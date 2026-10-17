@@ -1,4 +1,4 @@
-import { createInstrument, createSoundEffect, type SoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect, type Audio80SoundEffect } from '@mvtjs/audio';
 import { MIN_CASCADE_FOR_FIREWORKS } from './constants';
 
 // Kwazy Cactii's sound effects, for the Audio80. They were all written for
@@ -25,8 +25,8 @@ const GLASS_WAVE = '8CEF EEDE EEDE EFEC 8310 1121 1121 1013';
  * Two cactii swapping places: one short blip on the glass. A player hears it
  * on every move, so it is brief and soft, and it does not rise or ring.
  */
-export const SWAP = createSoundEffect({
-    instrument: createInstrument({
+export const SWAP = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'wavetable',
         wavetable: GLASS_WAVE,
         envelope: { attackMs: 0, decayMs: 45, sustain: 0, releaseMs: 0 },
@@ -38,7 +38,7 @@ export const SWAP = createSoundEffect({
 });
 
 /** A swap that makes no line, undone: two low knocks, falling. */
-export const SWAP_BACK = createSoundEffect({
+export const SWAP_BACK = createAudio80SoundEffect({
     note: 'E-4',
     stepMs: 90,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 70 },
@@ -54,8 +54,8 @@ export const SWAP_BACK = createSoundEffect({
 });
 
 /** The cactii dropping into place: a soft wooden tock. */
-export const LAND = createSoundEffect({
-    instrument: createInstrument({
+export const LAND = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'wavetable',
         wavetable: MARIMBA_WAVE,
         envelope: { attackMs: 0, decayMs: 70, sustain: 0, releaseMs: 0 },
@@ -119,8 +119,8 @@ const CASCADE_OPTIONS = {
 } as const;
 
 /** The whistle of a match at each step of a cascade, one note higher at each step. */
-export const CASCADE_WHISTLES: readonly SoundEffect[] = CASCADE_NOTES.map((note) =>
-    createSoundEffect({ ...CASCADE_OPTIONS, note, steps: WHISTLE_STEPS, volume: 0.9 }),
+export const CASCADE_WHISTLES: readonly Audio80SoundEffect[] = CASCADE_NOTES.map((note) =>
+    createAudio80SoundEffect({ ...CASCADE_OPTIONS, note, steps: WHISTLE_STEPS, volume: 0.9 }),
 );
 
 /**
@@ -133,16 +133,16 @@ export const CASCADE_WHISTLES: readonly SoundEffect[] = CASCADE_NOTES.map((note)
  * The two lists run in step, so one cascade step reads the same index in
  * either.
  */
-export const CASCADE_CRACKLES: readonly (SoundEffect | undefined)[] = CASCADE_NOTES.map((note, index) => {
+export const CASCADE_CRACKLES: readonly (Audio80SoundEffect | undefined)[] = CASCADE_NOTES.map((note, index) => {
     const step = index + 1;
     if (step < MIN_CASCADE_FOR_FIREWORKS) return undefined;
     const lift = (step - MIN_CASCADE_FOR_FIREWORKS) * CRACKLE_LIFT_PER_STEP;
-    return createSoundEffect({ ...CASCADE_OPTIONS, note, steps: CRACKLE_REST_STEPS + writeCrackleSteps(lift), volume: 0.5 });
+    return createAudio80SoundEffect({ ...CASCADE_OPTIONS, note, steps: CRACKLE_REST_STEPS + writeCrackleSteps(lift), volume: 0.5 });
 });
 
 /** A match that clears five or more cactii: glass, sparkling up two octaves, then up again as it fades. */
-export const BIG_MATCH = createSoundEffect({
-    instrument: createInstrument({
+export const BIG_MATCH = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'wavetable',
         wavetable: GLASS_WAVE,
         envelope: { attackMs: 0, decayMs: 600, sustain: 0, releaseMs: 200 },
@@ -161,7 +161,7 @@ export const BIG_MATCH = createSoundEffect({
 // ---------------------------------------------------------------------------
 
 /** A new board: three notes on the glass, up. */
-export const NEW_GAME = createSoundEffect({
+export const NEW_GAME = createAudio80SoundEffect({
     note: 'C-5',
     stepMs: 110,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 300 },
@@ -179,7 +179,7 @@ export const NEW_GAME = createSoundEffect({
 });
 
 /** No moves left: three notes on the marimba, down, and a long ring. */
-export const GAME_OVER = createSoundEffect({
+export const GAME_OVER = createAudio80SoundEffect({
     note: 'G-4',
     stepMs: 220,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 700 },

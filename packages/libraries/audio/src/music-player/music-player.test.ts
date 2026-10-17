@@ -1,18 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import type { AudioControls } from '../chip';
-import { toCutoff, toNoteNumber } from '../core';
-import { type ChipWrite, createHeadlessAudio80 } from '../headless';
-import { createInstrument, createSong, computeSongDurationMs, type Song, type SongOptions } from '../notation';
+import { createAudio80Instrument, createAudio80Song, type Audio80Song, type Audio80SongOptions, toCutoff } from '../audio80';
+import { type Audio80Write, createHeadlessAudio80 } from '../headless';
+import { type AudioControls, computeSongDurationMs, toNoteNumber } from '../shared';
 import { createMusicPlayer, type MusicPlayer } from './music-player';
 
 const BPM = 150;
 const ROWS_PER_BEAT = 4;
 const ROW_MS = 60000 / (BPM * ROWS_PER_BEAT);
-const LEAD = createInstrument({ wave: 'pulse', filter: 'a' });
-const BASS = createInstrument({ wave: 'saw' });
-const DRUM = createInstrument({ wave: 'noise', note: 'C-3' });
+const LEAD = createAudio80Instrument({ wave: 'pulse', filter: 'a' });
+const BASS = createAudio80Instrument({ wave: 'saw' });
+const DRUM = createAudio80Instrument({ wave: 'noise', note: 'C-3' });
 
-const TUNE = createSong({
+const TUNE = createAudio80Song({
     bpm: BPM,
     rowsPerBeat: ROWS_PER_BEAT,
     instruments: { L: LEAD, B: BASS, k: DRUM },
@@ -77,7 +76,7 @@ describe('music player', () => {
     });
 
     it('sends each cell\'s effects to the chip with its note', () => {
-        const song = createSong({ ...ONE_CHANNEL, patterns: { p: '| C-4 L a37 ~46 p8 fA' } });
+        const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: '| C-4 L a37 ~46 p8 fA' } });
         const { log } = playThrough(song, () => 10, ROW_MS / 2);
         expect(listSettingValues(log, 'arpeggio')).toEqual([0x37]);
         expect(listSettingValues(log, 'vibratoDepth')).toEqual([4 / 8]);
@@ -88,7 +87,7 @@ describe('music player', () => {
     });
 
     it('goes back to its loop point at the end', () => {
-        const looped = createSong({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
+        const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
         const { log, player } = playThrough(looped, () => 1000 / 60, 3 * 4 * ROW_MS + 1);
         expect(player.isPlaying).toBe(true);
         // Pattern b's first note plays three times: once in order, then twice more around the loop
@@ -99,15 +98,15 @@ describe('music player', () => {
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
         const player = createMusicPlayer({ audio80: chip });
         player.play(TUNE);
-        player.queue(createSong({ ...TUNE_OPTIONS, order: ['b'] }));
+        player.queue(createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] }));
         tick(controls, player, () => 1000 / 60, computeSongDurationMs(TUNE) + 3 * ROW_MS);
         const firstOfNext = listNoteOns(chip.log).find((write) => write.note === requireNoteNumber('G-5'));
         expect(firstOfNext?.time).toBeCloseTo(computeSongDurationMs(TUNE), 9);
     });
 
     it('plays a queued song instead of going back to its loop point', () => {
-        const looped = createSong({ ...TUNE_OPTIONS, order: ['a'], loop: 0 });
-        const next = createSong({ ...TUNE_OPTIONS, order: ['b'] });
+        const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 });
+        const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
         const player = createMusicPlayer({ audio80: chip });
         player.play(looped);
@@ -121,7 +120,7 @@ describe('music player', () => {
     });
 
     it('cancels a queued song when told to play another', () => {
-        const queued = createSong({ ...TUNE_OPTIONS, order: ['b'] });
+        const queued = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
         const player = createMusicPlayer({ audio80: chip });
         player.play(TUNE);
@@ -134,7 +133,7 @@ describe('music player', () => {
     });
 
     it('releases the song playing when told to play another, and starts the new one at once', () => {
-        const next = createSong({ ...TUNE_OPTIONS, order: ['b'] });
+        const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
         const player = createMusicPlayer({ audio80: chip });
         player.play(TUNE);
@@ -200,7 +199,7 @@ describe('music player', () => {
     it('ignores a deltaMs of 0 or less, or not finite', () => {
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
         const player = createMusicPlayer({ audio80: chip });
-        player.play(createSong({ ...TUNE_OPTIONS, order: ['a'], loop: 0 }));
+        player.play(createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 }));
         player.refresh();
         chip.clear();
         controls.update(ROW_MS);
@@ -211,7 +210,7 @@ describe('music player', () => {
     });
 
     it('slides by the written amount over the row, at any tempo scale', () => {
-        const song = createSong({ ...ONE_CHANNEL, patterns: { p: SLIDE_THEN_HOLD } });
+        const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: SLIDE_THEN_HOLD } });
         const steady = playThrough(song, () => 10, 2 * ROW_MS).log;
         expect(measureSlide(steady, 0, 0, ROW_MS)).toBeCloseTo(SLIDE, 9);
 
@@ -229,7 +228,7 @@ describe('music player', () => {
     });
 
     it('stops a slide while the song is held, and carries it on when it resumes', () => {
-        const song = createSong({ ...ONE_CHANNEL, patterns: { p: SLIDE_THEN_HOLD } });
+        const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: SLIDE_THEN_HOLD } });
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
         const player = createMusicPlayer({ audio80: chip });
         player.play(song);
@@ -252,7 +251,7 @@ describe('music player', () => {
             | E-4
         `;
         const rowCount = 3;
-        const song = createSong({ ...ONE_CHANNEL, swing, patterns: { p }, order: ['p', 'p'] });
+        const song = createAudio80Song({ ...ONE_CHANNEL, swing, patterns: { p }, order: ['p', 'p'] });
         const expected: number[] = [];
         for (let pass = 0; pass < 2; pass++) {
             for (let row = 0; row < rowCount; row++) expected.push((pass * rowCount + row + (row % 2 === 1 ? swing : 0)) * ROW_MS);
@@ -267,7 +266,7 @@ describe('music player', () => {
             | D-4 u0C
             | E-4 >
         `;
-        const song = createSong({ ...ONE_CHANNEL, swing, patterns: { p: slid } });
+        const song = createAudio80Song({ ...ONE_CHANNEL, swing, patterns: { p: slid } });
         const { log } = playThrough(song, () => 10, computeSongDurationMs(song));
         const rowStarts = [0, (1 + swing) * ROW_MS, 2 * ROW_MS];
         expect(measureSlide(log, 0, rowStarts[0], rowStarts[1])).toBeCloseTo(SLIDE, 9);
@@ -279,7 +278,7 @@ describe('music player', () => {
             | D-4 >
             | ...
         `;
-        const glided = createSong({ ...ONE_CHANNEL, swing, patterns: { p: glide } });
+        const glided = createAudio80Song({ ...ONE_CHANNEL, swing, patterns: { p: glide } });
         expect(listSettingValues(playThrough(glided, () => 10, computeSongDurationMs(glided)).log, 'glide')).toEqual([(1 - swing) * ROW_MS]);
     });
 
@@ -318,6 +317,31 @@ describe('music player', () => {
         expect(player.beat).toBeCloseTo(1, 9);
     });
 
+    it('reports the row playing, through its loop and into a queued song', () => {
+        const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
+        const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
+        const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+        const player = createMusicPlayer({ audio80: chip });
+        player.play(looped);
+        const places = [[player.orderIndex, player.row]];
+        for (let i = 0; i < 13; i++) {
+            if (i === 9) player.queue(next);
+            tick(controls, player, () => ROW_MS, ROW_MS);
+            places.push([player.orderIndex, player.row]);
+        }
+        expect(places).toEqual([
+            [0, 0], [0, 1], [0, 2], [0, 3],
+            [1, 0], [1, 1], [1, 2], [1, 3],
+            [1, 0], [1, 1], [1, 2], [1, 3],
+            [0, 0], [0, 1],
+        ]);
+        expect(player.song).toBe(next);
+        // Each place changes as its row's first note is written, at the chip's time
+        expect(listNoteOns(chip.log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS, 8 * ROW_MS, 12 * ROW_MS]);
+        player.stop();
+        expect([player.orderIndex, player.row]).toEqual([0, 0]);
+    });
+
     it('writes nothing in its update step, and everything in its refresh', () => {
         const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
         const player = createMusicPlayer({ audio80: chip });
@@ -331,9 +355,9 @@ describe('music player', () => {
 
     it('plays every note at its song\'s volume', () => {
         const volume = 0.5;
-        const song = createSong({ ...TUNE_OPTIONS, order: ['a'] });
+        const song = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'] });
         const asWritten = listNoteOns(playThrough(song, () => 10, computeSongDurationMs(song)).log);
-        const quieter = listNoteOns(playThrough(createSong({ ...TUNE_OPTIONS, order: ['a'], volume }), () => 10, computeSongDurationMs(song)).log);
+        const quieter = listNoteOns(playThrough(createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], volume }), () => 10, computeSongDurationMs(song)).log);
         expect(quieter.map((write) => write.volume)).toEqual(asWritten.map((write) => write.volume * volume));
     });
 });
@@ -363,7 +387,7 @@ const TUNE_OPTIONS = {
 };
 
 /** A one-channel song, for tests that set their own patterns. */
-const ONE_CHANNEL: SongOptions = { bpm: BPM, rowsPerBeat: ROWS_PER_BEAT, instruments: { L: LEAD }, patterns: { p: '| C-4 L' }, order: ['p'] };
+const ONE_CHANNEL: Audio80SongOptions = { bpm: BPM, rowsPerBeat: ROWS_PER_BEAT, instruments: { L: LEAD }, patterns: { p: '| C-4 L' }, order: ['p'] };
 
 /** The semitones a `u0C` slides by. */
 const SLIDE = 0x0C;
@@ -374,8 +398,8 @@ const SLIDE_THEN_HOLD = `
     | ...
 `;
 
-type NoteOn = Extract<ChipWrite, { kind: 'note-on' }>;
-type SetVoice = Extract<ChipWrite, { kind: 'set-voice'; value: number }>;
+type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
+type SetVoice = Extract<Audio80Write, { kind: 'set-voice'; value: number }>;
 
 /** A note's number from its name, for notes the tests write. */
 function requireNoteNumber(name: string): number {
@@ -384,12 +408,12 @@ function requireNoteNumber(name: string): number {
     return number;
 }
 
-function listNoteOns(log: readonly ChipWrite[]): NoteOn[] {
+function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {
     return log.filter((write): write is NoteOn => write.kind === 'note-on');
 }
 
 /** The values written to one voice setting, in order. */
-function listSettingValues(log: readonly ChipWrite[], setting: SetVoice['setting']): number[] {
+function listSettingValues(log: readonly Audio80Write[], setting: SetVoice['setting']): number[] {
     return log.filter((write): write is SetVoice => write.kind === 'set-voice' && write.setting === setting).map((write) => write.value);
 }
 
@@ -398,7 +422,7 @@ function listSettingValues(log: readonly ChipWrite[], setting: SetVoice['setting
  * would play the log. A slide write sets the rate in semitones a second, and
  * a `noteOn` stops the slide.
  */
-function measureSlide(log: readonly ChipWrite[], voice: number, fromMs: number, toMs: number): number {
+function measureSlide(log: readonly Audio80Write[], voice: number, fromMs: number, toMs: number): number {
     let rate = 0;
     let at = fromMs;
     let total = 0;
@@ -415,7 +439,7 @@ function measureSlide(log: readonly ChipWrite[], voice: number, fromMs: number, 
     return total + rate * (toMs - at) / 1000;
 }
 
-function listNoteStamps(song: Song, tickMs: () => number): number[] {
+function listNoteStamps(song: Audio80Song, tickMs: () => number): number[] {
     return listNoteOns(playThrough(song, tickMs, computeSongDurationMs(song) + 100).log).map((write) => write.time);
 }
 
@@ -436,7 +460,7 @@ function listStampsWhenPlayed(when: 'before-update' | 'in-refresh'): number[] {
     return listNoteOns(chip.log).map((write) => write.time);
 }
 
-function playThrough(song: Song, tickMs: () => number, durationMs: number) {
+function playThrough(song: Audio80Song, tickMs: () => number, durationMs: number) {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const player = createMusicPlayer({ audio80: chip });
     player.play(song);
@@ -445,7 +469,7 @@ function playThrough(song: Song, tickMs: () => number, durationMs: number) {
 }
 
 /** Ticks as a game loop does: the chip's clock, then the view's update, then its refresh. */
-function tick(controls: AudioControls, player: MusicPlayer, tickMs: () => number, durationMs: number): void {
+function tick(controls: AudioControls, player: MusicPlayer<Audio80Song>, tickMs: () => number, durationMs: number): void {
     let elapsed = 0;
     player.refresh();
     while (elapsed < durationMs) {

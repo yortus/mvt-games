@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { BASS, CHORD, HAT, KICK, LEAD, SNARE } from './sounds';
 
 // Galaxy Raiders' music. There are four pieces, all written for this game.
@@ -19,14 +19,14 @@ const BAND = {
     echo: { timeMs: 300, feedback: 0.35, level: 0.4 },
     // The songs are written loud. This brings them down to the loudness every song shares
     volume: 0.75,
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
 // ---------------------------------------------------------------------------
 
 /** The fanfare, played as each stage starts. It is two bars long, and goes from E minor round to E minor. */
-export const STAGE_FANFARE = createSong({
+export const STAGE_FANFARE = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -72,7 +72,7 @@ export const STAGE_FANFARE = createSong({
 });
 
 /** The stage's tune, played while the raiders fly. It is sixteen bars long, and loops. */
-export const STAGE_TUNE = createSong({
+export const STAGE_TUNE = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -193,7 +193,7 @@ export const STAGE_TUNE = createSong({
 });
 
 /** The jingle, played as the last raider of a stage falls. It is one bright bar, and the only piece in E major. */
-export const STAGE_CLEAR = createSong({
+export const STAGE_CLEAR = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -220,7 +220,7 @@ export const STAGE_CLEAR = createSong({
 });
 
 /** The tune played when the last ship is lost. It is five slow bars that fall home to E minor. */
-export const GAME_OVER = createSong({
+export const GAME_OVER = createAudio80Song({
     ...BAND,
     bpm: 100,
     rowsPerBeat: 2,

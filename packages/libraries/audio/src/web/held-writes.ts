@@ -1,17 +1,4 @@
-import {
-    COMMAND_STRIDE,
-    ECHO_SETTINGS,
-    FILTER_SETTINGS,
-    OP_NOTE_OFF,
-    OP_RELEASE_ALL,
-    OP_RESERVE_VOICES,
-    OP_SET_ECHO,
-    OP_SET_FILTER,
-    OP_SET_MIX,
-    OP_SET_VOICE,
-    VOICE_COUNT,
-    VOICE_SETTINGS,
-} from '../core';
+import { COMMAND_STRIDE } from '../shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -32,6 +19,8 @@ import {
  * It drops notes and sound effects. Sent late, they would all play at once.
  *
  * It holds at most one command per setting and voice, so it never grows.
+ * Which writes those are is each chip's: a chip's `HeldWriteSlots` gives
+ * each write worth keeping a slot of its own.
  */
 export interface HeldWrites {
     /** How many commands are held. */
@@ -44,20 +33,28 @@ export interface HeldWrites {
     clear: () => void;
 }
 
+/**
+ * Where a chip's held writes go. Each write worth keeping has a slot, and a
+ * later write to the same slot replaces it.
+ */
+export interface HeldWriteSlots {
+    /** How many slots there are. */
+    readonly slotCount: number;
+    /**
+     * The slot of a command, from its opcode and its first two operands.
+     * Returns -1 for a command not worth keeping, or one out of range, which
+     * the synthesiser would ignore.
+     */
+    readonly findSlot: (op: number, a: number, b: number) => number;
+}
+
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates held writes that hold nothing yet. */
-export function createHeldWrites(): HeldWrites {
-    const voiceBase = NOTE_OFF_BASE + VOICE_COUNT;
-    const filterBase = voiceBase + VOICE_COUNT * VOICE_SETTINGS.length;
-    const echoBase = filterBase + FILTER_COUNT * FILTER_SETTINGS.length;
-    const reserveSlot = echoBase + ECHO_SETTINGS.length;
-    const mixBase = reserveSlot + 1;
-    const releaseAllSlot = mixBase + MIX_BUS_COUNT;
-    const slotCount = releaseAllSlot + 1;
-
+/** Creates held writes that hold nothing yet, in a chip's slots. */
+export function createHeldWrites(options: HeldWriteSlots): HeldWrites {
+    const { slotCount, findSlot } = options;
     const slots = new Float64Array(slotCount * COMMAND_STRIDE);
     const isHeld = new Uint8Array(slotCount);
     let count = 0;
@@ -99,40 +96,13 @@ export function createHeldWrites(): HeldWrites {
             count = 0;
         },
     };
-
-    /** The slot a command is held in. Returns -1 for a command not worth keeping, or one out of range, which the synthesiser would ignore. */
-    function findSlot(op: number, a: number, b: number): number {
-        switch (op) {
-            case OP_NOTE_OFF:
-                return isIndex(a, VOICE_COUNT) ? NOTE_OFF_BASE + a : -1;
-            case OP_SET_VOICE:
-                return isIndex(a, VOICE_COUNT) && isIndex(b, VOICE_SETTINGS.length) ? voiceBase + a * VOICE_SETTINGS.length + b : -1;
-            case OP_SET_FILTER:
-                return isIndex(a, FILTER_COUNT) && isIndex(b, FILTER_SETTINGS.length) ? filterBase + a * FILTER_SETTINGS.length + b : -1;
-            case OP_SET_ECHO:
-                return isIndex(a, ECHO_SETTINGS.length) ? echoBase + a : -1;
-            case OP_RESERVE_VOICES:
-                return reserveSlot;
-            case OP_SET_MIX:
-                return isIndex(a, MIX_BUS_COUNT) ? mixBase + a : -1;
-            case OP_RELEASE_ALL:
-                return releaseAllSlot;
-            default:
-                return -1;
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
-// Internals
+// Functions
 // ---------------------------------------------------------------------------
 
-const NOTE_OFF_BASE = 0;
-/** Filters `a` and `b`. */
-const FILTER_COUNT = 2;
-/** The music bus and the effects bus. */
-const MIX_BUS_COUNT = 2;
-
-function isIndex(value: number, length: number): boolean {
+/** Whether `value` is a whole number from 0 to `length` - 1. Each chip's slots use it to check a command's operands. */
+export function isIndex(value: number, length: number): boolean {
     return Number.isInteger(value) && value >= 0 && value < length;
 }

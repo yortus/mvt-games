@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import type { SoundEffect } from '@mvtjs/audio';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import type { Audio80SoundEffect } from '@mvtjs/audio';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { refreshView } from '@mvtjs/html';
 import {
     BURN, CARD_TICK, DEVELOP, KEY_TICK_HIGH, KEY_TICK_LOW, LAUNCH, LOAD_FAILED, NO_RESULTS, PANEL_CLOSE, PANEL_OPEN, PAUSE, POWER_OFF,
@@ -152,6 +152,6 @@ function setUp(initial: Partial<State> = {}) {
     return { chip, state, tick };
 }
 
-function listPlays(log: readonly ChipWrite[]): SoundEffect[] {
-    return log.filter((write): write is Extract<ChipWrite, { kind: 'play' }> => write.kind === 'play').map((write) => write.effect);
+function listPlays(log: readonly Audio80Write[]): Audio80SoundEffect[] {
+    return log.filter((write): write is Extract<Audio80Write, { kind: 'play' }> => write.kind === 'play').map((write) => write.effect);
 }

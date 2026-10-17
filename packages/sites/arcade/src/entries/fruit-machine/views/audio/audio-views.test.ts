@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/html';
-import { createMusicPlayer, type Song, computeSongDurationMs } from '@mvtjs/audio';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createMusicPlayer, type Audio80Song, computeSongDurationMs } from '@mvtjs/audio';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import {
     BET, BIG_WIN, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, GAME_OVER, LEVER, NO_WIN, REEL_CLICK,
     REEL_STOP, SETTLE_MS, SETTLE_STAGGER_MS, STOPPING_SETTLE_MS, type SymbolKind, WAY_OF_3, WAY_OF_5, WIN,
@@ -157,8 +157,8 @@ const WAY_OF_5_STRIPS: readonly (readonly SymbolKind[])[] = [
 /** How long the last reel takes to land, from the start of a spin, and one tick more. */
 const LANDED_MS = FIRST_SETTLE_MS + (NO_WIN_STRIPS.length - 1) * SETTLE_STAGGER_MS + SETTLE_MS + TICK_MS;
 
-type Play = Extract<ChipWrite, { kind: 'play' }>;
-type NoteOn = Extract<ChipWrite, { kind: 'note-on' }>;
+type Play = Extract<Audio80Write, { kind: 'play' }>;
+type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
 function setUp(options: FruitMachineModelOptions) {
     const model = createFruitMachineModel({ seed: 5, ...options });
@@ -176,11 +176,11 @@ function setUp(options: FruitMachineModelOptions) {
     return { model, chip, advance };
 }
 
-function listPlays(log: readonly ChipWrite[], effect: Play['effect']): Play[] {
+function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[] {
     return log.filter((write): write is Play => write.kind === 'play' && write.effect === effect);
 }
 
-function listNoteOns(log: readonly ChipWrite[]): NoteOn[] {
+function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {
     return log.filter((write): write is NoteOn => write.kind === 'note-on');
 }
 
@@ -190,7 +190,7 @@ function listNoteOns(log: readonly ChipWrite[]): NoteOn[] {
  * of the same song match even when the song started at different chip times.
  * Effects are logged as plays, so every note-on is the music's.
  */
-function describeNoteOns(log: readonly ChipWrite[]): string[] {
+function describeNoteOns(log: readonly Audio80Write[]): string[] {
     const noteOns = listNoteOns(log);
     const startMs = noteOns.length > 0 ? noteOns[0].time : 0;
     return noteOns.map((write) => `${write.voice}:${write.note}@${(write.time - startMs).toFixed(3)}`);
@@ -201,7 +201,7 @@ function describeNoteOns(log: readonly ChipWrite[]): string[] {
  * notes it plays. This is what the view should play when it plays `song`.
  * Each test that compares with it listens to the whole song.
  */
-function recordSong(song: Song): string[] {
+function recordSong(song: Audio80Song): string[] {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const music = createMusicPlayer({ audio80: chip });
     music.play(song);

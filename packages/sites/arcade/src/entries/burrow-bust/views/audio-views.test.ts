@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type AudioControls, computeSongDurationMs, createMusicPlayer, type Song, type SoundEffect } from '@mvtjs/audio';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { type AudioControls, computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from '@mvtjs/audio';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import {
     DEATH, FIRE, FIRE_WARNING, GAME_OVER, GHOST, HARPOON, LEVEL_CLEAR, LEVEL_START, POP, PUMP_1, PUMP_2, PUMP_3,
     PUMP_4, ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE, SQUASH, WALK_TUNE,
@@ -235,15 +235,15 @@ describe('RockAudioView', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Play = Extract<ChipWrite, { kind: 'play' }>;
-type NoteOn = Extract<ChipWrite, { kind: 'note-on' }>;
+type Play = Extract<Audio80Write, { kind: 'play' }>;
+type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
-function listPlays(log: readonly ChipWrite[], effect: SoundEffect): Play[] {
+function listPlays(log: readonly Audio80Write[], effect: Audio80SoundEffect): Play[] {
     return log.filter((write): write is Play => write.kind === 'play' && write.effect === effect);
 }
 
 /** Lists the effects played in `log`, in order. */
-function listPlayedEffects(log: readonly ChipWrite[]): SoundEffect[] {
+function listPlayedEffects(log: readonly Audio80Write[]): Audio80SoundEffect[] {
     return log.filter((write): write is Play => write.kind === 'play').map((write) => write.effect);
 }
 
@@ -252,7 +252,7 @@ function listPlayedEffects(log: readonly ChipWrite[]): SoundEffect[] {
  * time is in ms from the first note-on, to three decimal places. So two logs
  * of the same song match even when the song started at different chip times.
  */
-function describeNoteOns(log: readonly ChipWrite[]): string[] {
+function describeNoteOns(log: readonly Audio80Write[]): string[] {
     const noteOns = log.filter((write): write is NoteOn => write.kind === 'note-on');
     const startMs = noteOns.length > 0 ? noteOns[0].time : 0;
     return noteOns.map((write) => `${write.voice}:${write.note}@${(write.time - startMs).toFixed(3)}`);
@@ -265,7 +265,7 @@ function describeNoteOns(log: readonly ChipWrite[]): string[] {
  * ticks. This is what a view that plays these songs should play over the same
  * ticks.
  */
-function recordSong(options: { song: Song; then?: Song; tempoScale?: number; heldTicks?: number; ticks?: number }): string[] {
+function recordSong(options: { song: Audio80Song; then?: Audio80Song; tempoScale?: number; heldTicks?: number; ticks?: number }): string[] {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const player = createMusicPlayer({ audio80: chip });
     player.play(options.song);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import type { SoundEffect } from '@mvtjs/audio';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import type { Audio80SoundEffect } from '@mvtjs/audio';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
     WAVE_CLEAR,
@@ -24,7 +24,7 @@ describe('GameAudioView', () => {
     });
 
     it('beats low and high by turns, and faster with each break', () => {
-        const listBeatsWith = (breaksLeft: number): SoundEffect[] => {
+        const listBeatsWith = (breaksLeft: number): Audio80SoundEffect[] => {
             const { chip, state, tickFor } = setUp();
             state.breaksLeft = breaksLeft;
             tickFor(LONG_MS);
@@ -150,31 +150,31 @@ describe('GameAudioView', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Play = Extract<ChipWrite, { kind: 'play' }>;
+type Play = Extract<Audio80Write, { kind: 'play' }>;
 
-function listPlays(log: readonly ChipWrite[]): Play[] {
+function listPlays(log: readonly Audio80Write[]): Play[] {
     return log.filter((write): write is Play => write.kind === 'play');
 }
 
-function listPlaysOf(log: readonly ChipWrite[], effect: SoundEffect): Play[] {
+function listPlaysOf(log: readonly Audio80Write[], effect: Audio80SoundEffect): Play[] {
     return listPlays(log).filter((write) => write.effect === effect);
 }
 
 /** Returns the heartbeat's thumps, in the order they played. */
-function listBeats(log: readonly ChipWrite[]): SoundEffect[] {
+function listBeats(log: readonly Audio80Write[]): Audio80SoundEffect[] {
     return listPlays(log).filter((write) => isBeat(write.effect)).map((write) => write.effect);
 }
 
 /** Returns the plays that are not the heartbeat's. */
-function listOtherPlays(log: readonly ChipWrite[]): Play[] {
+function listOtherPlays(log: readonly Audio80Write[]): Play[] {
     return listPlays(log).filter((write) => !isBeat(write.effect));
 }
 
-function isBeat(effect: SoundEffect): boolean {
+function isBeat(effect: Audio80SoundEffect): boolean {
     return effect === BEAT_LOW || effect === BEAT_HIGH;
 }
 
-function isBreak(effect: SoundEffect): boolean {
+function isBreak(effect: Audio80SoundEffect): boolean {
     return effect === BREAK_LARGE || effect === BREAK_MEDIUM || effect === BREAK_SMALL;
 }
 

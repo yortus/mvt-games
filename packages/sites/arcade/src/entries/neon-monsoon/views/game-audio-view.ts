@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80, type SoundEffect } from '@mvtjs/audio';
+import { createMusicPlayer, type Audio80, type Audio80SoundEffect } from '@mvtjs/audio';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
@@ -211,6 +211,6 @@ function countSirens(warningElapsedMs: number): number {
 }
 
 /** Returns the sound of an explosion of this size. */
-function chooseExplosion(size: ExplosionSize | undefined): SoundEffect {
+function chooseExplosion(size: ExplosionSize | undefined): Audio80SoundEffect {
     return size === 'huge' ? EXPLODE_HUGE : size === 'large' ? EXPLODE_LARGE : EXPLODE_SMALL;
 }

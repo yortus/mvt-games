@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MAX_MIX_VOLUME } from '../chip';
-import { COMMAND_STRIDE, OP_NOTE_OFF, OP_NOTE_ON, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX } from '../core';
-import { createInstrument } from '../notation';
-import type { RunnerMessage } from './chip-runner';
+import { createAudio80Instrument, OP_NOTE_OFF, OP_NOTE_ON, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX } from '../audio80';
+import { type ChipBatch, COMMAND_STRIDE, MAX_MIX_VOLUME } from '../shared';
+import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
 import { createWebAudio80 } from './web-audio80';
 
 const TICK_MS = 16;
@@ -18,7 +17,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
         const fake = createFakeContext('running');
         const { audio80, controls } = createWebAudio80({ context: fake.context });
         await controls.ready;
-        audio80.noteOn(0, createInstrument({ wave: 'saw' }), 57, 1);
+        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
         tick(controls);
         expect(fake.listBatches()).toHaveLength(1);
         expect(listOps(fake.listBatches()[0])).toEqual([OP_NOTE_ON]);
@@ -29,7 +28,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
         const { audio80, controls } = createWebAudio80({ context: fake.context });
         await controls.ready;
         for (let i = 0; i < 10; i++) {
-            audio80.noteOn(0, createInstrument({ wave: 'saw' }), 57, 1);
+            audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
             tick(controls);
         }
         expect(fake.listBatches()).toHaveLength(0);
@@ -43,7 +42,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
         audio80.reserveVoices(4);
         audio80.setFilter('a', 'cutoffHz', 500);
         audio80.setFilter('a', 'cutoffHz', 800);
-        audio80.noteOn(0, createInstrument({ wave: 'saw' }), 57, 1);
+        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
         tick(controls);
         tick(controls);
         fake.setState('running');
@@ -58,7 +57,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
         const fake = createFakeContext('suspended');
         const { audio80, controls } = createWebAudio80({ context: fake.context });
         await controls.ready;
-        const instrument = createInstrument({ wave: 'saw' });
+        const instrument = createAudio80Instrument({ wave: 'saw' });
         audio80.noteOn(0, instrument, 57, 1);
         tick(controls);
         fake.setState('running');
@@ -71,7 +70,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
         const fake = createFakeContext('running');
         const { audio80, controls } = createWebAudio80({ context: fake.context });
         await controls.ready;
-        audio80.noteOn(2, createInstrument({ wave: 'saw' }), 57, 1);
+        audio80.noteOn(2, createAudio80Instrument({ wave: 'saw' }), 57, 1);
         tick(controls);
         fake.setState('suspended');
         audio80.noteOff(2);
@@ -100,7 +99,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
         controls.destroy();
         expect(fake.messages.at(-1)).toEqual({ kind: 'stop' });
         const sent = fake.messages.length;
-        audio80.noteOn(0, createInstrument({ wave: 'saw' }), 57, 1);
+        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
         tick(controls);
         expect(fake.messages).toHaveLength(sent);
     });
@@ -136,54 +135,19 @@ interface Controls {
     readonly flush: () => void;
 }
 
-type Batch = Extract<RunnerMessage, { kind: 'batch' }>;
-
 function tick(controls: Controls): void {
     controls.update(TICK_MS);
     controls.flush();
 }
 
-/**
- * Creates an audio context with just what the chip uses, and an
- * `AudioWorkletNode` whose port keeps a copy of every message. It copies each
- * message as the browser does, so transferred buffers are detached.
- */
-function createFakeContext(initialState: AudioContextState, loadError?: Error) {
-    let state = initialState;
-    const messages: RunnerMessage[] = [];
-    const audioNode = { connect: ignore, disconnect: ignore };
-    const port = {
-        onmessage: undefined as unknown,
-        postMessage: (message: RunnerMessage, transfer?: Transferable[]) => {
-            messages.push(structuredClone(message, { transfer }));
-        },
-        close: ignore,
-    };
-    vi.stubGlobal('AudioWorkletNode', function AudioWorkletNode() {
-        return { ...audioNode, port };
-    });
-    const context = {
-        get state() {
-            return state;
-        },
-        currentTime: 0,
-        destination: audioNode,
-        createGain: () => ({ ...audioNode, gain: { setTargetAtTime: ignore } }),
-        audioWorklet: {
-            addModule: () => (loadError === undefined ? Promise.resolve() : Promise.reject(loadError)),
-        },
-    };
-    return {
-        context: context as unknown as AudioContext,
-        messages,
-        setState: (next: AudioContextState) => {
-            state = next;
-        },
-        listBatches: () => messages.filter((message): message is Batch => message.kind === 'batch'),
-    };
+/** Creates a stand-in audio context, and puts its `AudioWorkletNode` in place of the browser's. */
+function createFakeContext(state: AudioContextState, loadError?: Error): FakeAudioContext {
+    const fake = createFakeAudioContext(state, loadError);
+    vi.stubGlobal('AudioWorkletNode', fake.AudioWorkletNode);
+    return fake;
 }
 
-function listOps(batch: Batch): number[] {
+function listOps(batch: ChipBatch): number[] {
     const ops: number[] = [];
     for (let i = 0; i < batch.count; i++) ops.push(batch.commands[i * COMMAND_STRIDE]);
     return ops;
@@ -194,7 +158,7 @@ function listOps(batch: Batch): number[] {
  * `field`, which is 2 to 5 for `a` to `d`. If `a` is given, only commands
  * whose `a` matches it count.
  */
-function listValues(batch: Batch, op: number, field: number, a?: number): number[] {
+function listValues(batch: ChipBatch, op: number, field: number, a?: number): number[] {
     const values: number[] = [];
     for (let i = 0; i < batch.count; i++) {
         const at = i * COMMAND_STRIDE;
@@ -202,8 +166,4 @@ function listValues(batch: Batch, op: number, field: number, a?: number): number
         values.push(batch.commands[at + field]);
     }
     return values;
-}
-
-function ignore(): void {
-    // Nothing to do
 }

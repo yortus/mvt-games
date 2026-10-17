@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { BASS, CHORD, FLUTE, KOTO, RIM, SHAKER, TAIKO } from './sounds';
 
 // Dojo Duel's music. Every piece is written for this game. The pieces are in
@@ -20,14 +20,14 @@ const BAND = {
     filters: { a: { mode: 'lowpass', cutoffHz: 900, resonance: 0.5, drive: 0.2 } },
     // At 132 BPM, an eighth note lasts about 230 ms, so the echo falls in time with the fight's tune
     echo: { timeMs: 230, feedback: 0.4, level: 0.4 },
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
 // ---------------------------------------------------------------------------
 
 /** The fight's tune, played through each round. It loops. */
-export const FIGHT_THEME = createSong({
+export const FIGHT_THEME = createAudio80Song({
     ...BAND,
     bpm: 132,
     patterns: {
@@ -150,7 +150,7 @@ export const FIGHT_THEME = createSong({
 });
 
 /** The jingle played when the player wins a round. It climbs the scale, and ends on A major instead of the fight's A minor. */
-export const ROUND_WON = createSong({
+export const ROUND_WON = createAudio80Song({
     ...BAND,
     bpm: 132,
     patterns: {
@@ -177,7 +177,7 @@ export const ROUND_WON = createSong({
 });
 
 /** The jingle played when the opponent wins a round. It falls down the scale to A, over a low A minor chord. */
-export const ROUND_LOST = createSong({
+export const ROUND_LOST = createAudio80Song({
     ...BAND,
     bpm: 132,
     patterns: {
@@ -204,7 +204,7 @@ export const ROUND_LOST = createSong({
 });
 
 /** The tune played when the player wins the match. It is four bars of the flute, and ends brightly on A major. */
-export const MATCH_WON = createSong({
+export const MATCH_WON = createAudio80Song({
     ...BAND,
     bpm: 120,
     rowsPerBeat: 2,
@@ -248,7 +248,7 @@ export const MATCH_WON = createSong({
 });
 
 /** The tune played when the opponent wins the match. The flute falls slowly to a low A. */
-export const MATCH_LOST = createSong({
+export const MATCH_LOST = createAudio80Song({
     ...BAND,
     bpm: 80,
     rowsPerBeat: 2,

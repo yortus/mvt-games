@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type AudioControls, createMusicPlayer, type Song } from '@mvtjs/audio';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { type AudioControls, createMusicPlayer, type Audio80Song } from '@mvtjs/audio';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import {
     BLOCK,
     FIGHT_THEME,
@@ -213,14 +213,14 @@ describe('MatchAudioView', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Play = Extract<ChipWrite, { kind: 'play' }>;
-type NoteOn = Extract<ChipWrite, { kind: 'note-on' }>;
+type Play = Extract<Audio80Write, { kind: 'play' }>;
+type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
-function listPlays(log: readonly ChipWrite[], effect: Play['effect']): Play[] {
+function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[] {
     return log.filter((write): write is Play => write.kind === 'play' && write.effect === effect);
 }
 
-function listNoteOns(log: readonly ChipWrite[]): NoteOn[] {
+function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {
     return log.filter((write): write is NoteOn => write.kind === 'note-on');
 }
 
@@ -229,7 +229,7 @@ function listNoteOns(log: readonly ChipWrite[]): NoteOn[] {
  * time is in ms from the first note-on, to three decimal places. So two logs
  * of the same song match even when the song started at different chip times.
  */
-function describeNoteOns(log: readonly ChipWrite[]): string[] {
+function describeNoteOns(log: readonly Audio80Write[]): string[] {
     const noteOns = listNoteOns(log);
     const startMs = noteOns.length > 0 ? noteOns[0].time : 0;
     return noteOns.map((write) => `${write.voice}:${write.note}@${(write.time - startMs).toFixed(3)}`);
@@ -240,7 +240,7 @@ function describeNoteOns(log: readonly ChipWrite[]): string[] {
  * one it starts in, and describes the notes it plays. This is what a view
  * that plays `song` should play over the same ticks.
  */
-function recordSong(options: { song: Song }): string[] {
+function recordSong(options: { song: Audio80Song }): string[] {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const player = createMusicPlayer({ audio80: chip });
     player.play(options.song);

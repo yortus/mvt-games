@@ -1,4 +1,4 @@
-import { createInstrument, createSoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
 
 // Crumb Chase's instruments and sound effects, for the Audio80. They are all
 // written for this game. They play on wavetables, for the soft, buzzy tone of
@@ -19,7 +19,7 @@ const HOLLOW = '8BEFFEB8 7ACDDCA7 48ABBA84 26788762';
 // ---------------------------------------------------------------------------
 
 /** The tunes' lead. It plays the hollow wavetable, held, with a little vibrato. */
-export const PIPE = createInstrument({
+export const PIPE = createAudio80Instrument({
     wave: 'wavetable',
     wavetable: HOLLOW,
     envelope: { attackMs: 3, decayMs: 250, sustain: 0.6, releaseMs: 120 },
@@ -29,7 +29,7 @@ export const PIPE = createInstrument({
 });
 
 /** A plucked bass on the round wavetable, for tiptoeing. */
-export const PIZZ = createInstrument({
+export const PIZZ = createAudio80Instrument({
     wave: 'wavetable',
     wavetable: ROUND,
     envelope: { attackMs: 1, decayMs: 180, sustain: 0, releaseMs: 50 },
@@ -37,7 +37,7 @@ export const PIZZ = createInstrument({
 });
 
 /** A soft, high blip, for the sneaking tune's tiptoes. */
-export const TIP = createInstrument({
+export const TIP = createAudio80Instrument({
     wave: 'wavetable',
     wavetable: HOLLOW,
     envelope: { attackMs: 1, decayMs: 90, sustain: 0, releaseMs: 40 },
@@ -50,7 +50,7 @@ export const TIP = createInstrument({
 // ---------------------------------------------------------------------------
 
 /** The nibble as a crumb is eaten. It is quick, and falls a fifth in three steps. */
-const NIBBLE = createInstrument({
+const NIBBLE = createAudio80Instrument({
     wave: 'wavetable',
     wavetable: HOLLOW,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 },
@@ -62,7 +62,7 @@ const NIBBLE = createInstrument({
 });
 
 /** The lower of the two nibbles. The crumbs eaten take turns between the two. */
-export const NIBBLE_LOW = createSoundEffect({ instrument: NIBBLE, note: 'D-5', priority: 0, volume: 0.8 });
+export const NIBBLE_LOW = createAudio80SoundEffect({ instrument: NIBBLE, note: 'D-5', priority: 0, volume: 0.8 });
 
 /** The higher of the two nibbles, a fourth above the lower one. */
-export const NIBBLE_HIGH = createSoundEffect({ instrument: NIBBLE, note: 'G-5', priority: 0, volume: 0.8 });
+export const NIBBLE_HIGH = createAudio80SoundEffect({ instrument: NIBBLE, note: 'G-5', priority: 0, volume: 0.8 });

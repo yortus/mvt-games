@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { PIPE, PIZZ, TIP } from './sounds';
 
 // Crumb Chase's music. There are four pieces, all written for this game. Three
@@ -18,7 +18,7 @@ const BAND = {
     instruments: { P: PIPE, T: TIP, Z: PIZZ },
     // At 120 BPM, 250 ms is an eighth note, so the echo falls in time with the sneaking tune
     echo: { timeMs: 250, feedback: 0.3, level: 0.35 },
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
@@ -29,7 +29,7 @@ const BAND = {
  * with a high note now and then. It loops, and its third time through is a
  * fourth higher.
  */
-export const SNEAK = createSong({
+export const SNEAK = createAudio80Song({
     ...BAND,
     // The tune is written quiet. This lifts it to the loudness every song shares
     volume: 2.4,
@@ -79,7 +79,7 @@ export const SNEAK = createSong({
 });
 
 /** The tune played as a game starts. It climbs the D minor chord to the D above, then winds back down to D. */
-export const GAME_START = createSong({
+export const GAME_START = createAudio80Song({
     ...BAND,
     bpm: 140,
     patterns: {
@@ -128,7 +128,7 @@ export const GAME_START = createSong({
  * The tune played as the mouse is caught. A wavering note slides down two
  * octaves over a low D, and then the bass plucks two lower Ds.
  */
-export const CAUGHT = createSong({
+export const CAUGHT = createAudio80Song({
     ...BAND,
     // The tune is written quiet. This lifts it to the loudness every song shares
     volume: 1.4,
@@ -162,7 +162,7 @@ export const CAUGHT = createSong({
  * The tune played as the maze is cleared. It runs up the D major chord twice,
  * the second time to a high A, and ends on a held D.
  */
-export const CLEARED = createSong({
+export const CLEARED = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {

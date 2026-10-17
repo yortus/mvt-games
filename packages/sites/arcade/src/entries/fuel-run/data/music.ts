@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { SNARE, SQUARE, TRIANGLE_BASS } from './sounds';
 
 // Fuel Run's music. There are three short pieces, all written for this game.
@@ -16,14 +16,14 @@ const BAND = {
     instruments: { S: SQUARE, T: TRIANGLE_BASS, n: SNARE },
     // The songs are written loud. This brings them down to the loudness every song shares
     volume: 0.75,
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
 // ---------------------------------------------------------------------------
 
 /** The march played as each run begins. It is two bars long, in G major. It climbs the G chord, then winds back down to G. */
-export const LAUNCH = createSong({
+export const LAUNCH = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -69,7 +69,7 @@ export const LAUNCH = createSong({
 });
 
 /** The fanfare played as a run is cleared. It is one bar long, in C major, and climbs the C chord to a held high C. */
-export const RUN_CLEAR = createSong({
+export const RUN_CLEAR = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -101,7 +101,7 @@ export const RUN_CLEAR = createSong({
  * The lament played as the last ship is lost. It is six beats long, in G
  * minor. It falls from D through B flat, A and F sharp, and ends on a held G.
  */
-export const GAME_OVER = createSong({
+export const GAME_OVER = createAudio80Song({
     ...BAND,
     bpm: 110,
     patterns: {

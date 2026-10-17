@@ -1,0 +1,425 @@
+{
+    "suite": "audio90",
+    "environment": {
+        "date": "2026-10-16",
+        "cpu": "Intel(R) Core(TM) Ultra 9 185H",
+        "os": "win32 10.0.26200",
+        "node": "26.10.0",
+        "v8": "14.6.202.34-node.34",
+        "pixi": "8.21.0",
+        "solid": "1.9.15"
+    },
+    "runs": "adaptive",
+    "inputsHash": "e14be071d7c99345fb7d0121c86f1519e3c9ea5b617282fe7a2a5656f9930a79",
+    "results": [
+        {
+            "params": {
+                "measure": "time",
+                "engine": "none",
+                "voices": 0
+            },
+            "metrics": {
+                "usPerBlock": [
+                    21.92460815047017,
+                    22.694903474903484
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "fm",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    33.81758118701013,
+                    34.194013303769424
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "fm",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    93.41616161616159,
+                    100.26261682242993
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "fm",
+                "voices": 16
+            },
+            "metrics": {
+                "usPerBlock": [
+                    164.21686046511653,
+                    169.47111111111138
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "fm-console",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    35.99238875878221,
+                    37.47711640211639
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "fm-console",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    107.53682170542598,
+                    118.31353383458652
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "fm-console",
+                "voices": 16
+            },
+            "metrics": {
+                "usPerBlock": [
+                    194.28716216216222,
+                    195.59865771812127
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "analog-1",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    28.265116279069762,
+                    28.642816901408434
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "analog-1",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    59.61787148594392,
+                    63.68710407239805
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "analog-1",
+                "voices": 16
+            },
+            "metrics": {
+                "usPerBlock": [
+                    93.93636363636335,
+                    96.73030303030306
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "analog-7",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    32.795010615711305,
+                    32.8892461197339
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "analog-7",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    90.52187500000012,
+                    94.79899328859052
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "analog-7",
+                "voices": 16
+            },
+            "metrics": {
+                "usPerBlock": [
+                    137.9094594594595,
+                    142.78731707317058
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "sample",
+                "voices": 1
+            },
+            "metrics": {
+                "usPerBlock": [
+                    34.113181818181914,
+                    35.81164705882349
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "sample",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    60.44059829059831,
+                    65.98649237472767
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "sample",
+                "voices": 16
+            },
+            "metrics": {
+                "usPerBlock": [
+                    94.2025396825396,
+                    97.9585987261147
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "mix",
+                "voices": 8
+            },
+            "metrics": {
+                "usPerBlock": [
+                    108.78687258687252,
+                    114.99637096774231
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "time",
+                "engine": "mix",
+                "voices": 16
+            },
+            "metrics": {
+                "usPerBlock": [
+                    192.07628205128182,
+                    193.73618421052635
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "tick",
+                "engine": "song",
+                "voices": 10
+            },
+            "metrics": {
+                "usPerTick": [
+                    687.4977272727227,
+                    709.3395348837222
+                ],
+                "bytesPerTick": [
+                    34.8248,
+                    35.2696
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "engine": "none",
+                "voices": 0
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    0.7192000000000001,
+                    0.7824
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "engine": "fm",
+                "voices": 16
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    0.4576,
+                    0.7824,
+                    0.7824
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "engine": "fm-console",
+                "voices": 16
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    0.4576,
+                    0.4576
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "engine": "analog-1",
+                "voices": 16
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    0.4576,
+                    0.4576
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "engine": "analog-7",
+                "voices": 16
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    0.724,
+                    0.7824
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "engine": "sample",
+                "voices": 16
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    0.6943999999999999,
+                    0.9712,
+                    1.0191999999999999
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "allocation",
+                "engine": "mix",
+                "voices": 16
+            },
+            "metrics": {
+                "bytesPerBlock": [
+                    0.4576,
+                    0.4576,
+                    0.6304
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "bounce",
+                "sample": "hit"
+            },
+            "metrics": {
+                "msPerBounce": [
+                    26.216799999999978,
+                    28.864599999999996
+                ],
+                "samples": [
+                    24000,
+                    24000
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "bounce",
+                "sample": "break"
+            },
+            "metrics": {
+                "msPerBounce": [
+                    46.62389999999999,
+                    48.15809999999999
+                ],
+                "samples": [
+                    73412,
+                    73412
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "bounce",
+                "sample": "busy"
+            },
+            "metrics": {
+                "msPerBounce": [
+                    132.98260000000005,
+                    145.19099999999992
+                ],
+                "samples": [
+                    256000,
+                    256000
+                ]
+            }
+        },
+        {
+            "params": {
+                "measure": "bounce",
+                "sample": "busy-reverb"
+            },
+            "metrics": {
+                "msPerBounce": [
+                    174.4773,
+                    176.29680000000008
+                ],
+                "samples": [
+                    256000,
+                    256000
+                ]
+            }
+        }
+    ]
+}

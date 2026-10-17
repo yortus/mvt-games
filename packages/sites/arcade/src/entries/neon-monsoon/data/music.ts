@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { BASS, BELLS, EPIANO, HAT, KICK, LEAD, SNARE } from './sounds';
 
 // Neon Monsoon's music was written for this game, mostly in D minor, in the
@@ -25,7 +25,7 @@ const BAND = {
     // 300 ms is a dotted eighth at the stage theme's 150 BPM. Every song
     // shares this echo, so it falls a little off the beat at the other tempos
     echo: { timeMs: 300, feedback: 0.45, level: 0.45 },
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
@@ -36,7 +36,7 @@ const BAND = {
  * A minor, with a bridge on G minor and A. After the opening groove, it loops
  * from the theme.
  */
-export const STAGE_THEME = createSong({
+export const STAGE_THEME = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -330,7 +330,7 @@ export const STAGE_THEME = createSong({
 });
 
 /** The boss's theme, faster and in E minor. Its riff moves between E minor and F, a half step above. */
-export const BOSS_THEME = createSong({
+export const BOSS_THEME = createAudio80Song({
     ...BAND,
     bpm: 168,
     patterns: {
@@ -417,7 +417,7 @@ export const BOSS_THEME = createSong({
  * The jingle for a stage cleared, which plays over the tally. Its lead climbs
  * the F chord and comes home to F. It lasts 4.5 seconds, as long as the tally.
  */
-export const STAGE_CLEAR = createSong({
+export const STAGE_CLEAR = createAudio80Song({
     ...BAND,
     bpm: 160,
     patterns: {
@@ -480,7 +480,7 @@ export const STAGE_CLEAR = createSong({
 });
 
 /** The finale, for both loops cleared. It takes the long way home to F. */
-export const ALL_CLEAR = createSong({
+export const ALL_CLEAR = createAudio80Song({
     ...BAND,
     bpm: 140,
     patterns: {
@@ -594,7 +594,7 @@ export const ALL_CLEAR = createSong({
 });
 
 /** The tune for the last ship lost. The electric piano walks slowly down, and is left hanging on A. */
-export const GAME_OVER = createSong({
+export const GAME_OVER = createAudio80Song({
     ...BAND,
     bpm: 100,
     patterns: {

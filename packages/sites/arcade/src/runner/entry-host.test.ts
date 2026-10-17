@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setRefresh } from '@mvtjs/html';
-import { type Audio80, createInstrument, createSoundEffect } from '@mvtjs/audio';
-import type { ChipWrite } from '@mvtjs/audio/headless';
+import { type Audio80, createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import type { Audio80Write } from '@mvtjs/audio/headless';
 import type { ElementEntryStarter } from '../entry-types';
 import { createEntryHost, type EntryHost } from './entry-host';
 import { type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
@@ -93,8 +93,8 @@ describe('createEntryHost', () => {
 // ---------------------------------------------------------------------------
 
 const TICK_MS = 1000 / 60;
-const INSTRUMENT = createInstrument({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } });
-const EFFECT = createSoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
+const INSTRUMENT = createAudio80Instrument({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } });
+const EFFECT = createAudio80SoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
 
 /** Creates an entry host that plays on the page's sound. */
 function createHostWithSound(): { sound: PageSound; host: EntryHost } {
@@ -137,6 +137,6 @@ function createFakeGame() {
 }
 
 /** Returns the sound effects played, in order. */
-function listPlays(log: readonly ChipWrite[]): unknown[] {
+function listPlays(log: readonly Audio80Write[]): unknown[] {
     return log.filter((write) => write.kind === 'play').map((write) => (write as { effect: unknown }).effect);
 }

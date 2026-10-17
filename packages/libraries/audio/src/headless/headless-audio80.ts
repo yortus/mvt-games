@@ -1,6 +1,20 @@
-import { type Audio80, type Audio80WithControls, type AudioControls, clampVolume, createCommandAudio80, MAX_MIX_VOLUME } from '../chip';
-import { type Character, createAudio80Synthesiser, type EchoSetting, type FilterId, type FilterMode, type FilterSetting, VOICE_COUNT, type VoiceSetting, type Wave } from '../core';
-import type { Instrument, SoundEffect } from '../notation';
+import {
+    type Audio80,
+    type Audio80WithControls,
+    type Audio80Character,
+    createAudio80Synthesiser,
+    createCommandAudio80,
+    type Audio80EchoSetting,
+    type Audio80FilterId,
+    type Audio80FilterMode,
+    type Audio80FilterSetting,
+    type Audio80Instrument,
+    type Audio80SoundEffect,
+    VOICE_COUNT,
+    type Audio80VoiceSetting,
+    type Audio80Wave,
+} from '../audio80';
+import { createRenderedControls, createSilentControls, ignore } from './headless-controls';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -25,16 +39,16 @@ import type { Instrument, SoundEffect } from '../notation';
  * a log that nothing writes to.
  */
 export type HeadlessAudio80<O extends HeadlessAudio80Options = HeadlessAudio80Options> =
-    & Audio80WithControls<O extends { readonly record: true } ? Audio80 & ChipLog : Audio80>
-    & (O extends { readonly render: true | HeadlessRenderOptions } ? ChipRenderer : unknown);
+    & Audio80WithControls<O extends { readonly record: true } ? Audio80 & Audio80Log : Audio80>
+    & (O extends { readonly render: true | HeadlessAudio80RenderOptions } ? Audio80Renderer : unknown);
 
 /**
  * The log on a headless chip made with `record: true`. A test advances its
  * clock through the controls made alongside it, as a game loop would.
  */
-export interface ChipLog {
+export interface Audio80Log {
     /** Every write since the last `clear`, oldest first. */
-    readonly log: readonly ChipWrite[];
+    readonly log: readonly Audio80Write[];
     /** Empties the log. */
     clear: () => void;
 }
@@ -45,15 +59,15 @@ export interface ChipLog {
  * is a name for a voice's `'wave'` and a filter's `'mode'`, and a number for
  * every other setting.
  */
-export type ChipWrite =
-    | { readonly kind: 'play'; readonly effect: SoundEffect; readonly time: number }
-    | { readonly kind: 'note-on'; readonly voice: number; readonly instrument: Instrument; readonly note: number; readonly volume: number; readonly time: number }
+export type Audio80Write =
+    | { readonly kind: 'play'; readonly effect: Audio80SoundEffect; readonly time: number }
+    | { readonly kind: 'note-on'; readonly voice: number; readonly instrument: Audio80Instrument; readonly note: number; readonly volume: number; readonly time: number }
     | { readonly kind: 'note-off'; readonly voice: number; readonly time: number }
-    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: 'wave'; readonly value: Wave; readonly time: number }
-    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: Exclude<VoiceSetting, 'wave'>; readonly value: number; readonly time: number }
-    | { readonly kind: 'set-filter'; readonly filter: FilterId; readonly setting: 'mode'; readonly value: FilterMode; readonly time: number }
-    | { readonly kind: 'set-filter'; readonly filter: FilterId; readonly setting: Exclude<FilterSetting, 'mode'>; readonly value: number; readonly time: number }
-    | { readonly kind: 'set-echo'; readonly setting: EchoSetting; readonly value: number; readonly time: number }
+    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: 'wave'; readonly value: Audio80Wave; readonly time: number }
+    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: Exclude<Audio80VoiceSetting, 'wave'>; readonly value: number; readonly time: number }
+    | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: 'mode'; readonly value: Audio80FilterMode; readonly time: number }
+    | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: Exclude<Audio80FilterSetting, 'mode'>; readonly value: number; readonly time: number }
+    | { readonly kind: 'set-echo'; readonly setting: Audio80EchoSetting; readonly value: number; readonly time: number }
     | { readonly kind: 'reserve-voices'; readonly count: number; readonly time: number }
     | { readonly kind: 'release-all'; readonly time: number };
 
@@ -65,7 +79,7 @@ export type ChipWrite =
  * volumes apply to the samples `render` writes. `AudioControls.flush` does
  * nothing, since `render` takes the writes itself.
  */
-export interface ChipRenderer {
+export interface Audio80Renderer {
     /** The sample rate it renders at, in Hz. */
     readonly sampleRate: number;
     /**
@@ -87,15 +101,15 @@ export interface HeadlessAudio80Options {
     /** Whether to log every write, on the chip's `log`. Defaults to false. */
     readonly record?: boolean;
     /** Whether to render, and how. `true` renders with the default options. Defaults to false, which renders nothing. */
-    readonly render?: boolean | HeadlessRenderOptions;
+    readonly render?: boolean | HeadlessAudio80RenderOptions;
 }
 
 /** How a headless Audio80 renders. */
-export interface HeadlessRenderOptions {
+export interface HeadlessAudio80RenderOptions {
     /** The sample rate to render at, in Hz. Defaults to 48,000. */
     readonly sampleRate?: number;
     /** How the chip sounds. Defaults to `'classic'`. */
-    readonly character?: Character;
+    readonly character?: Audio80Character;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,16 +136,14 @@ export function createHeadlessAudio80<const O extends HeadlessAudio80Options = H
 // ---------------------------------------------------------------------------
 
 const DEFAULT_SAMPLE_RATE = 48000;
-/** The synthesiser's mix buses, as `setMix` numbers them. */
-const MUSIC_BUS = 0;
-const EFFECTS_BUS = 1;
 
 /** Creates a chip that plays nothing and logs nothing. Every write is an empty function. */
 function createSilentChip(): Audio80WithControls {
-    let time = 0;
+    // In a typed array, so advancing it boxes no double
+    const clock = new Float64Array(1);
     const audio80: Audio80 = {
         get time() {
-            return time;
+            return clock[0];
         },
         voiceCount: VOICE_COUNT,
         play: ignore,
@@ -145,14 +157,14 @@ function createSilentChip(): Audio80WithControls {
     };
     const controls = createSilentControls({
         update(deltaMs) {
-            time += deltaMs;
+            clock[0] += deltaMs;
         },
     });
     return { audio80, controls };
 }
 
 /** Creates a chip that logs every write and plays nothing. */
-function createRecordingChip(): Audio80WithControls<Audio80 & ChipLog> {
+function createRecordingChip(): Audio80WithControls<Audio80 & Audio80Log> {
     const clock = { time: 0 };
     const audio80 = createRecorder(clock);
     const controls = createSilentControls({
@@ -164,7 +176,7 @@ function createRecordingChip(): Audio80WithControls<Audio80 & ChipLog> {
 }
 
 /** Creates a chip that plays every write in memory, and also logs it if `record` is true. */
-function createRenderingChip(options: HeadlessRenderOptions & { readonly record: boolean }): Audio80WithControls & ChipRenderer {
+function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly record: boolean }): Audio80WithControls & Audio80Renderer {
     const sampleRate = options.sampleRate ?? DEFAULT_SAMPLE_RATE;
     const msPerSample = 1000 / sampleRate;
     const synthesiser = createAudio80Synthesiser({ sampleRate, character: options.character });
@@ -173,54 +185,9 @@ function createRenderingChip(options: HeadlessRenderOptions & { readonly record:
         onEffect: (id, data) => synthesiser.defineEffect(id, data),
     });
     let renderedFrames = 0;
-    let volume = 1;
-    let isMuted = false;
-    let musicVolume = 1;
-    let effectsVolume = 1;
 
     const audio80 = options.record ? createRecordingWriter() : createWriter();
-
-    const controls: AudioControls = {
-        ready: Promise.resolve(),
-        update: writer.update,
-        flush: ignore,
-        reset() {
-            writer.clear(writer.commands);
-            writer.forget();
-            synthesiser.reset();
-            // The synthesiser keeps its mix through a reset. But a mix change not yet rendered
-            // was just cleared, so set the mix again
-            synthesiser.setMix(MUSIC_BUS, musicVolume);
-            synthesiser.setMix(EFFECTS_BUS, effectsVolume);
-        },
-        get volume() {
-            return volume;
-        },
-        set volume(value) {
-            volume = clampVolume(value, 1);
-        },
-        get isMuted() {
-            return isMuted;
-        },
-        set isMuted(value) {
-            isMuted = value;
-        },
-        get musicVolume() {
-            return musicVolume;
-        },
-        set musicVolume(value) {
-            musicVolume = clampVolume(value, MAX_MIX_VOLUME);
-            writer.setMix('music', musicVolume);
-        },
-        get effectsVolume() {
-            return effectsVolume;
-        },
-        set effectsVolume(value) {
-            effectsVolume = clampVolume(value, MAX_MIX_VOLUME);
-            writer.setMix('effects', effectsVolume);
-        },
-        destroy: ignore,
-    };
+    const controls = createRenderedControls({ writer, synthesiser });
 
     return {
         audio80,
@@ -233,7 +200,7 @@ function createRenderingChip(options: HeadlessRenderOptions & { readonly record:
             const frames = output.length;
             synthesiser.render(output, 0, frames, renderedFrames * msPerSample, msPerSample);
             renderedFrames += frames;
-            const gain = isMuted ? 0 : volume;
+            const gain = controls.isMuted ? 0 : controls.volume;
             if (gain !== 1) {
                 for (let i = 0; i < frames; i++) output[i] *= gain;
             }
@@ -263,7 +230,7 @@ function createRenderingChip(options: HeadlessRenderOptions & { readonly record:
     }
 
     /** Creates the chip for when both `record` and `render` are given. Each write is logged, then passed to the writer. */
-    function createRecordingWriter(): Audio80 & ChipLog {
+    function createRecordingWriter(): Audio80 & Audio80Log {
         const recorder = createRecorder(writer);
         return {
             get time() {
@@ -309,8 +276,8 @@ function createRenderingChip(options: HeadlessRenderOptions & { readonly record:
 }
 
 /** Creates an Audio80 that logs every write and plays nothing. A write with no stamp is stamped with `clock`'s time. */
-function createRecorder(clock: { readonly time: number }): Audio80 & ChipLog {
-    const log: ChipWrite[] = [];
+function createRecorder(clock: { readonly time: number }): Audio80 & Audio80Log {
+    const log: Audio80Write[] = [];
     return {
         get time() {
             return clock.time;
@@ -332,10 +299,10 @@ function createRecorder(clock: { readonly time: number }): Audio80 & ChipLog {
         setVoice(voice, setting, value, atMs) {
             // The signature makes sure the setting and its value agree. TypeScript can't follow that
             // into the union, so the write is cast
-            log.push({ kind: 'set-voice', voice, setting, value, time: atMs ?? clock.time } as ChipWrite);
+            log.push({ kind: 'set-voice', voice, setting, value, time: atMs ?? clock.time } as Audio80Write);
         },
         setFilter(filter, setting, value, atMs) {
-            log.push({ kind: 'set-filter', filter, setting, value, time: atMs ?? clock.time } as ChipWrite);
+            log.push({ kind: 'set-filter', filter, setting, value, time: atMs ?? clock.time } as Audio80Write);
         },
         setEcho(setting, value, atMs) {
             log.push({ kind: 'set-echo', setting, value, time: atMs ?? clock.time });
@@ -347,52 +314,4 @@ function createRecorder(clock: { readonly time: number }): Audio80 & ChipLog {
             log.push({ kind: 'release-all', time: clock.time });
         },
     };
-}
-
-/**
- * Creates the controls of a chip that does not render. `update` moves its
- * clock on. Its volumes are kept as set, and clamped as every chip clamps
- * them. The rest of the controls do nothing.
- */
-function createSilentControls(options: { readonly update: (deltaMs: number) => void }): AudioControls {
-    const { update } = options;
-    let volume = 1;
-    let isMuted = false;
-    let musicVolume = 1;
-    let effectsVolume = 1;
-    return {
-        ready: Promise.resolve(),
-        update,
-        flush: ignore,
-        reset: ignore,
-        get volume() {
-            return volume;
-        },
-        set volume(value) {
-            volume = clampVolume(value, 1);
-        },
-        get isMuted() {
-            return isMuted;
-        },
-        set isMuted(value) {
-            isMuted = value;
-        },
-        get musicVolume() {
-            return musicVolume;
-        },
-        set musicVolume(value) {
-            musicVolume = clampVolume(value, MAX_MIX_VOLUME);
-        },
-        get effectsVolume() {
-            return effectsVolume;
-        },
-        set effectsVolume(value) {
-            effectsVolume = clampVolume(value, MAX_MIX_VOLUME);
-        },
-        destroy: ignore,
-    };
-}
-
-function ignore(): void {
-    // Nothing to do
 }

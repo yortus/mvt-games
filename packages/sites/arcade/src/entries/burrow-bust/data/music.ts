@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { BOUNCE, PLINK, SING, TOCK } from './sounds';
 
 // Burrow Bust's music, written for this game. It is bouncy, in C, and plays
@@ -16,14 +16,14 @@ import { BOUNCE, PLINK, SING, TOCK } from './sounds';
 const BAND = {
     instruments: { L: PLINK, S: SING, B: BOUNCE, t: TOCK },
     echo: { timeMs: 200, feedback: 0.3, level: 0.35 },
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
 // ---------------------------------------------------------------------------
 
 /** The walking tune. It loops through four bars, and moves on only while the digger moves. */
-export const WALK_TUNE = createSong({
+export const WALK_TUNE = createAudio80Song({
     ...BAND,
     // Its plucks die away, so it is turned up to be as loud as the other songs
     volume: 1.6,
@@ -94,7 +94,7 @@ export const WALK_TUNE = createSong({
 });
 
 /** As a level starts: up the chord, and a held top note. */
-export const LEVEL_START = createSong({
+export const LEVEL_START = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -121,7 +121,7 @@ export const LEVEL_START = createSong({
 });
 
 /** The digger caught: a slow walk down, a semitone at a time. */
-export const DEATH = createSong({
+export const DEATH = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -152,7 +152,7 @@ export const DEATH = createSong({
 });
 
 /** The level cleared: a bright run up, twice. */
-export const LEVEL_CLEAR = createSong({
+export const LEVEL_CLEAR = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: {
@@ -181,7 +181,7 @@ export const LEVEL_CLEAR = createSong({
 });
 
 /** The last digger lost: slow, in C minor, and down to a held C. */
-export const GAME_OVER = createSong({
+export const GAME_OVER = createAudio80Song({
     ...BAND,
     bpm: 100,
     patterns: {

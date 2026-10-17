@@ -34,6 +34,18 @@ describe('measureLoudness', () => {
     it('measures silence as -Infinity', () => {
         expect(measureLoudness(new Float32Array(SAMPLE_RATE), SAMPLE_RATE)).toBe(-Infinity);
     });
+
+    it('measures stereo sound with the same samples on both sides as it measures those samples in mono', () => {
+        const tone = createTone(0.1, 3);
+        expect(measureLoudness({ left: tone, right: tone }, SAMPLE_RATE)).toBeCloseTo(measureLoudness(tone, SAMPLE_RATE), 6);
+    });
+
+    it('measures a tone on one side only 3 dB below the same tone on both, since BS.1770 adds up the speakers\' power', () => {
+        const tone = createTone(0.1, 3);
+        const silence = new Float32Array(tone.length);
+        const oneSide = measureLoudness({ left: tone, right: silence }, SAMPLE_RATE);
+        expect(measureLoudness({ left: tone, right: tone }, SAMPLE_RATE) - oneSide).toBeCloseTo(10 * Math.log10(2), 2);
+    });
 });
 
 /** Creates a 997 Hz sine wave of `amplitude`, lasting `seconds`. It is BS.1770's own test tone. */

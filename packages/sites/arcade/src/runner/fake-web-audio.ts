@@ -1,5 +1,5 @@
 import type { Audio80, Audio80WithControls, AudioControls } from '@mvtjs/audio';
-import { type ChipLog, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { type Audio80Log, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 
 // The runner's tests fake the browser's audio with this file. A test file
 // mocks the chip's code with it, as below. Then the file calls
@@ -34,7 +34,7 @@ export interface FakeWebAudio {
 
 /** A fake browser chip, which logs its writes and counts the calls to its controls that a headless chip ignores. */
 export interface FakeChip {
-    readonly audio80: Audio80 & ChipLog;
+    readonly audio80: Audio80 & Audio80Log;
     readonly controls: AudioControls;
     /** How many times `AudioControls.flush` has been called. */
     readonly flushCount: number;

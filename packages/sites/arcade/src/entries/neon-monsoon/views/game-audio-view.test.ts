@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createMusicPlayer, type Song } from '@mvtjs/audio';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createMusicPlayer, type Audio80Song } from '@mvtjs/audio';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
     EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, GRAZE, type ItemKind, POWER_UP, RESPAWN, SHIP_EXPLODE, SHOT, STAGE_CLEAR,
@@ -216,8 +216,8 @@ describe('GameAudioView', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Play = Extract<ChipWrite, { kind: 'play' }>;
-type NoteOn = Extract<ChipWrite, { kind: 'note-on' }>;
+type Play = Extract<Audio80Write, { kind: 'play' }>;
+type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
 interface State {
     phase: GamePhase;
@@ -293,11 +293,11 @@ function runWarning(state: State, tick: () => void, totalMs: number): void {
     }
 }
 
-function listWrites<K extends ChipWrite['kind']>(log: readonly ChipWrite[], kind: K): Extract<ChipWrite, { kind: K }>[] {
-    return log.filter((write): write is Extract<ChipWrite, { kind: K }> => write.kind === kind);
+function listWrites<K extends Audio80Write['kind']>(log: readonly Audio80Write[], kind: K): Extract<Audio80Write, { kind: K }>[] {
+    return log.filter((write): write is Extract<Audio80Write, { kind: K }> => write.kind === kind);
 }
 
-function listPlays(log: readonly ChipWrite[], effect: Play['effect']): Play[] {
+function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[] {
     return listWrites(log, 'play').filter((write) => write.effect === effect);
 }
 
@@ -308,7 +308,7 @@ function listPlays(log: readonly ChipWrite[], effect: Play['effect']): Play[] {
  * time is in ms from the song's first note-on, to three decimal places. So the
  * notes of one song match even when it started at different chip times.
  */
-function describeSongNotes(log: readonly ChipWrite[]): string[] {
+function describeSongNotes(log: readonly Audio80Write[]): string[] {
     let start = 0;
     for (let i = 0; i < log.length; i++) {
         const write = log[i];
@@ -324,7 +324,7 @@ function describeSongNotes(log: readonly ChipWrite[]): string[] {
  * one it starts in, and describes the notes it plays. This is what the view
  * should play over the same ticks.
  */
-function recordSong(song: Song): string[] {
+function recordSong(song: Audio80Song): string[] {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const player = createMusicPlayer({ audio80: chip });
     player.play(song);

@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { BASS, CHIME, SPARKLE } from './sounds';
 
 // The fruit machine's jingles, all written for this machine. They are short,
@@ -14,14 +14,14 @@ import { BASS, CHIME, SPARKLE } from './sounds';
 const BAND = {
     instruments: { C: CHIME, S: SPARKLE, B: BASS },
     echo: { timeMs: 180, feedback: 0.35, level: 0.4 },
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
 // ---------------------------------------------------------------------------
 
 /** A win. The chime climbs the C major chord, in a little under a bar. */
-export const WIN = createSong({
+export const WIN = createAudio80Song({
     ...BAND,
     bpm: 160,
     patterns: {
@@ -51,7 +51,7 @@ export const WIN = createSong({
  * A big win. It runs through the chords of F and G, then home to C, ending
  * high. It lasts a little under two bars.
  */
-export const BIG_WIN = createSong({
+export const BIG_WIN = createAudio80Song({
     ...BAND,
     bpm: 160,
     patterns: {
@@ -95,7 +95,7 @@ export const BIG_WIN = createSong({
 });
 
 /** The credits running out. It is slow, and falls to a low C minor in a bar and a half. */
-export const GAME_OVER = createSong({
+export const GAME_OVER = createAudio80Song({
     ...BAND,
     bpm: 100,
     patterns: {

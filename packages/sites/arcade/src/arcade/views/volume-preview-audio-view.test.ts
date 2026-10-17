@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { refreshView, updateView } from '@mvtjs/html';
 import { EFFECTS_PREVIEW, MUSIC_PREVIEW } from '../data';
 import { VolumePreviewAudioView } from './volume-preview-audio-view';
@@ -62,6 +62,6 @@ function setUp(initial: { isOpen?: boolean } = {}) {
 const PHRASE_STARTED_MS = 100;
 
 /** The sound effects played, in order. */
-function listPlays(log: readonly ChipWrite[]): unknown[] {
+function listPlays(log: readonly Audio80Write[]): unknown[] {
     return log.filter((write) => write.kind === 'play').map((write) => (write as { effect: unknown }).effect);
 }

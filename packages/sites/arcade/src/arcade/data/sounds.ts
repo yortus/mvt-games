@@ -1,4 +1,4 @@
-import { createInstrument, createSong, createSoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80Song, createAudio80SoundEffect } from '@mvtjs/audio';
 
 // The Arcade's own sounds, which play on the page's Audio80 rather than any
 // entry's. They were all written for the Arcade. They are small and soft, at
@@ -20,7 +20,7 @@ const GLASS_WAVE = '8CEF EEDE EEDE EFEC 8310 1121 1121 1013';
 // ---------------------------------------------------------------------------
 
 /** The instrument for the music slider's twang. A low saw is strummed up a fifth and an octave, and its filter snaps shut. */
-const PLUCK = createInstrument({
+const PLUCK = createAudio80Instrument({
     wave: 'saw',
     filter: 'a',
     filterSweep: { fromHz: 2600, toHz: 280, ms: 170 },
@@ -35,7 +35,7 @@ const PLUCK = createInstrument({
  * is short, so a slider dragged across its steps plays one twang per step
  * rather than a pile of them.
  */
-export const MUSIC_PREVIEW = createSong({
+export const MUSIC_PREVIEW = createAudio80Song({
     bpm: 150,
     instruments: { P: PLUCK },
     filters: { a: { mode: 'lowpass', cutoffHz: 1500, resonance: 0.45 } },
@@ -50,7 +50,7 @@ export const MUSIC_PREVIEW = createSong({
 });
 
 /** The effects slider's preview. It is a blip that steps up a fifth, then to the octave. */
-export const EFFECTS_PREVIEW = createSoundEffect({
+export const EFFECTS_PREVIEW = createAudio80SoundEffect({
     note: 'G-5',
     stepMs: 35,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
@@ -69,20 +69,20 @@ export const EFFECTS_PREVIEW = createSoundEffect({
 // ---------------------------------------------------------------------------
 
 /** The instrument for the search's key ticks. Two ticks at different pitches take turns, so fast typing does not drone. */
-const TICK = createInstrument({
+const TICK = createAudio80Instrument({
     wave: 'pulse',
     pulseWidth: 0.25,
     envelope: { attackMs: 0, decayMs: 25, sustain: 0, releaseMs: 0 },
 });
 
 /** A key typed in the search. It is the lower of the two ticks, which take turns. */
-export const KEY_TICK_LOW = createSoundEffect({ instrument: TICK, note: 'A-5', lengthMs: 25, priority: 0, volume: 0.3 });
+export const KEY_TICK_LOW = createAudio80SoundEffect({ instrument: TICK, note: 'A-5', lengthMs: 25, priority: 0, volume: 0.3 });
 /** A key typed in the search. It is the higher of the two ticks. */
-export const KEY_TICK_HIGH = createSoundEffect({ instrument: TICK, note: 'C-6', lengthMs: 25, priority: 0, volume: 0.3 });
+export const KEY_TICK_HIGH = createAudio80SoundEffect({ instrument: TICK, note: 'C-6', lengthMs: 25, priority: 0, volume: 0.3 });
 
 /** The keyboard's selection moving to another card. It is a soft, round tick. */
-export const CARD_TICK = createSoundEffect({
-    instrument: createInstrument({
+export const CARD_TICK = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'wavetable',
         wavetable: SINE_WAVE,
         envelope: { attackMs: 0, decayMs: 45, sustain: 0, releaseMs: 0 },
@@ -94,14 +94,14 @@ export const CARD_TICK = createSoundEffect({
 });
 
 /** The instrument for a tag's pop. */
-const POP = createInstrument({
+const POP = createAudio80Instrument({
     wave: 'pulse',
     pulseWidth: 0.35,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 40 },
 });
 
 /** A tag chosen. It is a pop that slides up. */
-export const TAG_ADD = createSoundEffect({
+export const TAG_ADD = createAudio80SoundEffect({
     instrument: POP,
     note: 'C-5',
     glideTo: 'G-5',
@@ -111,7 +111,7 @@ export const TAG_ADD = createSoundEffect({
 });
 
 /** A tag removed. It is the pop, sliding down. */
-export const TAG_REMOVE = createSoundEffect({
+export const TAG_REMOVE = createAudio80SoundEffect({
     instrument: POP,
     note: 'G-5',
     glideTo: 'C-5',
@@ -121,8 +121,8 @@ export const TAG_REMOVE = createSoundEffect({
 });
 
 /** A search that matches nothing. It is a low, soft bonk. */
-export const NO_RESULTS = createSoundEffect({
-    instrument: createInstrument({
+export const NO_RESULTS = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'triangle',
         envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
     }),
@@ -134,7 +134,7 @@ export const NO_RESULTS = createSoundEffect({
 });
 
 /** An info panel, or the About note, opening. It is two notes, going up. */
-export const PANEL_OPEN = createSoundEffect({
+export const PANEL_OPEN = createAudio80SoundEffect({
     note: 'E-5',
     stepMs: 50,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 80 },
@@ -149,7 +149,7 @@ export const PANEL_OPEN = createSoundEffect({
 });
 
 /** A panel closing. It is the two notes, going down. */
-export const PANEL_CLOSE = createSoundEffect({
+export const PANEL_CLOSE = createAudio80SoundEffect({
     note: 'A-5',
     stepMs: 50,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 80 },
@@ -168,7 +168,7 @@ export const PANEL_CLOSE = createSoundEffect({
 // ---------------------------------------------------------------------------
 
 /** A card launched. It is a coin going in, a bright run up the chord. */
-export const LAUNCH = createSoundEffect({
+export const LAUNCH = createAudio80SoundEffect({
     note: 'C-5',
     stepMs: 40,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 200 },
@@ -185,7 +185,7 @@ export const LAUNCH = createSoundEffect({
 });
 
 /** The other cards burning away. It is a rush of noise that swells and dies. Its pitch jumps from step to step, which makes it crackle. */
-export const BURN = createSoundEffect({
+export const BURN = createAudio80SoundEffect({
     note: 'C-4',
     stepMs: 45,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 200 },
@@ -217,7 +217,7 @@ export const BURN = createSoundEffect({
  * static. The static lasts as long as the beam is a line (the transition's
  * `POWER_ON_BEAM_MS`), and stops as the beam opens out to the picture.
  */
-export const POWER_ON = createSoundEffect({
+export const POWER_ON = createAudio80SoundEffect({
     note: 'C-6',
     stepMs: 25,
     lengthMs: 175,
@@ -241,7 +241,7 @@ export const POWER_ON = createSoundEffect({
  * squashed to a line and lasts until the dot goes out (the transition's
  * `POWER_OFF_BEAM_MS`). It sinks a little, then ends with a pop.
  */
-export const POWER_OFF = createSoundEffect({
+export const POWER_OFF = createAudio80SoundEffect({
     note: 'C-6',
     stepMs: 25,
     lengthMs: 227.5,
@@ -263,8 +263,8 @@ export const POWER_OFF = createSoundEffect({
 });
 
 /** The cards developing back, as the way out ends. It is a glassy shimmer, going up. */
-export const DEVELOP = createSoundEffect({
-    instrument: createInstrument({
+export const DEVELOP = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'wavetable',
         wavetable: GLASS_WAVE,
         envelope: { attackMs: 120, decayMs: 500, sustain: 0, releaseMs: 300 },
@@ -279,7 +279,7 @@ export const DEVELOP = createSoundEffect({
 });
 
 /** An entry that could not load. It is a short buzz, twice. */
-export const LOAD_FAILED = createSoundEffect({
+export const LOAD_FAILED = createAudio80SoundEffect({
     note: 'C-3',
     stepMs: 90,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 40 },
@@ -298,7 +298,7 @@ export const LOAD_FAILED = createSoundEffect({
 // ---------------------------------------------------------------------------
 
 /** A game paused. A chime steps up a fourth, then to the octave. */
-export const PAUSE = createSoundEffect({
+export const PAUSE = createAudio80SoundEffect({
     note: 'E-6',
     stepMs: 55,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 120 },
@@ -313,7 +313,7 @@ export const PAUSE = createSoundEffect({
 });
 
 /** A game resumed. The chime steps down. */
-export const RESUME = createSoundEffect({
+export const RESUME = createAudio80SoundEffect({
     note: 'E-7',
     stepMs: 55,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 120 },

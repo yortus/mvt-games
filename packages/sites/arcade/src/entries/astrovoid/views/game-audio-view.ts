@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import type { Audio80, SoundEffect } from '@mvtjs/audio';
+import type { Audio80, Audio80SoundEffect } from '@mvtjs/audio';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
@@ -132,6 +132,6 @@ function computeBeatPeriodMs(breaksLeft: number): number {
 }
 
 /** Returns the sound of a rock of this size breaking. */
-function chooseBreak(size: AsteroidSize | undefined): SoundEffect {
+function chooseBreak(size: AsteroidSize | undefined): Audio80SoundEffect {
     return size === 'large' ? BREAK_LARGE : size === 'medium' ? BREAK_MEDIUM : BREAK_SMALL;
 }

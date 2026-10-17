@@ -1,4 +1,4 @@
-import { createInstrument, createSoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
 
 // Burrow Bust's instruments and sound effects, for the Audio80. They were
 // all written for this game. The tunes' leads and basses play on wavetables,
@@ -20,7 +20,7 @@ const BUZZY = 'FFFFEEDD CCBBAA99 77665544 33221100';
 // ---------------------------------------------------------------------------
 
 /** A bright pluck that dies away. It leads the walking tune and the level-clear run. */
-export const PLINK = createInstrument({
+export const PLINK = createAudio80Instrument({
     wave: 'wavetable',
     wavetable: BUZZY,
     envelope: { attackMs: 1, decayMs: 200, sustain: 0, releaseMs: 60 },
@@ -29,7 +29,7 @@ export const PLINK = createInstrument({
 });
 
 /** A round pluck that dies away. It plays the bass of every tune. */
-export const BOUNCE = createInstrument({
+export const BOUNCE = createAudio80Instrument({
     wave: 'wavetable',
     wavetable: ROUND,
     envelope: { attackMs: 1, decayMs: 220, sustain: 0, releaseMs: 60 },
@@ -37,7 +37,7 @@ export const BOUNCE = createInstrument({
 });
 
 /** A light tock of noise, on the beat. */
-export const TOCK = createInstrument({
+export const TOCK = createAudio80Instrument({
     wave: 'noise',
     note: 'C-6',
     envelope: { attackMs: 0, decayMs: 35, sustain: 0, releaseMs: 0 },
@@ -45,7 +45,7 @@ export const TOCK = createInstrument({
 });
 
 /** The round wavetable, held, with a vibrato. It leads the jingles. */
-export const SING = createInstrument({
+export const SING = createAudio80Instrument({
     wave: 'wavetable',
     wavetable: ROUND,
     envelope: { attackMs: 4, decayMs: 300, sustain: 0.7, releaseMs: 200 },
@@ -59,7 +59,7 @@ export const SING = createInstrument({
 // ---------------------------------------------------------------------------
 
 /** The pump shooting out: a quick rising zip. */
-export const HARPOON = createSoundEffect({
+export const HARPOON = createAudio80SoundEffect({
     note: 'C-5',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 30 },
     priority: 1,
@@ -80,7 +80,7 @@ export const HARPOON = createSoundEffect({
  * pump plays it a little higher. It is bright on purpose, since a low, soft
  * tone is lost under the harpoon's zip on a laptop's or a phone's speakers.
  */
-const PUMP = createInstrument({
+const PUMP = createAudio80Instrument({
     stepMs: 25,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 50 },
     volume: 0.7,
@@ -96,16 +96,16 @@ const PUMP = createInstrument({
 });
 
 /** The first pump of a creature, at C-5. */
-export const PUMP_1 = createSoundEffect({ instrument: PUMP, note: 'C-5', priority: 1, maxVoices: 2 });
+export const PUMP_1 = createAudio80SoundEffect({ instrument: PUMP, note: 'C-5', priority: 1, maxVoices: 2 });
 /** The second pump, a minor third higher, at D#5. */
-export const PUMP_2 = createSoundEffect({ instrument: PUMP, note: 'D#5', priority: 1, maxVoices: 2 });
+export const PUMP_2 = createAudio80SoundEffect({ instrument: PUMP, note: 'D#5', priority: 1, maxVoices: 2 });
 /** The third pump, a minor third higher again, at F#5. */
-export const PUMP_3 = createSoundEffect({ instrument: PUMP, note: 'F#5', priority: 1, maxVoices: 2 });
+export const PUMP_3 = createAudio80SoundEffect({ instrument: PUMP, note: 'F#5', priority: 1, maxVoices: 2 });
 /** The fourth pump, which pops the creature, at A-5. */
-export const PUMP_4 = createSoundEffect({ instrument: PUMP, note: 'A-5', priority: 1, maxVoices: 2 });
+export const PUMP_4 = createAudio80SoundEffect({ instrument: PUMP, note: 'A-5', priority: 1, maxVoices: 2 });
 
 /** A creature popping: a crack of noise, and a bright blip. */
-export const POP = createSoundEffect({
+export const POP = createAudio80SoundEffect({
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 80 },
     priority: 2,
     maxVoices: 2,
@@ -120,7 +120,7 @@ export const POP = createSoundEffect({
 });
 
 /** A creature under a rock: a low, flat squash. */
-export const SQUASH = createSoundEffect({
+export const SQUASH = createAudio80SoundEffect({
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 100 },
     priority: 2,
     maxVoices: 2,
@@ -135,8 +135,8 @@ export const SQUASH = createSoundEffect({
 });
 
 /** A rock working loose: a low creak, wavering. */
-export const ROCK_WOBBLE = createSoundEffect({
-    instrument: createInstrument({
+export const ROCK_WOBBLE = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'saw+pulse',
         pulseWidth: 0.4,
         envelope: { attackMs: 20, decayMs: 0, sustain: 1, releaseMs: 80 },
@@ -149,8 +149,8 @@ export const ROCK_WOBBLE = createSoundEffect({
 });
 
 /** A rock falling: a whistle, dropping two octaves. */
-export const ROCK_FALL = createSoundEffect({
-    instrument: createInstrument({
+export const ROCK_FALL = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'triangle',
         envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 80 },
     }),
@@ -162,7 +162,7 @@ export const ROCK_FALL = createSoundEffect({
 });
 
 /** A rock landing and breaking: a long crash of noise, falling. */
-export const ROCK_CRASH = createSoundEffect({
+export const ROCK_CRASH = createAudio80SoundEffect({
     note: 'C-4',
     stepMs: 35,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 160 },
@@ -182,7 +182,7 @@ export const ROCK_CRASH = createSoundEffect({
 });
 
 /** A salamander drawing breath: a hiss, growing. */
-export const FIRE_WARNING = createSoundEffect({
+export const FIRE_WARNING = createAudio80SoundEffect({
     note: 'C-7',
     stepMs: 60,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
@@ -199,8 +199,8 @@ export const FIRE_WARNING = createSoundEffect({
 });
 
 /** A salamander's fire: a low roar. */
-export const FIRE = createSoundEffect({
-    instrument: createInstrument({
+export const FIRE = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'noise',
         envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 200 },
         vibrato: { semitones: 1, hz: 9 },
@@ -212,8 +212,8 @@ export const FIRE = createSoundEffect({
 });
 
 /** A creature passing through the earth as a ghost: an eerie, wavering slide. */
-export const GHOST = createSoundEffect({
-    instrument: createInstrument({
+export const GHOST = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'triangle',
         envelope: { attackMs: 60, decayMs: 0, sustain: 1, releaseMs: 200 },
         vibrato: { semitones: 0.8, hz: 7 },

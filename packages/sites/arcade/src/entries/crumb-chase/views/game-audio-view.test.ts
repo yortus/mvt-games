@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Song } from '@mvtjs/audio';
-import { type ChipWrite, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { computeSongDurationMs, createMusicPlayer, type Audio80Song } from '@mvtjs/audio';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';
 import { GameAudioView, SNEAK_SPEED_UP } from './game-audio-view';
@@ -126,14 +126,14 @@ const BASS_VOICE = 1;
 /** The sneaking tune's bass plays a note on every second row. */
 const SNEAK_BASS_ROWS_APART = 2;
 
-type Play = Extract<ChipWrite, { kind: 'play' }>;
-type NoteOn = Extract<ChipWrite, { kind: 'note-on' }>;
+type Play = Extract<Audio80Write, { kind: 'play' }>;
+type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
-function listPlays(log: readonly ChipWrite[]): Play[] {
+function listPlays(log: readonly Audio80Write[]): Play[] {
     return log.filter((write): write is Play => write.kind === 'play');
 }
 
-function listNoteOns(log: readonly ChipWrite[]): NoteOn[] {
+function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {
     return log.filter((write): write is NoteOn => write.kind === 'note-on');
 }
 
@@ -144,7 +144,7 @@ function listNoteOns(log: readonly ChipWrite[]): NoteOn[] {
  * song started at different chip times. Every song plays a note on its first
  * row, so the first note-on marks the song's start.
  */
-function describeNoteOns(log: readonly ChipWrite[], fromMs = 0, listenMs = LISTEN_MS): string[] {
+function describeNoteOns(log: readonly Audio80Write[], fromMs = 0, listenMs = LISTEN_MS): string[] {
     // A thousandth of a ms of slack, for a note stamped at `fromMs` by a sum of floats
     const noteOns = listNoteOns(log).filter((write) => write.time >= fromMs - 0.001);
     const startMs = noteOns.length > 0 ? noteOns[0].time : 0;
@@ -158,7 +158,7 @@ function describeNoteOns(log: readonly ChipWrite[], fromMs = 0, listenMs = LISTE
  * and describes the notes it plays. This is what the view should play over
  * the same time.
  */
-function recordSong(options: { song: Song; tempoScale?: number; listenMs?: number }): string[] {
+function recordSong(options: { song: Audio80Song; tempoScale?: number; listenMs?: number }): string[] {
     const { song, tempoScale = 1, listenMs = LISTEN_MS } = options;
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const player = createMusicPlayer({ audio80: chip });

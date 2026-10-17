@@ -1,3 +1,5 @@
+import { listChannels, type RenderedSamples } from './stereo-samples';
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -29,21 +31,28 @@ export const LOUDNESS_TOLERANCE_LU = 3;
  * overlap by 75%. Quiet blocks are left out: first those under -70 LUFS,
  * then those more than 10 LU below the rest.
  *
- * The chip is mono, and a browser plays its one channel on both speakers.
- * This measures the samples as heard that way. BS.1770 adds up the power of
- * every speaker, so the samples' power is counted twice. That reads 3.01 dB
- * above the same samples on one speaker. A 1 kHz tone at -20 dBFS measures
- * -20 LUFS.
+ * BS.1770 adds up the power of every speaker. Stereo sound's two channels
+ * are added up so. Mono sound, as from the Audio80, is measured as a browser
+ * plays it, on both speakers, so its power is counted twice. That reads
+ * 3.01 dB above the same samples on one speaker, and the same as stereo
+ * sound with those samples on both sides. A 1 kHz tone at -20 dBFS measures
+ * -20 LUFS, in mono or on both sides.
  */
-export function measureLoudness(samples: Float32Array, sampleRate = DEFAULT_SAMPLE_RATE): number {
-    const weighted = applyKWeighting(samples, sampleRate);
+export function measureLoudness(samples: RenderedSamples, sampleRate = DEFAULT_SAMPLE_RATE): number {
+    const channels = listChannels(samples);
+    const weighted = channels.map((channel) => applyKWeighting(channel, sampleRate));
+    // Mono sound plays on both speakers
+    const speakers = channels.length === 1 ? 2 : 1;
+    const length = weighted[0].length;
     const blockLength = Math.round(BLOCK_S * sampleRate);
     const hop = Math.round(blockLength * (1 - BLOCK_OVERLAP));
     const powers: number[] = [];
-    for (let start = 0; start + blockLength <= weighted.length; start += hop) {
+    for (let start = 0; start + blockLength <= length; start += hop) {
         let sum = 0;
-        for (let i = start; i < start + blockLength; i++) sum += weighted[i] * weighted[i];
-        powers.push(SPEAKERS * sum / blockLength);
+        for (const channel of weighted) {
+            for (let i = start; i < start + blockLength; i++) sum += channel[i] * channel[i];
+        }
+        powers.push(speakers * sum / blockLength);
     }
     const aboveAbsolute = powers.filter((power) => toLoudness(power) > ABSOLUTE_GATE_LUFS);
     if (aboveAbsolute.length === 0) return -Infinity;
@@ -57,8 +66,6 @@ export function measureLoudness(samples: Float32Array, sampleRate = DEFAULT_SAMP
 // ---------------------------------------------------------------------------
 
 const DEFAULT_SAMPLE_RATE = 48000;
-/** How many speakers the one channel plays on. Each adds its power to the loudness. */
-const SPEAKERS = 2;
 const BLOCK_S = 0.4;
 const BLOCK_OVERLAP = 0.75;
 const ABSOLUTE_GATE_LUFS = -70;

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, SoundEffect } from '@mvtjs/audio';
+import type { Audio80, Audio80SoundEffect } from '@mvtjs/audio';
 import { watch } from '@mvtjs/utils';
 import { BLOCK, type FighterPhase, HIT, KICK_SWISH, LEAP_SWISH, type MoveKind, PUNCH_SWISH } from '../data';
 
@@ -57,7 +57,7 @@ export function FighterAudioView(bindings: FighterAudioViewBindings): Container 
 // ---------------------------------------------------------------------------
 
 /** Returns the swish for `move`, which depends on whether it is a punch, a kick or a move through the air. */
-function chooseSwish(move: MoveKind): SoundEffect {
+function chooseSwish(move: MoveKind): Audio80SoundEffect {
     switch (move) {
         case 'high-punch':
         case 'crouch-punch':

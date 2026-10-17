@@ -1,6 +1,7 @@
 /**
  * Renders every song and sound effect a module exports to WAV files, for
- * listening without starting the site.
+ * listening without starting the site. An Audio80's sounds are mono files,
+ * and an Audio90's stereo.
  *
  * Run from the repo's root:
  *
@@ -14,7 +15,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from '@mvtjs/audio/headless';
+import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, type RenderedSamples, findSounds } from '@mvtjs/audio/headless';
 
 const SAMPLE_RATE = 48000;
 const ROOT = process.env.INIT_CWD ?? process.cwd();
@@ -42,10 +43,11 @@ for (const path of modules) {
  * Writes `samples` as a WAV file, and logs how long and how loud it is. For a
  * song, it logs the loudness beside the loudness all songs share.
  */
-function write(folder: string, name: string, samples: Float32Array, isSong: boolean): void {
+function write(folder: string, name: string, samples: RenderedSamples, isSong: boolean): void {
     const file = join(folder, `${name}.wav`);
     writeFileSync(file, encodeWav(samples, SAMPLE_RATE));
-    const seconds = (samples.length / SAMPLE_RATE).toFixed(2);
+    const frames = samples instanceof Float32Array ? samples.length : samples.left.length;
+    const seconds = (frames / SAMPLE_RATE).toFixed(2);
     const loudness = isSong ? `, ${measureLoudness(samples, SAMPLE_RATE).toFixed(1)} LUFS (songs: ${REFERENCE_LOUDNESS_LUFS})` : '';
     console.log(`${file}  ${seconds} s, peak ${measurePeak(samples).toFixed(2)}${loudness}`);
 }

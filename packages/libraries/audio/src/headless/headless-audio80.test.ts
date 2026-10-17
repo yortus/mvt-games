@@ -1,18 +1,19 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import { createCommandAudio80, MAX_MIX_VOLUME } from '../chip';
 import {
-    COMMAND_STRIDE,
+    createCommandAudio80,
+    createAudio80Instrument,
+    createAudio80SoundEffect,
     FILTER_HIGHPASS,
     FILTER_LOWPASS,
     FILTER_SETTING_INDEX,
-    type FilterMode,
+    type Audio80FilterMode,
     OP_SET_FILTER,
     OP_SET_VOICE,
     VOICE_SETTING_INDEX,
-    type Wave,
-} from '../core';
-import { createInstrument, createSoundEffect } from '../notation';
-import { type ChipRenderer, type ChipWrite, createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
+    type Audio80Wave,
+} from '../audio80';
+import { COMMAND_STRIDE, MAX_MIX_VOLUME } from '../shared';
+import { type Audio80Renderer, type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
 import { hashSamples, measurePeak } from './render';
 
 const MUSIC_VOLUME = 0.5;
@@ -20,8 +21,8 @@ const MUSIC_VOLUME = 0.5;
 const FRAMES = 4800;
 const DEFAULT_SAMPLE_RATE = 48000;
 const TICK_MS = 1000 / 60;
-const INSTRUMENT = createInstrument({ wave: 'saw', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 } });
-const EFFECT = createSoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
+const INSTRUMENT = createAudio80Instrument({ wave: 'saw', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 } });
+const EFFECT = createAudio80SoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
 
 describe('headless Audio80', () => {
     describe('with no options', () => {
@@ -142,10 +143,10 @@ describe('headless Audio80', () => {
     describe('with a wave or a filter mode set by name', () => {
         it('writes a wave as the waveform flags an instrument with that wave has', () => {
             const writer = createWriter();
-            const waves: readonly Wave[] = ['saw+pulse', 'noise', 'wavetable'];
+            const waves: readonly Audio80Wave[] = ['saw+pulse', 'noise', 'wavetable'];
             for (let i = 0; i < waves.length; i++) writer.setVoice(2, 'wave', waves[i], 10);
             for (let i = 0; i < waves.length; i++) {
-                expect(readCommand(writer, i)).toEqual([OP_SET_VOICE, 10, 2, VOICE_SETTING_INDEX.wave, createInstrument({ wave: waves[i] }).data.wave, 0]);
+                expect(readCommand(writer, i)).toEqual([OP_SET_VOICE, 10, 2, VOICE_SETTING_INDEX.wave, createAudio80Instrument({ wave: waves[i] }).data.wave, 0]);
             }
         });
 
@@ -159,10 +160,10 @@ describe('headless Audio80', () => {
 
         it('plays a voice whose wave is set by name as an instrument with that wave plays', () => {
             const asSet = createHeadlessAudio80({ render: { character: 'clean' } });
-            asSet.audio80.noteOn(0, createInstrument({ wave: 'triangle' }), 57, 1);
+            asSet.audio80.noteOn(0, createAudio80Instrument({ wave: 'triangle' }), 57, 1);
             asSet.audio80.setVoice(0, 'wave', 'saw+pulse');
             const asInstrument = createHeadlessAudio80({ render: { character: 'clean' } });
-            asInstrument.audio80.noteOn(0, createInstrument({ wave: 'saw+pulse' }), 57, 1);
+            asInstrument.audio80.noteOn(0, createAudio80Instrument({ wave: 'saw+pulse' }), 57, 1);
             const samples = renderFrames(asSet);
             expect(measurePeak(samples)).toBeGreaterThan(0);
             expect(hashSamples(samples)).toBe(hashSamples(renderFrames(asInstrument)));
@@ -186,9 +187,9 @@ describe('headless Audio80', () => {
 
         it('accepts, in its type, a name for a wave or a mode and a number for every other setting', () => {
             const { audio80 } = createHeadlessAudio80();
-            expectTypeOf(audio80.setVoice<'wave'>).parameter(2).toEqualTypeOf<Wave>();
+            expectTypeOf(audio80.setVoice<'wave'>).parameter(2).toEqualTypeOf<Audio80Wave>();
             expectTypeOf(audio80.setVoice<'volume'>).parameter(2).toEqualTypeOf<number>();
-            expectTypeOf(audio80.setFilter<'mode'>).parameter(2).toEqualTypeOf<FilterMode>();
+            expectTypeOf(audio80.setFilter<'mode'>).parameter(2).toEqualTypeOf<Audio80FilterMode>();
             expectTypeOf(audio80.setFilter<'cutoffHz'>).parameter(2).toEqualTypeOf<number>();
             // @ts-expect-error: a wave is set by its name, not its flags
             audio80.setVoice(0, 'wave', 4);
@@ -218,13 +219,13 @@ describe('headless Audio80', () => {
         expectTypeOf(silent).not.toHaveProperty('render');
         expectTypeOf(neither.audio80).not.toHaveProperty('log');
         expectTypeOf(neither).not.toHaveProperty('render');
-        expectTypeOf(recording.audio80.log).toEqualTypeOf<readonly ChipWrite[]>();
+        expectTypeOf(recording.audio80.log).toEqualTypeOf<readonly Audio80Write[]>();
         expectTypeOf(recording).not.toHaveProperty('render');
         expectTypeOf(rendering.audio80).not.toHaveProperty('log');
-        expectTypeOf(rendering.render).toEqualTypeOf<ChipRenderer['render']>();
+        expectTypeOf(rendering.render).toEqualTypeOf<Audio80Renderer['render']>();
         expectTypeOf(tuned.sampleRate).toEqualTypeOf<number>();
-        expectTypeOf(both.audio80.log).toEqualTypeOf<readonly ChipWrite[]>();
-        expectTypeOf(both.render).toEqualTypeOf<ChipRenderer['render']>();
+        expectTypeOf(both.audio80.log).toEqualTypeOf<readonly Audio80Write[]>();
+        expectTypeOf(both.render).toEqualTypeOf<Audio80Renderer['render']>();
         expectTypeOf(both).toExtend<HeadlessAudio80<{ render: true }>>();
     });
 });
@@ -242,7 +243,7 @@ function writeOneOfEach(audio80: HeadlessAudio80['audio80']): void {
 }
 
 /** What `writeOneOfEach` logs, made at chip time `time`. */
-function buildOneOfEachLog(time: number): ChipWrite[] {
+function buildOneOfEachLog(time: number): Audio80Write[] {
     return [
         { kind: 'play', effect: EFFECT, time: -Infinity },
         { kind: 'note-on', voice: 0, instrument: INSTRUMENT, note: 60, volume: 1, time },
@@ -290,11 +291,11 @@ function readCommand(writer: ReturnType<typeof createCommandAudio80>, index: num
  * Renders a high saw through filter `a`. The filter's mode is set by name to
  * `mode`, and its cutoff is at the bottom of its range.
  */
-function renderFilteredNote(mode: FilterMode): Float32Array {
+function renderFilteredNote(mode: Audio80FilterMode): Float32Array {
     const chip = createHeadlessAudio80({ render: { character: 'clean' } });
     chip.audio80.setFilter('a', 'mode', mode);
     chip.audio80.setFilter('a', 'cutoffHz', 20);
-    chip.audio80.noteOn(0, createInstrument({ wave: 'saw', filter: 'a' }), 96, 1);
+    chip.audio80.noteOn(0, createAudio80Instrument({ wave: 'saw', filter: 'a' }), 96, 1);
     return renderFrames(chip);
 }
 

@@ -1,4 +1,4 @@
-import { createSong, type SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
 import { BANJO, BRUSH, FIDDLE, HORN, KICK, THUMP, TOCK } from './sounds';
 
 // Fenceline's music was written for this game. The tunes are country
@@ -22,7 +22,7 @@ const BAND = {
     },
     // At 120 BPM, a dotted eighth lasts 375 ms, so the echo falls in time with the meadow tune
     echo: { timeMs: 375, feedback: 0.2, level: 0.25 },
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
 // ---------------------------------------------------------------------------
 // Songs
@@ -35,7 +35,7 @@ const BAND = {
  * through sixteen bars: a first strain on G, played twice with two endings,
  * and a second strain that starts on C.
  */
-export const MEADOW_TUNE = createSong({
+export const MEADOW_TUNE = createAudio80Song({
     ...BAND,
     volume: 1.13,
     bpm: 120,
@@ -265,7 +265,7 @@ export const MEADOW_TUNE = createSong({
 });
 
 /** As a round starts: the fiddle kicks off up the G chord, over a banjo roll. */
-export const ROUND_START = createSong({
+export const ROUND_START = createAudio80Song({
     ...BAND,
     volume: 1.12,
     bpm: 150,
@@ -295,7 +295,7 @@ export const ROUND_START = createSong({
 });
 
 /** The wire snapped: a sorry slide down by semitones. */
-export const SNAPPED_TUNE = createSong({
+export const SNAPPED_TUNE = createAudio80Song({
     ...BAND,
     volume: 1.2,
     bpm: 150,
@@ -325,7 +325,7 @@ export const SNAPPED_TUNE = createSong({
 });
 
 /** The round cleared: a hoedown run, and a held G. */
-export const ROUND_CLEAR_TUNE = createSong({
+export const ROUND_CLEAR_TUNE = createAudio80Song({
     ...BAND,
     volume: 1.1,
     bpm: 150,
@@ -372,7 +372,7 @@ export const ROUND_CLEAR_TUNE = createSong({
 });
 
 /** The last life lost: slow, in G minor, down to a held G. */
-export const GAME_OVER_TUNE = createSong({
+export const GAME_OVER_TUNE = createAudio80Song({
     ...BAND,
     volume: 1.38,
     bpm: 96,
@@ -431,7 +431,7 @@ export const GAME_OVER_TUNE = createSong({
  * toots of the ute's horn, as the farmhand drives off to the next farm.
  * The horn sounds `FARM_FENCED_HORN_MS` into the tune.
  */
-export const FARM_FENCED_TUNE = createSong({
+export const FARM_FENCED_TUNE = createAudio80Song({
     ...BAND,
     volume: 1.07,
     bpm: 140,

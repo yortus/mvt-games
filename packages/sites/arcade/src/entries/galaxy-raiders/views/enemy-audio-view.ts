@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, SoundEffect } from '@mvtjs/audio';
+import type { Audio80, Audio80SoundEffect } from '@mvtjs/audio';
 import { watch } from '@mvtjs/utils';
 import { CARRIER_HIT, DIVE, SCOUT_HIT, STRIKER_HIT } from '../data';
 import type { EnemyKind, EnemyPhase } from '../models';
@@ -57,7 +57,7 @@ export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-function chooseHit(kind: EnemyKind): SoundEffect {
+function chooseHit(kind: EnemyKind): Audio80SoundEffect {
     switch (kind) {
         case 'carrier': return CARRIER_HIT;
         case 'striker': return STRIKER_HIT;

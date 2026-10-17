@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInstrument, createSoundEffect } from '@mvtjs/audio';
-import type { ChipWrite } from '@mvtjs/audio/headless';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import type { Audio80Write } from '@mvtjs/audio/headless';
 import { type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
 import { createPageSound } from './page-sound';
 import { toSliderGain } from './slider-gain';
@@ -193,10 +193,10 @@ describe('createPageSound', () => {
 // ---------------------------------------------------------------------------
 
 const TICK_MS = 1000 / 60;
-const INSTRUMENT = createInstrument({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } });
-const EFFECT = createSoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
+const INSTRUMENT = createAudio80Instrument({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } });
+const EFFECT = createAudio80SoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
 
 /** Returns the sound effects played, in order. */
-function listPlays(log: readonly ChipWrite[]): unknown[] {
+function listPlays(log: readonly Audio80Write[]): unknown[] {
     return log.filter((write) => write.kind === 'play').map((write) => (write as { effect: unknown }).effect);
 }

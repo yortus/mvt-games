@@ -1,4 +1,4 @@
-import { createInstrument, createSoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
 
 // Galaxy Raiders' instruments and sound effects for the Audio80, all written
 // for this game. An effect whose shape matters is written as a step table.
@@ -11,7 +11,7 @@ import { createInstrument, createSoundEffect } from '@mvtjs/audio';
 // ---------------------------------------------------------------------------
 
 /** The lead. It is a narrow pulse that sweeps wider and back, with a vibrato that starts once a note is held. */
-export const LEAD = createInstrument({
+export const LEAD = createAudio80Instrument({
     wave: 'pulse',
     pulseWidth: 0.25,
     pulseSweep: { to: 0.6, ms: 900, isPingPong: true },
@@ -22,7 +22,7 @@ export const LEAD = createInstrument({
 });
 
 /** The chords, played as fast arpeggios. It is a square wave, quieter than the lead. */
-export const CHORD = createInstrument({
+export const CHORD = createAudio80Instrument({
     wave: 'pulse',
     pulseWidth: 0.5,
     envelope: { attackMs: 1, decayMs: 300, sustain: 0.35, releaseMs: 120 },
@@ -31,7 +31,7 @@ export const CHORD = createInstrument({
 });
 
 /** The bass. It is a saw wave through a resonant filter, which closes on each note. */
-export const BASS = createInstrument({
+export const BASS = createAudio80Instrument({
     wave: 'saw',
     envelope: { attackMs: 1, decayMs: 220, sustain: 0.45, releaseMs: 60 },
     filter: 'a',
@@ -40,7 +40,7 @@ export const BASS = createInstrument({
 });
 
 /** The kick drum. One step of noise makes its click, then a triangle wave falls an octave and a half. */
-export const KICK = createInstrument({
+export const KICK = createAudio80Instrument({
     note: 'C-3',
     envelope: { attackMs: 0, decayMs: 170, sustain: 0, releaseMs: 0 },
     steps: `
@@ -55,7 +55,7 @@ export const KICK = createInstrument({
 });
 
 /** The snare drum. One step of a triangle wave gives it body, then a burst of bright noise follows. */
-export const SNARE = createInstrument({
+export const SNARE = createAudio80Instrument({
     note: 'C-5',
     envelope: { attackMs: 0, decayMs: 160, sustain: 0, releaseMs: 0 },
     volume: 0.6,
@@ -69,7 +69,7 @@ export const SNARE = createInstrument({
 });
 
 /** A closed hi-hat. It is a very short burst of high noise. */
-export const HAT = createInstrument({
+export const HAT = createAudio80Instrument({
     wave: 'noise',
     note: 'C-7',
     envelope: { attackMs: 0, decayMs: 45, sustain: 0, releaseMs: 0 },
@@ -81,7 +81,7 @@ export const HAT = createInstrument({
 // ---------------------------------------------------------------------------
 
 /** The ship's shot. A pulse zap falls two and a half octaves in about a tenth of a second, widening to a square. */
-export const SHOT = createSoundEffect({
+export const SHOT = createAudio80SoundEffect({
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 30 },
     priority: 0,
     maxVoices: 2,
@@ -99,7 +99,7 @@ export const SHOT = createSoundEffect({
 });
 
 /** The instrument for a raider's explosion. It thumps, then bursts into noise that falls in pitch. Each kind of raider plays it at its own note. */
-const BOOM = createInstrument({
+const BOOM = createAudio80Instrument({
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 120 },
     steps: `
         triangle  +0    vF
@@ -115,17 +115,17 @@ const BOOM = createInstrument({
 });
 
 /** A scout's explosion. The scout is the smallest raider, so its explosion is the highest. */
-export const SCOUT_HIT = createSoundEffect({ instrument: BOOM, note: 'C-4', priority: 2, maxVoices: 2, volume: 1 });
+export const SCOUT_HIT = createAudio80SoundEffect({ instrument: BOOM, note: 'C-4', priority: 2, maxVoices: 2, volume: 1 });
 
 /** A striker's explosion. It is pitched between the scout's and the carrier's. */
-export const STRIKER_HIT = createSoundEffect({ instrument: BOOM, note: 'A-3', priority: 2, maxVoices: 2, volume: 1 });
+export const STRIKER_HIT = createAudio80SoundEffect({ instrument: BOOM, note: 'A-3', priority: 2, maxVoices: 2, volume: 1 });
 
 /** A carrier's explosion. The carrier is the biggest raider, so its explosion is the deepest. */
-export const CARRIER_HIT = createSoundEffect({ instrument: BOOM, note: 'E-3', priority: 2, maxVoices: 2, volume: 1 });
+export const CARRIER_HIT = createAudio80SoundEffect({ instrument: BOOM, note: 'E-3', priority: 2, maxVoices: 2, volume: 1 });
 
 /** A raider's dive. It is a wavering whistle that falls two octaves. */
-export const DIVE = createSoundEffect({
-    instrument: createInstrument({
+export const DIVE = createAudio80SoundEffect({
+    instrument: createAudio80Instrument({
         wave: 'triangle',
         envelope: { attackMs: 20, decayMs: 0, sustain: 1, releaseMs: 150 },
         vibrato: { semitones: 0.4, hz: 9 },
@@ -139,7 +139,7 @@ export const DIVE = createSoundEffect({
 });
 
 /** The ship's loss. It is a long, low roar that falls slowly. */
-export const SHIP_HIT = createSoundEffect({
+export const SHIP_HIT = createAudio80SoundEffect({
     note: 'C-4',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 500 },
     stepMs: 45,
@@ -165,7 +165,7 @@ export const SHIP_HIT = createSoundEffect({
 });
 
 /** The ship's return. It plays four rising notes. */
-export const RESPAWN = createSoundEffect({
+export const RESPAWN = createAudio80SoundEffect({
     note: 'C-5',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 80 },
     stepMs: 70,

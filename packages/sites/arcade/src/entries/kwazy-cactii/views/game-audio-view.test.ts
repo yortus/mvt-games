@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import type { SoundEffect } from '@mvtjs/audio';
+import type { Audio80SoundEffect } from '@mvtjs/audio';
 import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
 import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
@@ -53,7 +53,7 @@ describe('GameAudioView', () => {
             state.cascadeStep = step;
             state.boardPhase = 'matching';
             const index = Math.min(step, CASCADE_WHISTLES.length) - 1;
-            const expected: SoundEffect[] = step === 1 ? [] : [LAND];
+            const expected: Audio80SoundEffect[] = step === 1 ? [] : [LAND];
             expected.push(CASCADE_WHISTLES[index]);
             const crackle = CASCADE_CRACKLES[index];
             if (crackle !== undefined) expected.push(crackle);
@@ -129,12 +129,12 @@ function setUp() {
         cascadeStep: () => state.cascadeStep,
         matchedCellCount: () => state.matchedCellCount,
     });
-    const tick = (): SoundEffect[] => {
+    const tick = (): Audio80SoundEffect[] => {
         chip.clear();
         controls.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
-        const played: SoundEffect[] = [];
+        const played: Audio80SoundEffect[] = [];
         for (const write of chip.log) {
             if (write.kind === 'play') played.push(write.effect);
         }

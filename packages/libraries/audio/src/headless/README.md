@@ -1,16 +1,18 @@
 # @mvtjs/audio/headless
 
-This part of the package runs the Audio80 without a speaker. It holds the
-headless chip, which plays sound in memory or not at all. It also holds the
-tools that render songs and sound effects, measure them and save them as WAV
-files. Nothing here uses Web Audio, so it all runs in Node as well as in a
-browser.
+This part of the package runs the Audio80 and the Audio90 without a
+speaker. It holds each chip's headless version, which plays sound in memory
+or not at all. It also holds the tools that render songs and sound effects,
+measure them and save them as WAV files. Nothing here uses Web Audio, so it
+all runs in Node as well as in a browser.
 
 Rendered sound is a list of **samples**. Each sample is the level of the
 sound wave at one instant, from -1 to 1. The **sample rate** is how many
 samples make up each second. Everything here renders at 48,000 a second
-unless told otherwise. The chip is mono, so there is one sample for each
-instant, not one for each speaker.
+unless told otherwise. The Audio80 is mono, so it renders one sample for
+each instant, which a browser plays on both speakers. The Audio90 is
+stereo, so it renders two: a `StereoSamples` holds its `left` and `right`
+channels.
 
 **Related:** [The package's README](../../README.md) · [Using the Audio80](../../docs/using-the-audio80.md)
 
@@ -43,7 +45,7 @@ not record is a type error, not an empty log.
 
 A chip made with `record: true` keeps every write in its `log` property,
 oldest first, until its `clear` method empties it. Each entry is a
-`ChipWrite`. It says what kind of write it was (`'play'`, `'note-on'`,
+`Audio80Write`. It says what kind of write it was (`'play'`, `'note-on'`,
 `'set-filter'` and so on), what it was given, and the time it was stamped
 with. A sound effect is stamped `-Infinity`, because it plays as soon as it
 arrives. Every other write is stamped with its `atMs`, or with the chip's
@@ -82,6 +84,15 @@ far waits for a later render. The controls' volumes apply to the samples
 `render` writes. Their `flush` method does nothing, since `render` takes
 the writes itself.
 
+### The Headless Audio90
+
+`createHeadlessAudio90` takes the same options, and returns
+`{ audio90, controls }`. Its log's entries are each an `Audio90Write`, with
+the Audio90's writes, such as `'set-effect'` and `'set-tempo'`, and a
+`'play'` keeps the pan it was given, or undefined for the effect's own. Its
+`render` option's `character` defaults to `'studio'`. It renders in stereo,
+so `render(left, right)` fills two buffers of the same length.
+
 ## Rendering Songs and Effects
 
 Most tests and tools need a whole song or effect, not blocks of samples.
@@ -90,8 +101,11 @@ samples as a new `Float32Array`:
 
 - `renderSong(song, options?)` renders one pass through the song. It ticks
   the chip and a music player every 60th of a second, as a game loop would.
-  A looping song is stopped where it would go back to its loop.
+  A looping song is stopped where it would go back to its loop. An Audio90
+  song is rendered in stereo, as a `StereoSamples`.
 - `renderSoundEffect(effect, options?)` renders the effect, played once.
+  An Audio90 effect is played at its own pan, and rendered in stereo, as
+  a `StereoSamples`.
 
 Each renders a little past the end of the sound, so that its release and
 echo can fade. They take these options:
@@ -99,7 +113,7 @@ echo can fade. They take these options:
 | Option | Meaning | Default |
 | --- | --- | --- |
 | `sampleRate` | The sample rate to render at | 48,000 |
-| `character` | How gritty the chip sounds | `'classic'` |
+| `character` | How gritty the chip sounds | `'classic'` on the Audio80, `'studio'` on the Audio90 |
 | `tickMs` | How long each tick is, in ms | 1000 / 60 |
 | `durationMs` | How long to render, in ms | The sound's length, and 600 ms more |
 
@@ -114,6 +128,11 @@ a listener, in LUFS. LUFS is the standard unit for that. The values are
 negative, and nearer 0 is louder. It measures as the ITU-R BS.1770 standard
 says, which is how streaming services measure it too. Silence measures
 `-Infinity`.
+
+Both take mono or stereo sound. The peak of stereo sound is its louder
+channel's. Its loudness adds up the two channels' power, as BS.1770 adds up
+each speaker's. Mono sound is measured as a browser plays it, on both
+speakers, so a song measures the same on either chip if it sounds as loud.
 
 Every song is written to the same loudness, `REFERENCE_LOUDNESS_LUFS`,
 which is -20 LUFS. So one song is not much louder than another, in one game
@@ -249,15 +268,19 @@ which do not load there.
 
 | Export | Description |
 | --- | --- |
-| `createHeadlessAudio80` (`HeadlessAudio80`, `HeadlessAudio80Options`, `HeadlessRenderOptions`) | Returns a new chip with no speaker, and its controls. It plays nothing, logs every write (`record: true`), renders to samples (`render`), or does both |
-| `ChipLog`, `ChipWrite` | The types of the log on a chip made with `record: true`, and of each entry in it |
-| `ChipRenderer` | The type of what a chip made with `render` adds: `render(output)` and `sampleRate` |
-| `renderSong` (`RenderOptions`) | Returns the samples of one pass through a song, as a new `Float32Array` |
-| `renderSoundEffect` (`RenderOptions`) | Returns the samples of a sound effect played once, as a new `Float32Array` |
-| `measurePeak` | Returns the peak of samples, which is the level of the loudest one |
-| `measureLoudness` | Returns the loudness of samples, in LUFS |
+| `createHeadlessAudio80` (`HeadlessAudio80`, `HeadlessAudio80Options`, `HeadlessAudio80RenderOptions`) | Returns a new Audio80 with no speaker, and its controls. It plays nothing, logs every write (`record: true`), renders to samples (`render`), or does both |
+| `Audio80Log`, `Audio80Write` | The types of the log on an Audio80 made with `record: true`, and of each entry in it |
+| `Audio80Renderer` | The type of what an Audio80 made with `render` adds: `render(output)` and `sampleRate` |
+| `createHeadlessAudio90` (`HeadlessAudio90`, `HeadlessAudio90Options`, `HeadlessAudio90RenderOptions`) | Returns a new Audio90 with no speaker, and its controls, as `createHeadlessAudio80` does |
+| `Audio90Log`, `Audio90Write`, `Audio90EffectWrite` | The types of the log on an Audio90 made with `record: true`, of each entry in it, and of an entry that sets an effect |
+| `Audio90Renderer` | The type of what an Audio90 made with `render` adds: `render(left, right)` and `sampleRate` |
+| `renderSong` (`Audio80RenderOptions`, `Audio90RenderOptions`, `RenderOptions`) | Returns the samples of one pass through a song: a new `Float32Array` for an Audio80 song, and a new `StereoSamples` for an Audio90 song |
+| `renderSoundEffect` (`Audio80RenderOptions`, `Audio90RenderOptions`, `RenderOptions`) | Returns the samples of a sound effect played once: a new `Float32Array` for an Audio80 effect, and a new `StereoSamples` for an Audio90 effect |
+| `StereoSamples`, `RenderedSamples` | The types of stereo sound, and of sound in mono or stereo |
+| `measurePeak` | Returns the peak of samples, mono or stereo, which is the level of the loudest one |
+| `measureLoudness` | Returns the loudness of samples, mono or stereo, in LUFS |
 | `REFERENCE_LOUDNESS_LUFS` | The loudness every song is written to: -20 LUFS |
 | `LOUDNESS_TOLERANCE_LU` | How far a song's loudness may stray from `REFERENCE_LOUDNESS_LUFS`: 3 LU |
-| `hashSamples` | Returns a short hash of samples, as a string of 8 hex digits |
-| `findSounds` (`ModuleSounds`) | Returns the songs and sound effects a module exports, with their names |
-| `encodeWav` | Returns samples encoded as a 16-bit mono WAV file, as a `Uint8Array` |
+| `hashSamples` | Returns a short hash of samples, mono or stereo, as a string of 8 hex digits |
+| `findSounds` (`ModuleSounds`) | Returns the songs and sound effects a module exports, for either chip, with their names |
+| `encodeWav` | Returns samples encoded as a 16-bit WAV file, mono or stereo, as a `Uint8Array` |
