@@ -225,6 +225,8 @@ architecture and engineering concerns.
 Review the prose too: docs, READMEs, JSDoc, comments, test names and error
 messages. Flag these, and give a rewrite for each:
 
+- **A stilted or clipped voice,** such as noun-heavy phrasing, or text that
+  says what a thing is but never speaks to the reader or says why it helps.
 - **Long sentences** joined by colons, semicolons, stacked commas or asides.
 - **Fragments,** especially at the start of a section or before a colon.
 - **Compressed or clever phrasing** that is hard to parse on first reading.

@@ -20,8 +20,6 @@ export interface SharedProject {
 
 /**
  * Writes a project for a share link: as JSON, gzipped, in URL-safe base64.
- * Gzip makes a link about a third the size that lz-string, the old
- * playground's format, makes.
  */
 export async function encodeSharedProject(project: SharedProject): Promise<string> {
     const json = JSON.stringify({

@@ -3,7 +3,6 @@ export { findLibraryUrls, type LibraryUrls } from './library-urls';
 export { type HashRequest, readHashRequest, toExampleHash, toSharedHash } from './location-hash';
 export { addLoopGuards, type AddLoopGuardsOptions } from './loop-guards';
 export { resolveRelative, rewriteImports, type RewriteImportsOptions, type RewrittenImports } from './module-imports';
-export { convertOldCode, decodeOldCode, type OldPlaygroundCode } from './old-links';
 export {
     findRenderer,
     MAIN_PATH,

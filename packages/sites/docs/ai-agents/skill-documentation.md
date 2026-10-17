@@ -55,7 +55,10 @@ Every docs page must follow this structure:
 
 ### Tone
 
-- Professional, neutral, approachable. Supportive mentor tone.
+- A friendly, mentoring voice in everyday language. Talk to the reader as
+  "you", and say why things help, not only what they are. This is the
+  default unless you're told otherwise. See
+  [Style Guide: Voice](../reference/style-guide.md#voice).
 - Active voice. Direct sentences.
 - No em-dashes - use hyphens or restructure the sentence.
 - No hedging ("It should be noted that...") or condescension ("Obviously...").

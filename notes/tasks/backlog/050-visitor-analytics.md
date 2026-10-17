@@ -31,9 +31,11 @@ referrers.
 Points to settle while adding it:
 
 - **Which pages.** The Arcade (`packages/sites/arcade/index.html`), the playground
-  (`packages/sites/arcade/playground/index.html`) and the docs (VitePress, built
-  into the same Pages site by `deploy.yml`) each need the tag, or a decision
-  to leave one out.
+  (`packages/sites/playground/index.html`, a package of its own since 052,
+  built into `dist/playground/`) and the docs (VitePress, built into the same
+  Pages site by `deploy.yml`) each need the tag, or a decision to leave one
+  out. The playground's sandbox runs visitors' code in an iframe of its own,
+  which should not report.
 - **Production only.** The test deploy to Surge (`test-deploy.yml`) and the
   dev server should not report. Passing the site token only in `deploy.yml`,
   for example as a `VITE_` variable, and adding the tag only when it is set,

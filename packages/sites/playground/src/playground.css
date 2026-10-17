@@ -135,6 +135,37 @@ button:disabled {
     color: var(--site-text);
 }
 
+/* The Help's (i), last in the nav: a light circle with a dark i, coloured as the GitHub icon beside it */
+.site-nav-end {
+    display: flex;
+    align-items: center;
+    padding: 6px;
+}
+
+.help-button {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--site-text-muted);
+    color: var(--site-nav-bg);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.help-button:hover,
+.help-button:focus-visible,
+.help-button[aria-expanded="true"] {
+    background: var(--site-text);
+}
+
 /* Shown on a narrow screen only, where the menu lies over it, unseen */
 .theme-picker-icon {
     display: none;
@@ -636,13 +667,15 @@ button:disabled {
 /* A dialog's wrapper takes no room: it is there to see the dialog open */
 .projects-layer,
 .share-layer,
-.options-layer {
+.options-layer,
+.help-layer {
     display: contents;
 }
 
 .projects,
 .share,
-.options {
+.options,
+.help {
     position: fixed;
     inset: 0;
     z-index: 10;
@@ -671,14 +704,16 @@ button:disabled {
 
 .projects-head,
 .share-head,
-.options-head {
+.options-head,
+.help-head {
     display: flex;
     align-items: center;
 }
 
 .projects-title,
 .share-title,
-.options-title {
+.options-title,
+.help-title {
     flex: 1;
     margin: 0;
     font-size: 15px;
@@ -770,6 +805,84 @@ button:disabled {
     padding: 1px 8px;
     font-size: 12px;
 }
+
+/* Help: wider than the other dialogs, and scrolled within */
+.help-panel {
+    width: min(680px, calc(100vw - 32px));
+    max-height: 80vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 18px;
+    box-sizing: border-box;
+    background: var(--pg-raised);
+    border: 1px solid var(--pg-border);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px var(--pg-shadow);
+    line-height: 1.5;
+}
+
+.help-panel:focus {
+    outline: none;
+}
+
+.help-head {
+    position: sticky;
+    top: -14px;
+    padding: 4px 0;
+    background: var(--pg-raised);
+}
+
+.help-content {
+    font-size: 13px;
+}
+
+.help-content p,
+.help-content ul {
+    margin: 0 0 8px;
+}
+
+.help-content code,
+.help-content kbd {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    padding: 0 3px;
+    border-radius: 4px;
+    background: var(--pg-background);
+}
+
+.help-section {
+    margin: 14px 0 6px;
+    font-size: 14px;
+    color: var(--pg-accent);
+}
+
+.help-code {
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    overflow: auto;
+    border-radius: 6px;
+    background: var(--pg-background);
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+}
+
+.help-keys {
+    border-collapse: collapse;
+    margin: 0 0 8px;
+}
+
+.help-keys td {
+    padding: 3px 12px 3px 0;
+    border-bottom: 1px solid var(--pg-border);
+    vertical-align: top;
+}
+
+.help-keys td:first-child {
+    white-space: nowrap;
+}
+
 
 /* Project options: the name, and the barrels' switch, with what it means */
 .options-label {

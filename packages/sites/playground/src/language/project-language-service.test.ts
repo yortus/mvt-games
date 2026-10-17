@@ -60,6 +60,18 @@ describe('a project language service', { timeout: 60_000 }, () => {
         expect(loaded).not.toContain('three');
     });
 
+    // Each runtime's types import @mvtjs/utils/jsx, which a project can't import. If its types
+    // went missing, JSX would quietly become untyped, and report nothing
+    it('checks the attributes in each renderer\'s JSX', async () => {
+        const { service } = createService();
+        for (const [renderer, tag] of [['pixi', 'container'], ['html', 'div'], ['three', 'group']]) {
+            const text = `/** @jsxImportSource @mvtjs/${renderer} */\nexport const view = <${tag} notAnAttribute={1} />;\n`;
+            await service.setFiles([{ path: 'view.tsx', text }]);
+            const messages = service.diagnostics().map((p) => p.message);
+            expect(messages, renderer).toEqual([expect.stringContaining('notAnAttribute')]);
+        }
+    });
+
     it('reports a type error at its place, with a fix to import a missing name', async () => {
         const { service } = createService();
         const files = exampleFiles('bouncing-ball').map((f) => (f.path === 'main.ts'

@@ -7,7 +7,6 @@ import { createLanguageClient } from './language';
 import { createWorkspaceModel, type OpenedProject, type ProjectRequest, toUniqueProjectName, type WorkspaceModel } from './models';
 import {
     buildSandboxDocument,
-    convertOldCode,
     decodeSharedProject,
     encodeSharedProject,
     findLibraryUrls,
@@ -23,13 +22,12 @@ import {
 import {
     createMemoryProjectDatabase,
     loadSettings,
-    moveLocalProjects,
     openProjectDatabase,
     type ProjectDatabase,
     saveSettings,
     type StoredProject,
 } from './storage';
-import { PlaygroundView, THEME_CHOICES, ThemePickerView, THEMES } from './views';
+import { HelpButtonView, PlaygroundView, THEME_CHOICES, ThemePickerView, THEMES } from './views';
 import './nav.css';
 import './playground.css';
 
@@ -42,8 +40,8 @@ import './playground.css';
 // It keeps the visitor's projects in IndexedDB, saving the one open as it
 // changes, and the workspace's settings in localStorage. It writes share
 // links and exported projects, and keeps the URL naming the example open. It
-// reads the project to open from the URL: an example, a share link, or a
-// link from the old playground. Without one, it opens the project the
+// reads the project to open from the URL: an example, or a share link.
+// Without one, it opens the project the
 // visitor last worked on, or the first example. Whatever opens, runs. The
 // sandbox's origin is opaque, so a shared project cannot reach anything the
 // site keeps for the visitor.
@@ -97,10 +95,18 @@ const language = createLanguageClient({ files: () => model.files, isBarrelKept: 
 const root = document.getElementById('playground');
 if (root === null) throw new Error('The page has no #playground element');
 root.append(PlaygroundView({ model, examples: EXAMPLES, starters: STARTERS, language }));
-// The theme's menu is in the site's nav, a second root, ticked as the first is
+// The theme's menu, and the Help's (i) after the GitHub link, are in the
+// site's nav, a second root, ticked as the first is
+const nav = document.querySelector<HTMLElement>('.site-nav');
 const navTools = document.getElementById('site-nav-tools');
-if (navTools === null) throw new Error('The page has no #site-nav-tools element');
+const navEnd = document.getElementById('site-nav-end');
+if (nav === null || navTools === null || navEnd === null) throw new Error('The page has no site nav with #site-nav-tools and #site-nav-end');
 navTools.append(ThemePickerView({ themes: THEME_CHOICES, theme: () => model.theme, onThemeChosen: (theme) => model.setTheme(theme) }));
+navEnd.append(HelpButtonView({
+    isOpen: () => model.layout.isHelpOpen,
+    // The nav is above the Help's backdrop, so the (i) closes the Help as well as opening it
+    onPressed: () => (model.layout.isHelpOpen ? model.layout.closeHelp() : model.layout.openHelp()),
+}));
 model.run();
 requestAnimationFrame(() => {
     language.start();
@@ -121,9 +127,9 @@ function frame(timeMs: number): void {
     followModel(model);
     saveChangedSettings(model);
     updateView(root!, deltaMs);
-    updateView(navTools!, deltaMs);
+    updateView(nav!, deltaMs);
     refreshView(root!);
-    refreshView(navTools!);
+    refreshView(nav!);
     requestAnimationFrame(frame);
 }
 
@@ -163,25 +169,14 @@ const MAX_SHARED_CHARACTERS = 300_000;
 /** How often the first type check looks to see if the language service is ready. */
 const LANGUAGE_WAIT_MS = 200;
 
-/**
- * The visitor's projects, in IndexedDB, with those that localStorage kept
- * before moved in. Where the browser keeps nothing, they are kept in memory.
- */
+/** The visitor's projects, in IndexedDB. Where the browser keeps nothing, they are kept in memory. */
 async function openDatabase(): Promise<ProjectDatabase> {
-    let opened: ProjectDatabase;
     try {
-        opened = await openProjectDatabase({ indexedDB });
+        return await openProjectDatabase({ indexedDB });
     }
     catch {
-        opened = createMemoryProjectDatabase();
+        return createMemoryProjectDatabase();
     }
-    try {
-        await moveLocalProjects({ database: opened, storage: localStorage, createId: createProjectId, now: Date.now() });
-    }
-    catch (error) {
-        console.error('The projects kept in localStorage could not be moved', error);
-    }
-    return opened;
 }
 
 /**
@@ -198,9 +193,6 @@ async function readFirstProject(projects: ProjectDatabase, lastId: string | unde
     else if (request.kind === 'shared') {
         const shared = await decodeSharedProject(request.encoded);
         if (shared !== undefined) return { project: shared };
-    }
-    else if (request.kind === 'old-code') {
-        return { project: { name: 'Shared from the old playground', files: convertOldCode(request.code) } };
     }
     for (const id of [lastId, (await projects.list())[0]?.id]) {
         const kept = id === undefined ? undefined : await projects.load(id);

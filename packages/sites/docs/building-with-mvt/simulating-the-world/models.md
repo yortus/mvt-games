@@ -50,7 +50,7 @@ function createTimerModel(durationMs: number): TimerModel {
 }
 ```
 
-> **Try it live:** <PlaygroundLink preset="countdown-timer" label="Countdown Timer in Playground" />
+> **Try it live:** <PlaygroundLink example="countdown-timer" label="Countdown Timer in Playground" />
 
 Notice what happens each frame:
 

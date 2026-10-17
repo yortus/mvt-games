@@ -58,6 +58,28 @@ packages/sites/arcade/src/
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
 
+The playground is laid out by what each part does. Its examples and
+starting projects are real files, linted and type-checked as the rest are:
+
+```
+packages/sites/playground/
+├── src/
+│   ├── models/          The workspace and its layout: the files, the run, the problems, the dialogs open
+│   ├── views/           The page's views, in HTML JSX, the editor's extensions, and the themes
+│   ├── language/        The TypeScript language service, in a worker: completions, types, problems, barrels
+│   ├── runtime/         Making a project ready to run: transpiling, loop guards, imports, the sandbox's page, links
+│   ├── sandbox/         What runs in the sandbox: the runner, and a host for each renderer
+│   ├── export/          A project as a Vite project of its own, zipped
+│   ├── storage/         The projects and settings kept in the visitor's browser
+│   ├── examples/        Reads the examples and the starting projects, as text
+│   ├── project-api/     The `playground` module a project imports: the define functions
+│   └── main.ts          The page's loop
+├── examples/<id>/       The examples, each a project
+├── starters/<renderer>/ The projects New starts from, one for each renderer
+├── libraries/           What a project may import, and a module for each
+└── scripts/             Vite plugins: the type bundles, and the versions an export depends on
+```
+
 [Visual tests](../building-with-mvt/iterating-with-confidence/visual-tests.md)
 are in a `visual-tests/` directory beside the views they test, one
 `<view>.test.tsx` file for each view. Each test file's reference images

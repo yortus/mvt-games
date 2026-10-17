@@ -705,6 +705,29 @@ These rules cover all prose in the repo. That includes documentation,
 READMEs, JSDoc, code comments, test names and error messages. Write for a
 reader who knows TypeScript but not this repo or the problem's domain.
 
+### Voice
+
+Write like a friendly, experienced colleague showing someone around. Short
+sentences help, but they aren't enough on their own. Clipped, noun-heavy
+writing is easy to scan, but it's hard for someone new to learn from.
+
+- **Talk to the reader as "you".** Say what they'll do and what they'll
+  see: "When your project runs, the playground calls your `start`
+  function."
+- **Use everyday language.** Write it the way you'd say it out loud to a
+  colleague. Contractions such as "you'll" and "isn't" are fine, and so is
+  a friendly aside.
+- **Say why, not only what.** Tell the reader what a thing is for, and how
+  it helps them, as well as what it is.
+- **Follow this voice unless you're told otherwise.** A reference table
+  or a one-line JSDoc on a member can stay brief, but its sentences should
+  still read naturally.
+
+| Avoid | Prefer |
+| --- | --- |
+| `start` is given where the views go. | The playground calls your `start` function, and hands it a place to put your views. |
+| Barrels: kept for you, imports checked. | The playground writes these barrels for you, and keeps them up to date as you add and change files. |
+
 ### Sentences
 
 - **Keep sentences short and simple.** Put one idea in each sentence. Say
@@ -741,6 +764,9 @@ reader who knows TypeScript but not this repo or the problem's domain.
   game", not "the host" or "an entry".
 - **Don't coin new terms.** Use the plain words that the code and docs
   already use.
+- **Don't use synonyms for different things.** Readers take "newest" and
+  "latest" to mean the same. If you need two meanings, say what each one
+  is: "the code that hasn't been published yet" and "the version on npm".
 
 ### Describing an API
 

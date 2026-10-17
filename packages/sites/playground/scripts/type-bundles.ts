@@ -92,10 +92,18 @@ function readPackages(names: readonly string[], folders: Readonly<Record<string,
 }
 
 /**
+ * The entries a project can't import, but whose declarations the libraries'
+ * own declarations import. The JSX runtimes' types are built on
+ * `@mvtjs/utils/jsx`, so without it they would quietly become `any`.
+ */
+const SUPPORTING_ENTRIES: readonly string[] = ['@mvtjs/utils/jsx'];
+
+/**
  * Emits the declarations of the `@mvtjs` libraries and of the `playground`
  * module from their sources, in one program, so their imports of each other
  * resolve. Each library gets a `package.json` whose `exports` name the
- * declarations of the entries a project may import.
+ * declarations of the entries a project may import, and of the supporting
+ * entries their declarations import.
  */
 function emitDeclarations(): { mvtjs: TypeBundle; playground: TypeBundle } {
     const packages = ['utils', 'pixi', 'html', 'three', 'audio'];
@@ -108,7 +116,7 @@ function emitDeclarations(): { mvtjs: TypeBundle; playground: TypeBundle } {
         exportsOf[name] = {};
         for (const [subpath, conditions] of Object.entries(manifest.exports)) {
             const specifier = subpath === '.' ? `@mvtjs/${name}` : `@mvtjs/${name}/${subpath.slice(2)}`;
-            if (!(LIBRARIES as readonly string[]).includes(specifier)) continue;
+            if (!(LIBRARIES as readonly string[]).includes(specifier) && !SUPPORTING_ENTRIES.includes(specifier)) continue;
             const source = conditions['@mvtjs/source'];
             entries.push(join(LIBRARY_ROOT, name, source));
             exportsOf[name][subpath] = { types: source.replace(/\.tsx?$/, '.d.ts') };

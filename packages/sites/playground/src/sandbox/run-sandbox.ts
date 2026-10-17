@@ -97,7 +97,7 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         (globalThis as { __pgFrameStart?: number }).__pgFrameStart = performance.now();
         try {
             if (isAdvancing) {
-                // A model from an old playground link may have no `update`
+                // Type errors don't stop a project running, so its model may have no `update`
                 if (typeof ticked?.update === 'function') ticked.update(deltaMs);
                 sound.controls()?.update(deltaMs);
                 host.update(deltaMs);

@@ -5,6 +5,7 @@ export {
     isLibrary,
     LIBRARIES,
     LIBRARY_MANIFEST,
+    LIBRARY_SUMMARIES,
     type LibrarySpecifier,
     SANDBOX_RUNNER,
     toLibraryEntryName,

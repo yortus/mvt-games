@@ -22,11 +22,14 @@ changed four details: a cheaper loop guard (5.5), gzip for share links
 (7.3), the editor's own glue to the language service (6.2), and a `CORS`
 file for the test deploy (13). The rest of the design stands. Step 2, the
 rename of the website to the Arcade, is done (section 15). Nothing else is
-built beyond the spike, but steps 3 to 9: the new package is the playground,
+built beyond the spike, but steps 3 to 10: the new package is the playground,
 at `/playground/`, with its layout, Problems list, run on change,
 intellisense, the editor's menu and keys, dark and light themes, projects
-kept in the browser, New, Export, and a file tree with moves and kept
-barrels, and the old one is gone. Next is step 10, the docs.
+kept in the browser, New, Export, a file tree with moves and kept barrels,
+and its help, and the old one is gone. The docs are up to date. Next is
+step 11, the later ideas, each a proposal or task of its own when its
+turn comes, and step 12, the investigation of opening Arcade entries from
+GitHub.
 
 **Written:** 2026-10-16, against `vnext` at `81900f5`. Checked against the
 playground as built
@@ -91,7 +94,7 @@ first draft had.
 | 10 | The libraries' types | Generated at build time from the packages' sources (and `node_modules` for Pixi, three.js and GSAP), one file per library, fetched the first time a project imports it | [6.3](#63-types-for-the-libraries) |
 | 11 | Saving and sharing | Projects saved in IndexedDB, several by name. A share link holds the compressed files in the URL's hash, as now. Export downloads a zip that is a ready Vite project | [7](#7-projects-examples-and-sharing) |
 | 12 | The examples | Real files in the repo, one folder each, so the repo's type check, lint and tests cover them. The presets' 992 lines of code in strings go | [7.2](#72-examples-are-real-files-in-the-repo) |
-| 13 | Old links | `#preset=` links, which the docs use, open the matching example. `#code=` links are converted to a project on open | [7.4](#74-old-links-keep-working) |
+| 13 | Old links | `#preset=` links, which the docs use, open the matching example. `#code=` links are converted to a project on open. Built, then dropped on 2026-10-17: the old playground was never publicised | [7.4](#74-old-links-keep-working) |
 | 14 | The playground's own code | Rebuilt in MVT, as the Arcade is: a model of the project, the tabs and the run, and HTML JSX views | [8](#8-the-playground-built-with-mvt) |
 | 15 | Where it lives | A private package of its own, `packages/sites/playground/` (`@mvtjs/playground`), built on its own into `dist/playground/` and proxied in dev, as the docs are. The lint rules that fence it off today go, since the package boundary does their job | [9.2](#92-the-playground-package) |
 | 16 | The website package | Renamed `packages/sites/arcade/` (`@mvtjs/arcade`), since without the playground it is the Arcade, its entries and its highscores Worker. A mechanical step of its own, before the playground work | [9.3](#93-the-website-becomes-the-arcade) |
@@ -309,7 +312,7 @@ grow up (section 10.2).
 | --- | --- |
 | `./x`, `../x/y` | The project's own files. Extensions are optional, and a folder resolves to its `index.ts`, as TypeScript's bundler resolution does |
 | `playground` | `definePixiProject`, `defineHtmlProject`, `defineThreeProject`, and their types |
-| `@mvtjs/utils`, `@mvtjs/utils/jsx` | The renderer-agnostic helpers, and the JSX base |
+| `@mvtjs/utils` | The renderer-agnostic helpers. `@mvtjs/utils/jsx`, the base for making a JSX runtime, was dropped. No playground project needs one, since each kind of project already has its JSX. Its types stay in the editor's type bundle, because the JSX runtimes' types import them |
 | `@mvtjs/pixi`, `@mvtjs/pixi/jsx-runtime` | The tick API for Pixi, and its JSX runtime |
 | `@mvtjs/html`, `@mvtjs/html/jsx-runtime` | The same for the DOM |
 | `@mvtjs/three`, `@mvtjs/three/jsx-runtime` | The same for three.js |
@@ -866,6 +869,15 @@ highscores could host it. It is left as an open question (section 14) until
 long links prove to be a problem.
 
 ### 7.4 Old links keep working
+
+**Dropped on 2026-10-17, at the owner's request.** This was built, then
+removed. The old playground was never publicised, so it's
+unlikely anyone shared a link to it, and the docs' links already use
+`#example=`. A `#preset=` or `#code=` link now opens what the playground
+opens with no link. The old playground's saved project, and this
+playground's own single project from before it kept many, are no longer
+moved out of `localStorage`. That removed `old-links.ts`, `project-store.ts`
+and the `lz-string` dependency. What follows is the design as it was built.
 
 - **`#preset=<id>`** opens the example of that ID. The docs'
   `PlaygroundLink` builds these, so every link in the docs keeps working
@@ -1605,13 +1617,41 @@ Each step ends with the site working and deployable.
      one row even on a phone, the name cut short where it must be.
    The owner playtested step 9, with all of the above, on 2026-10-17, and
    it passed.
-10. **Docs.** Section 13. The owner's questions after step 8 say two things
-   the docs must explain: what Organise Imports does (sorts the imports
-   as one block, the blank lines between them gone, drops unused names,
-   merges imports of one module, in TypeScript's order, which puts
-   `@mvtjs/pixi` before `pixi.js`; a comment between imports parts them),
-   and what an exported project is and how to use it. And the tree, moves
-   and kept barrels, with the rule they bring.
+10. ~~**Docs.** Section 13.~~ Done 2026-10-17. The rename, the eslint
+   rules, the build scripts, the deploy's `CORS` file, the playground's
+   lines in AGENTS.md and the site's tree, and the quickstart's text came
+   with steps 2 to 4. This step did the rest:
+   - **Help, inside the playground:** ? at the right of the header opens
+     "How the playground works": what a project is and what `main.ts`
+     returns, with an example; what a project imports, listed from the
+     playground's own list of libraries; files, moves, and auto-generated
+     barrels with their rule; running; the editor, with what Organise
+     Imports does; the keys, and that keys go to the project while the
+     preview has them; projects, sharing, and Export, with how to use an
+     exported project, and why it may need the libraries' next release;
+     and the theme. It is data, paragraphs with code in backticks, made
+     into plain elements once, since the JSX cannot mix text and elements.
+   - **The docs' links** go to `#example=<id>` now: `PlaygroundLink` takes
+     `example`, in place of `preset`, and old `#preset=` links still open.
+     The quickstart's line under its link says that a change runs again
+     as you type, and where Help is.
+   - **The Project Structure page** shows the playground's layout, as it
+     shows the Arcade's; the README's commands gain `playground:dev` and
+     `build:playground`, and AGENTS.md gains `build:playground`.
+   - **017's `view.onRefresh` item** is done: an old link's code, converted
+     as it opens, has each `x.onRefresh = f` made `setRefresh(x, f)`, and
+     each `x.onUpdate = f` made `setUpdate(x, f)`, found by matching
+     brackets, past strings and comments, with a test.
+   - **050** names the playground's page where it is now, and says its
+     sandbox should not report.
+   Checked in headless Chromium against a build: Help opens on ?, takes
+   the focus, lists the libraries, and closes on Escape; an old `#preset=`
+   link opens its example. The docs build, with the new link form.
+   After the owner's review (2026-10-17), Help, and the quickstart's line
+   under its link, were rewritten in a mentoring voice: "you", everyday
+   words, and why as well as what, for someone new to the playground. The
+   first draft was accurate but stilted ("`start` is given where the views
+   go").
 11. **Later.** Each of section 10's ideas, as a proposal or task of its own
    when its turn comes: swapping views (10.1) first, as the strongest case
    for an MVT playground, then the port to an Arcade entry (10.2).

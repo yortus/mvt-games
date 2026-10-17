@@ -98,7 +98,7 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; a top-level application view's one binding is the model itself, a fixed value (it's application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
 - **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on the **Audio80**, the virtual sound chip in `@mvtjs/audio`, which the entry host passes to each entry as `sound`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/audio/docs/](packages/libraries/audio/docs/using-the-audio80.md)
 - **`_` prefix** for intentionally unused parameters
-- **Plain writing** - in docs, comments, test names and messages: short, complete sentences, terms explained where first used, no in-house names in packages. See [Style Guide: Writing](packages/sites/docs/reference/style-guide.md#writing)
+- **Plain writing** - in docs, comments, test names and messages: a friendly, mentoring voice in everyday language (talk to the reader as "you", say why as well as what), short, complete sentences, terms explained where first used, no in-house names in packages. This is the default unless told otherwise. See [Style Guide: Writing](packages/sites/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
 
 Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
@@ -110,6 +110,7 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 | `npm run dev`          | Start Vite dev server         |
 | `npm run dev:https`    | The same over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check + production build |
+| `npm run build:playground` | Build the playground alone, into `dist/playground/` |
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
 | `npm test`             | Every test but v-snap's own: the unit tests and the visual tests (downloads the browser on first run) |

@@ -50,7 +50,7 @@ describe('a layout model', () => {
         expect(layout.isQuickOpenOpen).toBe(false);
     });
 
-    it('opens one dialog at a time: Projects, Project options, or opening a file by name', () => {
+    it('opens one dialog at a time: Projects, Project options, Help, or opening a file by name', () => {
         const layout = createLayoutModel({});
         layout.openQuickOpen(['main.ts']);
         layout.openProjects();
@@ -69,6 +69,13 @@ describe('a layout model', () => {
         layout.openProjectOptions();
         layout.closeProjectOptions();
         expect(layout.isProjectOptionsOpen).toBe(false);
+        layout.openHelp();
+        expect(layout.isHelpOpen).toBe(true);
+        layout.openProjects();
+        expect(layout.isHelpOpen).toBe(false);
+        layout.openHelp();
+        layout.closeHelp();
+        expect(layout.isHelpOpen).toBe(false);
     });
 
     it('folds a folder in the file list, and unfolds it, as a new set each time', () => {

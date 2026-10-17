@@ -234,7 +234,7 @@ Settled questions that should not be reopened without new information are in
 
   Each needs a cost check in dev against `refresh-view`, and a decision on how
   often it runs (027 section 9, items 10 and 11).
-- **Old playground links that assign `view.onRefresh`.** Since task 028, the
+- ~~**Old playground links that assign `view.onRefresh`.** Since task 028, the
   assignment makes a plain property `refreshView` never reads, so a
   playground link saved before then loads without error and never animates.
   Since 031 the same holds for links that call `setTickMethods`, which the
@@ -242,7 +242,13 @@ Settled questions that should not be reopened without new information are in
   and the new-project template use `setRefresh`. A dev
   warning for a node with an own `onRefresh` or `onUpdate` property, in the
   playground's sandbox only, would point old links at the fix. Worth it only
-  if old links are in circulation.
+  if old links are in circulation.~~ Done in 052 (step 10, 2026-10-17): the
+  new playground converts an old link as it opens it, and the conversion
+  makes each `x.onRefresh = f` a `setRefresh(x, f)` call, and each
+  `x.onUpdate = f` a `setUpdate(x, f)` call, so those links animate again.
+  Links that call `setTickMethods` still fail, with an error that names it.
+  On 2026-10-17 the conversion was dropped, since the old playground was
+  never publicised, so old links no longer open at all.
 
 - **Button presses shorter than a frame are missed.** The games' models see
   input by polling a pressed flag in their update, so a press and release

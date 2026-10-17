@@ -23,8 +23,9 @@ export interface HeaderViewBindings {
 /**
  * The playground's header: Projects, the way to every project, then the
  * project open, its name the page's heading, with a cog for its options, and
- * at the right, Share and Export. The project is saved as it changes, so a
- * request to save only says so: "Saved" shows beside the name for a moment.
+ * at the right, Share and Export. The project is saved as it changes,
+ * so a request to save only says so: "Saved" shows beside the name for a
+ * moment.
  */
 export function HeaderView(bindings: HeaderViewBindings): Element {
     const watcher = watch({ saves: bindings.saves });

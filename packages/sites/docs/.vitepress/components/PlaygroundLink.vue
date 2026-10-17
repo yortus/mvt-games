@@ -1,7 +1,8 @@
 <script setup lang="ts">
 declare const __SITE_ROOT__: string;
-const props = defineProps<{ preset: string; label?: string }>();
-const href = __SITE_ROOT__ + 'playground/#preset=' + props.preset;
+// An example, by its folder's name in the playground's examples/
+const props = defineProps<{ example: string; label?: string }>();
+const href = __SITE_ROOT__ + 'playground/#example=' + props.example;
 </script>
 
 <template>

@@ -34,6 +34,8 @@ export interface LayoutModel extends PaneSizes {
     readonly isProjectsOpen: boolean;
     /** Whether the Project options dialog is open, for the open project's name and settings. */
     readonly isProjectOptionsOpen: boolean;
+    /** Whether the Help dialog is open, which says how the playground works. */
+    readonly isHelpOpen: boolean;
     /** What the visitor has typed in the dialog that opens a file by name. */
     readonly quickOpenQuery: string;
     /** The paths that match the query, best first. */
@@ -57,6 +59,8 @@ export interface LayoutModel extends PaneSizes {
     readonly closeProjects: () => void;
     readonly openProjectOptions: () => void;
     readonly closeProjectOptions: () => void;
+    readonly openHelp: () => void;
+    readonly closeHelp: () => void;
     readonly setQuickOpenQuery: (query: string) => void;
 }
 
@@ -86,6 +90,7 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
     let isQuickOpenOpen = false;
     let isProjectsOpen = false;
     let isProjectOptionsOpen = false;
+    let isHelpOpen = false;
     let quickOpenQuery = '';
     let quickOpenPaths: readonly string[] = [];
     let quickOpenMatches: readonly string[] = [];
@@ -101,6 +106,7 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
         get isQuickOpenOpen() { return isQuickOpenOpen; },
         get isProjectsOpen() { return isProjectsOpen; },
         get isProjectOptionsOpen() { return isProjectOptionsOpen; },
+        get isHelpOpen() { return isHelpOpen; },
         get quickOpenQuery() { return quickOpenQuery; },
         get quickOpenMatches() { return quickOpenMatches; },
 
@@ -136,28 +142,34 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
         },
 
         openQuickOpen(paths) {
+            closeDialogs();
             isQuickOpenOpen = true;
-            isProjectsOpen = false;
-            isProjectOptionsOpen = false;
             quickOpenPaths = paths;
             quickOpenQuery = '';
             quickOpenMatches = paths;
         },
 
         openProjects() {
+            closeDialogs();
             isProjectsOpen = true;
-            isQuickOpenOpen = false;
-            isProjectOptionsOpen = false;
         },
 
         openProjectOptions() {
+            closeDialogs();
             isProjectOptionsOpen = true;
-            isQuickOpenOpen = false;
-            isProjectsOpen = false;
         },
 
         closeProjectOptions() {
             isProjectOptionsOpen = false;
+        },
+
+        openHelp() {
+            closeDialogs();
+            isHelpOpen = true;
+        },
+
+        closeHelp() {
+            isHelpOpen = false;
         },
 
         closeProjects() {
@@ -175,6 +187,14 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
     };
 
     return model;
+
+    /** Closes every dialog, so the one opening is the only one. */
+    function closeDialogs(): void {
+        isQuickOpenOpen = false;
+        isProjectsOpen = false;
+        isProjectOptionsOpen = false;
+        isHelpOpen = false;
+    }
 }
 
 // ---------------------------------------------------------------------------

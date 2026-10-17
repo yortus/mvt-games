@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-09 |
-| Updated  | 2026-10-11 |
+| Updated  | 2026-10-17 |
 
 ## Description
 
@@ -42,7 +42,8 @@ These are 045's open questions 5, 6, 7 and 9 (045 section 14).
   Arcade ask?
 - **Publishing `@mvtjs/audio`.** The package is private. Its own side is
   generic, and the site's side (`PageSound`) lives in the Arcade. Publishing
-  it would need its docs to show that side as an example.
+  it would need its docs to show that side as an example. Task 055 now
+  covers publishing it, under a new name, `@mvtjs/chiptune`.
 - **A Sound Test entry.** A demo in the Arcade, like the sound test menus of
   16-bit games. It would be a jukebox of every entry's sounds and tunes, with
   a scope for each voice. It would show the chip off, and give composers a

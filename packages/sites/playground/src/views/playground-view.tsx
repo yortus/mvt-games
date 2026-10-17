@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { memoiseLast, watch } from '@mvtjs/utils';
+import { LIBRARIES, LIBRARY_SUMMARIES } from '../../libraries';
 import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
 import type { PanelKind, WorkspaceModel } from '../models';
 import type { RendererKind } from '../project-api';
@@ -11,6 +12,7 @@ import { createDialogs } from './dialogs';
 import { DividerView } from './divider-view';
 import { FileListView } from './file-list-view';
 import { HeaderView } from './header-view';
+import { type HelpLibrary, HelpView } from './help-view';
 import { PreviewView } from './preview-view';
 import { ProblemsView } from './problems-view';
 import { ProjectOptionsView } from './project-options-view';
@@ -236,6 +238,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                 onBarrelKeptToggled={(isKept) => model.setBarrelKept(isKept)}
                 onClosed={() => layout.closeProjectOptions()}
             />
+            <HelpView isOpen={() => layout.isHelpOpen} libraries={HELP_LIBRARIES} onClosed={() => layout.closeHelp()} />
             <DialogView dialogs={dialogs} />
         </div>
     );
@@ -363,6 +366,11 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
 // ---------------------------------------------------------------------------
 
 const NO_PROBLEMS: readonly TypeProblem[] = [];
+
+/** The libraries the help names: those a project imports by hand. A view's JSX runtime comes from its pragma. */
+const HELP_LIBRARIES: readonly HelpLibrary[] = LIBRARIES
+    .filter((library) => !library.endsWith('/jsx-runtime'))
+    .map((library) => ({ name: library, summary: LIBRARY_SUMMARIES[library] }));
 
 /** What the banner over a kept barrel says, for the barrel's path. Made only as the barrel shown changes. */
 const keptBarrelNote = memoiseLast((path: string) => `Auto-generated. Exports everything in ${path.slice(0, path.lastIndexOf('/'))}/.`);

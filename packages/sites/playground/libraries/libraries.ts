@@ -9,7 +9,6 @@
 export const LIBRARIES = [
     'playground',
     '@mvtjs/utils',
-    '@mvtjs/utils/jsx',
     '@mvtjs/pixi',
     '@mvtjs/pixi/jsx-runtime',
     '@mvtjs/html',
@@ -23,6 +22,22 @@ export const LIBRARIES = [
 ] as const;
 
 export type LibrarySpecifier = (typeof LIBRARIES)[number];
+
+/** What each library is for, in a sentence, as the playground's Help lists them. */
+export const LIBRARY_SUMMARIES: Readonly<Record<LibrarySpecifier, string>> = {
+    'playground': 'Tells the playground about your project, with `definePixiProject` and friends.',
+    '@mvtjs/utils': 'Handy helpers that work with any renderer, such as `watch` and tweens.',
+    '@mvtjs/pixi': 'Lets you write Pixi views in JSX, and give them update and refresh methods.',
+    '@mvtjs/pixi/jsx-runtime': "What your Pixi JSX turns into. You won't need to import it yourself.",
+    '@mvtjs/html': 'Lets you write HTML views in JSX, and give them update and refresh methods.',
+    '@mvtjs/html/jsx-runtime': "What your HTML JSX turns into. You won't need to import it yourself.",
+    '@mvtjs/three': 'Lets you write three.js views in JSX, and give them update and refresh methods.',
+    '@mvtjs/three/jsx-runtime': "What your three.js JSX turns into. You won't need to import it yourself.",
+    '@mvtjs/audio': 'A little sound chip, for music and sound effects.',
+    'pixi.js': 'Fast 2D drawing, with sprites, shapes and text.',
+    'three': '3D scenes, with cameras, lights and meshes.',
+    'gsap': 'Smooth animation, with tweens and timelines.',
+};
 
 /**
  * The bundles of declaration files the editor's language service loads.
@@ -46,7 +61,6 @@ export const BASE_TYPE_BUNDLES: readonly TypeBundleKind[] = ['typescript', 'mvtj
 export const TYPE_BUNDLES_OF: Readonly<Record<LibrarySpecifier, readonly TypeBundleKind[]>> = {
     'playground': [],
     '@mvtjs/utils': [],
-    '@mvtjs/utils/jsx': [],
     '@mvtjs/pixi': ['pixi'],
     '@mvtjs/pixi/jsx-runtime': ['pixi'],
     '@mvtjs/html': [],

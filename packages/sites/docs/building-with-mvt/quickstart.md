@@ -119,9 +119,11 @@ frame is drawn; any mechanism that does that works.
 
 ## Try It Live
 
-> **<PlaygroundLink preset="bouncing-ball" />** - the ball as a
-> small project, with its model and view in files of their own. Change
-> either, and press Run to see the change.
+> **<PlaygroundLink example="bouncing-ball" />** - try the bouncing ball
+> for yourself. It's set up as a small project, with the model and the view
+> in files of their own. Change either one, and the ball restarts with your
+> change as you type. New to the playground? Click the (i) at the top right
+> for a quick tour.
 
 ## What's Next?
 
