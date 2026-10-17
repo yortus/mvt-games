@@ -1749,7 +1749,9 @@ was archived:
 
 Done on 2026-10-16, in a worktree at `b32f67b` on the branch
 `spike/052-playground`, in a throwaway folder,
-`packages/sites/playground-spike/`. It is not to be merged. It has two
+`packages/sites/playground-spike/`. It was never committed, and the
+worktree and the branch were deleted on 2026-10-17, so this section is
+all that remains of it. It had two
 pages: a runtime page, which runs a sample project of seven files
 (`main.ts`, a model and a view with their barrels, and two files that
 import each other) in variants that each test one thing, and an editor
