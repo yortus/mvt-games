@@ -165,7 +165,6 @@ function helpSections(libraries: readonly HelpLibrary[]): HelpSection[] {
                         'Run `npm run build` to check the whole project for type errors. It also builds a finished copy of your page into `dist/`, and `npm run preview` lets you try it out.',
                     ],
                 },
-                paragraph("There's one thing to watch for. The playground runs the very latest code of the MVT libraries, including changes that haven't been published to npm yet. An exported project installs the libraries from npm, so it only gets what has been published. If your project uses something that brand new, it may not build until the next version is published."),
             ],
         },
         {
