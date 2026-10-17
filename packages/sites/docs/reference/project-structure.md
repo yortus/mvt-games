@@ -12,7 +12,7 @@
 
 The repository is an npm workspace. It has four libraries, published under
 the `@mvtjs` npm scope, and the visual testing package, published as
-`v-snap`. Its other packages are private: the sound chip, the lint rules,
+`v-snap`. Its other packages are private: the sound chips, the lint rules,
 the Arcade, the docs, the benchmarks and the checks.
 
 ```
@@ -22,7 +22,7 @@ packages/
 │   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            @mvtjs/html: the tick API for DOM elements, its JSX runtime, and a Perfmon view
-│   └── audio/           @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
+│   └── audio/           @mvtjs/audio (private for now): the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules
@@ -51,10 +51,13 @@ packages/sites/arcade/src/
 │       ├── models/      State and domain logic + domain types
 │       └── views/       Presentation and user-input handling
 ├── device/              What the visitor's device supports, such as touch
+├── input/               Input that needs no renderer: the keyboard, for the entry host and the Pixi stage
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
-├── shared/              The site's shared views (overlay, input, swipes, perfmon), imported as `#shared`
+├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way, imported as `#pixel-glyphs`
+├── shared/              The site's shared views (overlay, pixel text, input, swipes, perfmon), imported as `#shared`
+├── tunes/               The site's Audio90 tunes, their instruments and samples, which the Tune Tracker plays, imported as `#tunes`
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
 
@@ -103,7 +106,7 @@ public API.
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
-| `packages/sites/arcade/src/shared/` | The site's shared views                          | `OverlayView`, `KeyboardInputView`, `SwipeInputView`, `PerfmonView` |
+| `packages/sites/arcade/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView`, `KeyboardInputView`, `SwipeInputView`, `PerfmonView` |
 | `packages/sites/arcade/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 
 ::: info Data directories are not MVT layers
@@ -312,7 +315,9 @@ The rules above apply inside each package. Between packages:
   `packages/sites/playground/`, and shares no code with the Arcade. It
   imports only the libraries, as the projects it runs do.
 
-Within the site, its shared views are imported as `#shared`, an alias that
+Within the site, its shared views are imported as `#shared`, the tunes
+two of its demos play as `#tunes`, and the pixel glyphs that entries set
+their text in as `#pixel-glyphs`. Each is an alias that
 `packages/sites/arcade/package.json` defines.
 
 ## Entry Structure
@@ -325,7 +330,8 @@ packages/sites/arcade/src/entries/<id>/
 ├── index.ts              Barrel - re-exports the entry
 ├── start/
 │   ├── index.ts          Barrel - re-exports `entry` from entry.ts
-│   ├── entry.ts          `entry`: what the Arcade lists (name, tags, thumbnail...) and `load`
+│   ├── entry.ts          `entry`: what the Arcade's card shows (name, tags, thumbnail...), `loadDetails` and `load`
+│   ├── details.ts        `details`: the long text (description, instructions, techniques), loaded after the first paint
 │   ├── load.ts           `load()`: the entry's code, imported only when it is launched
 │   └── thumbnail.webp    Its card's picture, made by `npm run generate-thumbnails`
 ├── data/

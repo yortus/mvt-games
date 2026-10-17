@@ -4,9 +4,10 @@
 > instruments, then patterns of rows and channels, then an order to play
 > the patterns in. The guide builds one tune from a single note to a
 > four-channel loop. It covers every token a cell can hold, and ends with
-> arranging habits that suit the chip.
+> arranging habits that suit the chip. The Audio90 reads the same notation,
+> with more tokens and settings, which the last sections cover.
 
-**Related:** [Using the Audio80](using-the-audio80.md) · [The package's README](../README.md)
+**Related:** [Using the Audio80](using-the-audio80.md) · [Using the Audio90](using-the-audio90.md) · [The package's README](../README.md)
 
 ---
 
@@ -49,7 +50,7 @@ one, as in `| E-5   | ...   # bar 2`. A `#` inside a token is part of the
 token, so `F#5` is still a note. Comment lines are skipped, and they do
 not count as rows.
 
-`createSong` reads the grid once, when the module loads. If there is a
+`createAudio80Song` reads the grid once, when the module loads. If there is a
 mistake, it throws an error naming the pattern, row and channel, counted
 from 0. A typo fails the tests that import the module, not a game in
 progress.
@@ -61,15 +62,15 @@ progress.
 Start with one instrument and one channel:
 
 ```ts
-import { createInstrument, createSong } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80Song } from '@mvtjs/audio';
 
 /** A plucked square, ringing a little. */
-const LEAD = createInstrument({
+const LEAD = createAudio80Instrument({
     wave: 'pulse',
     envelope: { attackMs: 2, decayMs: 300, sustain: 0.4, releaseMs: 150 },
 });
 
-export const HELLO = createSong({
+export const HELLO = createAudio80Song({
     bpm: 120,
     instruments: { L: LEAD },
     patterns: {
@@ -133,12 +134,12 @@ headings in line with the rows' `|`s. A second comment underlines them
 with dashes, to the end of the last heading:
 
 ```ts
-const BASS = createInstrument({
+const BASS = createAudio80Instrument({
     wave: 'triangle',
     envelope: { attackMs: 2, decayMs: 200, sustain: 0.6, releaseMs: 80 },
 });
 
-export const HELLO = createSong({
+export const HELLO = createAudio80Song({
     bpm: 120,
     instruments: { L: LEAD, B: BASS },
     patterns: {
@@ -180,7 +181,7 @@ A setting stays until a later row changes it:
 
 ```ts
 /** A kick: a click of noise, then a triangle dropping fast. */
-const KICK = createInstrument({
+const KICK = createAudio80Instrument({
     note: 'C-3',
     envelope: { attackMs: 0, decayMs: 170, sustain: 0, releaseMs: 0 },
     steps: `
@@ -193,7 +194,7 @@ const KICK = createInstrument({
 });
 
 /** A snare: noise over a short, low body. */
-const SNARE = createInstrument({
+const SNARE = createAudio80Instrument({
     note: 'D-5',
     stepMs: 20,
     envelope: { attackMs: 0, decayMs: 160, sustain: 0, releaseMs: 0 },
@@ -205,7 +206,7 @@ const SNARE = createInstrument({
 });
 
 /** A closed hat: a tick of high noise. */
-const HAT = createInstrument({
+const HAT = createAudio80Instrument({
     wave: 'noise',
     note: 'C-7',
     envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 0 },
@@ -396,9 +397,9 @@ const BAND = {
         a: { mode: 'lowpass', cutoffHz: 1200, resonance: 0.6, drive: 0.3 },
     },
     echo: { timeMs: 300, feedback: 0.35, level: 0.4 },
-} satisfies Partial<SongOptions>;
+} satisfies Partial<Audio80SongOptions>;
 
-export const STAGE_TUNE = createSong({
+export const STAGE_TUNE = createAudio80Song({
     ...BAND,
     bpm: 150,
     patterns: { /* ... */ },
@@ -465,7 +466,7 @@ second harmonic is a sine at twice the frequency, an octave higher.
 
 ## When It Goes Wrong
 
-`createSong`, `createInstrument` and `createSoundEffect` throw an error
+`createAudio80Song`, `createAudio80Instrument` and `createAudio80SoundEffect` throw an error
 when the module loads. The message says where the mistake is. Rows,
 channels, steps and order entries are counted from 0. Blank lines and
 comment lines are not counted as rows or steps. A song's message starts
@@ -519,6 +520,125 @@ A song that parses but sounds wrong is usually one of these:
   `audio:render` prints, and set the song's `volume`.
 - **A filter does not move.** `f` does nothing on a channel whose
   instrument has no `filter`.
+
+---
+
+## Writing for the Audio90
+
+You write songs for the Audio90 in the same notation, with
+`createAudio90Song`. Every token above means the same thing there, and
+patterns, the order, transposition and `loop` all work the same way.
+[Using the Audio90](using-the-audio90.md) shows you its instruments. This
+section shows you what a song for the Audio90 adds.
+
+### More Channels
+
+The Audio90 has sixteen voices, so your song can have up to sixteen
+channels. Sound effects take the voices from voice 15 down. If your song
+uses ten channels, that leaves six voices for effects, which suits most
+games.
+
+Each voice plays in stereo, so you can place each part of your song. Try
+spreading the chords and the hats a little to the sides, and keeping the
+bass and the bass drum in the centre.
+
+### The Tokens It Adds
+
+| Token | Meaning | Lasts | Example |
+| --- | --- | --- | --- |
+| `f` and a hex digit | Brightness, from `0` (dark) to `F` (the instrument as written). It closes an analog or sample voice's filter, and softens an FM voice's modulators | until the next `f` | `f4` |
+| `P` and two hex digits | Pan: `P00` is left, `P80` the centre, `PFF` right | until the next `P` | `P40` |
+| `r` and a hex digit | The channel's reverb send | until the next `r` | `r6` |
+| `e` and a hex digit | The channel's echo send | until the next `e` | `e3` |
+| `c` and two hex digits | A chord, on an analog instrument: the note, x semitones up and y up, all at once from one voice | the note | `c47` |
+| `s` and two hex digits | Plays one slice of a sliced sample, counting from `s00` | the note | `s0C` |
+| `!` | An accent, on an analog instrument: its filter opens further and the note plays louder | the note | `C-2 Q !` |
+
+On the Audio80, `f` sets the cutoff of a filter that several channels
+share. On the Audio90, each voice has its own filter, so `f` changes only
+its own channel.
+
+A chord from `c` isn't an arpeggio. Its three notes sound together, the way
+a synthesiser's chord memory played them. `c47` is a major chord, `c37` is
+a minor one, and `c57` is a sus4.
+
+```ts
+const drop = `
+    # stab           | bass   | drums
+    | A-4 S c37 P60  | A-1 B  | k
+    | ...            | A-2    | h
+    | ===            | A-1 !  | k
+    | ...            | A-2    | c
+`;
+```
+
+### A Song's Settings
+
+An Audio90 song has the Audio80's `instruments`, `volume`, `bpm`,
+`rowsPerBeat` and `swing`. It has no `filters`, because each voice has its
+own. It adds these settings:
+
+| Option | Meaning |
+| --- | --- |
+| `mixer` | One entry per channel: its starting `pan` and its `reverb`, `echo` and `chorus` sends. The tokens change them as the song plays |
+| `reverb` | `{ size, decayMs, damping, level }`, set as the song starts |
+| `echo` | `{ timeMs or timeBeats, feedback, toneHz, isPingPong, level }`. `timeBeats: 3 / 4` is a dotted eighth at any tempo |
+| `chorus` | `{ depth, rateHz, level }` |
+| `pump` | `{ channel, depth, releaseMs }`. Each note on `channel` ducks the other channels, which swell back over `releaseMs` |
+| `character` | `'studio'`, `'console'` or `'sampler'`: how the chip sounds while the song plays |
+
+[The Mix](using-the-audio90.md#the-mix) explains each one in more detail.
+
+```ts
+export const DROP = createAudio90Song({
+    bpm: 136,
+    instruments: { S: STAB, B: ACID, k: KICK, h: HAT, c: CLAP },
+    mixer: [
+        { reverb: 0.3 },         // stab
+        {},                      // bass
+        {},                      // drums
+    ],
+    pump: { channel: 2, depth: 0.45, releaseMs: 180 },
+    reverb: { size: 0.6, decayMs: 1800, level: 0.35 },
+    echo: { timeBeats: 3 / 4, feedback: 0.4, isPingPong: true, level: 0.3 },
+    patterns: { drop },
+    order: ['drop'],
+    loop: 0,
+});
+```
+
+### Arranging for the Audio90
+
+- **Let your chords share notes.** A chord change sounds smooth when the
+  next chord keeps a note or two of the last one. That matters more here,
+  because the reverb, the echo and a pad's long release carry each chord
+  into the next for a moment. If a new note sits a semitone from one of the
+  last chord's notes, you'll hear it sound sour.
+- **Give a pad two channels.** One voice plays one chord, so when a pad
+  moves to a new chord, it cuts the old one's release short. If two
+  channels take turns, each chord swells in over the last one's fade.
+- **Time the echo in beats.** A dotted eighth (`timeBeats: 3 / 4`) sits
+  nicely behind a melody, and ping-pong repeats make it wider.
+- **Pump the mix for dance music.** A pump on the bass drum's channel makes
+  the chords and the bass breathe with it.
+- **Keep the bass in the centre, and mostly dry.** Reverb and echo on a
+  bass make the whole mix sound muddy.
+
+### When It Goes Wrong on the Audio90
+
+`createAudio90Song` throws errors the same way `createAudio80Song` does.
+It also has a few of its own:
+
+| Message | Cause |
+| --- | --- |
+| `c37 needs an analog instrument, and 'P' is fm` | A chord on an FM or sample instrument. Use one channel for each note instead |
+| `! needs an analog instrument, ...` | An accent on an FM or sample instrument |
+| `s0C needs a sample instrument, ...` | A slice on an instrument that plays no sample |
+| `s20 is past the last of the 32 slices of 'b''s sample` | A slice the sample does not have. Slices count from `s00` |
+| `17 channels is more than the chip's 16 voices` | Too many channels |
+| `mixer has 6 entries, more than the song's 5 channels` | A `mixer` entry for a channel the song does not have |
+| `pump.channel: 7 is not one of the song's channels (0 to 4)` | A pump on a channel the song does not have |
+| `give echo.timeMs or echo.timeBeats, not both` | An echo timed both ways |
 
 ---
 

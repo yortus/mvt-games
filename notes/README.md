@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**065**.
+**066**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -92,7 +92,6 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 023 | [pixi-jsx follow-ups](./proposals/023-jsx-follow-ups.md) | Proposed, a collection of candidates. What is still open from the research session behind 021: `RenderLayer` in place of a portal (needs a spike), a component that rebuilds its subtree on a key and a cross-fade built on it (wait for a view that needs them), window listeners owned by the session (low priority), and findings to send to the workshop |
 | 034 | [Neon Monsoon, a 1990s bullet hell scroller](./proposals/034-neon-monsoon-bullet-hell.md) | Implemented, but for a boss replay in the benchmark. A vertical shooter with dense bullet patterns, a focus mode, bombs, chains and a three-phase boss. Its models run on a fixed 60 Hz step with seeded random numbers, keep up to 2048 bullets in typed arrays, and write patterns as data. Measured: 43 µs per model step and 70 µs per bullet-view refresh at 2000 bullets (CPU, Node). Found, and fixed, a gap in `<List>`: it did not skip an empty slot's update step (section 11.4) |
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
-| 051 | [The Audio90, and entries that choose their sound chip](./proposals/051-audio90-chip.md) | Proposed. A second chip in `@mvtjs/audio` for the sounds of the 1990s, from 16-bit console FM to trance and jungle: sixteen stereo voices, each running FM, an analog-style engine with unison and a resonant filter, or samples bounced from the chip's own engines (never recorded), with a reverb, an echo, a chorus and a pump. Each entry's starter names its chip (`soundChip`), and the types give it that chip as `sound`, or none. A Sound Test demo, and Neon Monsoon rescored |
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
@@ -118,9 +117,9 @@ testing docs already describe. 045, now archived, built the sound chip that
 `increased` and `decreased`, which 008's builder may want too.
 046, now archived, added to what a session gives its host, as 045 added
 to what the host gives a session, and built on 036's Arcade.
-051 adds a second chip beside 045's, and changes what 045 made the host
-give every session into a chip each entry chooses. Its Sound Test demo is
-048's idea, and it rescores 034's game.
+051, now archived, added a second chip beside 045's, and changed what 045
+made the host give every session into a chip each entry chooses. Its Sound
+Test demo was 048's idea, and it rescored 034's game.
 052, now archived, moved the playground out of the package that 036 made,
 added it to 011's workspace, and renamed what was left after 036's Arcade.
 A project can play the chip that 045 built, or the one 051 chooses. Its
@@ -159,6 +158,7 @@ loose ends are tasks 057 to 064.
 | 062 | [Check the Playground on Real Phones and in Safari](tasks/backlog/062-playground-on-phones-and-safari.md) | medium | 2026-10-17 |
 | 063 | [Playground: Shortcuts While the Preview Has the Keyboard](tasks/backlog/063-playground-shortcuts-while-the-preview-has-focus.md) | low | 2026-10-17 |
 | 064 | [HTML JSX: A Fixed `value` on a `<select>` Is Lost](tasks/backlog/064-html-jsx-select-fixed-value.md) | low | 2026-10-17 |
+| 065 | [Audio90: Follow-Ons](tasks/backlog/065-audio90-follow-ons.md) | low | 2026-10-17 |
 
 ## Archive
 
@@ -192,6 +192,7 @@ loose ends are tasks 057 to 064.
 | 043 | [Arcade: Fixes From the Playtest Review](archive/043-arcade-review-fixes.md) (the search list unfolds with a CSS transition in place of the wall's layout read in a refresh step; one open panel in the model; history steps for panels, safe against a panel opening as the page steps back; the nav magnifier in a view of its own) | 2026-10-06 |
 | 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/audio`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |
 | 046 | [Proposal: highscores for the Arcade](archive/046-arcade-highscores.md) (one global table of ten for each game with a score, kept by a Cloudflare Worker with one Durable Object, in `packages/sites/arcade/highscores-worker/`, sharing its rules with the page in `src/highscores/`; three-letter initials entered cabinet-style in the pixel font; games report `scoring` from their sessions; a Highscores tab in the pause menu. Loose ends are task 049) | 2026-10-15 |
+| 051 | [Proposal: the Audio90, and entries that choose their sound chip](archive/051-audio90-chip.md) (a second chip in `@mvtjs/audio`: sixteen stereo voices of FM, analog or samples bounced from its own engines, with a reverb, a stereo echo, a chorus and a pump; each entry's starter names its chip; the Tune Tracker plays fifteen original tunes of the 1990s; Neon Monsoon rescored; shared pixel glyphs for the older entries; the cards' long text after the first paint. Loose ends are task 065) | 2026-10-17 |
 | 052 | [Proposal: a playground that works like a small IDE](archive/052-playground-ide.md) (the playground became a package of its own, `packages/sites/playground/`, and the website became the Arcade: a project of real TypeScript files with real imports from a fixed list of libraries, intellisense from TypeScript in a worker, each run a fresh sandboxed iframe of ES modules, projects kept in IndexedDB, share links, Export as a Vite project, a file tree with kept barrels, themes, Help, and a Performance tab on `@mvtjs/html`'s new `PerfmonView`. Loose ends are tasks 057 to 064) | 2026-10-17 |
 
 ## Elsewhere

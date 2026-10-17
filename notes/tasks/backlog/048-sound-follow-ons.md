@@ -15,7 +15,9 @@ be done on its own, or dropped.
 
 ### Small fixes
 
-- **Boxed doubles on the Hot Paths page.** The chip's first build allocated
+- ~~**Boxed doubles on the Hot Paths page.**~~ Dropped (2026-10-18). 051
+  wrote a section on it, and the owner removed it in review, as too subtle
+  for most readers. The chip's first build allocated
   on every block of samples. V8 boxed the doubles held in closure variables
   that changed every sample, and the doubles passed to and returned from
   helpers it did not inline. Typed arrays fixed it. The Hot Paths page has no
@@ -33,7 +35,8 @@ be done on its own, or dropped.
 
 These are 045's open questions 5, 6, 7 and 9 (045 section 14).
 
-- **Effects borrowing music voices.** C64 games often let a sound effect
+- **Effects borrowing music voices.** Task 065 asks the same for the
+  Audio90, so the two can be decided together. C64 games often let a sound effect
   take a voice from the music, so the tune lost a part for the length of an
   explosion. It is authentic, and it frees voices. It could be an option on
   the song, such as `yieldsToEffects: [2]`.
@@ -44,7 +47,9 @@ These are 045's open questions 5, 6, 7 and 9 (045 section 14).
   generic, and the site's side (`PageSound`) lives in the Arcade. Publishing
   it would need its docs to show that side as an example. Task 055 now
   covers publishing it, under a new name, `@mvtjs/chiptune`.
-- **A Sound Test entry.** A demo in the Arcade, like the sound test menus of
+- ~~**A Sound Test entry.**~~ Dropped (2026-10-17). 051 built one on the
+  Audio90, and the owner dropped it, since the Tune Tracker plays the same
+  tunes. A demo in the Arcade, like the sound test menus of
   16-bit games. It would be a jukebox of every entry's sounds and tunes, with
   a scope for each voice. It would show the chip off, and give composers a
   page with hot reload.
@@ -132,7 +137,7 @@ use the Audio80. That work belongs to 035.
 
 ## Acceptance Criteria
 
-- [ ] The Hot Paths page explains boxed doubles, or the item is dropped.
+- [x] The Hot Paths page explains boxed doubles, or the item is dropped.
 - [ ] `findSounds` finds sounds inside exported arrays, or the item is
       dropped.
 - [ ] A slide over several rows can be written once, or the item is dropped.
@@ -153,3 +158,7 @@ use the Audio80. That work belongs to 035.
   yes: they play on the audio device's clock, not the game's ticks. So the
   pages should say what changes then, including pausing sounds already
   playing.
+- **2026-10-17.** 051 wrote a Hot Paths section on boxed doubles, which
+  the owner then removed as too subtle, and built a Sound Test on the
+  Audio90, which the owner then dropped. Its
+  follow-ons are task 065.

@@ -27,7 +27,7 @@ packages/
 │   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            @mvtjs/html: the tick API for DOM elements, its JSX runtime, and a Perfmon view
-│   └── audio/           @mvtjs/audio (private for now): the Audio80 sound chip, its tracker notation and music player; guides in docs/
+│   └── audio/           @mvtjs/audio (private for now): the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
@@ -46,15 +46,18 @@ packages/sites/arcade/src/
 ├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
 ├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
 │   └── <id>/            Self-contained entry
-│       ├── start/       entry.ts (what the Arcade lists), load.ts (the code, imported on launch), thumbnail.webp
+│       ├── start/       entry.ts (what the Arcade's card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Presentation (Pixi, three.js or HTML)
 ├── device/              What the visitor's device supports, such as touch
+├── input/               Input that needs no renderer: the keyboard, for the entry host and the Pixi stage
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
-├── shared/              The site's shared views (overlay, input, swipes, perfmon), imported as `#shared`
+├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way, imported as `#pixel-glyphs`
+├── shared/              The site's shared views (overlay, pixel text, input, swipes, perfmon), imported as `#shared`
+├── tunes/               The site's Audio90 tunes, their instruments and samples, which the Tune Tracker plays, imported as `#tunes`
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
 
@@ -76,7 +79,7 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 
 ## The Arcade and Its Entries
 
-- **ArcadeEntry** - what the Arcade lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, description, tags, screenWidth, screenHeight, thumbnail, load }`. Metadata only, so listing every entry loads no entry's code; `load()` imports `start/load.ts`
+- **ArcadeEntry** - what the Arcade lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, tags, screenWidth, screenHeight, thumbnail, loadDetails, load }`. What the card shows only, so listing every entry loads no entry's code; `loadDetails()` imports `start/details.ts`, the long text (description, instructions, techniques), which the page loads after its first paint, and `load()` imports `start/load.ts`
 - **EntryStarter** - what `load()` returns. A `pixi` starter draws on the host's Pixi stage; an `element` starter brings its own renderers (three.js, Pixi, the DOM, or several) and mounts into an element. Either's `start(...)` returns an **EntrySession**: `{ update(deltaMs), destroy() }`, with `inputConfig` for games, and `scoring` for a game with a highscore table
 - **CATALOGUE** - every entry, in `packages/sites/arcade/src/entries/catalogue.ts`
 - **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`arcade/main.ts`) starts and stops sessions as the model's phase changes
@@ -96,7 +99,7 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
 - **Functions start with a verb** - `measureLoudness`, `toInt16`, `isAlive`, so a call never reads as a value; views and bindings are named for what they are
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; a top-level application view's one binding is the model itself, a fixed value (it's application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
-- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on the **Audio80**, the virtual sound chip in `@mvtjs/audio`, which the entry host passes to each entry as `sound`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/audio/docs/](packages/libraries/audio/docs/using-the-audio80.md)
+- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on a virtual sound chip from `@mvtjs/audio`: the **Audio80** (8 mono voices, 1980s) or the **Audio90** (16 stereo voices of FM, analog and samples, 1990s). An entry that makes sound names its chip in its starter (`soundChip: 'audio90'`), and makes its `load` with `definePixiLoader` (or `defineElementLoader`), so the chip's type is inferred, and the entry host gives it that chip as `sound`. An entry that names no chip gets none. Audio90 samples are bounced from the chip's own engines, never recorded, and an entry bounces them in `load` with `prepareAudio90Samples`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/audio/docs/](packages/libraries/audio/docs/using-the-audio90.md)
 - **`_` prefix** for intentionally unused parameters
 - **Plain writing** - in docs, comments, test names and messages: a friendly, mentoring voice in everyday language (talk to the reader as "you", say why as well as what), short, complete sentences, terms explained where first used, no in-house names in packages. This is the default unless told otherwise. See [Style Guide: Writing](packages/sites/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else

@@ -420,10 +420,18 @@ a view that plays sounds instead of drawing visuals. It polls its bindings
 with `watch()`, and plays a sound when a value **changes**. It never plays
 from a state alone, which would play the sound every frame.
 
-- **[project convention]** It plays on the **Audio80**, a virtual sound chip
-  from `@mvtjs/audio`. The chip is a fixed binding, `sound: Audio80`, which
-  the view reads once. An entry gets it from the host as `sound`, in its
-  start options.
+- **[project convention]** It plays on a virtual sound chip from
+  `@mvtjs/audio`: the **Audio80** (eight mono voices, for 1980s games) or
+  the **Audio90** (sixteen stereo voices of FM, analog and samples, for
+  1990s games). The chip is a fixed binding, `sound: Audio80` or
+  `sound: Audio90`, which the view reads once. An entry names its chip in
+  its starter (`soundChip: 'audio90'`), and gets it from the host as
+  `sound`, in its start options.
+- **On the Audio90, pan an effect where it happens:**
+  `sound.play(EXPLODE, toPan(x))`, with the pan from -1 (left) to 1
+  (right). Set an effect's volume by its loudness against the music's
+  -20 LUFS, not by its peak. An entry that plays samples bounces them in
+  `load`, with `prepareAudio90Samples`.
 - **A phase or a flag** finds most moments. Play when it changes to a value.
 - **A count** (`shotsFired`) finds moments that repeat with no change of
   state. Play when it rises (`if (w.shots.increased)`). When the sound
@@ -458,12 +466,13 @@ from a state alone, which would play the sound every frame.
 - **A new song cuts the old one short.** `MusicPlayer.play` releases the
   song playing and cancels any song queued. A jingle that starts a phase
   must be no longer than the phase. Check it with `computeSongDurationMs`.
-- **Test** against a chip from `createHeadlessAudio80({ record: true })`, in
-  `@mvtjs/audio/headless`. Advance its clock with `AudioControls.update`,
+- **Test** against a chip from `createHeadlessAudio80({ record: true })` or
+  `createHeadlessAudio90({ record: true })`, in `@mvtjs/audio/headless`. Advance its clock with `AudioControls.update`,
   tick the view, and check the chip's `log` property.
 
 Full guide: [Sound and Music](../building-with-mvt/presenting-the-world/sound.md) ·
 [Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/docs/using-the-audio80.md) ·
+[Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/docs/using-the-audio90.md) ·
 [Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/docs/writing-tracker-music.md)
 
 ## Presentation State

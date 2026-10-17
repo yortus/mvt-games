@@ -15,14 +15,16 @@ built the same way; the difference is in their metadata, such as their
 `kind` tag and a game's instructions. To add one, you need:
 
 1. A directory with data, models, and views.
-2. A `start/` directory: `entry.ts`, what the Arcade lists, and `load.ts`,
-   the code it imports when the entry is launched.
+2. A `start/` directory: `entry.ts`, what the Arcade's card shows,
+   `details.ts`, the entry's long text, and `load.ts`, the code it imports
+   when the entry is launched.
 3. A line in `catalogue.ts`.
 4. A thumbnail.
 
 The Arcade lists every entry without loading any entry's code, so the first
 paint of the page stays small. The code, and the renderer it draws with,
-load only when someone launches the entry.
+load only when someone launches the entry. The long text, for the info
+panel and the search, loads just after the first paint.
 
 ## Originality
 
@@ -40,6 +42,13 @@ artwork, music and specific level layouts are not.
   web, Steam, the app stores) and in the trademark registers (USPTO, TMview).
 - **In prose**, describe a game by its genre ("a maze chase", "inspired by
   golden-age arcade games"), not as a clone of a named game.
+- **Sound** is made in your code. Design each sound effect and instrument
+  from its technique, and don't copy a synthesiser's factory preset. Never
+  record or download a sound. An Audio90 sample is bounced from the chip's
+  own engines, and you shouldn't rebuild a famous drum break hit for hit.
+  Write your own melodies, chords and arrangements, in a genre's style.
+  Name each sound for what it is, such as `PAD` or `EXPLODE`, never for a
+  console, a sound chip or a synthesiser.
 - **Credit the classic** a game is inspired by, if it is one game rather
   than a genre, in its entry's `inspiredBy`: the info panel shows "Inspired
   by Pac-Man (Namco, 1980)". This is the one place another game's title
@@ -55,7 +64,8 @@ packages/sites/arcade/src/entries/breakout/
 ├── index.ts              Barrel - export { entry } from './start'
 ├── start/
 │   ├── index.ts          Barrel - export { entry } from './entry'
-│   ├── entry.ts          `entry`: what the Arcade lists, and `load`
+│   ├── entry.ts          `entry`: what the Arcade's card shows, `loadDetails` and `load`
+│   ├── details.ts        `details`: the long text, for the info panel and the search
 │   ├── load.ts           `load()`: loads the assets, returns how to start the entry
 │   └── thumbnail.webp    Its card's picture (Step 6)
 ├── data/
@@ -266,21 +276,45 @@ export function GameView(bindings: GameViewBindings): Container {
 `width: number`, so the paddle view reads it once, at construction, and does
 not support it changing.
 
+### Text in the Style of an Era
+
+If your entry is in the style of the 1970s to the 1990s, set its text in
+the site's pixel glyphs rather than a system font. That's how the arcades
+of the time looked, and it suits a pixel-art screen far better. The glyphs
+cover every printable ASCII character. Each one is 5 cells wide and 7 tall,
+with two more rows for letters that hang below the line. They live in
+`#pixel-glyphs`, and two shared views draw them for you:
+
+- **`PixelTextView`**, from `#shared`, draws a string in capitals. It uses
+  a whole number of screen pixels for each cell, so the text stays crisp at
+  any size. You can give it a shadow or an outline, and a `maxWidth` that
+  it shrinks to fit. It only draws again when its text changes, so a HUD
+  costs almost nothing.
+- **`OverlayView`**, the shared overlay for messages such as "Paused", sets
+  its message in the glyphs when you pass `font: 'pixel'`.
+
+For text that would be about 9 to 12 pixels tall, use a scale of 1. For 14
+to 20 pixels, use a scale of 2, if it fits. If your entry draws the glyphs
+its own way, such as into a texture, read them from `#pixel-glyphs`
+directly.
+
 ## Step 4: Write the Starter (`start/load.ts`)
 
 `load()` loads the entry's assets and returns a **starter**: how to start the
 entry, and how the host should run it. Its types are in
 [`entry-types/`](../entry-types/entry-starter.ts). An entry drawn with Pixi
-returns a `pixi` starter, and draws on a stage the host owns:
+returns a `pixi` starter, and draws on a stage the host owns. The entry
+makes its `load` with `definePixiLoader`, which types it for the chip its
+starter plays on, if any (see [Sound](#sound)):
 
 ```ts
-import type { EntrySession, PixiEntryStarter } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 import { textures } from '../data';
 
-/** Loads Breakout's textures, and returns how to start it. */
-export async function load(): Promise<PixiEntryStarter> {
+/** Loads Breakout's textures, and returns how to start it. It makes no sound, as yet. */
+export const load = definePixiLoader(async () => {
     await textures.load();
 
     return {
@@ -311,7 +345,7 @@ export async function load(): Promise<PixiEntryStarter> {
             };
         },
     };
-}
+});
 ```
 
 `start()` creates the model and view, mounts the view, and returns a
@@ -333,10 +367,60 @@ The starter's other options say how the host should show the entry:
 lays itself out for the area it is given, as Boids does), and
 `thumbnailAdvanceMs` (how far to run the entry before taking its thumbnail).
 
+### Sound
+
+If your entry makes sound, its starter names the sound chip it plays on.
+There are two virtual sound chips, from `@mvtjs/audio`. The **Audio80** is
+in the spirit of the 1980s home computers. The **Audio90** has sixteen
+stereo voices of FM, analog and samples, in the spirit of the 1990s. The
+[Tune Tracker](./tune-tracker/start/load.ts) plays on the Audio90.
+
+You name the chip in your starter's `soundChip`. `definePixiLoader` works
+out the chip's type from it, so `start` is given that chip as `sound`, with
+the right type. You don't need to write any types yourself. If you name a
+chip that doesn't exist, or use `sound` as the other chip, TypeScript tells
+you. The host loads the chip as it prepares your entry, and gives it to
+each session for your audio views:
+
+```ts
+export const load = definePixiLoader(async () => {
+    await textures.load();
+
+    return {
+        kind: 'pixi',
+        soundChip: 'audio80',
+        // ...
+        start({ stage, sound }): EntrySession {   // sound: Audio80
+            const gameModel = createGameModel({ /* options */ });
+            const gameView = GameView({ model: gameModel, sound });
+            // ...
+        },
+    };
+});
+```
+
+Choose the chip that matches your entry's decade.
+[Using the Audio90](../../../../libraries/audio/docs/using-the-audio90.md#which-chip)
+compares the two. If your entry plays samples on the Audio90, bounce them
+in its `load`, beside its textures. Then none of them has to bounce while
+the entry plays:
+
+```ts
+await textures.load();
+prepareAudio90Samples(SAMPLES);
+```
+
+If your entry makes no sound, leave `soundChip` out, as the Breakout
+example above does. Then its start options have no `sound`, and the host
+doesn't load a chip for it. If you read `sound` anyway, you'll find it
+typed `undefined`, so you can't give it to an audio view by mistake.
+
 ### Entries with their own renderers
 
 An entry that draws with three.js, the DOM, or several renderers at once
-returns an `element` starter instead. Its `start({ element })` builds the
+returns an `element` starter instead, from a `load` made with
+`defineElementLoader`. Its
+`start({ element })` builds the
 entry inside an element the host gives it, and returns a session with two
 more members: `views`, the roots of its views of every renderer, and
 `render()`, which draws a frame. The host still runs each frame in the MVT
@@ -351,30 +435,45 @@ three renderers.
 
 ## Step 5: Describe the Entry (`start/entry.ts`)
 
-`entry.ts` is what the Arcade shows without running anything: the card, the
-search, and the info panel. It imports the starter only when the entry is
-launched:
+`entry.ts` is what the Arcade shows without running anything. That's the
+card, and what the search reads first. It's part of the home page's first
+load, so keep it to what the card needs. It imports your entry's long text
+and its starter only when they're wanted:
 
 ```ts
 import type { ArcadeEntry } from '../../../entry-types';
 import thumbnail from './thumbnail.webp';
 
-/** Breakout, as the arcade lists it. Its code loads on launch, from `load.ts`. */
+/** Breakout, as the arcade lists it. Its code loads on launch, from `load.ts`, and its long text after the Arcade's first paint, from `details.ts`. */
 export const entry: ArcadeEntry = {
     id: 'breakout',
     name: 'Breakout',
     summary: 'Knock out every brick with a ball and a paddle.',
-    description: [
-        'A bat-and-ball game. ...',
-        'What it shows about MVT, for the info panel. ...',
-    ].join('\n\n'),
     tags: { kind: 'game', era: '1970s', genres: ['action'] },
     screenWidth: 300,
     screenHeight: 400,
     thumbnail,
     cardColor: 'sky',
-    instructions: 'Left and Right move the paddle.',
+    loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
+};
+```
+
+`details.ts` holds your entry's long text. The info panel shows it, and
+the search reads it as well as the summary. The Arcade loads every entry's
+long text just after the page first appears, so the cards don't have to
+wait for it:
+
+```ts
+import type { EntryDetails } from '../../../entry-types';
+
+/** Breakout's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+export const details: EntryDetails = {
+    description: [
+        'A bat-and-ball game. ...',
+        'What it shows about MVT, for the info panel. ...',
+    ].join('\n\n'),
+    instructions: 'Left and Right move the paddle.',
 };
 ```
 
@@ -388,8 +487,10 @@ export const entry: ArcadeEntry = {
   own pixels: the same numbers its views use, written out, since importing
   them would bring the views, and their renderer, into the Arcade's first
   load. In development, the Arcade checks they match the starter's.
-- A game gives **`instructions`**, for the info panel and the pause menu. A
-  demo gives **`techniques`**, the patterns it shows.
+- In `details.ts`, the **`description`** is a paragraph or two, separated
+  by a blank line. If your entry is a game, give it **`instructions`**,
+  which the info panel and the pause menu show. If it's a demo, give it
+  **`techniques`**, the patterns it shows off.
 - **`inspiredBy`** credits the classic the entry is inspired by, if there is
   one (`{ title, maker, year }`), as the [originality rules](#originality) ask.
   The info panel shows it, and the search finds the entry by its title.
@@ -563,6 +664,13 @@ a resumed round is laid out as it was, and leaving cannot deal a new one.
 - Views convert domain units to presentation units (pixels)
 - `start/load.ts` returns a starter whose session's `update` advances only
   the models
+- An entry that makes sound names its chip, `soundChip: 'audio80'` or
+  `'audio90'`, and types its starter for it, and an Audio90 entry bounces
+  its samples in `load` (see [Sound](#sound))
+- An entry in the style of the 1970s to the 1990s sets its text in the pixel
+  glyphs (see [Text in the Style of an Era](#text-in-the-style-of-an-era))
+- `start/details.ts` exports `details`, the long text, and `entry.ts` loads
+  it with `loadDetails`
 - `start/entry.ts` exports `entry`, with its screen size matching the
   starter's
 - Barrel files export public API at each level
@@ -572,4 +680,4 @@ a resumed round is laid out as it was, and leaving cannot deal a new one.
 - A game with a score reports it as `scoring`, says `hasHighscores: true`,
   and has a table in `GAMES` (see [Keeping Highscores](#keeping-highscores))
 - A game that can be resumed gives `saveGame` and `loadGame` (see [Saving a Game](#saving-a-game))
-- The title, characters, art and levels are the entry's own (see [Originality](#originality))
+- The title, characters, art, levels and sounds are the entry's own (see [Originality](#originality))

@@ -7,9 +7,17 @@
 > sounds instead of drawing visuals.) It also covers music, repeating
 > sounds, the balance of music and effects, and testing.
 
-**Related:** [Writing Tracker Music](writing-tracker-music.md) · [The package's README](../README.md) · [Sound, in the MVT guide](../../../sites/docs/building-with-mvt/presenting-the-world/sound.md)
+**Related:** [Writing Tracker Music](writing-tracker-music.md) · [Using the Audio90](using-the-audio90.md) · [The package's README](../README.md) · [Sound, in the MVT guide](../../../sites/docs/building-with-mvt/presenting-the-world/sound.md)
 
 ---
+
+The package has a second chip, the **Audio90**, for games in the spirit of
+the 1990s. It has sixteen stereo voices that play FM, analog or samples,
+and a reverb, a stereo echo and a chorus. The Audio80 suits chiptune,
+arcade and 8-bit games. If you're not sure which you need,
+[Using the Audio90](using-the-audio90.md#which-chip) compares the two. Much
+of this guide applies to both chips, including time, audio views, music,
+repeating sounds and testing.
 
 ## The Chip
 
@@ -58,8 +66,10 @@ frame. Vibrato and the sweeps change smoothly, not in steps.
 
 ### In the Arcade
 
-The Arcade makes one chip. It passes the chip to each game as `sound`, in
-the game's start options. Pass it on to the views that play sounds on it:
+A game in the Arcade asks for the Audio80 in its starter, with
+`soundChip: 'audio80'`. The Arcade makes one chip for every game that asks,
+and passes it to each as `sound`, in the game's start options. Pass it on
+to the views that play sounds on it:
 
 ```ts
 start({ stage, sound }): EntrySession {
@@ -203,10 +213,10 @@ it once, when the module loads. Here the effect defines its own instrument,
 with the `stepMs`, `envelope` and `steps` options:
 
 ```ts
-import { createSoundEffect } from '@mvtjs/audio';
+import { createAudio80SoundEffect } from '@mvtjs/audio';
 
 /** A coin: a bright blip up a fifth. */
-export const COIN = createSoundEffect({
+export const COIN = createAudio80SoundEffect({
     note: 'E-6',
     stepMs: 25,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
@@ -222,22 +232,22 @@ export const COIN = createSoundEffect({
 It is played by passing it to `Audio80.play`.
 
 Several effects can share one instrument instead. Make the instrument with
-`createInstrument`, and pass it as the `instrument` option:
+`createAudio80Instrument`, and pass it as the `instrument` option:
 
 ```ts
-import { createInstrument, createSoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
 
-const BLIP = createInstrument({
+const BLIP = createAudio80Instrument({
     wave: 'pulse',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
 });
 
-export const MENU_UP = createSoundEffect({
+export const MENU_UP = createAudio80SoundEffect({
     instrument: BLIP,
     note: 'C-6',
     lengthMs: 40,
 });
-export const MENU_DOWN = createSoundEffect({
+export const MENU_DOWN = createAudio80SoundEffect({
     instrument: BLIP,
     note: 'G-5',
     lengthMs: 40,
@@ -279,7 +289,7 @@ one of each kind:
 
 ```ts
 /** A rock breaking: a burst of noise, falling. */
-export const BREAK = createSoundEffect({
+export const BREAK = createAudio80SoundEffect({
     note: 'C-4',
     stepMs: 30,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
@@ -338,13 +348,13 @@ heard. Shots and ticks can be lost.
 An instrument says how a note sounds. It sets the waveform, how the volume
 rises and fades, and what changes while the note plays. A song plays its
 notes on instruments, and so does a sound effect. You make an instrument
-once, when the module loads, with `createInstrument`:
+once, when the module loads, with `createAudio80Instrument`:
 
 ```ts
-import { createInstrument } from '@mvtjs/audio';
+import { createAudio80Instrument } from '@mvtjs/audio';
 
 /** A soft lead: a pulse wave that wavers a little once the note has started. */
-export const LEAD = createInstrument({
+export const LEAD = createAudio80Instrument({
     wave: 'pulse',
     pulseWidth: 0.25,
     envelope: { attackMs: 5, decayMs: 300, sustain: 0.6, releaseMs: 120 },
@@ -357,7 +367,7 @@ A sound effect can also define its own instrument, with the same options.
 
 ### Instrument Options
 
-`createInstrument` takes these options. Every one is optional.
+`createAudio80Instrument` takes these options. Every one is optional.
 
 | Option | Meaning | Default |
 | --- | --- | --- |
@@ -519,6 +529,7 @@ setRefresh(view, () => {
 | `stop()` | Releases the notes and gives the voices back to effects |
 | `tempoScale` | 1 for the song's own tempo. Above 1 speeds it up, and below 1 slows it down. Slides, which move a note's pitch smoothly, keep pace. 0 pauses the song where it is, while its notes ring out and its slides stop. Use it for music that plays only while something moves. A negative value, or one that is not finite, acts as 0. Set it in the update step, before calling `update` |
 | `beat` | The song's position, in beats, for views that pulse in time |
+| `orderIndex`, `row` | The row playing, and the entry in the song's order whose pattern it is in, for views that show the song as a tracker does |
 | `song`, `isPlaying` | What is playing |
 
 Call `update` from the view's update step. Call `refresh` at the end of its
