@@ -1,12 +1,12 @@
-import type { Audio80, Audio80WithControls, Audio90, Audio90WithControls, AudioControls } from '@mvtjs/audio';
-import { type Audio80Log, type Audio90Log, createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/audio/headless';
+import type { Audio80, Audio80WithControls, Audio90, Audio90WithControls, AudioControls } from '@mvtjs/chiptune';
+import { type Audio80Log, type Audio90Log, createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/chiptune/headless';
 
 // The runner's tests fake the browser's audio with this file. A test file
 // mocks the chip's code with it, as below. Then the file calls
 // `installFakeWebAudio` before each test, and `uninstallFakeWebAudio` after
 // each one.
 //
-//     vi.mock('@mvtjs/audio/web', async () => (await import('./fake-web-audio')).importFakeWebAudio());
+//     vi.mock('@mvtjs/chiptune/web', async () => (await import('./fake-web-audio')).importFakeWebAudio());
 //
 // Vitest keeps the mocked module once it has loaded. A test that needs the
 // import to run again, such as one that makes it fail, calls `vi.doMock` in
@@ -110,7 +110,7 @@ export function uninstallFakeWebAudio(): void {
     SAVED_GLOBALS.clear();
 }
 
-/** Returns the fake chip's code, in place of `@mvtjs/audio/web`. Throws if the test asked the import to fail. */
+/** Returns the fake chip's code, in place of `@mvtjs/chiptune/web`. Throws if the test asked the import to fail. */
 export function importFakeWebAudio(): FakeWebAudioModule {
     const fake = findFakeState();
     if (fake.failsNextImport) {
@@ -124,7 +124,7 @@ export function importFakeWebAudio(): FakeWebAudioModule {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** What the fake puts in place of `@mvtjs/audio/web`. */
+/** What the fake puts in place of `@mvtjs/chiptune/web`. */
 interface FakeWebAudioModule {
     readonly createWebAudio80: (options: { readonly context: unknown }) => Audio80WithControls;
     readonly createWebAudio90: (options: { readonly context: unknown }) => Audio90WithControls;

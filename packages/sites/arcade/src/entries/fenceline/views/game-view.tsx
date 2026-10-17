@@ -2,7 +2,7 @@
 
 import type { Container } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio80 } from '@mvtjs/chiptune';
 import { memoiseLast } from '@mvtjs/utils';
 import { isTouchDevice, OverlayView, SwipeInputView } from '#shared';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';

@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
 
 // Crumb Chase's instruments and sound effects, for the Audio80. They are all
 // written for this game. They play on wavetables, for the soft, buzzy tone of

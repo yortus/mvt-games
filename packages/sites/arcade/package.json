@@ -29,7 +29,7 @@
         "highscores:types": "wrangler types -c highscores-worker/wrangler.toml --include-env=false highscores-worker/worker-configuration.d.ts"
     },
     "dependencies": {
-        "@mvtjs/audio": "*",
+        "@mvtjs/chiptune": "^0.3.0",
         "@mvtjs/html": "^0.3.0",
         "@mvtjs/pixi": "^0.3.0",
         "@mvtjs/three": "^0.3.0",

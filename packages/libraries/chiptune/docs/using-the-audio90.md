@@ -105,13 +105,13 @@ await textures.load();
 prepareAudio90Samples(SAMPLES);
 ```
 
-**On your own page**, call `createWebAudio90` from `@mvtjs/audio/web`. You
+**On your own page**, call `createWebAudio90` from `@mvtjs/chiptune/web`. You
 give it an `AudioContext`, and it returns `{ audio90, controls }`. It can
 share the context with an Audio80. It also takes `leadMs`, as the Audio80
 does, and a `character`, which [The Character](#the-character) describes.
 
 **Without a speaker**, call `createHeadlessAudio90` from
-`@mvtjs/audio/headless`. It takes the same options as the Audio80's. If you
+`@mvtjs/chiptune/headless`. It takes the same options as the Audio80's. If you
 make it with `render`, its `render(left, right)` fills two `Float32Array`s,
 one for each side. The
 [headless README](../src/headless/README.md#the-headless-audio90) covers it.
@@ -125,7 +125,7 @@ Every option has a default, so a simple instrument is short. You make each
 one once, when your module loads:
 
 ```ts
-import { createAudio90Instrument } from '@mvtjs/audio';
+import { createAudio90Instrument } from '@mvtjs/chiptune';
 
 /** A pad: five slow saws, swelling in, in the chorus. */
 export const PAD = createAudio90Instrument({
@@ -233,7 +233,7 @@ things that playing the engines live can't:
   and play the slices back in a new order.
 
 ```ts
-import { createAudio90Sample, createAudio90Song } from '@mvtjs/audio';
+import { createAudio90Sample, createAudio90Song } from '@mvtjs/chiptune';
 
 /** An orchestra hit: brass, strings and a crack, kept as one sound. */
 export const ORCHESTRA_HIT = createAudio90Sample({
@@ -296,7 +296,7 @@ and a note, with a length, an optional glide and a step table
 pan and the three sends:
 
 ```ts
-import { createAudio90SoundEffect } from '@mvtjs/audio';
+import { createAudio90SoundEffect } from '@mvtjs/chiptune';
 
 /** An explosion: white noise through a falling low-pass filter. */
 export const EXPLODE = createAudio90SoundEffect({
@@ -478,7 +478,7 @@ Audio80 ([The Mix and Loudness](using-the-audio80.md#the-mix-and-loudness)).
 peak can sound very different in loudness. Noise has a high peak for how
 loud it actually sounds, so if you match peaks, your explosions end up too
 quiet. Instead, measure each effect with `measureLoudness` from
-`@mvtjs/audio/headless`, and compare it with the music's -20 LUFS. An LU is
+`@mvtjs/chiptune/headless`, and compare it with the music's -20 LUFS. An LU is
 one step on the LUFS scale. An effect that plays often, such as a shot,
 should sit well below the music, about 18 LU below it, at -38 LUFS. A rare
 effect that matters, such as losing the player's ship, can sit closer.

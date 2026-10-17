@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-10-17 |
-| Updated  | 2026-10-17 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
@@ -69,15 +69,17 @@ reader so. Publishing it removes those workarounds.
 
 ## Acceptance Criteria
 
-- [ ] 051 is merged, and the owner has confirmed the name.
-- [ ] The package is `@mvtjs/chiptune`, in `packages/libraries/chiptune/`.
-- [ ] Nothing outside `notes/archive/` names `@mvtjs/audio` or
-      `libraries/audio`.
-- [ ] Audio views, the chips' names and `sound` keep their names.
-- [ ] It builds for publishing with the other libraries, and is on npm.
-- [ ] An exported playground project plays sound, and Help no longer says it
+- [x] 051 is merged, and the owner has confirmed the name.
+- [x] The package is `@mvtjs/chiptune`, in `packages/libraries/chiptune/`.
+- [x] Nothing outside `notes/archive/` names `@mvtjs/audio` or
+      `libraries/audio`, except this task.
+- [x] Audio views, the chips' names and `sound` keep their names.
+- [x] It builds for publishing with the other libraries.
+- [ ] It is on npm. The owner publishes its first version by hand, at the
+      next release, as `.changeset/README.md` says.
+- [x] An exported playground project plays sound, and Help no longer says it
       can't.
-- [ ] Lint, type checks, the unit tests and the visual tests pass, and the
+- [x] Lint, type checks, the unit tests and the visual tests pass, and the
       Arcade's entries still play their sounds.
 
 ## Progress Log
@@ -85,3 +87,44 @@ reader so. Publishing it removes those workarounds.
 ### 2026-10-17
 
 Created at the owner's request, while finishing the playground's Help (052).
+
+### 2026-10-18
+
+The owner confirmed the name, `@mvtjs/chiptune`, with the Audio90 in. Done,
+on vnext:
+
+- The folder moved, and every mention changed, about 270 in 160 files. The
+  playground's type bundles named the folder as a bare `'audio'`, which a
+  search for the package's name missed.
+- The package is at 0.3.0, in the changesets' fixed group with the other
+  four, and the Arcade, the playground and the benchmarks depend on it as
+  `^0.3.0`. It has a LICENSE, `files`, and a changeset for its first
+  release.
+- **The worklets.** In the source, each browser chip imports its worklet's
+  URL with Vite's `?worker&url`, which only Vite understands. The package's
+  `tsdown.config.ts` has a small plugin that turns each such import into
+  the worklet bundled into one module, minified, and served from a Blob URL
+  (14 kB for the Audio80's, 26 kB for the Audio90's). So the published
+  package works with any bundler, and has no file to copy. A separate file
+  loaded with `new URL(..., import.meta.url)` was ruled out: Vite's dev
+  server pre-bundles dependencies into another folder, which breaks such
+  URLs. The Arcade and the playground still use the source, so their
+  worklets stay files of their own.
+- **The playground.** An export always gives the project a chip now.
+  `isPublished(packages, '@mvtjs/chiptune')`, `withoutSound` and Help's
+  sentence are gone, and the runner's `createSound` is required. The README's
+  general note on packages not yet on npm stays, with a test of its own.
+- **The docs.** The Audio80 guide has "A Page's Sound, in Full", which
+  shows what the Arcade's `PageSound` does, and links to it. Its example
+  now listens for `keydown`, `click` and `touchend`, not `pointerdown`,
+  which a touch doesn't count as a gesture.
+- **Checked end to end:** the five libraries packed with `npm pack`, and a
+  playground project exported with a sound on a timer, installed from the
+  tarballs. It type-checks and builds, the Audio90 is left out of its
+  bundle, and in a headless browser its sound reached the speakers, from
+  `vite build` and from the dev server. The Arcade's build plays sound in
+  Neon Monsoon (Audio90) and Galaxy Raiders (Audio80) too.
+
+Left: publishing. The release workflow can't publish a package that isn't
+on npm yet, so `.changeset/README.md` now says how its first version goes
+out by hand.

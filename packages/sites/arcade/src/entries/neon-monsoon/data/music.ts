@@ -1,4 +1,4 @@
-import { type Audio90SongOptions, createAudio90Song } from '@mvtjs/audio';
+import { type Audio90SongOptions, createAudio90Song } from '@mvtjs/chiptune';
 import { BASS, BELLS, CRASH, EPIANO, HAT, KICK, LEAD, PAD, SNARE, STORM_HIT } from './instruments';
 
 // Neon Monsoon's music was written for this game, mostly in D minor, in the
@@ -10,7 +10,7 @@ import { BASS, BELLS, CRASH, EPIANO, HAT, KICK, LEAD, PAD, SNARE, STORM_HIT } fr
 // chip's other nine voices for the storm of sound effects. The lead and the
 // bells ring in an echo that bounces from side to side, a dotted eighth
 // behind. Each row is a sixteenth note, and has a cell for each channel. See
-// @mvtjs/audio's guide, Writing Tracker Music, for the notation.
+// @mvtjs/chiptune's guide, Writing Tracker Music, for the notation.
 
 // ---------------------------------------------------------------------------
 // The band

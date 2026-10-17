@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, Audio80SoundEffect } from '@mvtjs/audio';
+import type { Audio80, Audio80SoundEffect } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import { FIRE, FIRE_WARNING, GHOST, POP, PUMP_1, PUMP_2, PUMP_3, PUMP_4, SQUASH } from '../data';
 import type { EnemyPhase, InflationStage } from '../models';

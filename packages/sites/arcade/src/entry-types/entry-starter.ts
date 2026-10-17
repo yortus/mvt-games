@@ -1,6 +1,6 @@
 import type { Container, Renderer, Ticker } from 'pixi.js';
 import type { View } from '@mvtjs/pixi';
-import type { Audio80, Audio90 } from '@mvtjs/audio';
+import type { Audio80, Audio90 } from '@mvtjs/chiptune';
 
 // ---------------------------------------------------------------------------
 // Interface

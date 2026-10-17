@@ -48,14 +48,13 @@ export interface ExportProjectOptions {
 export function exportProject(options: ExportProjectOptions): ExportedProject {
     const { name, packages } = options;
     const renderer = rendererOf(options.files);
-    const hasSound = isPublished(packages, '@mvtjs/audio');
     const files: ProjectFile[] = [
         { path: 'package.json', text: packageJson(name, packages) },
         { path: 'tsconfig.json', text: tsconfigJson(renderer) },
         { path: 'index.html', text: indexHtml(name) },
         { path: 'README.md', text: readme(name, options.description ?? '', packages, options.files) },
-        { path: 'src/index.ts', text: indexTs(renderer, hasSound) },
-        { path: 'src/playground.ts', text: hasSound ? source('../project-api/define-project.ts') : withoutSound(source('../project-api/define-project.ts')) },
+        { path: 'src/index.ts', text: indexTs(renderer) },
+        { path: 'src/playground.ts', text: source('../project-api/define-project.ts') },
     ];
     for (const runnerFile of ['renderer-host', 'run-project', 'fit-to-window', HOST_FILES[renderer]]) {
         files.push({ path: `src/runner/${runnerFile}.ts`, text: source(`../sandbox/${runnerFile}.ts`).replaceAll(`'../project-api'`, `'../playground'`) });
@@ -86,9 +85,6 @@ const SOURCES = import.meta.glob<string>(
 const HOST_FILES: Readonly<Record<RendererKind, string>> = { pixi: 'pixi-host', html: 'html-host', three: 'three-host' };
 const HOST_FACTORIES: Readonly<Record<RendererKind, string>> = { pixi: 'createPixiHost', html: 'createHtmlHost', three: 'createThreeHost' };
 
-/** The project API's import of the sound chip's type, which an export without `@mvtjs/audio` replaces. */
-const AUDIO_TYPE_IMPORT = `import type { Audio80 } from '@mvtjs/audio';`;
-
 function source(path: string): string {
     const text = SOURCES[path];
     if (text === undefined) throw new Error(`An export needs ${path}, which is not among its sources`);
@@ -105,15 +101,6 @@ function rendererOf(files: readonly ProjectFile[]): RendererKind {
 function isPublished(packages: Readonly<Record<string, PackageVersion>>, name: string): boolean {
     const found = packages[name];
     return found !== undefined && !found.isPrivate;
-}
-
-/** The project API, with the sound chip's type in place of its import, while `@mvtjs/audio` is not on npm. */
-function withoutSound(text: string): string {
-    return text.replace(AUDIO_TYPE_IMPORT, [
-        '// The Audio80, the sound chip from @mvtjs/audio. That package is not on npm',
-        '// yet, so an exported project has no sound, and `sound` cannot be used.',
-        'type Audio80 = never;',
-    ].join('\n'));
 }
 
 /** A project file's text, with each import of `playground` made a path to `src/playground.ts`. */
@@ -187,18 +174,16 @@ function indexHtml(name: string): string {
 `;
 }
 
-function indexTs(renderer: RendererKind, hasSound: boolean): string {
+function indexTs(renderer: RendererKind): string {
     const host = HOST_FACTORIES[renderer];
     return [
         '// Runs the project: makes its renderer, calls its `start`, and ticks it each frame.',
-        ...(hasSound ? [`import { createWebAudio80 } from '@mvtjs/audio/web';`] : []),
+        `import { createWebAudio80 } from '@mvtjs/chiptune/web';`,
         `import { project } from './main';`,
         `import { ${host} } from './runner/${HOST_FILES[renderer]}';`,
         `import { runProject } from './runner/run-project';`,
         '',
-        hasSound
-            ? `void runProject({ project, createHost: ${host}, createSound: () => createWebAudio80({ context: new AudioContext() }) });`
-            : `void runProject({ project, createHost: ${host} });`,
+        `void runProject({ project, createHost: ${host}, createSound: () => createWebAudio80({ context: new AudioContext() }) });`,
         '',
     ].join('\n');
 }
@@ -213,7 +198,6 @@ function readme(name: string, description: string, packages: Readonly<Record<str
                 '## Not on npm yet',
                 '',
                 `${unpublished.map((p) => `\`${p}\``).join(', ')} ${unpublished.length === 1 ? 'is' : 'are'} not on npm yet, so this project does not depend on ${unpublished.length === 1 ? 'it' : 'them'}.`,
-                ...(unpublished.includes('@mvtjs/audio') ? ['Until `@mvtjs/audio` is, the project has no sound: `sound` cannot be used.'] : []),
                 ...(importsUnpublished.length === 0 ? [] : [`The project imports ${importsUnpublished.map((p) => `\`${p}\``).join(', ')}, so it will not build until then.`]),
             ];
     return [

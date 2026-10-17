@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio80 } from '@mvtjs/chiptune';
 import { destroyElement, Match, Switch } from '@mvtjs/html';
 import { assert, memoiseLast, watch } from '@mvtjs/utils';
 import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';

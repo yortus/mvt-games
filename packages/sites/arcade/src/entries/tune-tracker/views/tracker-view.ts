@@ -1,5 +1,5 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import { type Audio90, type Audio90Instrument, createMusicPlayer } from '@mvtjs/audio';
+import { type Audio90, type Audio90Instrument, createMusicPlayer } from '@mvtjs/chiptune';
 import type { Tune } from '#tunes';
 import type { TrackerModel } from '../models';
 import { ChannelMetersView } from './channel-meters-view';

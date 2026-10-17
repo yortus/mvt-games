@@ -1,4 +1,4 @@
-import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/chiptune';
 import { BASS, CHORD, HAT, KICK, LEAD, SNARE } from './sounds';
 
 // Galaxy Raiders' music. There are four pieces, all written for this game.
@@ -6,7 +6,7 @@ import { BASS, CHORD, HAT, KICK, LEAD, SNARE } from './sounds';
 // filtered bass, and drums. That leaves the chip's other four voices for the
 // sound effects. Each pattern is a list of rows, read from top to bottom, with
 // one cell per channel in each row. See Writing Tracker Music, in
-// @mvtjs/audio's docs, for the notation.
+// @mvtjs/chiptune's docs, for the notation.
 
 // ---------------------------------------------------------------------------
 // The band

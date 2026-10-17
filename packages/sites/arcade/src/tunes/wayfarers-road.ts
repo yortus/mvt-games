@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/audio';
+import { createAudio90Song } from '@mvtjs/chiptune';
 import { FLUTE, FM_BASS, PLUCK, TIMPANI } from './instruments';
 import { SAMPLED_STRINGS } from './sample-instruments';
 import type { Tune } from './tune';

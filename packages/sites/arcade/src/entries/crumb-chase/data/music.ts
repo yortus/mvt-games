@@ -1,4 +1,4 @@
-import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/chiptune';
 import { PIPE, PIZZ, TIP } from './sounds';
 
 // Crumb Chase's music. There are four pieces, all written for this game. Three
@@ -8,7 +8,7 @@ import { PIPE, PIZZ, TIP } from './sounds';
 // plays under the chase, and the game's audio view speeds it up as the maze
 // empties. Each pattern is a list of rows, read from top to bottom, with one
 // cell per channel in each row. Each row is a sixteenth note. See Writing
-// Tracker Music, in @mvtjs/audio's docs, for the notation.
+// Tracker Music, in @mvtjs/chiptune's docs, for the notation.
 
 // ---------------------------------------------------------------------------
 // The band

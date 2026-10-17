@@ -1,5 +1,5 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import type { Audio90Song } from '@mvtjs/audio';
+import type { Audio90Song } from '@mvtjs/chiptune';
 import { setRefresh } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
 import { computeListStart } from './list-window';

@@ -29,8 +29,8 @@ export interface RunProjectOptions<P extends Project> {
     readonly project: P;
     /** Makes the renderer the project draws with. */
     readonly createHost: (project: P) => RendererHost<object> | Promise<RendererHost<object>>;
-    /** Makes the project's sound chip, the first time the project reads `sound`. Without it, reading `sound` throws. */
-    readonly createSound?: () => ProjectSound;
+    /** Makes the project's sound chip, the first time the project reads `sound`. */
+    readonly createSound: () => ProjectSound;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,16 +67,12 @@ export async function runProject<P extends Project>(options: RunProjectOptions<P
 
 /**
  * The project's sound chip, made the first time it is read, so a project
- * that never reads `sound` makes no sound. Without a way to make one, reading
- * it throws, saying why.
+ * that never reads `sound` makes no sound.
  */
-export function createLazySound(create?: () => ProjectSound): LazySound {
+export function createLazySound(create: () => ProjectSound): LazySound {
     let made: ProjectSound | undefined;
     return {
         chip() {
-            if (create === undefined) {
-                throw new Error('This project has no sound: it needs @mvtjs/audio, which is not on npm yet.');
-            }
             made ??= create();
             return made.audio80;
         },

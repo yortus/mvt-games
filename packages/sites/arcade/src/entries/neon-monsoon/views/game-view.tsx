@@ -3,7 +3,7 @@
 import { type Container, Graphics } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
-import type { Audio90 } from '@mvtjs/audio';
+import type { Audio90 } from '@mvtjs/chiptune';
 import { isTouchDevice, OverlayView } from '#shared';
 import { ARENA_WIDTH, textures } from '../data';
 import type { GameModel, GamePhase } from '../models';

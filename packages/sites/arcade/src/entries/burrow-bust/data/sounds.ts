@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
 
 // Burrow Bust's instruments and sound effects, for the Audio80. They were
 // all written for this game. The tunes' leads and basses play on wavetables,

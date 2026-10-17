@@ -131,6 +131,7 @@ loose ends are tasks 057 to 064.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
+| 055 | [Rename `@mvtjs/audio` to `@mvtjs/chiptune`, and Publish It](tasks/active/055-chiptune-package.md) | medium | 2026-10-17 |
 
 ### Backlog
 
@@ -148,7 +149,6 @@ loose ends are tasks 057 to 064.
 | 050 | [Visitor Analytics: Who Comes, and From Where](tasks/backlog/050-visitor-analytics.md) | low | 2026-10-15 |
 | 053 | [Models Name What the Player Means, Not the Controls](tasks/backlog/053-models-name-intent-not-input.md) | medium | 2026-10-16 |
 | 054 | [Smooth Window Resizes While an Entry Plays](tasks/backlog/054-smooth-window-resizes.md) | low | 2026-10-16 |
-| 055 | [Rename `@mvtjs/audio` to `@mvtjs/chiptune`, and Publish It](tasks/backlog/055-chiptune-package.md) | medium | 2026-10-17 |
 | 056 | [A Floating Perfmon Throughout the Arcade](tasks/backlog/056-floating-perfmon-in-the-arcade.md) | medium | 2026-10-17 |
 | 057 | [Open an Arcade Entry in the Playground, From GitHub](tasks/backlog/057-open-arcade-entries-in-the-playground.md) | medium | 2026-10-17 |
 | 058 | [Playground: Swap the Views, Keep the Model](tasks/backlog/058-swap-views-keep-the-model.md) | medium | 2026-10-17 |
@@ -190,9 +190,9 @@ loose ends are tasks 057 to 064.
 | 037 | [Arcade Code Review](archive/037-arcade-code-review.md) (036's Arcade, before switching over) | 2026-10-05 |
 | 042 | [Proposal: visual snapshot tests for views](archive/042-visual-snapshot-tests.md) (published to npm as `v-snap`: Vitest projects that draw Pixi, three.js, canvas and HTML views, and compare each image with a reference committed beside its test, the same on Windows, Linux and macOS with no Docker; every view and whole entry of the website is tested with it. Loose ends: the logo, a trial on a real project and the docs reviews, in `notes/tmp-vsnap-checklist.md`) | 2026-10-14 |
 | 043 | [Arcade: Fixes From the Playtest Review](archive/043-arcade-review-fixes.md) (the search list unfolds with a CSS transition in place of the wall's layout read in a refresh step; one open panel in the model; history steps for panels, safe against a panel opening as the page steps back; the nav magnifier in a view of its own) | 2026-10-06 |
-| 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/audio`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |
+| 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/chiptune`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |
 | 046 | [Proposal: highscores for the Arcade](archive/046-arcade-highscores.md) (one global table of ten for each game with a score, kept by a Cloudflare Worker with one Durable Object, in `packages/sites/arcade/highscores-worker/`, sharing its rules with the page in `src/highscores/`; three-letter initials entered cabinet-style in the pixel font; games report `scoring` from their sessions; a Highscores tab in the pause menu. Loose ends are task 049) | 2026-10-15 |
-| 051 | [Proposal: the Audio90, and entries that choose their sound chip](archive/051-audio90-chip.md) (a second chip in `@mvtjs/audio`: sixteen stereo voices of FM, analog or samples bounced from its own engines, with a reverb, a stereo echo, a chorus and a pump; each entry's starter names its chip; the Tune Tracker plays fifteen original tunes of the 1990s; Neon Monsoon rescored; shared pixel glyphs for the older entries; the cards' long text after the first paint. Loose ends are task 065) | 2026-10-17 |
+| 051 | [Proposal: the Audio90, and entries that choose their sound chip](archive/051-audio90-chip.md) (a second chip in `@mvtjs/chiptune`: sixteen stereo voices of FM, analog or samples bounced from its own engines, with a reverb, a stereo echo, a chorus and a pump; each entry's starter names its chip; the Tune Tracker plays fifteen original tunes of the 1990s; Neon Monsoon rescored; shared pixel glyphs for the older entries; the cards' long text after the first paint. Loose ends are task 065) | 2026-10-17 |
 | 052 | [Proposal: a playground that works like a small IDE](archive/052-playground-ide.md) (the playground became a package of its own, `packages/sites/playground/`, and the website became the Arcade: a project of real TypeScript files with real imports from a fixed list of libraries, intellisense from TypeScript in a worker, each run a fresh sandboxed iframe of ES modules, projects kept in IndexedDB, share links, Export as a Vite project, a file tree with kept barrels, themes, Help, and a Performance tab on `@mvtjs/html`'s new `PerfmonView`. Loose ends are tasks 057 to 064) | 2026-10-17 |
 
 ## Elsewhere

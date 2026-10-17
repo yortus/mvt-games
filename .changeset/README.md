@@ -1,9 +1,9 @@
 # Releasing the libraries
 
-The four libraries, `@mvtjs/utils`, `@mvtjs/pixi`, `@mvtjs/three` and
-`@mvtjs/html`, are released together from this repo with
-[Changesets](https://github.com/changesets/changesets). They share one
-version: a change to any of them releases all four.
+The five libraries, `@mvtjs/utils`, `@mvtjs/pixi`, `@mvtjs/three`,
+`@mvtjs/html` and `@mvtjs/chiptune`, are released together from this repo
+with [Changesets](https://github.com/changesets/changesets). They share one
+version: a change to any of them releases all five.
 
 v-snap, the visual testing package, is released from here too, on a
 version of its own. A change file for it names `v-snap` alone.
@@ -37,12 +37,25 @@ each library's first version, 0.1.0, is published by hand, once:
 
 1. `npm login`, as an owner of the `@mvtjs` npm organisation.
 2. `npm run build:packages`, then `npx changeset publish`. It asks for a 2FA
-   code, publishes the four libraries, and tags each version.
+   code, publishes the libraries, and tags each version.
 3. `git push --follow-tags`.
 4. On npmjs.com, for each package: Settings, Trusted publishing, GitHub
    Actions, repository `yortus/mvt-games`, workflow `release.yml`.
 
 From then on, releases go through the workflow.
+
+`@mvtjs/chiptune` joined the others later, so it is not on npm yet, and the
+workflow cannot publish it. Its first version goes out by hand, at the next
+release:
+
+1. `npx changeset`, if no change files are waiting, then `npm run release`,
+   and commit, as in [To release](#to-release). Don't push yet.
+2. `npm login`, then `npm run build:packages`, then `npx changeset publish`.
+   It publishes every library whose new version is not on npm yet,
+   `@mvtjs/chiptune` among them.
+3. `git push --follow-tags`. The workflow then finds nothing left to publish.
+4. Set up `@mvtjs/chiptune`'s trusted publishing on npmjs.com, as in step 4
+   above. Then delete this section.
 
 v-snap's first version on npm, 0.0.0, is a placeholder that was published
 by hand, so the package already exists. Its trusted publishing is set the

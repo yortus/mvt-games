@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { type Audio90, type Audio90SoundEffect, createMusicPlayer } from '@mvtjs/audio';
+import { type Audio90, type Audio90SoundEffect, createMusicPlayer } from '@mvtjs/chiptune';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,

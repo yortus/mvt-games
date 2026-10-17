@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, Audio80SoundEffect } from '@mvtjs/audio';
+import type { Audio80, Audio80SoundEffect } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import { CARRIER_HIT, DIVE, SCOUT_HIT, STRIKER_HIT } from '../data';
 import type { EnemyKind, EnemyPhase } from '../models';

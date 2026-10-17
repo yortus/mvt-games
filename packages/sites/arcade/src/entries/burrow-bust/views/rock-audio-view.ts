@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio80 } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import { ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE } from '../data';
 import type { RockPhase } from '../models';

@@ -1,4 +1,4 @@
-import { prepareAudio90Samples } from '@mvtjs/audio';
+import { prepareAudio90Samples } from '@mvtjs/chiptune';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { BOSS_ATTACKS, SAMPLES, STAGE_EVENTS, textures } from '../data';
 import { createGameModel } from '../models';

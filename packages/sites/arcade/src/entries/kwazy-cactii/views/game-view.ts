@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio80 } from '@mvtjs/chiptune';
 import { isTouchDevice, OverlayView } from '#shared';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';

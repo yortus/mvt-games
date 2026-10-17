@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, formatAudio90Cell, prepareAudio90Samples } from '@mvtjs/audio';
-import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSong } from '@mvtjs/audio/headless';
+import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, formatAudio90Cell, prepareAudio90Samples } from '@mvtjs/chiptune';
+import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSong } from '@mvtjs/chiptune/headless';
 import { INSTRUMENT_NAMES } from './instrument-names';
 import { SAMPLES } from './samples';
 import { TUNES } from './tunes';

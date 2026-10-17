@@ -1,11 +1,11 @@
-import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/chiptune';
 import { BANJO, BRUSH, FIDDLE, HORN, KICK, THUMP, TOCK } from './sounds';
 
 // Fenceline's music was written for this game. The tunes are country
 // breakdowns in G, for a band of four: a fiddle on the tune, a banjo
 // picking rolls, a bass on the beat and a drum kit played with brushes.
 // That leaves the chip's other four voices for the sound effects. Each row
-// is a sixteenth note, with a cell for each channel. See @mvtjs/audio's
+// is a sixteenth note, with a cell for each channel. See @mvtjs/chiptune's
 // guide, Writing Tracker Music, for the notation.
 
 // ---------------------------------------------------------------------------

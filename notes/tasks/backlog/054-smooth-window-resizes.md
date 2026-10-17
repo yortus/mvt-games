@@ -15,7 +15,7 @@ any one entry.
 
 The sound is choppy because the main thread stalls. The sound chip plays
 each note a short lead after it is written (35 ms by default, in
-`packages/libraries/audio/src/web/chip-clock.ts`). A frame that takes
+`packages/libraries/chiptune/src/web/chip-clock.ts`). A frame that takes
 longer than that leaves the chip without its next notes, so they arrive
 late. The screen blanks because the canvas is given a new size, which
 clears it, and the next frame is late to draw it again.

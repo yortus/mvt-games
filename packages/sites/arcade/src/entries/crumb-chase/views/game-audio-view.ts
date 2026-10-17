@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from '@mvtjs/audio';
+import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';

@@ -4,7 +4,7 @@ import { unzipSync, strFromU8 } from 'fflate';
 import ts from 'typescript';
 import { afterAll, describe, expect, it } from 'vitest';
 import { EXPORT_DEPENDENCIES, EXPORT_DEV_DEPENDENCIES } from '../../libraries';
-import { EXAMPLES, findExample, STARTERS } from '../examples';
+import { findExample, STARTERS } from '../examples';
 import type { ProjectFile } from '../runtime';
 import { exportProject, type PackageVersion, zipExportedProject } from './export-project';
 
@@ -13,8 +13,6 @@ const ROOT = resolve(import.meta.dirname, '../../../../..');
 
 /** Each package's version and whether it is private, as installed in the repo. */
 const PACKAGES = readPackages([...EXPORT_DEPENDENCIES, ...EXPORT_DEV_DEPENDENCIES]);
-/** The same, with @mvtjs/audio on npm, as it will be. */
-const PACKAGES_WITH_AUDIO = { ...PACKAGES, '@mvtjs/audio': { ...PACKAGES['@mvtjs/audio'], isPrivate: false } };
 
 const PROJECT = {
     name: 'Bouncing Ball!',
@@ -55,17 +53,23 @@ describe('exporting a project', () => {
         expect(fileOf(files, 'src/index.ts')).toContain('createHost: createPixiHost');
     });
 
-    it('has no sound while @mvtjs/audio is not on npm, and says so', () => {
+    it('gives the project a sound chip from @mvtjs/chiptune, as the playground does', () => {
         const { files } = exportProject({ ...PROJECT, packages: PACKAGES });
-        expect(fileOf(files, 'src/playground.ts')).not.toContain(`from '@mvtjs/audio'`);
-        expect(fileOf(files, 'src/index.ts')).not.toContain('createSound');
-        expect(fileOf(files, 'README.md')).toContain('no sound');
+        expect(fileOf(files, 'src/playground.ts')).toContain(`from '@mvtjs/chiptune'`);
+        expect(fileOf(files, 'src/index.ts')).toContain(`from '@mvtjs/chiptune/web'`);
+        expect(fileOf(files, 'src/index.ts')).toContain('createSound');
     });
 
-    it('has sound once @mvtjs/audio is on npm', () => {
-        const { files } = exportProject({ ...PROJECT, packages: PACKAGES_WITH_AUDIO });
-        expect(fileOf(files, 'src/playground.ts')).toContain(`from '@mvtjs/audio'`);
-        expect(fileOf(files, 'src/index.ts')).toContain('createSound');
+    it('says in its README which packages are not on npm yet, and leaves them out', () => {
+        const packages = { ...PACKAGES, '@mvtjs/three': { ...PACKAGES['@mvtjs/three'], isPrivate: true } };
+        const { files } = exportProject({ ...PROJECT, packages });
+        expect(fileOf(files, 'README.md')).toContain('## Not on npm yet');
+        expect(fileOf(files, 'README.md')).toContain('`@mvtjs/three` is not on npm yet');
+        expect(fileOf(files, 'package.json')).not.toContain('@mvtjs/three');
+    });
+
+    it('says nothing about npm in its README when every package is published', () => {
+        const { files } = exportProject({ ...PROJECT, packages: PACKAGES });
         expect(fileOf(files, 'README.md')).not.toContain('Not on npm yet');
     });
 
@@ -90,12 +94,11 @@ describe('an exported project', { timeout: 60_000 }, () => {
     const cases = [
         ...STARTERS.map((s) => ({ label: `the ${s.name} starting project`, project: { name: s.name, files: s.files }, packages: PACKAGES })),
         { label: 'an example with JSX views', project: findExample('bouncing-ball-jsx')!, packages: PACKAGES },
-        { label: 'a project with sound, once @mvtjs/audio is on npm', project: EXAMPLES[0], packages: PACKAGES_WITH_AUDIO },
     ];
     for (const { label, project, packages } of cases) {
         it(`type-checks as a project of its own: ${label}`, () => {
             const exported = exportProject({ name: project.name, files: project.files, packages });
-            const dir = join(OUT, exported.folder + (packages === PACKAGES ? '' : '-with-sound'));
+            const dir = join(OUT, exported.folder);
             for (const file of exported.files) {
                 mkdirSync(dirname(join(dir, file.path)), { recursive: true });
                 writeFileSync(join(dir, file.path), file.text);

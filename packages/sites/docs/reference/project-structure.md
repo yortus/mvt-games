@@ -10,10 +10,10 @@
 
 ## Directory Layout
 
-The repository is an npm workspace. It has four libraries, published under
+The repository is an npm workspace. It has five libraries, published under
 the `@mvtjs` npm scope, and the visual testing package, published as
-`v-snap`. Its other packages are private: the sound chips, the lint rules,
-the Arcade, the docs, the benchmarks and the checks.
+`v-snap`. Its other packages are private: the lint rules, the Arcade, the
+playground, the docs, the benchmarks and the checks.
 
 ```
 packages/
@@ -22,7 +22,7 @@ packages/
 │   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            @mvtjs/html: the tick API for DOM elements, its JSX runtime, and a Perfmon view
-│   └── audio/           @mvtjs/audio (private for now): the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
+│   └── chiptune/        @mvtjs/chiptune: the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules

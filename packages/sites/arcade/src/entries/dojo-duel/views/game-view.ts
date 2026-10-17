@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio80 } from '@mvtjs/chiptune';
 import { isTouchDevice, OverlayView } from '#shared';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';
 import type { GameModel } from '../models';

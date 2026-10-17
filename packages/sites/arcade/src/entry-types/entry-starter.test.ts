@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import type { Audio80, Audio90 } from '@mvtjs/audio';
-import { createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/audio/headless';
+import type { Audio80, Audio90 } from '@mvtjs/chiptune';
+import { createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/chiptune/headless';
 import {
     defineElementLoader, definePixiLoader, type ElementEntrySession, type ElementEntryStarter, type PixiEntryStarter,
     type PixiStartOptions, type SoundChipFinder, type SoundChipsByKind, startPixiEntry,

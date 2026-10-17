@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUDIO90_CELL_TEXT_WIDTH, createAudio90Instrument, createAudio90Song } from '@mvtjs/audio';
+import { AUDIO90_CELL_TEXT_WIDTH, createAudio90Instrument, createAudio90Song } from '@mvtjs/chiptune';
 import { TUNES } from '#tunes';
 import { createPatternSheet, INK_BAR_ROW, INK_BEAT_ROW, INK_DOT, INK_EFFECT, INK_NOTE, INK_ROW, ROW_NUMBER_WIDTH } from './pattern-sheet';
 import { DOT_GLYPH, GLYPH_WIDTH, RULE_GLYPH } from './pixel-font';

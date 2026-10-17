@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/audio';
+import { createAudio90Song } from '@mvtjs/chiptune';
 import { AIR, CLAP, DEEP_BASS, DREAM_KEYS, DREAM_LEAD, HAT, HAZE_PAD, OPEN_HAT, SOFT_ARP, SOFT_KICK } from './instruments';
 import type { Tune } from './tune';
 

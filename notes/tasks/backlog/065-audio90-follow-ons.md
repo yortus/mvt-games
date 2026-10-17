@@ -8,7 +8,7 @@
 
 ## Description
 
-Proposal 051 built the Audio90, a second sound chip in `@mvtjs/audio`, and
+Proposal 051 built the Audio90, a second sound chip in `@mvtjs/chiptune`, and
 let each entry choose its chip. It added the Tune Tracker, set the older
 entries' text in shared pixel glyphs, rescored Neon Monsoon, and moved the
 cards' long text out of the home page's first load.

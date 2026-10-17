@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/html';
-import { createMusicPlayer, type Audio80Song, computeSongDurationMs } from '@mvtjs/audio';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createMusicPlayer, type Audio80Song, computeSongDurationMs } from '@mvtjs/chiptune';
+import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import {
     BET, BIG_WIN, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, GAME_OVER, LEVER, NO_WIN, REEL_CLICK,
     REEL_STOP, SETTLE_MS, SETTLE_STAGGER_MS, STOPPING_SETTLE_MS, type SymbolKind, WAY_OF_3, WAY_OF_5, WIN,

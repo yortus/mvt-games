@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import type { Audio80, Audio80SoundEffect } from '@mvtjs/audio';
+import type { Audio80, Audio80SoundEffect } from '@mvtjs/chiptune';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,

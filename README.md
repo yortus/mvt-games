@@ -82,9 +82,9 @@ else.
 
 ```
 packages/     Every package: the libraries (@mvtjs/utils, @mvtjs/pixi,
-              @mvtjs/three, @mvtjs/html), and the private ones: the sound
-              chip, the Arcade, the docs, the benchmarks, the checks and
-              the lint rules
+              @mvtjs/three, @mvtjs/html, @mvtjs/chiptune), and the private
+              ones: the Arcade, the playground, the docs, the benchmarks,
+              the checks and the lint rules
 notes/        Proposals, tasks, and the archive of finished work
 ```
 
@@ -95,7 +95,7 @@ packages/
 │   ├── pixi/            The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           The tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            The tick API for DOM elements, and its JSX runtime
-│   └── audio/           The Audio80 sound chip, its tracker notation and music player (private for now)
+│   └── chiptune/        The Audio80 and Audio90 sound chips, their tracker notation and music player
 ├── tools/
 │   ├── v-snap/          Visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   This repo's lint rules (private for now)

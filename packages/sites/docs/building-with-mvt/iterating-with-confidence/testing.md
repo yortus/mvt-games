@@ -43,7 +43,7 @@ A kind of test called a **snapshot test** compares what a previous run produced 
 
 - A [visual test](visual-tests.md) takes an image of a view and compares
   it with a reference image.
-- An [audio test](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/src/headless/README.md#audio-tests)
+- An [audio test](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#audio-tests)
   renders a sound in memory and compares a hash of its samples with a
   stored hash.
 

@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
 
 // Dojo Duel's instruments and sound effects, for the Audio80. They are all
 // written for this game. Each swish is noise through filter `b`. The `f`

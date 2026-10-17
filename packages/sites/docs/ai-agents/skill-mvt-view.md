@@ -421,7 +421,7 @@ with `watch()`, and plays a sound when a value **changes**. It never plays
 from a state alone, which would play the sound every frame.
 
 - **[project convention]** It plays on a virtual sound chip from
-  `@mvtjs/audio`: the **Audio80** (eight mono voices, for 1980s games) or
+  `@mvtjs/chiptune`: the **Audio80** (eight mono voices, for 1980s games) or
   the **Audio90** (sixteen stereo voices of FM, analog and samples, for
   1990s games). The chip is a fixed binding, `sound: Audio80` or
   `sound: Audio90`, which the view reads once. An entry names its chip in
@@ -457,7 +457,7 @@ from a state alone, which would play the sound every frame.
   is a model count of the moment itself. Otherwise, read the values
   together.
 - **Music and repeating sounds are presentation state.** A music player
-  (`createMusicPlayer`, from `@mvtjs/audio`) or a metronome
+  (`createMusicPlayer`, from `@mvtjs/chiptune`) or a metronome
   (`createMetronome`, from `@mvtjs/utils`) advances in the update step. The
   refresh step plays what is due. It calls `MusicPlayer.refresh` last, and
   plays a sound each time the metronome's `count` rises. A metronome only
@@ -467,13 +467,13 @@ from a state alone, which would play the sound every frame.
   song playing and cancels any song queued. A jingle that starts a phase
   must be no longer than the phase. Check it with `computeSongDurationMs`.
 - **Test** against a chip from `createHeadlessAudio80({ record: true })` or
-  `createHeadlessAudio90({ record: true })`, in `@mvtjs/audio/headless`. Advance its clock with `AudioControls.update`,
+  `createHeadlessAudio90({ record: true })`, in `@mvtjs/chiptune/headless`. Advance its clock with `AudioControls.update`,
   tick the view, and check the chip's `log` property.
 
 Full guide: [Sound and Music](../building-with-mvt/presenting-the-world/sound.md) ·
-[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/docs/using-the-audio80.md) ·
-[Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/docs/using-the-audio90.md) ·
-[Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/docs/writing-tracker-music.md)
+[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md) ·
+[Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio90.md) ·
+[Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/writing-tracker-music.md)
 
 ## Presentation State
 

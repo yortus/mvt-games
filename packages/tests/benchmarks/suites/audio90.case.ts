@@ -5,8 +5,8 @@ import {
     createAudio90Sample,
     createAudio90Song,
     createMusicPlayer,
-} from '@mvtjs/audio';
-import { createHeadlessAudio90 } from '@mvtjs/audio/headless';
+} from '@mvtjs/chiptune';
+import { createHeadlessAudio90 } from '@mvtjs/chiptune/headless';
 import { allocationPerFrame, readParams, report, timeFrames } from '../harness/measure';
 
 // Measured file for the `audio90` suite. It times the headless Audio90

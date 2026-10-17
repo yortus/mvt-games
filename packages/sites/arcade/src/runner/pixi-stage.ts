@@ -1,6 +1,6 @@
 import { Application, Container, TextureSource } from 'pixi.js';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
-import type { AudioControls } from '@mvtjs/audio';
+import type { AudioControls } from '@mvtjs/chiptune';
 import { KeyboardInputView, TouchInputView } from '#shared';
 import { type EntryInputConfig, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';

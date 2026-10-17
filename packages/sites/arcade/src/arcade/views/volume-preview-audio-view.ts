@@ -1,4 +1,4 @@
-import { type Audio80, createMusicPlayer } from '@mvtjs/audio';
+import { type Audio80, createMusicPlayer } from '@mvtjs/chiptune';
 import { setRefresh, setUpdate } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import { EFFECTS_PREVIEW, MUSIC_PREVIEW } from '../data';

@@ -1,4 +1,4 @@
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { advanceTime } from '@mvtjs/pixi';
 import { canvasTest } from 'v-snap';
 import { CAT_SPAWNS, MAZE_DATA, MOUSE_SPAWN, PEN_EXIT, textures } from '../../data';

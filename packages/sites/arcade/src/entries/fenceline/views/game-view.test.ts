@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Container, Text } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { FIELD_COLS, FIELD_ROWS, type RoundConfig, ROUNDS, SHEEP_POINTS } from '../data';
 import { createGameModel, type HeldDirection } from '../models';
 import { GameView } from './game-view';

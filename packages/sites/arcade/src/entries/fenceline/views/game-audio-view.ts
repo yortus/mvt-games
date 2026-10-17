@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from '@mvtjs/audio';
+import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BAA,

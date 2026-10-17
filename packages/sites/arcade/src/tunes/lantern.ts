@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/audio';
+import { createAudio90Song } from '@mvtjs/chiptune';
 import { BELL, ELECTRIC_PIANO, HAT, KICK, SNARE, SUB_BASS } from './instruments';
 import { AAH } from './sample-instruments';
 import type { Tune } from './tune';

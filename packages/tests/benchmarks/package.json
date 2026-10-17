@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "dependencies": {
-        "@mvtjs/audio": "*",
+        "@mvtjs/chiptune": "^0.3.0",
         "@mvtjs/html": "^0.3.0",
         "@mvtjs/pixi": "^0.3.0",
         "@mvtjs/three": "^0.3.0",

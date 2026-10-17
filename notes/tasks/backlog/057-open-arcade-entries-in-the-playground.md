@@ -70,7 +70,7 @@ easier to provide.
 ### What makes it cheap
 
 - `shared/` and `entry-types/` import only the libraries (Pixi,
-  `@mvtjs/pixi`, `@mvtjs/utils`, `@mvtjs/audio`). So they can be fetched as
+  `@mvtjs/pixi`, `@mvtjs/utils`, `@mvtjs/chiptune`). So they can be fetched as
   they are, and nothing needs rewriting.
 - If the playground lays the files out at their repo paths, every
   `../../../entry-types` import still resolves. Only `#shared` needs

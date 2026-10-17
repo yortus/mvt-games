@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import type { Audio90Song, MusicPlayer } from '@mvtjs/audio';
+import type { Audio90Song, MusicPlayer } from '@mvtjs/chiptune';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
 

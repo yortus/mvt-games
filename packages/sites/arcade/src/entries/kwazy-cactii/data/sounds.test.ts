@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashSamples, measurePeak, renderSoundEffect, findSounds } from '@mvtjs/audio/headless';
+import { hashSamples, measurePeak, renderSoundEffect, findSounds } from '@mvtjs/chiptune/headless';
 import * as sounds from './sounds';
 
 // Importing the data parses its notation, so a mistake in a step table fails

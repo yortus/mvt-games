@@ -1,0 +1,47 @@
+{
+    "name": "@mvtjs/chiptune",
+    "version": "0.3.0",
+    "description": "Virtual sound chips for games: the Audio80 and the Audio90, in the spirit of the 1980s and 1990s, with their tracker notation and the music player that audio views use",
+    "license": "MIT",
+    "author": "Troy Gerwien",
+    "keywords": ["chiptune", "sound chip", "synthesizer", "tracker", "music", "sound effects", "web audio", "audio worklet", "game", "mvt"],
+    "homepage": "https://yortus.com/mvt-games/docs/",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yortus/mvt-games.git",
+        "directory": "packages/libraries/chiptune"
+    },
+    "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
+    "type": "module",
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "@mvtjs/source": "./src/index.ts",
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./web": {
+            "@mvtjs/source": "./src/web/index.ts",
+            "types": "./dist/web/index.d.ts",
+            "default": "./dist/web/index.js"
+        },
+        "./headless": {
+            "@mvtjs/source": "./src/headless/index.ts",
+            "types": "./dist/headless/index.d.ts",
+            "default": "./dist/headless/index.js"
+        }
+    },
+    "files": ["dist", "src", "docs", "!src/**/*.test.ts"],
+    "scripts": {
+        "build": "tsdown",
+        "render-wav": "tsx --conditions=@mvtjs/source scripts/render-wav.ts"
+    },
+    "devDependencies": {
+        "rolldown": "^1.2.12",
+        "tsdown": "^0.23.0",
+        "tsx": "^4.21.0",
+        "vite": "^8.3.2",
+        "vitest": "^5.0.1"
+    },
+    "publishConfig": { "access": "public" }
+}

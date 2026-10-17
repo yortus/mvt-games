@@ -16,9 +16,9 @@ Full reference: [Architecture Overview](packages/sites/docs/architecture/index.m
 
 ## Project Structure
 
-An npm workspace: four libraries published under `@mvtjs`, the visual
+An npm workspace: five libraries published under `@mvtjs`, the visual
 testing package `v-snap`, published on its own, and private packages for
-everything else, including `@mvtjs/audio` for now.
+everything else.
 
 ```
 packages/
@@ -27,7 +27,7 @@ packages/
 │   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            @mvtjs/html: the tick API for DOM elements, its JSX runtime, and a Perfmon view
-│   └── audio/           @mvtjs/audio (private for now): the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
+│   └── chiptune/        @mvtjs/chiptune: the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules, loaded from source by `eslint.config.ts`
@@ -99,7 +99,7 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
 - **Functions start with a verb** - `measureLoudness`, `toInt16`, `isAlive`, so a call never reads as a value; views and bindings are named for what they are
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; a top-level application view's one binding is the model itself, a fixed value (it's application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
-- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on a virtual sound chip from `@mvtjs/audio`: the **Audio80** (8 mono voices, 1980s) or the **Audio90** (16 stereo voices of FM, analog and samples, 1990s). An entry that makes sound names its chip in its starter (`soundChip: 'audio90'`), and makes its `load` with `definePixiLoader` (or `defineElementLoader`), so the chip's type is inferred, and the entry host gives it that chip as `sound`. An entry that names no chip gets none. Audio90 samples are bounced from the chip's own engines, never recorded, and an entry bounces them in `load` with `prepareAudio90Samples`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/audio/docs/](packages/libraries/audio/docs/using-the-audio90.md)
+- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It polls its bindings with `watch` and plays on a change, such as a phase beginning or a count rising, never on a state alone. Models expose a count (`shotsFired`) for a moment that repeats, and a view finds each rise with the watched number's `increased`. Audio views play on a virtual sound chip from `@mvtjs/chiptune`: the **Audio80** (8 mono voices, 1980s) or the **Audio90** (16 stereo voices of FM, analog and samples, 1990s). An entry that makes sound names its chip in its starter (`soundChip: 'audio90'`), and makes its `load` with `definePixiLoader` (or `defineElementLoader`), so the chip's type is inferred, and the entry host gives it that chip as `sound`. An entry that names no chip gets none. Audio90 samples are bounced from the chip's own engines, never recorded, and an entry bounces them in `load` with `prepareAudio90Samples`. Music and repeating sounds are presentation state, advanced in the update step. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/chiptune/docs/](packages/libraries/chiptune/docs/using-the-audio90.md)
 - **`_` prefix** for intentionally unused parameters
 - **Plain writing** - in docs, comments, test names and messages: a friendly, mentoring voice in everyday language (talk to the reader as "you", say why as well as what), short, complete sentences, terms explained where first used, no in-house names in packages. This is the default unless told otherwise. See [Style Guide: Writing](packages/sites/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
@@ -126,11 +126,11 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 | `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
 | `npm run docs:dev`     | Start the VitePress dev server |
 | `npm run playground:dev` | Start the playground's dev server, which `npm run dev` serves at /playground/ |
-| `npm run build:packages` | Build the four libraries for publishing (tsdown, publint, attw), then check their published types |
+| `npm run build:packages` | Build the five libraries for publishing (tsdown, publint, attw), then check their published types |
 | `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/tests/checks/](packages/tests/checks/README.md)) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |
 | `npm run bench`        | Performance benchmarks ([packages/tests/benchmarks/](packages/tests/benchmarks/README.md)) |
-| `npm run audio:render -- <modules>` | Render a module's songs and sound effects to WAV files, with their peaks and loudness ([packages/libraries/audio/](packages/libraries/audio/README.md)) |
+| `npm run audio:render -- <modules>` | Render a module's songs and sound effects to WAV files, with their peaks and loudness ([packages/libraries/chiptune/](packages/libraries/chiptune/README.md)) |
 
 ## Notes: Proposals and Tasks
 

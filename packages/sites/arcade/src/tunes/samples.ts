@@ -1,4 +1,4 @@
-import { type Audio90Instrument, createAudio90Instrument, createAudio90Sample, createAudio90Song } from '@mvtjs/audio';
+import { type Audio90Instrument, createAudio90Instrument, createAudio90Sample, createAudio90Song } from '@mvtjs/chiptune';
 import { BOOM, BRASS, HAT, KICK, SNARE, STRINGS } from './instruments';
 
 // The samples. None is recorded: each is a short song that the chip plays

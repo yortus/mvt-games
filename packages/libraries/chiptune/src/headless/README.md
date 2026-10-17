@@ -1,4 +1,4 @@
-# @mvtjs/audio/headless
+# @mvtjs/chiptune/headless
 
 This part of the package runs the Audio80 and the Audio90 without a
 speaker. It holds each chip's headless version, which plays sound in memory
@@ -173,7 +173,7 @@ import { describe, expect, it } from 'vitest';
 import {
     findSounds, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness,
     measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong,
-} from '@mvtjs/audio/headless';
+} from '@mvtjs/chiptune/headless';
 import * as music from './music';
 import * as sounds from './sounds';
 
@@ -219,7 +219,7 @@ view, as a game loop would. Then check the log:
 
 ```ts
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 
 const TICK_MS = 1000 / 60;
 

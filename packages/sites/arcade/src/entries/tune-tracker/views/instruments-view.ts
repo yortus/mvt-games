@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import type { Audio90Instrument, Audio90Song } from '@mvtjs/audio';
+import type { Audio90Instrument, Audio90Song } from '@mvtjs/chiptune';
 import { setRefresh } from '@mvtjs/pixi';
 import { cacheAsPixels, PANEL_LINE_X, PANEL_LINE_Y, PanelView } from './panel-view';
 import { createGlyphRow, GLYPH_HEIGHT, GLYPH_WIDTH, type GlyphRow, type PixelFont } from './pixel-font';

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Project, StartOptions } from '../project-api';
 import { EXAMPLES } from './examples';

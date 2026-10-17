@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/audio';
+import { createAudio90Song } from '@mvtjs/chiptune';
 import { CLAP, CRASH, EURO_BASS, EURO_LEAD, HAT, KICK, OPEN_HAT, STAB } from './instruments';
 import type { Tune } from './tune';
 

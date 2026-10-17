@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, SNAP, STRING_TICK, TIE_OFF } from '../data';
 import type { GamePhase } from '../models';
 import { CREAK_PERIOD_MS, GameAudioView } from './game-audio-view';

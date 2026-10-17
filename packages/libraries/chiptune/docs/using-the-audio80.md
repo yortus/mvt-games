@@ -92,7 +92,7 @@ on one, and drive it from your loop. The chip computes its sound in an
 `AudioWorklet`, which is browser code that runs on its own thread:
 
 ```ts
-import { createWebAudio80 } from '@mvtjs/audio/web';
+import { createWebAudio80 } from '@mvtjs/chiptune/web';
 
 const context = new AudioContext({ latencyHint: 'interactive' });
 const { audio80, controls } = createWebAudio80({ context });
@@ -100,9 +100,11 @@ controls.ready.catch(() => {
     console.warn('No sound here: AudioWorklet needs a secure page');
 });
 
-// Browsers start audio only after a gesture
+// Browsers start audio only in a gesture's handler, and can stop it later
 const resume = (): void => void context.resume();
-window.addEventListener('pointerdown', resume, { once: true });
+for (const gesture of ['keydown', 'click', 'touchend']) {
+    window.addEventListener(gesture, resume);
+}
 
 const view = GameView({ model, sound: audio80 });
 
@@ -153,9 +155,42 @@ limiting smooths only the jumps in the saw and pulse waves. Combined
 waves, noise, wavetables, ring modulation and hard-synced voices alias in
 every character. The headless chip takes `character` too, when it renders.
 
+### A Page's Sound, in Full
+
+The page above has the least a page needs. The Arcade's page does more, and
+its code is an example you can borrow from:
+[`page-sound.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/runner/page-sound.ts).
+It does seven things that a page of your own may want too:
+
+- **It loads the chips' code only when it's wanted.** It imports
+  `@mvtjs/chiptune/web` with a dynamic `import()`, the first time the
+  visitor clicks or presses a key. So a visitor who never plays downloads
+  none of it.
+- **It makes the `AudioContext` inside that gesture's handler,** before it
+  awaits anything. Safari starts a context only if the page made it, or
+  resumed it, while handling a gesture.
+- **It hands out stand-ins until the chips load.** A game gets a chip and
+  controls at once. Until the real chip is ready, they drop every write and
+  keep the volumes they're given. Then they pass every call on. So no game
+  waits for the download.
+- **It listens for gestures whenever the context isn't running.** A phone
+  can stop a page's audio, as when a call comes in, and the next tap starts
+  it again. The gestures every browser accepts are `keydown`, `click` and
+  `touchend`. On a touch screen, a touch counts only when it ends.
+- **It keeps its own chip apart from the game's.** The page's menus play on
+  an Audio80 of their own, which the page ticks every frame. The game's chip
+  is ticked with the game, so it pauses when the game does. The chips share
+  one `AudioContext`.
+- **It turns a volume slider's position into a gain,** by squaring it, so
+  that equal steps of the slider sound like equal steps in loudness. Then it
+  sets each chip's `musicVolume` and `effectsVolume`.
+- **It checks for `AudioWorklet` first.** Only a secure page has one, which
+  means one served over HTTPS, or from `localhost`. Without it, the page
+  warns in the console and stays silent, and the game plays on.
+
 ### Without a Speaker
 
-`createHeadlessAudio80`, from `@mvtjs/audio/headless`, makes a chip with no
+`createHeadlessAudio80`, from `@mvtjs/chiptune/headless`, makes a chip with no
 speaker. It is for running a game headless, testing audio views and
 rendering sound in memory. Rendered sound is a list of samples. Each sample
 is the level of the sound wave at one instant. The sample rate is how many
@@ -213,7 +248,7 @@ it once, when the module loads. Here the effect defines its own instrument,
 with the `stepMs`, `envelope` and `steps` options:
 
 ```ts
-import { createAudio80SoundEffect } from '@mvtjs/audio';
+import { createAudio80SoundEffect } from '@mvtjs/chiptune';
 
 /** A coin: a bright blip up a fifth. */
 export const COIN = createAudio80SoundEffect({
@@ -235,7 +270,7 @@ Several effects can share one instrument instead. Make the instrument with
 `createAudio80Instrument`, and pass it as the `instrument` option:
 
 ```ts
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
 
 const BLIP = createAudio80Instrument({
     wave: 'pulse',
@@ -351,7 +386,7 @@ notes on instruments, and so does a sound effect. You make an instrument
 once, when the module loads, with `createAudio80Instrument`:
 
 ```ts
-import { createAudio80Instrument } from '@mvtjs/audio';
+import { createAudio80Instrument } from '@mvtjs/chiptune';
 
 /** A soft lead: a pulse wave that wavers a little once the note has started. */
 export const LEAD = createAudio80Instrument({
@@ -420,7 +455,7 @@ plays a sound when it sees a change that calls for one:
 ```ts
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/audio';
+import type { Audio80 } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 
 export interface ShipAudioViewBindings {
@@ -596,7 +631,7 @@ Write each sound at the level it should be heard at:
 - **Songs** should be at the shared loudness, about -20 LUFS. LUFS is the
   standard unit for how loud sound seems to a listener. The values are
   negative, and nearer 0 is louder. The shared loudness is
-  `REFERENCE_LOUDNESS_LUFS`, from `@mvtjs/audio/headless`.
+  `REFERENCE_LOUDNESS_LUFS`, from `@mvtjs/chiptune/headless`.
   `npm run audio:render` prints each song's loudness. Set a song's `volume`
   to bring it to that level.
 - **Effects** should be loud enough to be heard over the music, and quiet
@@ -658,7 +693,7 @@ listened to it and updated the snapshot with `vitest -u`:
 ```ts
 import {
     findSounds, hashSamples, measurePeak, renderSoundEffect,
-} from '@mvtjs/audio/headless';
+} from '@mvtjs/chiptune/headless';
 
 const { songs, effects } = findSounds({ ...sounds, ...music });
 

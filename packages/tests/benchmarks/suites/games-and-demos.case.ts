@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { findEntry } from '@mvtjs/arcade/entries';
 import { type EntryInputConfig, type PixiEntryStarter, type SoundChipsByKind, startPixiEntry } from '@mvtjs/arcade/entry-types';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/chiptune/headless';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
 import { stubTextMeasurement } from '../harness/text-measurement';
 

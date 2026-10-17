@@ -1,4 +1,4 @@
-import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/audio';
+import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/chiptune';
 import { BOUNCE, PLINK, SING, TOCK } from './sounds';
 
 // Burrow Bust's music, written for this game. It is bouncy, in C, and plays
@@ -6,7 +6,7 @@ import { BOUNCE, PLINK, SING, TOCK } from './sounds';
 // five voices for the sound effects. The walking tune's lead and bass are
 // plucks that die away by themselves. The game moves the tune on only while
 // the digger moves, so it falls quiet when the digger stops. Each row is a
-// sixteenth note, with a cell for each channel. See @mvtjs/audio's guide,
+// sixteenth note, with a cell for each channel. See @mvtjs/chiptune's guide,
 // Writing Tracker Music, for the notation.
 
 // ---------------------------------------------------------------------------

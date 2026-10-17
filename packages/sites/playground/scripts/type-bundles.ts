@@ -106,7 +106,7 @@ const SUPPORTING_ENTRIES: readonly string[] = ['@mvtjs/utils/jsx'];
  * entries their declarations import.
  */
 function emitDeclarations(): { mvtjs: TypeBundle; playground: TypeBundle } {
-    const packages = ['utils', 'pixi', 'html', 'three', 'audio'];
+    const packages = ['utils', 'pixi', 'html', 'three', 'chiptune'];
     const entries: string[] = [];
     const exportsOf: Record<string, Record<string, { types: string }>> = {};
     for (const name of packages) {

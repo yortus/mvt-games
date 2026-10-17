@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/audio';
+import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
 
 // Astrovoid's sound effects, for the Audio80. All of them were written for
 // this game. It has no music. Instead, a heartbeat of two thumps plays by

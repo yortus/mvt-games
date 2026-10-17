@@ -8,7 +8,7 @@
 
 ## Description
 
-Proposal 045 built the Audio80 sound chip (`@mvtjs/audio`) and gave every
+Proposal 045 built the Audio80 sound chip (`@mvtjs/chiptune`) and gave every
 game in the Arcade its sound. It was archived on 2026-10-09. This task holds
 what it left open. None of it is needed for the sound to work. Each item can
 be done on its own, or dropped.
@@ -23,7 +23,7 @@ be done on its own, or dropped.
   helpers it did not inline. Typed arrays fixed it. The Hot Paths page has no
   line on this yet: a double that crosses a call that is not inlined is
   boxed. See 045 section 16.1.
-- **`findSounds` and arrays.** `findSounds`, in `@mvtjs/audio/headless`,
+- **`findSounds` and arrays.** `findSounds`, in `@mvtjs/chiptune/headless`,
   finds the sound effects and songs that a module exports. It does not look
   inside an exported array. So Kwazy Cactii's audio test adds its
   `CASCADE_FANFARES` by hand. See 045 section 16.3.
@@ -43,10 +43,9 @@ These are 045's open questions 5, 6, 7 and 9 (045 section 14).
 - **iOS's silent switch.** On iOS, the silent switch mutes Web Audio unless
   the page asks for media playback, with `navigator.audioSession`. Should the
   Arcade ask?
-- **Publishing `@mvtjs/audio`.** The package is private. Its own side is
-  generic, and the site's side (`PageSound`) lives in the Arcade. Publishing
-  it would need its docs to show that side as an example. Task 055 now
-  covers publishing it, under a new name, `@mvtjs/chiptune`.
+- ~~**Publishing the package.**~~ Done in 055 (2026-10-18): renamed
+  `@mvtjs/chiptune` and made ready for npm, with the Audio80 guide's "A
+  Page's Sound, in Full" showing the Arcade's `PageSound` as an example.
 - ~~**A Sound Test entry.**~~ Dropped (2026-10-17). 051 built one on the
   Audio90, and the owner dropped it, since the Tune Tracker plays the same
   tunes. A demo in the Arcade, like the sound test menus of

@@ -1,4 +1,4 @@
-import { createAudio90Instrument } from '@mvtjs/audio';
+import { createAudio90Instrument } from '@mvtjs/chiptune';
 
 // The instruments, which the tunes share. Every patch is written for this
 // site, from the techniques of the 1990s' synthesisers and

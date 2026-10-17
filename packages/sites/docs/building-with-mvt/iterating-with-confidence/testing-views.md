@@ -138,7 +138,7 @@ a shifted sprite, a missing particle, a wrong tint.
 simple and repeatable, for single views and for whole games.
 
 Sounds have the same kind of test. An
-[audio test](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/src/headless/README.md#audio-tests)
+[audio test](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#audio-tests)
 renders a sound and compares a hash of its samples with a saved one.
 
 ### What snapshots verify
@@ -199,7 +199,7 @@ This test uses the `ShipAudioView` from
 ```ts
 import { expect, it } from 'vitest';
 import { refreshView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/audio/headless';
+import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { ShipAudioView } from './ship-audio-view';
 import { SHIP_EXPLODE } from './sounds';
 
@@ -234,7 +234,7 @@ Audio tests check the sounds themselves, much as
 renders a sound in memory and compares a hash of its samples with a stored
 hash. A change that alters the sound fails the test, until someone has
 listened to it and accepted the new hash. See
-[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio/src/headless/README.md#audio-tests).
+[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#audio-tests).
 
 ## Choosing an Approach
 
