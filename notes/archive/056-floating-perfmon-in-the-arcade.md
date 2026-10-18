@@ -265,3 +265,13 @@ Still to do: regenerate the Boids and Falling Sand thumbnails
 (`npm run generate-thumbnails -- boids falling-sand`), whose play areas
 changed. Then copy the nav's design to the docs and the playground once it
 is settled.
+
+### 2026-10-18, later
+
+Checked for archiving: every criterion is met, and the nav was carried to
+the docs and the playground (2a7056c6). The Boids and Falling Sand
+thumbnails were still the old play areas' (960x605 for a 960x492 play area,
+and 514x898 for 480x722). Regenerated them with `npm run
+generate-thumbnails -- boids falling-sand`: Boids at 960x492, and Falling
+Sand at 514x774, its play area's shape. Neither shows a Perfmon panel.
+Archived.

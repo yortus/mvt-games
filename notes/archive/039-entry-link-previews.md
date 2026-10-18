@@ -79,7 +79,7 @@ development).
   `trailingSlashPlugin`, serves the Arcade's page for a path that names a
   catalogue entry. `/` serves the redirect page, as `<base>` does on Pages.
 
-This reverses proposal [036](../../archive/036-website-arcade.md)'s
+This reverses proposal [036](036-website-arcade.md)'s
 decision (section 12, question 5) that entries stay on fragments, and its
 plan for the Arcade to be the site's root page. Only `writeUrl` and
 `launchFromFragment` read or wrote the fragment.
@@ -121,14 +121,12 @@ plan for the Arcade to be the site's root page. Only `writeUrl` and
 
 - [x] The Arcade is at `<base>arcade/`, and `<base>` redirects to it,
   keeping the query
-- [ ] While an entry plays, the address bar shows its own address
+- [x] While an entry plays, the address bar shows its own address
   (`<base>arcade/<id>/`), and that address previews with the entry's name,
-  summary and picture (the address and the tags are done; the preview is
-  checked after deploying)
+  summary and picture (checked on the deployed site: see the log)
 - [x] Opening that address, or reloading it, plays the entry in the Arcade
-- [ ] Back and Forward move between the wall, the info panels and the entry
-  as they do now (checked for the wall and the entry, not yet by hand for
-  the info panels)
+- [x] Back and Forward move between the wall, the info panels and the entry
+  as they do now (checked in a headless browser: see the log)
 - [x] An old `<base>#<id>` link plays the entry and shows its new address
 - [x] The nav links in the Arcade, the playground and the docs reach each
   other from every page, an entry's page included
@@ -155,3 +153,11 @@ plan for the Arcade to be the site's root page. Only `writeUrl` and
   Arcade's models (unit tested). Lint, the type check, the unit tests and
   the home page's budget pass, and a headless browser walked the addresses
   on the dev server and the built site.
+
+- 2026-10-18: Checked and archived. On the deployed site,
+  `https://yortus.com/mvt-games/arcade/crumb-chase/` has its own title
+  ("Crumb Chase - MVT Arcade") and Open Graph tags (the entry's name,
+  summary, address and thumbnail), and the thumbnail loads. On the built
+  site, Back and Forward close and reopen an info panel on the wall and the
+  Arcade's About note, leave and re-enter an entry, and leave an entry with
+  its info panel open over it, which adds no step of its own.

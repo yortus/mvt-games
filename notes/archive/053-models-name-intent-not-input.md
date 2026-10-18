@@ -5,7 +5,6 @@
 | Priority | medium     |
 | Created  | 2026-10-16 |
 | Updated  | 2026-10-18 |
-| Status   | Done in the `mvt-alignment` worktree, for review |
 
 ## Description
 
@@ -21,7 +20,7 @@ onRestartButtonChanged: (pressed) => { gameModel.restartPressed = pressed; },
 So the model knows there is a button, and knows what pressing it means. That
 is not MVT. The architecture docs name a relay binding for what the user did
 (`onFirePressed`), and leave what it means to whoever wires it
-([Relay Bindings and Input Handling](../../../packages/sites/docs/architecture/bindings.md#relay-bindings-and-input-handling)).
+([Relay Bindings and Input Handling](../../packages/sites/docs/architecture/bindings.md#relay-bindings-and-input-handling)).
 The wiring is the place to say "the Rise button means blow the tanks". The
 model should model what the player means: the tanks are being blown, or a
 new run was asked for. It should not model which control said so.
@@ -105,9 +104,9 @@ them.
   (`onPrimaryButtonChanged`). Only what each game wires them to changes.
 - **Tests.** Model tests that set the flags, `galaxy-raiders/views/audio-views.test.ts`,
   and the visual tests' poses, such as Deep Dive's, that hold a control.
-- **The docs.** [Style Guide](../../../packages/sites/docs/reference/style-guide.md)
+- **The docs.** [Style Guide](../../packages/sites/docs/reference/style-guide.md)
   uses `PlayerInputModel` as its example of a model's name, and
-  [View Composition](../../../packages/sites/docs/building-with-mvt/presenting-the-world/view-composition.md)
+  [View Composition](../../packages/sites/docs/building-with-mvt/presenting-the-world/view-composition.md)
   wires `model.playerInput.direction`.
 
 ## Acceptance Criteria
@@ -132,7 +131,7 @@ them.
 - [x] Every game plays as before, but for the changes in the log. Unit tests
       pass, and every visual test's reference image is unchanged
 - [x] The rule is written down: under **M-domain** in
-      [Architecture Rules](../../../packages/sites/docs/architecture/rules.md)
+      [Architecture Rules](../../packages/sites/docs/architecture/rules.md)
       (a control's name is not a domain term, so it needs no rule of its
       own), a paragraph in the architecture's bindings page, a row in the style guide's naming table (and the code-style
       skill's), a line in the model skill's forbidden patterns, the review
@@ -183,3 +182,6 @@ them.
     now does, so a press window needn't match the step.
   - Most games say "a new game" (Dojo Duel "a new match") in
     `startNewRun`'s doc, but keep the one name across games.
+- 2026-10-18: Archived, after review. M-intent was folded into M-domain at
+  the owner's request: a control's name is not a domain term, so it needs no
+  rule of its own. The pending-request flags are named `isXRequested`.

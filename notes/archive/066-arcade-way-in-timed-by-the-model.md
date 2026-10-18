@@ -5,7 +5,6 @@
 | Priority | medium     |
 | Created  | 2026-10-18 |
 | Updated  | 2026-10-18 |
-| Status   | Done in the `mvt-alignment` worktree, for review |
 
 ## Description
 
@@ -121,3 +120,6 @@ in place of the hand-over.
     typed words, which is the search box's behaviour. The wiring in
     `arcade-head-view.tsx` clears them now, and the model's action only
     chooses the tag.
+- 2026-10-18: Archived, after review. The view model was renamed
+  `EntryTransitionViewModel` (and its view `EntryTransitionView`), after the
+  Arcade's term for the entries it goes into and out of.

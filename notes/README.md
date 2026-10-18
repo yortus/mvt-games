@@ -131,10 +131,6 @@ loose ends are tasks 057 to 064.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
-| 039 | [Link Previews for Each Entry](tasks/active/039-entry-link-previews.md) | low | 2026-10-18 |
-| 053 | [Models Name What the Player Means, Not the Controls](tasks/active/053-models-name-intent-not-input.md) | medium | 2026-10-16 |
-| 056 | [A Perfmon Throughout the Arcade, and a New Nav](tasks/active/056-floating-perfmon-in-the-arcade.md) | medium | 2026-10-17 |
-| 066 | [The Arcade's Way Into an Entry, Timed by the Model](tasks/active/066-arcade-way-in-timed-by-the-model.md) | medium | 2026-10-18 |
 
 ### Backlog
 
@@ -185,6 +181,7 @@ loose ends are tasks 057 to 064.
 | 033 | [Fruit Machine Demo](archive/033-fruit-machine-demo/task.md) (one model, four views: Pixi, three.js, an HTML panel and a terminal) | 2026-10-03 |
 | 036 | [Proposal: the website, and one Arcade for every entry](archive/036-website-arcade.md) (`site/` became `packages/sites/arcade/`, with `docs/`, `benchmarks/` and `checks/` beside it; the cabinet and the demos gallery became one Arcade, the home page, in HTML JSX: a search with tag tokens, a card wall in columns, committed thumbnails, a burn and power-on transition, and attract mode; every game and demo an entry in `src/entries/`, Pixi or `element`, hosted in one loop; a size budget on the home page. Absorbed task 026; loose ends are tasks 038-041) | 2026-10-05 |
 | 037 | [Arcade Code Review](archive/037-arcade-code-review.md) (036's Arcade, before switching over) | 2026-10-05 |
+| 039 | [Link Previews for Each Entry](archive/039-entry-link-previews.md) (the Arcade moved to `arcade/`, and the site's root redirects there; each entry has its own address, a copy of the Arcade's page with the entry's title and link preview, generated from the catalogue; the page writes the address as the entry plays) | 2026-10-18 |
 | 041 | [Docs: Questions the Arcade Raised](archive/041-docs-from-the-arcade.md) (Reading Layout Back, Reduced Motion and The URL and the Model in the guide, and the hand-over in Open-Ended Phases) | 2026-10-18 |
 | 042 | [Proposal: visual snapshot tests for views](archive/042-visual-snapshot-tests.md) (published to npm as `v-snap`: Vitest projects that draw Pixi, three.js, canvas and HTML views, and compare each image with a reference committed beside its test, the same on Windows, Linux and macOS with no Docker; every view and whole entry of the website is tested with it. Loose ends: the logo, a trial on a real project and the docs reviews, in `notes/tmp-vsnap-checklist.md`) | 2026-10-14 |
 | 043 | [Arcade: Fixes From the Playtest Review](archive/043-arcade-review-fixes.md) (the search list unfolds with a CSS transition in place of the wall's layout read in a refresh step; one open panel in the model; history steps for panels, safe against a panel opening as the page steps back; the nav magnifier in a view of its own) | 2026-10-06 |
@@ -194,8 +191,11 @@ loose ends are tasks 057 to 064.
 | 047 | [Pixel Art as Multiline Strings](archive/047-pixel-art-as-multiline-strings.md) (each texture script's pictures read by `parsePixelArt`) | 2026-10-18 |
 | 051 | [Proposal: the Audio90, and entries that choose their sound chip](archive/051-audio90-chip.md) (a second chip in `@mvtjs/chiptune`: sixteen stereo voices of FM, analog or samples bounced from its own engines, with a reverb, a stereo echo, a chorus and a pump; each entry's starter names its chip; the Tune Tracker plays fifteen original tunes of the 1990s; Neon Monsoon rescored; shared pixel glyphs for the older entries; the cards' long text after the first paint. Loose ends are task 065) | 2026-10-17 |
 | 052 | [Proposal: a playground that works like a small IDE](archive/052-playground-ide.md) (the playground became a package of its own, `packages/sites/playground/`, and the website became the Arcade: a project of real TypeScript files with real imports from a fixed list of libraries, intellisense from TypeScript in a worker, each run a fresh sandboxed iframe of ES modules, projects kept in IndexedDB, share links, Export as a Vite project, a file tree with kept barrels, themes, Help, and a Performance tab on `@mvtjs/html`'s new `PerfmonView`. Loose ends are tasks 057 to 064) | 2026-10-17 |
+| 053 | [Models Name What the Player Means, Not the Controls](archive/053-models-name-intent-not-input.md) (every game's input record folded into its model: a held control is state named for what it does, a one-off command an action taken at the next update; Fenceline's swipes and taps became `steer` and `stop`; the host's keyboard reports only changes; `OverlayView` reports a press; `@mvtjs/no-control-names` for model files) | 2026-10-18 |
 | 055 | [Rename `@mvtjs/audio` to `@mvtjs/chiptune`, and Publish It](archive/055-chiptune-package.md) (the package renamed and published, 0.3.0 by hand then 0.4.0 with the other four; each worklet inlined as a Blob URL in the published build; exported playground projects play sound; the chips stopped using `Math.pow`, whose last digit differs between Linux and Windows) | 2026-10-18 |
+| 056 | [A Perfmon Throughout the Arcade, and a New Nav](archive/056-floating-perfmon-in-the-arcade.md) (the Arcade drives one performance meter from its own loop, shown in a floating `PerfmonView` over the wall or any entry, with the GPU timed only while it is open; Boids and Falling Sand dropped their own panels; `@mvtjs/pixi`'s `createPerformanceMetrics` removed; the nav and the runner's bar touched up, and carried to the docs and the playground) | 2026-10-18 |
 | 064 | [HTML JSX: A Fixed `value` on a `<select>` Is Lost](archive/064-html-jsx-select-fixed-value.md) (kept until its option is added) | 2026-10-18 |
+| 066 | [The Arcade's Way Into an Entry, Timed by the Model](archive/066-arcade-way-in-timed-by-the-model.md) (the Arcade's model times the way in, in phases `'launching'` and `'revealing'`, with durations shared in `data/way-in.ts`; `EntryTransitionViewModel` draws from them, and keeps its own clock for the way out; a link straight to an entry no longer shows a small picture in the corner) | 2026-10-18 |
 
 ## Elsewhere
 
