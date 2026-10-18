@@ -87,8 +87,9 @@ export interface ListBindings<T, N> {
      * bindings and refresh methods, so anything read at construction must also
      * be followed there. An empty slot skips its whole subtree, in
      * `updateView` as well as `refreshView`, so no binding or update step sees
-     * an absent item. An update step runs before the frame's refresh, so it
-     * sees the item its slot showed at its last refresh.
+     * an absent item. An update step sees the slot's item as it is now, as a
+     * view outside a list sees the model: an item removed or replaced since
+     * the last refresh is gone, or replaced, in the update step too.
      */
     children: (item: () => T, index: number) => N;
     /**
@@ -143,8 +144,10 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
         // reads it back through the slot's `item()` accessor, without calling `at()`.
         const slotItems: (T | undefined)[] = [];
 
-        // Which slots gate their subtree's update steps, by index. See `gateUpdatesOnceEmpty`.
+        // Which slots gate their subtree's update steps, by index, and whether
+        // the list reads its source in an update step of its own. See `gateUpdates`.
         const isUpdateGated: boolean[] = [];
+        let isSourceReadInUpdate = false;
 
         // The source and its length, read once per frame by the list's own
         // refresh method, which `refreshView` calls before any slot's,
@@ -163,6 +166,7 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
 
         /** Attaches exactly the slots below `length`, building any that do not exist yet. */
         function fitToLength(): void {
+            // As `readSource` does, written out here, on the path every list takes every frame
             currentSource = typeof itemsBinding === 'function' ? itemsBinding() : itemsBinding;
             const lengthOrGetter = currentSource.length;
             currentLength = typeof lengthOrGetter === 'function' ? lengthOrGetter() : lengthOrGetter;
@@ -173,6 +177,13 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
             // rather than in the slot's refresh, where even an untaken branch
             // costs V8's inlining budget.
             if (tickCounter.isCounting) tickCounter.reads += (1 + attachedCount);
+        }
+
+        /** Reads the source and its length, for this frame's slots, as `fitToLength` does. */
+        function readSource(): void {
+            currentSource = typeof itemsBinding === 'function' ? itemsBinding() : itemsBinding;
+            const lengthOrGetter = currentSource.length;
+            currentLength = typeof lengthOrGetter === 'function' ? lengthOrGetter() : lengthOrGetter;
         }
 
         function detachTail(): void {
@@ -236,6 +247,7 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
             // built.
             slotItems[index] = item;
             const slot = bindings.children(() => slotItems[index] as T, index);
+            gateUpdates(slot, index);
 
             // The slot's presence check wraps the item view's own refresh and runs
             // before it, so no item binding ever runs for an empty slot. When
@@ -258,7 +270,8 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
                 if (isPresent !== wasPresent) {
                     wasPresent = isPresent;
                     setVisible(slot, isPresent);
-                    if (!isPresent) gateUpdatesOnceEmpty(slot, index);
+                    // An item view may have gained an update step since it was built
+                    if (!isPresent) gateUpdates(slot, index);
                 }
                 if (!isPresent) return SKIP_DESCENDANTS;
                 return itemViewRefresh?.();
@@ -267,24 +280,40 @@ export function createList<N extends object>(options: ListOptions<N>): ListCompo
         }
 
         /**
-         * Skip an emptied slot's update steps, as its presence check skips its
-         * refresh. Asked as the slot empties, which is the one time it matters:
-         * an empty slot's subtree cannot change, its refresh being skipped. And
-         * only a slot with an update step somewhere in its item view is given
-         * the gate, so a list of item views without any still costs nothing to
-         * update, and a steady list never asks.
+         * Gives a slot whose item view has an update step a gate of its own in
+         * `updateView`. The gate looks up the slot's item afresh, and stores it
+         * for the accessor, so the item view's update steps see the item as it
+         * is now, not as it was at the last refresh. When the slot is empty, it
+         * skips the subtree's update steps, as the presence check skips its
+         * refresh. The list then reads its source in an update step too, before
+         * any slot's, so a getter's new collection is followed there as well.
          *
-         * The gate goes by `slotItems`, which holds each slot's item as of its
-         * last refresh: update steps run before the frame's refresh, so an item
-         * view's update step sees the item its slot showed then. Kept at the
-         * list's level rather than in each slot's closure, which every slot's
-         * presence check reads every frame (measured: per-slot state for this
-         * made a list of 20,000 settled grains refresh about 10% slower).
+         * Called when the item view is built, and again as its slot empties, for
+         * an item view that gained an update step since. Only a slot with an
+         * update step somewhere in its item view is given the gate, so a list of
+         * item views without any still costs nothing to update. The gate's
+         * state is kept at the list's level rather than in each slot's closure,
+         * which every slot's presence check reads every frame (measured:
+         * per-slot state for this made a list of 20,000 settled grains refresh
+         * about 10% slower).
          */
-        function gateUpdatesOnceEmpty(slot: N, index: number): void {
+        function gateUpdates(slot: N, index: number): void {
             if (isUpdateGated[index] === true || !hasNodeUpdateInSubtree(slot)) return;
             isUpdateGated[index] = true;
-            setNodeUpdate(slot, (deltaMs, itemViewUpdate) => (slotItems[index] !== undefined ? itemViewUpdate?.(deltaMs) : SKIP_DESCENDANTS));
+            if (!isSourceReadInUpdate) {
+                isSourceReadInUpdate = true;
+                setNodeUpdate(container, (deltaMs, containerUpdate) => {
+                    readSource();
+                    if (tickCounter.isCounting) tickCounter.reads++;
+                    return containerUpdate?.(deltaMs);
+                });
+            }
+            setNodeUpdate(slot, (deltaMs, itemViewUpdate) => {
+                const item = index < currentLength ? currentSource.at(index) : undefined;
+                slotItems[index] = item;
+                if (tickCounter.isCounting) tickCounter.reads++;
+                return item !== undefined ? itemViewUpdate?.(deltaMs) : SKIP_DESCENDANTS;
+            });
         }
     }
 }

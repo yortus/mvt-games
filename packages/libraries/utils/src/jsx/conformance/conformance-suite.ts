@@ -697,7 +697,7 @@ function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>)
             expect(updated).toEqual([2]);
         });
 
-        it('updates a slot with the item it showed at its last refresh', () => {
+        it('updates a slot with its item as it is now, not as it was at the last refresh', () => {
             const bullets = createSlotList<{ id: number }>();
             const a = bullets.insert({ id: 2 });
             const updated: number[] = [];
@@ -706,15 +706,75 @@ function describeList<N extends object>({ fixture, jsx, List }: SuiteContext<N>)
                 children: (slot) => jsx(fixture.everyFrame.tag, { onUpdate: () => void updated.push(slot().value.id) }),
             });
             refresh(list);
+            updateNode(list, 16);
+            expect(updated).toEqual([2]);
 
-            // Removed by the model after the last refresh: the slot still shows it this frame.
+            // Removed by the model after the last refresh: the update step no longer sees it
             bullets.remove(a);
+            updated.length = 0;
             updateNode(list, 16);
-            expect(updated).toEqual([2]);
+            expect(updated).toEqual([]);
+        });
 
+        it('never updates an item the model tore down as it removed it', () => {
+            // A pooled value, reset as the model releases it
+            const items: ({ position: { x: number } | undefined } | undefined)[] = [{ position: { x: 1 } }];
+            const read: number[] = [];
+            const list = List({
+                items,
+                children: (item) => jsx(fixture.everyFrame.tag, { onUpdate: () => void read.push(item()!.position!.x) }),
+            });
             refresh(list);
+
+            const removed = items[0]!;
+            items[0] = undefined;
+            removed.position = undefined;
+            expect(() => updateNode(list, 16)).not.toThrow();
+            expect(read).toEqual([]);
+        });
+
+        it('updates a slot with the item that replaced its last one, in the same frame', () => {
+            // A pooled bullet, fired again from the gun in the update that removed it
+            const items: (Item | undefined)[] = itemsWithIds(1);
+            const updated: number[] = [];
+            const list = List<Item>({
+                items,
+                children: (item) => jsx(fixture.everyFrame.tag, { onUpdate: () => void updated.push(item().id) }),
+            });
+            refresh(list);
+
+            items[0] = { id: 7 };
             updateNode(list, 16);
-            expect(updated).toEqual([2]);
+            expect(updated).toEqual([7]);
+        });
+
+        it('reports the current item from an update step through a relay binding', () => {
+            const items: (Item | undefined)[] = itemsWithIds(1, 2);
+            const finished: number[] = [];
+            const list = List<Item>({
+                items,
+                children: (item) => jsx(fixture.everyFrame.tag, { onUpdate: () => void finished.push(item().id) }),
+            });
+            refresh(list);
+
+            // The model removes the first item, and the second moves into its slot
+            items.splice(0, 1);
+            updateNode(list, 16);
+            expect(finished).toEqual([2]);
+        });
+
+        it('follows a new collection from a getter in the update step too', () => {
+            let items: Item[] = itemsWithIds(1);
+            const updated: number[] = [];
+            const list = List<Item>({
+                items: () => items,
+                children: (item) => jsx(fixture.everyFrame.tag, { onUpdate: () => void updated.push(item().id) }),
+            });
+            refresh(list);
+
+            items = itemsWithIds(5);
+            updateNode(list, 16);
+            expect(updated).toEqual([5]);
         });
 
         it('gates an update step an item view gains after it is built', () => {

@@ -169,7 +169,21 @@ Settled questions that should not be reopened without new information are in
   building the fruit machine's wins list (033), which still has the wrapper:
   `packages/sites/arcade/src/demos/fruit-machine/views/panel/wins-list-view.tsx`.
 
-- **A `<List>` item view's update step sees last frame's item.** An item
+- ~~**A `<List>` item view's update step sees last frame's item.**~~ Done
+  2026-10-18, with the suggested fix. A slot whose item view has an update
+  step gets its gate as the view is built, and again as it empties, for one
+  that gained an update step since. The gate looks the item up afresh, and
+  the list reads its source in an update step of its own, before any
+  slot's, so a getter's new collection is followed too. Five conformance
+  tests cover the three cases below and the getter, and fail on the old
+  code. The first version slowed the `arrays-sprites` A/B (20,000 grains)
+  by about 3%, although its item views have no update steps. The cause was
+  asking `hasNodeUpdateInSubtree` as each slot was built, which filled the
+  method lists' cache field on every sprite earlier than `updateView` does,
+  in another order among its fields. That check now reads the cache without
+  filling it. Then four interleaved rounds each way were level: settled
+  2,080 against 2,070 µs, and flipping 2,380 against 2,340 µs, within the
+  rounds' spread. Originally: an item
   view reads its item through a cache that the slot's presence check fills
   during `refreshView`. `updateView` runs between the models' update and
   that refresh, so in the frame after the model removes or replaces an item,
@@ -506,7 +520,7 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Parked items each still parked, or moved into their own task
 - [ ] Import and export layout, and line length, enforced by lint
 - [ ] `<List>` builds list items straight into a list element, with no wrapper
-- [ ] A `<List>` item view's update step sees the current item, or the hazards are documented
+- [x] A `<List>` item view's update step sees the current item, or the hazards are documented
 
 ## Progress Log
 
@@ -580,3 +594,5 @@ falling-sand demo. Each is a new variant, measured with
 - 2026-10-18: Measured the line lengths again for the import and line
   length item. The code has outgrown 120 columns, so the length to enforce
   needs the owner's decision first.
+- 2026-10-18: A `<List>` item view's update step sees the current item.
+  The A/B found a 3% cost from filling a cache field early, now avoided.
