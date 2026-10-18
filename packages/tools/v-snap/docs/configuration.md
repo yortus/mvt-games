@@ -1,57 +1,98 @@
 # Configuration
 
-v-snap has two config files. `vitest.config.ts` lists v-snap's projects, and
-runs in Node. `vsnap.config.ts` registers the kinds of view, and runs in
-the test page, as [Kinds of View](kinds-of-view.md) describes. This page
-covers the first.
+Your project has two config files for v-snap. `vitest.config.ts` adds
+v-snap's projects to Vitest, and runs in Node. `vsnap.config.ts` registers
+the kinds of view that your tests pose, and runs in the test page, as
+[Kinds of View](kinds-of-view.md) describes. This page covers the first.
 
 - [v-snap's Projects](#v-snaps-projects)
+- [Listing v-snap's Projects](#listing-v-snaps-projects)
 - [What the Projects Inherit](#what-the-projects-inherit)
 - [Options](#options)
 - [Checks When the Config Loads](#checks-when-the-config-loads)
-- [Where a Failed Test's Images Go](#where-a-failed-tests-images-go)
 - [Where Files Go](#where-files-go)
 - [Changing Layout](#changing-layout)
+- [Where a Failed Test's Images Go](#where-a-failed-tests-images-go)
 
 ## v-snap's Projects
 
-v-snap's tests run in two Vitest projects, beside a project's unit tests.
-Vitest runs them after the project's other projects, in a group of their
-own (Vitest's `sequence.groupOrder`). There are two ways to add them.
+v-snap's tests run in Vitest projects of their own, beside your unit
+tests. A Vitest project is a group of test files with its own settings.
+That's what lets the visual tests run in a browser while your unit tests
+stay in Node. v-snap makes a project for your canvas tests and another
+for your HTML tests, if you have tests of that kind. Vitest runs them
+after your other projects, in a group of their own (Vitest's
+`sequence.groupOrder`).
 
-The first is `withVsnap(config)`, which adds them to a config as it is, as
-[Getting Started](getting-started.md#an-example) shows. v-snap's options go
-in the same config, under a `vsnap` key. `withVsnap()` takes them out of
-the config that it returns, so Vitest never sees them.
-
-```ts
-export default defineConfig(withVsnap({
-    vsnap: { root: import.meta.dirname },
-    plugins: [/* the plugins that the project's views need */],
-    test: { environment: 'jsdom' },
-}));
-```
-
-What `withVsnap()` does depends on the config's shape:
-
-- **A flat config,** with no projects, gets a project named `unit`, with
-  `extends: true`. Its unit test settings move into that project: `name`,
-  `include`, `exclude`, `includeSource`, `environment`,
-  `environmentOptions`, `setupFiles` and `browser`. The project's
-  `exclude` also leaves out the visual test files. The rest of the config
-  stays where it is.
-- **A config that has projects** keeps them, and v-snap's are added after
-  them. Its own projects must leave out the visual test files themselves.
-
-The second way is `vsnap(options)`, which returns the projects, for a
-config that lists them itself:
+You add them with the `vsnap()` plugin, as
+[Getting Started](getting-started.md#an-example) shows. v-snap's options
+go in the call. Here, `react()` stands for the plugins that your views
+need:
 
 ```ts
-import { configDefaults, defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
 import { vsnap } from 'v-snap/vitest';
 
 export default defineConfig({
-    plugins: [/* the plugins that the project's views need */],
+    plugins: [react(), vsnap({ viewport: { width: 960, height: 600 } })],
+    test: { environment: 'jsdom', setupFiles: ['./test-setup.ts'] },
+});
+```
+
+When Vitest starts, the plugin does three things:
+
+- **It adds v-snap's projects to the run.** They bring v-snap's reporter
+  with them, which prints the visual tests' summary and checks the
+  reference images. So you don't need to add anything else.
+- **It leaves the visual test files out of your config's own tests,** by
+  adding v-snap's `include` globs to their `exclude`. If your config lists
+  its projects, the plugin does this for each project listed inline.
+- **It names your unit tests `unit`,** if your config is a flat config
+  (one with no `test.projects` list) and doesn't name them already. Then
+  `vitest -p unit` runs them alone.
+
+The plugin works through the projects that Vitest starts with, since
+Vitest calls a plugin only through a project that carries it. A project in
+a config file of its own, such as one that a glob like `'packages/*'`
+names, doesn't carry the plugin. So it must leave out the visual test
+files itself. And if every project is in a file of its own, the plugin
+never runs, and the visual tests are silently missing. In that case, list
+v-snap's projects with `vsnapProjects()` instead, as the next section
+shows.
+
+`vitest` runs every test. To run only the visual tests, give Vitest part
+of their paths, since it runs the test files whose paths contain what you
+give it. With v-snap's default `include`, the visual tests are in
+`visual-tests` folders, so `vitest visual-tests/` runs them alone. If you
+changed `include`, use a part of the paths that your visual test files
+share.
+
+You can't pick the plugin's projects by name with Vitest's `-p`
+(`--project`) filter. That's because the plugin adds them from inside
+your config's own projects. A filter such as `-p "visual-*"` leaves those
+projects out, so the plugin never runs, and Vitest finds nothing to run.
+Vitest then stops, and says that no projects matched the filter. v-snap
+usually explains first, and suggests filtering on the paths instead. It
+can't explain when it can't tell which projects carry the plugin, such as
+when one of them has no name. If you want to pick v-snap's projects by
+name, list them yourself, as the next section shows.
+
+## Listing v-snap's Projects
+
+If your config lists its projects, you can list v-snap's projects there
+too, with `vsnapProjects(options)`, which returns them. This suits a
+monorepo that wants to see every project in one place, or to pick v-snap's
+projects by name, as `vitest -p "visual-*"` does. It's also what to use
+when all your projects are in config files of their own.
+
+```ts
+import react from '@vitejs/plugin-react';
+import { configDefaults, defineConfig } from 'vitest/config';
+import { vsnapProjects } from 'v-snap/vitest';
+
+export default defineConfig({
+    plugins: [react()],
     test: {
         projects: [
             {
@@ -64,88 +105,83 @@ export default defineConfig({
                     ],
                 },
             },
-            ...vsnap(),
+            ...vsnapProjects(),
         ],
     },
 });
 ```
 
-The unit project has `extends: true`, so that it keeps the config's
-plugins, as v-snap's projects do. It leaves out the visual test files,
-which run in v-snap's projects instead, since Vitest's default `include`
-matches both kinds of file.
+The unit project has `extends: true`, so it keeps the config's plugins,
+as v-snap's projects do. Vitest's default `include` matches the visual
+test files too, so the unit project must leave them out itself. They run
+in v-snap's projects instead.
 
-Either way, v-snap's projects bring v-snap's reporter with them. The
-reporter prints the visual tests' summary and checks the reference images.
-So there is nothing else to add. A run without v-snap's projects, such as
-`vitest -p unit`, prints no summary.
+Use either `vsnap()` or `vsnapProjects()` for a set of visual tests, not
+both.
 
 ## What the Projects Inherit
 
-v-snap's projects inherit the config that they are listed in, as Vitest's
-`extends: true` does. So the views compile with the same plugins and
-aliases as the rest of the project.
+v-snap's projects inherit the config that adds them, as Vitest's
+`extends: true` does. So your views compile with the same plugins and
+aliases as the rest of your project. The projects also get settings such
+as `alias` and `server` from your config's `test` block.
 
-Some settings must not reach v-snap's projects, so they belong in the unit
-project, not in the config's `test` block:
+Your unit tests' own settings don't reach v-snap's projects. Each project
+keeps its own `include`, `exclude`, `setupFiles` and `browser`, and drops
+the config's `includeSource`, `environment` and `environmentOptions`.
+Without this, Vitest would join your lists to the projects' own. Then the
+projects would pick up your unit test files, and a setup file written for
+Node or a simulated DOM would fail in the browser page. Your `browser`
+settings would also run each visual test a second time, in a browser that
+v-snap didn't set up.
 
-- **`include` and `exclude`.** Vitest adds the config's own lists to an
-  inheriting project's, so v-snap's projects would pick up the unit
-  tests' files.
-- **`setupFiles`.** A setup file would run in v-snap's browser pages,
-  where one written for Node, or for a simulated DOM, fails.
-
-`withVsnap()` moves them into the unit project. A run stops with a message
-if any of them reach v-snap's projects.
-
-A `globalSetup` in the config's `test` block can stay there, and
-`withVsnap()` leaves it. Vitest runs it once for the whole run, in Node,
-not once for each project, since it never passes a root config's
-`globalSetup` on to the projects that inherit it.
+A `globalSetup` in your config's `test` block runs once for the whole
+run, in Node. Vitest never passes a root config's `globalSetup` on to the
+projects that inherit it. So a server that it starts for your unit tests
+isn't started again for each of v-snap's projects.
 
 ## Options
 
-`vsnap(options)` and the `vsnap` of `withVsnap()`'s config take the same
-options. Every option is optional.
+`vsnap(options)` and `vsnapProjects(options)` take the same options, and
+every option is optional.
 
 | Option | What it sets |
 | --- | --- |
-| `name` | The start of the projects' names, which end in `-canvas` and `-html`. The default is `visual` |
-| `root` | The folder that the other paths are relative to, and that holds `vsnap.config.ts`. The default is the folder Vitest runs in. A run whose Vitest root is elsewhere, such as with `vitest --root`, stops and asks for it, such as `root: import.meta.dirname` |
-| `include` | Globs for the test files. See [Where Files Go](#where-files-go) |
+| `name` | The start of the projects' names, which end in `-canvas` and `-html`. The default is `visual`, which gives `visual-canvas` and `visual-html` |
+| `root` | The folder that holds `vsnap.config.ts`, which the other paths are relative to. With `vsnap()`, the default is Vitest's root, and a relative `root` is relative to it. With `vsnapProjects()`, the default is the folder that you run Vitest in, and a relative `root` is relative to that. If Vitest's root is elsewhere, such as with `vitest --root`, the run stops and asks you to set it, such as `root: import.meta.dirname` |
+| `include` | Globs for your visual test files. See [Where Files Go](#where-files-go) |
 | `exclude` | Globs for files that `include` matches but that aren't visual test files, such as fixtures. The default is none |
-| `referencePath` | Where each reference image is kept. See [Where Files Go](#where-files-go) |
-| `maxPixels` | The size budget, which is the most pixels an image may have. A smooth view over the budget is drawn at half its size, or a quarter, and so on, until it fits. Detail finer than an image pixel is then averaged away, and the run's summary lists the image. Pixel art and HTML are always drawn at full size, so their tests fail when over the budget. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
-| `viteConfig` | A Vite config for v-snap's projects to extend, in place of the config they are listed in. A monorepo whose views need a package's own Vite config names it here |
-| `vsnapConfig` | The project's `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, or `vsnap.config.mts`, `.js` or `.mjs`, if there is one. Naming it shows a reader of `vitest.config.ts` where the rest of v-snap's settings are |
+| `referencePath` | The path template for each reference image. See [Where Files Go](#where-files-go) |
+| `maxPixels` | The size budget, which is the most pixels an image may have. It keeps your references small and your tests quick. A smooth view over the budget is drawn at half its size, or a quarter, and so on, until it fits. Detail finer than an image pixel is then averaged away, and the run's summary lists the image. Pixel art and HTML are always drawn at full size, so their tests fail when they're over the budget. The default, `DEFAULT_MAX_PIXELS`, is 500,000 |
+| `viteConfig` | A Vite config for v-snap's projects to extend, in place of the config that adds them. Use it in a monorepo whose views need a package's own Vite config |
+| `vsnapConfig` | Your `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, or `vsnap.config.mts`, `.js` or `.mjs`, if there is one. Naming it shows anyone reading `vitest.config.ts` where the rest of v-snap's settings are |
 | `viewport` | The test page's viewport, as `{ width, height }` in CSS pixels. An HTML view must fit inside it, and a test's own `viewport` can't be bigger. The default, `DEFAULT_VIEWPORT`, is 1280 by 800 |
-| `colorScheme` | `'light'` or `'dark'`: what the page's `prefers-color-scheme` media queries see, unless a test's own `colorScheme` says otherwise. The default is `'dark'` |
+| `colorScheme` | What the page's `prefers-color-scheme` media queries see, `'light'` or `'dark'`, unless a test's own `colorScheme` says otherwise. The default is `'dark'` |
 
-A monorepo can call `vsnap()` once for each package that has visual tests,
-with its own `root` and `name`, and list all their projects in one config.
-Two calls can also share a root, with `include` globs that don't overlap.
-A test file that the globs of two calls match stops the run.
+In a monorepo, you can add v-snap's projects once for each package that
+has visual tests, each with its own `root` and `name`. Use a `vsnap()`
+plugin for each package, or a `vsnapProjects()` call for each, all in one
+config. Two packages can also share a root, if their `include` globs
+don't overlap. If a test file matches the globs of two of them, the run
+stops.
 
 ## Checks When the Config Loads
 
-When the config loads, v-snap checks `vsnap.config.ts` by its text, without
-running it. A file with no default export stops the run. A file that never
-gives its config's type to v-snap, with `Register`, gets a warning, since
-then `canvasTest`'s types don't know its kinds of view.
+When the config loads, v-snap reads `vsnap.config.ts` as text, without
+running it, since the file is meant to run in the test page. It checks
+two things:
 
-## Where a Failed Test's Images Go
-
-When a test fails, v-snap writes its actual image, and a diff for a changed
-image, to `.vitest/vsnap/` at the root of the repository, in folders that
-mirror the reference's path. Add `.vitest/` to `.gitignore`. The failure
-points at the test's `canvasTest` or `htmlTest` line in its file, as a
-failed assertion points at its line. An error that the pose threw points at
-the pose's own code.
+- **The file has a default export.** v-snap reads its config from that
+  export, so a file without one stops the run.
+- **The file gives its config's type to v-snap,** with `Register` or
+  `bindCanvasTest`. If it doesn't, you get a warning. Without the type,
+  `canvasTest` doesn't know your kinds of view, so every test of a kind
+  that you registered is a type error.
 
 ## Where Files Go
 
-Two options say where a project keeps its visual test files and their
-reference images. Both are relative to the root.
+Two options say where you keep your visual test files and their reference
+images. Both are relative to the root.
 
 - **`include`** is a list of globs for the test files. The default,
   `DEFAULT_INCLUDE`, is `['**/visual-tests/*.test.{ts,tsx}']`.
@@ -153,8 +189,8 @@ reference images. Both are relative to the root.
   default, `DEFAULT_REFERENCE_PATH`, is
   `'{testFileDir}/{testFileStem}.{imageName}.png'`.
 
-The template's variables give these values, for a test named `at the start`
-in `src/hud/visual-tests/hud-view.test.tsx`:
+Here's what each of the template's variables gives, for a test named
+`at the start` in `src/hud/visual-tests/hud-view.test.tsx`:
 
 | Variable | What it gives | Example |
 | --- | --- | --- |
@@ -162,7 +198,7 @@ in `src/hud/visual-tests/hud-view.test.tsx`:
 | `{testFileName}` | The test file's name | `hud-view.test.tsx` |
 | `{testFileStem}` | The name without `.test` or `.spec` and its extension | `hud-view` |
 | `{testFilePath}` | The test file's path | `src/hud/visual-tests/hud-view.test.tsx` |
-| `{imageName}` | The test's image name, from its full name | `at-the-start` |
+| `{imageName}` | The test's image name, made from its full name | `at-the-start` |
 
 So by default, a view's folder looks like this:
 
@@ -176,10 +212,13 @@ src/hud/
     poses.ts
 ```
 
-Two test files in one folder with one stem, such as `hud-view.test.ts` and
-`hud-view.test.tsx`, would share their images, so v-snap leaves the second
-out, and says why. In VS Code, the explorer can fold each test file's
-images under it, with these settings:
+If two test files in one folder have the same stem, such as
+`hud-view.test.ts` and `hud-view.test.tsx`, they would share their images.
+So v-snap leaves the second one out, and says why. The visual tests then
+fail until you rename one of them.
+
+In VS Code, you can fold each test file's images under it in the explorer,
+which keeps a busy folder easy to scan. Add these settings:
 
 ```json
 "explorer.fileNesting.enabled": true,
@@ -189,8 +228,10 @@ images under it, with these settings:
 }
 ```
 
-A template follows these rules, or the run stops when the config loads:
+A template must follow these rules, or the run stops when the config
+loads:
 
+- It uses only the variables in the table above.
 - `{imageName}` appears once, in the file name.
 - The file name ends in `.png`.
 - The path is relative to the root, and stays inside it.
@@ -213,35 +254,53 @@ vsnap({
 vsnap({ referencePath: 'visual-references/{testFilePath}/{imageName}.png' });
 ```
 
-The unit project must leave out a layout's test files. `withVsnap()` adds
-the `include` globs to its `exclude` itself. A config that lists the
-projects by hand adds them: `'**/visual-tests/*.test.{ts,tsx}'` for the
-default layout, and `'**/*.visual.test.{ts,tsx}'` for the first layout
-above.
+Your unit tests must leave out the visual test files. The `vsnap()`
+plugin adds the `include` globs to their `exclude` for you. With
+`vsnapProjects()`, add them yourself: `'**/visual-tests/*.test.{ts,tsx}'`
+for the default layout, or `'**/*.visual.test.{ts,tsx}'` for the first
+layout above.
 
-Keep other PNGs out of the places where the reference path puts
-references. With the default layout, that is a PNG beside a test file
-whose name starts with the file's stem and a dot. A test whose image has
-that name would compare with it.
+Keep your other PNGs out of the places where the reference path puts
+references. With the default layout, that means a PNG beside a test file
+whose name starts with the file's stem and a dot. If a test's image had
+that name, the test would compare its actual image with that PNG.
 
-v-snap tells its reference images from other PNGs in two ways. Each
-reference carries a hash of its pixels. And the reference path would put
-an image of one of its test files there. That has these effects:
+v-snap tells its reference images apart from your other PNGs in two ways.
+First, each reference carries a hash of its pixels. Second, it must be at
+a path where the reference path would put an image of one of your test
+files. This has these effects:
 
-- When a test file is deleted, its images still belong to it, if the
-  `include` globs would match it. So they count as unused, and a run
+- When you delete a test file, its images still belong to it, as long as
+  the `include` globs would match it. So they count as unused, and a run
   outside CI deletes the ones that git tracks.
 - A template without `{testFileName}`, `{testFileStem}` or
-  `{testFilePath}` can't say which file an image is for. So images can
-  only be in folders that hold a test file. A run of some of the test
-  files looks only at the images that no other file could own.
+  `{testFilePath}` can't say which test file an image belongs to. So an
+  image counts as a reference only in a folder that holds a test file.
+  When you run only some test files, v-snap checks only the images that
+  no other test file could own.
 - The check for unused references never deletes a PNG without a hash. It
-  also leaves a copy of a reference in another folder, such as `docs`, and
-  the images of another `vsnap` call's tests.
+  also leaves alone a copy of a reference in another folder, such as
+  `docs`, and the images of another `vsnap()` or `vsnapProjects()` call's
+  tests.
 
 ## Changing Layout
 
-To change layout, change the options, then run the visual tests once with
-Vitest's `-u`. Each test writes its reference image at the new path, with
-the same pixels as before. The run leaves the old files alone, since the
-new layout would never put a reference there. Delete them by hand.
+To change the layout, change the options, then run the visual tests once
+with Vitest's `-u` flag. Each test writes its reference image at the new
+path, with the same pixels as before. The run leaves the old files alone,
+since the new layout would never put a reference there. Once you've
+checked the new references, delete the old files by hand.
+
+## Where a Failed Test's Images Go
+
+When a test fails, v-snap writes its actual image to `.vitest/vsnap/` at
+the root of your repository. If the image changed but kept its size, a
+diff goes beside it. The folders there mirror the reference's path, so
+you can find a test's images easily. Outside a git repository, the
+`.vitest/vsnap/` folder is in the folder that you run Vitest in. Add
+`.vitest/` to `.gitignore`, so that you don't commit these images.
+
+The failure points at the test's `canvasTest` or `htmlTest` line in its
+file, just as a failed assertion points at its line. If the pose (the
+function that arranges your view for the test) threw an error, the
+failure points at the pose's own code instead.

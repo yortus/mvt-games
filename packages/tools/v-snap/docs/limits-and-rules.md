@@ -1,68 +1,80 @@
 # Limits and Rules
 
-v-snap gives the same images on every machine by giving up a few details,
-which this page lists. It also lists the rules that tests follow, so that
-their images don't change from one run to the next.
-[How It Works](how-it-works.md) explains why each limit is there.
+v-snap gives you the same images on every machine. To do that, it gives
+up a few details, which this page lists. The page also lists the rules
+your tests should follow, so that their images don't change from one run
+to the next. [How It Works](how-it-works.md) explains why each limit is
+there.
 
 - [What the Images Leave Out](#what-the-images-leave-out)
 - [Rules for Tests](#rules-for-tests)
 
 ## What the Images Leave Out
 
-- **Images of HTML views have no text.** Layout and styling show, but the
-  words don't. For a game's menus and panels, that is usually what
-  matters, and a copy edit doesn't fail a test. Words that matter can be
-  checked with assertions.
-- **HTML text is laid out as if every letter were 0.625 em wide,** which
-  is the width of each letter of the blank font. So text wraps, is cut off
-  with an ellipsis, and sizes the boxes that fit it, at other points than
-  in the real font. A layout that is right in the image can still overflow
-  in the page, and the other way round.
-- **HTML views are captured at rest.** Animations are finished or
-  cancelled, so an image shows where one ends, not a moment in it.
-- **Canvas text uses the two test fonts,** not the view's own. A character
-  that they lack, such as ★ or an emoji, is drawn as a box with its code
-  point inside, so a change from one such character to another still
-  changes the image. Text that a view measures, to wrap or fit it, is
-  measured in the test fonts too, so a line that overflows in the view's
-  own font may fit in the image.
-- **Text that reaches a canvas in another way than its text calls is
-  drawn by the system,** in the system's own fonts. Pixi's `HTMLText` is
-  one example, since it draws HTML through an SVG image. Its images can
-  differ between machines, so leave it out of visual tests.
-- **Rotated `<img>` elements look a little jagged,** because smooth
-  sampling rounds differently on arm64 processors.
-- **Differences of 2 levels or less pass.** A real change is almost never
-  that small. On a processor other than arm64, Vitest's `-u` still writes
-  such a change to the reference.
-- **Drawing is done in software,** so it can differ a little from what a
-  real graphics card draws.
+- **Images of HTML views have no text.** You see the layout and styling,
+  but not the words. For a game's menus and panels, that's usually what
+  matters, and it means a change of wording doesn't fail a test. If some
+  words do matter, check them with an assertion.
+- **HTML text is laid out as if every character were 0.625 em wide.**
+  That's the width of each character in v-snap's blank font. So text may
+  wrap, or be cut off with an ellipsis, at a different point than in your
+  real font. Boxes that size themselves to fit their text may come out a
+  different size too. A layout that looks right in the image can still
+  overflow in the real page, and the other way round.
+- **HTML views are captured at rest.** v-snap jumps each animation to its
+  end, or removes it if it repeats forever. So an image shows where an
+  animation ends, not a moment in the middle of it.
+- **Canvas text is drawn in v-snap's own fonts,** one sans-serif and one
+  monospace, not in the fonts your view asks for. If a character isn't in
+  those fonts, such as ★ or an emoji, v-snap draws a box with the
+  character's code point inside. So changing one such character to
+  another still changes the image. Text that your view measures, to wrap
+  or fit it, is measured in v-snap's own fonts too. So a line that
+  overflows in your font may fit in the image.
+- **Text that reaches a canvas without the canvas's own text calls
+  (`fillText` and `strokeText`) is drawn by the system,** in the system's
+  own fonts. One example is Pixi's `HTMLText`, which draws HTML through an
+  SVG image. Its images can differ between machines, so leave it out of
+  visual tests.
+- **Rotated `<img>` elements look a little jagged.** v-snap draws them
+  without smoothing, because arm64 processors round smoothed, rotated
+  images differently from other processors.
+- **Small differences pass.** A pixel passes if none of its colour
+  channels differs by more than 2, on a scale of 0 to 255. A real change
+  is almost never that small. On arm64 processors, Vitest's `-u` leaves
+  such a reference alone, since those processors round a little
+  differently. On other processors, `-u` writes the change to the
+  reference.
+- **Drawing is done in software,** on the processor. So it can differ a
+  little from what a real graphics card draws.
 
 ## Rules for Tests
 
-- **Don't leave global state changed, or depend on real time.** Either can
-  make images change from one run to the next. Canvas tests share one
-  page, so a change that one test leaves behind affects the tests after it.
-  That includes Vitest's `vi.mock` and `vi.stubGlobal`.
-- **Make a Pixi texture in the pose, if pixel art and smooth tests share
-  it.** A texture keeps the sampling that it was made with, which
-  `pixelArt` sets as each pose starts. Say a module makes a texture once
-  and caches it. The texture keeps the sampling of the test that made it,
-  so a later test of the other kind draws it differently. Its image then
-  depends on which test ran first. A texture whose sampling is set when it
-  is made, such as a spritesheet's, draws the same in every test.
-- **Give each canvas font list a family that v-snap knows.** Canvas text
-  is drawn in v-snap's own sans-serif or monospace font. The first family
-  in the list that v-snap knows picks which. It knows every generic
-  family, and the common system fonts, such as Arial, Helvetica, Segoe UI,
-  Roboto, Consolas and Menlo. `monospace` and `ui-monospace` are drawn in
-  the monospace font. `sans-serif`, `serif`, `system-ui`, `ui-sans-serif`,
-  `ui-serif`, `ui-rounded`, `cursive`, `fantasy`, `emoji`, `math` and
-  `fangsong` are drawn in the sans-serif font. So
-  `'"Press Start 2P", monospace'` works, but `'"Press Start 2P"'` alone
-  fails its test. Ending each list with `sans-serif` or `monospace` always
-  works.
+- **Don't leave global state changed, or depend on real time.** Either
+  can make images change from one run to the next. Every canvas test file
+  runs in one shared page, and the tests of an HTML test file share their
+  page too. So a change that one test leaves behind affects the tests
+  after it. That includes a `vi.mock` or a `vi.stubGlobal` that you don't
+  undo.
+- **If pixel-art and smooth tests share a Pixi texture, make it in the
+  pose.** Pixi fixes a texture's sampling, sharp or smoothed, when it
+  makes the texture. v-snap sets the default sampling from the test's
+  `pixelArt` option as each pose starts. Say a module makes a texture once
+  and caches it. The texture keeps the sampling of whichever test made
+  it, so a later test of the other kind draws it differently. Its image
+  then depends on which test ran first. A texture that sets its own
+  sampling, such as a spritesheet's, draws the same in every test.
+- **Give each canvas font a family that v-snap knows.** v-snap draws
+  canvas text in one of its own fonts, the sans-serif one or the monospace
+  one. It picks one by looking through your CSS font list, such as
+  `'Arial, sans-serif'`, for the first family it knows. It knows every
+  generic family, and common system fonts such as Arial, Helvetica, Segoe
+  UI, Roboto, Consolas and Menlo. `monospace` and `ui-monospace` use the
+  monospace font, and every other generic family uses the sans-serif
+  font. So `'"Press Start 2P", monospace'` works, but `'"Press Start 2P"'`
+  on its own fails its test. If you end each list with `sans-serif` or
+  `monospace`, it always works.
 
-A run in a random order, `vitest run -p "visual-*" --sequence.shuffle`,
-finds a test that breaks the first rule.
+To find a test that breaks the first rule, run the visual tests in a
+random order, with `--sequence.shuffle`, as
+[Running the Tests](running-tests.md#commands) shows.

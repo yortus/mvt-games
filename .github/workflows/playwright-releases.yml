@@ -128,7 +128,7 @@ jobs:
               continue-on-error: true
               run: |
                   set -o pipefail
-                  npx vitest run -p "visual-*" 2>&1 | tee site.log
+                  npx vitest run visual-tests/ 2>&1 | tee site.log
 
             - name: Comment on the issue
               if: always() && steps.install.outcome != 'skipped' && steps.issue.outputs.number != ''

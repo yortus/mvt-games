@@ -11,7 +11,8 @@ const config = defineVsnapConfig({
     views: [htmlViews({ prepare: refreshView, dispose: destroyElement })],
 });
 
-// Gives v-snap's types the kinds of view above.
+// Tells TypeScript about the kinds of view above, so that v-snap's test
+// functions check each test's options against them.
 declare module 'v-snap' {
     interface Register {
         config: typeof config;

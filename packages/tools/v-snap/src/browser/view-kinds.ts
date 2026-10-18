@@ -72,9 +72,10 @@ export interface VsnapConfig<Views extends readonly ViewKind[] = readonly ViewKi
 }
 
 /**
- * What a project's `vsnap.config.ts` tells v-snap's types. The project adds
- * its config's type here, so that `canvasTest` knows its kinds of view and
- * its default kind:
+ * Where you tell TypeScript about your `vsnap.config.ts`. Add your config's
+ * type to it with the declaration below. Then `canvasTest` accepts tests of
+ * the kinds of view that the config registers, and checks their options.
+ * It also lets a test leave out its kind, to use the default kind.
  *
  * ```ts
  * declare module 'v-snap' {

@@ -9,15 +9,25 @@ const ROOT = import.meta.dirname;
 const SOURCE_CONDITION = '@mvtjs/source';
 
 // One test run over every workspace in packages/: the unit tests in Node, and
-// the Arcade's and the playground's visual tests in a browser. The "unit"
-// project leaves out the visual tests, which run in v-snap's projects:
-// `visual-canvas` and `visual-html` for the Arcade,
-// `visual-playground-html` for the playground, and `visual-library-html` for
-// the HTML library's views. They bring v-snap's reporter
-// with them. `-p unit` and `-p "visual-*"` run each kind alone. v-snap is
-// left out, as if it lived in a repo of its own: its own config runs its
-// tests, and the scripts call it.
+// the visual tests in a browser. Each vsnap() plugin adds the projects for
+// one package's visual tests when Vitest starts: `visual-canvas` and
+// `visual-html` for the Arcade, `visual-playground-html` for the playground,
+// and `visual-library-html` for the HTML library's views. They bring
+// v-snap's reporter with them. The plugins also leave the visual tests out of
+// this config's own tests, which they name "unit". So `-p unit` runs the unit
+// tests alone, and `vitest run visual-tests/` the visual tests, since every
+// visual test file is in a `visual-tests` folder.
+// v-snap is left out, as if it lived in a repo of its own: its own config
+// runs its tests, and the scripts call it.
 export default defineConfig({
+    plugins: [
+        // The Arcade's visual tests, which build its views with its own Vite config
+        vsnap({ root: resolve(ROOT, 'packages/sites/arcade'), viteConfig: './vite.config.ts' }),
+        // The playground's, which need nothing beyond this config
+        vsnap({ root: resolve(ROOT, 'packages/sites/playground'), name: 'visual-playground' }),
+        // The HTML library's, for the views it offers, such as its Perfmon
+        vsnap({ root: resolve(ROOT, 'packages/libraries/html'), name: 'visual-library' }),
+    ],
     resolve: {
         conditions: [SOURCE_CONDITION, ...defaultClientConditions],
     },
@@ -42,32 +52,8 @@ export default defineConfig({
             { find: /^solid-js\/web$/, replacement: resolve(ROOT, 'node_modules/solid-js/web/dist/web.js') },
         ],
         server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
-        projects: [
-            {
-                extends: true,
-                test: {
-                    name: 'unit',
-                    // .claude/ holds agent worktrees: separate checkouts, tested
-                    // on their own. v-snap's own tests run in its own config.
-                    // The visual tests run in v-snap's projects.
-                    exclude: [...configDefaults.exclude, '.claude/**', 'packages/tools/v-snap/**', '**/visual-tests/*.test.{ts,tsx}'],
-                },
-            },
-            // The Arcade's visual tests, which build its views with its own Vite config
-            ...vsnap({
-                root: resolve(ROOT, 'packages/sites/arcade'),
-                viteConfig: './vite.config.ts',
-            }),
-            // The playground's, which need nothing beyond this config
-            ...vsnap({
-                root: resolve(ROOT, 'packages/sites/playground'),
-                name: 'visual-playground',
-            }),
-            // The HTML library's, for the views it offers, such as its Perfmon
-            ...vsnap({
-                root: resolve(ROOT, 'packages/libraries/html'),
-                name: 'visual-library',
-            }),
-        ],
+        // .claude/ holds agent worktrees: separate checkouts, tested on their
+        // own. v-snap's own tests run in its own config.
+        exclude: [...configDefaults.exclude, '.claude/**', 'packages/tools/v-snap/**'],
     },
 });

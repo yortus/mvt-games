@@ -11,8 +11,17 @@ and messages are written.
 ## Running v-snap's Own Tests
 
 v-snap's own `vitest.config.ts` lists its projects by hand, as
-[Configuration](docs/configuration.md#v-snaps-projects) describes. It has
-a unit project, then the projects of two `vsnap()` calls:
+[Configuration](docs/configuration.md#listing-v-snaps-projects) describes.
+It has a unit project, a project for the plugin's tests, then the projects
+of two `vsnapProjects()` calls:
+
+- **`plugin`** runs `fixtures/plugin-project.test.ts`, which tests the
+  `vsnap()` plugin from end to end. Each test runs Vitest on the small
+  project in `fixtures/plugin-project/`, as a process of its own, and
+  reads what it printed. The project's settings would break v-snap's
+  projects if they reached them, so a visual test that passes shows that
+  they didn't. Each run starts a browser, so these tests are left out of
+  the unit tests.
 
 - **`visual-canvas` and `visual-html`** run v-snap's own visual tests, in
   `src/browser/visual-tests/`, with the kinds of view that its
@@ -29,8 +38,9 @@ These commands run in v-snap's folder:
 
 | Command | What it does |
 | --- | --- |
-| `npm test` | Runs all of v-snap's tests: unit, visual and the fixture's |
+| `npm test` | Runs all of v-snap's tests: unit, the plugin's, visual and the fixture's |
 | `npm run test:unit` | Runs the unit tests alone, in Node |
+| `npx vitest run -p plugin` | Runs the plugin's tests alone |
 | `npm run test:visual` | Runs the visual tests alone, the fixture's included |
 | `npm run test:visual:update` | Also writes changed actual images as reference images |
 | `npm run test:visual:environment` | Rewrites the environment's fingerprint and the calibration set's references, as [Upgrading Playwright](#upgrading-playwright) describes |
@@ -66,7 +76,7 @@ used.
 | `src/browser/` | The side that runs in the test page. The main entry point exports `canvasTest`, `htmlTest`, `bindCanvasTest`, `defineVsnapConfig` and `htmlViews` from here, with the types of the kinds of view. This side loads the project's `vsnap.config.ts`, reads canvases, captures HTML views, and sets the page up. The setup seeds random numbers, draws canvas text in the two test fonts, blanks HTML text, and checks the calibration set |
 | `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, which `v-snap/pixi` and `v-snap/three` export: `pixiViews`, `getPixiRenderer` and `threeViews`. Only these folders import the libraries |
 | `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
-| `src/node/` | The side that runs in Node. `v-snap/vitest` exports `withVsnap()` and `vsnap()` from here, which make the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter, and the step that installs the browser |
+| `src/node/` | The side that runs in Node. `v-snap/vitest` exports `vsnap()` and `vsnapProjects()` from here, which make the plugin, the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter, and the step that installs the browser |
 | `src/browser/visual-tests/` | v-snap's own visual tests, and their references |
 | `src/browser/calibration-images/` | The calibration set's references, for each kind of page |
 | `scripts/` | The maintainers' scripts. They rewrite the environment, generate the blank font, and put the published `package.json` in place while npm packs the package |

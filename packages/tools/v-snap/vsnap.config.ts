@@ -66,7 +66,9 @@ const config = defineVsnapConfig({
     defaultKind: 'pixi',
 });
 
-// Gives canvasTest's types the kinds of view above, and the default kind.
+// Tells TypeScript about the kinds of view above, so that canvasTest
+// accepts tests of those kinds and checks their options. It also lets a
+// test leave out its kind, to use the default kind.
 // The fixture's tests are in this package's TypeScript program too, so they
 // are checked against this config.
 declare module './src/browser' {

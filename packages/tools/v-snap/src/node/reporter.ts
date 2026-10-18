@@ -26,7 +26,6 @@
 
 import { appendFileSync, existsSync, rmSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import { configDefaults } from 'vitest/config';
 import type { Reporter, TestModule, TestRunEndReason, Vitest } from 'vitest/node';
 import { toImageName } from '../image-name.ts';
 import type { VisualTestMeta } from '../protocol.ts';
@@ -36,7 +35,7 @@ import { DRAWS_EXACTLY } from './compare.ts';
 import { createPaint, isColourOn, type Paint } from './paint.ts';
 import { shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
 import { findOrphans, findReferences, findReferencesOfFiles, listTrackedFiles, removeReference, toFileKey } from './references.ts';
-import { describeProblems, forgetVsnapCalls, listVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
+import { describeProblems, forgetVsnapCalls, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -50,10 +49,6 @@ export function createVisualReporter(options: {
     readonly projectNames: readonly string[];
     /** Every visual test file of those projects, as absolute paths. */
     readonly testFiles: readonly string[];
-    /** The `include` lists that v-snap gave its projects. */
-    readonly includes: readonly string[];
-    /** The setup files that v-snap gave its projects. */
-    readonly setupFiles: readonly string[];
     /** The files that match the globs but can't run, which fail every run of the projects. */
     readonly problems: VisualTestFiles['problems'];
 }): Reporter {
@@ -68,9 +63,6 @@ export function createVisualReporter(options: {
     return {
         onInit(v: Vitest) {
             vitest = v;
-            checkForInheritedLists(v, projectNames, options.includes);
-            checkForInheritedSetupFiles(v, projectNames, options.setupFiles);
-            checkForInheritedInstances(v, options.setupFiles);
         },
         onTestRunStart() {
             started = undefined;
@@ -518,48 +510,6 @@ function writesMachineOutput(vitest: Vitest): boolean {
 const MACHINE_REPORTERS: ReadonlySet<string> = new Set(['json', 'junit', 'tap', 'tap-flat']);
 
 /**
- * Throws if a v-snap project inherits setup files from the config that it is
- * listed in, as a project with Vitest's `extends: true` does. They would
- * run in the project's browser page, where a setup file written for Node,
- * or for a simulated DOM, fails in ways that point nowhere near the cause.
- */
-function checkForInheritedSetupFiles(vitest: Vitest, projectNames: readonly string[], setupFiles: readonly string[]): void {
-    const own = new Set(setupFiles.map(toFileKey));
-    for (const project of vitest.projects) {
-        if (!projectNames.includes(project.name)) continue;
-        const extra = project.config.setupFiles.filter((file) => !own.has(toFileKey(file)));
-        if (extra.length === 0) continue;
-        throw new Error(
-            `v-snap's project ${project.name} inherits setup files from the config (${extra.map(toDisplayPath).join(', ')}), which would run in its browser page. `
-            + "Move setupFiles out of the config's test block, into the unit project (withVsnap(config) does that for a flat config), "
-            + "or name the Vite config that v-snap's projects need, with vsnap({ viteConfig }).",
-        );
-    }
-}
-
-/**
- * Throws if a project that no `vsnap` call made runs v-snap's setup file. A
- * v-snap project inherits the config's `browser` settings (`extends: true`),
- * and Vitest adds the config's `browser.instances` to the project's own. So
- * each visual test file would run again, in a browser that v-snap didn't set
- * up, uncounted in the summary, and racing v-snap's own when it writes a new
- * reference.
- */
-function checkForInheritedInstances(vitest: Vitest, setupFiles: readonly string[]): void {
-    const setups = new Set(setupFiles.map(toFileKey));
-    const names = listVsnapProjectNames();
-    for (const project of vitest.projects) {
-        if (names.has(project.name) || !project.config.setupFiles.some((file) => setups.has(toFileKey(file)))) continue;
-        throw new Error(
-            `The project ${project.name} runs v-snap's visual tests a second time, in a browser that v-snap didn't set up. `
-            + "v-snap's projects inherit the config's browser settings, and Vitest adds the config's browser.instances to theirs. "
-            + "Move the browser settings out of the config's test block, into the project that needs them, "
-            + 'or name the Vite config that v-snap\'s projects need, with vsnap({ viteConfig }).',
-        );
-    }
-}
-
-/**
  * A reference, and the full names of the tests that used it in this run.
  * Paths that differ only in case are one reference, since they are one file
  * on macOS and Windows, so it can have more than one path.
@@ -692,32 +642,6 @@ const UNTRACKED_KEEPS = 'Git doesn\'t track them, so their deletion couldn\'t be
 
 /** Why a run kept every unused reference, when git couldn't say which it tracks. */
 const NO_GIT_KEEPS = 'Git couldn\'t say which references it tracks, so their deletion might not be undone. Delete them by hand.';
-
-/**
- * Throws if v-snap's projects have file lists that v-snap didn't give them. A
- * project that inherits the config it is listed in (`extends: true`) also
- * gets the `include` and `exclude` lists of the config's own `test` block,
- * which Vitest adds to the project's own. They would send unit tests to a
- * browser page, or keep visual tests out of it. So it stops the run with a
- * message that says how to fix it, before any test runs.
- */
-function checkForInheritedLists(vitest: Vitest, projectNames: readonly string[], includes: readonly string[]): void {
-    const own = new Set(includes);
-    const defaults = new Set(configDefaults.exclude);
-    for (const project of vitest.projects) {
-        if (!projectNames.includes(project.name)) continue;
-        const extra = [
-            ...project.config.include.filter((pattern) => !own.has(pattern)),
-            ...project.config.exclude.filter((pattern) => !defaults.has(pattern)),
-        ];
-        if (extra.length === 0) continue;
-        throw new Error(
-            `v-snap's project ${project.name} inherits the config's own include and exclude lists (${extra.join(', ')}). `
-            + "Move include and exclude out of the config's test block, into the unit project (withVsnap(config) does that for a flat config), "
-            + "or name the Vite config that v-snap's projects need, with vsnap({ viteConfig }).",
-        );
-    }
-}
 
 /** Returns a count and its noun, such as '1 actual image' or '3 actual images'. */
 function count(n: number, noun: string): string {

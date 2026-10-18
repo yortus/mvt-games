@@ -1,8 +1,8 @@
 # Writing Tests
 
 A visual test builds a view in a known state, renders it to an image, and
-compares that image with a reference image. This page shows how to declare
-one, and what v-snap does with it.
+compares that image with one you accepted earlier. This page shows you how
+to declare a test, and what v-snap does with it.
 
 - [Tests, Actual Images and Reference Images](#tests-actual-images-and-reference-images)
 - [Declaring a Test](#declaring-a-test)
@@ -16,33 +16,34 @@ one, and what v-snap does with it.
 
 ## Tests, Actual Images and Reference Images
 
-Each test renders its view to one image. These docs keep three terms
-apart:
+Three terms come up throughout these docs. They mean different things, so
+it helps to know them before you start.
 
-- A **test** is one `canvasTest` or `htmlTest` declaration. A test runs,
-  and passes or fails.
+- A **test** is one test that you declare with `canvasTest` or
+  `htmlTest`. It runs, and it passes or fails.
 - An **actual image** is the image that a test renders during a run.
-- A **reference image**, or just a **reference**, is an image that has been
-  accepted, and committed as a PNG file.
+- A **reference image**, or just a **reference**, is an image that you
+  have checked and accepted, and committed to your repository as a PNG
+  file.
 
-A visual test passes when its actual image matches its reference image.
+A test passes when its actual image matches its reference image.
 
 ## Declaring a Test
 
-A test is a declaration in a `*.test.ts` or `*.test.tsx` file in a
-`visual-tests` folder beside the view, such as
-`visual-tests/hud-view.test.tsx` for `hud-view.tsx`. The file is a Vitest
-test file that runs in a browser, and it can hold ordinary tests too.
-Other files in the folder, such as poses that several tests share, are not
-test files. A project can keep its tests elsewhere, as
-[Where Files Go](configuration.md#where-files-go) describes.
+You write a test in a `*.test.ts` or `*.test.tsx` file, in a
+`visual-tests` folder beside the view. For example, the tests for
+`hud-view.tsx` go in `visual-tests/hud-view.test.tsx`. It's an ordinary
+Vitest test file that runs in a browser, so it can hold ordinary tests
+too. Other files in the folder, such as poses that several tests share,
+aren't test files. If you'd rather keep your tests somewhere else,
+[Where Files Go](configuration.md#where-files-go) shows you how.
 
-A view drawn on a canvas is declared with
-`canvasTest(name, options?, pose)`, and an HTML view with
-`htmlTest(name, options?, pose)`. The options, if there are any, come
-before the pose, as they do in Vitest's `test`. The pose is a function
-whose only job is to return the view, arranged into the state that the
-test describes.
+To test a view that draws on a canvas, call
+`canvasTest(name, options?, pose)`. For an HTML view, call
+`htmlTest(name, options?, pose)`. As with Vitest's `test`, any options
+come before the function. That function is the **pose**. Its only job is
+to build the view, set it up in the state that the test describes, and
+return it.
 
 ```tsx
 import { canvasTest } from 'v-snap';
@@ -54,35 +55,41 @@ canvasTest('a high score', { width: 320 }, () => HudView({
 }));
 ```
 
-The test file is named for its view, and so is each of its images. So the
-tests need no `describe` block that names the view. A `describe` block can
-still group tests by something more specific, such as a state that they
+The samples after this one leave out their imports of v-snap and of the
+views, so that you can see what matters in each.
+
+Each test file is named for its view, and so is each of its images. So
+you don't need a `describe` block that names the view. You can still use
+one to group tests by something more specific, such as a state that they
 share.
 
-`HudView` returns a Pixi container here. v-snap knows how to draw it,
-because the project registers Pixi views and makes them its default kind,
-as [Kinds of View](kinds-of-view.md) describes.
+In this example, `HudView` returns a Pixi container. v-snap knows how to
+draw it because your project registers Pixi views in its
+`vsnap.config.ts`, and makes them the default kind of view. That's why
+the test doesn't need to say what kind of view it is.
+[Kinds of View](kinds-of-view.md) shows you how to set this up.
 
 ## Views That Change Over Time
 
-A view that changes over time, such as one that animates, is posed at a
-known moment. The pose moves it on by a fixed amount of time, then returns
-it. A pose never waits for real time to pass. A view that its game moves
-on with an update function is moved on the same way:
+A view that changes over time, such as an animation, needs a fixed moment
+to be tested at. Your pose advances the view by a set amount of time, then
+returns it. It never waits for real time to pass. If your game advances
+the view by calling an update function, the pose calls that function too.
 
 ```tsx
 canvasTest('a quarter of the way through its spin', () => {
     const coin = CoinView();
-    coin.update(250); // 250 ms on, as the game's loop would move it
+    coin.update(250); // Advance 250 ms, as your game loop would
     return coin;
 });
 ```
 
-Some views run on real time, with `setTimeout`, `requestAnimationFrame` or
-a tween that plays by itself. Vitest's fake timers hold such a view still.
-The pose moves the timers on to the moment that it wants. It gives real
-timers back before it returns, because v-snap waits for frames as it takes
-the image.
+Some views run on real time. They use `setTimeout`,
+`requestAnimationFrame` or a tween that plays by itself. You can hold such
+a view still with Vitest's fake timers, then advance the timers to the
+moment you want. Switch back to real timers before the pose returns.
+v-snap waits for real frames while it takes the image, so it would wait
+forever on fake ones.
 
 ```tsx
 import { vi } from 'vitest';
@@ -100,16 +107,17 @@ htmlTest('the banner, half a second in', () => {
 });
 ```
 
-Before every test, v-snap seeds `Math.random`, `crypto.getRandomValues`
-and `crypto.randomUUID` the same way. So a view that uses random numbers
-draws the same every time.
+Before every test, v-snap resets `Math.random`, `crypto.getRandomValues`
+and `crypto.randomUUID` to the same fixed starting point, called a seed.
+So a view that uses random numbers gets the same numbers, and draws the
+same image, on every run.
 
 ## Shared Setup and Assets
 
-A pose builds its view from scratch. What many tests share, such as a
-spritesheet or a font, can be loaded once instead, at the top of the test
-file or in a `beforeAll` step. A pose can also be `async`, and await what
-it needs.
+Each pose builds its view from scratch. If many tests need the same thing,
+such as a spritesheet or a font, you can load it once instead. Load it at
+the top of the test file, or in a `beforeAll` step. A pose can also be
+`async`, and await what it needs.
 
 ```tsx
 import { Assets, type Spritesheet } from 'pixi.js';
@@ -123,21 +131,23 @@ beforeAll(async () => {
 canvasTest('three lives', () => LivesView({ sheet, lives: () => 3 }));
 ```
 
-Canvas test files share one page, so what one file loads stays loaded for
-the files after it. A test must not change a shared asset.
+Canvas test files share one page, so anything that one file loads stays
+loaded for the files after it. So don't change a shared asset in a test.
+If you do, every test that runs after it sees the change.
 
 ## Options and Modifiers
 
-A test's options can hold Vitest's own `timeout`, `retry`, `repeats` and
-`fails`, which work as they do on `test`. Vitest's modifiers work too:
-`canvasTest.skip`, `canvasTest.only`, `canvasTest.todo`,
+You can give a test Vitest's own `timeout`, `retry`, `repeats` and
+`fails` options. They work as they do on `test`. Vitest's modifiers work
+too. You can use `canvasTest.skip`, `canvasTest.only`, `canvasTest.todo`,
 `canvasTest.skipIf(condition)` and `canvasTest.runIf(condition)`, and the
 same on `htmlTest`.
 
-`.each(cases)` and `.for(cases)` declare a test for each case of a table,
-as Vitest's do, and pass the case to the pose. `.each` spreads a case that
-is an array, and `.for` passes it whole. The name can show the case, with
-`%s` or `$property`:
+To declare one test for each row of a table, use `.each(cases)` or
+`.for(cases)`, as you would in Vitest. Each one passes the row to the
+pose. If a row is an array, `.each` spreads its items as separate
+arguments, and `.for` passes the array whole. To show the row in the
+test's name, use `%s` or `$property`.
 
 ```ts
 canvasTest.each(['spin', 'stop'])('the %s button', (mode) => SpinButton({
@@ -145,40 +155,43 @@ canvasTest.each(['spin', 'stop'])('the %s button', (mode) => SpinButton({
 }));
 ```
 
-They also follow the other modifiers, as in `canvasTest.skip.each(cases)`.
+You can chain `.each` and `.for` after the other modifiers too, as in
+`canvasTest.skip.each(cases)`.
 
-A canvas image that is one colour all over fails its test, because it
-usually means that the view drew nothing. A view that is meant to be one
-colour, such as an empty panel, sets `canBeBlank: true`.
+If a canvas image is one colour all over, its test fails, because that
+usually means the view drew nothing. If your view is meant to be one
+colour, such as an empty panel, give its test `canBeBlank: true`.
 
-The `background` of Pixi, three.js and HTML views takes a number, such as
-`0x202024`, or a CSS colour. A canvas that the pose drew has its own
-background. [Options of Each Kind](kinds-of-view.md#options-of-each-kind)
-lists the other options.
+Each kind of view has options of its own, such as a test's `background`
+colour. [Options of Each Kind](kinds-of-view.md#options-of-each-kind)
+lists them.
 
-Visual tests never run concurrently, even in a `describe.concurrent`
-block, because the tests of a page share its renderers.
+Visual tests never run at the same time, even in a `describe.concurrent`
+block. The tests in a page share that page, its renderers and its seeded
+random numbers, so they must take turns.
 
 ## New Images
 
-The first time a test runs, its image is new. v-snap writes it as the
-test's reference image, as Vitest writes a new snapshot. Look at each new
-reference before committing it. In CI, Vitest writes no new snapshots, so
-a new image fails its test instead.
+The first time a test runs, it has no reference image yet. v-snap saves
+the actual image as the reference, just as Vitest saves a new snapshot.
+Look at each new reference before you commit it, because every later run
+is checked against it. In CI, Vitest saves no new snapshots, so a test
+with no reference fails there instead.
 
 ## How HTML Views Are Captured
 
-The pose builds an HTML view before it is in the page. v-snap then mounts
-it in the page, and takes its image there.
+Your pose builds the HTML element, but doesn't add it to the page. v-snap
+adds it to the test page, then takes its image there.
 
-A test's `act` step can act on the view once it is in the page, before its
-image is taken. It can hover over the view, focus it or open a menu, with
-Vitest's `userEvent`, or measure its layout. It runs after the kind's
-`prepare` step, if the project registered one. Both steps see the view as
-its image will be, with its text blank and its font sizes rounded. So a
-measurement that they take matches the image on every machine. After the
-image, v-snap moves the pointer off the page, so that the next test's view
-isn't hovered.
+If you need to act on the view before its image is taken, give the test
+an `act` step. It runs once the view is in the page. You could use
+Vitest's `userEvent` to hover over the view, focus it or open a menu. You
+could also measure its layout. The `act` step runs after your kind's
+`prepare` step, if you registered one. Both steps see the view exactly as
+its image will be, with its text blank and its font sizes rounded. So any
+measurement they take matches the image on every machine. If a test has
+an `act` step, v-snap moves the pointer off the page after the image, so
+that the next test's view isn't hovered.
 
 ```ts
 import { userEvent } from 'vitest/browser';
@@ -188,97 +201,107 @@ htmlTest('the menu, open', {
 }, () => Menu());
 ```
 
-An HTML view must fit the test page, since the part of a view outside it
-isn't drawn. A bigger view fails its test, and says so. The page's
-viewport is 1280 by 800 pixels, unless `vsnap()`'s `viewport` option says
-otherwise.
+An HTML view must fit inside the test page, because the browser doesn't
+draw the part of a view that's outside it. If your view is bigger, its
+test fails, and says why. The page is 1280 by 800 pixels, unless you set
+v-snap's `viewport` option (see [Options](configuration.md#options)).
 
-A test's `viewport` and `colorScheme` set what the view's media queries
-see, for one test. For example, `viewport: { width: 400, height: 600 }`
-gives a narrow layout, and `colorScheme: 'light'` a light theme. A test's
-viewport can't be bigger than the page's, since a bigger one would be
-scaled. The page goes back to its own after the test.
+A test's `viewport` and `colorScheme` options change what the view's
+media queries see, for that test only. For example,
+`viewport: { width: 400, height: 600 }` gives a narrow layout, and
+`colorScheme: 'light'` gives a light theme. A test's viewport can't be
+bigger than the page, because the browser would then scale the image.
+After the test, the page goes back to its usual size and colour scheme.
 
-The image is the view's box. So what the view draws outside its box, such
-as a shadow, an outline or a focus ring, is cut off. A test's `margin`
-adds that many pixels around the box, as with `{ margin: 6 }` for a focus
-ring.
+The image covers the view's box and nothing more. So anything the view
+draws outside its box is cut off, such as a shadow, an outline or a focus
+ring. To include it, give the test a `margin`, such as `{ margin: 6 }`
+for a focus ring. That adds 6 pixels on every side.
 
-A view whose root has `position: fixed` or `absolute`, such as a modal
-overlay, takes no room where it is mounted. So its image runs from the
-page's top left to the root's right and bottom edges. A test can give it a
-`width` and `height` instead.
+A view whose root element has `position: fixed` or `absolute`, such as a
+modal overlay, takes up no room where it's added. So its image runs from
+the page's top-left corner to the root element's right and bottom edges.
+If you want a different size, give the test a `width` and `height`.
 
-Before an HTML view's image is taken, v-snap waits for its fonts, its
-`<img>` elements, and the images that its styles use, such as backgrounds.
-It also brings its animations and transitions to rest, as Playwright's
-screenshots do with `animations: 'disabled'`. An animation that ends is
-finished, and one that never ends, such as a spinner, is cancelled. A text
-field's caret is hidden.
+Before v-snap takes an HTML view's image, it waits for the view's fonts,
+its `<img>` elements, and the images that its styles use, such as
+backgrounds. It also stops the view's animations and transitions, as
+Playwright's screenshots do with `animations: 'disabled'`. An animation
+that would end jumps to its end. One that repeats forever, such as a
+spinner, is removed, so the image shows the view without it. A text
+field's caret is hidden too. That way, the image never catches a moment
+that differs from one run to the next.
 
-The page prefers a dark colour scheme, unless `vsnap()`'s `colorScheme`
+The page prefers a dark colour scheme, unless v-snap's `colorScheme`
 option or the test's own says otherwise. It also prefers reduced motion.
-So a view's `prefers-color-scheme: dark` and
-`prefers-reduced-motion: reduce` styles apply. Form controls are drawn
-light or dark by CSS's `color-scheme`, as in any page, and v-snap checks
-both.
+So your view's `prefers-color-scheme: dark` and
+`prefers-reduced-motion: reduce` styles apply. Form controls follow CSS's
+`color-scheme` property, as in any page. Before every run, v-snap checks
+that light and dark controls both draw the same on your machine as they
+do everywhere else.
 
 HTML text is drawn blank, as
 [Limits and Rules](limits-and-rules.md#what-the-images-leave-out)
-explains. The text in a view's open shadow roots, such as a web
-component's, is blank too. A closed shadow root can't be reached, so its
-text is drawn in the system's fonts, which differ between systems.
+explains. That includes the text in a view's open shadow roots, such as a
+web component's. A closed shadow root can't be reached, so its text is
+drawn in the system's fonts. Those differ between systems, so its image
+can differ too.
 
 ## One Kind of Test in Each File
 
-The tests run in a browser. Vitest loads each test file into a browser
+Your tests run in a browser. Vitest loads each test file into a browser
 page, much like a tab, and the views are drawn in that page. The two kinds
-of test need their pages arranged differently.
+of test need their pages set up differently.
 
 - **Canvas tests share one page.** Every file of canvas tests runs in the
-  same page, one file after another. The libraries load once, the shaders
-  compile once, and v-snap draws every Pixi image with one renderer, and
-  every three.js image with another. That is what lets hundreds of tests
-  run in seconds.
+  same page, one file after another. The libraries load once, and the
+  shaders compile once. v-snap draws every Pixi image with one renderer,
+  and every three.js image with another. That's what lets hundreds of
+  tests run in seconds.
 - **Each file of HTML tests gets a fresh page.** HTML views use
-  stylesheets, which can't be unloaded from a page. A fresh page for each
-  file gives each view only its own styles.
+  stylesheets, and a page can't unload a stylesheet once it has loaded
+  it. A fresh page for each file means each view sees only its own
+  styles.
 
-A test file runs in one page, so it declares one kind of visual test.
-When the config loads, v-snap reads each file's declarations, and sends
-the file to the right kind of page. A visual test file may hold unit
-tests, but they run in the browser page too. So a unit test that needs
-Node, such as one that reads a file, goes in a separate test file.
+Since a test file runs in one page, it can declare only one kind of
+visual test. When the config loads, v-snap reads each file's
+declarations, and sends the file to the Vitest project for its kind of
+page. A visual test file can hold unit tests too, but they also run in
+the browser page. So if a unit test needs Node, such as one that reads a
+file, put it in a separate test file.
 
-A visual test file that declares both `canvasTest` and `htmlTest` can't
-run, and nor can one that declares neither, such as a new empty file.
-v-snap leaves such a file out of its projects, and says why when the
-config loads. A run of the visual tests then fails, after running the
-others. A run of the project's other tests, such as `vitest -p unit`, only
-warns, so a half-written file stops no other test.
+A visual test file can't run if it declares both `canvasTest` and
+`htmlTest`. It also can't run if it declares neither, such as a new,
+empty file. v-snap leaves such a file out, and explains why when the
+config loads. A run of the visual tests still runs every other visual
+test file, then fails. A run of only your other tests, such as
+`vitest -p unit`, just shows a warning. That way, a half-written file
+never blocks your unit tests.
 
 Vitest needs to know each file's project before any test code runs. So
-v-snap finds the declarations by reading each file's text for
-`canvasTest(` and `htmlTest(`. That has three effects:
+v-snap finds the declarations by searching each file's text for calls
+such as `canvasTest(`, `htmlTest(` or `canvasTest.skip.each(`. That has
+three effects:
 
-- A file must call `canvasTest` or `htmlTest` by those names, not under an
+- You must call `canvasTest` and `htmlTest` by those names, not under an
   alias.
-- A file whose tests all go through a helper of its own is reported as
-  declaring neither.
-- A comment that mentions the other one, followed by a bracket, counts as
-  a declaration.
+- If all of a file's tests go through a helper function of its own, the
+  file is reported as declaring neither kind.
+- A comment or a string that names the other kind, followed by `(`,
+  counts as a declaration of that kind.
 
 ## Image Names
 
-An image's name comes from its test's full name. The full name is the
+Each image's name comes from its test's full name. The full name is the
 names of the test's `describe` blocks, followed by the test's own name.
-These rules turn it into an image name:
+v-snap turns it into an image name with these rules:
 
 - Each run of characters other than letters, digits and dots becomes one
-  hyphen. So the name has no spaces, and can be typed on a command line.
+  hyphen. So the name has no spaces, and you can type it on a command
+  line.
 - Hyphens at either end are dropped.
-- Letters and digits of every script count, so `日本` stays as it is. A
-  test whose name has none fails.
+- Letters and digits of every writing system count, so `日本` stays as it
+  is. A test whose name has none fails.
 - A name longer than 100 bytes is cut short, and a short hash of the whole
   name is added. That keeps file names inside every system's limits.
 
@@ -287,22 +310,22 @@ For example, a test named `at the start` has the image name
 `describe('after a game over')` block, has the image name
 `after-a-game-over-with-a-new-best`.
 
-By default, a reference image is beside its test file, named for the
-file's stem and the image name, as in
+By default, a reference image sits beside its test file. It's named for
+the file's stem and the image name, as in
 `visual-tests/hud-view.at-the-start.png`. A test file's stem is its name
 without `.test` or `.spec` and its extension. So each test file's images
-sort together beside it, and each image's name says which file it belongs
-to.
+sort together beside it, and each image's name tells you which file it
+belongs to.
 
-Each test has one image, named for the test. So renaming a test, or its
+Since each image is named for its test, renaming a test, or its
 `describe` block, renames its image. A run outside CI writes the new
-reference and deletes the old one, if git tracks it, so version control
-shows the rename as one file renamed. A rerun in watch mode keeps the old
+reference, and deletes the old one if git tracks it. So version control
+shows the change as one file renamed. A rerun in watch mode keeps the old
 one, as [Running the Tests](running-tests.md#checks-of-the-reference-images)
 explains.
 
-Two tests whose full names differ only in punctuation would have the same
+Two tests whose full names differ only in punctuation would get the same
 image name, and so share one reference image. So would two whose names
-differ only in case, since macOS and Windows treat such names as one file.
-If two tests of a file would share a reference image, the second fails,
-and names the first.
+differ only in case, because macOS and Windows treat such names as one
+file. If two tests in a file would share a reference image, the second
+one fails, and names the first.

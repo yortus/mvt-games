@@ -90,25 +90,11 @@ export function escapeGlob(path: string): string {
 }
 
 /**
- * Records the names of a `vsnap` call's projects, and returns every name that
- * this process's calls recorded. Vitest loads its config several times in a
- * run, each time with a fresh copy of this module, so the names are kept on
- * the process.
- */
-export function recordVsnapProjectNames(names: readonly string[]): void {
-    for (const name of names) listVsnapProjectNames().add(name);
-}
-
-/** Returns the names of every project that a `vsnap` call made in this process. */
-export function listVsnapProjectNames(): Set<string> {
-    return ((globalThis as { vsnapProjectNames?: Set<string> }).vsnapProjectNames ??= new Set());
-}
-
-/**
  * Records a `vsnap` call's test files, by their file keys, and throws if
  * another call, with another name, already has one of them. Each would run
  * the file in its own projects, and the two would write the same reference
- * images. The records are kept on the process, as the project names are.
+ * images. Vitest loads its config several times in a run, each time with a
+ * fresh copy of this module, so the records are kept on the process.
  */
 export function claimTestFiles(name: string, files: readonly { readonly key: string; readonly file: string }[]): void {
     const owners = listOwners();
@@ -122,13 +108,12 @@ export function claimTestFiles(name: string, files: readonly { readonly key: str
 }
 
 /**
- * Forgets the test files that `vsnap` calls claimed, and the names of their
- * projects, before Vitest restarts and loads its config again. A call whose
- * name or globs changed then claims its files afresh.
+ * Forgets the test files that `vsnap` calls claimed, before Vitest restarts
+ * and loads its config again. A call whose name or globs changed then claims
+ * its files afresh.
  */
 export function forgetVsnapCalls(): void {
     listOwners().clear();
-    listVsnapProjectNames().clear();
 }
 
 /** Returns whether a folder holds no visual test files or reference images: installed packages, build output, and hidden folders such as `.git`. */

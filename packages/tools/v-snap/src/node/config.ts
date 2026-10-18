@@ -1,7 +1,9 @@
 /**
- * v-snap's Vitest projects, which a project lists in its own Vitest config,
- * beside its unit tests. `vsnap(options)` returns two projects, which bring
- * v-snap's reporter with them.
+ * v-snap's Vitest projects, which run beside a project's unit tests. The
+ * `vsnap()` plugin adds them to a run (see plugin.ts), and
+ * `vsnapProjects(options)` returns them, for a config that lists its
+ * projects itself. Either way, there are two, which bring v-snap's reporter
+ * with them.
  *
  * - `<name>-canvas` runs the files that declare `canvasTest`, which test
  *   views drawn on a canvas. Every file runs in one shared page.
@@ -12,10 +14,9 @@
  * containers, in a `vsnap.config.ts` in the root. That file runs in the
  * test page, before the tests.
  *
- * The name is `visual` by default, so `vitest -p "visual-*"` runs the
- * visual tests alone. Each project gets its files from the declarations in
- * them, read when the config loads. So in watch mode, v-snap restarts Vitest
- * when a visual test file is added or deleted.
+ * The name is `visual` by default. Each project gets its files from the
+ * declarations in them, read when the config loads. So in watch mode,
+ * v-snap restarts Vitest when a visual test file is added or deleted.
  *
  * Both run in Playwright's headless shell, a small build of Chromium for
  * headless use. It is launched with one fixed value for every setting that
@@ -26,7 +27,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { playwright } from '@vitest/browser-playwright';
-import type { Plugin, TestProjectInlineConfiguration } from 'vitest/config';
+import { configDefaults, type Plugin, type TestProjectInlineConfiguration } from 'vitest/config';
 import type { Reporter } from 'vitest/node';
 import type { ColorScheme, PageKind } from '../protocol.ts';
 import { createRunState, createVisualCommands } from './commands.ts';
@@ -35,7 +36,7 @@ import { toDisplayPath } from './paths.ts';
 import { forgetFingerprint, isLeftOutByCommandLine, mustRebundle, recordFingerprint } from './rebundle.ts';
 import { registerRoot, toFileKey } from './references.ts';
 import { createVisualReporter } from './reporter.ts';
-import { claimTestFiles, describeProblems, escapeGlob, findVisualTestFiles, recordVsnapProjectNames, type VisualTestFiles } from './test-files.ts';
+import { claimTestFiles, describeProblems, escapeGlob, findVisualTestFiles, type VisualTestFiles } from './test-files.ts';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -47,7 +48,12 @@ export interface VsnapOptions {
      * The default is `visual`.
      */
     readonly name?: string;
-    /** The folder that the other paths are relative to. The default is the folder Vitest runs in. */
+    /**
+     * The folder that holds the visual tests and `vsnap.config.ts`, which the
+     * other paths are relative to. For the `vsnap()` plugin, a relative root
+     * is relative to Vitest's root, which is also the default. For
+     * `vsnapProjects()`, the default is the folder that Vitest runs in.
+     */
     readonly root?: string;
     /**
      * Globs for the visual test files, relative to the root. The default is
@@ -130,9 +136,21 @@ export const DEFAULT_NAME = 'visual';
  * and `<name>-html`, which the config lists in `test.projects`. They bring
  * v-snap's reporter with them, which prints the visual tests' summary. After
  * a complete run, it also checks every reference image, and handles the
- * reference images that no test used.
+ * reference images that no test used. The config's other projects must
+ * leave out the visual test files themselves.
  */
-export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguration[] {
+export function vsnapProjects(options: VsnapOptions = {}): TestProjectInlineConfiguration[] {
+    return createVsnapProjects(options).projects;
+}
+
+/**
+ * Returns v-snap's projects, and the plugin that they share. Vitest calls
+ * the plugin's `configureVitest` for each project that it starts with, which
+ * adds v-snap's reporter to the run. The `vsnap()` plugin adds the projects
+ * once the run has started, so Vitest never calls it for them, and the
+ * `vsnap()` plugin calls it instead.
+ */
+export function createVsnapProjects(options: VsnapOptions): { projects: TestProjectInlineConfiguration[]; plugin: Plugin } {
     const root = resolve(options.root ?? process.cwd());
     const name = options.name ?? DEFAULT_NAME;
     const layout = createLayout({ root, include: options.include, exclude: options.exclude, referencePath: options.referencePath });
@@ -145,7 +163,6 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
     // A kind of page with no test files gets no project.
     const pageKinds = (['canvas', 'html'] as const).filter((pageKind) => files[pageKind].length > 0);
     const projectNames = pageKinds.map((pageKind) => `${name}-${pageKind}`);
-    recordVsnapProjectNames(projectNames);
     const viewConfig = findViewConfig(root, options.vsnapConfig);
     if (viewConfig !== undefined) checkViewConfig(viewConfig);
     const allFiles = [...files.canvas, ...files.html];
@@ -154,14 +171,12 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         state,
         projectNames,
         testFiles: allFiles.map((file) => resolve(root, file)),
-        includes: allFiles.map(escapeGlob),
-        setupFiles: [SETUP_FILE],
         problems: files.problems,
     });
     const plugin = createVsnapPlugin({ reporter, name, root, isDefaultRoot: options.root === undefined, files: () => findVisualTestFiles(layout), initialFiles: files });
     // A run that leaves the projects out never bundles for them.
     const rebundle = isLeftOutByCommandLine(projectNames) ? false : mustRebundle({ name, root });
-    return pageKinds.map((pageKind, i) => createVisualProject({
+    const projects = pageKinds.map((pageKind, i) => createVisualProject({
         rebundle,
         root,
         name: projectNames[i],
@@ -175,6 +190,7 @@ export function vsnap(options: VsnapOptions = {}): TestProjectInlineConfiguratio
         colorScheme: options.colorScheme ?? 'dark',
         viteConfig: options.viteConfig,
     }));
+    return { projects, plugin };
 }
 
 // ---------------------------------------------------------------------------
@@ -204,9 +220,48 @@ function createVisualProject(options: {
     const setupFiles = [SETUP_FILE];
     // The scan's globs are relative to the root.
     const viewConfig = options.viewConfig === undefined ? [] : [escapeGlob(relative(options.root, options.viewConfig).replaceAll('\\', '/'))];
+    const test = {
+        name: options.name,
+        // Each file is a glob to Vitest, so its name is escaped.
+        include: files.map(escapeGlob),
+        // The project runs one file at a time, so it needs a group of its
+        // own, after the projects that run several at once. Its tests never
+        // run concurrently, whatever the config they inherit says, since
+        // they share a page.
+        sequence: { groupOrder: GROUP_ORDER, concurrent: false },
+        globalSetup: [INSTALL_BROWSER],
+        // An HTML view's stylesheet stays in the page once it is imported,
+        // so each HTML file gets a fresh page.
+        isolate: isHtml,
+        fileParallelism: false,
+        setupFiles,
+        testTimeout: 30_000,
+        provide: {
+            vsnapPageKind: options.pageKind,
+            vsnapMaxPixels: options.maxPixels,
+            vsnapHasConfig: options.viewConfig !== undefined,
+            vsnapConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
+            vsnapViewport: options.viewport,
+            vsnapColorScheme: options.colorScheme,
+        },
+        browser: {
+            enabled: true,
+            headless: true,
+            screenshotFailures: false,
+            dependencySourcemaps: false,
+            viewport: options.viewport,
+            provider: playwright({
+                launchOptions: { args: BROWSER_ARGS },
+                contextOptions: { locale: 'en-US', timezoneId: 'UTC', deviceScaleFactor: 1, colorScheme: options.colorScheme, reducedMotion: 'reduce' },
+            }),
+            // Named, so that the project's name has no "(chromium)" after it.
+            instances: [{ browser: 'chromium', name: options.name }],
+            commands: options.commands,
+        },
+    } satisfies TestProjectInlineConfiguration['test'];
     return {
         root: options.root,
-        plugins: [options.plugin],
+        plugins: [options.plugin, createOwnSettingsPlugin(test)],
         // The page imports the project's vsnap.config.ts by this name. Vite
         // resolves the import as it resolves a test's, so both get one module.
         resolve: { alias: { 'virtual:vsnap-config': options.viewConfig ?? NO_CONFIG } },
@@ -230,47 +285,39 @@ function createVisualProject(options: {
             include: ['v-snap > fontkit', ...RENDERERS.filter((name) => isInstalled(name, options.root))],
             force: options.rebundle,
         },
-        test: {
-            name: options.name,
-            // Each file is a glob to Vitest, so its name is escaped.
-            include: files.map(escapeGlob),
-            // The project runs one file at a time, so it needs a group of its
-            // own, after the projects that run several at once. Its tests never
-            // run concurrently, whatever the config they inherit says, since
-            // they share a page.
-            sequence: { groupOrder: GROUP_ORDER, concurrent: false },
-            globalSetup: [INSTALL_BROWSER],
-            // An HTML view's stylesheet stays in the page once it is imported,
-            // so each HTML file gets a fresh page.
-            isolate: isHtml,
-            fileParallelism: false,
-            setupFiles,
-            testTimeout: 30_000,
-            provide: {
-                vsnapPageKind: options.pageKind,
-                vsnapMaxPixels: options.maxPixels,
-                vsnapHasConfig: options.viewConfig !== undefined,
-                vsnapConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
-                vsnapViewport: options.viewport,
-                vsnapColorScheme: options.colorScheme,
-            },
-            browser: {
-                enabled: true,
-                headless: true,
-                screenshotFailures: false,
-                dependencySourcemaps: false,
-                viewport: options.viewport,
-                provider: playwright({
-                    launchOptions: { args: BROWSER_ARGS },
-                    contextOptions: { locale: 'en-US', timezoneId: 'UTC', deviceScaleFactor: 1, colorScheme: options.colorScheme, reducedMotion: 'reduce' },
-                }),
-                // Named, so that the project's name has no "(chromium)" after it.
-                instances: [{ browser: 'chromium', name: options.name }],
-                commands: options.commands,
-            },
+        test,
+    };
+}
+
+/**
+ * Returns the plugin that gives a visual project its own settings back, in
+ * place of those that it inherits. A project that inherits a config
+ * (`extends: true`) loads it again, and Vite merges the config's `test`
+ * block into the project's own, joining lists. So without the plugin, the
+ * project would get the unit tests' files, their setup files, which would
+ * run in the browser page, their environment, and their browser settings,
+ * which would run each visual test again in a browser that v-snap didn't set
+ * up. Vitest reads `test` once Vite has resolved the config, so the plugin
+ * puts the project's own settings back then. The project inherits the rest,
+ * such as `alias` and `server`, as the unit tests' views need them too.
+ */
+function createOwnSettingsPlugin(own: { readonly include: readonly string[]; readonly setupFiles: readonly string[]; readonly browser: object }): Plugin {
+    return {
+        name: 'v-snap:own-settings',
+        configResolved: (resolved) => {
+            const test = (resolved as unknown as { test?: Record<string, unknown> }).test;
+            if (test === undefined) return;
+            test.include = [...own.include];
+            test.exclude = [...configDefaults.exclude];
+            test.setupFiles = [...own.setupFiles];
+            test.browser = own.browser;
+            for (const key of UNIT_ONLY_SETTINGS) delete test[key];
         },
     };
 }
+
+/** The settings of a config's `test` block that belong to its unit tests, and that a visual project leaves out. */
+const UNIT_ONLY_SETTINGS = ['includeSource', 'environment', 'environmentOptions'] as const;
 
 /**
  * Returns the plugin that the projects of one `vsnap` call share. Vitest
@@ -318,7 +365,7 @@ function createVsnapPlugin(options: {
             if (options.isDefaultRoot && toFileKey(vitest.config.root) !== toFileKey(options.root)) {
                 throw new Error(
                     `v-snap's root is the folder that Vitest runs in, ${toDisplayPath(options.root)}, but Vitest's own root is ${toDisplayPath(vitest.config.root)}, `
-                    + 'as `vitest --root`, or a config in another folder, sets it. Give v-snap the root, such as vsnap({ root: import.meta.dirname }).',
+                    + 'as `vitest --root`, or a config in another folder, sets it. Give v-snap the root yourself, such as vsnapProjects({ root: import.meta.dirname }).',
                 );
             }
             const server = vitest.vite;
@@ -393,21 +440,21 @@ function findViewConfig(root: string, named: string | undefined): string | undef
  * Checks a project's `vsnap.config` by its text, without running it, since
  * it runs in the test page. It throws if the file has no default export,
  * which v-snap reads. It warns if the file mentions neither `Register` nor
- * `bindCanvasTest`, since then `canvasTest`'s types don't know its kinds of
- * view, and every test of a registered kind is a type error.
+ * `bindCanvasTest`, since then TypeScript doesn't know the file's kinds of
+ * view, and rejects every test of those kinds.
  */
 function checkViewConfig(file: string): void {
     const text = readFileSync(file, 'utf8');
     // `export default config`, or `export { config as default }`.
     if (!/\bexport\s+default\b|\bas\s+default\b/.test(text)) {
-        throw new Error(`${toDisplayPath(file)} has no default export. It exports its config as default: export default defineVsnapConfig({ ... }).`);
+        throw new Error(`${toDisplayPath(file)} has no default export. v-snap reads the config from it, so export the config as the default: export default defineVsnapConfig({ ... }).`);
     }
     if (!/\b(?:Register|bindCanvasTest)\b/.test(text) && !WARNED.has(file)) {
         WARNED.add(file);
         console.warn(
-            `v-snap: ${toDisplayPath(file)} doesn't give its config's type to v-snap, so canvasTest's types don't know its kinds of view. Add:\n`
+            `v-snap: TypeScript doesn't know which kinds of view ${toDisplayPath(file)} registers, so canvasTest will reject tests of those kinds. Add this to the file:\n`
             + "    declare module 'v-snap' {\n        interface Register {\n            config: typeof config;\n        }\n    }\n"
-            + 'In a monorepo whose packages have configs of their own, export bindCanvasTest(config) instead, and import canvasTest from the config.',
+            + 'In a monorepo where each package has its own config, export bindCanvasTest(config) from each config instead, and import canvasTest from there.',
         );
     }
 }

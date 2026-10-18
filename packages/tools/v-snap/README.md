@@ -17,41 +17,44 @@
   <img src="https://img.shields.io/badge/licence-MIT-e8456b" alt="MIT licence">
 </p>
 
-[Visual snapshot tests](docs/writing-tests.md) have two well-known
-problems: they are slow and flaky. The screenshot process that most tools
-use is inefficient and makes test runs slow. And each system draws a
-little differently, so a reference image made on one machine can fail on
-another. The usual cure for the flakiness is to draw every image in
-Docker, so that every machine draws alike. Then every developer and every
-CI job must run Docker, and the slow tests get slower. As a result, many
-projects use fragile
+[Visual snapshot tests](docs/writing-tests.md) have two
+well-known problems: they're slow, and they're flaky. Most tools take a
+screenshot of the page for each image, and that's slow. And each system
+draws a little differently, so a reference image made on one machine can
+fail on another. The usual cure for the flakiness is to draw every image
+in Docker, so that every machine draws alike. But then every developer
+and every CI job must run Docker, and the slow tests get slower. So many
+projects fall back on fragile
 [assertions](https://yortus.com/mvt-games/docs/building-with-mvt/iterating-with-confidence/testing-views.html#scene-graph-assertions)
-or skip view testing altogether.
+about their views, or skip view testing altogether.
 
-v-snap is fast and consistent across machines, without Docker:
+v-snap is fast, and it draws the same images on every machine, without
+Docker.
 
-- **It is an order of magnitude faster per image.** A canvas image takes
+- **It's an order of magnitude faster per image.** A canvas image takes
   about 4 ms to draw and check. A screenshot test in the same browser
   takes 67 ms. 1000 images run in under 8 seconds, start-up included.
 - **Every machine draws the same images.** A reference made on Windows
   passes on Linux and macOS, and the other way round. v-snap is checked on
   Windows x64, Linux x64 and arm64, and macOS arm64. `npm ci` installs
-  everything but the browser, which the first run downloads.
+  everything but the browser, and the first run downloads that.
 
-And it fits the way projects already test:
+And it fits the way you already test.
 
-- **Its tests are Vitest tests.** v-snap adds two projects to a Vitest
-  config. Watch mode, the Vitest UI and the VS Code extension all work.
-- **One line declares one image.** There is no test page to build.
-- **It draws Pixi and three.js views itself,** and any canvas that a test
-  draws. HTML views are tested too, and support for other renderers can
-  be added.
+- **Its tests are Vitest tests.** One plugin adds them to your Vitest
+  config, and `vitest` runs them with your unit tests. Watch mode, the
+  Vitest UI and the VS Code extension all work.
+- **One line declares one image.** You don't need to build a test page.
+- **It draws Pixi and three.js views itself,** and any canvas that your
+  test draws. It tests HTML views too, and you can add support for other
+  renderers.
 
-## A Test
+## Adding Visual Tests
 
-A test file sits in a `visual-tests` folder beside its view. Each test has
-a name, and a pose. A pose is a function that returns the view in the
-state that the test describes.
+By default, each test file goes in a `visual-tests` folder beside the view
+that it tests (but you can configure it however you like). Each test has a
+name and a pose. A pose is the function in each test that builds the view,
+in the state that the test describes, and returns it.
 
 ```tsx
 // src/hud/visual-tests/hud-view.test.tsx
@@ -62,16 +65,17 @@ canvasTest('at the start', () => HudView({ score: () => 0 }));
 canvasTest('a high score', () => HudView({ score: () => 98_765 }));
 ```
 
-The first run writes each image as its test's reference, beside the test
-file: `hud-view.at-the-start.png` and `hud-view.a-high-score.png`. Look at
-them, and commit them. From then on, each run compares the images with
-them.
+The first run writes each test's image as its reference image, beside the
+test file. Here, they're `hud-view.at-the-start.png` and
+`hud-view.a-high-score.png`. Look at them, and commit them. From then on,
+each run compares each test's new image with its reference.
 
 ## When an Image Changes
 
-A test whose image changed fails. v-snap writes its actual image, and a
-diff that shows the reference dimmed and the changed pixels in red. Here,
-one more light is on:
+When a view draws differently, its test fails. v-snap writes the actual
+image, which is what the view drew this time. It also writes a diff, which
+shows the reference dimmed and the changed pixels in red. Here, one more
+light is on:
 
 | The reference | The actual image | The diff |
 | :---: | :---: | :---: |
@@ -84,75 +88,79 @@ Image 'a-panel' differs from its reference in 214 pixels, by up to 194 of 255,
 in the 16x16 pixels at (116, 108).
 ```
 
-It goes on to name the three files. It ends with a command that accepts
-this image alone, if the change was meant. The Vitest UI shows the same
-three images, with a slider between the reference and the actual image.
+Then it names the three files. If you meant the change, the message ends
+with a command that makes this one image the new reference. The Vitest UI
+shows the same three images, with a slider that lets you compare the
+reference and the actual image.
 
-## How Fast?
+## How Much Faster is v-snap?
 
-The same 1000 images of Pixi views, checked with v-snap and with Vitest's
-own `toMatchScreenshot`, in the same browser, took these times:
+Here are the times for the same 1000 images of Pixi views, checked with
+v-snap and with Vitest's own `toMatchScreenshot`, in the same browser:
 
 | | 1000 images, start-up included | One image, at the median |
 | --- | ---: | ---: |
+| **vitest** `toMatchScreenshot`, one file at a time | 89.9 s | 67 ms |
+| **vitest** `toMatchScreenshot`, 13 files at once | 18.0 s | 131 ms |
 | **v-snap**, in one page | **7.8 s** | **4.0 ms** |
-| `toMatchScreenshot`, in one page | 89.9 s (11.5x) | 67 ms (17x) |
-| `toMatchScreenshot`, 13 pages at once | 18.0 s (2.3x) | 131 ms (33x) |
 
-Vitest runs screenshot tests in several pages at once by default, one for
-each processor core but one. That makes the whole run faster, but each
-screenshot slower. Even with 13 pages, v-snap in one page was 2.3 times as
-fast. [The benchmark](docs/how-it-works.md#the-benchmark) says how it was
-measured, and how to run it.
+Per image, **v-snap is up to 33x faster**. By default, Vitest runs several
+test files at once, one for each processor core but one. That makes vitest's
+whole run faster, but each screenshot slower. Even against 13 files at
+once, v-snap was still 2.3 times as fast. [The benchmark](docs/how-it-works.md#the-benchmark) says how it was measured, and how you can run it yourself.
 
-## What It Gives Up
+## Limitations a Project Must Accept When Using v-snap
 
-The images are the same everywhere because v-snap decides how they are
-drawn. That has costs, which [Limits and Rules](docs/limits-and-rules.md)
-lists in full.
+v-snap draws the same images everywhere because it decides how they're
+drawn. That has some costs, and [Limits and Rules](docs/limits-and-rules.md)
+lists them in full.
 
 - **Canvas text is drawn in v-snap's own fonts,** Source Sans 3 and Source
   Code Pro. Text that a view measures is measured in them too. A character
   that they lack, such as an emoji, is drawn as a box.
 - **HTML text is drawn blank.** Every letter is an empty space 0.625 em
-  wide, so an HTML image shows layout and styling, but not words. Text
+  wide. So an HTML image shows layout and styling, but not words. Text
   wraps where it would if every letter were that wide.
-- **Drawing is done in software.** WebGL runs on the processor, so what a
-  graphics card would draw differently isn't tested.
+- **Drawing is done in software.** WebGL runs on the processor, not on the
+  graphics card. So the tests can't catch something that only a graphics
+  card draws differently.
 - **Each release of v-snap supports one minor version of Playwright.**
   Every machine must draw with the same build of Chromium, and Playwright
-  moves to a new build in each minor version. So a project upgrades
-  Playwright when v-snap does.
+  moves to a new build in each minor version. So you upgrade Playwright
+  when v-snap does.
   [Playwright Versions](docs/getting-started.md#playwright-versions)
   explains why.
 
 ## Quick Start
 
-1. Install v-snap beside Vitest. npm also installs Playwright and Vitest's
-   Playwright provider, which v-snap needs.
+1. Install v-snap beside Vitest. npm also installs Playwright, and
+   Vitest's Playwright provider, because v-snap needs them.
 
    ```sh
    npm install --save-dev v-snap vitest
    ```
 
-2. Wrap the config in `vitest.config.ts` in `withVsnap()`, which adds
-   v-snap's projects to it. The unit tests keep their settings, in a
-   project of their own that leaves out the visual tests.
+2. Add the `vsnap()` plugin to `vitest.config.ts`. When Vitest starts, the
+   plugin adds v-snap's projects, which run the visual tests. It also
+   leaves the visual tests out of your unit tests, which keep their
+   settings.
 
    ```ts
    import { defineConfig } from 'vitest/config';
-   import { withVsnap } from 'v-snap/vitest';
+   import { vsnap } from 'v-snap/vitest';
 
-   export default defineConfig(withVsnap({
+   export default defineConfig({
+       plugins: [vsnap()],
        test: {
            // The unit tests' settings, as before.
        },
-   }));
+   });
    ```
 
 3. Create `vsnap.config.ts` beside it, and add the file to
-   `tsconfig.json`'s `include`. It registers the kinds of view that the
-   tests pose, such as Pixi containers.
+   `tsconfig.json`'s `include`. It lists the kinds of view that your tests
+   pose. A kind of view tells v-snap how to recognise a view, such as a
+   Pixi container, and how to draw it.
 
    ```ts
    import { defineVsnapConfig } from 'v-snap';
@@ -163,7 +171,9 @@ lists in full.
        defaultKind: 'pixi',
    });
 
-   // Gives canvasTest's types the kinds of view above, and the default kind.
+   // Tells TypeScript about the kinds of view above, so that canvasTest
+   // accepts tests of those kinds and checks their options. It also lets a
+   // test leave out its kind, to use the default kind.
    declare module 'v-snap' {
        interface Register {
            config: typeof config;
@@ -173,54 +183,56 @@ lists in full.
    export default config;
    ```
 
-4. Add `.vitest/` to `.gitignore`. v-snap writes a failed test's images
-   there.
+4. Add `.vitest/` to `.gitignore`. That's where v-snap writes a failed
+   test's images, for you to look at, and they don't belong in the
+   repository.
 
 5. Write a test, as above, and run `npx vitest`.
 
-[Getting Started](docs/getting-started.md) says what v-snap needs, and
-covers a config that already has settings or projects.
+[Getting Started](docs/getting-started.md) says what you need, and how to
+add v-snap to a config that already has settings or projects.
 
 ## Documentation
 
-- **[Getting Started](docs/getting-started.md)**: the requirements,
-  Playwright versions, adding v-snap to a project, and the first test.
-- **[Writing Tests](docs/writing-tests.md)**: declaring tests, views that
-  change over time, shared setup, options, how HTML views are captured,
-  and image names.
-- **[Kinds of View](docs/kinds-of-view.md)**: Pixi, three.js, canvases and
-  HTML, the options of each, preparing and disposing of views, configs in
-  a monorepo, and support for another renderer.
-- **[Configuration](docs/configuration.md)**: adding v-snap's projects,
-  their options, and where test files and references go.
-- **[Running the Tests](docs/running-tests.md)**: the commands, the checks
-  of the references, reviewing a failed image, CI and watch mode.
-- **[How It Works](docs/how-it-works.md)**: what makes v-snap fast, the
-  benchmark, and how every machine draws the same images.
-- **[Limits and Rules](docs/limits-and-rules.md)**: what the images leave
-  out, and the rules that tests follow.
-- **[Troubleshooting](docs/troubleshooting.md)**: v-snap's messages, and
-  what they usually mean.
+- **[Getting Started](docs/getting-started.md)** covers the requirements,
+  Playwright versions, adding v-snap to a project, and your first test.
+- **[Writing Tests](docs/writing-tests.md)** covers declaring tests, views
+  that change over time, shared setup, options, how HTML views are
+  captured, and image names.
+- **[Kinds of View](docs/kinds-of-view.md)** covers Pixi, three.js,
+  canvases and HTML, the options of each, preparing and disposing of
+  views, configs in a monorepo, and support for another renderer.
+- **[Configuration](docs/configuration.md)** covers adding v-snap's
+  projects, their options, and where test files and references go.
+- **[Running the Tests](docs/running-tests.md)** covers the commands, the
+  checks of the references, reviewing a failed image, CI and watch mode.
+- **[How It Works](docs/how-it-works.md)** explains what makes v-snap
+  fast, how the benchmark works, and how every machine draws the same
+  images.
+- **[Limits and Rules](docs/limits-and-rules.md)** lists what the images
+  leave out, and the rules that your tests follow.
+- **[Troubleshooting](docs/troubleshooting.md)** lists v-snap's messages,
+  and what they usually mean.
 
 ## API
 
-The package is named `v-snap`. Names in code can't hold a hyphen, so the
-code says `vsnap`, as in `vsnap()`, `defineVsnapConfig` and
+The package is named `v-snap`. A name in code can't contain a hyphen, so
+in code it's `vsnap`, as in `vsnap()`, `defineVsnapConfig` and
 `vsnap.config.ts`.
 
 | Import | Export | What it does |
 | --- | --- | --- |
 | `v-snap` | `canvasTest(name, options?, pose)` | Declares a test of a view drawn on a canvas. It has Vitest's modifiers, such as `.skip`, `.only` and `.each` |
 | | `htmlTest(name, options?, pose)` | Declares a test of an HTML view, with the same modifiers |
-| | `defineVsnapConfig(config)` | Returns the config that `vsnap.config.ts` exports, with its kinds of view and its default kind |
-| | `bindCanvasTest(config)` | Returns a `canvasTest` whose types know one config's kinds of view, for a monorepo's packages |
-| | `htmlViews(options?)` | Returns the kind for HTML views, with steps to prepare and dispose of them, and a background for every test |
-| | `fitImage`, `readCanvas` | Help to support another renderer. `fitImage` returns how an image fits the size budget, and `readCanvas` returns a canvas's pixels |
-| `v-snap/vitest` | `withVsnap(config)` | Returns the Vitest config with v-snap's projects added. It takes v-snap's options from the config's `vsnap` key, and moves a flat config's unit test settings into a `unit` project |
-| | `vsnap(options?)` | Returns the Vitest projects that run the visual tests, for a config that lists its projects itself |
-| `v-snap/pixi` | `pixiViews(options?)` | Returns the kind for Pixi views |
+| | `defineVsnapConfig(config)` | Returns the config unchanged, with each kind's name kept in its type, so that the `Register` declaration can pass it to `canvasTest`'s types |
+| | `bindCanvasTest(config)` | Returns a `canvasTest` tied to one config's kinds of view, for when each package of a monorepo has its own config |
+| | `htmlViews(options?)` | Returns the kind of view for HTML, with optional steps to prepare and dispose of each view, and a background for every test |
+| | `fitImage`, `readCanvas` | Help you support another renderer. `fitImage` returns how an image fits the size budget, which is the most pixels an image may have. `readCanvas` returns a canvas's pixels |
+| `v-snap/vitest` | `vsnap(options?)` | Returns a Vitest plugin. When Vitest starts, it adds v-snap's projects, which run the visual tests, and leaves the visual test files out of your other tests |
+| | `vsnapProjects(options?)` | Returns v-snap's Vitest projects, for a config that lists its projects itself |
+| `v-snap/pixi` | `pixiViews(options?)` | Returns the kind of view for Pixi |
 | | `getPixiRenderer()` | Returns a promise of the Pixi renderer that draws the images, for a view that needs one to build itself |
-| `v-snap/three` | `threeViews(options?)` | Returns the kind for three.js views |
+| `v-snap/three` | `threeViews(options?)` | Returns the kind of view for three.js |
 
 ## Requirements
 
@@ -232,19 +244,20 @@ code says `vsnap`, as in `vsnap()`, `defineVsnapConfig` and
 | Pixi, for Pixi views | 8.16 or later |
 | three.js, for three.js views | 0.160 or later |
 
-A canvas test can draw with the browser's own canvas, and needs no
+A canvas test can draw with the browser's own canvas, so it needs no
 renderer library. [Getting Started](docs/getting-started.md#requirements)
-says why each is needed.
+says why you need each of the others.
 
 ## Contributing
 
-To work on v-snap itself, see [CONTRIBUTING.md](./CONTRIBUTING.md). It says
-how v-snap's own tests run, how the package is laid out, how the test
-environment is checked and upgraded, and how the package is built and
-published.
+To work on v-snap itself, see [CONTRIBUTING.md](./CONTRIBUTING.md). It
+explains how v-snap's own tests run, how the package is laid out, how the
+test environment is checked and upgraded, and how the package is built
+and published.
 
 ## Licence
 
-MIT, but for the two test fonts, Source Sans 3 and Source Code Pro, which
-are under the SIL Open Font License. The published package holds them in
-`lib/browser/fonts/`, and their licences in `src/browser/fonts/`.
+v-snap is under the MIT licence. v-snap's own fonts, Source Sans 3 and
+Source Code Pro, are under the SIL Open Font License. The published
+package holds the fonts in `lib/browser/fonts/`, and their licences in
+`src/browser/fonts/`.

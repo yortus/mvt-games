@@ -34,7 +34,7 @@ export interface HtmlImageOptions<E extends Element = Element> {
      * the page's size.
      */
     readonly viewport?: { readonly width: number; readonly height: number };
-    /** The colour scheme that the page's `prefers-color-scheme` media queries see. By default, it is `vsnap()`'s `colorScheme`, `dark` unless set. */
+    /** The colour scheme that the page's `prefers-color-scheme` media queries see. By default, it is v-snap's `colorScheme` option, which is `dark` unless you set it. */
     readonly colorScheme?: ColorScheme;
     /**
      * The space around the view, in CSS pixels, that the image takes in
@@ -138,8 +138,8 @@ async function setUpPage(options: HtmlImageOptions): Promise<() => Promise<void>
     const isResized = viewport !== undefined && (viewport.width !== defaults.viewport.width || viewport.height !== defaults.viewport.height);
     if (viewport !== undefined && (viewport.width > defaults.viewport.width || viewport.height > defaults.viewport.height)) {
         throw new Error(
-            `The test's viewport, ${viewport.width}x${viewport.height}, is bigger than the test page, ${defaults.viewport.width}x${defaults.viewport.height}, which would scale the image. `
-            + "Give vsnap's viewport option a bigger page.",
+            `The test's viewport, ${viewport.width}x${viewport.height}, is bigger than the test page, ${defaults.viewport.width}x${defaults.viewport.height}. The browser would scale the image to fit. `
+            + "Make the test's viewport smaller, or make the page bigger with v-snap's viewport option, in vitest.config.ts.",
         );
     }
     const isRecoloured = options.colorScheme !== undefined && options.colorScheme !== defaults.colorScheme;

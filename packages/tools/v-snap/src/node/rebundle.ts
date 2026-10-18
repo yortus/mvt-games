@@ -150,7 +150,7 @@ function findFingerprint(): string {
  * `--project=<name>`, `-p <name>` and `-p=<name>`, or undefined if one is
  * cut short, as at the end of the line.
  */
-function listProjectFilters(argv: readonly string[]): string[] | undefined {
+export function listProjectFilters(argv: readonly string[]): string[] | undefined {
     const filters: string[] = [];
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -169,7 +169,7 @@ function listProjectFilters(argv: readonly string[]): string[] | undefined {
 }
 
 /** Returns whether a project runs under some filters, as Vitest decides it. */
-function matchesProjectFilter(filters: readonly string[], name: string): boolean {
+export function matchesProjectFilter(filters: readonly string[], name: string): boolean {
     const matches = (pattern: string): boolean => new RegExp(`^${pattern.split('*').map(escapeRegExp).join('.*')}$`, 'i').test(name);
     if (filters.some((filter) => filter.startsWith('!') && matches(filter.slice(1)))) return false;
     const positives = filters.filter((filter) => !filter.startsWith('!'));

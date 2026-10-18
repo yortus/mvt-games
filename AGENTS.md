@@ -120,7 +120,7 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 | `npm run test:unit`    | Every workspace's unit tests but v-snap's (Vitest's `unit` project; no browser): the fast check while working |
 | `npm run test:watch`   | Every test but v-snap's own, in watch mode |
 | `npm run test:ui`      | The same, with the Vitest UI in a browser: each test's result, and a failed image's reference, actual image and diff side by side (for people; agents use the commands above) |
-| `npm run test:visual`  | Visual tests (the `visual-*` projects): compare each actual image with its reference image, and write a new image as its reference, except in CI (downloads the browser on first run) |
+| `npm run test:visual`  | Visual tests (the `visual-*` projects, picked by their `visual-tests/` folders, since the vsnap() plugin's projects can't be picked with `-p`): compare each actual image with its reference image, and write a new image as its reference, except in CI (downloads the browser on first run) |
 | `npm run test:visual:update` | Also write changed actual images as reference images, and delete orphaned references; look at each before committing. `npx vitest run <test file> -u` for one file |
 | `npm run test:vsnap`   | All of v-snap's own tests, unit and visual, from its own config |
 | `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
