@@ -7,7 +7,9 @@
 **Related:** [Presentation State](presentation-state.md) -
 [Views (Learn)](../presenting-the-world/views.md) -
 [View Composition](../presenting-the-world/view-composition.md) -
-[Testing Views](../iterating-with-confidence/testing-views.md)
+[Testing Views](../iterating-with-confidence/testing-views.md) -
+[Reduced Motion](reduced-motion.md) -
+[Reading Layout Back](../presenting-the-world/reading-layout.md)
 
 ---
 
@@ -328,8 +330,5 @@ the coordination logic itself is what needs testing.
 
 ---
 
-**Next:** [Phase-Based Transitions](../animating-transitions/phase-based-transitions.md) - modelling
-components that cycle through mutually-exclusive phases.
-
-**See also:** [View Composition](../presenting-the-world/view-composition.md) -
-[Testing Views](../iterating-with-confidence/testing-views.md)
+**Next:** [Reduced Motion](reduced-motion.md) - giving a player who asked
+for less motion a quieter way to see the same thing.

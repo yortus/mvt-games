@@ -84,6 +84,7 @@ export default withMermaid(defineConfig({
                             { text: 'Bindings in Depth', link: '/building-with-mvt/presenting-the-world/bindings-in-depth' },
                             { text: 'Presenting Collections', link: '/building-with-mvt/presenting-the-world/collections' },
                             { text: 'Sound and Music', link: '/building-with-mvt/presenting-the-world/sound' },
+                            { text: 'Reading Layout Back', link: '/building-with-mvt/presenting-the-world/reading-layout' },
                         ],
                     },
                     {
@@ -99,6 +100,7 @@ export default withMermaid(defineConfig({
                         items: [
                             { text: 'Presentation State', link: '/building-with-mvt/adding-visual-polish/presentation-state' },
                             { text: 'Taming Complex Views', link: '/building-with-mvt/adding-visual-polish/taming-complex-views' },
+                            { text: 'Reduced Motion', link: '/building-with-mvt/adding-visual-polish/reduced-motion' },
                         ],
                     },
                     {

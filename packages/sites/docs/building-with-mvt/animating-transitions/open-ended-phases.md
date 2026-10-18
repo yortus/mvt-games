@@ -8,6 +8,7 @@
 **Related:** [Phase-Based Transitions](phase-based-transitions.md) -
 [Complex Sequences](complex-sequences.md) -
 [Presentation State](../adding-visual-polish/presentation-state.md) -
+[Reduced Motion](../adding-visual-polish/reduced-motion.md) -
 [Time Management](../simulating-the-world/time-management.md)
 
 ---
@@ -181,6 +182,83 @@ The same pattern applies whether the phase lives in the model or the view.
 The only difference is who triggers the transitions and whether external
 code can observe the phase.
 
+## When a Transition Decides When Play Starts
+
+Picture a curtain that closes over the screen while the next level loads.
+The level mustn't start while the curtain is still closed, or the player
+would miss its first seconds. And the curtain mustn't open before the
+level has loaded, or it would show an empty screen.
+
+It's tempting to make the two wait on each other. The curtain, a view
+model, holds closed until the model says it's ready. As it finishes
+opening, it tells the model to start, through a binding such as
+`onOpened: model.startLevel`. Avoid that design:
+
+- **The model depends on its presentation.** It can't move on until a
+  view calls it, so a test or a headless run has to stand in for the
+  view.
+- **The view gives the model orders.** A relay binding reports what the
+  player did, and the model decides what that means. `onOpened` reports
+  something the view did, so that the model will act on it.
+
+The clue is that the curtain decides when play starts. Its timing changes
+what happens in the game, so it's domain timing, like a "Get ready!" pause
+before a level. So the model owns it, and the view follows, as it would
+any [phase-based transition](phase-based-transitions.md). Here the
+model's phases are an open-ended one and a timed one:
+
+```ts
+type LevelPhase = 'loading' | 'opening' | 'playing';
+```
+
+- **`'loading'` is open-ended.** It ends once the level has loaded, and
+  `CLOSE_MS` has passed since it began. The wait for the time means a fast
+  load can't cut the curtain's closing short.
+- **`'opening'` is timed.** It lasts `OPEN_MS`, and `progress` runs from
+  0 to 1. The level is in place, but held still.
+- **`'playing'`** begins when the curtain is fully open.
+
+The model's update step moves between them, with nothing from the view:
+
+```ts
+update(deltaMs) {
+    elapsedMs += deltaMs;
+    if (phase === 'loading' && isLoaded && elapsedMs >= CLOSE_MS) {
+        beginPhase('opening', OPEN_MS);
+    }
+    else if (phase === 'opening' && elapsedMs >= OPEN_MS) {
+        beginPhase('playing', 0);
+    }
+    if (phase === 'playing') level.update(deltaMs);
+},
+```
+
+The curtain's view draws everything from the model's `phase`, `progress`
+and `elapsedMs`. In `'loading'`, it closes over the first `CLOSE_MS`, then
+stays closed with a cyclic shimmer, as
+[above](#cyclic-animations-in-open-ended-phases), for as long as the load
+takes. In `'opening'`, it opens with `progress`.
+
+A few things follow from that:
+
+- **The durations are shared.** `CLOSE_MS` and `OPEN_MS` are the model's
+  constants, and the view fits its animation to them. A player who asked
+  for [less motion](../adding-visual-polish/reduced-motion.md) gets a fade
+  over the same durations, so the game plays the same for them.
+- **The view may still wait on presentation.** If the level's first frame
+  isn't drawn yet as the curtain starts to open, the view can keep the
+  opening dark for a frame. That's the view waiting on its renderer, which
+  is fine. The model's clock doesn't wait for it.
+- **Tests need no views.** A test loads the level, calls `advanceTime` past
+  `CLOSE_MS` and `OPEN_MS`, and checks that the level is playing. A headless
+  run, for a thumbnail or a benchmark, plays the same way.
+
+Compare that with [When the View Owns the Open-Ended
+Phase](#when-the-view-owns-the-open-ended-phase), where the popup is purely
+cosmetic. The rule of thumb is this. If a transition changes when something
+happens in the game, the model owns its timing. If it only changes how
+things look, the view does.
+
 ## Combining Fixed and Open-Ended Phases
 
 Most real components mix both kinds. The chest model above has two fixed
@@ -232,6 +310,9 @@ elapsed time rather than maintaining a separate timer.
   fixed phases auto-advance, open-ended phases wait for external triggers.
 - Prefer deriving cycle values from `elapsedMs` rather than
   maintaining separate cycle timers.
+- When a transition decides **when play starts**, the model owns its
+  timing, with an open-ended phase and a timed one, and the view follows.
+  The view never tells the model to move on.
 
 ---
 

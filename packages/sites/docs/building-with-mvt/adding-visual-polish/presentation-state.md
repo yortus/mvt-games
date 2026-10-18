@@ -10,7 +10,9 @@
 [Phase-Based Transitions](../animating-transitions/phase-based-transitions.md) -
 [View Composition](../presenting-the-world/view-composition.md) -
 [The Game Loop](../the-game-loop.md) -
-[Sound and Music](../presenting-the-world/sound.md)
+[Sound and Music](../presenting-the-world/sound.md) -
+[Reduced Motion](reduced-motion.md) -
+[Reading Layout Back](../presenting-the-world/reading-layout.md)
 
 ---
 
@@ -50,7 +52,7 @@ identically.
 A form model holds a validated `email` string. A text field view lets the
 user edit the value. While the user types, the view holds an intermediate
 editing buffer - the in-progress text that hasn't been committed to the model
-yet. The user might type "troy@exa", which is not yet a valid email, so it
+yet. The user might type "alice@exa", which is not yet a valid email, so it
 stays in the view. The cursor position, the blinking caret timer, and any
 text selection range are also presentation state - the model has no reason to
 know where the cursor is or which characters are highlighted.
@@ -59,6 +61,33 @@ The editing buffer, cursor, and selection are all presentation state. The
 model's `email` field only changes when the user commits (e.g. presses Enter
 or blurs the field). The model never sees the half-typed value, the cursor
 position, or the selection because they are irrelevant to the domain.
+
+### Controls that are both output and input
+
+A text field is a control that shows the model's state and also lets the
+user change it. So are a dropdown, a slider, a scrolled list, and in a web
+app, the browser's address bar and history. MVT's data flows one way: the
+model's state goes out to the view, and the user's input comes back through
+the model's methods. A two-way control has both directions in one element,
+so three things need care:
+
+1. **In-progress state stays in the view.** A dropdown's model cares only
+   about the item chosen. Whether the list is open, and which item is
+   highlighted as the user moves through it, are presentation state. The
+   model hears about a choice once the user commits it.
+2. **A write from the model mustn't fight the user.** If the view writes the
+   model's value into a field every frame, it overwrites what the user is
+   typing. So it holds off while the user is editing. This repo's HTML JSX
+   runtime, for example, doesn't write a text field's `value` while the
+   field has the focus.
+3. **A write that comes back as an event isn't the user's input.** Some
+   elements report the view's own writes as if the user made them. In a
+   browser, `history.back()` fires `popstate`, as the user's Back button
+   does. `scrollTo` fires `scroll`, and `focus()` fires `focus`. A view that
+   passed each event on to the model would tell it about a change the model
+   made itself. So the view tells the two apart. It can count the writes it
+   makes and skip their events, or skip any input that already matches the
+   model's state.
 
 ## When Is Presentation State Useful?
 

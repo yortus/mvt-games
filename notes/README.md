@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**066**.
+**067**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -140,7 +140,6 @@ loose ends are tasks 057 to 064.
 | 038 | [HTML JSX Runtime: Findings from the Arcade](tasks/backlog/038-html-jsx-findings-from-the-arcade.md) | medium | 2026-10-05 |
 | 039 | [Link Previews for Each Entry](tasks/backlog/039-entry-link-previews.md) | low | 2026-10-16 |
 | 040 | [Touch Controls in HTML](tasks/backlog/040-html-touch-controls.md) | low | 2026-10-05 |
-| 041 | [Docs: Questions the Arcade Raised](tasks/backlog/041-docs-from-the-arcade.md) | medium | 2026-10-05 |
 | 044 | [Tick API: One Copy, or a Loud Failure](tasks/backlog/044-one-copy-or-a-loud-failure.md) | low | 2026-10-06 |
 | 048 | [Sound: Follow-Ons From the Audio80](tasks/backlog/048-sound-follow-ons.md) | low | 2026-10-09 |
 | 049 | [Highscores: Follow-Ons](tasks/backlog/049-highscores-follow-ons.md) | low | 2026-10-15 |
@@ -156,6 +155,7 @@ loose ends are tasks 057 to 064.
 | 062 | [Check the Playground on Real Phones and in Safari](tasks/backlog/062-playground-on-phones-and-safari.md) | medium | 2026-10-17 |
 | 063 | [Playground: Shortcuts While the Preview Has the Keyboard](tasks/backlog/063-playground-shortcuts-while-the-preview-has-focus.md) | low | 2026-10-17 |
 | 065 | [Audio90: Follow-Ons](tasks/backlog/065-audio90-follow-ons.md) | low | 2026-10-17 |
+| 066 | [The Arcade's Way Into an Entry, Timed by the Model](tasks/backlog/066-arcade-way-in-timed-by-the-model.md) | medium | 2026-10-18 |
 
 ## Archive
 
@@ -185,6 +185,7 @@ loose ends are tasks 057 to 064.
 | 033 | [Fruit Machine Demo](archive/033-fruit-machine-demo/task.md) (one model, four views: Pixi, three.js, an HTML panel and a terminal) | 2026-10-03 |
 | 036 | [Proposal: the website, and one Arcade for every entry](archive/036-website-arcade.md) (`site/` became `packages/sites/arcade/`, with `docs/`, `benchmarks/` and `checks/` beside it; the cabinet and the demos gallery became one Arcade, the home page, in HTML JSX: a search with tag tokens, a card wall in columns, committed thumbnails, a burn and power-on transition, and attract mode; every game and demo an entry in `src/entries/`, Pixi or `element`, hosted in one loop; a size budget on the home page. Absorbed task 026; loose ends are tasks 038-041) | 2026-10-05 |
 | 037 | [Arcade Code Review](archive/037-arcade-code-review.md) (036's Arcade, before switching over) | 2026-10-05 |
+| 041 | [Docs: Questions the Arcade Raised](archive/041-docs-from-the-arcade.md) (Reading Layout Back, Reduced Motion and The URL and the Model in the guide, and the hand-over in Open-Ended Phases) | 2026-10-18 |
 | 042 | [Proposal: visual snapshot tests for views](archive/042-visual-snapshot-tests.md) (published to npm as `v-snap`: Vitest projects that draw Pixi, three.js, canvas and HTML views, and compare each image with a reference committed beside its test, the same on Windows, Linux and macOS with no Docker; every view and whole entry of the website is tested with it. Loose ends: the logo, a trial on a real project and the docs reviews, in `notes/tmp-vsnap-checklist.md`) | 2026-10-14 |
 | 043 | [Arcade: Fixes From the Playtest Review](archive/043-arcade-review-fixes.md) (the search list unfolds with a CSS transition in place of the wall's layout read in a refresh step; one open panel in the model; history steps for panels, safe against a panel opening as the page steps back; the nav magnifier in a view of its own) | 2026-10-06 |
 | 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/chiptune`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |

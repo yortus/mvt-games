@@ -298,8 +298,20 @@ deliberate:
   games on the host's Pixi stage are turned. The way in floats the polaroid
   to the play area turning as it goes.
 
-## Open Questions
+## In the Guide
 
-Building the Arcade raised questions the docs do not answer yet: when a view
-may read layout back, how a view model and a model hand control to each
-other, where reduced motion belongs, and how a URL relates to a model.
+The guide answers, in general, the questions that building the Arcade
+raised, with the Arcade's code as its example:
+
+- [Reading Layout Back](../../../docs/building-with-mvt/presenting-the-world/reading-layout.md):
+  measurements as input (section 7), and reading a pose once (`photoPoseOf`,
+  above).
+- [Open-Ended Phases, "When a Transition Decides When Play Starts"](../../../docs/building-with-mvt/animating-transitions/open-ended-phases.md#when-a-transition-decides-when-play-starts):
+  the pattern the way into an entry should follow. Section 5's hand-over,
+  where the transition tells the model when to start, is the design that
+  page advises against.
+- [Reduced Motion](../../../docs/building-with-mvt/adding-visual-polish/reduced-motion.md):
+  why `isMotionReduced` is a binding that only the views see.
+- [Presentation State, "Controls that are both output and input"](../../../docs/building-with-mvt/adding-visual-polish/presentation-state.md#controls-that-are-both-output-and-input):
+  why `onHistoryStep`, in `main.ts`, skips the history steps the page takes
+  itself.
