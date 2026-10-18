@@ -1082,7 +1082,12 @@ button { font: inherit; color: inherit; }
 }
 .resume-offer-title { font-size: 18px; color: #e6edf3; }
 .resume-offer-text { font-size: 14px; line-height: 1.4; color: var(--site-text-muted, #8b949e); }
+/* Each with its key beside its label */
 .resume-offer-panel button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     padding: 9px 16px;
     border-radius: 6px;
     border: 1px solid #30363d;
