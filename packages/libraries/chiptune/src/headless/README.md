@@ -246,6 +246,12 @@ it('plays a shot each time the ship fires', () => {
 });
 ```
 
+Name the exact sound in the check, as `SHOT` is named here. Two sounds
+often share an instrument or a first note, so a check that some note
+sounded still passes when the view plays the wrong sound. For a view that
+plays music, compare the notes it writes with the notes of a music player
+playing the song you expect.
+
 ## Listening
 
 `encodeWav(samples, sampleRate)` returns the samples as a 16-bit mono WAV

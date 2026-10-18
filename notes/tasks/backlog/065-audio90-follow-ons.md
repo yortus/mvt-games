@@ -49,7 +49,10 @@ The offline render can't drop out, since it waits for every block, and the
 chip reads no clock. So the audio tests can't catch this, and a fix has to
 keep each tune's hash, or update it after listening.
 
-### With 048's docs revision
+### ~~With 048's docs revision~~
+
+Done 2026-10-18: "Bounce" left the glossary with 048's revision, and the
+Audio90 entry is a short convention entry. Originally:
 
 048 keeps the package's own terms out of the MVT glossary. 051 step 16
 added two: "Audio90", a short project-convention entry like "Audio80", and
@@ -122,3 +125,4 @@ the answer 051 recommended.
   archived 052's link to 051 was pointed at the archive.
 - **2026-10-18.** Added Long Exposure's drop-outs, which the owner heard,
   and marked the line endings item fixed.
+- **2026-10-18.** "Bounce" left the glossary, with 048's docs revision.

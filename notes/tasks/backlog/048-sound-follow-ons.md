@@ -57,7 +57,22 @@ These are 045's open questions 5, 6, 7 and 9 (045 section 14).
   a scope for each voice. It would show the chip off, and give composers a
   page with hot reload.
 
-### Docs: keep the MVT pages about MVT
+### ~~Docs: keep the MVT pages about MVT~~
+
+Done 2026-10-18, with "Who owns the clock" below. Sound and Music's
+example view now asks only for `play` (`Pick<Audio80, 'play'>`), so its
+"Testing" section, and Testing Views' "Testing Audio Views", pass a plain
+object that records each sound. "Time" teaches why sound should follow the
+ticks, then what changes when a library keeps the time (pausing is yours,
+the library keeps the song's place, a test can't see timing), and when the
+ticks keep it, linking the Audio80 guide's "Time". The music player
+paragraph says the same in general terms, and the common mistakes gained a
+row on pausing a library's sounds. The glossary lost `AudioControls`,
+"Tracker notation" and "Bounce" (from 065), and its Audio80, Audio90 and
+music player entries are short convention entries. The tip on testing music
+against a music player moved to the headless README's "Testing an Audio
+View". Originally:
+
 
 The MVT docs should teach how to give an MVT game good sound. How the
 Audio80 works, and how to use its API, belongs in the package's own docs,
@@ -145,9 +160,9 @@ use the Audio80. That work belongs to 035.
       dropped.
 - [ ] A slide over several rows can be written once, or the item is dropped.
 - [ ] Each open design question is decided, built or dropped.
-- [ ] The MVT pages teach sound as MVT, and leave the Audio80's own API to
+- [x] The MVT pages teach sound as MVT, and leave the Audio80's own API to
       the package's docs.
-- [ ] The MVT pages say what changes when a sound library owns the clock,
+- [x] The MVT pages say what changes when a sound library owns the clock,
       including pausing sounds that are already playing.
 
 ## Progress Log
@@ -167,3 +182,5 @@ use the Audio80. That work belongs to 035.
   follow-ons are task 065.
 - **2026-10-18.** `findSounds` finds the sounds in exported arrays, so
   Kwazy Cactii's test no longer adds its whistles and crackles by hand.
+- **2026-10-18.** Revised the sound docs to teach MVT and leave the chips'
+  API to the package, including what changes when a library owns the clock.

@@ -187,54 +187,54 @@ shows how.
 ## Testing Audio Views
 
 An audio view plays sounds instead of drawing visuals, so neither a scene
-graph assertion nor a snapshot can see what it does. Its output is what it
-tells the sound chip to play. In a test, it plays on a headless chip, which
-plays nothing and records every write in its `log` property. The test
-drives the bindings, advances the chip's clock, refreshes the view and
-checks the log.
+graph assertion nor a snapshot can see what it does. Its output is the
+sounds it plays, and it plays them on whatever its `sound` binding gives
+it. So a test passes a stand-in that records each sound in an array, and
+plays nothing. Then the test drives the bindings, refreshes the view and
+checks the array.
 
 This test uses the `ShipAudioView` from
-[Sound and Music](../presenting-the-world/sound.md#audio-views):
+[Sound and Music](../presenting-the-world/sound.md#audio-views), whose
+`sound` binding asks only for a `play` method:
 
 ```ts
 import { expect, it } from 'vitest';
 import { refreshView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { ShipAudioView } from './ship-audio-view';
 import { SHIP_EXPLODE } from './sounds';
 
 it('plays the crash once, as the ship is lost', () => {
-    const { audio80, controls } = createHeadlessAudio80({ record: true });
+    const played: unknown[] = [];
+    const sound = { play: (effect: unknown) => { played.push(effect); } };
     let isAlive = true;
     const view = ShipAudioView({
-        sound: audio80,
+        sound,
         shotsFired: () => 0,
         isAlive: () => isAlive,
     });
 
     isAlive = false;
-    controls.update(1000 / 60);
     refreshView(view);
     // A second refresh with no change plays nothing more
     refreshView(view);
 
-    const plays = audio80.log.filter((write) => write.kind === 'play');
-    expect(plays.map((write) => write.effect)).toEqual([SHIP_EXPLODE]);
+    expect(played).toEqual([SHIP_EXPLODE]);
 });
 ```
 
-Name the exact sound in the assertion. Two sounds often share an
-instrument or a first note. So a check that some sound played, or that
-some note sounded, still passes when the view plays the wrong one. For
-music, compare the view's notes with those of a music player playing the
-expected song.
+Name the exact sound in the assertion. Two sounds often start alike, so a
+check that some sound played still passes when the view plays the wrong
+one.
 
 Audio tests check the sounds themselves, much as
-[visual tests](visual-tests.md) check what a view looks like. An audio test
-renders a sound in memory and compares a hash of its samples with a stored
-hash. A change that alters the sound fails the test, until someone has
-listened to it and accepted the new hash. See
-[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#audio-tests).
+[visual tests](visual-tests.md) check what a view looks like. They catch a
+sound that changes by accident. How you write one depends on your sound
+library. For this repo's sound chips, the package's
+[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#audio-tests)
+shows how. Its
+[Testing an Audio View](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#testing-an-audio-view)
+tests a view against a chip that records every note, which suits a view
+that plays music.
 
 ## Choosing an Approach
 

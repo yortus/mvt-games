@@ -55,6 +55,10 @@ so the view reads that binding only once. In its refresh step, the view
 polls its other bindings. It plays a sound when some sound-triggering
 change has occurred.
 
+The view's `sound` binding asks only for the one method it calls, `play`.
+That's the whole of the view's output. So a test can pass a stand-in that
+records each sound instead of playing it, as [Testing](#testing) shows.
+
 This audio view plays a shot each time the ship fires, and a crash when
 the ship is lost:
 
@@ -66,8 +70,8 @@ import { watch } from '@mvtjs/utils';
 import { SHIP_EXPLODE, SHOT } from './sounds';
 
 export interface ShipAudioViewBindings {
-    /** The sound output. The view reads it once. */
-    readonly sound: Audio80;
+    /** What the view plays its sounds on. The view reads it once. */
+    readonly sound: Pick<Audio80, 'play'>;
     /** Shots fired this game. Each rise is a shot. */
     readonly shotsFired: () => number;
     readonly isAlive: () => boolean;
@@ -117,8 +121,10 @@ properties follow from that:
 - **A refresh with no change plays nothing.** A second refresh in the same
   tick plays nothing again. So a view can still be refreshed at any time,
   as usual.
-- **A paused game is quiet.** The game loop still refreshes a paused
-  game's views, to show them. No state changes, so no sound starts.
+- **A paused game starts no new sounds.** The game loop still refreshes a
+  paused game's views, to show them. No state changes, so no sound starts.
+  Whether the sounds already playing stop too depends on who keeps the
+  sound's time. [Time](#time) explains.
 
 ::: info Project convention
 This repo's audio views play on a virtual sound chip from `@mvtjs/chiptune`. A
@@ -248,74 +254,101 @@ would take 1 as the starting count, and the first beat would be silent. So
 poll at construction whenever the view's own first update can cause a
 change.
 
-A **music player** from `@mvtjs/chiptune` keeps a tune's place in the same
-way. The view calls `MusicPlayer.update` in its update step. It calls
-`MusicPlayer.refresh` at the end of its refresh step, after any call that
-starts a song. A new song cuts the old one short, because
-`MusicPlayer.play` releases the song playing and cancels any song queued.
-So a jingle played as a phase begins stops when the next phase plays its
-own song. Keep each such jingle no longer than its phase. A test can check
-this with `computeSongDurationMs`, which returns how long one pass through
-a song lasts.
+A tune works the same way. Its place in the song is presentation state.
+The view moves it on in the update step, and plays the notes that are due
+in the refresh step. A view usually plays one song at a time, so a new
+song cuts the old one off. A jingle that plays as a phase begins stops
+when the next phase starts its own song. Keep each such jingle no longer than its phase.
 
 Only the update step moves the tune and the heartbeat on. A paused game's
 views sit out the update step, so both stop while the game is paused. They
-carry on from the same place when it resumes.
+carry on from the same place when it resumes. That holds when the view
+keeps the tune's place. Many sound libraries keep it themselves, as the
+next section explains.
 
 ## Time
 
-A model's time is the ticks, never the wall clock. Sound keeps the same
-time. In this repo, the game loop advances the Audio80's clock by the
-models' `deltaMs` each tick. Each note is stamped with the chip's time,
-and the chip plays it at that time. That has three results:
+A model's time is the ticks, never the wall clock. Ideally, sound keeps the
+same time, for the same reasons. When sound follows the ticks, pausing the
+game pauses its sound, and the same ticks always make the same sound. But
+whether it does depends on who keeps the sound's time, and that's up to
+the sound library.
+
+### When the Library Keeps the Time
+
+Most sound libraries, such as Howler, `@pixi/sound` and the Web Audio API,
+play on the audio device's clock. An audio view can start and stop a
+sound, pause and resume it, and change its volume or speed. But once a
+sound starts, it plays in real time, not with the game's ticks.
+
+Everything above still holds. Audio views play on a change, and the advice
+on finding the moment, counts and lists is the same. What changes is time:
+
+- **Pausing is your job.** A paused game starts no new sounds, but the
+  sounds already playing carry on, and so does the music. Pause them
+  yourself, from the audio view as it sees the game pause, or from the game
+  loop.
+- **The library keeps the song's place.** So the view's presentation state
+  is only which song should be playing. When the phase changes, the view
+  starts the new song.
+- **A test sees what the view started, but not its timing.** It can check
+  that a shot played, but not when each of its notes sounded.
+
+### When the Ticks Keep the Time
+
+Some sound output takes its time from the game loop. The loop advances its
+clock by the models' `deltaMs` each tick. Then sound behaves like
+everything else in MVT:
 
 - Pausing the game pauses its sound, including notes already playing.
 - A tune keeps its tempo, however uneven the frames.
 - The same ticks always make the same sound, so the sound can be tested.
 
-Sound effects are the exception. They play as soon as they arrive, not at
-their stamped time, so that a shot is heard in the frame it is seen.
+This repo's sound chips work this way. It's a choice, though,
+not how sound works in general. The
+[Audio80 guide's "Time" section](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md#time-the-chip-runs-on-game-time)
+shows how its clock does it.
 
 ## Testing
 
 An audio view is tested like any other view. The test drives its bindings,
-ticks the view and checks what it wrote. Here the output is a log of what
-the view told the chip to play. A headless chip, from
-`@mvtjs/chiptune/headless`, records every write and plays nothing. The test
-advances the chip's clock with `AudioControls.update`, as a game loop
-would:
+refreshes the view, and checks what it wrote. Here the output is the
+sounds the view played. The view's `sound` binding asks only for `play`, so
+the test can pass a plain object that records each sound in an array. You
+don't need a sound library at all:
 
 ```ts
 import { expect, it } from 'vitest';
 import { refreshView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { ShipAudioView } from './ship-audio-view';
 import { SHOT } from './sounds';
 
 it('plays a shot each time the ship fires', () => {
-    const { audio80, controls } = createHeadlessAudio80({ record: true });
+    const played: unknown[] = [];
+    const sound = { play: (effect: unknown) => { played.push(effect); } };
     const state = { shots: 0 };
     const view = ShipAudioView({
-        sound: audio80,
+        sound,
         shotsFired: () => state.shots,
         isAlive: () => true,
     });
 
     state.shots++;
-    controls.update(1000 / 60);
     refreshView(view);
-    const shot = expect.objectContaining({ kind: 'play', effect: SHOT });
-    expect(audio80.log).toContainEqual(shot);
+    expect(played).toEqual([SHOT]);
 });
 ```
 
-The sounds themselves can have audio tests. An audio test renders a sound
-in memory and compares a hash of its samples with a saved one. A change
-that alters the sound then fails the test, until someone has listened to it
-and updated the saved hash. See
-[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md#testing-and-listening).
-What a view looks like has the same kind of test, described in
-[Visual Tests](../iterating-with-confidence/visual-tests.md).
+Check for the exact sound, as the last line does. Two sounds often start
+alike, so a check that some sound played still passes when the view plays
+the wrong one.
+
+The sounds themselves can have audio tests, which catch a sound that
+changes by accident. They do for sound what
+[visual tests](../iterating-with-confidence/visual-tests.md) do for what a
+view looks like. How you write one depends on your sound library.
+[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md#testing-and-listening)
+shows them for this repo's chips.
 
 ## Common Mistakes
 
@@ -331,6 +364,7 @@ What a view looks like has the same kind of test, described in
 | Playing a sound for each of two values that change together | Two sounds play for one moment | Count the moment in the model, or read the values together |
 | A jingle in a phase shorter than the jingle | The next phase's song cuts it short | Shorten the jingle, or lengthen the phase |
 | A wall-clock timer for a repeating sound | It ignores pausing, and drifts from the game | Use presentation state advanced in the update step, such as a metronome |
+| Expecting a pause to silence a library's sounds | Sounds already playing carry on, the music among them | Pause and resume them yourself, from the audio view or the game loop |
 
 ## Going Further
 
