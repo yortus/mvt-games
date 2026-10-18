@@ -1,6 +1,5 @@
 import { Container } from 'pixi.js';
-import { type RegisteredRenderer, registerCopy, registerRenderer, setRefresh, setUpdate, shareAcrossCopies } from '@mvtjs/utils';
-import { version } from '../package.json';
+import { type RegisteredRenderer, registerRenderer, setRefresh, setUpdate } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Install
@@ -16,9 +15,8 @@ declare module '@mvtjs/utils' {
 /**
  * Pixi containers, registered with `registerRenderer` on `Container.prototype`
  * (see `registerContainers`), so that `updateView` and `refreshView` walk
- * them. Every copy of @mvtjs/pixi in a program that extends the same
- * `Container` shares one registration, made by the first copy to load, so the
- * prototype is wrapped once and every copy's views are walked alike.
+ * them. A second copy of @mvtjs/pixi that extends the same `Container` would
+ * register it again, which throws.
  *
  * Installed at module load rather than lazily on first use, so every container
  * carries the private fields' defaults before any is given a method or
@@ -27,9 +25,7 @@ declare module '@mvtjs/utils' {
  * entry point of the package imports it, which also brings the
  * `RendererViews` declaration above with it.
  */
-shareAcrossCopies(Container.prototype, '@mvtjs/pixi', registerContainers);
-
-registerCopy('@mvtjs/pixi', version);
+registerContainers();
 
 /**
  * Registers Pixi containers: the generic method lists of `@mvtjs/utils`,

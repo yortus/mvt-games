@@ -81,6 +81,13 @@ If you drive the frames yourself instead of with Pixi's ticker, use
 `createPerformanceMeter` from `@mvtjs/utils`, and give it a GPU timer from
 `createGpuTimer({ renderer })`.
 
+## Keep one copy
+
+A program must load one copy of this package, and one of `@mvtjs/utils`. A
+second copy that extends the same Pixi `Container` throws an error as it
+loads. `npm ls @mvtjs/pixi` finds it, and in Vite, `resolve.dedupe` keeps
+one copy of each. See [Keep one copy](https://github.com/yortus/mvt-games/blob/main/packages/libraries/utils/README.md#keep-one-copy) in `@mvtjs/utils` for the causes and their fixes.
+
 ## Learn more
 
 - [The guide and reference](https://yortus.com/mvt-games/docs/)

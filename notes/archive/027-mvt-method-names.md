@@ -1177,6 +1177,11 @@ Two more things to check:
 **Recommendation:** all five, when the packages are published. 1, 2, 4 and 5
 make every remaining case loud. 3 removes the most common case outright.
 
+**Later (2026-10-18):** task [044](044-one-copy-or-a-loud-failure.md)
+reversed mitigations 3 and 5, and replaced 1 and 4 with a throw at load. A
+second copy of `@mvtjs/utils` throws as it loads, and so does a second copy
+of a renderer that extends the same class. Peers (2) stay.
+
 ### 11.8 Spike results (2026-10-01)
 
 **What was built.** It is uncommitted on branch `vnext-027`, on top of

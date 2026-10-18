@@ -3,7 +3,6 @@ export type { RefreshMethod, RegisteredRenderer, RegisterRendererOptions, Render
 export { addReads, countTick, SKIP_DESCENDANTS, tickCounter, type TickCounter, type TickCounts } from './tick-api';
 export { advanceTime, type Advanceable } from './tick-api';
 export { createDestroyRegistry, type DestroyRegistry, type DestroyRegistryOptions } from './destroy-registry';
-export { PROTOCOL, registerCopy, shareAcrossCopies } from './copies';
 export { assert } from './assert';
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';
 export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';

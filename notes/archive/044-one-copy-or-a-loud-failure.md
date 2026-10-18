@@ -4,13 +4,13 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-06 |
-| Updated  | 2026-10-06 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
 Before the first publish, 011 built all five of 027 section 11.7's
 mitigations for two copies of the @mvtjs packages in one program
-([011's progress log](../../archive/011-multi-package-repo.md), "Two copies
+([011's progress log](011-multi-package-repo.md), "Two copies
 in one program"). The centrepiece is mitigation 3: copies with the same
 `PROTOCOL` share one core, so a second copy loaded by tooling (Vite reaching
 a package by two paths, a linked package with its own `node_modules`) simply
@@ -30,31 +30,31 @@ on how to keep one copy. It relies on:
 
 ### What exists today
 
-- [copies.ts](../../../packages/libraries/utils/src/copies.ts): `PROTOCOL`,
+- [copies.ts](../../packages/libraries/utils/src/copies.ts): `PROTOCOL`,
   `shareAcrossCopies(host, name, create)` and `registerCopy(name, version)`,
   all three exported from `@mvtjs/utils`.
-- [shared-state.ts](../../../packages/libraries/utils/src/tick-api/shared-state.ts):
+- [shared-state.ts](../../packages/libraries/utils/src/tick-api/shared-state.ts):
   `methodAssignments` and the `tickCounter` object, kept in one object on
   `globalThis` so every copy of utils counts into it; registers utils' copy.
   It is the module utils' `sideEffects` keeps.
-- [tick-api.ts](../../../packages/libraries/utils/src/tick-api/tick-api.ts): the
+- [tick-api.ts](../../packages/libraries/utils/src/tick-api/tick-api.ts): the
   dev-only `_mvtProtocol` field, set by `setUpdate` and `setRefresh` and
   checked on every node visit (`visit`, `warnOfForeignNode`,
   `hasWarnedOfForeignNode`), so a walk can warn of a node another protocol
   set up.
 - Each renderer's mixin
-  ([pixi](../../../packages/libraries/pixi/src/container-mixin.ts),
-  [three](../../../packages/libraries/three/src/object3d-mixin.ts),
-  [html](../../../packages/libraries/html/src/element-mixin.ts)) wraps its registration
+  ([pixi](../../packages/libraries/pixi/src/container-mixin.ts),
+  [three](../../packages/libraries/three/src/object3d-mixin.ts),
+  [html](../../packages/libraries/html/src/element-mixin.ts)) wraps its registration
   in `shareAcrossCopies` on the prototype it extends (three and html through
   an `ObjectCore` / `ElementCore` record), and calls `registerCopy` with the
   version it imports from its `package.json`.
-- [skip-descendants.ts](../../../packages/libraries/utils/src/tick-api/skip-descendants.ts):
+- [skip-descendants.ts](../../packages/libraries/utils/src/tick-api/skip-descendants.ts):
   `SKIP_DESCENDANTS` is `Symbol.for(...)` so every copy agrees.
-- Tests: [copies.test.ts](../../../packages/libraries/utils/src/copies.test.ts), a
+- Tests: [copies.test.ts](../../packages/libraries/utils/src/copies.test.ts), a
   `second-copy.test.ts` in each renderer, and the "nodes set up by an
   incompatible copy" block in
-  [tick-api.test.ts](../../../packages/libraries/utils/src/tick-api/tick-api.test.ts).
+  [tick-api.test.ts](../../packages/libraries/utils/src/tick-api/tick-api.test.ts).
 
 ### The plan
 
@@ -149,7 +149,7 @@ nothing is broken today.
    `globalThis`, or a registration on a prototype, outlives a re-run of the
    module that set it, and the guard cannot tell a re-run from a second
    copy. Concretely:
-   - **In this repo:** [html-jsx.test.tsx](../../../packages/libraries/html/src/jsx/html-jsx.test.tsx)
+   - **In this repo:** [html-jsx.test.tsx](../../packages/libraries/html/src/jsx/html-jsx.test.tsx)
      calls `vi.resetModules()` and re-imports `./jsx-runtime`, which
      re-evaluates `element-mixin.ts` and, since the libraries resolve to
      source and are inlined, utils' modules too. Today the shared core makes
@@ -302,32 +302,74 @@ part of it, the rest are options to weigh.
 
 ## Acceptance Criteria
 
-- [ ] `copies.ts` and `shared-state.ts` removed; `PROTOCOL`,
+- [x] `copies.ts` and `shared-state.ts` removed; `PROTOCOL`,
   `shareAcrossCopies` and `registerCopy` no longer exported
-- [ ] A second copy of `@mvtjs/utils` throws at load, naming both versions
+- [x] A second copy of `@mvtjs/utils` throws at load, naming both versions
   and the fix; it also detects a 0.2.x copy, either order (issue 5)
-- [ ] A second copy of each renderer that extends the same class throws at
+- [x] A second copy of each renderer that extends the same class throws at
   load, through `registerRenderer`, with the same advice
-- [ ] `_mvtProtocol`, the dev check in `visit` and `warnOfForeignNode` gone
-- [ ] three and html export their registries without a core record;
+- [x] `_mvtProtocol`, the dev check in `visit` and `warnOfForeignNode` gone
+- [x] three and html export their registries without a core record;
   renderers no longer import their `package.json`
-- [ ] `sideEffects` in utils' `package.json` names the guard's module, and
+- [x] `sideEffects` in utils' `package.json` names the guard's module, and
   `npm run build:packages` passes (publint, attw, the view-type check)
-- [ ] The `vi.resetModules()` test in `html-jsx.test.tsx` reworked so it
+- [x] The `vi.resetModules()` test in `html-jsx.test.tsx` reworked so it
   does not load a second copy
-- [ ] One "a second copy throws" test per package; the old copy tests removed
-- [ ] A "Keep one copy" section in each package README
-- [ ] The thrown message tells same-version and two-version duplicates
+- [x] One "a second copy throws" test per package; the old copy tests removed
+- [x] A "Keep one copy" section in each package README
+- [x] The thrown message tells same-version and two-version duplicates
   apart, and names both copies' `import.meta.url`
-- [ ] HMR checked by hand for the mixins and utils
-- [ ] A check that the built website holds one copy of the guard, run by
+- [x] HMR checked by hand for the mixins and utils
+- [x] A check that the built website holds one copy of the guard, run by
   `npm run build`
-- [ ] Benchmarks show no regression (issue 6)
-- [ ] A changeset for the breaking change, saying how to keep one copy
-- [ ] 027 section 11.7 and 011's progress log point here
-- [ ] Actual lines removed recorded below, against the estimate
+- [x] Benchmarks show no regression (issue 6)
+- [x] A changeset for the breaking change, saying how to keep one copy
+- [x] 027 section 11.7 and 011's progress log point here
+- [x] Actual lines removed recorded below, against the estimate
 
 ## Progress Log
 
 - 2026-10-06: Created. Estimates from reading the current code; nothing
   built or measured. Added mitigations for each potential issue.
+- 2026-10-18: Done, as planned, with these choices and results.
+  - **The guard** is `packages/libraries/utils/src/one-copy.ts`, which
+    `tick-api.ts` imports and `sideEffects` keeps. It reads and writes the
+    old `mvtjs:copies` record, registering with protocol 2, so a copy from
+    0.2 to 0.4 is caught in either order (the published 0.3 and 0.4 have
+    the same record as 0.2). Its message tells same-version and
+    two-version duplicates apart, names both copies' `import.meta.url`, and
+    mentions resetting modules in tests. Renderers rely on
+    `registerRenderer`'s throw, with a reworded message.
+  - **`methodAssignments`** stayed a property of a module-level object
+    (`tickState`), the shape the method lists already read, as mitigation 6
+    allowed, so the hot path did not change. `tickCounter` is a plain
+    object in `tick-counter.ts`. `SKIP_DESCENDANTS` keeps `Symbol.for`.
+  - **Tests:** `one-copy.test.ts` (both messages, a planted older copy, and
+    the protocol it records), one "a second copy throws" test per renderer,
+    and the CSP test moved to `html/src/jsx/blocked-function.test.tsx`,
+    which needs no `vi.resetModules()`.
+  - **The check** is `npm run check:one-copy-of-utils`
+    (`packages/tests/checks/scripts/one-copy-of-utils.ts`). It counts
+    `mvtjs:copies` in the built Arcade and the built playground, whose
+    sandbox loads the libraries as chunks of their own, and `npm run build`
+    runs it. Both hold one.
+  - **HMR, by hand:** with the Arcade's dev server and a headless browser,
+    editing `container-mixin.ts` (Boids running), `object3d-mixin.ts`
+    (Boids 3D running), `element-mixin.ts`, `one-copy.ts`, `tick-api.ts`
+    and `watch.ts` each made Vite reload the page, with no hot update and
+    no error. No `import.meta.hot?.decline()` was needed.
+  - **Benchmarks:** three interleaved rounds each of `refresh-view`,
+    `jsx-refresh` and `construction`, each side in its own worktree. Median
+    ratio over all 32 cells 1.000. The widest were rows the change cannot
+    touch, such as the plain recursive walk (0.94), so within noise.
+    `html-refresh-view` was not run: each run of it starts headless Chrome
+    with a new profile, which Windows counts as a failed logon.
+  - **Lines,** against the estimate: shipped source +227 -372, net -145
+    (estimate about -200 with the adopted mitigations), and tests +171
+    -251, net -80 (about -213 estimated). Both came out smaller because
+    the guard's message, its handling of older copies and their comments
+    took about 75 lines, against about 35 estimated, and its test about 87,
+    against 70. The READMEs gained 69 lines.
+  - **Settled** (do not reopen without new information): sharing state
+    between copies was removed on purpose. Reopen only if users report
+    duplicates that configuration cannot fix.

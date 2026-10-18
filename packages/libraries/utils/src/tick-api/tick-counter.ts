@@ -1,5 +1,3 @@
-import { utilsState } from './shared-state';
-
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -52,10 +50,15 @@ export interface TickCounts {
  * costs a few nanoseconds per site, so sample it rather than leave it on.
  *
  * The counting sites write it directly, so it must stay one object for the
- * life of the program; every copy of @mvtjs/utils in a program counts into
- * the same one.
+ * life of the program.
  */
-export const tickCounter: TickCounter = utilsState.tickCounter;
+export const tickCounter: TickCounter = {
+    isCounting: false,
+    reads: 0,
+    methodCalls: 0,
+    methodListRebuilds: 0,
+    rebuildNodeVisits: 0,
+};
 
 /** {@link tickCounter}'s shape: its counts so far, and whether it is counting. */
 export interface TickCounter {

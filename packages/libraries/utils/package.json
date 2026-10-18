@@ -13,7 +13,7 @@
     },
     "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",
-    "sideEffects": ["./src/tick-api/shared-state.ts", "./dist/tick-api/shared-state.js"],
+    "sideEffects": ["./src/one-copy.ts", "./dist/one-copy.js"],
     "exports": {
         ".": {
             "@mvtjs/source": "./src/index.ts",

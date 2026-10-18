@@ -1126,6 +1126,8 @@ placeholder versions to create the packages first.
     each side in its own worktree with `npm ci`, found no difference: every
     row within about 5% (median ratio 0.99), and the rows the change cannot
     touch (naive walks, Solid, `onRender`) spread as widely.
+  - **Later (2026-10-18):** task [044](044-one-copy-or-a-loud-failure.md)
+    removed the sharing. A second copy now throws as it loads.
 - **Builds:** tsdown in each library, one entry per `exports` path, and
   `unbundle`, so each source module is its own output file. That keeps the
   modules with side effects at load (each renderer's mixin, and utils'

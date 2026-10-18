@@ -1,5 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
-import { PROTOCOL } from '../copies';
+import { describe, expect, it } from 'vitest';
 import { SKIP_DESCENDANTS } from './skip-descendants';
 import { hasRefresh, hasUpdate, refreshView, registerRenderer, setRefresh, setUpdate, updateView } from './tick-api';
 
@@ -485,38 +484,5 @@ describe('registerRenderer', () => {
         refreshView(root);
 
         expect(flushed).toEqual(['root', 'root', 'root']);
-    });
-});
-
-describe('nodes set up by an incompatible copy', () => {
-    it.runIf(import.meta.env.DEV)('marks a node with its protocol when its methods are set, in dev', () => {
-        const node = plainNode('marked');
-        setRefresh(node, () => undefined);
-        expect((node as { _mvtProtocol?: number })._mvtProtocol).toBe(PROTOCOL);
-    });
-
-    it.runIf(import.meta.env.DEV)('warns once, in dev, of a node whose methods another protocol set', () => {
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-        try {
-            const root = plainNode('root');
-            const foreign = plainNode('foreign');
-            const another = plainNode('another');
-            append(root, foreign);
-            append(root, another);
-            // As a copy of another protocol would leave it: its own fields, under other names
-            (foreign as { _mvtProtocol?: number })._mvtProtocol = PROTOCOL + 1;
-            (another as { _mvtProtocol?: number })._mvtProtocol = PROTOCOL + 1;
-
-            updateView(root, 16);
-            refreshView(root);
-            updateView(root, 16);
-            refreshView(root);
-
-            expect(warn).toHaveBeenCalledTimes(1);
-            expect(warn.mock.calls[0][0]).toMatch(/^\[mvt\] (foreign|another) was set up by an incompatible copy of @mvtjs/);
-        }
-        finally {
-            warn.mockRestore();
-        }
     });
 });

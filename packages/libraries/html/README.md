@@ -90,6 +90,14 @@ brings its own styles. To match your page, set its CSS variables, such as
 - A refresh method should only write: reading layout after a write makes the
   browser lay the page out there and then.
 
+## Keep one copy
+
+A program must load one copy of this package, and one of `@mvtjs/utils`. A
+second copy, which would extend the DOM's `Element` again, throws an error
+as it loads. `npm ls @mvtjs/html` finds it, and in Vite, `resolve.dedupe`
+keeps one copy of each. See [Keep one copy](https://github.com/yortus/mvt-games/blob/main/packages/libraries/utils/README.md#keep-one-copy) in `@mvtjs/utils` for the causes and their
+fixes.
+
 ## Learn more
 
 - [The guide and reference](https://yortus.com/mvt-games/docs/)

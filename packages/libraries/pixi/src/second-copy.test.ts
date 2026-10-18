@@ -1,26 +1,21 @@
 import { Container } from 'pixi.js';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as first from './container-mixin';
-
-afterEach(() => {
-    vi.restoreAllMocks();
-});
+import { describe, expect, it } from 'vitest';
+import './container-mixin';
 
 describe('a second copy of @mvtjs/pixi', () => {
-    it('shares the first copy\'s registration, and wraps Container once', async () => {
-        const addChild = Container.prototype.addChild;
-        const renderer = rendererOf(Container.prototype);
-        // Registering `Container.prototype` again would throw
-        const second = await importCopy('second-copy');
-        expect(second).not.toBe(first);
-        expect(rendererOf(Container.prototype)).toBe(renderer);
-        expect(Container.prototype.addChild).toBe(addChild);
+    it('throws as it loads, saying how to keep one copy', async () => {
+        await expect(importCopy('second-copy')).rejects.toThrow(
+            /is already registered as a renderer's prototype\. Two copies of a renderer package/,
+        );
     });
 
-    it('loads silently: it is the same version', async () => {
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-        await importCopy('third-copy');
-        expect(warn).not.toHaveBeenCalled();
+    it('leaves the first copy\'s registration as it was', async () => {
+        const renderer = rendererOf(Container.prototype);
+        const addChild = Container.prototype.addChild;
+        await importCopy('third-copy').catch(() => undefined);
+        expect(rendererOf(Container.prototype)).toBe(renderer);
+        // Its structural methods are wrapped once, by the first copy
+        expect(Container.prototype.addChild).toBe(addChild);
     });
 });
 
@@ -38,7 +33,7 @@ function rendererOf(prototype: object): unknown {
  * query string makes Vite load it again, while its own imports resolve to
  * the instances already loaded.
  */
-async function importCopy(name: string): Promise<typeof first> {
+async function importCopy(name: string): Promise<unknown> {
     const path = `./container-mixin.ts?${name}`;
-    return await import(/* @vite-ignore */ path) as typeof first;
+    return await import(/* @vite-ignore */ path);
 }

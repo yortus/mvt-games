@@ -74,6 +74,13 @@ A function attribute is read on every refresh; a plain value is set once.
   of its ancestors, so an `onClick` attribute on a group receives clicks on
   any mesh inside it.
 
+## Keep one copy
+
+A program must load one copy of this package, and one of `@mvtjs/utils`. A
+second copy that extends the same three.js `Object3D` throws an error as it
+loads. `npm ls @mvtjs/three` finds it, and in Vite, `resolve.dedupe` keeps
+one copy of each. See [Keep one copy](https://github.com/yortus/mvt-games/blob/main/packages/libraries/utils/README.md#keep-one-copy) in `@mvtjs/utils` for the causes and their fixes.
+
 ## Learn more
 
 - [The guide and reference](https://yortus.com/mvt-games/docs/)

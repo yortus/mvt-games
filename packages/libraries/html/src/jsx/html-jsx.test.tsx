@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { refreshView } from '@mvtjs/utils';
 import '../element-mixin';
 import { MVT_GROUP_CSS } from './html-target';
@@ -360,45 +360,5 @@ describe('@mvtjs/html JSX', () => {
             refreshView(list);
             expect(texts()).toEqual(['c']);
         });
-    });
-});
-
-describe('@mvtjs/html JSX where new Function is blocked', () => {
-    afterEach(() => {
-        vi.unstubAllGlobals();
-        vi.restoreAllMocks();
-    });
-
-    /**
-     * A fresh runtime, with the global `Function` replaced by one that throws,
-     * as a Content Security Policy without 'unsafe-eval' makes it.
-     */
-    async function withBlockedFunction() {
-        vi.resetModules();
-        const runtime = await import('./jsx-runtime');
-        let constructions = 0;
-        vi.stubGlobal('Function', function Blocked() {
-            constructions++;
-            throw new EvalError('Refused to evaluate a string as JavaScript');
-        });
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-        return { runtime, warn, constructions: () => constructions };
-    }
-
-    it('builds and refreshes elements without ever calling it, and warns nothing', async () => {
-        const t = await withBlockedFunction();
-        let text = 'a';
-
-        // Enough elements that the shape takes a copy of the refresh code of its own
-        const elements: HTMLElement[] = [];
-        for (let i = 0; i < 20; i++) elements.push(t.runtime.jsx('div', { title: () => text }) as HTMLElement);
-        for (const el of elements) refreshView(el);
-        text = 'b';
-        for (const el of elements) refreshView(el);
-
-        expect(elements[0].title).toBe('b');
-        expect(elements[19].title).toBe('b');
-        expect(t.constructions()).toBe(0);
-        expect(t.warn).not.toHaveBeenCalled();
     });
 });

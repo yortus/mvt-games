@@ -1,28 +1,21 @@
 import { Object3D } from 'three';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import * as first from './object3d-mixin';
-
-afterEach(() => {
-    vi.restoreAllMocks();
-});
+import { describe, expect, it } from 'vitest';
+import './object3d-mixin';
 
 describe('a second copy of @mvtjs/three', () => {
-    it('shares the first copy\'s core, and wraps Object3D once', async () => {
-        const add = Object3D.prototype.add;
-        const renderer = rendererOf(Object3D.prototype);
-        // Registering `Object3D.prototype` again would throw
-        const second = await importCopy('second-copy');
-        expect(second).not.toBe(first);
-        expect(rendererOf(Object3D.prototype)).toBe(renderer);
-        expect(second.destroyObject).toBe(first.destroyObject);
-        expect(second.onDestroyed).toBe(first.onDestroyed);
-        expect(Object3D.prototype.add).toBe(add);
+    it('throws as it loads, saying how to keep one copy', async () => {
+        await expect(importCopy('second-copy')).rejects.toThrow(
+            /is already registered as a renderer's prototype\. Two copies of a renderer package/,
+        );
     });
 
-    it('loads silently: it is the same version', async () => {
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-        await importCopy('third-copy');
-        expect(warn).not.toHaveBeenCalled();
+    it('leaves the first copy\'s registration as it was', async () => {
+        const renderer = rendererOf(Object3D.prototype);
+        const add = Object3D.prototype.add;
+        await importCopy('third-copy').catch(() => undefined);
+        expect(rendererOf(Object3D.prototype)).toBe(renderer);
+        // Its structural methods are wrapped once, by the first copy
+        expect(Object3D.prototype.add).toBe(add);
     });
 });
 
@@ -40,7 +33,7 @@ function rendererOf(prototype: object): unknown {
  * query string makes Vite load it again, while its own imports resolve to
  * the instances already loaded.
  */
-async function importCopy(name: string): Promise<typeof first> {
+async function importCopy(name: string): Promise<unknown> {
     const path = `./object3d-mixin.ts?${name}`;
-    return await import(/* @vite-ignore */ path) as typeof first;
+    return await import(/* @vite-ignore */ path);
 }

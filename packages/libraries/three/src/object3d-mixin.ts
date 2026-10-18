@@ -1,6 +1,5 @@
 import { Object3D } from 'three';
-import { createDestroyRegistry, type DestroyRegistry, registerCopy, registerRenderer, shareAcrossCopies } from '@mvtjs/utils';
-import { version } from '../package.json';
+import { createDestroyRegistry, registerRenderer } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Install
@@ -15,58 +14,38 @@ declare module '@mvtjs/utils' {
 
 /**
  * three.js objects, registered with `registerRenderer` on `Object3D.prototype`
- * so that `updateView` and `refreshView` walk them, and the destroy registry
- * for them (see `createObjectCore`). Every copy of @mvtjs/three in a program
- * that extends the same `Object3D` shares them, made by the first copy to
- * load, so the prototype is wrapped once and the copies agree.
+ * so that `updateView` and `refreshView` walk them. Unlike three's
+ * `onBeforeRender`, the walks run for objects that are hidden or out of view,
+ * so a binding that brings an object back into view still runs. A second copy
+ * of @mvtjs/three that extends the same `Object3D` would register it again,
+ * which throws.
  *
  * Installed at module load, so every object carries the private fields'
  * defaults before any is given a method or walked. Every entry point of the
  * package imports this module, which also brings the `RendererViews`
  * declaration above with it.
  */
-const objectCore = shareAcrossCopies(Object3D.prototype, '@mvtjs/three', createObjectCore);
-
-export const { destroy: destroyObject, onDestroyed, isDestroyed } = objectCore.destroyRegistry;
-
-registerCopy('@mvtjs/three', version);
-
-/** What every copy of @mvtjs/three that extends one `Object3D` shares. */
-interface ObjectCore {
-    /**
-     * Destroying three.js objects, which have no destroy of their own
-     * (`DestroyRegistry` in `@mvtjs/utils`): runs each `onDestroyed` callback
-     * in the subtree, clears its update and refresh methods, and detaches it.
-     * Geometry, materials and textures are not disposed: the view does not
-     * know who else uses them, so one that made them disposes them in
-     * `onDestroyed`.
-     */
-    readonly destroyRegistry: DestroyRegistry<Object3D>;
-}
+const { invalidate } = registerRenderer<Object3D>({
+    prototype: Object3D.prototype,
+    children: (node) => node.children,
+    parent: (node) => node.parent,
+    describe: (node) => (node.name ? `'${node.name}'` : `(${node.type})`),
+});
+wrapStructuralMethods(invalidate);
 
 /**
- * Registers three.js objects: the generic method lists of `@mvtjs/utils`,
- * told how to read an object's children and parent. Unlike three's
- * `onBeforeRender`, they run for objects that are hidden or out of view, so a
- * binding that brings an object back into view still runs. Also wraps
- * `Object3D.prototype`'s structural methods, and makes the destroy registry.
+ * Destroying three.js objects, which have no destroy of their own
+ * (`DestroyRegistry` in `@mvtjs/utils`): runs each `onDestroyed` callback in
+ * the subtree, clears its update and refresh methods, and detaches it.
+ * Geometry, materials and textures are not disposed: the view does not know
+ * who else uses them, so one that made them disposes them in `onDestroyed`.
  */
-function createObjectCore(): ObjectCore {
-    const { invalidate } = registerRenderer<Object3D>({
-        prototype: Object3D.prototype,
-        children: (node) => node.children,
-        parent: (node) => node.parent,
-        describe: (node) => (node.name ? `'${node.name}'` : `(${node.type})`),
-    });
-    const destroyRegistry = createDestroyRegistry<Object3D>({
-        children: (node) => node.children,
-        detach: (node) => {
-            node.removeFromParent();
-        },
-    });
-    wrapStructuralMethods(invalidate);
-    return { destroyRegistry };
-}
+export const { destroy: destroyObject, onDestroyed, isDestroyed } = createDestroyRegistry<Object3D>({
+    children: (node) => node.children,
+    detach: (node) => {
+        node.removeFromParent();
+    },
+});
 
 // ---------------------------------------------------------------------------
 // Internals

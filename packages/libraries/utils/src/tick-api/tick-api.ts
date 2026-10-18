@@ -1,7 +1,6 @@
 import { assert } from '../assert';
-import { PROTOCOL } from '../copies';
+import '../one-copy';
 import type { View } from './renderer-views';
-import { utilsState } from './shared-state';
 import { SKIP_DESCENDANTS } from './skip-descendants';
 import { tickCounter } from './tick-counter';
 import type { RefreshMethod, UpdateMethod } from './tick-methods';
@@ -134,14 +133,17 @@ export function hasRefresh(view: View): boolean {
  * removes a child. It declares its view type in `RendererViews` in the same
  * module.
  *
- * Registering a prototype twice throws. Copies of a renderer package share
- * one registration through `shareAcrossCopies`.
+ * Registering a prototype twice throws. That's how a second copy of a
+ * renderer package, which would extend the same class again, is caught.
  */
 export function registerRenderer<N extends object>(options: RegisterRendererOptions<N>): RegisteredRenderer<N> {
     const { prototype } = options;
     assert(
         !Object.hasOwn(prototype, '_mvtRenderer'),
-        () => `[mvt] ${describeValue(prototype)} is already registered as a renderer's prototype.`,
+        () => `[mvt] ${describeValue(prototype)} is already registered as a renderer's prototype. `
+            + 'Two copies of a renderer package, such as @mvtjs/pixi, are probably loaded, each extending the '
+            + 'same class, and a program can use only one. Run `npm ls` on the package to find the second copy, '
+            + 'then `npm dedupe`, or add npm `overrides`. In Vite, list the @mvtjs packages in `resolve.dedupe`.',
     );
     const renderer = createRenderer(options);
     const defaults: NodeFields = {
@@ -153,7 +155,6 @@ export function registerRenderer<N extends object>(options: RegisterRendererOpti
         _mvtRefreshMethodList: undefined,
         _mvtLastRefreshId: 0,
         _mvtRenderer: renderer,
-        _mvtProtocol: undefined,
     };
     Object.defineProperties(prototype, Object.getOwnPropertyDescriptors(defaults));
     return { invalidate: (node) => renderer.invalidate(node) };
@@ -234,8 +235,7 @@ export function setNodeUpdate(node: object, method: UpdateMethodOrWrapper | unde
         : method as UpdateMethod | undefined;
     if (fields._mvtUpdateMethod === stored) return;
     fields._mvtUpdateMethod = stored;
-    utilsState.methodAssignments++;
-    if (DEV) fields._mvtProtocol = PROTOCOL;
+    tickState.methodAssignments++;
     fields._mvtRenderer?.invalidateUpdate(node);
 }
 
@@ -248,8 +248,7 @@ export function setNodeRefresh(node: object, method: RefreshMethodOrWrapper | un
         : method as RefreshMethod | undefined;
     if (fields._mvtRefreshMethod === stored) return;
     fields._mvtRefreshMethod = stored;
-    utilsState.methodAssignments++;
-    if (DEV) fields._mvtProtocol = PROTOCOL;
+    tickState.methodAssignments++;
     fields._mvtRenderer?.invalidateRefresh(node);
 }
 
@@ -374,13 +373,6 @@ interface NodeFields {
      * prototype only.
      */
     _mvtRenderer?: Renderer;
-    /**
-     * Dev builds only: the protocol (`PROTOCOL` in `copies.ts`) of the copy
-     * that set this node's methods, so that a copy with another protocol,
-     * which cannot see them, can say so. The one field whose name never
-     * changes with the protocol.
-     */
-    _mvtProtocol?: number;
 }
 
 /**
@@ -430,7 +422,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
         flushChanges?.(node);
         enter(activeUpdates, node, 'updateView');
         try {
-            const fields = visit(node);
+            const fields = fieldsOf(node);
             let list = fields._mvtUpdateMethodList as MethodList<N> | undefined;
             if (list === undefined) {
                 list = buildMethodList(node, UPDATE);
@@ -454,7 +446,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
         const isOutermost = activeRefreshes.length === 1;
         if (isOutermost) refreshId = refreshId === MAX_REFRESH_ID ? 1 : refreshId + 1;
         try {
-            const fields = visit(node);
+            const fields = fieldsOf(node);
             let list = fields._mvtRefreshMethodList as MethodList<N> | undefined;
             if (list === undefined) {
                 list = buildMethodList(node, REFRESH);
@@ -507,7 +499,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
      */
     function catchUpRefresh(node: N, outerList: MethodList<N>): void {
         const id = refreshId;
-        const fields = visit(node);
+        const fields = fieldsOf(node);
         markRefreshedNodes(outerList, id);
         for (let round = 1; ; round++) {
             if (round > MAX_CATCH_UP_ROUNDS) {
@@ -641,28 +633,6 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
         }
     }
 
-    /** A node visit: the node's fields, after the dev-only check for a foreign copy. */
-    function visit(node: N): NodeFields {
-        const fields = fieldsOf(node);
-        if (DEV && fields._mvtProtocol !== undefined && fields._mvtProtocol !== PROTOCOL) warnOfForeignNode(node, fields._mvtProtocol);
-        return fields;
-    }
-
-    /**
-     * Dev builds only: warns, once per program, of a node whose methods were
-     * set by a copy of @mvtjs with another protocol. Its fields have other
-     * names, so this copy never runs its methods.
-     */
-    function warnOfForeignNode(node: N, protocol: number): void {
-        if (hasWarnedOfForeignNode) return;
-        hasWarnedOfForeignNode = true;
-        console.warn(
-            `[mvt] ${describe(node)} was set up by an incompatible copy of @mvtjs (protocol ${protocol}; `
-            + `this copy's is ${PROTOCOL}), so its update and refresh methods will not run here. `
-            + 'Keep one copy of the @mvtjs packages in the program.',
-        );
-    }
-
     function enter(active: N[], node: N, name: 'updateView' | 'refreshView'): void {
         for (let i = 0; i < active.length; i++) {
             if (active[i] !== node) continue;
@@ -702,7 +672,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
         const methods = list.methods;
         const skip = list.skip;
         const elisions = list.elisions;
-        const state = utilsState;
+        const state = tickState;
         const assignmentsAtStart = state.methodAssignments;
         let elided = 0;
         for (let i = 0; i < nodes.length;) {
@@ -767,7 +737,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
     function collectSubtreeMethods(node: N, kind: MethodKind, nodes: N[], methods: ListedMethod[], ends: number[]): void {
         // Read here rather than through a shared helper: measured, V8 did not
         // inline one, and the rebuild of a churning scene was 25% slower.
-        const fields = visit(node);
+        const fields = fieldsOf(node);
         // An update method is only ever invoked by `updateView`, which always
         // passes a number (see `ListedMethod`).
         const method = (kind === UPDATE ? fields._mvtUpdateMethod : fields._mvtRefreshMethod) as ListedMethod | undefined;
@@ -797,7 +767,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
     /** As `has(node, UPDATE)`, but reads the cache without filling it. */
     function peekHasUpdate(node: N): boolean {
         if (tickCounter.isCounting) tickCounter.rebuildNodeVisits++;
-        const fields = visit(node);
+        const fields = fieldsOf(node);
         const cached = fields._mvtSubtreeHasUpdate;
         if (cached !== undefined) return cached;
         if (fields._mvtUpdateMethod !== undefined) return true;
@@ -810,7 +780,7 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>): 
 
     function has(node: N, kind: MethodKind): boolean {
         if (tickCounter.isCounting) tickCounter.rebuildNodeVisits++;
-        const fields = visit(node);
+        const fields = fieldsOf(node);
         const cached = kind === UPDATE ? fields._mvtSubtreeHasUpdate : fields._mvtSubtreeHasRefresh;
         if (cached !== undefined) return cached;
         let found = (kind === UPDATE ? fields._mvtUpdateMethod : fields._mvtRefreshMethod) !== undefined;
@@ -877,8 +847,15 @@ function encodeElision(id: number, kind: ElisionKind): number {
  */
 const MAX_CATCH_UP_ROUNDS = 100;
 
-/** Whether a node set up by a copy with another protocol has been warned of. */
-let hasWarnedOfForeignNode = false;
+/**
+ * How many times any node's update or refresh method has been set, by any
+ * renderer. Invoking a method list records it on entry and, if it has
+ * changed, reads methods live for the rest of that invocation. Shared by
+ * every renderer, so a method that assigns a method on another kind of node
+ * is safe too. Kept as a property of an object, not a module-level `let`,
+ * as the method lists have always read it.
+ */
+const tickState = { methodAssignments: 0 };
 
 /**
  * The renderer that registered `node`'s prototype. Checked on every call, not

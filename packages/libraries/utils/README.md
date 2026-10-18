@@ -32,6 +32,53 @@ make common parts of it shorter, and none of them needs a renderer:
 npm install @mvtjs/utils
 ```
 
+## Keep one copy
+
+A program must load one copy of `@mvtjs/utils`, and one of each renderer
+package. The tick API keeps its state in the package, such as the counts
+that `tickCounter` reports. Two copies would each keep their own, and views
+set up through one would be missed by the other. So a second copy throws an
+error as it loads, saying what was loaded twice and from where.
+
+Two copies get into a program in two ways, and each has its own fix:
+
+- **Two versions.** The install nested a second copy, because two packages
+  asked for versions that don't overlap. Run `npm ls @mvtjs/utils` to find
+  it. Then `npm dedupe`, or add npm `overrides` so that every package gets
+  the same version.
+- **One version, twice.** The bundler reached the package by two paths,
+  such as a linked package with its own `node_modules`, or a dependency
+  that was pre-bundled and also imported directly. In Vite, list the
+  packages in `resolve.dedupe`:
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+    resolve: {
+        dedupe: [
+            '@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/three', '@mvtjs/html',
+        ],
+    },
+});
+```
+
+A few other things load a package twice:
+
+- **A test that resets its modules,** such as with `vi.resetModules()` or
+  `jest.resetModules()`, then loads the package again in the same program.
+  Keep such a test in a file of its own, since Vitest and Jest give each
+  file a fresh start.
+- **Two apps on one page that each bundle the package,** such as two
+  widgets built apart. Share the packages between them as one copy, with an
+  import map or Module Federation's `shared: { singleton: true }`, or give
+  each app an `iframe` of its own.
+
+Vite's dev server and its build find packages differently, so a duplicate
+can appear in a build alone. After you add or upgrade an `@mvtjs` package,
+run the production build once, with `vite build` and `vite preview`.
+
 ## Learn more
 
 - [The guide and reference](https://yortus.com/mvt-games/docs/)
