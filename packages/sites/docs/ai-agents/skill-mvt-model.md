@@ -142,9 +142,9 @@ Models differ in whether they tolerate large `update()` calls:
 Do not assume a model is leap-safe unless you know its internals. When writing
 a model, document whether it is leap-safe if the answer is not obvious.
 
-For testing non-leap-safe models, use the tick API's `advanceTime`, which
-steps 16 ms at a time and flushes microtasks after each step. In the site,
-import it from the renderer package, as the rest of the tick API:
+For testing non-leap-safe models, use `advanceTime`, which steps 16 ms at a
+time and flushes microtasks after each step. In the site, import it from the
+renderer package, which re-exports it:
 
 ```ts
 await advanceTime(1600, game); // the test must be async

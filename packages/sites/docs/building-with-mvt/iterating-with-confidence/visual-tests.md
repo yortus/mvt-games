@@ -87,7 +87,7 @@ break.
 Some views hold [presentation state](../adding-visual-polish/presentation-state.md),
 such as a banner that counts up, or a flash that fades. Such a view has an
 update step, and its look depends on how much time has passed. To pose it,
-advance time by a fixed amount with `advanceTime`, from the tick API.
+advance time by a fixed amount with `advanceTime`, from the renderer package.
 
 ```tsx
 canvasTest('counting up, 300 ms in', async () => {

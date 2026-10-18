@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countTick, hasNodeRefresh, hasNodeUpdate, refreshNode, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, tickCounter, updateNode } from '../../tick-api';
+import { countTick, hasNodeRefresh, hasNodeUpdate, refreshNode, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, tickCounter, updateNode } from '../../view-tick-api';
 import { createOrderedSlotList, createSlotList } from '../../slot-list';
 import { createJsx, type ElementTable, Fragment, type JsxFactory } from '../create-jsx';
 import type { JsxTarget } from '../jsx-target';

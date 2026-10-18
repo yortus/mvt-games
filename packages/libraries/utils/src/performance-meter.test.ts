@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createPerformanceMeter, type PerformanceMeterOptions } from './performance-meter';
-import { addReads, tickCounter } from './tick-api';
+import { addReads, tickCounter } from './view-tick-api';
 
 /** A meter on a clock stepped by hand, and a frame of a loop that drives it. */
 function setup(options: PerformanceMeterOptions = {}) {

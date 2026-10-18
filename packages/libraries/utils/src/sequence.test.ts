@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createSequence } from './sequence';
-import { advanceTime } from './tick-api';
+import { advanceTime } from './advance-time';
 
 // ---------------------------------------------------------------------------
 // Tests

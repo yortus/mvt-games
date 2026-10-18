@@ -270,7 +270,7 @@ test('timer expires after full duration', () => {
 });
 ```
 
-For models that are not leap-safe, use the tick API's `advanceTime`. It
+For models that are not leap-safe, use `advanceTime`. It
 breaks a large advance into frame-sized steps, so the logic between phases
 runs as it would in the game. It's async, because it lets the model's own
 `await`s settle after each step, so `await` it:

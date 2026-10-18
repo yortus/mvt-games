@@ -1,8 +1,8 @@
 // Checks that every entry point a renderer package publishes brings that
 // renderer's view type into `View`, the type `updateView`, `refreshView` and
-// the rest of the tick API take. If one does not, a program that imports only
-// that entry point cannot pass the renderer's views to any of them: every
-// call is a type error. It checks the built packages, reading their `dist/`
+// the rest of the view tick API take. If one does not, a program that
+// imports only that entry point cannot pass the renderer's views to any of
+// them: every call is a type error. It checks the built packages, reading their `dist/`
 // and never their source, so `npm run build:packages` runs it after building
 // them. Once they are built, `npm run check:view-type-registration` runs it alone.
 //

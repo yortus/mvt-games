@@ -18,10 +18,10 @@ playground, the docs, the benchmarks and the checks.
 ```
 packages/
 ├── libraries/           What people build with
-│   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
-│   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
-│   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
-│   ├── html/            @mvtjs/html: the tick API for DOM elements, its JSX runtime, and a Perfmon view
+│   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the view tick API, watch, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
+│   ├── pixi/            @mvtjs/pixi: the view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+│   ├── three/           @mvtjs/three: the view tick API for three.js objects, pointer picker, and its JSX runtime
+│   ├── html/            @mvtjs/html: the view tick API for DOM elements, its JSX runtime, and a Perfmon view
 │   └── chiptune/        @mvtjs/chiptune: the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
@@ -300,10 +300,11 @@ The rules above apply inside each package. Between packages:
   undeclared import still works here, then fails for whoever installs the
   package. ESLint's `import/no-extraneous-dependencies` reports it. Tests,
   scripts and config files may import `devDependencies`; other code may not.
-- **Import the tick API from your renderer package.** Each renderer package
-  re-exports the names it shares with `@mvtjs/utils`: `updateView`,
+- **Import the view tick API from your renderer package.** Each renderer
+  package re-exports the names it shares with `@mvtjs/utils`: `updateView`,
   `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`,
-  `hasRefresh`, the tick counter, and the method types. The site and the
+  `hasRefresh`, the tick counter, and the method types. It re-exports
+  `advanceTime` too, a separate helper for tests. The site and the
   benchmarks import them from the renderer they use, so each name has one
   place to come from, and the import also loads the renderer, which
   registers its views (`no-restricted-imports`). They are the same functions

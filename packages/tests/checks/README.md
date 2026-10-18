@@ -34,7 +34,7 @@ package depends on each package it checks, and nothing depends on it.
 
 | File | Keeps |
 | --- | --- |
-| [renderer-tick-api.test.ts](./renderer-tick-api.test.ts) | Every renderer package re-exports the same tick API names from `@mvtjs/utils`, as the base's own values |
+| [renderer-view-tick-api.test.ts](./renderer-view-tick-api.test.ts) | Every renderer package re-exports the same names from `@mvtjs/utils`, as the base's own values |
 | [scripts/home-page-budget.ts](./scripts/home-page-budget.ts) | The site's home page, the Arcade, loads no renderer before its first paint (no Pixi, no three.js), and its JavaScript stays under a budget, gzipped. Builds the Arcade in memory, so `npm run build:arcade` runs it after building, rather than `npm test`. Alone: `npm run check:home-page-budget` |
 | [scripts/one-copy-of-utils.ts](./scripts/one-copy-of-utils.ts) | The built site holds one copy of `@mvtjs/utils`, in the Arcade's JavaScript and in the playground's. A second copy throws as the page loads, and a duplicate can appear in a build alone. Checks `dist/`, so `npm run build` runs it after building the two. Alone, once built: `npm run check:one-copy-of-utils` |
 | [scripts/view-type-registration.ts](./scripts/view-type-registration.ts) | Every entry point a renderer package publishes brings the renderer's view type into `View`, in its built declaration files. Checks `dist/`, so `npm run build:packages` runs it after building, rather than `npm test`. Alone, once built: `npm run check:view-type-registration` |

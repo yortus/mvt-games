@@ -14,19 +14,22 @@ make common parts of it shorter, and none of them needs a renderer:
   a clock.
 - **Collections:** `createSlotList` and `createOrderedSlotList`, which keep a
   stable slot per item, for views that pool what they draw.
-- **The tick API:** `updateView` and `refreshView`, which call the update and
-  refresh methods that `setUpdate` and `setRefresh` give a view's nodes, for
-  every installed renderer. Use them through a renderer package
+- **The view tick API:** `updateView` and `refreshView`, which call the
+  update and refresh methods that `setUpdate` and `setRefresh` give a view's
+  nodes, for every installed renderer. Use them through a renderer package
   (`@mvtjs/pixi`, `@mvtjs/three`, `@mvtjs/html`), which registers its nodes
   and re-exports them.
+- **Testing:** `advanceTime` moves models and views forward in time, one
+  frame-sized step at a time, as a game loop would. A test can then check
+  what happens after a few seconds without waiting for them.
 - **Measuring performance:** `createPerformanceMeter` measures frames per
   second, the time each frame takes, and how much work the views do, from
   any frame loop that tells it when each frame starts and ends.
   `createPerformanceHistory` holds metrics that were measured somewhere
   else, such as in an iframe. `@mvtjs/html`'s `PerfmonView` shows either.
-- **For renderer packages:** `registerRenderer`, which teaches the tick API a
-  new kind of tree, and, at `@mvtjs/utils/jsx`, the base that each renderer's
-  JSX runtime is built on.
+- **For renderer packages:** `registerRenderer`, which teaches the view tick
+  API a new kind of tree, and, at `@mvtjs/utils/jsx`, the base that each
+  renderer's JSX runtime is built on.
 
 ```sh
 npm install @mvtjs/utils
@@ -35,8 +38,8 @@ npm install @mvtjs/utils
 ## Keep one copy
 
 A program must load one copy of `@mvtjs/utils`, and one of each renderer
-package. The tick API keeps its state in the package, such as the counts
-that `tickCounter` reports. Two copies would each keep their own, and views
+package. The view tick API keeps its state in the package, such as the
+counts that `tickCounter` reports. Two copies would each keep their own, and views
 set up through one would be missed by the other. So a second copy throws an
 error as it loads, saying what was loaded twice and from where.
 

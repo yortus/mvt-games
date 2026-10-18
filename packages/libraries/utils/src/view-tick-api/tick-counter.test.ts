@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SKIP_DESCENDANTS } from './skip-descendants';
-import { refreshView, registerRenderer, setRefresh, setUpdate, updateView } from './tick-api';
+import { refreshView, registerRenderer, setRefresh, setUpdate, updateView } from './view-tick-api';
 import { addReads, countTick, tickCounter } from './tick-counter';
 
 // ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@
  * The design is explained in `design-notes.md`, beside this file.
  */
 
-import { hasNodeUpdateInSubtree, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, tickCounter } from '../tick-api';
+import { hasNodeUpdateInSubtree, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, tickCounter } from '../view-tick-api';
 import type { JsxTarget } from './jsx-target';
 
 // ---------------------------------------------------------------------------

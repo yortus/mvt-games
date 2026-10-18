@@ -23,10 +23,10 @@ everything else.
 ```
 packages/
 ├── libraries/           What people build with
-│   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
-│   ├── pixi/            @mvtjs/pixi: the tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
-│   ├── three/           @mvtjs/three: the tick API for three.js objects, pointer picker, and its JSX runtime
-│   ├── html/            @mvtjs/html: the tick API for DOM elements, its JSX runtime, and a Perfmon view
+│   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the view tick API, watch, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
+│   ├── pixi/            @mvtjs/pixi: the view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+│   ├── three/           @mvtjs/three: the view tick API for three.js objects, pointer picker, and its JSX runtime
+│   ├── html/            @mvtjs/html: the view tick API for DOM elements, its JSX runtime, and a Perfmon view
 │   └── chiptune/        @mvtjs/chiptune: the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
@@ -66,7 +66,7 @@ Visual tests are in a `visual-tests/` folder beside the views they test, one
 `htmlTest`, from `v-snap` (`packages/tools/v-snap/`).
 A pose returns the view arranged into one state: fixed bindings (for a
 top-level view, a model brought into a state through its actions), and
-`advanceTime` (tick API) for time. Reference images are
+`advanceTime` for time. Reference images are
 beside the tests, named for the test file's stem and the image, such as
 `hud-view.at-the-start.png`, so a test needs no `describe` block that only
 names its view. See
@@ -89,7 +89,7 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 
 - **Barrel imports only** - never import past a directory's `index.ts`, and never import your own or an ancestor's (`.`, `..`): import the file directly; enforced by ESLint `@mvtjs/no-deep-imports` and `no-restricted-imports`. Between packages, import the package name (`@mvtjs/pixi`, `@mvtjs/utils/jsx`): its `exports` are its barrel
 - **Declared dependencies** - every import names a dependency of the nearest `package.json` (lint: `import/no-extraneous-dependencies`); add it there rather than relying on npm's hoisting
-- **Tick API from the renderer package** - in the site and benchmarks, import `updateView`, `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter and the method types from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint). They are one set of functions for every renderer, so code using two renderers imports them from either
+- **View tick API from the renderer package** - in the site and benchmarks, import `updateView`, `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter, the method types and `advanceTime` from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint). They are one set of functions for every renderer, so code using two renderers imports them from either
 - **No `null`, no `this`** - our own code and APIs never introduce `null` (`undefined` instead). Be explicit where a third-party `null` arrives (`node.parent === null`, a local `T | null`), and convert it (`?? undefined`) before it reaches our own APIs; a declaration that must accept one takes an `eslint-disable` comment saying why. Closures instead of `this`. Lint: `@mvtjs/no-null`, `@mvtjs/no-this`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
 - **Views are functions** - `XxxView(bindings: XxxViewBindings): Container`, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi */`) or plain TypeScript; neither is required, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Style Guide: Writing the Body](packages/sites/docs/reference/style-guide.md#writing-the-body). Top-level views take `{ model }`.

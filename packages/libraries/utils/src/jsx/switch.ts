@@ -39,7 +39,7 @@
  */
 
 import { assert } from '../assert';
-import { setNodeRefresh, SKIP_DESCENDANTS, tickCounter } from '../tick-api';
+import { setNodeRefresh, SKIP_DESCENDANTS, tickCounter } from '../view-tick-api';
 import type { JsxTarget } from './jsx-target';
 
 // ---------------------------------------------------------------------------

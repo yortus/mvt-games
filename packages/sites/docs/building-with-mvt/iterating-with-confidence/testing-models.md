@@ -79,10 +79,9 @@ behind the current execution. To keep tests deterministic while still
 allowing internal awaits to resolve, flush the microtask queue after each
 small time step.
 
-The tick API's `advanceTime(ms, ...models)` does both. It comes from
-`@mvtjs/utils`, and the renderer packages re-export it with the rest of
-the tick API. In each step of 16 ms, it calls every model's `update`, in
-the order given, then awaits a resolved promise:
+`advanceTime(ms, ...models)` does both. It comes from `@mvtjs/utils`, and
+the renderer packages re-export it. In each step of 16 ms, it calls every
+model's `update`, in the order given, then awaits a resolved promise:
 
 ```ts
 await advanceTime(3200, game);

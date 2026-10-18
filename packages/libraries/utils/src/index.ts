@@ -1,7 +1,7 @@
-export { hasRefresh, hasUpdate, refreshView, registerRenderer, setRefresh, setUpdate, updateView } from './tick-api';
-export type { RefreshMethod, RegisteredRenderer, RegisterRendererOptions, RendererViews, UpdateMethod, View } from './tick-api';
-export { addReads, countTick, SKIP_DESCENDANTS, tickCounter, type TickCounter, type TickCounts } from './tick-api';
-export { advanceTime, type Advanceable } from './tick-api';
+export { hasRefresh, hasUpdate, refreshView, registerRenderer, setRefresh, setUpdate, updateView } from './view-tick-api';
+export type { RefreshMethod, RegisteredRenderer, RegisterRendererOptions, RendererViews, UpdateMethod, View } from './view-tick-api';
+export { addReads, countTick, SKIP_DESCENDANTS, tickCounter, type TickCounter, type TickCounts } from './view-tick-api';
+export { advanceTime, type Advanceable } from './advance-time';
 export { createDestroyRegistry, type DestroyRegistry, type DestroyRegistryOptions } from './destroy-registry';
 export { assert } from './assert';
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';

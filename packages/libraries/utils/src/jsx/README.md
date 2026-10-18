@@ -224,7 +224,7 @@ shows them in use.
 ## Adding a JSX target
 
 A new renderer first registers its nodes with `registerRenderer`
-(in this package's `tick-api/`), and declares their type in `RendererViews`,
+(in this package's `view-tick-api/`), and declares their type in `RendererViews`,
 as `packages/libraries/pixi/src/container-mixin.ts` does for Pixi. Then, in a `jsx/`
 directory beside it:
 

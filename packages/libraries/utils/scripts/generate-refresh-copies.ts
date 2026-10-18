@@ -70,7 +70,7 @@ export function generateRefreshCopies(): string {
         '// In a stack trace, `refresh3Copy1` is the refresh method of an element with three',
         '// bindings, in copy 1, and the line names the binding: `g0()` is the first.',
         '',
-        'import { type RefreshMethod, SKIP_DESCENDANTS, tickCounter } from \'../tick-api\';',
+        'import { type RefreshMethod, SKIP_DESCENDANTS, tickCounter } from \'../view-tick-api\';',
         '',
         '/** Reads one binding. */',
         'export type Getter = () => unknown;',

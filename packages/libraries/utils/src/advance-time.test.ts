@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { advanceTime } from './advance-time';
-import { registerRenderer, setUpdate } from './tick-api';
+import { registerRenderer, setUpdate } from './view-tick-api';
 
 // ---------------------------------------------------------------------------
 // A renderer of plain objects
@@ -11,7 +11,7 @@ interface TestNode {
     parent: TestNode | undefined;
 }
 
-declare module './renderer-views' {
+declare module './view-tick-api/renderer-views' {
     interface RendererViews {
         advanceTimeTest: TestNode;
     }

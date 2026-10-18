@@ -8,7 +8,7 @@
 
 **Where the code is now.** The method lists described here have since become
 generic over any tree. They live in
-[tick-api/tick-api.ts](../../utils/src/tick-api/tick-api.ts) in `@mvtjs/utils`, which the
+[view-tick-api/view-tick-api.ts](../../utils/src/view-tick-api/view-tick-api.ts) in `@mvtjs/utils`, which the
 three.js and DOM renderers use too: each renderer registers its node
 prototype with `registerRenderer`. @mvtjs/pixi keeps what is Pixi's: the
 structural wrappers, the destroy warning, and that registration. Invoking a
@@ -19,7 +19,7 @@ renderer. Before that it was `setTickMethods` and `tickScene`, one pair per
 renderer, and before that `onUpdate` / `onRefresh` accessors on `Container`
 (see "Methods are set with `setUpdate` and `setRefresh`" below). The design
 below is unchanged by these moves. The code samples show the algorithm before
-the method cache, simplified; in `tick-api/tick-api.ts`, `updateSubtree` and
+the method cache, simplified; in `view-tick-api/view-tick-api.ts`, `updateSubtree` and
 `refreshSubtree` are what `updateView` and `refreshView` run for a
 renderer.
 
@@ -67,7 +67,7 @@ read.
 
 Shown for update; refresh is the identical code with `kind = REFRESH` against
 the other pair of fields - the two are one implementation.
-See [tick-api/tick-api.ts](../../utils/src/tick-api/tick-api.ts) in `@mvtjs/utils`.
+See [view-tick-api/view-tick-api.ts](../../utils/src/view-tick-api/view-tick-api.ts) in `@mvtjs/utils`.
 
 ```ts
 function updateSubtree(node: Container, deltaMs: number): void {
@@ -127,7 +127,7 @@ function has(node: Container, kind: MethodKind): boolean {
 ### Invalidation
 
 One walk up the tree per method kind, stopping at the first container already
-cleared for that kind. It lives in [tick-api/tick-api.ts](../../utils/src/tick-api/tick-api.ts)
+cleared for that kind. It lives in [view-tick-api/view-tick-api.ts](../../utils/src/view-tick-api/view-tick-api.ts)
 in `@mvtjs/utils`, next to the setters that trigger it; @mvtjs/pixi's wrappers
 in [container-mixin.ts](./container-mixin.ts) call it too, through the
 `invalidate` that `registerRenderer` returns:

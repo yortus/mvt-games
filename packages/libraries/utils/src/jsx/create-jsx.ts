@@ -1,5 +1,5 @@
 import { assert } from '../assert';
-import { hasNodeRefresh, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, type UpdateMethod } from '../tick-api';
+import { hasNodeRefresh, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, type UpdateMethod } from '../view-tick-api';
 import { MVT_ATTRIBUTE_KEYS } from './attributes';
 import type { AttributeDefinition, AttributePattern, ElementDefinition, WriteKind } from './attributes';
 import type { JsxTarget } from './jsx-target';

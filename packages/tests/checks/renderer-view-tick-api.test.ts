@@ -5,10 +5,10 @@ import * as three from '@mvtjs/three';
 import * as utils from '@mvtjs/utils';
 import { describe, expect, it } from 'vitest';
 
-// Each renderer package re-exports the tick API it shares with @mvtjs/utils
-// (`updateView`, `setRefresh`, `SKIP_DESCENDANTS`, the tick counter and the
-// like), so code using one renderer imports all of it from one place. They
-// are one set of functions for every renderer, so these tests hold the
+// Each renderer package re-exports the view tick API it shares with
+// @mvtjs/utils (`updateView`, `setRefresh`, `SKIP_DESCENDANTS`, the tick
+// counter and the like), and `advanceTime` too, so code using one renderer
+// imports all of it from one place. They are one set of functions for every renderer, so these tests hold the
 // renderers to re-exporting the same names, as the very same values: code
 // using two renderers can import them from either. Lint holds the site to
 // importing them from a renderer.

@@ -600,7 +600,7 @@ brought into a known state through its public actions. If the view has presentat
 with `advanceTime(ms, model, view)`, which updates models before views
 in each step. `canvasTest` and
 `htmlTest` come from `v-snap`. `advanceTime` comes from the renderer
-package, with the rest of the tick API.
+package, which re-exports it.
 
 ```tsx
 canvasTest('a win, counted', { pixelArt: false }, () => WinBannerView({

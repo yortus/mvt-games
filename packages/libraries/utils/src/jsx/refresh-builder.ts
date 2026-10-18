@@ -1,4 +1,4 @@
-import { type RefreshMethod, SKIP_DESCENDANTS, tickCounter } from '../tick-api';
+import { type RefreshMethod, SKIP_DESCENDANTS, tickCounter } from '../view-tick-api';
 import type { WriteKind } from './attributes';
 import { REFRESH_COPIES, type RefreshCopy, type Write, type Writer } from './refresh-copies';
 

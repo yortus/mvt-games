@@ -265,7 +265,7 @@ export function hasNodeRefresh(node: object): boolean {
 /**
  * Whether `node` or anything below it has an update method. For library code
  * that gates a subtree's update steps, as `<List>` gates a slot's; not part
- * of the public tick API.
+ * of the public view tick API.
  *
  * Answered from the cache the method lists use, where it holds an answer.
  * Otherwise the subtree is walked, and the cache is left for `updateView` to
@@ -877,7 +877,7 @@ function rendererOf(node: object, name: 'updateView' | 'refreshView'): Renderer 
 /**
  * Returns whether a value is a view of an installed renderer, which is
  * whether its prototype was registered with `registerRenderer`. It is not
- * part of the public tick API. `advanceTime` uses it to tell views from
+ * part of the public view tick API. `advanceTime` uses it to tell views from
  * models.
  */
 export function isView(value: unknown): value is View {

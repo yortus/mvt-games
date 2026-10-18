@@ -4,7 +4,7 @@ import { version } from '../package.json';
 // Guard
 // ---------------------------------------------------------------------------
 
-// A program must load one copy of @mvtjs/utils. Its tick API keeps state at
+// A program must load one copy of @mvtjs/utils. Its view tick API keeps state at
 // module level: the counts that `tickCounter` exports, and how many times a
 // method has been set. Two copies would each keep their own, and quietly
 // disagree. So this module, which every program that uses the package loads

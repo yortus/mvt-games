@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { version } from '../package.json';
-// The first copy: the tick API loads the guard, as every program does
-import './tick-api';
+// The first copy: the view tick API loads the guard, as every program does
+import './view-tick-api';
 
 // ---------------------------------------------------------------------------
 // Tests

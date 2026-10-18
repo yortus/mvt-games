@@ -48,12 +48,12 @@ const OWN_BARREL_IMPORT = {
     message: 'Import the file directly, not your own or an ancestor\'s barrel (packages/sites/docs/reference/project-structure.md).',
 };
 
-// The tick API a renderer package re-exports from @mvtjs/utils. Code that uses
-// a renderer imports these from it: one place to import each from, an import
-// that also loads the renderer, which registers its views with `updateView`
-// and declares their type in `View`, and the same copy of @mvtjs/utils that
-// the renderer was built against.
-const TICK_API_FROM_RENDERER = {
+// The view tick API, and `advanceTime`, which a renderer package re-exports
+// from @mvtjs/utils. Code that uses a renderer imports these from it: one
+// place to import each from, an import that also loads the renderer, which
+// registers its views with `updateView` and declares their type in `View`,
+// and the same copy of @mvtjs/utils that the renderer was built against.
+const VIEW_TICK_API_FROM_RENDERER = {
     name: '@mvtjs/utils',
     importNames: [
         'updateView', 'refreshView', 'setUpdate', 'setRefresh', 'hasUpdate', 'hasRefresh', 'SKIP_DESCENDANTS', 'advanceTime',
@@ -165,13 +165,13 @@ export default tseslint.config(
     {
         files: ['packages/sites/arcade/src/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*.{ts,tsx}', PLAYGROUND_EXAMPLES],
         rules: {
-            'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [TICK_API_FROM_RENDERER] }],
+            'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [VIEW_TICK_API_FROM_RENDERER] }],
         },
     },
     {
         files: ['packages/tests/benchmarks/**/*.ts'],
         rules: {
-            'no-restricted-imports': ['error', { paths: [TICK_API_FROM_RENDERER] }],
+            'no-restricted-imports': ['error', { paths: [VIEW_TICK_API_FROM_RENDERER] }],
         },
     },
     {

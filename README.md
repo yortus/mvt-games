@@ -90,10 +90,10 @@ notes/        Proposals, tasks, and the archive of finished work
 ```
 packages/
 ├── libraries/
-│   ├── utils/           Renderer-agnostic helpers (the tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
-│   ├── pixi/            The tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
-│   ├── three/           The tick API for three.js objects, pointer picker, and its JSX runtime
-│   ├── html/            The tick API for DOM elements, and its JSX runtime
+│   ├── utils/           Renderer-agnostic helpers (the view tick API, watch, SlotList, tweens, metronome); JSX base at ./jsx
+│   ├── pixi/            The view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
+│   ├── three/           The view tick API for three.js objects, pointer picker, and its JSX runtime
+│   ├── html/            The view tick API for DOM elements, and its JSX runtime
 │   └── chiptune/        The Audio80 and Audio90 sound chips, their tracker notation and music player
 ├── tools/
 │   ├── v-snap/          Visual snapshot tests for canvas and HTML views, as Vitest projects

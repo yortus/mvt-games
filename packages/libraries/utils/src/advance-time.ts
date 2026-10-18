@@ -1,5 +1,4 @@
-import type { View } from './renderer-views';
-import { describeValue, isView, updateView } from './tick-api';
+import { describeValue, isView, updateView, type View } from './view-tick-api';
 
 // ---------------------------------------------------------------------------
 // Interface

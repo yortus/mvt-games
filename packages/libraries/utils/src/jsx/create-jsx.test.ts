@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countTick, type RefreshMethod, SKIP_DESCENDANTS } from '../tick-api';
+import { countTick, type RefreshMethod, SKIP_DESCENDANTS } from '../view-tick-api';
 import { attributesOf, defineElements, element, event } from './attributes';
 import { createJsx, Fragment } from './create-jsx';
 import type { JsxTarget } from './jsx-target';

@@ -165,9 +165,9 @@ The entry host ([`../runner/entry-host.ts`](../runner/entry-host.ts)) runs
 an entry of either kind. A Pixi entry draws on a stage the host owns, whose
 ticker the loop steps; an `element` entry (three.js, Pixi and HTML, or any
 mix) gives the host the roots of its views, and the host updates and
-refreshes exactly those, then asks the entry to render. The tick API is the
-same set of functions for every renderer, so one loop drives them all. The
-entry's element sits out the page's own `updateView` and `refreshView`
+refreshes exactly those, then asks the entry to render. The view tick API is
+the same set of functions for every renderer, so one loop drives them all.
+The entry's element sits out the page's own `updateView` and `refreshView`
 (its steps return `SKIP_DESCENDANTS`), so nothing is ticked twice.
 
 `followModel` uses `watch` to see the phase change, and starts or ends the

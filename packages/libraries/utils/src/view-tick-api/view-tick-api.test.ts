@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SKIP_DESCENDANTS } from './skip-descendants';
-import { hasRefresh, hasUpdate, refreshView, registerRenderer, setRefresh, setUpdate, updateView } from './tick-api';
+import { hasRefresh, hasUpdate, refreshView, registerRenderer, setRefresh, setUpdate, updateView } from './view-tick-api';
 
 // ---------------------------------------------------------------------------
 // A renderer of plain objects

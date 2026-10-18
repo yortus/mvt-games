@@ -1,5 +1,5 @@
 import { createPerformanceHistory, type PerformanceMetrics } from './performance-history';
-import { tickCounter, type TickCounts } from './tick-api';
+import { tickCounter, type TickCounts } from './view-tick-api';
 
 // ---------------------------------------------------------------------------
 // Interface

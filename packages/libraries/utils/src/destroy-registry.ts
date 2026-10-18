@@ -1,4 +1,4 @@
-import { setNodeRefresh, setNodeUpdate } from './tick-api';
+import { setNodeRefresh, setNodeUpdate } from './view-tick-api';
 
 // ---------------------------------------------------------------------------
 // Interface
