@@ -97,8 +97,8 @@ function toSampleData(left: Float32Array, right: Float32Array, bits: number): In
     let peak = 0;
     for (let i = 0; i < frames; i++) peak = Math.max(peak, Math.abs(left[i] + right[i]) * 0.5);
     const scale = peak > 0 ? PEAK / peak : 0;
-    const steps = 2 ** (bits - 1) - 1;
-    const shift = 2 ** (16 - bits);
+    const steps = (1 << (bits - 1)) - 1;
+    const shift = 1 << (16 - bits);
     const data = new Int16Array(frames);
     for (let i = 0; i < frames; i++) {
         const x = (left[i] + right[i]) * 0.5 * scale;

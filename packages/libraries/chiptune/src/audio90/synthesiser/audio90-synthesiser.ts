@@ -1,4 +1,4 @@
-import { chooseEffectVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, type EffectVoices } from '../../shared';
+import { chooseEffectVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, type EffectVoices, LN_SEMITONE } from '../../shared';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
@@ -552,7 +552,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         const count = Math.min(MAX_OPERATORS, operators.length);
         opCount[v] = count;
         feedback[v] = clamp(data.feedback, 0, 1);
-        const rateScale = Math.pow(2, -((note - 60) / 12) * data.rateScaling);
+        const rateScale = Math.exp(-(note - 60) * data.rateScaling * LN_SEMITONE);
         let carriers = 0;
         for (let o = 0; o < MAX_OPERATORS; o++) {
             const i = v * MAX_OPERATORS + o;
@@ -564,7 +564,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 opOut[i] = 0;
                 continue;
             }
-            opRatio[i] = op.ratio * Math.pow(2, op.detuneCents / 1200);
+            opRatio[i] = op.ratio * Math.exp(op.detuneCents / 100 * LN_SEMITONE);
             opFixedHz[i] = op.fixedHz;
             opLevel[i] = op.level * (1 - op.velocity * (1 - velocity[v]));
             opWave[i] = op.wave;
@@ -599,7 +599,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         chordLength[v] = length;
         for (let i = 0; i < length; i++) chord[v * MAX_UNISON + i] = data.chord[i];
         pulseWidth[v] = clamp(data.pulseWidth, 0.01, 0.99);
-        intervalRatioB[v] = Math.pow(2, data.intervalB / 12);
+        intervalRatioB[v] = Math.exp(data.intervalB * LN_SEMITONE);
         levelB[v] = data.levelB;
         isSyncedB[v] = data.isSyncedB ? 1 : 0;
         subLevel[v] = data.sub;
@@ -634,7 +634,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             const k = v * MAX_UNISON + u;
             const position = n === 1 ? 0 : (u / (n - 1)) * 2 - 1;
             const offset = (chords > 0 ? chord[v * MAX_UNISON + (u % chords)] : 0) + position * detune[v] * MAX_DETUNE_SEMITONES;
-            uRatio[k] = Math.pow(2, offset / 12);
+            uRatio[k] = Math.exp(offset * LN_SEMITONE);
             const pan = position * spread[v];
             uGainL[k] = copyGain * Math.cos((pan + 1) * Math.PI / 4) * Math.SQRT2;
             uGainR[k] = copyGain * Math.sin((pan + 1) * Math.PI / 4) * Math.SQRT2;
@@ -905,7 +905,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
 
         const mod = envLevel[v * ENVS_PER_VOICE + ENV_MOD];
         const pitch = currentNote[v] + mod * modPitch[v] + lfo * lfoAmounts[lfoAt + LFO_PITCH];
-        const inc = 440 * Math.pow(2, (pitch - 69) / 12) / sampleRate;
+        const inc = 440 * Math.exp((pitch - 69) * LN_SEMITONE) / sampleRate;
         // `Math.min` and `Math.max` rather than `clamp`, here and below. A choice between a computed double and a
         // constant can make V8 box the double each time, and this runs for every voice every 32 samples
         const bright = Math.min(1, Math.max(0, channelBrightness[v] * noteBrightness[v] + mod * modBrightness[v] + lfo * lfoAmounts[lfoAt + LFO_BRIGHTNESS]));
@@ -925,7 +925,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             incB[v] = inc * intervalRatioB[v];
         }
         else {
-            sampleInc[v] = sampleRateRatio[v] * Math.pow(2, (pitch - sampleRoot[v]) / 12);
+            sampleInc[v] = sampleRateRatio[v] * Math.exp((pitch - sampleRoot[v]) * LN_SEMITONE);
         }
 
         const mode = filterMode[v];
@@ -933,7 +933,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             const accent = 1 + accentAmount[v] * isAccented[v];
             const octaves = mod * modCutoff[v] * accent + lfo * lfoAmounts[lfoAt + LFO_CUTOFF]
                 + (pitch - 60) / 12 * keyTrack[v] + (bright - 1) * BRIGHTNESS_OCTAVES;
-            const cutoff = Math.min(maxCutoffHz, Math.max(MIN_CUTOFF_HZ, cutoffHz[v] * Math.pow(2, octaves)));
+            const cutoff = Math.min(maxCutoffHz, Math.max(MIN_CUTOFF_HZ, cutoffHz[v] * Math.exp(octaves * Math.LN2)));
             const g = Math.tan(Math.PI * cutoff / sampleRate);
             if (mode === FILTER90_LOWPASS_24) {
                 filterG[v] = g / (1 + g);
@@ -1342,7 +1342,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             offset += Math.round(REVERB_LENGTHS_48K[i] * scale);
             if (reverbWrite[i] >= length) reverbWrite[i] = 0;
             // The gain that makes a line fall 60 dB over the decay time
-            reverbGain[i] = Math.pow(10, -3 * length / (sampleRate * reverbDecayMs / 1000));
+            reverbGain[i] = Math.exp(-3 * Math.LN10 * length / (sampleRate * reverbDecayMs / 1000));
         }
         for (let d = 0; d < DIFFUSER_LENGTHS_48K.length; d++) {
             diffuserLengths[d] = Math.min(DIFFUSER_MAX, Math.max(1, Math.round(DIFFUSER_LENGTHS_48K[d] * scale)));
@@ -1512,9 +1512,10 @@ function toSampleIndex(stampMs: number, fromMs: number, msPerSample: number): nu
     return Math.ceil((stampMs - fromMs) / msPerSample);
 }
 
-/** A per-sample coefficient set at 48 kHz, for another rate, so it acts over the same time. */
+/** A per-sample coefficient set at 48 kHz, for another rate, so it acts over the same time. At 48 kHz it is unchanged. */
 function adapt(coefficientAt48k: number, sampleRate: number): number {
-    return 1 - Math.pow(1 - coefficientAt48k, 48000 / sampleRate);
+    if (sampleRate === 48000) return coefficientAt48k;
+    return 1 - Math.exp(Math.log(1 - coefficientAt48k) * 48000 / sampleRate);
 }
 
 /** One sample of a band-limited oscillator at phase `p`, moving `dt` a sample. */

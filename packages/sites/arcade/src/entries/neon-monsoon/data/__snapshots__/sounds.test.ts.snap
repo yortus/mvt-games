@@ -24,7 +24,7 @@ exports[`neon monsoon sounds > FOCUS sounds as it did, audible and unclipped 1`]
 
 exports[`neon monsoon sounds > FOCUSED_SHOT sounds as it did, audible and unclipped 1`] = `"be9d81a9"`;
 
-exports[`neon monsoon sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"ae24325a"`;
+exports[`neon monsoon sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"d465a76c"`;
 
 exports[`neon monsoon sounds > GEM sounds as it did, audible and unclipped 1`] = `"47d94d69"`;
 
@@ -40,6 +40,6 @@ exports[`neon monsoon sounds > SHOT sounds as it did, audible and unclipped 1`] 
 
 exports[`neon monsoon sounds > STAGE_CLEAR sounds as it did, audible and unclipped, as loud as every other song 1`] = `"8f2743e2"`;
 
-exports[`neon monsoon sounds > STAGE_THEME sounds as it did, audible and unclipped, as loud as every other song 1`] = `"87f6624d"`;
+exports[`neon monsoon sounds > STAGE_THEME sounds as it did, audible and unclipped, as loud as every other song 1`] = `"803e19cf"`;
 
 exports[`neon monsoon sounds > WARNING sounds as it did, audible and unclipped 1`] = `"e7c67c56"`;

@@ -97,8 +97,8 @@ function computeMean(values: readonly number[]): number {
 
 function applyKWeighting(x: Float32Array, sampleRate: number): Float64Array {
     const shelfK = Math.tan(Math.PI * SHELF_HZ / sampleRate);
-    const vh = 10 ** (SHELF_GAIN_DB / 20);
-    const vb = vh ** SHELF_VB_EXPONENT;
+    const vh = Math.exp(SHELF_GAIN_DB / 20 * Math.LN10);
+    const vb = Math.exp(SHELF_VB_EXPONENT * Math.log(vh));
     const shelfA0 = 1 + shelfK / SHELF_Q + shelfK * shelfK;
     const shelf = applyBiquad(
         x,

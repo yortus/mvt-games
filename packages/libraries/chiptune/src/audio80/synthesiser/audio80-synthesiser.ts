@@ -1,4 +1,4 @@
-import { chooseEffectVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, type EffectVoices } from '../../shared';
+import { chooseEffectVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, type EffectVoices, LN_SEMITONE } from '../../shared';
 import {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
@@ -484,7 +484,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         // it in a new heap object) when a call it does not inline returns one.
         // This line runs for every voice at control rate, which is once every
         // `CONTROL_SAMPLES` samples
-        phaseInc[v] = 440 * Math.pow(2, (note - 69) / 12) / sampleRate;
+        phaseInc[v] = 440 * Math.exp((note - 69) * LN_SEMITONE) / sampleRate;
 
         if (pulseSweepMs[v] > 0) {
             let u = tMs / pulseSweepMs[v];
@@ -501,7 +501,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         // An idle voice leaves the filter alone: another voice may be using it
         if (filterSweepMs[v] > 0 && route[v] > 0 && envStage[v] !== ENV_IDLE) {
             const u = tMs >= filterSweepMs[v] ? 1 : tMs / filterSweepMs[v];
-            setCutoff(route[v] - 1, filterSweepFrom[v] * Math.pow(filterSweepTo[v] / filterSweepFrom[v], u));
+            setCutoff(route[v] - 1, filterSweepFrom[v] * Math.exp(u * Math.log(filterSweepTo[v] / filterSweepFrom[v])));
             if (u >= 1) filterSweepMs[v] = 0;
         }
     }
@@ -920,7 +920,7 @@ function toSampleIndex(stamp: number, fromMs: number, msPerSample: number): numb
  */
 function adaptCoefficient(atReference: number, sampleRate: number): number {
     if (sampleRate === REFERENCE_SAMPLE_RATE) return atReference;
-    return 1 - Math.pow(1 - atReference, REFERENCE_SAMPLE_RATE / sampleRate);
+    return 1 - Math.exp(Math.log(1 - atReference) * REFERENCE_SAMPLE_RATE / sampleRate);
 }
 
 function isVoice(v: number): boolean {

@@ -20,6 +20,26 @@ const VIEW_CONVENTION_FILES = [
     PLAYGROUND_EXAMPLES,
 ];
 
+// What a view's files must not declare, as `no-restricted-syntax` selectors.
+// Each block that sets `no-restricted-syntax` for these files repeats them,
+// since a later block's setting replaces an earlier one's.
+const VIEW_CONVENTION_SELECTORS = [
+    {
+        selector: 'TSInterfaceDeclaration[id.name=/(ViewBindings|ViewModel|ViewModelOptions)$/] TSPropertySignature[key.name=/^get[A-Z]/]',
+        message: 'Name a query binding, or a view model member or option, for what it returns, without a `get` prefix. See the style guide, "Views and Bindings".',
+    },
+    {
+        selector: 'FunctionDeclaration[id.name=/^create[A-Z][A-Za-z0-9]*View$/]',
+        message: 'A view is an `XxxView(bindings)` function, not a `createXxxView` factory. See the style guide, "Views and Bindings".',
+    },
+    {
+        selector: 'TSInterfaceDeclaration[id.name=/ViewProps$/]',
+        message: 'Name the input of a view `XxxViewBindings`, not props. See the style guide, "Views and Bindings".',
+    },
+];
+
+const POW_MESSAGE = 'Write `Math.exp(y * Math.log(x))`, or `Math.exp(n * LN_SEMITONE)` for notes `n` semitones apart. `Math.pow` and `**` round differently on different systems, so a sound would hash differently on each. See `LN_SEMITONE` in shared/notes.ts.';
+
 // No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
 // `./index` and the like): inside a directory, import the file directly
 // (packages/sites/docs/reference/project-structure.md).
@@ -145,20 +165,24 @@ export default tseslint.config(
     {
         files: VIEW_CONVENTION_FILES,
         rules: {
+            'no-restricted-syntax': ['error', ...VIEW_CONVENTION_SELECTORS],
+        },
+    },
+    {
+        // The sound chips render the same samples on every system, so a test
+        // that hashes them passes everywhere. Node and Chrome compute
+        // `Math.pow` and `**` with the system's C library, whose last digit
+        // differs between Linux and Windows. `Math.exp` and `Math.log` are V8's own.
+        // A test may use `Math.pow` for a value it checks within a tolerance.
+        files: ['packages/libraries/chiptune/src/**/*.ts'],
+        ignores: ['**/*.test.ts'],
+        rules: {
+            'no-restricted-properties': ['error', { object: 'Math', property: 'pow', message: POW_MESSAGE }],
             'no-restricted-syntax': [
                 'error',
-                {
-                    selector: 'TSInterfaceDeclaration[id.name=/(ViewBindings|ViewModel|ViewModelOptions)$/] TSPropertySignature[key.name=/^get[A-Z]/]',
-                    message: 'Name a query binding, or a view model member or option, for what it returns, without a `get` prefix. See the style guide, "Views and Bindings".',
-                },
-                {
-                    selector: 'FunctionDeclaration[id.name=/^create[A-Z][A-Za-z0-9]*View$/]',
-                    message: 'A view is an `XxxView(bindings)` function, not a `createXxxView` factory. See the style guide, "Views and Bindings".',
-                },
-                {
-                    selector: 'TSInterfaceDeclaration[id.name=/ViewProps$/]',
-                    message: 'Name the input of a view `XxxViewBindings`, not props. See the style guide, "Views and Bindings".',
-                },
+                ...VIEW_CONVENTION_SELECTORS,
+                { selector: 'BinaryExpression[operator="**"]', message: POW_MESSAGE },
+                { selector: 'AssignmentExpression[operator="**="]', message: POW_MESSAGE },
             ],
         },
     },

@@ -1,16 +1,16 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`tunes > Breakdown, Build sounds as it did, audible and unclipped, as loud as every other song 1`] = `"0611bc1e"`;
+exports[`tunes > Breakdown, Build sounds as it did, audible and unclipped, as loud as every other song 1`] = `"6606c781"`;
 
 exports[`tunes > Copper Sky sounds as it did, audible and unclipped, as loud as every other song 1`] = `"2bde5835"`;
 
-exports[`tunes > Fuse Box sounds as it did, audible and unclipped, as loud as every other song 1`] = `"93755ac2"`;
+exports[`tunes > Fuse Box sounds as it did, audible and unclipped, as loud as every other song 1`] = `"b3a10766"`;
 
-exports[`tunes > Hairpin Night sounds as it did, audible and unclipped, as loud as every other song 1`] = `"cba1cffb"`;
+exports[`tunes > Hairpin Night sounds as it did, audible and unclipped, as loud as every other song 1`] = `"6a8cf94d"`;
 
-exports[`tunes > Lantern sounds as it did, audible and unclipped, as loud as every other song 1`] = `"39b71beb"`;
+exports[`tunes > Lantern sounds as it did, audible and unclipped, as loud as every other song 1`] = `"25524e7d"`;
 
-exports[`tunes > Long Exposure sounds as it did, audible and unclipped, as loud as every other song 1`] = `"fdc21278"`;
+exports[`tunes > Long Exposure sounds as it did, audible and unclipped, as loud as every other song 1`] = `"4c87ebc5"`;
 
 exports[`tunes > Meadow Hop sounds as it did, audible and unclipped, as loud as every other song 1`] = `"f5c2d05f"`;
 
@@ -22,7 +22,7 @@ exports[`tunes > Scramble Wing sounds as it did, audible and unclipped, as loud 
 
 exports[`tunes > Setup Complete sounds as it did, audible and unclipped, as loud as every other song 1`] = `"bb7e41ee"`;
 
-exports[`tunes > Slow Burn sounds as it did, audible and unclipped, as loud as every other song 1`] = `"950a158f"`;
+exports[`tunes > Slow Burn sounds as it did, audible and unclipped, as loud as every other song 1`] = `"7c3919c2"`;
 
 exports[`tunes > Squelch sounds as it did, audible and unclipped, as loud as every other song 1`] = `"b56bb8bb"`;
 

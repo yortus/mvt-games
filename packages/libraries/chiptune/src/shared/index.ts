@@ -12,7 +12,7 @@ export {
     createNoteDriver, DEFAULT_STEP_MS, type DriverInstrument, type DriverStep, MAX_ARPEGGIO, type NoteDriver, type NoteDriverOptions,
     type StepPitchMode,
 } from './note-driver';
-export { toFrequency, HIGHEST_NOTE, HIGHEST_NOTE_NAME, LOWEST_NOTE, toNoteName, toNoteNumber } from './notes';
+export { toFrequency, HIGHEST_NOTE, HIGHEST_NOTE_NAME, LN_SEMITONE, LOWEST_NOTE, toNoteName, toNoteNumber } from './notes';
 export {
     checkInstrumentLetters,
     checkLoop,

@@ -128,3 +128,20 @@ on vnext:
 Left: publishing. The release workflow can't publish a package that isn't
 on npm yet, so `.changeset/README.md` now says how its first version goes
 out by hand.
+
+Later that day: the owner published 0.3.0 by hand, from `main` before the
+release commit, so the package exists and the workflow can publish it. The
+0.4.0 release run then failed in its unit tests, before publishing anything:
+Long Exposure's audio hash differed on Linux.
+
+The cause: in Node 26, `Math.pow` and `**` call the system's C library
+(V8's `--use-std-math-pow`, on by default), whose last digit differs between
+glibc and Windows. The other Math functions the chips use are V8's own. So
+the chips no longer call `Math.pow` or use `**`. A ratio of notes `n`
+semitones apart is `Math.exp(n * LN_SEMITONE)`, exported from
+`shared/notes.ts`. A lint rule keeps `pow` out of the package's source, but
+not its tests. Eight Audio90 hashes changed. Seven differ from the old
+renders by less than -150 dBFS. Fuse Box differs more, from 20.7 s: its acid
+line is a resonant ladder near self-oscillation, which turns any change in
+the last digit into a different squelch with the same notes. No Audio80
+hash changed.

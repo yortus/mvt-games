@@ -38,9 +38,21 @@ export function toNoteName(note: number): string {
     return NAMES[note % 12] + String(Math.floor(note / 12) - 1);
 }
 
+/**
+ * The natural log of the ratio between two notes a semitone apart. The ratio
+ * of notes `n` semitones apart is `Math.exp(n * LN_SEMITONE)`.
+ *
+ * The chips never call `Math.pow`, or use `**`. In Node and in Chrome, those
+ * call the C library of the system they run on, and its last digit can differ
+ * from one system to the next. `Math.exp` and `Math.log` are V8's own, the
+ * same everywhere. So a song renders the same samples on every system, and
+ * a test that hashes them passes on all of them.
+ */
+export const LN_SEMITONE = Math.LN2 / 12;
+
 /** The frequency, in Hz, of a note number, which may be fractional (a note bent by vibrato). */
 export function toFrequency(note: number): number {
-    return 440 * Math.pow(2, (note - 69) / 12);
+    return 440 * Math.exp((note - 69) * LN_SEMITONE);
 }
 
 // ---------------------------------------------------------------------------

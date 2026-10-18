@@ -43,22 +43,3 @@ each library's first version, 0.1.0, is published by hand, once:
    Actions, repository `yortus/mvt-games`, workflow `release.yml`.
 
 From then on, releases go through the workflow.
-
-`@mvtjs/chiptune` joined the others later, so it is not on npm yet, and the
-workflow cannot publish it. Its first version goes out by hand, at the next
-release:
-
-1. `npx changeset`, if no change files are waiting, then `npm run release`,
-   and commit, as in [To release](#to-release). Don't push yet.
-2. `npm login`, then `npm run build:packages`, then `npx changeset publish`.
-   It publishes every library whose new version is not on npm yet,
-   `@mvtjs/chiptune` among them.
-3. `git push --follow-tags`. The workflow then finds nothing left to publish.
-4. Set up `@mvtjs/chiptune`'s trusted publishing on npmjs.com, as in step 4
-   above. Then delete this section.
-
-v-snap's first version on npm, 0.0.0, is a placeholder that was published
-by hand, so the package already exists. Its trusted publishing is set the
-same way (step 4), and its first real version, 0.1.0, goes through the
-workflow. Once that is out, the placeholder is deprecated:
-`npm deprecate v-snap@"<0.1.0" "A placeholder. Use 0.1.0 or later."`

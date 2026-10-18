@@ -211,7 +211,7 @@ export function toFilterRoute(filter: Audio80FilterId | undefined): number {
  * pitch.
  */
 export function toCutoff(level: number): number {
-    return 80 * Math.pow(2, level / 2);
+    return 80 * Math.exp(level * Math.LN2 / 2);
 }
 
 // ---------------------------------------------------------------------------

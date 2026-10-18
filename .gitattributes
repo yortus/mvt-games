@@ -1,3 +1,10 @@
+# Every text file is LF, in the repo and when checked out, whatever a
+# machine's core.autocrlf says. The tools write LF (.editorconfig, Vitest's
+# snapshots, the generators), and tests compare files' text, so a checkout in
+# CRLF made changes that weren't there, and failures that only happened on
+# Windows. Git tells binary files apart, and leaves them as they are.
+* text=auto eol=lf
+
 # Written by packages/libraries/utils/scripts/generate-refresh-copies.ts. GitHub collapses
 # it in diffs and leaves it out of the language statistics.
 packages/libraries/utils/src/jsx/refresh-copies.ts linguist-generated=true

@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-17 |
-| Updated  | 2026-10-17 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
@@ -25,6 +25,29 @@ Audio, so Safari is tested on Apple hardware, once this is deployed through
 main. Play the Tune Tracker and Neon Monsoon on Safari on
 the desktop and on iOS. Raise and fix whatever arises. The spike's Safari
 test (051 step 1) is the same test.
+
+### Long Exposure drops out
+
+The owner hears Long Exposure go silent for a moment, here and there, in the
+Tune Tracker, and it seems heavy on the CPU. It is the heaviest tune:
+ten channels, detuned analog pads, and the reverb, the echo and the chorus
+all at once. Rendered offline it takes two to four times as long as the
+other tunes. The chip's worklet has about 2.7 ms to render each 128-sample
+block, and a block that takes longer is a gap in the sound. So the likely
+cause is the busiest blocks, not the average.
+
+- Measure the slowest blocks, not the mean, with the `audio90` benchmark's
+  busy-song case, or a case that plays Long Exposure itself.
+- Find what makes them slow. Candidates are the analog pads' unison
+  copies, within `AUDIO90_OSCILLATOR_BUDGET`, and the three effects running
+  together. Numbers too small for floats to hold exactly (subnormals), in
+  the reverb's and the filters' long tails, slow some CPUs a great deal.
+- Then make the chip faster there, or the tune lighter, or both, and play
+  it again on a slower machine, such as a phone.
+
+The offline render can't drop out, since it waits for every block, and the
+chip reads no clock. So the audio tests can't catch this, and a fix has to
+keep each tune's hash, or update it after listening.
 
 ### With 048's docs revision
 
@@ -74,13 +97,10 @@ the answer 051 recommended.
 
 ### Found along the way
 
-- **The playground's language service test fails on a checkout with
-  Windows line endings.** `project-language-service.test.ts`, "reports a
-  type error at its place, with a fix to import a missing name", finds no
-  diagnostic on the worktree's checkout, whose files have Windows line
-  endings. The line endings looked to be the cause, but it was not chased
-  further. It is the playground's (052), not the Audio90's, and was left
-  alone.
+- ~~**The playground's language service test fails on a checkout with
+  Windows line endings.**~~ Fixed (2026-10-18). The line endings were the
+  cause. `.gitattributes` now checks every text file out with LF, whatever
+  a machine's `core.autocrlf` says.
 - **Smooth window resizes** are task 054. The owner saw the Tune Tracker
   redraw slowly and its music stutter while resizing, and then the same in
   other entries. It is the host's, not the chip's.
@@ -89,6 +109,8 @@ the answer 051 recommended.
 
 - [ ] The Tune Tracker and Neon Monsoon play on Safari, on
       the desktop and on iOS, and any issues are fixed.
+- [ ] Long Exposure plays without dropping out, on the desktop and on a
+      phone.
 - [ ] Each open design question is decided, built or dropped.
 - [ ] Each small thing is done or dropped.
 
@@ -98,3 +120,5 @@ the answer 051 recommended.
   057, and renumbered 065 when `vnext` had used 057 to 064. As the branch
   took in `vnext`, 048's two items that 051 finished were ticked, and the
   archived 052's link to 051 was pointed at the archive.
+- **2026-10-18.** Added Long Exposure's drop-outs, which the owner heard,
+  and marked the line endings item fixed.
