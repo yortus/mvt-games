@@ -1,6 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
 import type { ArcadeModel } from '../models';
-import { AboutView } from './about-view';
 import { SearchBarView } from './search-bar-view';
 import { WordmarkView } from './wordmark-view';
 
@@ -11,8 +10,6 @@ import { WordmarkView } from './wordmark-view';
 export interface ArcadeHeadViewBindings {
     /** The arcade, whose search the head shows. */
     readonly model: ArcadeModel;
-    /** The address of the docs, which the note about the Arcade links to. */
-    readonly docsHref: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -20,11 +17,11 @@ export interface ArcadeHeadViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The head of the arcade's page, on one line: its name as a marquee, the (i)
- * that opens a note about it, and the search. When the search wraps under
- * the name, the name stands centred over it: where it wraps depends on the
- * name's width and the search's, not on a screen width, so the view measures
- * it as the head's size changes, and keeps the answer as its own state.
+ * The head of the arcade's page, on one line: its name as a marquee, and the
+ * search. When the search wraps under the name, the name stands centred over
+ * it: where it wraps depends on the name's width and the search's, not on a
+ * screen width, so the view measures it as the head's size changes, and
+ * keeps the answer as its own state.
  */
 export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
     const { model } = bindings;
@@ -54,20 +51,9 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
             onDestroyed={() => observer.disconnect()}
         >
             <div class="arcade-title" ref={(e) => { title = e; }}>
-                <h1 class="arcade-name">{WordmarkView({ text: 'MVT ARCADE', label: 'MVT Arcade' })}</h1>
-                <AboutView
-                    docsHref={bindings.docsHref}
-                    isOpen={() => model.isAboutOpen}
-                    onAboutPressed={toggleAbout}
-                    onDismissed={model.closeAbout}
-                />
+                <h1 class="arcade-name">{WordmarkView({ text: 'ARCADE', label: 'Arcade' })}</h1>
             </div>
             {search}
         </header>
     );
-
-    function toggleAbout(): void {
-        if (model.isAboutOpen) model.closeAbout();
-        else model.openAbout();
-    }
 }

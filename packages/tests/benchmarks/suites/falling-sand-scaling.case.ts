@@ -73,7 +73,6 @@ const view = DemoView({
     grainsView,
     tankSize,
     isReactive: isStore && polled === undefined,
-    performanceMetrics: () => undefined,
 });
 stage.addChild(view);
 

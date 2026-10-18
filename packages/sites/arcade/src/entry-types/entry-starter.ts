@@ -1,5 +1,5 @@
-import type { Container, Renderer, Ticker } from 'pixi.js';
-import type { View } from '@mvtjs/pixi';
+import type { Container } from 'pixi.js';
+import type { MetricKind, View } from '@mvtjs/pixi';
 import type { Audio80, Audio90 } from '@mvtjs/chiptune';
 
 // ---------------------------------------------------------------------------
@@ -130,6 +130,13 @@ export interface PixiEntryStarterFields<K extends SoundChoice> {
      * session's `inputConfig`.
      */
     readonly thumbnailInput?: (session: EntrySession, elapsedMs: number) => void;
+    /**
+     * The metrics the Arcade's Perfmon can't measure honestly while the entry
+     * runs, which it shows as n/a. For example, `reads`, for an entry whose
+     * views draw by hand and don't count their reads (`addReads`). None by
+     * default.
+     */
+    readonly unmeasuredMetrics?: readonly MetricKind[];
     /** Starts a session, adding the entry's view to `stage`. */
     readonly start: (options: PixiStartOptions<K>) => EntrySession;
 }
@@ -141,8 +148,12 @@ export type PixiStartOptions<K extends SoundChoice> = PixiStartBase & SoundOptio
 export interface PixiStartBase extends StartOptions {
     /** The container to add the entry's view to. */
     readonly stage: Container;
-    /** The application the entry runs in. Absent when it is started headless. */
-    readonly host?: PixiHost;
+    /**
+     * Whether the entry plays in the Arcade's page, whose URL it may read and
+     * change. Absent when it is started headless, as thumbnails, visual tests
+     * and benchmarks do.
+     */
+    readonly isInPage?: boolean;
 }
 
 /** What the host gives an entry of either kind as it starts. */
@@ -153,13 +164,6 @@ export interface StartOptions {
      * the game is started headless, or outside the Arcade.
      */
     readonly bestScore?: () => number;
-}
-
-/** The Pixi application an entry runs in, for entries that measure it (`createPerformanceMetrics`). */
-export interface PixiHost {
-    readonly renderer: Renderer;
-    /** Steps once per frame, before the stage is updated, refreshed and rendered. */
-    readonly ticker: Ticker;
 }
 
 /**
@@ -183,6 +187,8 @@ export interface ElementEntryStarterFields<K extends SoundChoice> {
     readonly kind: 'element';
     /** As for a Pixi entry: how long to advance before taking the thumbnail. */
     readonly thumbnailAdvanceMs?: number;
+    /** As for a Pixi entry: the metrics the Arcade's Perfmon can't measure honestly while the entry runs. */
+    readonly unmeasuredMetrics?: readonly MetricKind[];
     /** Starts a session, building the entry inside `element`, which it fills. */
     readonly start: (options: ElementStartOptions<K>) => ElementEntrySession;
 }

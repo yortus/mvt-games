@@ -4,7 +4,7 @@ import type { EntryDetails } from '../../../entry-types';
 // Details
 // ---------------------------------------------------------------------------
 
-/** Fractal Forest's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** Fractal Forest's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'Each tree is a fractal: every branch splits in two by the same rule, all the way out to its sharp-edged leaves. '

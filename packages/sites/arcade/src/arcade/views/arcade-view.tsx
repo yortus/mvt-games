@@ -1,17 +1,20 @@
 /** @jsxImportSource @mvtjs/html */
 import type { Audio80 } from '@mvtjs/chiptune';
 import { destroyElement, Match, Switch } from '@mvtjs/html';
-import { assert, memoiseLast, watch } from '@mvtjs/utils';
+import { assert, memoiseLast, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
 import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';
 import type { ArcadeModel } from '../models';
+import { AboutView } from './about-view';
 import { ArcadeHeadView } from './arcade-head-view';
 import { cardHeightFor, frameForCrop, type PhotoPose } from './card-photo';
 import { createCardWallLayout } from './card-wall-layout';
 import { CardWallView, photoPoseIn } from './card-wall-view';
 import { EntryInfoView } from './entry-info-view';
 import type { ArcadeAudioViews } from './load-arcade-audio-views';
+import { NavPerfmonView } from './nav-perfmon-view';
 import { NavSearchView } from './nav-search-view';
 import { NavSoundView } from './nav-sound-view';
+import { PerfmonFloatView } from './perfmon-float-view';
 import { PlacingView } from './placing-view';
 import { NO_RECT, type Rect } from './rect';
 import { ResumeOfferView } from './resume-offer-view';
@@ -51,10 +54,18 @@ export interface ArcadeViewBindings {
     /**
      * A place in the site's nav for the Arcade's own tools, if the page has
      * one. A magnifier there takes a visitor scrolled down the wall back to
-     * the search. A speaker there turns all the sound off, or back on. The
+     * the search. A speaker there turns all the sound off, or back on. A
+     * gauge opens the Perfmon, and an (i) opens a note about the Arcade. The
      * page ticks them with the rest of its views.
      */
     readonly navTools?: HTMLElement;
+    /**
+     * The site nav's links to the Arcade itself: the site's name and the
+     * Arcade's link. The page is already the Arcade, so a click on one
+     * scrolls back to the top of the wall, closing any panel open, rather
+     * than loading the page again. A click that opens a new tab still does.
+     */
+    readonly homeLinks?: readonly HTMLElement[];
     /**
      * The page's own chip. It plays whether an entry runs, is paused or is
      * held. The Arcade's own sounds and the pause menu's volume previews play
@@ -84,6 +95,10 @@ export interface ArcadeViewBindings {
     readonly entryHref: (entry: ArcadeEntry) => string;
     /** The address of the docs, which the Arcade's own info panel links to. Read once. */
     readonly docsHref: string;
+    /** How fast the page runs, which the Perfmon shows. Undefined while there is nothing to show, as while it is closed. */
+    readonly performance: () => PerformanceMetrics | undefined;
+    /** The metrics the page can't measure as things stand, such as the GPU's time for an entry not drawn with Pixi. The Perfmon shows them as n/a. */
+    readonly unmeasuredMetrics: () => readonly MetricKind[];
 }
 
 // ---------------------------------------------------------------------------
@@ -105,8 +120,11 @@ export interface ArcadeViewBindings {
  * Scrolled down the wall, past the head, a magnifier shows in the site's nav
  * to go back to the search, as `/` does from anywhere on the wall. A speaker
  * in the site's nav, and another in the runner's bar, turns all the sound
- * off, or back on at the levels it had. The Arcade's own sounds play from
- * audio views that load on the visitor's first press.
+ * off, or back on at the levels it had. A gauge beside each opens the
+ * Perfmon, over the wall or the entry playing. It drops at the top right,
+ * under the bar, and the visitor can drag it anywhere. An (i) at the nav's right end opens a note about the Arcade. The
+ * Arcade's own sounds play from audio views that load on the visitor's first
+ * press.
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
@@ -145,6 +163,8 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     let launchedFrom: PicturePose | undefined;
     let isScrollLockDrawn = false;
     let isTurnDrawn = false;
+    // Presentation state: whether the entry was paused by its info panel opening over it, to resume as the panel closes
+    let isPausedForInfo = false;
 
     const wall = CardWallView({
         entries,
@@ -168,7 +188,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     });
     const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
 
-    const head = ArcadeHeadView({ model, docsHref: bindings.docsHref });
+    const head = ArcadeHeadView({ model });
     const navSearch = NavSearchView({
         search: head,
         isActive: isWallActive,
@@ -183,9 +203,21 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         isOn: isAnySoundOn,
         onPressed: toggleAllSound,
     });
-    bindings.navTools?.append(navSearch, navSound);
+    const navPerfmon = NavPerfmonView({
+        isOpen: () => model.isPerfmonOpen,
+        onPressed: togglePerfmon,
+    });
+    const about = AboutView({
+        docsHref: bindings.docsHref,
+        isOpen: () => model.isAboutOpen,
+        onAboutPressed: toggleAbout,
+        onDismissed: model.closeAbout,
+    });
+    bindings.navTools?.append(navSearch, navSound, navPerfmon, about);
 
     window.addEventListener('keydown', onKeyDown);
+    const homeLinks = bindings.homeLinks ?? [];
+    for (const link of homeLinks) link.addEventListener('click', goHome);
 
     return (
         <div
@@ -215,8 +247,14 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 factsFor={model.factsFor}
                 highscoreRowsFor={highscores.tableFor}
                 highscoresStatus={() => highscores.status}
-                onClosePressed={model.closeInfo}
+                isOverEntry={isInfoOverEntry}
+                onClosePressed={closeInfo}
                 onPlayPressed={(id) => {
+                    // Over the entry, the button resumes it
+                    if (isInfoOverEntry()) {
+                        closeInfo();
+                        return;
+                    }
                     const index = entries.findIndex((e) => e.id === id);
                     launch(index, cardPoseAt(index));
                 }}
@@ -229,10 +267,14 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 isOpen={() => model.phase !== 'browsing'}
                 isPlaying={() => model.phase === 'playing'}
                 isPaused={() => model.isPaused}
+                isInfoOpen={isInfoOverEntry}
+                onInfoPressed={toggleInfoOverEntry}
                 // The runner's bar covers the site's nav, so it has a speaker of its own, the same as the nav's
                 isSoundOn={isAnySoundOn}
                 isSoundOffByDefault={bindings.isSoundOffByDefault}
                 onSoundPressed={toggleAllSound}
+                isPerfmonOpen={() => model.isPerfmonOpen}
+                onPerfmonPressed={togglePerfmon}
                 // While all the sound is muted, the pause menu shows each sound as off.
                 // Using a slider or an icon there unmutes the sound first.
                 musicVolume={() => (model.isSoundMuted ? 0 : model.musicVolume)}
@@ -248,16 +290,20 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 }}
                 onEffectsIconPressed={() => toggleSound(model.effectsVolume, model.turnEffectsOn, model.turnEffectsOff)}
                 title={() => model.activeEntry?.name ?? ''}
-                instructions={() => detailsOf(model.activeEntry)?.instructions}
                 isLandscape={() => (model.activeEntry?.screenWidth ?? 0) > (model.activeEntry?.screenHeight ?? 0)}
                 isTurned={bindings.isTurned}
-                onBackPressed={model.exit}
+                onBackPressed={leaveEntry}
                 onPausePressed={() => { model.isPaused = true; }}
-                onResumePressed={() => { model.isPaused = false; }}
+                onResumePressed={() => {
+                    closeInfo();
+                    model.isPaused = false;
+                }}
                 onRestartPressed={model.restart}
-                hasHighscores={() => model.activeEntry?.hasHighscores === true}
-                highscoreRows={() => highscores.tableFor(model.activeEntry?.id ?? '')}
-                highscoresStatus={() => highscores.status}
+            />
+            <PerfmonFloatView
+                isOpen={() => model.isPerfmonOpen}
+                metrics={bindings.performance}
+                unmeasured={bindings.unmeasuredMetrics}
             />
             <ResumeOfferView
                 isOpen={() => model.phase === 'playing' && model.isResumeOffered}
@@ -387,6 +433,15 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     }
 
     /** Scrolls back up to the head, and puts the caret in the search, which opens its tags. */
+    /** Scrolls back to the top of the wall, with no panel open, for a plain click on a link to the Arcade. */
+    function goHome(e: MouseEvent): void {
+        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        model.closeInfo();
+        model.closeAbout();
+        window.scrollTo({ top: 0, behavior: bindings.isMotionReduced() ? 'auto' : 'smooth' });
+    }
+
     function goToSearch(): void {
         window.scrollTo({ top: 0, behavior: bindings.isMotionReduced() ? 'auto' : 'smooth' });
         head.querySelector<HTMLInputElement>('.search-input')?.focus({ preventScroll: true });
@@ -394,9 +449,12 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
 
     function stopListening(): void {
         window.removeEventListener('keydown', onKeyDown);
+        for (const link of homeLinks) link.removeEventListener('click', goHome);
         // In the site's nav, outside this view: destroyed with it, which takes it out of the nav
         destroyElement(navSearch);
         destroyElement(navSound);
+        destroyElement(navPerfmon);
+        destroyElement(about);
     }
 
     function onKeyDown(e: KeyboardEvent): void {
@@ -418,11 +476,59 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
      */
     function stepBack(e: KeyboardEvent): void {
         if (highscores.placing !== 'none' || model.isResumeOffered) return;
-        if (model.infoEntry !== undefined) model.closeInfo();
+        if (model.infoEntry !== undefined) closeInfo();
         else if (model.phase === 'playing') model.isPaused = !model.isPaused;
         else if (model.phase !== 'browsing') model.exit();
         else return;
         e.preventDefault();
+    }
+
+    /** Whether the entry's info panel is open over the entry, which is paused behind it. */
+    function isInfoOverEntry(): boolean {
+        return model.infoEntry !== undefined && model.phase !== 'browsing';
+    }
+
+    /**
+     * Opens the entry's info panel over it, from the runner's (i), or closes
+     * it. Opening it pauses the entry, if it plays, and closing it resumes
+     * the entry, if the panel paused it: one the visitor paused stays paused.
+     */
+    function toggleInfoOverEntry(): void {
+        if (isInfoOverEntry()) {
+            closeInfo();
+            return;
+        }
+        const entry = model.activeEntry;
+        if (entry === undefined) return;
+        if (model.phase === 'playing' && !model.isPaused) {
+            model.isPaused = true;
+            isPausedForInfo = true;
+        }
+        model.openInfo(entry.id);
+    }
+
+    /** Closes an info panel, and resumes the entry under it, if the panel paused it. */
+    function closeInfo(): void {
+        model.closeInfo();
+        if (!isPausedForInfo) return;
+        isPausedForInfo = false;
+        if (model.phase === 'playing') model.isPaused = false;
+    }
+
+    /** Leaves the entry, from the runner's back button or the pause menu's Exit, closing its info panel, if open, first. */
+    function leaveEntry(): void {
+        isPausedForInfo = false;
+        if (isInfoOverEntry()) model.closeInfo();
+        model.exit();
+    }
+
+    function togglePerfmon(): void {
+        model.isPerfmonOpen = !model.isPerfmonOpen;
+    }
+
+    function toggleAbout(): void {
+        if (model.isAboutOpen) model.closeAbout();
+        else model.openAbout();
     }
 
     /**

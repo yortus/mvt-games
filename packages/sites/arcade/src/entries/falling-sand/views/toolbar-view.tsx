@@ -1,9 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
-import { PERFMON_WIDTH, PerfmonView } from '#shared';
 import { memoiseLast } from '@mvtjs/utils';
-import type { PerformanceMetrics } from '@mvtjs/pixi';
 import { type GrainStorageKind, TANK_SIZES, type TankSizeKind, type ToolKind } from '../models';
 import { lookUpShade } from './grain-colors';
 import type { GrainsViewKind } from './tank-view';
@@ -21,8 +19,6 @@ export interface ToolbarViewBindings {
     canFlip: () => boolean;
     grainCount: () => number;
     movingCount: () => number;
-    /** Performance metrics to show, or undefined where there are none (e.g. rendering a thumbnail). */
-    performanceMetrics: () => PerformanceMetrics | undefined;
     /**
      * The implementations and tank size the demo is running with. Fixed for
      * the demo's life, so read once, when the view is built.
@@ -52,9 +48,9 @@ export interface ToolbarViewBindings {
 
 /**
  * Everything below the tank: the tool palette, Flip, Reset and Clear, the
- * switches showing which implementations are running, the grain counts, and
- * frame timing. Presses are relayed; what they do is up to whoever handles
- * them.
+ * switches showing which implementations are running, and a line along the
+ * bottom with the grain counts and how to play. Presses are relayed; what
+ * they do is up to whoever handles them.
  */
 export function ToolbarView(bindings: ToolbarViewBindings): Container {
     // Formatted only when the count changes, not every frame.
@@ -120,14 +116,11 @@ export function ToolbarView(bindings: ToolbarViewBindings): Container {
 
             <container y={STATS_Y}>
                 <text text="GRAINS" y={8} style={LABEL_STYLE} />
-                <text text={() => grainText(bindings.grainCount())} x={72} y={4} style={COUNT_STYLE} />
-                <text text="MOVING" y={32} style={LABEL_STYLE} />
-                <text text={() => movingText(bindings.movingCount())} x={72} y={28} style={COUNT_STYLE} />
-                <text text="Tap, hold and drag to pour" y={52} style={HINT_STYLE} />
-                <text text="Switches restart the demo" y={66} style={HINT_STYLE} />
-                <container x={TOOLBAR_WIDTH - PERFMON_WIDTH}>
-                    <PerfmonView performanceMetrics={bindings.performanceMetrics} />
-                </container>
+                <text text={() => grainText(bindings.grainCount())} x={COUNT_X} y={3} style={COUNT_STYLE} />
+                <text text="MOVING" x={MOVING_X} y={8} style={LABEL_STYLE} />
+                <text text={() => movingText(bindings.movingCount())} x={MOVING_X + COUNT_X} y={3} style={COUNT_STYLE} />
+                <text text="Tap, hold and drag to pour" x={TOOLBAR_WIDTH} y={1} anchorX={1} style={HINT_STYLE} />
+                <text text="Switches restart the demo" x={TOOLBAR_WIDTH} y={15} anchorX={1} style={HINT_STYLE} />
             </container>
         </container>
     );
@@ -138,6 +131,11 @@ export function ToolbarView(bindings: ToolbarViewBindings): Container {
 // ---------------------------------------------------------------------------
 
 const TOOLS: readonly ToolKind[] = ['sand', 'water', 'wall', 'erase'];
+
+/** Each count, after its label. The counts go up to seven characters, such as 246,240. */
+const COUNT_X = 50;
+/** The second label and count, after the first count's widest. */
+const MOVING_X = 136;
 
 /**
  * One formatter, reused. `toLocaleString` builds a new one on every call,

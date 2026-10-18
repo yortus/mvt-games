@@ -41,7 +41,7 @@ export interface TickCounts {
  *
  * Counting is off unless something is measuring. To measure one call, use
  * {@link countTick}. To measure across ticker callbacks, as
- * `createPerformanceMetrics` does for one frame in each window, switch
+ * `createPerformanceMeter` does for one frame in each window, switch
  * `isCounting` on, and take the differences in the counts when switching it
  * off.
  *

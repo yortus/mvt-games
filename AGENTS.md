@@ -32,7 +32,7 @@ packages/
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private): this repo's lint rules, loaded from source by `eslint.config.ts`
 ├── sites/               What gets deployed
-│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite): pages, src/, scripts/ (textures, thumbnails, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
+│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite): pages, src/, scripts/ (textures, thumbnails, the pixel font, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
 │   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite): src/, examples/ and starters/ (each a project; starters/ are what New opens), libraries/ (what a project may import)
 │   └── docs/            @mvtjs/docs (private): the documentation (VitePress)
 └── tests/               What tests the other packages, and never ships
@@ -56,7 +56,7 @@ packages/sites/arcade/src/
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way, imported as `#pixel-glyphs`
-├── shared/              The site's shared views (overlay, pixel text, input, swipes, perfmon), imported as `#shared`
+├── shared/              The site's shared views (overlay, pixel text, input, swipes), imported as `#shared`
 ├── tunes/               The site's Audio90 tunes, their instruments and samples, which the Tune Tracker plays, imported as `#tunes`
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```

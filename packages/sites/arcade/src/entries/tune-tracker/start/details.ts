@@ -4,7 +4,7 @@ import type { EntryDetails } from '../../../entry-types';
 // Details
 // ---------------------------------------------------------------------------
 
-/** The Tune Tracker's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** The Tune Tracker's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'In the 1990s, many musicians wrote their tunes in a tracker. A tracker is a program that shows a song '
@@ -28,8 +28,14 @@ export const details: EntryDetails = {
         + 'numbers, so the two can\'t drift apart. The music player reports which row is playing, so the pattern '
         + 'moves in time with the music, and stops when you pause.',
     ].join('\n\n'),
-    instructions: 'Choose a tune and press Play. You can choose with Up and Down, or with Left and Right, and Space '
-        + 'starts or stops the tune. You can also click or tap a tune to play it.',
+    howToPlay: {
+        intro: 'Choose a tune and press Play.',
+        controls: [
+            { action: 'Choose a tune', inputs: ['up-down', 'left-right'] },
+            { action: 'Play or stop', inputs: ['space'] },
+            { action: 'Play a tune', inputs: ['click', 'tap'] },
+        ],
+    },
     techniques: [
         'Each cell of a song written back as tracker text, which reads back as the same cell',
         'The music player reporting which row is playing, so the pattern view can follow it',

@@ -4,7 +4,7 @@ import type { EntryDetails } from '../../../entry-types';
 // Details
 // ---------------------------------------------------------------------------
 
-/** Coral's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** Coral's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'A reaction-diffusion system: one chemical feeds the other as both spread across the grid. How fast the food '

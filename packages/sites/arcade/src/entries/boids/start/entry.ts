@@ -13,7 +13,7 @@ export const entry: ArcadeEntry = {
     tags: { kind: 'demo', genres: ['simulation'] },
     // It lays itself out for the area it plays in; this is the one it is designed around
     screenWidth: 960,
-    screenHeight: 605,
+    screenHeight: 492,
     thumbnail,
     // The colour of its flock
     cardColor: 'seafoam',

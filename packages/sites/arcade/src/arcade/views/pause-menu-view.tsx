@@ -1,8 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import type { HighscoreRow } from '../../highscores';
-import type { HighscoresStatus } from '../models';
 import { focusOnOpen } from './focus-on-open';
-import { HighscoreTableView } from './highscore-table-view';
 import { SoundControlView } from './sound-control-view';
 
 // ---------------------------------------------------------------------------
@@ -13,8 +10,6 @@ import { SoundControlView } from './sound-control-view';
 export interface PauseMenuViewBindings {
     /** Whether the menu is open. It is open while the entry is paused. */
     readonly isOpen: () => boolean;
-    /** How to play the entry, if it says. */
-    readonly instructions: () => string | undefined;
     /** The music's volume, from 0 to 1. 0 is off. */
     readonly musicVolume: () => number;
     /** The sound effects' volume, from 0 to 1. 0 is off. */
@@ -25,10 +20,6 @@ export interface PauseMenuViewBindings {
     readonly onRestartPressed?: () => void;
     /** Reported as Exit, or X, is pressed. */
     readonly onExitPressed?: () => void;
-    /** Whether the entry keeps a highscore table, and the table, to look at while paused. */
-    readonly hasHighscores: () => boolean;
-    readonly highscoreRows: () => readonly HighscoreRow[];
-    readonly highscoresStatus: () => HighscoresStatus;
     /** Reported with the new volume, from 0 to 1, as the music's slider moves. */
     readonly onMusicVolumeChanged?: (volume: number) => void;
     /** Reported as the music's icon is pressed, or Enter on its slider. */
@@ -44,23 +35,17 @@ export interface PauseMenuViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Shows the menu over a paused entry, in tabs. The first tab has Resume,
- * Restart, the music's and the sound effects' volumes, and Exit. For a game
- * with a highscore table, the next tab shows the table. The last tab says how
- * to play. The menu is in HTML, so it works over an entry of any renderer.
+ * Shows the menu over a paused entry: Resume, Restart, the music's and the
+ * sound effects' volumes, and Exit. How to play the entry, and its
+ * highscores, are in its info panel, which the runner's (i) opens. The menu
+ * is in HTML, so it works over an entry of any renderer.
  *
- * The menu is quick to leave from the keyboard. It opens on the first tab
- * with Resume focused, so Enter resumes. Up and Down, or W and S, move
- * through the open tab's choices and wrap round, so Up then Enter leaves.
- * Left and Right switch tabs, except on a slider, which they move. Three
- * keys act at once, and each is shown on its button. Escape resumes, R
- * restarts and X leaves. Which tab shows is the view's own presentation
- * state.
+ * The menu is quick to leave from the keyboard. It opens with Resume
+ * focused, so Enter resumes. Up and Down, or W and S, move through its
+ * choices and wrap round, so Up then Enter leaves. Three keys act at once,
+ * and each is shown on its button. Escape resumes, R restarts and X leaves.
  */
 export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
-    // Presentation state: the tab that shows, and whether the menu was open in the last update
-    let tab: PauseTab = 'menu';
-    let wasOpen = false;
     // Enter resumes
     const focusResume = focusOnOpen({
         isOpen: bindings.isOpen,
@@ -73,19 +58,13 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
         // The steps are on a wrapper that is never hidden, so they see the menu close
         <div
             class="pause-layer"
-            onUpdate={resetTabOnOpen}
             onRefresh={focusResume}
             onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}
         >
             <div class="pause-menu" visible={bindings.isOpen}>
                 <section class="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pause-title" ref={(e) => { panel = e; }}>
                     <h2 id="pause-title" class="visually-hidden" text="Paused" />
-                    <div class="pause-tabs" role="tablist" aria-label="Pause menu pages">
-                        <TabView kind="menu" label="Pause menu" />
-                        <TabView kind="highscores" label="Highscores" />
-                        <TabView kind="how-to-play" label="How to play" />
-                    </div>
-                    <div class="pause-page" id="pause-page-menu" role="tabpanel" aria-labelledby="pause-tab-menu" visible={() => tab === 'menu'}>
+                    <div class="pause-page">
                         <ChoiceView
                             label="Resume"
                             keyText="Esc"
@@ -126,67 +105,15 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
                             onPressed={() => bindings.onExitPressed?.()}
                         />
                     </div>
-                    <div
-                        class="pause-page pause-highscores"
-                        id="pause-page-highscores"
-                        role="tabpanel"
-                        aria-labelledby="pause-tab-highscores"
-                        visible={() => tab === 'highscores'}
-                    >
-                        <HighscoreTableView rows={bindings.highscoreRows} status={bindings.highscoresStatus} />
-                    </div>
-                    <div
-                        class="pause-page pause-how-to"
-                        id="pause-page-how-to-play"
-                        role="tabpanel"
-                        aria-labelledby="pause-tab-how-to-play"
-                        visible={() => tab === 'how-to-play'}
-                    >
-                        <pre text={() => bindings.instructions() ?? NO_INSTRUCTIONS} />
-                    </div>
                 </section>
             </div>
         </div>
     );
 
     /**
-     * Builds a tab's button. Pressing it shows the tab's page. Only the tab
-     * that shows is in the tab order. The highscores' tab is there only for a
-     * game with a table.
-     */
-    function TabView({ kind, label }: TabViewBindings): Element {
-        return (
-            <button
-                type="button"
-                visible={() => isTabShown(kind)}
-                class={() => (tab === kind ? 'pause-tab is-selected' : 'pause-tab')}
-                id={`pause-tab-${kind}`}
-                role="tab"
-                aria-controls={`pause-page-${kind}`}
-                aria-selected={() => (tab === kind ? 'true' : 'false')}
-                text={label}
-                onClick={() => { tab = kind; }}
-                onRefresh={(button) => {
-                    const tabIndex = tab === kind ? 0 : -1;
-                    if (button.tabIndex !== tabIndex) button.tabIndex = tabIndex;
-                }}
-            />
-        );
-    }
-
-    /** Shows the first tab as the menu opens. */
-    function resetTabOnOpen(): void {
-        const isOpen = bindings.isOpen();
-        if (isOpen && !wasOpen) tab = 'menu';
-        wasOpen = isOpen;
-    }
-
-    /**
      * Handles the menu's keys while it is open. R restarts and X leaves,
-     * wherever the focus is. Up and Down move through the open tab's
-     * choices, and wrap round. Left and Right switch tabs, except on a
-     * slider, which they move. Enter and Space press the focused button, as
-     * they always do.
+     * wherever the focus is. Up and Down move through its choices, and wrap
+     * round. Enter and Space press the focused button, as they always do.
      */
     function onKeyDown(e: KeyboardEvent): void {
         if (!bindings.isOpen() || panel === undefined || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -199,19 +126,9 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
             else bindings.onExitPressed?.();
             return;
         }
-        const target = e.target;
-        const isOnSlider = target instanceof HTMLInputElement && target.type === 'range';
-        if (!isOnSlider && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-            const shown = PAUSE_TABS.filter(isTabShown);
-            const step = e.key === 'ArrowRight' ? 1 : -1;
-            tab = shown[(shown.indexOf(tab) + step + shown.length) % shown.length];
-            panel.querySelector<HTMLElement>(`#pause-tab-${tab}`)?.focus();
-            e.preventDefault();
-            return;
-        }
         const step = toMenuStep(e.key);
         if (step === 0) return;
-        const page = panel.querySelector(`#pause-page-${tab}`);
+        const page = panel.querySelector('.pause-page');
         if (page === null) return;
         // A control's icon is left out, so the keys stop once on each control
         const choices = [...page.querySelectorAll<HTMLElement>('button:not([tabindex="-1"]), input')];
@@ -221,30 +138,11 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
         choices[next].focus();
         e.preventDefault();
     }
-
-    /** Whether a tab is in the menu: every tab is, but the highscores', for a game without a table. */
-    function isTabShown(kind: PauseTab): boolean {
-        return kind !== 'highscores' || bindings.hasHighscores();
-    }
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/** The menu's tabs. */
-type PauseTab = 'menu' | 'highscores' | 'how-to-play';
-
-/** Every tab, in the order they show. */
-const PAUSE_TABS: readonly PauseTab[] = ['menu', 'highscores', 'how-to-play'];
-
-/** What a tab's button shows. */
-interface TabViewBindings {
-    /** The tab the button shows. */
-    readonly kind: PauseTab;
-    /** The button's text. */
-    readonly label: string;
-}
 
 /** What one of the menu's choices shows, and what it reports. */
 interface ChoiceViewBindings {
@@ -259,8 +157,6 @@ interface ChoiceViewBindings {
     /** Reported as the button is pressed. */
     readonly onPressed: () => void;
 }
-
-const NO_INSTRUCTIONS = 'This one has no instructions: explore!';
 
 /**
  * Builds one of the menu's choices, a button with the key that presses it

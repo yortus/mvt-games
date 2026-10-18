@@ -43,11 +43,24 @@ describe('the catalogue', () => {
         }
     });
 
-    it('tells how to play each game, for the pause menu', async () => {
+    it('tells how to play each game, its controls among it, for the How to Play tab of its info panel', async () => {
         for (const entry of CATALOGUE) {
             if (entry.tags.kind !== 'game') continue;
             const details = await entry.loadDetails();
-            expect(details.instructions?.trim(), entry.id).toBeTruthy();
+            expect(details.howToPlay?.controls?.length, entry.id).toBeGreaterThan(0);
+        }
+    });
+
+    it('gives every How to Play something to show, and every control an action and an input', async () => {
+        for (const entry of CATALOGUE) {
+            const { howToPlay } = await entry.loadDetails();
+            if (howToPlay === undefined) continue;
+            const { intro, controls = [], notes = [] } = howToPlay;
+            expect(intro !== undefined || controls.length > 0 || notes.length > 0, entry.id).toBe(true);
+            for (const row of controls) {
+                expect(row.action.trim(), entry.id).toBeTruthy();
+                expect(row.inputs.length, `${entry.id}: ${row.action}`).toBeGreaterThan(0);
+            }
         }
     });
 

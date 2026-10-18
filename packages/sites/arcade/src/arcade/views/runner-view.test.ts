@@ -16,6 +16,44 @@ describe('RunnerView', () => {
         expect(state.soundPresses).toBe(1);
     });
 
+    it('shows whether the Perfmon is open on its gauge, and reports a press', () => {
+        const { runner, state } = setUp();
+        const gauge = runner.querySelector<HTMLButtonElement>('.runner-perfmon')!;
+        expect(gauge.getAttribute('aria-pressed')).toBe('false');
+        state.isPerfmonOpen = true;
+        refreshView(runner);
+        expect(gauge.getAttribute('aria-pressed')).toBe('true');
+        expect(gauge.classList.contains('is-on')).toBe(true);
+        gauge.click();
+        expect(state.perfmonPresses).toBe(1);
+    });
+
+    it('pauses with its pause button, and resumes as it is pressed again', () => {
+        const { runner, state } = setUp();
+        const pause = runner.querySelector<HTMLButtonElement>('.runner-pause')!;
+        pause.click();
+        expect(state.isPaused).toBe(true);
+        refreshView(runner);
+        expect(pause.getAttribute('aria-pressed')).toBe('true');
+        expect(pause.title).toBe('Resume');
+        pause.click();
+        expect(state.isPaused).toBe(false);
+    });
+
+    it('opens the info panel from its (i), and hides the pause menu while the panel is over the entry', () => {
+        const { runner, state } = setUp();
+        const info = runner.querySelector<HTMLButtonElement>('.runner-info')!;
+        info.click();
+        expect(state.infoPresses).toBe(1);
+        state.isPaused = true;
+        refreshView(runner);
+        expect(runner.querySelector('.pause-menu')!.hasAttribute('hidden')).toBe(false);
+        state.isInfoOpen = true;
+        refreshView(runner);
+        expect(info.getAttribute('aria-pressed')).toBe('true');
+        expect(runner.querySelector('.pause-menu')!.hasAttribute('hidden')).toBe(true);
+    });
+
     it('says the sound is off only while an entry plays with the sound off by default', () => {
         const { runner, state } = setUp();
         state.isSoundOn = false;
@@ -52,27 +90,49 @@ describe('RunnerView', () => {
     });
 });
 
-function setUp(): { runner: Element; state: { isPlaying: boolean; isSoundOn: boolean; isSoundOffByDefault: boolean; soundPresses: number } } {
-    const state = { isPlaying: true, isSoundOn: true, isSoundOffByDefault: false, soundPresses: 0 };
+interface RunnerState {
+    isPlaying: boolean;
+    isSoundOn: boolean;
+    isSoundOffByDefault: boolean;
+    soundPresses: number;
+    isPerfmonOpen: boolean;
+    perfmonPresses: number;
+    isPaused: boolean;
+    isInfoOpen: boolean;
+    infoPresses: number;
+}
+
+function setUp(): { runner: Element; state: RunnerState } {
+    const state: RunnerState = { isPlaying: true, isSoundOn: true, isSoundOffByDefault: false, soundPresses: 0, isPerfmonOpen: false, perfmonPresses: 0, isPaused: false, isInfoOpen: false, infoPresses: 0 };
     const runner = RunnerView({
         stage: document.createElement('div'),
         isOpen: () => true,
         isPlaying: () => state.isPlaying,
-        isPaused: () => false,
+        isPaused: () => state.isPaused,
+        onPausePressed: () => {
+            state.isPaused = true;
+        },
+        onResumePressed: () => {
+            state.isPaused = false;
+        },
         isSoundOn: () => state.isSoundOn,
         isSoundOffByDefault: () => state.isSoundOffByDefault,
         onSoundPressed: () => {
             state.soundPresses++;
         },
+        isPerfmonOpen: () => state.isPerfmonOpen,
+        onPerfmonPressed: () => {
+            state.perfmonPresses++;
+        },
         musicVolume: () => 0.5,
         effectsVolume: () => 0.5,
+        isInfoOpen: () => state.isInfoOpen,
+        onInfoPressed: () => {
+            state.infoPresses++;
+        },
         title: () => 'Entry',
-        instructions: () => undefined,
         isLandscape: () => false,
         isTurned: () => false,
-        hasHighscores: () => false,
-        highscoreRows: () => [],
-        highscoresStatus: () => 'ready',
     });
     document.body.replaceChildren(runner);
     refreshView(runner);

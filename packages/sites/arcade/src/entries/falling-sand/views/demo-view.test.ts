@@ -30,7 +30,7 @@ interface Setup {
 function setup(options: SetupOptions): Setup {
     const { grainsView, storage = 'objects', tankSize = 'small', isReactive } = options;
     const model = createDemoModel({ ...(options.tank ?? TANK_SIZES[tankSize]), storage });
-    const view = DemoView({ model, grainsView, tankSize, isReactive, performanceMetrics: () => undefined });
+    const view = DemoView({ model, grainsView, tankSize, isReactive });
     refreshView(view);
     const grainsLayer = view.getChildByLabel('grains', true);
     if (grainsLayer === null) throw new Error('no grains layer');

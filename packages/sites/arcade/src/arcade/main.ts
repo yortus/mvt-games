@@ -1,7 +1,7 @@
 import { ENTRY_FACTS } from 'virtual:entry-facts';
 import { createFetchHighscoreStore, createMemoryHighscoreStore, GAMES, type HighscoreStore } from '../highscores';
 import { refreshView, updateView } from '@mvtjs/html';
-import { assert, watch } from '@mvtjs/utils';
+import { assert, createPerformanceMeter, type MetricKind, type PerformanceMeter, watch } from '@mvtjs/utils';
 import { CATALOGUE, findEntry } from '../entries';
 import type { ArcadeEntry, EntryStarter } from '../entry-types';
 import { isHandheldDevice } from '../device';
@@ -45,6 +45,9 @@ import './arcade.css';
 // It keeps the visitor's favourites between visits too. It saves a game every
 // few seconds of play, and as the visitor leaves it, for the model to offer
 // to resume next time.
+//
+// While the Perfmon is open, the loop measures each of its frames, whatever
+// the entry's renderer, with the GPU's time for an entry drawn with Pixi.
 
 // ---------------------------------------------------------------------------
 // The page
@@ -148,6 +151,7 @@ root.append(ArcadeView({
     isMotionReduced: () => reducedMotion.matches,
     liveElement,
     navTools: pageElement('site-nav-tools'),
+    homeLinks: [...document.querySelectorAll<HTMLElement>('.site-nav-brand, .site-nav-links a.active')],
     liveEntry: () => liveEntry,
     isLiveShowing: () => liveFrames >= LIVE_SHOWN_AFTER_FRAMES,
     pageSound: sound.pageAudio80,
@@ -157,6 +161,8 @@ root.append(ArcadeView({
     isTurned: isRunnerTurned,
     entryHref: (entry) => formatEntryPath(ARCADE_PATH, entry.id),
     docsHref: `${SITE_PATH}docs/`,
+    performance: () => meter,
+    unmeasuredMetrics,
     onLiveWanted: playLive,
     playRectFor: (entry, starter) => host.playRectFor({
         screenWidth: entry.screenWidth,
@@ -185,6 +191,7 @@ const watcher = watch({
     panel: panelStep,
     isRunOver: () => host.session?.scoring?.isOver() === true,
     initials: () => model.highscores.lastInitials,
+    isPerfmonOpen: () => model.isPerfmonOpen,
 });
 // An info panel's step, reloaded, opens its panel again
 followPanelStep();
@@ -215,6 +222,8 @@ window.addEventListener('popstate', onHistoryStep);
 // ---------------------------------------------------------------------------
 
 let lastTimeMs: number | undefined;
+/** Measures each frame, while the Perfmon is open. */
+let meter: PerformanceMeter | undefined;
 requestAnimationFrame(frame);
 // The entries' long text loads once the wall is first drawn, not before it,
 // so the home page's first load holds only what the cards show. A search
@@ -222,6 +231,7 @@ requestAnimationFrame(frame);
 requestAnimationFrame(() => setTimeout(model.loadDetails, 0));
 
 function frame(timeMs: number): void {
+    meter?.startFrame();
     // A long gap (a hidden tab) is clamped rather than simulated
     const deltaMs = lastTimeMs === undefined ? 0 : Math.min(timeMs - lastTimeMs, MAX_STEP_MS);
     lastTimeMs = timeMs;
@@ -246,13 +256,14 @@ function frame(timeMs: number): void {
     updateView(document.body, deltaMs);
     refreshView(document.body);
     sound.pageControls.flush();
+    meter?.endFrame();
 
     requestAnimationFrame(frame);
 }
 
 /** Starts and ends the entry's sessions as the model's phase changes, and writes the URL. */
 function followModel(): void {
-    const { phase, restarts, query, panel, isRunOver, initials } = watcher.poll();
+    const { phase, restarts, query, panel, isRunOver, initials, isPerfmonOpen } = watcher.poll();
     if (phase.changed) {
         if (phase.value === 'playing') {
             exitFrame = undefined;
@@ -290,6 +301,7 @@ function followModel(): void {
         // Blocked or full storage means the settings hold for this visit only
         store.write(SOUND_SETTINGS_KEY, formatSoundSettings(keptSoundSettings));
     }
+    if (isPerfmonOpen.changed) measurePerformance(isPerfmonOpen.value);
     if (phase.changed && phase.previous === 'browsing') writeUrl('enter');
     else if (phase.changed && phase.value === 'browsing') writeUrl('leave');
     else if (panel.changed) writePanelStep();
@@ -366,6 +378,35 @@ const SAVE_EVERY_MS = 5000;
 /** How many frames a live entry draws on its card before it is shown, so it never shows blank. */
 const LIVE_SHOWN_AFTER_FRAMES = 3;
 const DEV = import.meta.env.DEV;
+
+/**
+ * Starts measuring each frame, for the Perfmon, or stops. Each opening starts
+ * afresh. The meter and the GPU's timer cost a little each frame, so they run
+ * only while the Perfmon is open.
+ */
+function measurePerformance(isOn: boolean): void {
+    meter?.destroy();
+    host.isGpuTimed = isOn;
+    meter = isOn ? createPerformanceMeter({ takeGpuMs: host.takeGpuMs }) : undefined;
+}
+
+/** The starter the list of metrics not measured was last made for, and the list. */
+let unmeasuredFor: EntryStarter | undefined;
+let unmeasured: readonly MetricKind[] = ['gpuMs'];
+
+/**
+ * The metrics the Perfmon can't measure as things stand, shown as n/a: the
+ * GPU's time unless a Pixi entry runs, and those the entry running says it
+ * can't measure. Made again only when the entry running changes.
+ */
+function unmeasuredMetrics(): readonly MetricKind[] {
+    const starter = host.session === undefined ? undefined : host.starter;
+    if (starter === unmeasuredFor) return unmeasured;
+    unmeasuredFor = starter;
+    const own = starter?.unmeasuredMetrics ?? [];
+    unmeasured = starter?.kind === 'pixi' ? own : ['gpuMs', ...own];
+    return unmeasured;
+}
 
 /** Gives the host the sound settings. Muting mutes every chip, the entries' and the page's own. */
 function applySoundSettings(settings: ArcadeSoundSettings): void {
@@ -488,8 +529,13 @@ function entryUrl(entry: ArcadeEntry): string {
     return formatEntryPath(ARCADE_PATH, entry.id) + formatArcadeQuery(location.search, model.query, model.chips);
 }
 
-/** The mark of the history step for the info panel open, if one is. */
+/**
+ * The mark of the history step for the info panel open, if one is. A panel
+ * opened over the entry playing has none: Back from an entry leaves it,
+ * whatever is open over it.
+ */
 function panelStep(): string | undefined {
+    if (model.phase !== 'browsing') return undefined;
     if (model.infoEntry !== undefined) return INFO_STEP + model.infoEntry.id;
     return model.isAboutOpen ? ABOUT_STEP : undefined;
 }

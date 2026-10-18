@@ -4,7 +4,7 @@ import type { EntryDetails } from '../../../entry-types';
 // Details
 // ---------------------------------------------------------------------------
 
-/** The flock in 3D's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** The flock in 3D's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'The boids demo\'s flock model, unchanged, drawn with three.js through the same JSX runtime as the Pixi '
@@ -13,7 +13,12 @@ export const details: EntryDetails = {
         'Each frame runs the MVT way: the model updates, then `updateView` and `refreshView` call both views\' '
         + 'methods, then three.js renders.',
     ].join('\n\n'),
-    instructions: 'Click the ground to add boids, or a boid to take some away.',
+    howToPlay: {
+        controls: [
+            { action: 'Add boids', inputs: ['click', 'tap'], note: 'On the ground' },
+            { action: 'Take boids away', inputs: ['click', 'tap'], note: 'On a boid' },
+        ],
+    },
     techniques: [
         'One model, two renderers: three.js and the DOM',
         'The three.js JSX runtime',

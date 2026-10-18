@@ -4,7 +4,7 @@ import type { EntryDetails } from '../../../entry-types';
 // Details
 // ---------------------------------------------------------------------------
 
-/** The harbour fireworks' long text, for their info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** The harbour fireworks' long text, for their info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'A fireworks show that never ends. Each rocket bursts at the top of its climb, and its sparks spread, '

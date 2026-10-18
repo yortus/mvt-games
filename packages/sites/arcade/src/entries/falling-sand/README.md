@@ -14,15 +14,17 @@ chosen in the page's URL
 drawn by SolidJS versions of the views, which are pushed changes rather than
 polling; the others are polled, as MVT views are. The switches
 under the buttons show the running choice; pressing one reloads the page with
-another. The panel under the tank shows the grain count,
-how many grains are moving, and frame timing: frames per second, then, per
-frame, CPU and GPU milliseconds and `Reads`, the reads of the model the view
-makes (the pixel view counts its own reads the way the JSX runtime counts the
+another. The panel under the tank shows the grain count, and
+how many grains are moving. The Arcade's Perfmon, opened with the gauge at
+the top of the page, shows frame timing: frames per second, then, per frame,
+CPU and GPU milliseconds and `Reads`, the reads of the model the views make
+(the pixel view counts its own reads the way the JSX runtime counts the
 sprite view's, so the two compare). Below those, `Methods` is the update and
 refresh methods `updateView` and `refreshView` call, and `Rebuilds` and
 `Visits` are the method lists they rebuild and the node visits rebuilding
-them takes: the scene's churn, zero while the tank's grains stay put. The panel's (i) button explains
-each figure.
+them takes: the scene's churn, zero while the tank's grains stay put. The
+Perfmon measures the whole page's frame, so the Arcade's own views add a
+little to each figure. Its (i) button explains each one.
 `npm run bench -- falling-sand-scaling` measures every combination headless,
 from 1,000 to 200,000 grains (with `--extended` for a store flipping 10,000
 grains or more, which takes most of the suite's time); the demo as it ships is
@@ -235,10 +237,10 @@ does not jump.
 | [`grain-pixels-view.ts`](./views/grain-pixels-view.ts) | The grains as a pixel per cell in one texture |
 | [`solid-grain-sprites-view.ts`](./views/solid-grain-sprites-view.ts) | The grains as a sprite per grain, with pixi-solid, updated by SolidJS effects |
 | [`solid-grain-pixels-view.ts`](./views/solid-grain-pixels-view.ts) | The grains as a pixel per cell, each grain's pixel redrawn by a SolidJS effect when it changes |
-| [`toolbar-view.tsx`](./views/toolbar-view.tsx) | Tool palette, Flip, Reset, Clear, the variant switches, counts and frame timing |
+| [`toolbar-view.tsx`](./views/toolbar-view.tsx) | Tool palette, Flip, Reset, Clear, the variant switches, and the counts |
 | [`grain-colors.ts`](./views/grain-colors.ts) | Colours by kind, with a stable shade per grain, as tints and as pixels |
 | [`view-constants.ts`](./views/view-constants.ts) | Sizes and positions in pixels |
 
-The performance metrics come from `createPerformanceMetrics` in
-[`packages/libraries/pixi/src/`](../../../../../libraries/pixi/src/index.ts) and `PerfmonView` in
-[`packages/sites/arcade/src/shared/`](../../shared/index.ts), which any demo or game can use.
+The performance metrics come from the Arcade's page, which measures every
+entry's frames with `createPerformanceMeter` from `@mvtjs/utils`, and shows
+them with `@mvtjs/html`'s `PerfmonView`.

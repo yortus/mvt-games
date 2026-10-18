@@ -13,10 +13,10 @@ function rowsOf(count: number): HighscoreRow[] {
     return rows;
 }
 
-/** Returns the table in a panel the width of the pause menu's, on its dark background. */
+/** Returns the table as the info panel's Highscores tab shows it, in a narrow panel, on its dark background. */
 function inPanel(bindings: HighscoreTableViewBindings): HTMLElement {
     const panel = document.createElement('div');
-    panel.className = 'pause-highscores';
+    panel.className = 'info-highscores';
     panel.style.cssText = 'width:276px;padding:12px;background:#161b22;';
     panel.append(HighscoreTableView(bindings));
     return panel;

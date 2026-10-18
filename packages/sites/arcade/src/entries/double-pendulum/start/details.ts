@@ -4,7 +4,7 @@ import type { EntryDetails } from '../../../entry-types';
 // Details
 // ---------------------------------------------------------------------------
 
-/** The double pendulum's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** The double pendulum's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'Two arms, the second shorter and hanging from the end of the first, swing under gravity. The smallest change '

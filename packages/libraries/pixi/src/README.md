@@ -407,9 +407,9 @@ The [JSX runtime](./jsx/) counts its reads itself: every
 function attribute it calls, so a JSX scene is counted without any code of
 its own.
 
-`createPerformanceMetrics` samples `tickCounter` for one frame in each window,
-alongside frame rate and CPU and GPU time, and the perfmon panel in
-`packages/sites/arcade/src/shared/` shows the results.
+`createPerformanceMeter`, in `@mvtjs/utils`, samples `tickCounter` for one
+frame in each window, alongside frame rate and CPU and GPU time, and
+`@mvtjs/html`'s `PerfmonView` shows the results.
 
 ## What it costs
 

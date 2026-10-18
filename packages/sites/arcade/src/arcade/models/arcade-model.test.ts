@@ -484,7 +484,7 @@ describe('ArcadeModel', () => {
             model.loadDetails();
             model.loadDetails();
             await settle();
-            expect(model.detailsFor('sim-demo')?.instructions).toBe('Watch.');
+            expect(model.detailsFor('sim-demo')?.howToPlay?.intro).toBe('Watch.');
             expect(model.detailsFor('no-such-entry')).toBeUndefined();
             for (const e of entries) expect(loadsOf(e.id), e.id).toBe(1);
         });
@@ -502,7 +502,7 @@ describe('ArcadeModel', () => {
             const model = createArcadeModel(options());
             model.launch('sim-demo');
             await settle();
-            expect(model.detailsFor('sim-demo')?.instructions).toBe('Watch.');
+            expect(model.detailsFor('sim-demo')?.howToPlay?.intro).toBe('Watch.');
         });
 
         it('asks again for text that failed to load', async () => {
@@ -611,7 +611,7 @@ const ENTRIES: readonly ArcadeEntry[] = [
         hasHighscores: true,
     },
     entry('shooter-game', 'Shooter Game', { kind: 'game', era: '1980s', genres: ['shooter'] }, { description: '', techniques: ['Object pooling'] }),
-    entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }, { description: 'Birds flocking, in 3D.', instructions: 'Watch.' }),
+    entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }, { description: 'Birds flocking, in 3D.', howToPlay: { intro: 'Watch.' } }),
     { ...entry('old-shooter', 'Old Shooter', { kind: 'game', era: '1970s', genres: ['shooter'] }), summary: 'Rocks and asteroids.' },
 ];
 

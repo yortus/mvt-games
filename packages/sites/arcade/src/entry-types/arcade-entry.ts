@@ -63,10 +63,59 @@ export interface ArcadeEntry {
 export interface EntryDetails {
     /** A paragraph or two, for the entry's info panel. Paragraphs are separated by a blank line. */
     readonly description: string;
-    /** How to play, for the info panel and the pause menu. */
-    readonly instructions?: string;
+    /** How to play, for the info panel's How to Play tab, which the runner's (i) opens over the game. */
+    readonly howToPlay?: HowToPlay;
     /** The techniques and patterns the entry shows, for the info panel. */
     readonly techniques?: readonly string[];
+}
+
+/**
+ * How to play an entry: what to do, the controls, and anything else worth
+ * knowing. The info panel shows the controls as a table, an action to a row,
+ * with a column for the keyboard and one for touch, so they are data rather
+ * than text. Give at least one of the three.
+ */
+export interface HowToPlay {
+    /** What to aim for, or what to do, in a sentence or two. */
+    readonly intro?: string;
+    /** The controls, one row for each thing the player does. */
+    readonly controls?: readonly ControlRow[];
+    /** Anything else worth knowing, a short paragraph each. */
+    readonly notes?: readonly string[];
+}
+
+/** One thing the player does, and the inputs that do it: any one of them. */
+export interface ControlRow {
+    /** What it does, in a word or two: `'Move'`, `'Shoot'`. */
+    readonly action: string;
+    /** The inputs that do it. The keys show in the keyboard's column, and the rest in the touch one. */
+    readonly inputs: readonly ControlInput[];
+    /** More about it, shown under the action: `'Hold to rise, let go to sink'`. */
+    readonly note?: string;
+}
+
+/**
+ * An input: a key, or a pair of keys for two ways (`'left-right'`), or keys
+ * pressed together (`['space', 'up']`). Or, for touch and the mouse, a
+ * gesture, or one of the on-screen buttons a game shows (`{ button: 'Fire' }`).
+ */
+export type ControlInput = ControlKey | readonly ControlKey[] | ControlGesture | ControlButton;
+
+/**
+ * A key, or a set the player uses as one: all four arrows, or WASD. Forward
+ * and back are the arrows that point toward the opponent, and away.
+ */
+export type ControlKey =
+    | 'arrows' | 'wasd' | 'left-right' | 'a-d' | 'up-down'
+    | 'up' | 'down' | 'left' | 'right' | 'forward' | 'back' | 'w'
+    | 'space' | 'shift' | 'enter';
+
+/** A gesture, on a touch screen or with a mouse. The joystick is the one a game draws on a touch screen. */
+export type ControlGesture = 'joystick' | 'swipe' | 'tap' | 'double-tap' | 'drag' | 'pinch' | 'click' | 'wheel';
+
+/** One of the buttons a game draws on a touch screen, by its label. */
+export interface ControlButton {
+    readonly button: string;
 }
 
 /** A game an entry is inspired by: its title, who made it, and the year it came out. */

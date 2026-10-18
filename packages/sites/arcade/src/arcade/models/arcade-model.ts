@@ -204,6 +204,14 @@ export interface ArcadeModel {
     /** Closes the Arcade's own info panel, if it is open. */
     readonly closeAbout: () => void;
 
+    // --- The Perfmon --------------------------------------------------------
+
+    /**
+     * Whether the Perfmon is open: a panel of how fast the page runs, over the
+     * wall or the entry playing. It always starts closed.
+     */
+    isPerfmonOpen: boolean;
+
     /** Does nothing. Nothing in the Arcade moves with time, and its entries' sessions are the page's. */
     readonly update: (deltaMs: number) => void;
 }
@@ -291,6 +299,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     let launchCount = 0;
     /** The info panel open, if any. It is an entry's, or the Arcade's own. */
     let panel: ArcadeEntry | 'about' | undefined;
+    let isPerfmonOpen = false;
     const highscores = createHighscoresModel({ store: options.highscoreStore, rememberedInitials: options.rememberedInitials });
 
     const model: ArcadeModel = {
@@ -525,6 +534,12 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         closeAbout() {
             if (panel === 'about') panel = undefined;
+        },
+        get isPerfmonOpen() {
+            return isPerfmonOpen;
+        },
+        set isPerfmonOpen(value) {
+            isPerfmonOpen = value;
         },
 
         update(deltaMs) {

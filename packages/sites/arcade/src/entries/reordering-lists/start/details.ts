@@ -4,7 +4,7 @@ import type { EntryDetails } from '../../../entry-types';
 // Details
 // ---------------------------------------------------------------------------
 
-/** The reordering-lists demo's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** The reordering-lists demo's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'One row of cards, held two ways and rendered by the same index-addressed <List>. A script sorts, moves, '

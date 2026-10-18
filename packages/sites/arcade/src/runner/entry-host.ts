@@ -50,6 +50,19 @@ export interface EntryHost {
      */
     isTurned: boolean;
     /**
+     * Whether the GPU's time is measured for the Pixi entries the host runs,
+     * for `takeGpuMs`. It costs a little each frame, so it is off until the
+     * page asks for it.
+     */
+    isGpuTimed: boolean;
+    /**
+     * Returns the median time on the GPU of the Pixi entry's frames since the
+     * last call, in milliseconds. Returns undefined if none were timed: while
+     * `isGpuTimed` is off, while no Pixi entry runs, or where the browser
+     * can't time the GPU. Give it to a performance meter as its `takeGpuMs`.
+     */
+    takeGpuMs: () => number | undefined;
+    /**
      * Gets ready to start `starter`. For a Pixi entry, it loads Pixi, makes
      * the Pixi application, and fits the entry to the host's area if the
      * entry fits itself. For an element entry, which brings its own
@@ -146,6 +159,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let session: EntrySession | undefined;
     let isPaused = false;
     let isTurned = false;
+    let isGpuTimed = false;
     let pixiStage: PixiStage | undefined;
     const sound = options.sound ?? createPageSound({ isEnabled: false });
     const isSoundOwned = options.sound === undefined;
@@ -200,6 +214,17 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
         set isTurned(value) {
             isTurned = value;
+        },
+        get isGpuTimed() {
+            return isGpuTimed;
+        },
+        set isGpuTimed(value) {
+            isGpuTimed = value;
+            if (pixiStage !== undefined) pixiStage.isGpuTimed = value;
+        },
+
+        takeGpuMs() {
+            return starter?.kind === 'pixi' ? pixiStage?.takeGpuMs() : undefined;
         },
 
         async prepare(next) {
@@ -310,6 +335,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             audioControls: () => sessionControls,
         });
         pixiStage.fit(areaRect.width, areaRect.height);
+        pixiStage.isGpuTimed = isGpuTimed;
     }
 
     function startSession(next: EntryStarter, options: StartOptions): EntrySession {

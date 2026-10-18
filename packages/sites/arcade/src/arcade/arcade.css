@@ -1,10 +1,15 @@
 /*
  * The arcade's page. Colours and fonts come from the site's nav styles
  * (`--site-*`, in `shared/nav.css`). Stacking, bottom to top: the page and its
- * wall; the canvas that burns and develops the cards (30); the nav (9999);
+ * wall; the canvas that burns and develops the cards (30); the Perfmon over
+ * the wall (9998), under the nav, so the (i)'s note drops in front of it;
+ * the nav (9999);
  * the stage an entry plays on (10000); the transition's backdrop and picture
- * (10001); the runner's bar (10002); its pause menu, or the offer to resume
- * a saved game (10003); a score that places, asking for initials (10004).
+ * (10001); the runner's hints (10002); its pause menu, or the offer to resume
+ * a saved game (10003); a score that places, asking for initials (10004);
+ * the Perfmon while the runner is open (10005); and the runner's bar
+ * (10006), which those all sit below, never over, so its menu drops in
+ * front of them.
  */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -48,7 +53,7 @@ button { font: inherit; color: inherit; }
 
 /* For a visitor who has asked for less motion, nothing on the page animates its way between states */
 @media (prefers-reduced-motion: reduce) {
-    .card, .card-polaroid, .search-box, .search-tags-reveal, .chip, .nav-search, .nav-sound { transition: none; }
+    .card, .card-polaroid, .search-box, .search-tags-reveal, .chip, .nav-search, .nav-sound, .nav-perfmon, .about-button, .runner-bar button { transition: none; }
 }
 
 .arcade {
@@ -64,7 +69,7 @@ button { font: inherit; color: inherit; }
  */
 .arcade-head {
     position: relative;
-    /* Above the wall's lifted polaroids, so the about note drops over them */
+    /* Above the wall's lifted polaroids */
     z-index: 20;
     display: flex;
     flex-wrap: wrap;
@@ -73,7 +78,7 @@ button { font: inherit; color: inherit; }
     /* The name's height, which the search box lines up with */
     --wordmark-height: 44px;
 }
-.arcade-title { position: relative; display: flex; align-items: center; gap: 14px; }
+.arcade-title { position: relative; display: flex; align-items: center; }
 /* The name, as a marquee: drawn by the view, scaled by its height */
 .arcade-name { line-height: 0; }
 .arcade-name .wordmark { display: block; height: var(--wordmark-height); width: auto; max-width: calc(100vw - 80px); }
@@ -89,19 +94,34 @@ button { font: inherit; color: inherit; }
     .arcade-head { --wordmark-height: 38px; }
 }
 
-/* The Arcade's tools in the site's nav, styled as the nav's GitHub link */
-.nav-search, .nav-sound {
+/*
+ * The Arcade's tools in the site's nav, and the buttons of the runner's bar,
+ * which covers the nav while an entry plays: icons in the nav's colours, each
+ * drawn by a mask on its `::before`. A tool that is on (the Perfmon open, the
+ * note open) is lit as the nav's link to the page is.
+ */
+.nav-search, .nav-sound, .nav-perfmon, .about-button, .runner-bar button {
     position: relative;
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 6px;
     border: none;
     border-radius: 6px;
     background: none;
-    color: var(--site-text-muted, #8b949e);
+    color: var(--site-nav-text-muted);
     cursor: pointer;
+    transition: color 0.15s, background 0.15s;
 }
-.nav-search:hover, .nav-sound:hover { color: var(--site-text, #c9d1d9); background: rgba(255, 255, 255, 0.05); }
-.nav-search::before, .nav-sound::before {
+.nav-search:hover, .nav-sound:hover, .nav-perfmon:hover, .about-button:hover, .runner-bar button:hover:not(:disabled) {
+    color: var(--site-nav-text);
+    background: var(--site-nav-hover-bg);
+}
+.nav-perfmon.is-on, .runner-perfmon.is-on, .runner-pause.is-on, .runner-info.is-on, .about-button[aria-expanded="true"] {
+    color: var(--site-nav-text);
+    background: var(--site-nav-active-bg);
+}
+.nav-search::before, .nav-sound::before, .nav-perfmon::before, .about-button::before, .runner-bar button::before {
     content: '';
     width: 20px;
     height: 20px;
@@ -127,48 +147,36 @@ button { font: inherit; color: inherit; }
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--site-accent, #58a6ff);
+    background: var(--site-nav-text);
 }
 
-/* The speaker beside it, for all the sound. It is always shown, and struck through when all the sound is off. The runner's bar has one too */
-.nav-sound { transition: color 0.15s, background 0.15s; }
+/* The speaker, for all the sound. It is always shown, and struck through when all the sound is off. The runner's bar has one too */
 .nav-sound::before, .runner-sound::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 5.5a3.5 3.5 0 010 5M12.8 3.5a6 6 0 010 9'/%3E%3C/svg%3E") center / 18px no-repeat; }
 .nav-sound.is-off::before, .runner-sound.is-off::before {
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 6l4 4M15 6l-4 4'/%3E%3C/svg%3E");
 }
 
-/* The (i) by the title, and the note it opens beneath it */
-.about-button {
-    flex: none;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 1px solid #30363d;
-    background: #21262d;
-    color: #e6edf3;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-style: italic;
-    font-weight: 700;
-    cursor: pointer;
-}
-.about-button:hover, .about-button[aria-expanded="true"] { border-color: var(--site-accent, #58a6ff); }
-/* Over the search too, which it drops onto when the search wraps under the title */
+/* The gauge, which opens the Perfmon. The runner's bar has one too */
+.nav-perfmon::before, .runner-perfmon::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M2.5 11a5.5 5.5 0 0111 0'/%3E%3Cpath d='M8 11l2.6-3.4'/%3E%3Ccircle cx='8' cy='11' r='1.2' fill='%23000' stroke='none'/%3E%3C/svg%3E") center / 18px no-repeat; }
+
+/* The (i) at the nav's right end, and the note it drops beneath it */
+.about { position: relative; display: inline-flex; }
+.about-button::before, .runner-info::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='8' cy='8' r='6.3'/%3E%3Cpath d='M8 7.3v4'/%3E%3Ccircle cx='8' cy='4.9' r='.95' fill='%23000' stroke='none'/%3E%3C/svg%3E") center / 18px no-repeat; }
 .about-note {
     position: absolute;
     z-index: 1;
     top: calc(100% + 10px);
-    left: 0;
-    width: min(440px, calc(100vw - 32px));
+    right: 0;
+    width: min(440px, calc(100vw - 24px));
     padding: 16px;
     border: 1px solid #30363d;
     border-radius: 12px;
     background: #161b22;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+    color: var(--site-text, #c9d1d9);
     font-size: 14px;
     line-height: 1.5;
 }
-/* Under a centred title, centred too, so it keeps clear of the screen's edges */
-.arcade-head.is-stacked .about-note { left: 50%; transform: translateX(-50%); }
 .about-note p { color: var(--site-text, #c9d1d9); }
 .about-docs { display: inline-block; margin-top: 8px; }
 .about-keys {
@@ -571,7 +579,8 @@ button { font: inherit; color: inherit; }
     inset: 0;
     z-index: 200;
     display: flex;
-    align-items: center;
+    /* From the top, not centred, so the panel's top stays put as a tab changes its height */
+    align-items: flex-start;
     justify-content: center;
     padding: calc(var(--site-nav-height, 48px) + 16px) 16px 16px;
     background: rgba(0, 0, 0, 0.7);
@@ -603,16 +612,116 @@ button { font: inherit; color: inherit; }
 .info-summary { margin: 14px 0 12px; font-size: 16px; line-height: 1.5; color: #e6edf3; }
 .info-description { margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
 .info-section { margin: 16px 0; }
-.info-instructions {
-    padding: 10px 12px;
-    border-radius: 6px;
+/* --- How to Play: what to aim for, the controls as a table, and notes ------- */
+
+.how-intro { margin-bottom: 14px; font-size: 16px; line-height: 1.5; color: #e6edf3; }
+.how-note { margin-top: 10px; font-size: 14px; line-height: 1.6; }
+.how-controls { width: 100%; border-collapse: collapse; font-size: 14px; }
+.how-controls thead th {
+    padding: 0 8px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+    color: var(--site-text-muted, #8b949e);
+}
+.how-controls tbody tr { border-top: 1px solid #30363d; }
+.how-controls tbody th, .how-controls tbody td { padding: 8px; text-align: left; vertical-align: middle; }
+.how-controls tbody th { width: 34%; font-weight: 600; color: #e6edf3; }
+.how-action-note { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; line-height: 1.4; color: var(--site-text-muted, #8b949e); }
+.how-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.how-or, .how-plus { font-size: 12px; color: var(--site-text-muted, #8b949e); }
+.how-combo { display: inline-flex; align-items: center; gap: 4px; }
+/* Keys as key caps */
+.how-keys { display: inline-flex; gap: 2px; }
+.how-keys kbd {
+    min-width: 24px;
+    padding: 1px 6px;
+    border: 1px solid #30363d;
+    border-bottom-width: 2px;
+    border-radius: 5px;
     background: #0d1117;
-    font-size: 13px;
-    white-space: pre-wrap;
+    color: #e6edf3;
+    font: 12px/1.5 var(--site-font-ui, sans-serif);
+    font-variant-emoji: text;
+    text-align: center;
+}
+/* Gestures, each with its icon */
+.how-gesture {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px 2px 6px;
+    border-radius: 999px;
+    background: rgba(88, 166, 255, 0.12);
+    color: #79c0ff;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.how-gesture::before { content: ''; flex: none; width: 16px; height: 16px; background: currentColor; mask: center / 16px no-repeat; }
+.how-gesture-joystick::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='6.5'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%23000'/%3E%3C/svg%3E"); }
+.how-gesture-swipe::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 8h2.5M6 8h8.5M11.5 5l3 3-3 3'/%3E%3C/svg%3E"); }
+.how-gesture-tap::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='2.2' fill='%23000' stroke='none'/%3E%3Ccircle cx='8' cy='8' r='5.8'/%3E%3C/svg%3E"); }
+.how-gesture-double-tap::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='1.8' fill='%23000' stroke='none'/%3E%3Ccircle cx='8' cy='8' r='4.3'/%3E%3Ccircle cx='8' cy='8' r='7'/%3E%3C/svg%3E"); }
+.how-gesture-drag::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 1.5v13M1.5 8h13M6 3.5l2-2 2 2M6 12.5l2 2 2-2M3.5 6l-2 2 2 2M12.5 6l2 2-2 2'/%3E%3C/svg%3E"); }
+.how-gesture-pinch::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 2l4.5 4.5M2 2v3.5M2 2h3.5M14 14l-4.5-4.5M14 14v-3.5M14 14h-3.5'/%3E%3C/svg%3E"); }
+.how-gesture-click::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='1.5' width='9' height='13' rx='4.5'/%3E%3Cpath d='M8 1.5v5M3.5 6.5h9'/%3E%3C/svg%3E"); }
+.how-gesture-wheel::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='1.5' width='9' height='13' rx='4.5'/%3E%3Cpath d='M8 4v3' stroke-width='2.2'/%3E%3C/svg%3E"); }
+/* An on-screen button, round, as the game draws it */
+.how-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px;
+    border: 2px solid #ffd83d;
+    border-radius: 999px;
+    color: #ffd83d;
+    font-size: 11px;
+    font-weight: 700;
 }
 .info-techniques { padding-left: 18px; font-size: 14px; line-height: 1.6; }
 .info-size { margin: 16px 0; font-size: 12px; color: #6e7681; }
-.info-actions { display: flex; align-items: center; gap: 12px; }
+.info-actions { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+/* The panel's tabs, where an entry has more than one page: Description, How to Play, Highscores */
+.info-tabs { display: flex; margin-top: 16px; border-bottom: 1px solid #30363d; }
+.info-tab {
+    flex: 1;
+    margin-bottom: -1px;
+    padding: 8px 6px;
+    border: 1px solid transparent;
+    border-radius: 6px 6px 0 0;
+    background: none;
+    color: var(--site-text-muted, #8b949e);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.info-tab:hover { color: #e6edf3; }
+/* The selected tab and its page share a lighter shade than the panel, joined as a folder's tab is */
+.info-tab.is-selected { border-color: #30363d #30363d #21262d; background: #21262d; color: #e6edf3; }
+/* The page that shows sets the panel's height. Its width, and its top, stay as the tabs change */
+.info-pages {
+    display: grid;
+    padding: 0 16px 16px;
+    border: 1px solid #30363d;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    background: #21262d;
+}
+/* With no tabs, for an entry with a description alone, the page is a box of its own */
+.info-tabs[hidden] + .info-pages { margin-top: 16px; border-top: 1px solid #30363d; border-radius: 8px; }
+.info-page { min-width: 0; padding-top: 14px; }
+.info-page:not(.is-shown) { display: none; }
+/* The page's box has room of its own below its last line */
+.info-page > :last-child { margin-bottom: 0; }
+.info-page > .info-summary:first-child { margin-top: 0; }
+/* No wider than it needs, and centred in a tab wider than that */
+.info-highscores .hs-table { max-width: 300px; margin-inline: auto; padding: 10px 12px; border-radius: 6px; background: #0d1117; }
+/* Over the entry, paused behind it: over its pause menu, and under the runner's bar */
+.info-backdrop.is-over-entry { z-index: 10004; }
 .info-play {
     padding: 8px 22px;
     border-radius: 6px;
@@ -644,42 +753,84 @@ button { font: inherit; color: inherit; }
 /* Its parts are fixed one by one, so the transition can sit between the stage and the bar */
 .runner { display: contents; }
 
+/* The bar takes the nav's place, at its height, in its colours, so the page's top stays put as an entry starts */
+:root { --runner-bar-height: var(--site-nav-height, 48px); }
+
 .runner-bar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 10002;
-    height: 44px;
+    z-index: 10006;
+    height: var(--runner-bar-height);
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 8px;
-    border-bottom: 1px solid #30363d;
-    background: #161b22;
+    gap: 4px;
+    padding: 0 20px;
+    /* Below the bar, as the nav's is, so its buttons centre on whole pixels */
+    box-shadow: 0 1px 0 var(--site-nav-border);
+    background: var(--site-nav-bg);
+    color: var(--site-nav-text);
     visibility: hidden;
 }
-.runner.is-open .runner-bar { visibility: visible; }
-.runner-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: #e6edf3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.runner-bar button {
-    width: 36px;
-    height: 32px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    background: #21262d;
-    font-size: 16px;
-    cursor: pointer;
+@media (max-width: 660px) {
+    .runner-bar { padding: 0 12px; }
 }
-.runner-bar button:hover:not(:disabled) { border-color: var(--site-accent, #58a6ff); }
-/* The speaker, drawn with the nav speaker's icon */
-.runner-sound { display: flex; align-items: center; justify-content: center; color: #e6edf3; }
-.runner-sound::before { content: ''; width: 20px; height: 20px; background: currentColor; }
+.runner.is-open .runner-bar { visibility: visible; }
+/* The entry's name, in the pixel font, as the site's name is in the nav, on a layer of its own for sharp edges */
+.runner-title {
+    flex: 1;
+    min-width: 0;
+    margin-left: 8px;
+    font: var(--site-nav-pixel-font);
+    font-synthesis: none;
+    will-change: transform;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .runner-bar button:disabled { opacity: 0.4; cursor: default; }
+.runner-back::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.7' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M13 8H3.5M7.5 4L3.5 8l4 4'/%3E%3C/svg%3E") center / 18px no-repeat; }
+.runner-pause::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M5 3.5v9M11 3.5v9'/%3E%3C/svg%3E") center / 18px no-repeat; }
+/* The menu's button (⋮), where the buttons that don't fit go */
+.runner-more::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='8' cy='3' r='1.5'/%3E%3Ccircle cx='8' cy='8' r='1.5'/%3E%3Ccircle cx='8' cy='13' r='1.5'/%3E%3C/svg%3E") center / 18px no-repeat; }
+.runner-more[aria-expanded="true"] { color: var(--site-nav-text); background: var(--site-nav-active-bg); }
+/* The menu drops from the bar's end, inside the bar, so it turns with it */
+.runner-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 8px;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    padding: 4px;
+    border: 1px solid var(--site-nav-border);
+    border-radius: 8px;
+    background: var(--site-nav-bg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.runner-bar .runner-menu-item {
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    font: 14px var(--site-font-ui);
+    text-align: left;
+}
+/* The name at its full width, which the view measures: laid out, but never seen */
+.runner-title-measure {
+    position: absolute;
+    flex: none;
+    width: max-content;
+    visibility: hidden;
+    pointer-events: none;
+}
+.runner-fullscreen::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.7' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10'/%3E%3C/svg%3E") center / 18px no-repeat; }
 
 /* Laid out even while hidden, so the transition knows where an entry will play */
 .runner-frame {
     position: fixed;
-    top: 44px;
+    top: var(--runner-bar-height);
     left: 0;
     right: 0;
     bottom: 0;
@@ -692,7 +843,7 @@ button { font: inherit; color: inherit; }
 
 .pause-menu {
     position: fixed;
-    top: 44px;
+    top: var(--runner-bar-height);
     left: 0;
     right: 0;
     bottom: 0;
@@ -742,22 +893,8 @@ button { font: inherit; color: inherit; }
     .pause-key { display: none; }
 }
 
-.pause-tabs { display: flex; border-bottom: 1px solid #30363d; }
-.pause-panel .pause-tab {
-    flex: 1;
-    margin-bottom: -1px;
-    padding: 8px 6px;
-    border: 1px solid transparent;
-    border-radius: 6px 6px 0 0;
-    background: none;
-    color: var(--site-text-muted, #8b949e);
-    font-size: 14px;
-    font-weight: 600;
-}
-.pause-panel .pause-tab:hover { border-color: transparent; color: #e6edf3; }
-.pause-panel .pause-tab.is-selected { border-color: #30363d #30363d #161b22; background: #161b22; color: #e6edf3; }
 /*
- * A page scrolls if it is taller than the panel, as on a phone held sideways.
+ * The menu scrolls if it is taller than the panel, as on a phone held sideways.
  * A scrolling box clips what is drawn outside it, so the page has room inside
  * its edges for a focus outline (2px, 2px off the control). The negative
  * margin keeps the page where it was.
@@ -829,15 +966,6 @@ button { font: inherit; color: inherit; }
 .sound-control input::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--site-accent, #58a6ff); }
 .sound-control input::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: var(--site-accent, #58a6ff); }
 
-.pause-how-to pre {
-    padding: 12px 14px;
-    border-radius: 8px;
-    background: #0d1117;
-    font-size: 13px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-}
-.pause-highscores .hs-table { padding: 10px 12px; border-radius: 6px; background: #0d1117; }
 
 /* --- Highscores ----------------------------------------------------------- */
 
@@ -860,13 +988,12 @@ button { font: inherit; color: inherit; }
 .hs-row.is-empty { opacity: 0.55; }
 .hs-row.is-new { color: #ffd83d; }
 .hs-row.is-new.is-lit { color: #fff; }
-.info-section .hs-table { max-width: 300px; }
 
 /* A score that places, over the held entry: above the runner's bar and its pause menu */
 .placing-layer { display: contents; }
 .placing {
     position: fixed;
-    top: 44px;
+    top: var(--runner-bar-height);
     left: 0;
     right: 0;
     bottom: 0;
@@ -904,7 +1031,7 @@ button { font: inherit; color: inherit; }
 .resume-offer-layer { display: contents; }
 .resume-offer {
     position: fixed;
-    top: 44px;
+    top: var(--runner-bar-height);
     left: 0;
     right: 0;
     bottom: 0;
@@ -1019,6 +1146,7 @@ button { font: inherit; color: inherit; }
 html.is-runner-turned .runner-bar,
 html.is-runner-turned .runner-frame,
 html.is-runner-turned .pause-menu,
+html.is-runner-turned .info-backdrop.is-over-entry,
 html.is-runner-turned .resume-offer,
 html.is-runner-turned .placing {
     top: 0;
@@ -1031,16 +1159,19 @@ html.is-runner-turned .placing {
 html.is-runner-turned .runner-bar { left: 100vw; }
 html.is-runner-turned .runner-frame,
 html.is-runner-turned .pause-menu,
+html.is-runner-turned .info-backdrop.is-over-entry,
 html.is-runner-turned .resume-offer,
 html.is-runner-turned .placing {
-    left: calc(100vw - 44px);
-    height: calc(100vw - 44px);
+    left: calc(100vw - var(--runner-bar-height));
+    height: calc(100vw - var(--runner-bar-height));
 }
+/* Turned, it starts below the bar already, so it needs no room for it */
+html.is-runner-turned .info-backdrop.is-over-entry { padding-top: 16px; }
 /* Its top right corner is placed, where the turned screen's top right is, at the screen's bottom right */
 html.is-runner-turned .runner-sound-hint {
     top: calc(100dvh - 8px);
     right: auto;
-    left: calc(100vw - 52px);
+    left: calc(100vw - var(--runner-bar-height) - 8px);
     /* Placed so near the right edge, it would otherwise shrink to the little room left of it */
     width: max-content;
     max-width: calc(100dvh - 16px);
@@ -1051,7 +1182,7 @@ html.is-runner-turned .runner-sound-hint {
 /* Under the bar's speaker, while the sound is off only because the visit started that way */
 .runner-sound-hint {
     position: fixed;
-    top: 52px;
+    top: calc(var(--runner-bar-height) + 8px);
     right: 8px;
     z-index: 10002;
     display: flex;
@@ -1068,6 +1199,50 @@ html.is-runner-turned .runner-sound-hint {
 .runner-sound-hint button { border: none; background: none; color: inherit; cursor: pointer; }
 .runner-sound-hint-text { padding: 4px 0; font-size: 13px; text-align: left; }
 .runner-sound-hint button[aria-label] { font-size: 18px; }
+
+/* --- The Perfmon ---------------------------------------------------------- */
+
+/*
+ * Dropped from the right end of the nav, or of the runner's bar, which has
+ * the same height: over the wall, its panels, and the entry playing
+ */
+.perfmon-float {
+    position: fixed;
+    top: calc(var(--site-nav-height, 48px) + 8px);
+    right: 8px;
+    z-index: 9998;
+    width: 240px;
+}
+/* Over the entry, while the runner is open, and still under its bar */
+.runner.is-open ~ .perfmon-float { z-index: 10005; }
+.perfmon-float .mvt-perfmon {
+    /* Opaque, so what is under it never shows through its figures */
+    --mvt-perfmon-background: var(--site-nav-bg);
+    border: 1px solid var(--site-nav-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+/*
+ * It is dragged from anywhere on it, so a finger's drag moves it rather than
+ * scrolling the page. The explanation's text still scrolls
+ */
+.perfmon-float .mvt-perfmon {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+.perfmon-float.is-dragging .mvt-perfmon { cursor: grabbing; }
+.perfmon-float .mvt-perfmon-info-body { cursor: auto; touch-action: pan-y; }
+.perfmon-float .mvt-perfmon-titlebar { color: var(--site-nav-text); }
+/* Once dragged, the view places it by its left and top */
+.perfmon-float.is-moved { right: auto; }
+/* With the runner turned, it drops from the turned screen's top right, as the sound's hint does */
+html.is-runner-turned .perfmon-float {
+    top: calc(100dvh - 8px);
+    right: auto;
+    left: calc(100vw - var(--runner-bar-height) - 8px);
+    transform-origin: 0 0;
+    transform: rotate(90deg) translateX(-100%);
+}
 
 /* --- The way in and out -------------------------------------------------- */
 

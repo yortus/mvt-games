@@ -71,12 +71,28 @@ A function attribute is read on every refresh; a plain value is set once.
 
 `PerfmonView` shows how fast your game runs: frames per second, the time
 each frame takes, and how much work the views do, each with a small graph.
-Give it the metrics to show, from `createPerformanceMetrics` in
-`@mvtjs/pixi`, or `createPerformanceMeter` in `@mvtjs/utils`:
+Give it the metrics to show, from `createPerformanceMeter` in
+`@mvtjs/utils`:
 
 ```ts
-document.body.append(PerfmonView({ metrics: () => metrics }));
+document.body.append(PerfmonView({ metrics: () => meter }));
 ```
+
+Give it a `title`, and it has a title bar, with its (i) at the right end,
+for a panel that floats over your game like a small window. An `infoNote`
+adds a paragraph to the top of its explanation, such as how to move or
+close the panel in your page.
+
+A faint line in the CPU and GPU graphs marks the time each frame has. It
+follows your display, from the highest frame rate the panel has seen:
+16.7 ms at 60 FPS, 8.3 ms at 120. If your game holds itself to a lower
+rate, give that frame's time as `frameBudgetMs`.
+
+Some metrics can't always be measured honestly. For example, views that
+draw by hand don't count their reads unless they call `addReads`. List
+those in `unmeasured`, and they show as n/a rather than a false zero. Give
+a function if the list can change, such as in a page that runs one game
+and then another.
 
 It fits the space you give it. In a small box over a corner of your game,
 it's a compact panel, and in a larger one its text and graphs grow. It

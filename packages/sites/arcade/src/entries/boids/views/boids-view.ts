@@ -1,8 +1,6 @@
 import { Container, Graphics, GraphicsContext } from 'pixi.js';
-import { PerfmonView } from '#shared';
-import type { PerformanceMetrics } from '@mvtjs/pixi';
 import type { FlockModel } from '../models';
-import { PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
+import { PANEL_PADDING, SLIDER_SPACING, SLIDER_WIDTH } from './layout-constants';
 import { SliderView } from './slider-view';
 import { CheckboxView } from './checkbox-view';
 import { setRefresh } from '@mvtjs/pixi';
@@ -29,8 +27,6 @@ export interface BoidsViewBindings {
     isShowingInfluences: () => boolean;
     /** Called when the user toggles the influence-vector checkbox. */
     onShowInfluencesToggled?: (isShowing: boolean) => void;
-    /** Performance metrics to show, or undefined where there are none (e.g. rendering a thumbnail). */
-    performanceMetrics: () => PerformanceMetrics | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -183,12 +179,6 @@ export function BoidsView(bindings: BoidsViewBindings): Container {
     }
     influenceCheckbox.position.set(0, yOffset);
     controlsContainer.addChild(influenceCheckbox);
-    yOffset += PERFMON_GAP;
-
-    // Boids' hand-written views do not count their reads (`addReads`)
-    const perfmon = PerfmonView({ performanceMetrics: bindings.performanceMetrics, unmeasured: ['reads'] });
-    perfmon.position.set(0, yOffset);
-    controlsContainer.addChild(perfmon);
 
     // ---- Draw static background --------------------------------------------
 

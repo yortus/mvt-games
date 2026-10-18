@@ -132,6 +132,7 @@ loose ends are tasks 057 to 064.
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
 | 039 | [Link Previews for Each Entry](tasks/active/039-entry-link-previews.md) | low | 2026-10-18 |
+| 056 | [A Perfmon Throughout the Arcade, and a New Nav](tasks/active/056-floating-perfmon-in-the-arcade.md) | medium | 2026-10-17 |
 
 ### Backlog
 
@@ -145,7 +146,6 @@ loose ends are tasks 057 to 064.
 | 050 | [Visitor Analytics: Who Comes, and From Where](tasks/backlog/050-visitor-analytics.md) | low | 2026-10-15 |
 | 053 | [Models Name What the Player Means, Not the Controls](tasks/backlog/053-models-name-intent-not-input.md) | medium | 2026-10-16 |
 | 054 | [Smooth Window Resizes While an Entry Plays](tasks/backlog/054-smooth-window-resizes.md) | low | 2026-10-16 |
-| 056 | [A Floating Perfmon Throughout the Arcade](tasks/backlog/056-floating-perfmon-in-the-arcade.md) | medium | 2026-10-17 |
 | 057 | [Open an Arcade Entry in the Playground, From GitHub](tasks/backlog/057-open-arcade-entries-in-the-playground.md) | medium | 2026-10-17 |
 | 058 | [Playground: Swap the Views, Keep the Model](tasks/backlog/058-swap-views-keep-the-model.md) | medium | 2026-10-17 |
 | 059 | [Playground: Port a Project to an Arcade Entry](tasks/backlog/059-port-a-project-to-an-arcade-entry.md) | low | 2026-10-17 |

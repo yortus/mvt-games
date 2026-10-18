@@ -20,9 +20,10 @@ export interface AboutViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * An (i) button by the arcade's title, and the note it opens beneath it: what
- * the arcade is, a link to the docs, the keys, and a word on the classics its
- * games credit. Escape, or a press anywhere else, dismisses the note.
+ * An (i) button for the site's nav, at its right end, and the note it drops
+ * beneath it: what the arcade is, a link to the docs, the keys, and a word on
+ * the classics its games credit. Escape, or a press anywhere else, dismisses
+ * the note.
  */
 export function AboutView(bindings: AboutViewBindings): Element {
     let root: HTMLElement | undefined;
@@ -38,7 +39,6 @@ export function AboutView(bindings: AboutViewBindings): Element {
                 title="About"
                 aria-expanded={bindings.isOpen}
                 aria-controls="about-note"
-                text="i"
                 onClick={() => bindings.onAboutPressed?.()}
             />
             <div class="about-note" id="about-note" role="note" visible={bindings.isOpen}>

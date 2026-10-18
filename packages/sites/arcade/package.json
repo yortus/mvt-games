@@ -22,6 +22,7 @@
         "preview": "vite preview",
         "generate-textures": "tsx scripts/generate-textures.ts",
         "generate-thumbnails": "tsx scripts/generate-thumbnails.ts",
+        "generate-pixel-font": "tsx scripts/generate-pixel-font.ts",
         "measure-load": "tsx scripts/measure-load.ts",
         "highscores:dev": "wrangler dev -c highscores-worker/wrangler.toml --env test",
         "highscores:deploy": "wrangler deploy -c highscores-worker/wrangler.toml",

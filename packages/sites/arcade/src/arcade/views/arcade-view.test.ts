@@ -9,6 +9,89 @@ import { ArcadeView } from './arcade-view';
 import { NO_RECT } from './rect';
 
 describe('ArcadeView', () => {
+    describe('the Perfmon', () => {
+        it('opens and closes with the gauge in the nav, starting closed', () => {
+            const { model, navTools, tick, view } = setUp();
+            const gauge = navTools.querySelector<HTMLElement>('.nav-perfmon')!;
+            const panel = view.querySelector<HTMLElement>('.perfmon-float')!;
+            expect(model.isPerfmonOpen).toBe(false);
+            expect(panel.hidden).toBe(true);
+            gauge.click();
+            tick();
+            expect(model.isPerfmonOpen).toBe(true);
+            expect(panel.hidden).toBe(false);
+            expect(gauge.getAttribute('aria-pressed')).toBe('true');
+            gauge.click();
+            tick();
+            expect(panel.hidden).toBe(true);
+            destroyElement(view);
+        });
+    });
+
+    describe('the nav\'s links to the Arcade', () => {
+        it('scroll back to the top, closing a panel, rather than loading the page again', () => {
+            const home = document.createElement('a');
+            const { model, view } = setUp({ homeLinks: [home] });
+            model.openAbout();
+            const click = new MouseEvent('click', { button: 0, cancelable: true });
+            home.dispatchEvent(click);
+            expect(click.defaultPrevented).toBe(true);
+            expect(model.isAboutOpen).toBe(false);
+            destroyElement(view);
+        });
+
+        it('leave a click that opens a new tab alone', () => {
+            const home = document.createElement('a');
+            const { view } = setUp({ homeLinks: [home] });
+            const click = new MouseEvent('click', { button: 0, ctrlKey: true, cancelable: true });
+            home.dispatchEvent(click);
+            expect(click.defaultPrevented).toBe(false);
+            destroyElement(view);
+        });
+    });
+
+    describe('the info panel over an entry', () => {
+        it('pauses the entry as it opens from the bar, and resumes it as it closes', async () => {
+            const { model, tick, view } = setUp();
+            await playPaused(model);
+            model.isPaused = false;
+            tick();
+            view.querySelector<HTMLElement>('.runner-info')!.click();
+            tick();
+            expect(model.infoEntry?.id).toBe(ENTRY.id);
+            expect(model.isPaused).toBe(true);
+            view.querySelector<HTMLElement>('.info-close')!.click();
+            tick();
+            expect(model.infoEntry).toBeUndefined();
+            expect(model.isPaused).toBe(false);
+            destroyElement(view);
+        });
+
+        it('leaves an entry the visitor paused paused as it closes', async () => {
+            const { model, tick, view } = setUp();
+            await playPaused(model);
+            tick();
+            view.querySelector<HTMLElement>('.runner-info')!.click();
+            tick();
+            view.querySelector<HTMLElement>('.info-play')!.click();
+            tick();
+            expect(model.infoEntry).toBeUndefined();
+            expect(model.isPaused).toBe(true);
+            destroyElement(view);
+        });
+    });
+
+    describe('the note about the Arcade', () => {
+        it('opens from the (i) in the nav', () => {
+            const { model, navTools, tick, view } = setUp();
+            navTools.querySelector<HTMLElement>('.about-button')!.click();
+            tick();
+            expect(model.isAboutOpen).toBe(true);
+            expect(navTools.querySelector<HTMLElement>('.about-note')!.hidden).toBe(false);
+            destroyElement(view);
+        });
+    });
+
     describe('the sound', () => {
         it('mutes all the sound with the nav\'s speaker, and unmutes it with each sound at the level it had', () => {
             const { model, navTools, tick, view } = setUp();
@@ -105,7 +188,7 @@ const ENTRY: ArcadeEntry = {
     load: () => Promise.resolve(STARTER),
 };
 
-function setUp(): { model: ArcadeModel; navTools: HTMLElement; view: Element; tick: () => void } {
+function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: ArcadeModel; navTools: HTMLElement; view: Element; tick: () => void } {
     const model = createArcadeModel({
         entries: [ENTRY],
         factsFor: () => undefined,
@@ -129,6 +212,9 @@ function setUp(): { model: ArcadeModel; navTools: HTMLElement; view: Element; ti
         isTurned: () => false,
         entryHref: (entry) => `/arcade/${entry.id}/`,
         docsHref: '/docs/',
+        performance: () => undefined,
+        unmeasuredMetrics: () => [],
+        homeLinks: options.homeLinks,
     });
     document.body.replaceChildren(view, navTools);
     const tick = (): void => {

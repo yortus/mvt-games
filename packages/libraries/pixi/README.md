@@ -71,15 +71,28 @@ A function attribute is read on every refresh; a plain value is set once.
 
 ## Measuring performance
 
-`createPerformanceMetrics({ renderer: app.renderer, ticker: app.ticker })`
-measures a Pixi application as it runs: frames per second, the time each
-frame takes on the CPU and the GPU, and how much work the views do. It
-hooks into the ticker and the renderer, so there's nothing else to call.
-Show the numbers with `@mvtjs/html`'s `PerfmonView`, or draw them yourself.
+`createPerformanceMeter`, from `@mvtjs/utils`, measures your frames as your
+game runs: frames per second, the time each frame takes on the CPU and the
+GPU, and how much work the views do. It needs to know when each frame starts
+and ends. For an app that runs on Pixi's own ticker, four lines tell it:
 
-If you drive the frames yourself instead of with Pixi's ticker, use
-`createPerformanceMeter` from `@mvtjs/utils`, and give it a GPU timer from
-`createGpuTimer({ renderer })`.
+```ts
+import { UPDATE_PRIORITY } from 'pixi.js';
+import { createGpuTimer } from '@mvtjs/pixi';
+import { createPerformanceMeter } from '@mvtjs/utils';
+
+const gpuTimer = createGpuTimer({ renderer: app.renderer });
+const meter = createPerformanceMeter({ takeGpuMs: gpuTimer?.takeMedianMs });
+// The frame starts before any other ticker listener, and ends once Pixi has drawn it
+app.ticker.add(meter.startFrame, undefined, UPDATE_PRIORITY.INTERACTION + 1);
+app.renderer.runners.postrender.add({ postrender: meter.endFrame });
+```
+
+`createGpuTimer` times each render on the GPU. It returns `undefined` where
+the browser can't do that, and the GPU's time then shows as n/a. If you
+drive the frames yourself, call `meter.startFrame()` and `meter.endFrame()`
+around each one instead. Show the numbers with `@mvtjs/html`'s
+`PerfmonView`, or draw them yourself.
 
 ## Keep one copy
 

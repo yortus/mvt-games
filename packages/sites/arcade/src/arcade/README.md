@@ -63,8 +63,9 @@ Which state belongs to the model, and which to the views?
   from the model (`writeUrl`), and reads them back on load. An entry's path
   is the Arcade's with the entry's id added (`arcade/crumb-chase/`). Going
   into an entry adds a history step, so Back returns to the wall, and so does
-  opening an info panel (`writePanelStep`), so Back closes it, as a phone's
-  back button is expected to. The model also holds the visitor's sound
+  opening an info panel on the wall (`writePanelStep`), so Back closes it, as
+  a phone's back button is expected to. An entry's info panel opened over
+  the entry, from the runner's (i), adds none: Back from an entry leaves it. The model also holds the visitor's sound
   settings. These are a volume for the music and one for the effects, the
   level each had when it was turned off, and whether all sound is muted. It
   holds the visitor's favourites too, which the wall shows first, and

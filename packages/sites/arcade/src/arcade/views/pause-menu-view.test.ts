@@ -1,52 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import type { HighscoreRow } from '../../highscores';
-import { refreshView, updateView } from '@mvtjs/html';
+import { refreshView } from '@mvtjs/html';
 import { PauseMenuView } from './pause-menu-view';
 
 describe('PauseMenuView', () => {
-    it('opens on its menu, and shows how to play on its other tab', () => {
-        const { menu, state } = setUp();
-        expect(isShown(menu, '#pause-page-menu')).toBe(true);
-        expect(isShown(menu, '#pause-page-how-to-play')).toBe(false);
-        click(menu, '#pause-tab-how-to-play');
-        refreshView(menu);
-        expect(isShown(menu, '#pause-page-menu')).toBe(false);
-        expect(isShown(menu, '#pause-page-how-to-play')).toBe(true);
-        expect(menu.querySelector('.pause-how-to pre')?.textContent).toBe(state.instructions);
-        expect(menu.querySelector('#pause-tab-how-to-play')?.getAttribute('aria-selected')).toBe('true');
-    });
-
-    it('puts only the tab that shows in the tab order', () => {
-        const { menu } = setUp();
-        expect(menu.querySelector('[role="tablist"]')?.getAttribute('aria-label')).toBe('Pause menu pages');
-        expect(tabIndexOf(menu, '#pause-tab-menu')).toBe(0);
-        expect(tabIndexOf(menu, '#pause-tab-how-to-play')).toBe(-1);
-        click(menu, '#pause-tab-how-to-play');
-        refreshView(menu);
-        expect(tabIndexOf(menu, '#pause-tab-menu')).toBe(-1);
-        expect(tabIndexOf(menu, '#pause-tab-how-to-play')).toBe(0);
-    });
-
-    it('opens on its menu again, whichever tab it closed on', () => {
-        const { menu, state } = setUp();
-        click(menu, '#pause-tab-how-to-play');
-        tick(menu);
-        state.isOpen = false;
-        tick(menu);
-        state.isOpen = true;
-        tick(menu);
-        expect(isShown(menu, '#pause-page-menu')).toBe(true);
-    });
-
-    it('says so when an entry has no instructions', () => {
-        const { menu, state } = setUp();
-        state.instructions = undefined;
-        click(menu, '#pause-tab-how-to-play');
-        refreshView(menu);
-        expect(menu.querySelector('.pause-how-to pre')?.textContent).not.toBe('');
-    });
-
     it('shows each volume as a step from 0 to 10, its icon crossed out at 0', () => {
         const { menu, state } = setUp();
         const [music, effects] = [...menu.querySelectorAll('.sound-control')];
@@ -109,7 +66,7 @@ describe('PauseMenuView', () => {
         expect(visited).toEqual(['pause-music-volume', 'pause-effects-volume', 'pause-exit']);
     });
 
-    it('goes up from Resume round to Exit, skipping the tabs, so Up then Enter leaves', () => {
+    it('goes up from Resume round to Exit, so Up then Enter leaves', () => {
         const { menu } = setUp();
         focus(menu, '.pause-resume');
         press('ArrowUp');
@@ -118,13 +75,12 @@ describe('PauseMenuView', () => {
         expect(document.activeElement?.classList.contains('pause-resume')).toBe(true);
     });
 
-    it('restarts with R and leaves with X, from either tab, once for a key held down', () => {
+    it('restarts with R and leaves with X, wherever the focus is, once for a key held down', () => {
         const { menu, reports } = setUp();
         press('r');
         press('r', { repeat: true });
         expect(reports.restarts).toBe(1);
-        click(menu, '#pause-tab-how-to-play');
-        refreshView(menu);
+        focus(menu, '#pause-music-volume');
         press('X');
         expect(reports.exits).toBe(1);
     });
@@ -134,46 +90,6 @@ describe('PauseMenuView', () => {
         state.isOpen = false;
         press('x');
         expect(reports.exits).toBe(0);
-    });
-
-    it('switches tabs with left and right, except on a slider', () => {
-        const { menu } = setUp();
-        focus(menu, '#pause-music-volume');
-        press('ArrowRight');
-        refreshView(menu);
-        expect(isShown(menu, '#pause-page-menu')).toBe(true);
-        focus(menu, '.pause-restart');
-        press('ArrowRight');
-        refreshView(menu);
-        expect(isShown(menu, '#pause-page-how-to-play')).toBe(true);
-    });
-
-    it('has a highscores tab only for a game with a table, between the menu and how to play', () => {
-        const { menu, state } = setUp();
-        expect(isShown(menu, '#pause-tab-highscores')).toBe(false);
-        state.hasHighscores = true;
-        refreshView(menu);
-        expect(isShown(menu, '#pause-tab-highscores')).toBe(true);
-        click(menu, '#pause-tab-highscores');
-        refreshView(menu);
-        expect(isShown(menu, '#pause-page-highscores')).toBe(true);
-        expect(menu.querySelector('#pause-page-highscores .hs-initials svg')?.getAttribute('aria-label')).toBe(state.rows[0].initials);
-    });
-
-    it('steps through every tab shown with left and right, round, the highscores\' among them for a game with a table', () => {
-        const { menu, state } = setUp();
-        focus(menu, '.pause-restart');
-        press('ArrowRight');
-        refreshView(menu);
-        expect(isShown(menu, '#pause-page-how-to-play')).toBe(true);
-        state.hasHighscores = true;
-        press('ArrowLeft');
-        refreshView(menu);
-        expect(isShown(menu, '#pause-page-highscores')).toBe(true);
-        press('ArrowLeft');
-        press('ArrowLeft');
-        refreshView(menu);
-        expect(isShown(menu, '#pause-page-how-to-play')).toBe(true);
     });
 
     it('shows each choice the key that presses it', () => {
@@ -192,21 +108,14 @@ describe('PauseMenuView', () => {
 function setUp(initial: { isOpen?: boolean } = {}) {
     const state = {
         isOpen: initial.isOpen ?? true,
-        instructions: 'Shoot everything.' as string | undefined,
         musicVolume: 0.5,
         effectsVolume: 0.5,
-        hasHighscores: false,
-        rows: [{ initials: 'TJG', score: 4200, at: 0 }] as readonly HighscoreRow[],
     };
     const reports = { musicVolume: -1, effectsIconPresses: 0, restarts: 0, exits: 0 };
     const menu = PauseMenuView({
         isOpen: () => state.isOpen,
-        instructions: () => state.instructions,
         musicVolume: () => state.musicVolume,
         effectsVolume: () => state.effectsVolume,
-        hasHighscores: () => state.hasHighscores,
-        highscoreRows: () => state.rows,
-        highscoresStatus: () => 'ready',
         onMusicVolumeChanged: (volume) => { reports.musicVolume = volume; },
         onEffectsIconPressed: () => { reports.effectsIconPresses++; },
         onRestartPressed: () => { reports.restarts++; },
@@ -215,25 +124,6 @@ function setUp(initial: { isOpen?: boolean } = {}) {
     document.body.replaceChildren(menu);
     refreshView(menu);
     return { menu, state, reports };
-}
-
-/** Ticks the menu as the page does, updating it and then refreshing it. */
-function tick(menu: Element): void {
-    updateView(menu, 16);
-    refreshView(menu);
-}
-
-function tabIndexOf(root: Element, selector: string): number | undefined {
-    return root.querySelector<HTMLElement>(selector)?.tabIndex;
-}
-
-function isShown(root: Element, selector: string): boolean {
-    const element = root.querySelector(selector);
-    return element !== null && !element.hasAttribute('hidden');
-}
-
-function click(root: Element, selector: string): void {
-    root.querySelector<HTMLElement>(selector)?.click();
 }
 
 function focus(root: Element, selector: string): void {

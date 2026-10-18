@@ -12,7 +12,7 @@ export const entry: ArcadeEntry = {
     summary: 'Pour sand and water into a tank, then flip it: a sprite for every grain, to push the game loop.',
     tags: { kind: 'demo', genres: ['simulation'] },
     screenWidth: 480,
-    screenHeight: 838,
+    screenHeight: 722,
     thumbnail,
     // The colour of its sand
     cardColor: 'apricot',

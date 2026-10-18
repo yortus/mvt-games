@@ -41,6 +41,7 @@ const STYLES = `
     --mvt-perfmon-methodCalls: #f2cc60;
     --mvt-perfmon-methodListRebuilds: #ff7b72;
     --mvt-perfmon-rebuildNodeVisits: #ffa198;
+    --mvt-perfmon-titlebar-height: 24px;
     container-type: inline-size;
     position: relative;
     box-sizing: border-box;
@@ -97,6 +98,24 @@ const STYLES = `
     background: currentColor;
     opacity: 0.5;
 }
+.mvt-perfmon-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    height: var(--mvt-perfmon-titlebar-height);
+    margin: -6px -8px 4px;
+    padding: 0 6px 0 8px;
+    border-bottom: 1px solid color-mix(in srgb, var(--mvt-perfmon-text) 15%, transparent);
+}
+.mvt-perfmon-titlebar-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 600 12px/1 system-ui, sans-serif;
+}
 .mvt-perfmon-info-button {
     flex: none;
     box-sizing: border-box;
@@ -125,6 +144,12 @@ const STYLES = `
     background: var(--mvt-perfmon-info-background, #0d1117);
     color: var(--mvt-perfmon-text);
     font: 11px/14px system-ui, sans-serif;
+}
+/* With a title bar, the explanation opens under it, so the bar and its (i) stay in reach */
+.mvt-perfmon-has-title .mvt-perfmon-info {
+    top: var(--mvt-perfmon-titlebar-height);
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 .mvt-perfmon-info-head {
     flex: none;
@@ -183,6 +208,9 @@ const STYLES = `
     .mvt-perfmon-caption {
         font-size: 12px;
         line-height: 22px;
+    }
+    .mvt-perfmon-titlebar-title {
+        font-size: 14px;
     }
     .mvt-perfmon-info-button {
         width: 18px;

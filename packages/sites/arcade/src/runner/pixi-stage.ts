@@ -1,5 +1,5 @@
 import { Application, Container, TextureSource } from 'pixi.js';
-import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
+import { createGpuTimer, type GpuTimer, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 import type { AudioControls } from '@mvtjs/chiptune';
 import { KeyboardInputView, TouchInputView } from '#shared';
 import { type EntryInputConfig, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
@@ -28,6 +28,17 @@ export interface PixiStage {
     fit: (areaWidth: number, areaHeight: number) => void;
     /** Draws the play area of the frame now showing into a new canvas. */
     captureFrame: () => HTMLCanvasElement | undefined;
+    /**
+     * Whether each render is timed on the GPU, for `takeGpuMs`. It costs a
+     * little each frame, so it is off until it is asked for.
+     */
+    isGpuTimed: boolean;
+    /**
+     * Returns the median time on the GPU of the renders since the last call,
+     * in milliseconds. Returns undefined if none were timed: while
+     * `isGpuTimed` is off, or where the browser can't time the GPU.
+     */
+    takeGpuMs: () => number | undefined;
     /** Destroys the application, with its canvas and everything on its stage. */
     destroy: () => void;
 }
@@ -109,6 +120,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     };
 
     let starter: PixiEntryStarter | undefined;
+    let gpuTimer: GpuTimer | undefined;
+    let isGpuTimed = false;
     let area: PlayArea = { scale: 1, stageWidth: 1, stageHeight: 1, offsetX: 0, offsetY: 0 };
     let areaWidth = 0;
     let areaHeight = 0;
@@ -189,7 +202,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             const session = startPixiEntry(next, {
                 ...startOptions,
                 stage: entryContainer,
-                host: { renderer: app.renderer, ticker: app.ticker },
+                isInPage: true,
             }, findChip);
             canvas.hidden = false;
             // The session's controls are known now, and they can change the fit
@@ -226,8 +239,24 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             return frame;
         },
 
+        get isGpuTimed() {
+            return isGpuTimed;
+        },
+        set isGpuTimed(value) {
+            if (value === isGpuTimed) return;
+            isGpuTimed = value;
+            gpuTimer?.destroy();
+            gpuTimer = value ? createGpuTimer({ renderer: app.renderer }) : undefined;
+        },
+
+        takeGpuMs() {
+            return gpuTimer?.takeMedianMs();
+        },
+
         destroy() {
             canvas.removeEventListener('touchend', preventDoubleTapZoom);
+            gpuTimer?.destroy();
+            gpuTimer = undefined;
             app.destroy(true, { children: true });
         },
     };

@@ -7,5 +7,5 @@ export const PANEL_PADDING = 20;
 /** From the top of one slider to the top of the next, in pixels. */
 export const SLIDER_SPACING = 55;
 
-/** From the top of the influence checkbox to the top of the perfmon panel, in pixels. */
-export const PERFMON_GAP = 36;
+/** The influence checkbox's height, in pixels. */
+export const CHECKBOX_HEIGHT = 16;

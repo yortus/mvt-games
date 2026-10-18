@@ -46,3 +46,13 @@ htmlTest('with its explanation open', { viewport: { width: 520, height: 260 } },
     view.querySelector('button')!.click();
     return inBox(view, 520, 260);
 });
+
+htmlTest('compact, with a title', { viewport: { width: 240, height: 200 } }, () => (
+    inBox(PerfmonView({ metrics: () => history, title: 'Performance' }), 240, 200)
+));
+
+htmlTest('with a title, and its explanation open with a note', { viewport: { width: 240, height: 200 } }, () => {
+    const view = PerfmonView({ metrics: () => history, title: 'Performance', infoNote: 'Drag the title bar to move this panel.' });
+    view.querySelector('button')!.click();
+    return inBox(view, 240, 200);
+});

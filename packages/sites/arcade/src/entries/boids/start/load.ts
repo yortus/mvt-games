@@ -1,8 +1,6 @@
-import { PERFMON_HEIGHT } from '#shared';
-import { createPerformanceMetrics } from '@mvtjs/pixi';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createFlockModel } from '../models';
-import { BoidsView, PANEL_PADDING, PERFMON_GAP, SLIDER_SPACING, SLIDER_WIDTH } from '../views';
+import { BoidsView, CHECKBOX_HEIGHT, PANEL_PADDING, SLIDER_SPACING, SLIDER_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -23,10 +21,10 @@ export const load = definePixiLoader(async () => {
             layout = computeLayout(width, height);
         },
         thumbnailAdvanceMs: 2000,
+        // Its views draw by hand, and don't count their reads (`addReads`)
+        unmeasuredMetrics: ['reads'],
 
-        start({ stage, host }): EntrySession {
-            const performanceMetrics = host === undefined ? undefined : createPerformanceMetrics(host);
-
+        start({ stage }): EntrySession {
             const model = createFlockModel({
                 arenaWidth: ARENA_WIDTH,
                 arenaHeight: ARENA_HEIGHT,
@@ -53,7 +51,6 @@ export const load = definePixiLoader(async () => {
                 onTimeScaleChanged: (v) => { timeScale = v; },
                 isShowingInfluences: () => isShowingInfluences,
                 onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-                performanceMetrics: () => performanceMetrics,
             });
             stage.addChild(view);
 
@@ -75,12 +72,10 @@ export const load = definePixiLoader(async () => {
                         onTimeScaleChanged: (v) => { timeScale = v; },
                         isShowingInfluences: () => isShowingInfluences,
                         onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-                        performanceMetrics: () => performanceMetrics,
                     });
                     stage.addChild(view);
                 },
                 destroy(): void {
-                    performanceMetrics?.destroy();
                     stage.removeChild(view);
                     view.destroy({ children: true });
                 },
@@ -98,8 +93,8 @@ const ARENA_WIDTH = 100;
 const ARENA_HEIGHT = 82;
 
 const PANEL_TOTAL = SLIDER_WIDTH + PANEL_PADDING * 2;
-/** Seven sliders, the influence checkbox and the perfmon panel, with padding. */
-const CONTROLS_HEIGHT = 7 * SLIDER_SPACING + PERFMON_GAP + PERFMON_HEIGHT + PANEL_PADDING * 2;
+/** Seven sliders and the influence checkbox, with padding. */
+const CONTROLS_HEIGHT = 7 * SLIDER_SPACING + CHECKBOX_HEIGHT + PANEL_PADDING * 2;
 
 /**
  * The area the demo is designed around, before it is fitted to one: its
@@ -107,7 +102,7 @@ const CONTROLS_HEIGHT = 7 * SLIDER_SPACING + PERFMON_GAP + PERFMON_HEIGHT + PANE
  * beside it, filling it exactly.
  */
 const DESIGN_WIDTH = 960;
-const DESIGN_HEIGHT = 605;
+const DESIGN_HEIGHT = 492;
 
 const MIN_SIM_WIDTH = 300;
 const PORTRAIT_THRESHOLD = 0.67;

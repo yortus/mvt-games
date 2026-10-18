@@ -12,7 +12,7 @@ Everything the Arcade lists is an **entry**: a game or a demo. A demo shows
 a technique, or is a piece of art to watch. Each is a self-contained module under
 `packages/sites/arcade/src/entries/<id>/`, named for its id. Games and demos are
 built the same way; the difference is in their metadata, such as their
-`kind` tag and a game's instructions. To add one, you need:
+`kind` tag and how to play a game. To add one, you need:
 
 1. A directory with data, models, and views.
 2. A `start/` directory: `entry.ts`, what the Arcade's card shows,
@@ -467,13 +467,19 @@ wait for it:
 ```ts
 import type { EntryDetails } from '../../../entry-types';
 
-/** Breakout's long text, for its info panel, the pause menu and the search. The Arcade loads it after its first paint, not with the cards. */
+/** Breakout's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
         'A bat-and-ball game. ...',
         'What it shows about MVT, for the info panel. ...',
     ].join('\n\n'),
-    instructions: 'Left and Right move the paddle.',
+    howToPlay: {
+        intro: 'Break every brick to clear the wall.',
+        controls: [
+            { action: 'Move', inputs: ['left-right', 'a-d', 'joystick'] },
+            { action: 'Serve', inputs: ['space', { button: 'Serve' }] },
+        ],
+    },
 };
 ```
 
@@ -490,9 +496,18 @@ export const details: EntryDetails = {
   them would bring the views, and their renderer, into the Arcade's first
   load. In development, the Arcade checks they match the starter's.
 - In `details.ts`, the **`description`** is a paragraph or two, separated
-  by a blank line. If your entry is a game, give it **`instructions`**,
-  which the info panel and the pause menu show. If it's a demo, give it
-  **`techniques`**, the patterns it shows off.
+  by a blank line. If your entry is a game, give it **`howToPlay`**, which
+  the info panel shows on its How to Play tab, and which the runner's (i)
+  opens over the game as it plays. It has an `intro` (what to aim for), the
+  `controls`, and any `notes`. Each control is an action and the inputs
+  that do it: keys (`'arrows'`, `'space'`, or keys pressed together, such as
+  `['space', 'up']`), gestures (`'joystick'`, `'swipe'`, `'drag'`) and the
+  game's on-screen buttons (`{ button: 'Fire' }`). The panel draws them as a
+  table, with a column for the keyboard and one for touch, so give them as
+  data rather than in the text. The kinds are listed in
+  [`arcade-entry.ts`](../entry-types/arcade-entry.ts). If it's a demo, give
+  it **`techniques`**, the patterns it shows off, and a `howToPlay` if it
+  takes input.
 - **`inspiredBy`** credits the classic the entry is inspired by, if there is
   one (`{ title, maker, year }`), as the [originality rules](#originality) ask.
   The info panel shows it, and the search finds the entry by its title.
