@@ -23,7 +23,6 @@ export function HelpButtonView(bindings: HelpButtonViewBindings): Element {
             aria-label="Help"
             title="How the playground works"
             aria-expanded={bindings.isOpen}
-            text="i"
             onClick={() => bindings.onPressed?.()}
         />
     );

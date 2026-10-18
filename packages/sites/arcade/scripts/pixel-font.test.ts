@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { PIXEL_FONT_OPTIONS } from './pixel-font-options.ts';
+import { PIXEL_FONT_OPTIONS, PIXEL_FONT_PATHS } from './pixel-font-options.ts';
 import { buildPixelFont, toWoff } from './pixel-font.ts';
 
 describe('buildPixelFont', () => {
@@ -39,10 +38,12 @@ describe('buildPixelFont', () => {
         expect(glyph.pointCount).toBe(glyph.contourCount * 4);
     });
 
-    it('is the font committed, so the nav shows the glyphs as they are', () => {
-        const committed = readFileSync(join(import.meta.dirname, '..', 'src', 'shared', 'mvt-pixel.woff'));
-        // If this fails, run `npm run generate-pixel-font -w @mvtjs/arcade`
-        expect(Buffer.from(toWoff(font)).equals(committed)).toBe(true);
+    it('is the font each site has committed, so every nav shows the glyphs as they are', () => {
+        const woff = Buffer.from(toWoff(font));
+        for (const path of PIXEL_FONT_PATHS) {
+            // If this fails, run `npm run generate-pixel-font -w @mvtjs/arcade`
+            expect(woff.equals(readFileSync(path)), path).toBe(true);
+        }
     });
 });
 

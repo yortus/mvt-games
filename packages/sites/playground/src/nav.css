@@ -6,16 +6,41 @@
    Shared site navigation bar
    ========================================================================== */
 
+/*
+ * The site's pixel font: its pixel glyphs, five cells by seven, made into a
+ * web font by the Arcade's `scripts/generate-pixel-font.ts`, which writes this
+ * copy too. Its em is a capital's
+ * height, seven cells, so it is sharp at 7px, 14px or 21px, where each cell
+ * is a whole number of pixels. It has one weight: a bold made up by the
+ * browser would smear its cells.
+ */
+@font-face {
+    font-family: 'MVT Pixel';
+    src: url('./mvt-pixel.woff') format('woff');
+    font-display: block;
+}
+
 :root {
     --site-bg: #0d1117;
-    --site-nav-bg: #161b22;
-    --site-nav-border: #30363d;
     --site-text: #c9d1d9;
     --site-text-muted: #8b949e;
     --site-accent: #58a6ff;
     --site-accent-hover: #79c0ff;
     --site-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     --site-nav-height: 48px;
+    /* The site's name, in the pixel font, at two pixels to a cell */
+    --site-nav-pixel-font: 14px 'MVT Pixel', ui-monospace, monospace;
+
+    /*
+     * The nav's colour scheme, kept apart from the page's, so a scheme can be
+     * tried by changing these alone. This one: yellow on a very dark blue.
+     */
+    --site-nav-bg: #0a0f2e;
+    --site-nav-border: #1e2a63;
+    --site-nav-text: #ffd83d;
+    --site-nav-text-muted: rgba(255, 216, 61, 0.68);
+    --site-nav-hover-bg: rgba(255, 216, 61, 0.08);
+    --site-nav-active-bg: rgba(255, 216, 61, 0.15);
 }
 
 /* Whatever the page scrolls into view (a focused box, a card arrowed to) stops below the nav, not under it */
@@ -32,27 +57,37 @@ html { touch-action: pan-x pan-y; }
     z-index: 9999;
     height: var(--site-nav-height);
     background: var(--site-nav-bg);
-    border-bottom: 1px solid var(--site-nav-border);
+    /* A line just below the nav, not a border inside it, so its contents centre on whole pixels */
+    box-shadow: 0 1px 0 var(--site-nav-border);
     display: flex;
     align-items: center;
     padding: 0 20px;
     gap: 8px;
     font-family: var(--site-font-ui);
     font-size: 14px;
-    color: var(--site-text);
+    color: var(--site-nav-text);
 }
 
 .site-nav-brand {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--site-text);
+    font: var(--site-nav-pixel-font);
+    font-synthesis: none;
+    color: var(--site-nav-text);
     text-decoration: none;
     margin-right: 16px;
     white-space: nowrap;
 }
 
+/*
+ * The pixel font's edges fall on whole pixels, so plain grey antialiasing
+ * draws them sharp. Text on a layer of its own gets that, rather than the
+ * coloured fringes of the subpixel antialiasing Windows uses for text
+ */
+.site-nav-brand {
+    will-change: transform;
+}
+
 .site-nav-brand:hover {
-    color: var(--site-accent);
+    color: #fff3b0;
 }
 
 .site-nav-links {
@@ -66,54 +101,53 @@ html { touch-action: pan-x pan-y; }
 .site-nav-links a {
     display: inline-flex;
     align-items: center;
+    gap: 7px;
     padding: 6px 12px;
-    color: var(--site-text-muted);
+    color: var(--site-nav-text-muted);
     text-decoration: none;
     border-radius: 6px;
     transition: color 0.15s, background 0.15s;
     font-size: 14px;
+    white-space: nowrap;
 }
 
 .site-nav-links a:hover {
-    color: var(--site-text);
-    background: rgba(255, 255, 255, 0.05);
+    color: var(--site-nav-text);
+    background: var(--site-nav-hover-bg);
 }
 
 .site-nav-links a.active {
-    color: var(--site-accent);
-    background: rgba(88, 166, 255, 0.1);
+    color: var(--site-nav-text);
+    background: var(--site-nav-active-bg);
+}
+
+/* Each link's icon, before its label: drawn in the link's colour */
+.site-nav-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* The GitHub mark is a filled shape */
+.site-nav-icon.is-filled {
+    fill: currentColor;
+    stroke: none;
 }
 
 .site-nav-spacer {
     flex: 1;
 }
 
-/* A page's own tools, beside the GitHub link, which its views fill */
+/* A page's own tools, at the right, which its views fill */
 .site-nav-tools {
     display: flex;
     align-items: center;
     gap: 4px;
-}
-
-.site-nav-github {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px;
-    color: var(--site-text-muted);
-    text-decoration: none;
-    border-radius: 6px;
-    transition: color 0.15s, background 0.15s;
-}
-
-.site-nav-github:hover {
-    color: var(--site-text);
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.site-nav-github svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
 }
 
 /* --------------------------------------------------------------------------
@@ -124,7 +158,7 @@ html { touch-action: pan-x pan-y; }
     display: none;
     background: none;
     border: none;
-    color: var(--site-text);
+    color: var(--site-nav-text);
     cursor: pointer;
     padding: 8px;
     margin-left: -8px;
@@ -138,10 +172,19 @@ html { touch-action: pan-x pan-y; }
 }
 
 /* --------------------------------------------------------------------------
-   Responsive: collapse nav links on narrow screens
+   Responsive: the icons go first, then the links fold into the hamburger.
+   Each width leaves about 20px to spare. They are wider than the Arcade's,
+   for the playground's theme menu
    -------------------------------------------------------------------------- */
 
-@media (max-width: 600px) {
+/* Too narrow for the icons as well as the labels, the labels stay */
+@media (max-width: 800px) {
+    .site-nav-icon {
+        display: none;
+    }
+}
+
+@media (max-width: 700px) {
     .site-nav {
         padding: 0 12px;
         flex-wrap: wrap;
@@ -150,6 +193,14 @@ html { touch-action: pan-x pan-y; }
     .site-nav-toggle {
         display: inline-flex;
         align-items: center;
+    }
+
+    /*
+     * Holds the top row at the closed nav's height, so the row stays put as
+     * the menu opens and the nav's height goes to `auto`
+     */
+    .site-nav-spacer {
+        min-height: var(--site-nav-height);
     }
 
     .site-nav-links {
@@ -166,15 +217,16 @@ html { touch-action: pan-x pan-y; }
         font-size: 15px;
     }
 
+    /* The menu has room for the icons again */
+    .site-nav-icon {
+        display: block;
+    }
+
     .site-nav.site-nav--open .site-nav-links {
         display: flex;
     }
 
     .site-nav.site-nav--open {
         height: auto;
-    }
-
-    .site-nav-github {
-        padding: 12px 6px;
     }
 }

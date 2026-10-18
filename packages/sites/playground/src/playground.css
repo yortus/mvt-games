@@ -122,7 +122,7 @@ button:disabled {
 .theme-picker-menu {
     font: inherit;
     font-size: 13px;
-    color: var(--site-text-muted);
+    color: var(--site-nav-text-muted);
     background: var(--site-nav-bg);
     border: 1px solid var(--site-nav-border);
     border-radius: 6px;
@@ -132,45 +132,53 @@ button:disabled {
 
 .theme-picker-menu:hover,
 .theme-picker-menu:focus-visible {
-    color: var(--site-text);
+    color: var(--site-nav-text);
 }
 
-/* The Help's (i), last in the nav: a light circle with a dark i, coloured as the GitHub icon beside it */
+/* The Help's (i), last in the nav, as the Arcade's nav has its own (i): an icon in the nav's colours */
 .site-nav-end {
     display: flex;
     align-items: center;
-    padding: 6px;
 }
 
 .help-button {
-    flex: none;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--site-nav-text-muted);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.help-button::before {
+    content: '';
     width: 20px;
     height: 20px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: var(--site-text-muted);
-    color: var(--site-nav-bg);
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 14px;
-    font-style: italic;
-    font-weight: 700;
-    line-height: 20px;
-    cursor: pointer;
-    transition: background 0.15s;
+    background: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='8' cy='8' r='6.3'/%3E%3Cpath d='M8 7.3v4'/%3E%3Ccircle cx='8' cy='4.9' r='.95' fill='%23000' stroke='none'/%3E%3C/svg%3E") center / 18px no-repeat;
 }
 
 .help-button:hover,
-.help-button:focus-visible,
+.help-button:focus-visible {
+    color: var(--site-nav-text);
+    background: var(--site-nav-hover-bg);
+}
+
 .help-button[aria-expanded="true"] {
-    background: var(--site-text);
+    color: var(--site-nav-text);
+    background: var(--site-nav-active-bg);
 }
 
 /* Shown on a narrow screen only, where the menu lies over it, unseen */
 .theme-picker-icon {
     display: none;
     padding: 6px;
-    color: var(--site-text-muted);
+    color: var(--site-nav-text-muted);
     font-size: 18px;
     line-height: 1;
 }
@@ -1161,8 +1169,8 @@ button:disabled {
 
 /* --- Narrow screens: one panel at a time, chosen by tabs --- */
 
-/* The site's nav folds its links away below 600px: the theme's menu becomes its ◐ */
-@media (max-width: 600px) {
+/* The site's nav folds its links away at 700px: the theme's menu becomes its ◐ */
+@media (max-width: 700px) {
     .theme-picker-icon {
         display: block;
     }

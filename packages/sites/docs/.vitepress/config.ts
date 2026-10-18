@@ -38,10 +38,15 @@ export default withMermaid(defineConfig({
     },
 
     themeConfig: {
-        // Cross-site nav (Arcade / Docs / Playground) is rendered by the custom
-        // Layout via the nav-bar-content-before slot so the links are plain
-        // <a> tags not intercepted by VitePress's SPA router.
+        // Cross-site nav (Arcade / Docs / Playground / GitHub) is rendered by
+        // the custom Layout via the nav-bar-content-before slot so the links
+        // are plain <a> tags not intercepted by VitePress's SPA router.
         nav: [],
+
+        // The site's name goes to the Arcade, as it does from the Arcade's
+        // and the playground's navs. A target keeps VitePress's router from
+        // taking the link as a page of the docs.
+        logoLink: { link: `${base.slice(0, -'docs/'.length)}arcade/`, target: '_self' },
 
         sidebar: [
             {
@@ -158,10 +163,6 @@ export default withMermaid(defineConfig({
                     { text: 'Skill: Documentation', link: '/ai-agents/skill-documentation' },
                 ],
             },
-        ],
-
-        socialLinks: [
-            { icon: 'github', link: 'https://github.com/yortus/mvt-games' },
         ],
 
         search: {

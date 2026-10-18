@@ -231,6 +231,23 @@ one server stopping, stops all three. It starts nothing if any of their
 ports is in use (IPv4 or IPv6). `docs:dev` and `playground:dev` are gone:
 `npm run dev -w @mvtjs/docs` runs one site alone.
 
+The nav copied to the playground and the docs, each keeping its own copy:
+
+- The playground: `src/nav.css` is the Arcade's again, under its own note,
+  with breakpoints of its own (800px and 700px) for its wider theme menu.
+  Its markup has the four links with icons; its theme menu and Help (i)
+  take the nav's colours, the (i) as the Arcade's info icon.
+- The docs restyle VitePress's own navbar in `.vitepress/theme/custom.css`,
+  keeping its search, its light and dark switch and its menu: 48px tall,
+  the same dark blue in either mode, the site's name in the pixel font
+  (linking to the Arcade, as elsewhere), the four links with icons in the
+  bar, folding into VitePress's menu below 768px. Its GitHub icon is the
+  fourth link now.
+- The pixel font: the generator writes a copy for each site, and its test
+  checks all three. Each build inlines it into its CSS (2.3 KB).
+- The site's name starts at the same point (20px in, 15px down) on all
+  three sites, so it stays put going from one to another.
+
 Still to do: regenerate the Boids and Falling Sand thumbnails
 (`npm run generate-thumbnails -- boids falling-sand`), whose play areas
 changed. Then copy the nav's design to the docs and the playground once it

@@ -3,6 +3,13 @@
    ========================================================================== */
 
 /*
+ * The playground and the docs keep copies of this nav, each its own, so they
+ * share no code with the Arcade: playground/src/nav.css, and the docs'
+ * .vitepress/theme/custom.css, which styles VitePress's own nav to match. A
+ * change here goes to them too.
+ */
+
+/*
  * The site's pixel font: its pixel glyphs, five cells by seven, made into a
  * web font by `scripts/generate-pixel-font.ts`. Its em is a capital's
  * height, seven cells, so it is sharp at 7px, 14px or 21px, where each cell

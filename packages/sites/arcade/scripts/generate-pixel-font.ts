@@ -1,6 +1,8 @@
 /**
  * Generate the site's pixel font, a web font of the site's pixel glyphs
- * (`#pixel-glyphs`), which the nav sets its text in.
+ * (`#pixel-glyphs`), which the nav sets the site's name in. Each of the
+ * three sites keeps its own copy, as it keeps its own copy of the nav: the
+ * Arcade, the playground and the docs.
  *
  * Run:  npm run generate-pixel-font
  *
@@ -9,12 +11,11 @@
  */
 
 import { writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { PIXEL_FONT_OPTIONS } from './pixel-font-options.ts';
+import { PIXEL_FONT_OPTIONS, PIXEL_FONT_PATHS } from './pixel-font-options.ts';
 import { buildPixelFont, toWoff } from './pixel-font.ts';
 
-const OUT_PATH = join(import.meta.dirname, '..', 'src', 'shared', 'mvt-pixel.woff');
-
 const woff = toWoff(buildPixelFont(PIXEL_FONT_OPTIONS));
-writeFileSync(OUT_PATH, woff);
-console.log(`Wrote ${OUT_PATH} (${woff.length} bytes)`);
+for (const path of PIXEL_FONT_PATHS) {
+    writeFileSync(path, woff);
+    console.log(`Wrote ${path} (${woff.length} bytes)`);
+}
