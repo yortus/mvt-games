@@ -131,6 +131,7 @@ loose ends are tasks 057 to 064.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
+| 067 | [Better Link Previews](tasks/active/067-better-link-previews.md) | medium | 2026-10-18 |
 
 ### Backlog
 
@@ -151,7 +152,6 @@ loose ends are tasks 057 to 064.
 | 062 | [Check the Playground on Real Phones and in Safari](tasks/backlog/062-playground-on-phones-and-safari.md) | medium | 2026-10-17 |
 | 063 | [Playground: Shortcuts While the Preview Has the Keyboard](tasks/backlog/063-playground-shortcuts-while-the-preview-has-focus.md) | low | 2026-10-17 |
 | 065 | [Audio90: Follow-Ons](tasks/backlog/065-audio90-follow-ons.md) | low | 2026-10-17 |
-| 067 | [Better Link Previews](tasks/backlog/067-better-link-previews.md) | medium | 2026-10-18 |
 
 ## Archive
 

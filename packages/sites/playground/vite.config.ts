@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { defaultClientConditions, defaultServerConditions, defineConfig } from 'vite';
+import { defaultClientConditions, defaultServerConditions, defineConfig, type Plugin } from 'vite';
 import { LIBRARIES, LIBRARY_MANIFEST, SANDBOX_RUNNER, toLibraryEntryName } from './libraries/index.ts';
 import { exportPackagesPlugin, libraryTypesPlugin } from './scripts/index.ts';
 
@@ -14,6 +14,36 @@ const PLAYGROUND_PATH = 'playground/';
 /** The dev server's port. The Arcade's dev server sends requests for the playground here. */
 const DEV_PORT = 5300;
 
+/**
+ * Adds the two tags of the page's link preview that need full addresses: the
+ * page's own, and its picture's. The picture is the Arcade's card wall, which
+ * the Arcade's build writes at this address, from the site's root
+ * (packages/sites/arcade/scripts/share-image.ts). `SITE_ORIGIN` names the
+ * site's origin, such as `https://example.com`. A build with none, for trying
+ * the site out, writes the addresses from the site's root.
+ */
+function linkPreviewPlugin(): Plugin {
+    let base = '/';
+    return {
+        name: 'link-preview',
+        configResolved(config) {
+            base = config.base;
+        },
+        transformIndexHtml() {
+            const origin = process.env.SITE_ORIGIN ?? '';
+            const siteBase = base.slice(0, -PLAYGROUND_PATH.length);
+            const tags: Record<string, string> = {
+                'og:url': origin + base,
+                'og:image': `${origin}${siteBase}arcade/share.jpg`,
+                'og:image:width': '1200',
+                'og:image:height': '630',
+                'og:image:alt': 'The MVT Arcade\'s wall of cards, one for each game and demo',
+            };
+            return Object.entries(tags).map(([property, content]) => ({ tag: 'meta', attrs: { property, content }, injectTo: 'head' }));
+        },
+    };
+}
+
 // The playground's page, and a module for each library a project may import
 // (`libraries/entries/`), each built as an entry of its own, so the sandbox's
 // import map can name it. The build's manifest says which chunk holds each.
@@ -26,7 +56,7 @@ export default defineConfig({
     base: (process.env.BASE_URL ?? '/') + PLAYGROUND_PATH,
     publicDir: false,
     // The language service's type bundles: served in development, and written as assets by the build
-    plugins: [libraryTypesPlugin(), exportPackagesPlugin()],
+    plugins: [libraryTypesPlugin(), exportPackagesPlugin(), linkPreviewPlugin()],
     // The language service's worker is built on its own, so it needs the plugin too
     worker: {
         format: 'es',

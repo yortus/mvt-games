@@ -5,21 +5,31 @@
  * entry needs a page of its own, with its own tags.
  *
  * The build writes one for each catalogue entry: a copy of the Arcade's
- * built page, with the entry's name, summary and thumbnail in its title and
- * its Open Graph tags (`og:title`, `og:description`, `og:image`). The copy is
- * the Arcade, which plays the entry its address names. The build also writes
- * `404.html`, another copy, which static hosts such as GitHub Pages serve for
- * any address they have no file for. So an address that names no entry
- * lands on the Arcade's wall.
+ * built page, with the entry's name and summary in its title and its Open
+ * Graph tags (`og:title`, `og:description`), and its share image, a picture
+ * of it as it plays, in `og:image` (see `share-image.ts`). The copy is the
+ * Arcade, which plays the entry its address names. The Arcade's own page, and
+ * the site's root, show the Arcade's share image, a picture of its card wall.
+ * The build also writes `404.html`, another copy, which static hosts such as
+ * GitHub Pages serve for any address they have no file for. So an address
+ * that names no entry lands on the Arcade's wall.
  *
  * The dev server has no copies. It serves the Arcade's page for an address
  * that names an entry.
  */
 
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import process from 'node:process';
-import { type Plugin, type Rolldown, runnerImport } from 'vite';
+import { type Plugin, runnerImport } from 'vite';
 import { ENTRIES_DIR, findEntryDirectories } from './entry-facts.ts';
+import {
+    findShareImage,
+    SHARE_IMAGE_HEIGHT,
+    SHARE_IMAGE_WIDTH,
+    SITE_SHARE_IMAGE,
+    SITE_SHARE_IMAGE_ALT,
+} from './share-image.ts';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -71,6 +81,10 @@ export function entryPagesPlugin(options: EntryPagesPluginOptions): Plugin {
                 if (page?.type !== 'asset' || typeof page.source !== 'string') {
                     this.error(`found no ${arcadePage} in the build`);
                 }
+                const root = bundle['index.html'];
+                if (root?.type !== 'asset' || typeof root.source !== 'string') {
+                    this.error('found no index.html, the site\'s root, in the build');
+                }
                 const arcadeHtml = page.source;
                 const arcadeTitle = readTitle(arcadeHtml);
                 // The site's origin, such as `https://example.com`, which Open Graph's addresses need.
@@ -78,23 +92,38 @@ export function entryPagesPlugin(options: EntryPagesPluginOptions): Plugin {
                 const origin = process.env.SITE_ORIGIN ?? '';
                 const arcadeUrl = origin + base + arcadeDir + '/';
 
-                page.source = addTags(arcadeHtml, [['og:url', arcadeUrl]]);
+                // The Arcade's share image, at the address the docs and the playground name too
+                this.emitFile({
+                    type: 'asset',
+                    fileName: SITE_SHARE_IMAGE,
+                    source: readShareImage(join(srcDir, 'arcade', basename(SITE_SHARE_IMAGE)), 'arcade'),
+                });
+                const siteImageTags = imageTags(origin + base + SITE_SHARE_IMAGE, SITE_SHARE_IMAGE_ALT);
+
+                page.source = addTags(arcadeHtml, [['og:url', arcadeUrl], ...siteImageTags]);
+                // The root sends the visitor on to the Arcade, so a link to it is one to the Arcade
+                root.source = addTags(root.source, [['og:url', arcadeUrl], ...siteImageTags]);
                 this.emitFile({
                     type: 'asset',
                     fileName: '404.html',
-                    source: addTags(arcadeHtml, [], '<meta name="robots" content="noindex" />'),
+                    source: addTags(arcadeHtml, siteImageTags, '<meta name="robots" content="noindex" />'),
                 });
 
                 const { module } = await runnerImport<{ CATALOGUE: readonly CatalogueEntry[] }>(
                     join(srcDir, ENTRIES_DIR, 'catalogue.ts'),
                     { configFile: false, root: join(srcDir, '..'), logLevel: 'error' },
                 );
+                const entryDirs = findEntryDirectories(srcDir);
                 for (const entry of module.CATALOGUE) {
                     const folder = `${arcadeDir}/${entry.id}/`;
                     const clash = Object.keys(bundle).find((name) => name.startsWith(folder));
                     if (clash !== undefined) this.error(`${entry.id}: its page would be at ${folder}, but the build writes ${clash} there`);
-                    const thumbnail = findThumbnail(bundle, entry.thumbnail);
-                    if (thumbnail === undefined) this.error(`${entry.id}: found no file for its thumbnail, ${entry.thumbnail}, in the build`);
+                    const imageFile = findShareImage(join(entryDirs[entry.id] ?? '', 'start')) ?? join(entryDirs[entry.id] ?? '', 'start', 'share.png');
+                    const image = this.getFileName(this.emitFile({
+                        type: 'asset',
+                        name: `${entry.id}-${basename(imageFile)}`,
+                        source: readShareImage(imageFile, entry.id),
+                    }));
 
                     // As the Arcade's page writes the title while the entry plays
                     const title = `${entry.name} - ${arcadeTitle}`;
@@ -104,7 +133,7 @@ export function entryPagesPlugin(options: EntryPagesPluginOptions): Plugin {
                     html = replaceContent(html, 'property="og:description"', entry.summary);
                     html = addTags(html, [
                         ['og:url', arcadeUrl + entry.id + '/'],
-                        ['og:image', origin + base + thumbnail],
+                        ...imageTags(origin + base + image, `A screen from ${entry.name}, a ${entry.tags.kind} in the ${arcadeTitle}`),
                     ]);
                     this.emitFile({ type: 'asset', fileName: folder + 'index.html', source: html });
                 }
@@ -122,18 +151,30 @@ interface CatalogueEntry {
     readonly id: string;
     readonly name: string;
     readonly summary: string;
-    /** Its thumbnail's address while the site is served from source: `/src/entries/<id>/start/thumbnail.webp`. */
-    readonly thumbnail: string;
+    readonly tags: { readonly kind: string };
 }
 
-/** The built file for the thumbnail at `sourceUrl`, from the site's base: `assets/thumbnail-1a2b3c.webp`. */
-function findThumbnail(bundle: Rolldown.OutputBundle, sourceUrl: string): string | undefined {
-    const wanted = sourceUrl.replace(/^\//, '');
-    for (const file of Object.values(bundle)) {
-        if (file.type !== 'asset') continue;
-        if (file.originalFileNames.some((name) => name.replaceAll('\\', '/').endsWith(wanted))) return file.fileName;
+/** An Open Graph tag: its property, and its content. */
+type Tag = readonly [property: string, content: string];
+
+/** The tags that show the share image at `url`. Every share image is the same size. */
+function imageTags(url: string, alt: string): Tag[] {
+    return [
+        ['og:image', url],
+        ['og:image:width', String(SHARE_IMAGE_WIDTH)],
+        ['og:image:height', String(SHARE_IMAGE_HEIGHT)],
+        ['og:image:alt', alt],
+    ];
+}
+
+/** The share image at `file`, which `generate-thumbnails` makes for `id`, an entry or `arcade`. */
+function readShareImage(file: string, id: string): Uint8Array {
+    try {
+        return readFileSync(file);
     }
-    return undefined;
+    catch {
+        throw new Error(`entry pages: ${id} has no share image at ${file}. Make one with \`npm run generate-thumbnails -- ${id}\``);
+    }
 }
 
 function readTitle(html: string): string {
@@ -143,7 +184,7 @@ function readTitle(html: string): string {
 }
 
 /** Adds Open Graph tags, and any other markup, at the end of the page's head. */
-function addTags(html: string, tags: readonly (readonly [property: string, content: string])[], more = ''): string {
+function addTags(html: string, tags: readonly Tag[], more = ''): string {
     const lines = tags.map(([property, content]) => `<meta property="${property}" content="${escapeHtml(content)}" />`);
     if (more !== '') lines.push(more);
     return replaceOnce(html, /<\/head>/, `${lines.join('\n')}\n</head>`);

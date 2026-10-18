@@ -71,6 +71,12 @@ export async function launchHeadlessChrome(): Promise<HeadlessChrome> {
         if (message.error) call?.reject(new Error(message.error.message));
         else call?.resolve(message.result);
     });
+    // An open socket doesn't keep Node running, so a call left waiting when it
+    // closes would end the script silently, partway through
+    socket.addEventListener('close', (event) => {
+        for (const call of pending.values()) call.reject(new Error(`Chrome closed the connection (${event.code} ${event.reason})`));
+        pending.clear();
+    });
 
     const browser: HeadlessChrome = {
         send(method, params = {}) {

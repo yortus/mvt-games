@@ -15,6 +15,12 @@ concurrency:
 jobs:
     build-and-deploy:
         runs-on: ubuntu-latest
+        env:
+            # Where the site is served: its base, and its origin, for the full
+            # addresses each page's link preview needs. The builds and the check
+            # of the previews read them
+            BASE_URL: /
+            SITE_ORIGIN: https://mvt-games-test.surge.sh
         steps:
             - uses: actions/checkout@v4
 
@@ -28,19 +34,14 @@ jobs:
             - run: npm run test:unit
             - run: npm run build:arcade
               env:
-                  BASE_URL: /
-                  # Where the site is served, for the full addresses each entry's link preview needs
-                  SITE_ORIGIN: https://mvt-games-test.surge.sh
                   # The highscores Worker's test environment, with tables of its own (deploy-highscores.yml)
                   VITE_HIGHSCORES_URL: https://highscores-test.yortus.workers.dev
             - run: npm run build:playground
-              env:
-                  BASE_URL: /
             # With the Arcade and the playground built: each holds one copy of @mvtjs/utils, as a second throws on load
             - run: npm run check:one-copy-of-utils
             - run: npm run build:docs
-              env:
-                  BASE_URL: /
+            # With all three built: every page has what a link preview needs
+            - run: npm run check:link-previews
 
             # The playground's sandbox loads its modules across origins, which
             # needs CORS headers. GitHub Pages sends them; Surge sends them with this file.

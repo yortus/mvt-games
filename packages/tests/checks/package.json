@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "check:home-page-budget": "node scripts/home-page-budget.ts",
+        "check:link-previews": "node scripts/link-previews.ts",
         "check:one-copy-of-utils": "node scripts/one-copy-of-utils.ts",
         "check:view-type-registration": "node scripts/view-type-registration.ts"
     },

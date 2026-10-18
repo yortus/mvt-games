@@ -334,7 +334,8 @@ packages/sites/arcade/src/entries/<id>/
 │   ├── entry.ts          `entry`: what the Arcade's card shows (name, tags, thumbnail...), `loadDetails` and `load`
 │   ├── details.ts        `details`: the long text (description, instructions, techniques), loaded after the first paint
 │   ├── load.ts           `load()`: the entry's code, imported only when it is launched
-│   └── thumbnail.webp    Its card's picture, made by `npm run generate-thumbnails`
+│   ├── thumbnail.webp    Its card's picture, made by `npm run generate-thumbnails`
+│   └── share.png         Its link preview's picture, made by the same script
 ├── data/
 │   ├── index.ts          Barrel - re-exports shared game constants
 │   └── constants.ts      Shared game constants (used by both models and views)

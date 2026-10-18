@@ -31,6 +31,12 @@ concurrency:
 jobs:
     build:
         runs-on: ubuntu-latest
+        env:
+            # Where the site is served: its base, and its origin, for the full
+            # addresses each page's link preview needs. The builds and the check
+            # of the previews read them
+            BASE_URL: /${{ github.event.repository.name }}/
+            SITE_ORIGIN: https://yortus.com
         steps:
             - uses: actions/checkout@v4
 
@@ -44,19 +50,14 @@ jobs:
             - run: npm run test:unit
             - run: npm run build:arcade
               env:
-                  BASE_URL: /${{ github.event.repository.name }}/
-                  # Where the site is served, for the full addresses each entry's link preview needs
-                  SITE_ORIGIN: https://yortus.com
                   # The Worker that keeps the Arcade's highscore tables (deploy-highscores.yml)
                   VITE_HIGHSCORES_URL: https://highscores.yortus.workers.dev
             - run: npm run build:playground
-              env:
-                  BASE_URL: /${{ github.event.repository.name }}/
             # With the Arcade and the playground built: each holds one copy of @mvtjs/utils, as a second throws on load
             - run: npm run check:one-copy-of-utils
             - run: npm run build:docs
-              env:
-                  BASE_URL: /${{ github.event.repository.name }}/
+            # With all three built: every page has what a link preview needs
+            - run: npm run check:link-previews
 
             - uses: actions/upload-pages-artifact@v3
               with:

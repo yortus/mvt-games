@@ -67,7 +67,8 @@ packages/sites/arcade/src/entries/breakout/
 │   ├── entry.ts          `entry`: what the Arcade's card shows, `loadDetails` and `load`
 │   ├── details.ts        `details`: the long text, for the info panel and the search
 │   ├── load.ts           `load()`: loads the assets, returns how to start the entry
-│   └── thumbnail.webp    Its card's picture (Step 6)
+│   ├── thumbnail.webp    Its card's picture (Step 6)
+│   └── share.png         Its link preview's picture (Step 6)
 ├── data/
 │   ├── index.ts          Barrel - re-exports shared constants
 │   └── constants.ts      Shared constants (used by both models and views)
@@ -568,7 +569,16 @@ npm run generate-thumbnails -- breakout
 ```
 
 It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
-`start/thumbnail.webp`. Run it again whenever the entry's look changes.
+two pictures. `start/thumbnail.webp` is for its card. `start/share.png` is
+for its link preview, the picture a chat app or a social network shows
+beside a shared link to the entry. It is 1200 by 630 pixels, the size those
+sites draw a large preview at, so they don't stretch it and blur it. A
+picture that would be too large as a PNG is saved as `start/share.jpg`
+instead. The build stops if an entry has neither. Run the script again
+whenever the entry's look changes.
+
+If the Arcade's dev server is running, the script uses it. Otherwise it
+starts one of its own.
 
 The entry also gets a visual test of its whole screen, at the same moment,
 without any new code. `visual-tests/canvas-entries.test.tsx` makes one for every

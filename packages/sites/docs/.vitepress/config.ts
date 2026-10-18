@@ -7,6 +7,23 @@ const repoBase = process.env.BASE_URL ?? '/';
 const base = repoBase.endsWith('/')
     ? `${repoBase}docs/`
     : `${repoBase}/docs/`;
+// The site's root, where the Arcade and the playground are too.
+const siteBase = base.slice(0, -'docs/'.length);
+
+// The site's origin, such as `https://example.com`, for the full addresses a
+// link preview needs. A build with none, for trying the site out, writes them
+// from the site's root.
+const siteOrigin = process.env.SITE_ORIGIN ?? '';
+
+// The picture a link to any page shows: the Arcade's card wall, which the
+// Arcade's build writes at this address
+// (packages/sites/arcade/scripts/share-image.ts).
+const shareImage = {
+    url: `${siteOrigin}${siteBase}arcade/share.jpg`,
+    width: 1200,
+    height: 630,
+    alt: 'The MVT Arcade\'s wall of cards, one for each game and demo',
+};
 
 export default withMermaid(defineConfig({
     title: 'MVT Games',
@@ -20,6 +37,26 @@ export default withMermaid(defineConfig({
     ],
 
     appearance: 'dark',
+
+    // What a link to a page shows when it is shared: the page's own title,
+    // summary and address, with the site's picture. Sites that build link
+    // previews read these tags, and no page sets them itself.
+    transformHead({ pageData, siteData }) {
+        // The address VitePress serves the page at: `architecture/models.html`, or `architecture/` for an index
+        const path = pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '.html');
+        return [
+            ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+            ['meta', { property: 'og:type', content: 'website' }],
+            ['meta', { property: 'og:site_name', content: siteData.title }],
+            ['meta', { property: 'og:title', content: pageData.title || siteData.title }],
+            ['meta', { property: 'og:description', content: pageData.description || siteData.description }],
+            ['meta', { property: 'og:url', content: siteOrigin + base + path }],
+            ['meta', { property: 'og:image', content: shareImage.url }],
+            ['meta', { property: 'og:image:width', content: String(shareImage.width) }],
+            ['meta', { property: 'og:image:height', content: String(shareImage.height) }],
+            ['meta', { property: 'og:image:alt', content: shareImage.alt }],
+        ];
+    },
 
     // Inline __SITE_ROOT__ so the custom Layout can build cross-site links
     // (Arcade, Playground) that bypass VitePress's SPA router.
@@ -46,7 +83,7 @@ export default withMermaid(defineConfig({
         // The site's name goes to the Arcade, as it does from the Arcade's
         // and the playground's navs. A target keeps VitePress's router from
         // taking the link as a page of the docs.
-        logoLink: { link: `${base.slice(0, -'docs/'.length)}arcade/`, target: '_self' },
+        logoLink: { link: `${siteBase}arcade/`, target: '_self' },
 
         sidebar: [
             {

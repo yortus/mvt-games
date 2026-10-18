@@ -7,7 +7,11 @@
         <script>['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault()},{passive:false})});</script>
         <title>MVT Arcade</title>
         <meta name="description" content="Games, demos and art, each built with Model-View-Ticker, an architecture for games and interactive apps." />
-        <!-- What a link to the page shows when it is shared. The build gives each entry's copy of the page its own -->
+        <!--
+            What a link to the page shows when it is shared. The build gives each
+            entry's copy of the page its own, and adds the address and the picture
+        -->
+        <meta name="twitter:card" content="summary_large_image" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="MVT Arcade" />
         <meta property="og:title" content="MVT Arcade" />

@@ -46,7 +46,7 @@ packages/sites/arcade/src/
 ├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
 ├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
 │   └── <id>/            Self-contained entry
-│       ├── start/       entry.ts (what the Arcade's card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp
+│       ├── start/       entry.ts (what the Arcade's card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp (its card's picture), share.png (its link preview's picture)
 │       ├── data/        Static data and configuration constants
 │       ├── models/      State & domain logic + domain types
 │       └── views/       Presentation (Pixi, three.js or HTML)
