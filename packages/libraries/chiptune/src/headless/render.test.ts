@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createAudio90SoundEffect, HELD_ENVELOPE } from '../audio90';
 import { encodeWav, toInt16 } from './encode-wav';
 import { createHeadlessAudio80 } from './headless-audio80';
-import { hashSamples, measurePeak, renderSoundEffect, renderTicks } from './render';
+import { findSounds, hashSamples, measurePeak, renderSoundEffect, renderTicks } from './render';
 
 describe('renderTicks', () => {
     for (const tickMs of [0, -1, NaN]) {
@@ -39,6 +39,21 @@ describe('the render tools, with stereo sound', () => {
         // The channel count, the bytes a second, the bytes a frame and the data's length
         expect([view.getUint16(22, true), view.getUint32(28, true), view.getUint16(32, true), view.getUint32(40, true)]).toEqual([2, 128000, 4, 8]);
         expect([view.getInt16(44, true), view.getInt16(46, true), view.getInt16(48, true), view.getInt16(50, true)]).toEqual([toInt16(0.5), toInt16(0.25), toInt16(-0.5), toInt16(1)]);
+    });
+});
+
+describe('findSounds', () => {
+    const effect = createAudio90SoundEffect({ oscillator: { wave: 'saw' }, envelope: HELD_ENVELOPE, note: 'C-5', lengthMs: 100 });
+
+    it('finds each exported sound, by its export name, and skips what is not a sound', () => {
+        const { songs, effects } = findSounds({ ZAP: effect, SPEED: 3, LABEL: 'zap' });
+        expect(effects).toEqual([['ZAP', effect]]);
+        expect(songs).toEqual([]);
+    });
+
+    it('finds the sounds in an exported array, each named for its place', () => {
+        const { effects } = findSounds({ FANFARES: [effect, undefined, effect], SPEEDS: [1, 2] });
+        expect(effects).toEqual([['FANFARES[0]', effect], ['FANFARES[2]', effect]]);
     });
 });
 

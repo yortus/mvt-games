@@ -153,16 +153,33 @@ export function hashSamples(samples: RenderedSamples): string {
     return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
-/** Finds a module's songs and sound effects, for either chip, with the names it exports them under. Tests and scripts use it to go through every sound. */
+/**
+ * Finds a module's songs and sound effects, for either chip, with the names it
+ * exports them under. Tests and scripts use it to go through every sound.
+ *
+ * It looks inside exported arrays too, so a set of sounds made in a loop is
+ * found. Each sound in an array is named for its place, such as
+ * `'FANFARES[2]'`. Entries that aren't sounds, such as `undefined` for a
+ * place with no sound, are skipped.
+ */
 export function findSounds(exports: Readonly<Record<string, unknown>>): ModuleSounds {
     const songs: [string, Audio80Song | Audio90Song][] = [];
     const effects: [string, Audio80SoundEffect | Audio90SoundEffect][] = [];
     for (const name of Object.keys(exports)) {
         const value = exports[name];
+        if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i++) addSound(`${name}[${i}]`, value[i]);
+        }
+        else {
+            addSound(name, value);
+        }
+    }
+    return { songs, effects };
+
+    function addSound(name: string, value: unknown): void {
         if (isAudio80Song(value) || isAudio90Song(value)) songs.push([name, value]);
         else if (isAudio80SoundEffect(value) || isAudio90SoundEffect(value)) effects.push([name, value]);
     }
-    return { songs, effects };
 }
 
 /** The peak level of rendered sound, from 0 to 1, or more if it clips. For stereo sound, it is the louder channel's. */

@@ -8,9 +8,7 @@ import * as sounds from './sounds';
 // sound makes that sound's test fail. Listen to the new sound first, with
 // `npm run audio:render`. Then update the snapshot with `vitest -u`.
 
-const whistles = Object.fromEntries(sounds.CASCADE_WHISTLES.map((whistle, i) => [`CASCADE_WHISTLES[${i}]`, whistle]));
-const crackles = Object.fromEntries(sounds.CASCADE_CRACKLES.map((crackle, i) => [`CASCADE_CRACKLES[${i}]`, crackle]));
-const { songs, effects } = findSounds({ ...sounds, ...whistles, ...crackles });
+const { songs, effects } = findSounds(sounds);
 
 describe('kwazy cactii sounds', () => {
     it('has effects to test, and no music', () => {

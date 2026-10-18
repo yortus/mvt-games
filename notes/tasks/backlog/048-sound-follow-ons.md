@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-09 |
-| Updated  | 2026-10-17 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
@@ -23,7 +23,11 @@ be done on its own, or dropped.
   helpers it did not inline. Typed arrays fixed it. The Hot Paths page has no
   line on this yet: a double that crosses a call that is not inlined is
   boxed. See 045 section 16.1.
-- **`findSounds` and arrays.** `findSounds`, in `@mvtjs/chiptune/headless`,
+- ~~**`findSounds` and arrays.**~~ Done 2026-10-18: `findSounds` looks
+  inside exported arrays, and names each sound for its place
+  (`CASCADE_WHISTLES[3]`), as Kwazy Cactii's test did by hand. Its test now
+  passes the module as it is, with its snapshots unchanged. Originally:
+  `findSounds`, in `@mvtjs/chiptune/headless`,
   finds the sound effects and songs that a module exports. It does not look
   inside an exported array. So Kwazy Cactii's audio test adds its
   `CASCADE_FANFARES` by hand. See 045 section 16.3.
@@ -137,7 +141,7 @@ use the Audio80. That work belongs to 035.
 ## Acceptance Criteria
 
 - [x] The Hot Paths page explains boxed doubles, or the item is dropped.
-- [ ] `findSounds` finds sounds inside exported arrays, or the item is
+- [x] `findSounds` finds sounds inside exported arrays, or the item is
       dropped.
 - [ ] A slide over several rows can be written once, or the item is dropped.
 - [ ] Each open design question is decided, built or dropped.
@@ -161,3 +165,5 @@ use the Audio80. That work belongs to 035.
   the owner then removed as too subtle, and built a Sound Test on the
   Audio90, which the owner then dropped. Its
   follow-ons are task 065.
+- **2026-10-18.** `findSounds` finds the sounds in exported arrays, so
+  Kwazy Cactii's test no longer adds its whistles and crackles by hand.

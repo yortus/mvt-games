@@ -162,7 +162,9 @@ to hear in a WAV file does not change the hash.
 `findSounds(exports)` returns the songs and sound effects a module exports,
 each with its export name. Pass it the module's namespace, from
 `import * as sounds from './sounds'`, and a test covers every sound the
-module adds later too.
+module adds later too. It looks inside exported arrays as well, so a set of
+sounds you make in a loop is found. Each is named for its place in the
+array, such as `FANFARES[2]`.
 
 An audio test for a game's sounds checks that each one can be heard, is
 not squashed and has not changed. It also checks that each song is at the
