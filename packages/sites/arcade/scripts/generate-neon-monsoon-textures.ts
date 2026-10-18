@@ -21,6 +21,7 @@
 import { PNG } from 'pngjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parsePixelArt } from './pixel-art';
 
 // ---------------------------------------------------------------------------
 // Output directory
@@ -217,83 +218,83 @@ function gem(): string[] {
 // ---------------------------------------------------------------------------
 
 /** The interceptor, 16 x 16, nose up: cobalt, its wings edged in cyan neon. */
-const INTERCEPTOR: string[] = [
-    '.......SS.......',
-    '......SNNS......',
-    '......SNNS......',
-    '.....SSnnSS.....',
-    '.....sSSSSs.....',
-    '.....sSSSSs.....',
-    '....ksSSSSsk....',
-    '....ksSSSSsk....',
-    '...CksSSSSskC...',
-    '..CCksSSSSskCC..',
-    '.CkkksSSSSskkkC.',
-    'CkkkksSSSSskkkkC',
-    'Ckk.ksSSSSsk.kkC',
-    'C...ksSkkSsk...C',
-    '.....sS..Ss.....',
-    '.....kk..kk.....',
-];
+const INTERCEPTOR = parsePixelArt(`
+    .......SS.......
+    ......SNNS......
+    ......SNNS......
+    .....SSnnSS.....
+    .....sSSSSs.....
+    .....sSSSSs.....
+    ....ksSSSSsk....
+    ....ksSSSSsk....
+    ...CksSSSSskC...
+    ..CCksSSSSskCC..
+    .CkkksSSSSskkkC.
+    CkkkksSSSSskkkkC
+    Ckk.ksSSSSsk.kkC
+    C...ksSkkSsk...C
+    .....sS..Ss.....
+    .....kk..kk.....
+`);
 
-const INTERCEPTOR_ICON: string[] = [
-    '...SS...',
-    '..SNNS..',
-    '..SSSS..',
-    '.CSSSSC.',
-    'CCSSSSCC',
-    'C.SSSS.C',
-    '..S..S..',
-    '........',
-];
+const INTERCEPTOR_ICON = parsePixelArt(`
+    ...SS...
+    ..SNNS..
+    ..SSSS..
+    .CSSSSC.
+    CCSSSSCC
+    C.SSSS.C
+    ..S..S..
+    ........
+`);
 
-const BOMB_ICON: string[] = [
-    '.....W..',
-    '....C...',
-    '..mmmm..',
-    '.mMMMmm.',
-    '.mMWMMm.',
-    '.mMMMMm.',
-    '..mmmm..',
-    '........',
-];
+const BOMB_ICON = parsePixelArt(`
+    .....W..
+    ....C...
+    ..mmmm..
+    .mMMMmm.
+    .mMWMMm.
+    .mMMMMm.
+    ..mmmm..
+    ........
+`);
 
 // ---------------------------------------------------------------------------
 // Enemies, nose down: off-white hulls with neon trim
 // ---------------------------------------------------------------------------
 
 /** A small dart, its leading edges in magenta, converging on a cyan cockpit. */
-const KITE: string[] = [
-    'm............m',
-    'Mm..........mM',
-    'hMm..ffff..mMh',
-    '.hMmfhhhhfmMh.',
-    '..hMhhHHhhMh..',
-    '...hMhHHhMh...',
-    '....hMCCMh....',
-    '.....hCCh.....',
-    '......Mm......',
-    '......m.......',
-];
+const KITE = parsePixelArt(`
+    m............m
+    Mm..........mM
+    hMm..ffff..mMh
+    .hMmfhhhhfmMh.
+    ..hMhhHHhhMh..
+    ...hMhHHhMh...
+    ....hMCCMh....
+    .....hCCh.....
+    ......Mm......
+    ......m.......
+`);
 
 /** A spear: a cyan spine down a pale shaft, and swept cyan tips. */
-const LANCER: string[] = [
-    '....hhhh....',
-    '...hHHHHh...',
-    '..hHcCCcHh..',
-    '.hHhhCChhHh.',
-    'hCh.hCCh.hCh',
-    'hc..hCCh..ch',
-    'c...hCCh...c',
-    '....hCCh....',
-    '....hCCh....',
-    '....fCCf....',
-    '....fhhf....',
-    '.....hh.....',
-    '.....hh.....',
-    '.....ff.....',
-    '.....CC.....',
-];
+const LANCER = parsePixelArt(`
+    ....hhhh....
+    ...hHHHHh...
+    ..hHcCCcHh..
+    .hHhhCChhHh.
+    hCh.hCCh.hCh
+    hc..hCCh..ch
+    c...hCCh...c
+    ....hCCh....
+    ....hCCh....
+    ....fCCf....
+    ....fhhf....
+    .....hh.....
+    .....hh.....
+    .....ff.....
+    .....CC.....
+`);
 
 /** A rooftop gun, seen from above: a violet ring round its turret, barrel pointing down. */
 function turret(): string[] {
@@ -433,8 +434,22 @@ function item(letter: readonly string[], frame: string, halo: string): string[] 
     return rows(g);
 }
 
-const LETTER_P = ['###.', '#..#', '###.', '#...', '#...', '#...'];
-const LETTER_B = ['###.', '#..#', '###.', '#..#', '#..#', '###.'];
+const LETTER_P = parsePixelArt(`
+    ###.
+    #..#
+    ###.
+    #...
+    #...
+    #...
+`);
+const LETTER_B = parsePixelArt(`
+    ###.
+    #..#
+    ###.
+    #..#
+    #..#
+    ###.
+`);
 
 // ---------------------------------------------------------------------------
 // Encode and write

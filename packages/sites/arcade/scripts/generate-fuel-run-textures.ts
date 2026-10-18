@@ -10,6 +10,7 @@
 import { PNG } from 'pngjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parsePixelArt } from './pixel-art';
 
 // ---------------------------------------------------------------------------
 // Output directory
@@ -42,144 +43,144 @@ const PALETTE: Record<string, Rgba> = {
 // ---------------------------------------------------------------------------
 
 /** Player ship - 16x16, facing right */
-const SHIP: string[] = [
-    '................',
-    '.........WW.....',
-    '........WCCW....',
-    '.......WCCCW....',
-    '......WCCCCW....',
-    '.G...WCCCCCWWWW.',
-    'GgG.WWCCCCWWWWWW',
-    'GgGWWWWWWWWWWWWW',
-    'GgG.WWCCCCWWWWWW',
-    '.G...WCCCCCWWWW.',
-    '......WCCCCW....',
-    '.......WCCCW....',
-    '........WCCW....',
-    '.........WW.....',
-    '................',
-    '................',
-];
+const SHIP = parsePixelArt(`
+    ................
+    .........WW.....
+    ........WCCW....
+    .......WCCCW....
+    ......WCCCCW....
+    .G...WCCCCCWWWW.
+    GgG.WWCCCCWWWWWW
+    GgGWWWWWWWWWWWWW
+    GgG.WWCCCCWWWWWW
+    .G...WCCCCCWWWW.
+    ......WCCCCW....
+    .......WCCCW....
+    ........WCCW....
+    .........WW.....
+    ................
+    ................
+`);
 
 /** Ship lives icon - 8x8 tiny ship for HUD */
-const SHIP_ICON: string[] = [
-    '....CC..',
-    '...CWWC.',
-    '.GWWWWWW',
-    '.GWWWWWW',
-    '...CWWC.',
-    '....CC..',
-    '........',
-    '........',
-];
+const SHIP_ICON = parsePixelArt(`
+    ....CC..
+    ...CWWC.
+    .GWWWWWW
+    .GWWWWWW
+    ...CWWC.
+    ....CC..
+    ........
+    ........
+`);
 
 /** Bullet - 4x4 yellow projectile */
-const BULLET: string[] = [
-    '.YY.',
-    'YYYY',
-    'YYYY',
-    '.YY.',
-];
+const BULLET = parsePixelArt(`
+    .YY.
+    YYYY
+    YYYY
+    .YY.
+`);
 
 /** Bomb - 8x8 dark round bomb */
-const BOMB: string[] = [
-    '...rr...',
-    '...RR...',
-    '..DDDD..',
-    '.DDDDDD.',
-    '.DDDDDD.',
-    '.DDDDDD.',
-    '..DDDD..',
-    '...DD...',
-];
+const BOMB = parsePixelArt(`
+    ...rr...
+    ...RR...
+    ..DDDD..
+    .DDDDDD.
+    .DDDDDD.
+    .DDDDDD.
+    ..DDDD..
+    ...DD...
+`);
 
 /** Rocket idle - 8x16, sitting on ground pointing up */
-const ROCKET_IDLE: string[] = [
-    '...WW...',
-    '..WWWW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '.WWCCWW.',
-    '.WKKKKW.',
-    'WW.KK.WW',
-    'W......W',
-];
+const ROCKET_IDLE = parsePixelArt(`
+    ...WW...
+    ..WWWW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    .WWCCWW.
+    .WKKKKW.
+    WW.KK.WW
+    W......W
+`);
 
 /** Rocket launching - 8x16, with flame */
-const ROCKET_LAUNCHING: string[] = [
-    '...WW...',
-    '..WWWW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '..WCCW..',
-    '.WWCCWW.',
-    '.WKKKKW.',
-    'WW.Gg.WW',
-    'W.GggG.W',
-];
+const ROCKET_LAUNCHING = parsePixelArt(`
+    ...WW...
+    ..WWWW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    ..WCCW..
+    .WWCCWW.
+    .WKKKKW.
+    WW.Gg.WW
+    W.GggG.W
+`);
 
 /** UFO - 16x8 flying saucer */
-const UFO: string[] = [
-    '......CCCC......',
-    '....CCCCCCCC....',
-    '...CWWWWWWWWC...',
-    '..CWWWWWWWWWWC..',
-    '.CCCCCCCCCCCCCC.',
-    'CCCCCCCCCCCCCCCC',
-    '..CC..CC..CC..CC',
-    '...C...C...C...C',
-];
+const UFO = parsePixelArt(`
+    ......CCCC......
+    ....CCCCCCCC....
+    ...CWWWWWWWWC...
+    ..CWWWWWWWWWWC..
+    .CCCCCCCCCCCCCC.
+    CCCCCCCCCCCCCCCC
+    ..CC..CC..CC..CC
+    ...C...C...C...C
+`);
 
 /** Fuel tank - 16x12 ground fuel depot */
-const FUEL_TANK: string[] = [
-    '....YYYYYYYY....',
-    '...YRKRKRKRKY...',
-    '..YRKRKRKRKRKY..',
-    '.YRKRKRKRKRKRKY.',
-    '.YRKRKRKRKRKRKY.',
-    '.YRKRKRKRKRKRKY.',
-    '.YRKRKRKRKRKRKY.',
-    '.YRKRKRKRKRKRKY.',
-    '..YRKRKRKRKRKY..',
-    '...YRKRKRKRKY...',
-    '....YYYYYYYY....',
-    '................',
-];
+const FUEL_TANK = parsePixelArt(`
+    ....YYYYYYYY....
+    ...YRKRKRKRKY...
+    ..YRKRKRKRKRKY..
+    .YRKRKRKRKRKRKY.
+    .YRKRKRKRKRKRKY.
+    .YRKRKRKRKRKRKY.
+    .YRKRKRKRKRKRKY.
+    .YRKRKRKRKRKRKY.
+    ..YRKRKRKRKRKY..
+    ...YRKRKRKRKY...
+    ....YYYYYYYY....
+    ................
+`);
 
 /** Base target - 16x16 enemy headquarters */
-const BASE: string[] = [
-    '.....RRRRRR.....',
-    '....RRRRRRRR....',
-    '...RRKKKKKRRR...',
-    '..RRKKKKKKKRR...',
-    '..RRKKWWKKRRR...',
-    '.RRKKWWWWKKRR...',
-    '.RRKKWWWWKKRRR..',
-    'RRRKKKKKKKKKRR..',
-    'RRRKKKKKKKKRRR..',
-    'RRRRRRRRRRRRRR..',
-    '.RRRRRRRRRRRR...',
-    '..RRRRRRRRRR....',
-    '...RRRRRRRR.....',
-    '....RRRRRRR.....',
-    '.....RRRRR......',
-    '................',
-];
+const BASE = parsePixelArt(`
+    .....RRRRRR.....
+    ....RRRRRRRR....
+    ...RRKKKKKRRR...
+    ..RRKKKKKKKRR...
+    ..RRKKWWKKRRR...
+    .RRKKWWWWKKRR...
+    .RRKKWWWWKKRRR..
+    RRRKKKKKKKKKRR..
+    RRRKKKKKKKKRRR..
+    RRRRRRRRRRRRRR..
+    .RRRRRRRRRRRR...
+    ..RRRRRRRRRR....
+    ...RRRRRRRR.....
+    ....RRRRRRR.....
+    .....RRRRR......
+    ................
+`);
 
 // ---------------------------------------------------------------------------
 // Encoder

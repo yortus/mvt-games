@@ -142,7 +142,6 @@ loose ends are tasks 057 to 064.
 | 040 | [Touch Controls in HTML](tasks/backlog/040-html-touch-controls.md) | low | 2026-10-05 |
 | 041 | [Docs: Questions the Arcade Raised](tasks/backlog/041-docs-from-the-arcade.md) | medium | 2026-10-05 |
 | 044 | [Tick API: One Copy, or a Loud Failure](tasks/backlog/044-one-copy-or-a-loud-failure.md) | low | 2026-10-06 |
-| 047 | [Pixel Art as Multiline Strings](tasks/backlog/047-pixel-art-as-multiline-strings.md) | low | 2026-10-09 |
 | 048 | [Sound: Follow-Ons From the Audio80](tasks/backlog/048-sound-follow-ons.md) | low | 2026-10-09 |
 | 049 | [Highscores: Follow-Ons](tasks/backlog/049-highscores-follow-ons.md) | low | 2026-10-15 |
 | 050 | [Visitor Analytics: Who Comes, and From Where](tasks/backlog/050-visitor-analytics.md) | low | 2026-10-15 |
@@ -194,6 +193,7 @@ loose ends are tasks 057 to 064.
 | 052 | [Proposal: a playground that works like a small IDE](archive/052-playground-ide.md) (the playground became a package of its own, `packages/sites/playground/`, and the website became the Arcade: a project of real TypeScript files with real imports from a fixed list of libraries, intellisense from TypeScript in a worker, each run a fresh sandboxed iframe of ES modules, projects kept in IndexedDB, share links, Export as a Vite project, a file tree with kept barrels, themes, Help, and a Performance tab on `@mvtjs/html`'s new `PerfmonView`. Loose ends are tasks 057 to 064) | 2026-10-17 |
 | 055 | [Rename `@mvtjs/audio` to `@mvtjs/chiptune`, and Publish It](archive/055-chiptune-package.md) (the package renamed and published, 0.3.0 by hand then 0.4.0 with the other four; each worklet inlined as a Blob URL in the published build; exported playground projects play sound; the chips stopped using `Math.pow`, whose last digit differs between Linux and Windows) | 2026-10-18 |
 | 064 | [HTML JSX: A Fixed `value` on a `<select>` Is Lost](archive/064-html-jsx-select-fixed-value.md) (kept until its option is added) | 2026-10-18 |
+| 047 | [Pixel Art as Multiline Strings](archive/047-pixel-art-as-multiline-strings.md) (each texture script's pictures read by `parsePixelArt`) | 2026-10-18 |
 
 ## Elsewhere
 

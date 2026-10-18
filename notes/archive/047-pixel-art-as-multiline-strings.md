@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-09 |
-| Updated  | 2026-10-09 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
@@ -40,3 +40,12 @@ Search the rest of the repo for others before starting.
 ## Progress Log
 
 - 2026-10-09: Created, after the tracker notation moved to backtick strings.
+- 2026-10-18: Done. Each of the 48 pictures in the five scripts is a
+  backtick string, read by `parsePixelArt` (`scripts/pixel-art.ts`, with a
+  test). It trims each line's indentation and skips blank lines, as the
+  tracker notation does, but has no comments: `#` is a pixel in Neon
+  Monsoon's letters. The one-line pictures (Galaxy Raiders' bullets, Neon
+  Monsoon's letters) became backtick strings too. `npm run generate-textures`
+  rewrote every PNG, and git found none changed. Left as arrays on purpose:
+  the shared pixel glyphs (`src/pixel-glyphs/`), which the site's views read
+  as rows at run time, and the Tune Tracker's five symbols, which join them.

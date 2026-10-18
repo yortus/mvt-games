@@ -10,6 +10,7 @@
 import { PNG } from 'pngjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parsePixelArt } from './pixel-art';
 
 // ---------------------------------------------------------------------------
 // Output directory
@@ -63,331 +64,331 @@ const PALETTE: Record<string, Rgba> = {
 // Miner textures (16×16, facing right)
 // ---------------------------------------------------------------------------
 
-const DIGGER_IDLE: string[] = [
-    '................',
-    '.....YYYY.......',
-    '....YYYYYYyy....',
-    '....ZZZZZZZZZ...',
-    '.....HHHH.......',
-    '.....HHKH.......',
-    '.....HHHH.......',
-    '....OOOOOO......',
-    '...HOOOOOOH.....',
-    '...HOOOOOOH.....',
-    '....oooooo......',
-    '....OOOOOO......',
-    '....OO..OO......',
-    '....OO..OO......',
-    '....kk..kk......',
-    '...kkk..kkk.....',
-];
+const DIGGER_IDLE = parsePixelArt(`
+    ................
+    .....YYYY.......
+    ....YYYYYYyy....
+    ....ZZZZZZZZZ...
+    .....HHHH.......
+    .....HHKH.......
+    .....HHHH.......
+    ....OOOOOO......
+    ...HOOOOOOH.....
+    ...HOOOOOOH.....
+    ....oooooo......
+    ....OOOOOO......
+    ....OO..OO......
+    ....OO..OO......
+    ....kk..kk......
+    ...kkk..kkk.....
+`);
 
-const DIGGER_WALK_A: string[] = [
-    '................',
-    '.....YYYY.......',
-    '....YYYYYYyy....',
-    '....ZZZZZZZZZ...',
-    '.....HHHH.......',
-    '.....HHKH.......',
-    '.....HHHH.......',
-    '....OOOOOO......',
-    '...HOOOOOOOH....',
-    '..H.OOOOOO......',
-    '....oooooo......',
-    '....OOOOOO......',
-    '...OO....OO.....',
-    '..OO......OO....',
-    '..kk.......kk...',
-    '.kkk.......kkk..',
-];
+const DIGGER_WALK_A = parsePixelArt(`
+    ................
+    .....YYYY.......
+    ....YYYYYYyy....
+    ....ZZZZZZZZZ...
+    .....HHHH.......
+    .....HHKH.......
+    .....HHHH.......
+    ....OOOOOO......
+    ...HOOOOOOOH....
+    ..H.OOOOOO......
+    ....oooooo......
+    ....OOOOOO......
+    ...OO....OO.....
+    ..OO......OO....
+    ..kk.......kk...
+    .kkk.......kkk..
+`);
 
-const DIGGER_WALK_B: string[] = [
-    '................',
-    '.....YYYY.......',
-    '....YYYYYYyy....',
-    '....ZZZZZZZZZ...',
-    '.....HHHH.......',
-    '.....HHKH.......',
-    '.....HHHH.......',
-    '....OOOOOO......',
-    '...HOOOOOOH.....',
-    '....OOOOOO.H....',
-    '....oooooo......',
-    '....OOOOOO......',
-    '.....OOOO.......',
-    '.....OO.OO......',
-    '.....kk.kk......',
-    '....kkk.kkk.....',
-];
+const DIGGER_WALK_B = parsePixelArt(`
+    ................
+    .....YYYY.......
+    ....YYYYYYyy....
+    ....ZZZZZZZZZ...
+    .....HHHH.......
+    .....HHKH.......
+    .....HHHH.......
+    ....OOOOOO......
+    ...HOOOOOOH.....
+    ....OOOOOO.H....
+    ....oooooo......
+    ....OOOOOO......
+    .....OOOO.......
+    .....OO.OO......
+    .....kk.kk......
+    ....kkk.kkk.....
+`);
 
-const DIGGER_PUMP: string[] = [
-    '................',
-    '.....YYYY.......',
-    '....YYYYYYyy....',
-    '....ZZZZZZZZZ...',
-    '.....HHHH.......',
-    '.....HHKH.......',
-    '.....HHHH.......',
-    '....OOOOOO......',
-    '....OOOOOOHHgg..',
-    '....OOOOOOHHggg.',
-    '....oooooo......',
-    '....OOOOOO......',
-    '....OO..OO......',
-    '....OO..OO......',
-    '....kk..kk......',
-    '...kkk..kkk.....',
-];
+const DIGGER_PUMP = parsePixelArt(`
+    ................
+    .....YYYY.......
+    ....YYYYYYyy....
+    ....ZZZZZZZZZ...
+    .....HHHH.......
+    .....HHKH.......
+    .....HHHH.......
+    ....OOOOOO......
+    ....OOOOOOHHgg..
+    ....OOOOOOHHggg.
+    ....oooooo......
+    ....OOOOOO......
+    ....OO..OO......
+    ....OO..OO......
+    ....kk..kk......
+    ...kkk..kkk.....
+`);
 
 /** Miner lives icon - 8×8 */
-const DIGGER_ICON: string[] = [
-    '..YYYY..',
-    '.YYYYYy.',
-    '..HHKH..',
-    '..HHHH..',
-    '.OOOOOO.',
-    '..OOOO..',
-    '..O..O..',
-    '..k..k..',
-];
+const DIGGER_ICON = parsePixelArt(`
+    ..YYYY..
+    .YYYYYy.
+    ..HHKH..
+    ..HHHH..
+    .OOOOOO.
+    ..OOOO..
+    ..O..O..
+    ..k..k..
+`);
 
 // ---------------------------------------------------------------------------
 // Mole textures (16×16, facing right)
 // ---------------------------------------------------------------------------
 
-const MOLE: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '.....bbbbb......',
-    '...bbBBBBBbb....',
-    '..bBBBBBBBBBb...',
-    '..bBBBBBBBKBBb..',
-    '.bBBBBBBBBBBBpp.',
-    '.bBBBBBBBBBBppp.',
-    '.bBBBBBBBBBBBpp.',
-    '.bBBBBBBBBBBBb..',
-    '..bBBBBBBBBBc.c.',
-    '..bBBBBBBBBcc...',
-    '...bbBBBBbb.....',
-    '...cc.....cc....',
-];
+const MOLE = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    .....bbbbb......
+    ...bbBBBBBbb....
+    ..bBBBBBBBBBb...
+    ..bBBBBBBBKBBb..
+    .bBBBBBBBBBBBpp.
+    .bBBBBBBBBBBppp.
+    .bBBBBBBBBBBBpp.
+    .bBBBBBBBBBBBb..
+    ..bBBBBBBBBBc.c.
+    ..bBBBBBBBBcc...
+    ...bbBBBBbb.....
+    ...cc.....cc....
+`);
 
 /** Second walking frame: a hop, with the body up a pixel and the claws shifted */
-const MOLE_STEP: string[] = [
-    '................',
-    '................',
-    '................',
-    '.....bbbbb......',
-    '...bbBBBBBbb....',
-    '..bBBBBBBBBBb...',
-    '..bBBBBBBBKBBb..',
-    '.bBBBBBBBBBBBpp.',
-    '.bBBBBBBBBBBppp.',
-    '.bBBBBBBBBBBBpp.',
-    '.bBBBBBBBBBBBb..',
-    '..bBBBBBBBBBcc..',
-    '..bBBBBBBBBBc.c.',
-    '...bbBBBBbb.....',
-    '....bb...bb.....',
-    '....cc...cc.....',
-];
+const MOLE_STEP = parsePixelArt(`
+    ................
+    ................
+    ................
+    .....bbbbb......
+    ...bbBBBBBbb....
+    ..bBBBBBBBBBb...
+    ..bBBBBBBBKBBb..
+    .bBBBBBBBBBBBpp.
+    .bBBBBBBBBBBppp.
+    .bBBBBBBBBBBBpp.
+    .bBBBBBBBBBBBb..
+    ..bBBBBBBBBBcc..
+    ..bBBBBBBBBBc.c.
+    ...bbBBBBbb.....
+    ....bb...bb.....
+    ....cc...cc.....
+`);
 
-const MOLE_INFLATE1: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '.....LLLLL......',
-    '...LLLLLLLLL....',
-    '..LLLLLLLLLLL...',
-    '..LLLLLLLLKLL...',
-    '.LLLLLLLLLLLLpp.',
-    '.LLLLLLLLLLLppp.',
-    '.LLLLLLLLLLLLpp.',
-    '.LLLLLLLLLLLLL..',
-    '..LLLLLLLLLLL...',
-    '..LLLLLLLLLLL...',
-    '...LLLLLLLLL....',
-    '....c.LLL.c.....',
-];
+const MOLE_INFLATE1 = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    .....LLLLL......
+    ...LLLLLLLLL....
+    ..LLLLLLLLLLL...
+    ..LLLLLLLLKLL...
+    .LLLLLLLLLLLLpp.
+    .LLLLLLLLLLLppp.
+    .LLLLLLLLLLLLpp.
+    .LLLLLLLLLLLLL..
+    ..LLLLLLLLLLL...
+    ..LLLLLLLLLLL...
+    ...LLLLLLLLL....
+    ....c.LLL.c.....
+`);
 
-const MOLE_INFLATE2: string[] = [
-    '................',
-    '................',
-    '................',
-    '.....PPPPPP.....',
-    '...PPPPPPPPPP...',
-    '..PPPPPPPPPPPP..',
-    '.PPPPPPPPPPKPPP.',
-    '.PPPPPPPPPPPPPpp',
-    'PPPPPPPPPPPPPppp',
-    'PPPPPPPPPPPPPPpp',
-    'PPPPPPPPPPPPPPP.',
-    '.PPPPPPPPPPPPPP.',
-    '.PPPPPPPPPPPPPP.',
-    '..PPPPPPPPPPPP..',
-    '...PPPPPPPPPP...',
-    '.....PPPPPP.....',
-];
+const MOLE_INFLATE2 = parsePixelArt(`
+    ................
+    ................
+    ................
+    .....PPPPPP.....
+    ...PPPPPPPPPP...
+    ..PPPPPPPPPPPP..
+    .PPPPPPPPPPKPPP.
+    .PPPPPPPPPPPPPpp
+    PPPPPPPPPPPPPppp
+    PPPPPPPPPPPPPPpp
+    PPPPPPPPPPPPPPP.
+    .PPPPPPPPPPPPPP.
+    .PPPPPPPPPPPPPP.
+    ..PPPPPPPPPPPP..
+    ...PPPPPPPPPP...
+    .....PPPPPP.....
+`);
 
-const MOLE_INFLATE3: string[] = [
-    '................',
-    '................',
-    '....QQQQQQQQ....',
-    '..QQQQQQQQQQQQ..',
-    '.QQQQQQQQQQQQQQ.',
-    '.QQQQQQQQQQKQQQ.',
-    'QQQQQQQQQQQQQQpp',
-    'QQQQQQQQQQQQQppp',
-    'QQQQQQQQQQQQQQpp',
-    'QQQQQQQQQQQQQQQQ',
-    'QQQQQQQQQQQQQQQQ',
-    'QQQQQQQQQQQQQQQQ',
-    '.QQQQQQQQQQQQQQ.',
-    '.QQQQQQQQQQQQQQ.',
-    '..QQQQQQQQQQQQ..',
-    '....QQQQQQQQ....',
-];
+const MOLE_INFLATE3 = parsePixelArt(`
+    ................
+    ................
+    ....QQQQQQQQ....
+    ..QQQQQQQQQQQQ..
+    .QQQQQQQQQQQQQQ.
+    .QQQQQQQQQQKQQQ.
+    QQQQQQQQQQQQQQpp
+    QQQQQQQQQQQQQppp
+    QQQQQQQQQQQQQQpp
+    QQQQQQQQQQQQQQQQ
+    QQQQQQQQQQQQQQQQ
+    QQQQQQQQQQQQQQQQ
+    .QQQQQQQQQQQQQQ.
+    .QQQQQQQQQQQQQQ.
+    ..QQQQQQQQQQQQ..
+    ....QQQQQQQQ....
+`);
 
-const MOLE_CRUSHED: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '..bbbbbbbbbbbp..',
-    '.bBBBBBBBBBKBpp.',
-    '.cc.........cc..',
-];
+const MOLE_CRUSHED = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ..bbbbbbbbbbbp..
+    .bBBBBBBBBBKBpp.
+    .cc.........cc..
+`);
 
 // ---------------------------------------------------------------------------
 // Salamander textures (16×16, facing right)
 // ---------------------------------------------------------------------------
 
-const SALAMANDER: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '..........dddd..',
-    '.........dDDDDd.',
-    '.........DDDWKdd',
-    '....dddddDSDDDDd',
-    '..ddDDSDDDDDDDd.',
-    '.dDDDDDDDFDDSd..',
-    'dDFDdDSDDDDDDd..',
-    'd...dDDDDDSDd...',
-    '....dDd...dDd...',
-    '...dd.....dd....',
-];
+const SALAMANDER = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ..........dddd..
+    .........dDDDDd.
+    .........DDDWKdd
+    ....dddddDSDDDDd
+    ..ddDDSDDDDDDDd.
+    .dDDDDDDDFDDSd..
+    dDFDdDSDDDDDDd..
+    d...dDDDDDSDd...
+    ....dDd...dDd...
+    ...dd.....dd....
+`);
 
 /** Second walking frame: legs swapped and the tail tip flicked up */
-const SALAMANDER_STEP: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '..........dddd..',
-    '.........dDDDDd.',
-    '.........DDDWKdd',
-    '....dddddDSDDDDd',
-    '..ddDDSDDDDDDDd.',
-    'ddDDDDDDDFDDSd..',
-    'dDFDdDSDDDDDDd..',
-    '....dDDDDDSDd...',
-    '...dDd.....dDd..',
-    '....dd.....dd...',
-];
+const SALAMANDER_STEP = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ..........dddd..
+    .........dDDDDd.
+    .........DDDWKdd
+    ....dddddDSDDDDd
+    ..ddDDSDDDDDDDd.
+    ddDDDDDDDFDDSd..
+    dDFDdDSDDDDDDd..
+    ....dDDDDDSDd...
+    ...dDd.....dDd..
+    ....dd.....dd...
+`);
 
-const SALAMANDER_INFLATE1: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '.....eeeeee.....',
-    '...eeeeeeeeee...',
-    '..eeSeeeeeWKe...',
-    '.eeeeeeFeeeeee..',
-    '.eeeeSeeeeeSeee.',
-    'deFeeeeeeeeeeee.',
-    '.eeeeeeSeeeFee..',
-    '..eeeeeeeeeee...',
-    '...eeeeeeeeee...',
-    '....dd....dd....',
-];
+const SALAMANDER_INFLATE1 = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    .....eeeeee.....
+    ...eeeeeeeeee...
+    ..eeSeeeeeWKe...
+    .eeeeeeFeeeeee..
+    .eeeeSeeeeeSeee.
+    deFeeeeeeeeeeee.
+    .eeeeeeSeeeFee..
+    ..eeeeeeeeeee...
+    ...eeeeeeeeee...
+    ....dd....dd....
+`);
 
-const SALAMANDER_INFLATE2: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '....EEEEEEE.....',
-    '..EEEEEEEEEEE...',
-    '.EESEEEEEEWKEE..',
-    '.EEEEEEFEEEEEEE.',
-    'EEEEESEEEEEESEEE',
-    'EEFEEEEEEEEEEEEE',
-    'EEEEEEEESEEEFEEE',
-    '.EEEEEEEEEEEEEE.',
-    '.EEEEEEEEEEEEEE.',
-    '..EEEEEEEEEEEE..',
-    '....EEEEEEEE....',
-];
+const SALAMANDER_INFLATE2 = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    ................
+    ....EEEEEEE.....
+    ..EEEEEEEEEEE...
+    .EESEEEEEEWKEE..
+    .EEEEEEFEEEEEEE.
+    EEEEESEEEEEESEEE
+    EEFEEEEEEEEEEEEE
+    EEEEEEEESEEEFEEE
+    .EEEEEEEEEEEEEE.
+    .EEEEEEEEEEEEEE.
+    ..EEEEEEEEEEEE..
+    ....EEEEEEEE....
+`);
 
-const SALAMANDER_INFLATE3: string[] = [
-    '................',
-    '................',
-    '................',
-    '....QQQQQQQQ....',
-    '..QQQQQQQQQQQQ..',
-    '.QQSQQQQQQQWKQQ.',
-    '.QQQQQQQFQQQQQQ.',
-    'QQQQQSQQQQQQQSQQ',
-    'QQFQQQQQQQQQQQQQ',
-    'QQQQQQQQQSQQQFQQ',
-    'QQQQQQQQQQQQQQQQ',
-    'QQQSQQQQQQQQQQQQ',
-    '.QQQQQQQQFQQQQQ.',
-    '.QQQQQQQQQQQQQQ.',
-    '..QQQQQQQQQQQQ..',
-    '....QQQQQQQQ....',
-];
+const SALAMANDER_INFLATE3 = parsePixelArt(`
+    ................
+    ................
+    ................
+    ....QQQQQQQQ....
+    ..QQQQQQQQQQQQ..
+    .QQSQQQQQQQWKQQ.
+    .QQQQQQQFQQQQQQ.
+    QQQQQSQQQQQQQSQQ
+    QQFQQQQQQQQQQQQQ
+    QQQQQQQQQSQQQFQQ
+    QQQQQQQQQQQQQQQQ
+    QQQSQQQQQQQQQQQQ
+    .QQQQQQQQFQQQQQ.
+    .QQQQQQQQQQQQQQ.
+    ..QQQQQQQQQQQQ..
+    ....QQQQQQQQ....
+`);
 
-const SALAMANDER_CRUSHED: string[] = [
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '................',
-    '...ddddddddddd..',
-    '.dDDSDDDFDDSDKd.',
-    '..dd.......dd...',
-];
+const SALAMANDER_CRUSHED = parsePixelArt(`
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ................
+    ...ddddddddddd..
+    .dDDSDDDFDDSDKd.
+    ..dd.......dd...
+`);
 
 // ---------------------------------------------------------------------------
 // Ghosting eyes (20×20, the texture's own size, so the two eyes come out
@@ -395,70 +396,70 @@ const SALAMANDER_CRUSHED: string[] = [
 // Outlined to read on any earth colour; the pupils look forward.
 // ---------------------------------------------------------------------------
 
-const GHOST_EYES: string[] = [
-    '....................',
-    '....................',
-    '....................',
-    '....................',
-    '....................',
-    '....KKKKK.KKKKK.....',
-    '...KWWWWWKWWWWWK....',
-    '...KWWWWWKWWWWWK....',
-    '...KWWWKWKWWWKWK....',
-    '...KWWKKWKWWKKWK....',
-    '...KWWKKWKWWKKWK....',
-    '...KWWKKWKWWKKWK....',
-    '...KWWWWWKWWWWWK....',
-    '....KKKKK.KKKKK.....',
-    '....................',
-    '....................',
-    '....................',
-    '....................',
-    '....................',
-    '....................',
-];
+const GHOST_EYES = parsePixelArt(`
+    ....................
+    ....................
+    ....................
+    ....................
+    ....................
+    ....KKKKK.KKKKK.....
+    ...KWWWWWKWWWWWK....
+    ...KWWWWWKWWWWWK....
+    ...KWWWKWKWWWKWK....
+    ...KWWKKWKWWKKWK....
+    ...KWWKKWKWWKKWK....
+    ...KWWKKWKWWKKWK....
+    ...KWWWWWKWWWWWK....
+    ....KKKKK.KKKKK.....
+    ....................
+    ....................
+    ....................
+    ....................
+    ....................
+    ....................
+`);
 
 // ---------------------------------------------------------------------------
 // Rock textures (16×16)
 // ---------------------------------------------------------------------------
 
-const ROCK: string[] = [
-    '................',
-    '....NNNN........',
-    '...NNNNNN.......',
-    '..NNNNNNNN......',
-    '..NNNNnNNNN.....',
-    '.NNNnNNNNNNN....',
-    '.NNNNNNNNNNNN...',
-    '.NNRNNNNNNNNN...',
-    '.NNNNNnNNNNNN...',
-    '..NNNNnNNNNN....',
-    '..NNNNNNNNN.....',
-    '...NNNNNNNN.....',
-    '....NNNNNN......',
-    '.....NNN........',
-    '................',
-    '................',
-];
+const ROCK = parsePixelArt(`
+    ................
+    ....NNNN........
+    ...NNNNNN.......
+    ..NNNNNNNN......
+    ..NNNNnNNNN.....
+    .NNNnNNNNNNN....
+    .NNNNNNNNNNNN...
+    .NNRNNNNNNNNN...
+    .NNNNNnNNNNNN...
+    ..NNNNnNNNNN....
+    ..NNNNNNNNN.....
+    ...NNNNNNNN.....
+    ....NNNNNN......
+    .....NNN........
+    ................
+    ................
+`);
 
-const ROCK_SHATTERED: string[] = [
-    '................',
-    '...NN...........',
-    '.NNN....NN......',
-    '...N.....NNN....',
-    '..........N.....',
-    '................',
-    '.NN.............',
-    'NNN....NNN......',
-    '..N.....NNNN....',
-    '........NNN.....',
-    '.....NN.........',
-    '......NNN..NN...',
-    '.........N..NNN.',
-    '..........NN....',
-    '................',
-    '................',
-];
+const ROCK_SHATTERED = parsePixelArt(`
+    ................
+    ...NN...........
+    .NNN....NN......
+    ...N.....NNN....
+    ..........N.....
+    ................
+    .NN.............
+    NNN....NNN......
+    ..N.....NNNN....
+    ........NNN.....
+    .....NN.........
+    ......NNN..NN...
+    .........N..NNN.
+    ..........NN....
+    ................
+    ................
+`);
 
 // ---------------------------------------------------------------------------
 // Encoder

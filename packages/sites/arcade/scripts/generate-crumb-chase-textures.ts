@@ -10,6 +10,7 @@
 import { PNG } from 'pngjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parsePixelArt } from './pixel-art';
 
 // ---------------------------------------------------------------------------
 // Output directory
@@ -45,64 +46,64 @@ const PALETTE: Record<string, Rgba> = {
 // ---------------------------------------------------------------------------
 
 /** Tail swished up */
-const MOUSE_TAIL_UP: string[] = [
-    '................',
-    '................',
-    '................',
-    '..........mm....',
-    '.........mPPm...',
-    'P....mmmmmPPm...',
-    '.P..mMMMMMMmMm..',
-    '..PmMMMMMMMMMKm.',
-    '...mMMMMMMMMMMMP',
-    '...mMMMMMMMMMKm.',
-    '....mMMMMMMmMm..',
-    '.....mmmmmPPm...',
-    '.........mPPm...',
-    '..........mm....',
-    '................',
-    '................',
-];
+const MOUSE_TAIL_UP = parsePixelArt(`
+    ................
+    ................
+    ................
+    ..........mm....
+    .........mPPm...
+    P....mmmmmPPm...
+    .P..mMMMMMMmMm..
+    ..PmMMMMMMMMMKm.
+    ...mMMMMMMMMMMMP
+    ...mMMMMMMMMMKm.
+    ....mMMMMMMmMm..
+    .....mmmmmPPm...
+    .........mPPm...
+    ..........mm....
+    ................
+    ................
+`);
 
 /** Tail straight behind */
-const MOUSE_TAIL_MID: string[] = [
-    '................',
-    '................',
-    '................',
-    '..........mm....',
-    '.........mPPm...',
-    '.....mmmmmPPm...',
-    '....mMMMMMMmMm..',
-    '...mMMMMMMMMMKm.',
-    'PPPmMMMMMMMMMMMP',
-    '...mMMMMMMMMMKm.',
-    '....mMMMMMMmMm..',
-    '.....mmmmmPPm...',
-    '.........mPPm...',
-    '..........mm....',
-    '................',
-    '................',
-];
+const MOUSE_TAIL_MID = parsePixelArt(`
+    ................
+    ................
+    ................
+    ..........mm....
+    .........mPPm...
+    .....mmmmmPPm...
+    ....mMMMMMMmMm..
+    ...mMMMMMMMMMKm.
+    PPPmMMMMMMMMMMMP
+    ...mMMMMMMMMMKm.
+    ....mMMMMMMmMm..
+    .....mmmmmPPm...
+    .........mPPm...
+    ..........mm....
+    ................
+    ................
+`);
 
 /** Tail swished down */
-const MOUSE_TAIL_DOWN: string[] = [
-    '................',
-    '................',
-    '................',
-    '..........mm....',
-    '.........mPPm...',
-    '.....mmmmmPPm...',
-    '....mMMMMMMmMm..',
-    '...mMMMMMMMMMKm.',
-    '...mMMMMMMMMMMMP',
-    '..PmMMMMMMMMMKm.',
-    '.P..mMMMMMMmMm..',
-    'P....mmmmmPPm...',
-    '.........mPPm...',
-    '..........mm....',
-    '................',
-    '................',
-];
+const MOUSE_TAIL_DOWN = parsePixelArt(`
+    ................
+    ................
+    ................
+    ..........mm....
+    .........mPPm...
+    .....mmmmmPPm...
+    ....mMMMMMMmMm..
+    ...mMMMMMMMMMKm.
+    ...mMMMMMMMMMMMP
+    ..PmMMMMMMMMMKm.
+    .P..mMMMMMMmMm..
+    P....mmmmmPPm...
+    .........mPPm...
+    ..........mm....
+    ................
+    ................
+`);
 
 // ---------------------------------------------------------------------------
 // Cat textures (24×24, seen from above, facing right: half again as big as a
@@ -110,60 +111,60 @@ const MOUSE_TAIL_DOWN: string[] = [
 // ---------------------------------------------------------------------------
 
 /** Cat body - white coat with grey tabby stripes and outline, tinted at runtime */
-const CAT_BODY: string[] = [
-    '........................',
-    '........................',
-    '........................',
-    '...................g....',
-    '..................gWg...',
-    '..................gWg...',
-    '......g.....gg...gWWWg..',
-    '.....gWgggggWWgggWWWWg..',
-    '....gWWWWWWWWWgWWWWWWg..',
-    '....gWsWWsWWsWWWWWWWWWg.',
-    '...gWWsWWsWWsWWWWWWWWWg.',
-    '..gWWWsWWsWWsWWWWWWWWWg.',
-    '.gWWWWsWWsWWsWWsssWWWWg.',
-    '.gWgWWsWWsWWsWWWWWWWWWg.',
-    'gWWggWsWWsWWsWWWWWWWWWg.',
-    'gWg.gWWWWWWWWWgWWWWWWg..',
-    'gWWg.gWgggggWWgggWWWWg..',
-    'gWWWggg.....gg...gWWWg..',
-    '.gWWWWg...........gWg...',
-    '..gggWg...........gWg...',
-    '.....g.............g....',
-    '........................',
-    '........................',
-    '........................',
-];
+const CAT_BODY = parsePixelArt(`
+    ........................
+    ........................
+    ........................
+    ...................g....
+    ..................gWg...
+    ..................gWg...
+    ......g.....gg...gWWWg..
+    .....gWgggggWWgggWWWWg..
+    ....gWWWWWWWWWgWWWWWWg..
+    ....gWsWWsWWsWWWWWWWWWg.
+    ...gWWsWWsWWsWWWWWWWWWg.
+    ..gWWWsWWsWWsWWWWWWWWWg.
+    .gWWWWsWWsWWsWWsssWWWWg.
+    .gWgWWsWWsWWsWWWWWWWWWg.
+    gWWggWsWWsWWsWWWWWWWWWg.
+    gWg.gWWWWWWWWWgWWWWWWg..
+    gWWg.gWgggggWWgggWWWWg..
+    gWWWggg.....gg...gWWWg..
+    .gWWWWg...........gWg...
+    ..gggWg...........gWg...
+    .....g.............g....
+    ........................
+    ........................
+    ........................
+`);
 
 /** Cat face - eyes, nose, inner ears and whiskers, drawn untinted over the body */
-const CAT_FACE: string[] = [
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '...................p....',
-    '...................p....',
-    '........................',
-    '.......................w',
-    '...................EK.w.',
-    '.....................p..',
-    '.....................p..',
-    '...................EK.w.',
-    '.......................w',
-    '........................',
-    '...................p....',
-    '...................p....',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-    '........................',
-];
+const CAT_FACE = parsePixelArt(`
+    ........................
+    ........................
+    ........................
+    ........................
+    ........................
+    ........................
+    ...................p....
+    ...................p....
+    ........................
+    .......................w
+    ...................EK.w.
+    .....................p..
+    .....................p..
+    ...................EK.w.
+    .......................w
+    ........................
+    ...................p....
+    ...................p....
+    ........................
+    ........................
+    ........................
+    ........................
+    ........................
+    ........................
+`);
 
 // ---------------------------------------------------------------------------
 // Encoder

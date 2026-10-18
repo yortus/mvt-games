@@ -10,6 +10,7 @@
 import { PNG } from 'pngjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parsePixelArt } from './pixel-art';
 
 // ---------------------------------------------------------------------------
 // Output directory
@@ -55,102 +56,120 @@ const PALETTE: Record<string, Rgba> = {
 // ---------------------------------------------------------------------------
 
 /** Carrier - 16×16 hexagonal command drone with a glowing core */
-const CARRIER: string[] = [
-    '.....x....x.....',
-    '.....m....m.....',
-    '....mmhhhhmm....',
-    '...mhhMMMMhhm...',
-    '..mhMMmmmmMMhm..',
-    '.mhMMmttttmMMhm.',
-    'XmhMmtTTTTtmMhmX',
-    'mhMMmtTXXTtmMMhm',
-    'mhMMmtTXXTtmMMhm',
-    'XmhMmtTTTTtmMhmX',
-    '.mhMMmttttmMMhm.',
-    '..mhMMmmmmMMhm..',
-    '...mhhMMMMhhm...',
-    '....mmMMMMmm....',
-    '.....m.XX.m.....',
-    '................',
-];
+const CARRIER = parsePixelArt(`
+    .....x....x.....
+    .....m....m.....
+    ....mmhhhhmm....
+    ...mhhMMMMhhm...
+    ..mhMMmmmmMMhm..
+    .mhMMmttttmMMhm.
+    XmhMmtTTTTtmMhmX
+    mhMMmtTXXTtmMMhm
+    mhMMmtTXXTtmMMhm
+    XmhMmtTTTTtmMhmX
+    .mhMMmttttmMMhm.
+    ..mhMMmmmmMMhm..
+    ...mhhMMMMhhm...
+    ....mmMMMMmm....
+    .....m.XX.m.....
+    ................
+`);
 
 /** Striker - 16×16 delta-wing interceptor, nose down */
-const STRIKER: string[] = [
-    'X..............X',
-    'vX............Xv',
-    'vVv..........vVv',
-    '.vVV...hh...VVv.',
-    '.vVVV.hMMh.VVVv.',
-    '..vVVVMTTMVVVv..',
-    '..vvVVMTTMVVvv..',
-    '...vvVMttMVvv...',
-    '....vvMMMMvv....',
-    '.....mMhhMm.....',
-    '......MhhM......',
-    '......mMMm......',
-    '.......XX.......',
-    '.......xx.......',
-    '................',
-    '................',
-];
+const STRIKER = parsePixelArt(`
+    X..............X
+    vX............Xv
+    vVv..........vVv
+    .vVV...hh...VVv.
+    .vVVV.hMMh.VVVv.
+    ..vVVVMTTMVVVv..
+    ..vvVVMTTMVVvv..
+    ...vvVMttMVvv...
+    ....vvMMMMvv....
+    .....mMhhMm.....
+    ......MhhM......
+    ......mMMm......
+    .......XX.......
+    .......xx.......
+    ................
+    ................
+`);
 
 /** Scout - 16×16 small orb with a single lens */
-const SCOUT: string[] = [
-    '................',
-    '.......X........',
-    '.......m........',
-    '.....mmmmmm.....',
-    '....mhhMMMMm....',
-    '...mhMMMMMMMm...',
-    '...mMMmxxmMMm...',
-    '...mMmxXXxmMm...',
-    '...mMmxXhxmMm...',
-    '...mMMmxxmMMm...',
-    '...mMMMMMMMMm...',
-    '....mMMMMMMm....',
-    '.....mmmmmm.....',
-    '....m......m....',
-    '...x........x...',
-    '................',
-];
+const SCOUT = parsePixelArt(`
+    ................
+    .......X........
+    .......m........
+    .....mmmmmm.....
+    ....mhhMMMMm....
+    ...mhMMMMMMMm...
+    ...mMMmxxmMMm...
+    ...mMmxXXxmMm...
+    ...mMmxXhxmMm...
+    ...mMMmxxmMMm...
+    ...mMMMMMMMMm...
+    ....mMMMMMMm....
+    .....mmmmmm.....
+    ....m......m....
+    ...x........x...
+    ................
+`);
 
 /** Player ship - 16×16, facing up */
-const SHIP: string[] = [
-    '.......WW.......',
-    '......WCCW......',
-    '......WCCW......',
-    '.....WWCCWW.....',
-    '.....WCCCW......',
-    '....WWWWWWW.....',
-    '....WWWWWWW.....',
-    '...cWWWWWWWc....',
-    '..ccWWWWWWWcc...',
-    '.cccWWWWWWWccc..',
-    'LccWWWWWWWWccL..',
-    'L.cWWWWWWWWc.L..',
-    '....GGGGGG......',
-    '....GgGGgG......',
-    '.....gggg.......',
-    '................',
-];
+const SHIP = parsePixelArt(`
+    .......WW.......
+    ......WCCW......
+    ......WCCW......
+    .....WWCCWW.....
+    .....WCCCW......
+    ....WWWWWWW.....
+    ....WWWWWWW.....
+    ...cWWWWWWWc....
+    ..ccWWWWWWWcc...
+    .cccWWWWWWWccc..
+    LccWWWWWWWWccL..
+    L.cWWWWWWWWc.L..
+    ....GGGGGG......
+    ....GgGGgG......
+    .....gggg.......
+    ................
+`);
 
 /** Player bullet - 3×8 white capsule */
-const BULLET_PLAYER: string[] = ['.W.', 'WWW', 'WWW', 'WWW', 'WWW', 'WWW', 'WWW', '.W.'];
+const BULLET_PLAYER = parsePixelArt(`
+    .W.
+    WWW
+    WWW
+    WWW
+    WWW
+    WWW
+    WWW
+    .W.
+`);
 
 /** Enemy bullet - 3×8 red capsule */
-const BULLET_ENEMY: string[] = ['.R.', 'RRR', 'RRR', 'RRR', 'RRR', 'RRR', 'RRR', '.R.'];
+const BULLET_ENEMY = parsePixelArt(`
+    .R.
+    RRR
+    RRR
+    RRR
+    RRR
+    RRR
+    RRR
+    .R.
+`);
 
 /** Ship lives icon - 8×8 tiny ship for HUD */
-const SHIP_ICON: string[] = [
-    '...CC...',
-    '..CWWC..',
-    '..CWWC..',
-    '.cWWWWc.',
-    'cWWWWWWc',
-    'LWWWWWWL',
-    '..GGGG..',
-    '...gg...',
-];
+const SHIP_ICON = parsePixelArt(`
+    ...CC...
+    ..CWWC..
+    ..CWWC..
+    .cWWWWc.
+    cWWWWWWc
+    LWWWWWWL
+    ..GGGG..
+    ...gg...
+`);
 
 // ---------------------------------------------------------------------------
 // Encoder
