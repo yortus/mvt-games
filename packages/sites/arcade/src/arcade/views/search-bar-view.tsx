@@ -27,6 +27,8 @@ export interface SearchBarViewBindings {
     /** Reported with a chip's index as the visitor removes its token. */
     readonly onChipRemoved?: (index: number) => void;
     readonly onClearPressed?: () => void;
+    /** Reported as the focus leaves the box: a click elsewhere, Tab, Escape, or `/`. */
+    readonly onLeft?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,6 +192,7 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
     function onBlur(): void {
         isFocused = false;
         highlighted = -1;
+        bindings.onLeft?.();
     }
 
     function onInput(e: Event): void {

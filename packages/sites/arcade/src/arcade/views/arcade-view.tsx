@@ -117,8 +117,10 @@ export interface ArcadeViewBindings {
  * develop. The transition and the wall's layout are this view's
  * presentation state, in view models it owns.
  *
- * Scrolled down the wall, past the head, a magnifier shows in the site's nav
- * to go back to the search, as `/` does from anywhere on the wall. A speaker
+ * A magnifier in the site's nav opens the search, in the head, as `/` does
+ * from anywhere on the wall, scrolling back up to it, or closes it while it
+ * is empty. The search shows while it is open, or while it holds something,
+ * so a narrowed wall always says why. A speaker
  * in the site's nav, and another in the runner's bar, turns all the sound
  * off, or back on at the levels it had. A gauge beside each opens the
  * Perfmon, over the wall or the entry playing. It drops at the top right,
@@ -188,13 +190,23 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     });
     const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
 
-    const head = ArcadeHeadView({ model });
+    // Presentation state: whether the visitor has opened the search box, and
+    // how many times the caret has been asked for in it. The box also shows
+    // while it holds something, so a search that narrows the wall is in view
+    let isSearchOpen = false;
+    let searchFocusRequests = 0;
+    const head = ArcadeHeadView({
+        model,
+        isSearchShown,
+        searchFocusRequests: () => searchFocusRequests,
+        // An empty box closes as it is left. One that holds something stays, so the wall says why it is narrowed
+        onSearchLeft: () => { isSearchOpen = false; },
+    });
     const navSearch = NavSearchView({
-        search: head,
-        isActive: isWallActive,
+        isOn: isSearchShown,
         shownCount: () => model.shownCount,
         totalCount: entries.length,
-        onPressed: goToSearch,
+        onPressed: toggleSearch,
     });
     // The speaker mutes all the sound, the music and the effects, so a game started next is silent too.
     // Pressed again, it unmutes, and each sound plays at the level it had. A press on a speaker that
@@ -443,9 +455,30 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         window.scrollTo({ top: 0, behavior: bindings.isMotionReduced() ? 'auto' : 'smooth' });
     }
 
+    /** Whether the search box shows: opened by the visitor, or holding a search. */
+    function isSearchShown(): boolean {
+        return isSearchOpen || model.searchText !== '' || model.activeChipCount > 0;
+    }
+
+    /**
+     * The nav's magnifier: closes the search box while it shows empty, and
+     * otherwise goes to it, opening it.
+     */
+    function toggleSearch(): void {
+        const isEmpty = model.searchText === '' && model.activeChipCount === 0;
+        if (isSearchShown() && isEmpty) {
+            isSearchOpen = false;
+            head.querySelector<HTMLInputElement>('.search-input')?.blur();
+            return;
+        }
+        goToSearch();
+    }
+
+    /** Scrolls back up to the head, opens the search box, and puts the caret in it, which opens its tags. */
     function goToSearch(): void {
+        isSearchOpen = true;
+        searchFocusRequests++;
         window.scrollTo({ top: 0, behavior: bindings.isMotionReduced() ? 'auto' : 'smooth' });
-        head.querySelector<HTMLInputElement>('.search-input')?.focus({ preventScroll: true });
     }
 
     function stopListening(): void {

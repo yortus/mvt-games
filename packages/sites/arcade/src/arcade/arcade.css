@@ -53,7 +53,7 @@ button { font: inherit; color: inherit; }
 
 /* For a visitor who has asked for less motion, nothing on the page animates its way between states */
 @media (prefers-reduced-motion: reduce) {
-    .card, .card-polaroid, .search-box, .search-tags-reveal, .chip, .nav-search, .nav-sound, .nav-perfmon, .about-button, .runner-bar button { transition: none; }
+    .card, .card-polaroid, .search-box, .search-slot, .search-tags-reveal, .chip, .nav-search, .nav-sound, .nav-perfmon, .about-button, .runner-bar button { transition: none; }
 }
 
 .arcade {
@@ -74,7 +74,8 @@ button { font: inherit; color: inherit; }
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: 12px 24px;
+    /* The search's slot keeps its own room above it, as it opens, so a shut one leaves no gap */
+    gap: 0 24px;
     /* The name's height, which the search box lines up with */
     --wordmark-height: 44px;
 }
@@ -87,7 +88,8 @@ button { font: inherit; color: inherit; }
  * stands centred over it, and the search takes the whole line
  */
 .arcade-head.is-stacked .arcade-title { margin-inline: auto; }
-.arcade-head.is-stacked .search { max-width: none; margin-left: 0; }
+.arcade-head.is-stacked .search-slot { max-width: none; margin-left: 0; }
+.arcade-head.is-stacked .search-slot.is-open { margin-top: 12px; }
 /* Beside the title, the box (40px tall) is centred on the name */
 .arcade-head:not(.is-stacked) .search { margin-top: calc((var(--wordmark-height) - 40px) / 2); }
 @media (max-width: 640px) {
@@ -117,7 +119,7 @@ button { font: inherit; color: inherit; }
     color: var(--site-nav-text);
     background: var(--site-nav-hover-bg);
 }
-.nav-perfmon.is-on, .runner-perfmon.is-on, .runner-pause.is-on, .runner-info.is-on, .about-button[aria-expanded="true"] {
+.nav-search.is-on, .nav-perfmon.is-on, .runner-perfmon.is-on, .runner-pause.is-on, .runner-info.is-on, .about-button[aria-expanded="true"] {
     color: var(--site-nav-text);
     background: var(--site-nav-active-bg);
 }
@@ -128,16 +130,7 @@ button { font: inherit; color: inherit; }
     background: currentColor;
 }
 
-/*
- * The magnifier, shown once the head is scrolled away. A dot on it marks a
- * search that narrows the wall.
- */
-.nav-search {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.15s, visibility 0.15s, color 0.15s, background 0.15s;
-}
-.nav-search.is-shown { opacity: 1; visibility: visible; }
+/* The magnifier, always there: it opens the search, lit while it shows. A dot on it marks a search that narrows the wall */
 .nav-search::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") center / 18px no-repeat; }
 .nav-search.is-narrowed::after {
     content: '';
@@ -214,9 +207,29 @@ button { font: inherit; color: inherit; }
 
 /* --- The search ----------------------------------------------------------- */
 
-.search { position: relative; flex: 1 1 320px; max-width: 560px; margin-left: auto; }
+/*
+ * The search's place in the head. Shut, it is no height, and unseen; it
+ * slides open, and shut, so the wall under it moves rather than jumps. The
+ * clip inside keeps its box's focus ring in view as it slides.
+ */
+.search-slot {
+    flex: 1 1 320px;
+    max-width: 560px;
+    margin-left: auto;
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.25s ease-out, margin-top 0.25s ease-out, visibility 0s 0.25s;
+}
+.search-slot.is-open {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows 0.25s ease-out, margin-top 0.25s ease-out;
+}
+.search-slot-clip { min-height: 0; margin: -4px; padding: 4px; overflow: hidden; }
+.search { position: relative; }
 @media (max-width: 640px) {
-    .search { flex-basis: 100%; max-width: none; }
+    .search-slot { flex-basis: 100%; max-width: none; }
 }
 
 /* The box: a magnifying glass, the tags chosen, the words typed, and a button to clear them */

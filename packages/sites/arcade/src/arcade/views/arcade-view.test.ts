@@ -9,6 +9,39 @@ import { ArcadeView } from './arcade-view';
 import { NO_RECT } from './rect';
 
 describe('ArcadeView', () => {
+    describe('the search', () => {
+        it('opens from the magnifier in the nav, and closes from it again while empty', () => {
+            const { navTools, tick, view } = setUp();
+            const slot = view.querySelector<HTMLElement>('.search-slot')!;
+            const magnifier = navTools.querySelector<HTMLElement>('.nav-search')!;
+            expect(slot.classList.contains('is-open')).toBe(false);
+            expect(slot.inert).toBe(true);
+            magnifier.click();
+            tick();
+            expect(slot.classList.contains('is-open')).toBe(true);
+            expect(slot.inert).toBe(false);
+            expect(magnifier.getAttribute('aria-pressed')).toBe('true');
+            magnifier.click();
+            tick();
+            expect(slot.classList.contains('is-open')).toBe(false);
+            destroyElement(view);
+        });
+
+        it('stays open while it holds something, even as the focus leaves it', () => {
+            const { model, navTools, tick, view } = setUp();
+            navTools.querySelector<HTMLElement>('.nav-search')!.click();
+            tick();
+            model.searchText = 'game';
+            view.querySelector<HTMLInputElement>('.search-input')!.dispatchEvent(new Event('blur'));
+            tick();
+            expect(view.querySelector('.search-slot')!.classList.contains('is-open')).toBe(true);
+            model.searchText = '';
+            tick();
+            expect(view.querySelector('.search-slot')!.classList.contains('is-open')).toBe(false);
+            destroyElement(view);
+        });
+    });
+
     describe('the Perfmon', () => {
         it('opens and closes with the gauge in the nav, starting closed', () => {
             const { model, navTools, tick, view } = setUp();

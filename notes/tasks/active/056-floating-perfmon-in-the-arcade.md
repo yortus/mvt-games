@@ -251,11 +251,15 @@ The nav copied to the playground and the docs, each keeping its own copy:
 The pause menu: a heading in the pixel font (GAME PAUSED, or DEMO PAUSED),
 then Resume, Restart and Exit in one row, each with its key under its
 label, then the volumes. Left and Right move along the row, round; Up and
-Down move from the row to each slider. It has a visual test now. The
-search stays in the head, for now: the owner asked whether it should move
-into the nav as a glyph, and the answer given was to keep it visible (it
-is the wall's main control, and a hidden filter confuses), or to fold it
-to a glyph on phones only.
+Down move from the row to each slider. It has a visual test now.
+
+The search, as the owner designed it: the nav's magnifier is always there,
+lit while the search box shows. The box shows in the head while it is open
+(the magnifier, or `/`) or while it holds text or tags, so a narrowed wall
+always says why; an empty one closes as it is left, or from the magnifier.
+It slides open and shut (`.search-slot`), so the wall moves rather than
+jumps, and is `inert` while shut. Whether it is open is the Arcade view's
+presentation state.
 
 Still to do: regenerate the Boids and Falling Sand thumbnails
 (`npm run generate-thumbnails -- boids falling-sand`), whose play areas
