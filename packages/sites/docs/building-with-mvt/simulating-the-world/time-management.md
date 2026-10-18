@@ -270,26 +270,17 @@ test('timer expires after full duration', () => {
 });
 ```
 
-For models that are not leap-safe, use a helper that breaks a large time
-advance into small increments so orchestration logic triggers correctly between
-phases:
+For models that are not leap-safe, use the tick API's `advanceTime`. It
+breaks a large advance into frame-sized steps, so the logic between phases
+runs as it would in the game. It's async, because it lets the model's own
+`await`s settle after each step, so `await` it:
 
 ```ts
-function stepMs(model: { update(deltaMs: number): void }, totalMs: number): void {
-    const step = 16;
-    let remaining = totalMs;
-    while (remaining > 0) {
-        const dt = Math.min(step, remaining);
-        model.update(dt);
-        remaining -= dt;
-    }
-}
-
-test('game transitions through phases', () => {
+test('game transitions through phases', async () => {
     const game = createGameModel(options);
     game.startWave();
 
-    stepMs(game, 1600); // advance ~1.6 seconds in small increments
+    await advanceTime(1600, game); // about 1.6 seconds, a frame at a time
     expect(game.phase).toBe('playing');
 });
 ```

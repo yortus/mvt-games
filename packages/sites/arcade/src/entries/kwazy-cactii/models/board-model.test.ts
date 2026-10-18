@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { advanceTime } from '@mvtjs/pixi';
 import { createBoardModel } from './board-model';
 import type { BoardModel } from './board-model';
 import type { CactusCell } from './common';
@@ -7,16 +8,6 @@ import { EMPTY_CELL } from './common';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function stepMs(model: { update: (deltaMs: number) => void }, totalMs: number): void {
-    const step = 16;
-    let remaining = totalMs;
-    while (remaining > 0) {
-        const dt = Math.min(step, remaining);
-        model.update(dt);
-        remaining -= dt;
-    }
-}
 
 /** Create a small 3x3 board for testing. */
 function makeBoard(rowCount = 3, colCount = 3): BoardModel {
@@ -163,7 +154,7 @@ describe('BoardModel', () => {
             expect(board.swapProgress).toBeLessThan(1);
         });
 
-        it('isSwapMatching says, as a swap starts, whether it makes a line', () => {
+        it('isSwapMatching says, as a swap starts, whether it makes a line', async () => {
             // A seeded board, so the swaps it offers are the same on every run
             const board = createBoardModel({ random: makeSeededRandom(7) });
             let sawMatching = false;
@@ -172,16 +163,16 @@ describe('BoardModel', () => {
                 for (let c = 0; c < board.colCount - 1; c++) {
                     if (!board.trySwap(board.cells[r][c], board.cells[r][c + 1])) continue;
                     const isSwapMatching = board.isSwapMatching;
-                    stepMs(board, 300); // past SWAP_DURATION_MS, so the board has acted on the swap
+                    await advanceTime(300, board); // past SWAP_DURATION_MS, so the board has acted on the swap
                     if (isSwapMatching) {
                         expect(board.phase).toBe('matching');
                         sawMatching = true;
-                        stepMs(board, 5000); // let the cascade run out
+                        await advanceTime(5000, board); // let the cascade run out
                     }
                     else {
                         expect(board.phase).toBe('reversing');
                         sawReversing = true;
-                        stepMs(board, 300);
+                        await advanceTime(300, board);
                     }
                     expect(board.isSwapMatching).toBe(false);
                 }
@@ -207,18 +198,18 @@ describe('BoardModel', () => {
     });
 
     describe('phase transitions', () => {
-        it('transitions from swapping to matching or reversing', () => {
+        it('transitions from swapping to matching or reversing', async () => {
             const board = makeBoard();
             const pair = findSwappablePair(board);
             expect(pair).toBeDefined();
             board.trySwap(pair![0], pair![1]);
-            stepMs(board, 300); // well past SWAP_DURATION_MS (200ms)
+            await advanceTime(300, board); // well past SWAP_DURATION_MS (200ms)
 
             const phase = board.phase;
             expect(['matching', 'reversing']).toContain(phase);
         });
 
-        it('reversal returns to idle after completion', () => {
+        it('reversal returns to idle after completion', async () => {
             const board = makeBoard(4, 4);
             // Try swaps until we get a reversal (no match)
             let reversed = false;
@@ -227,15 +218,15 @@ describe('BoardModel', () => {
                     const cell1 = board.cells[r][c];
                     const cell2 = board.cells[r][c + 1];
                     if (!board.trySwap(cell1, cell2)) continue;
-                    stepMs(board, 300);
+                    await advanceTime(300, board);
                     if (board.phase === 'reversing') {
                         reversed = true;
-                        stepMs(board, 300);
+                        await advanceTime(300, board);
                         expect(board.phase).toBe('idle');
                     }
                     else {
                         // It matched - run to idle
-                        stepMs(board, 5000);
+                        await advanceTime(5000, board);
                     }
                 }
             }
@@ -246,12 +237,12 @@ describe('BoardModel', () => {
             expect(board.swapProgress).toBe(0);
         });
 
-        it('eventually returns to idle after a full cycle', () => {
+        it('eventually returns to idle after a full cycle', async () => {
             const board = makeBoard();
             const pair = findSwappablePair(board);
             expect(pair).toBeDefined();
             board.trySwap(pair![0], pair![1]);
-            stepMs(board, 10000); // plenty of time for any cascade
+            await advanceTime(10000, board); // plenty of time for any cascade
             expect(board.phase).toBe('idle');
         });
     });
@@ -269,12 +260,12 @@ describe('BoardModel', () => {
             expect(board.matchProgress).toBe(0);
         });
 
-        it('matchProgress advances during matching phase', () => {
+        it('matchProgress advances during matching phase', async () => {
             const board = makeBoard(4, 4);
             const pair = findSwappablePair(board);
             expect(pair).toBeDefined();
             board.trySwap(pair![0], pair![1]);
-            stepMs(board, 300); // past swap duration
+            await advanceTime(300, board); // past swap duration
             if (board.phase === 'matching') {
                 board.update(50);
                 expect(board.matchProgress).toBeGreaterThan(0);
@@ -292,12 +283,12 @@ describe('BoardModel', () => {
             expect(board.cascadeStep).toBe(0);
         });
 
-        it('cascadeStep increments on each match in a cascade', () => {
+        it('cascadeStep increments on each match in a cascade', async () => {
             const board = makeBoard(4, 4);
             const pair = findSwappablePair(board);
             expect(pair).toBeDefined();
             board.trySwap(pair![0], pair![1]);
-            stepMs(board, 300);
+            await advanceTime(300, board);
             if (board.phase === 'matching') {
                 expect(board.cascadeStep).toBeGreaterThanOrEqual(1);
             }

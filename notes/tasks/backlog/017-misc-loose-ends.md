@@ -202,7 +202,11 @@ Settled questions that should not be reopened without new information are in
   draw a large smooth `roundRect` and compare with a fresh page), and
   decide whether the site patches `reset` meanwhile as 042's harness does
   (`packages/sites/arcade/visual-spike/setup.ts` on the `visual-tests` branch).
-- **Hand-written time-stepping helpers that `advanceTime` now covers.** The
+- ~~**Hand-written time-stepping helpers that `advanceTime` now covers.**~~
+  Done 2026-10-18: Time Management and the model skill teach
+  `advanceTime`, and the four test files with a `stepMs` helper (the three
+  below, and Fractalscope's `picture-view-model.test.ts`) await it instead.
+  Originally: the
   tick API gained `advanceTime(ms, ...items)` (042, step 10). But
   `building-with-mvt/simulating-the-world/time-management.md` and
   `ai-agents/skill-mvt-model.md` still teach a hand-written
@@ -548,3 +552,5 @@ falling-sand demo. Each is a new variant, measured with
   variadic form (042).
 - 2026-10-18: Closed Vite's config-loader warning, already fixed on
   2026-10-16.
+- 2026-10-18: Replaced the hand-written `stepMs` helpers with
+  `advanceTime`, in the docs and four test files.

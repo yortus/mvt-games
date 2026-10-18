@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { advanceTime } from '@mvtjs/pixi';
 import { createFlockModel } from './flock-model';
 
 // ---------------------------------------------------------------------------
@@ -20,16 +21,6 @@ function defaultOptions() {
         perceptionRadius: 10,
         seed: 1,
     };
-}
-
-function stepMs(model: { update: (deltaMs: number) => void }, totalMs: number): void {
-    const step = 16;
-    let remaining = totalMs;
-    while (remaining > 0) {
-        const dt = Math.min(step, remaining);
-        model.update(dt);
-        remaining -= dt;
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -54,14 +45,14 @@ describe('FlockModel', () => {
         }
     });
 
-    it('update() moves boids', () => {
+    it('update() moves boids', async () => {
         const model = createFlockModel(defaultOptions());
         const startPositions: { x: number; y: number }[] = [];
         for (let i = 0; i < model.boids.length; i++) {
             startPositions.push({ x: model.boids[i].position.x, y: model.boids[i].position.y });
         }
 
-        stepMs(model, 500);
+        await advanceTime(500, model);
 
         let anyMoved = false;
         for (let i = 0; i < model.boids.length; i++) {
@@ -73,10 +64,10 @@ describe('FlockModel', () => {
         expect(anyMoved).toBe(true);
     });
 
-    it('keeps boids within arena bounds via edge repulsion', () => {
+    it('keeps boids within arena bounds via edge repulsion', async () => {
         const model = createFlockModel(defaultOptions());
 
-        stepMs(model, 5000);
+        await advanceTime(5000, model);
 
         for (let i = 0; i < model.boids.length; i++) {
             const b = model.boids[i];
@@ -87,14 +78,14 @@ describe('FlockModel', () => {
         }
     });
 
-    it('populates debug force vectors', () => {
+    it('populates debug force vectors', async () => {
         const model = createFlockModel({
             ...defaultOptions(),
             boidCount: 50,
             perceptionRadius: 30,
         });
 
-        stepMs(model, 200);
+        await advanceTime(200, model);
 
         let anyNonZero = false;
         for (let i = 0; i < model.boids.length; i++) {
@@ -179,11 +170,11 @@ describe('FlockModel', () => {
         });
     });
 
-    it('is reproducible from a seed', () => {
+    it('is reproducible from a seed', async () => {
         const a = createFlockModel({ ...defaultOptions(), wander: 5 });
         const b = createFlockModel({ ...defaultOptions(), wander: 5 });
-        stepMs(a, 1000);
-        stepMs(b, 1000);
+        await advanceTime(1000, a);
+        await advanceTime(1000, b);
         for (let i = 0; i < a.boids.length; i++) {
             expect(b.boids[i].position).toEqual(a.boids[i].position);
         }
@@ -273,12 +264,12 @@ describe('FlockModel', () => {
         }
     });
 
-    it('handles zero boids without errors', () => {
+    it('handles zero boids without errors', async () => {
         const model = createFlockModel({ ...defaultOptions(), boidCount: 0 });
-        expect(() => stepMs(model, 100)).not.toThrow();
+        await expect(advanceTime(100, model)).resolves.toBeUndefined();
     });
 
-    it('enforces minSpeed so boids never slow below the threshold', () => {
+    it('enforces minSpeed so boids never slow below the threshold', async () => {
         const model = createFlockModel({
             ...defaultOptions(),
             boidCount: 50,
@@ -289,7 +280,7 @@ describe('FlockModel', () => {
         });
 
         // Run long enough for alignment to dampen velocities
-        stepMs(model, 10000);
+        await advanceTime(10000, model);
 
         for (let i = 0; i < model.boids.length; i++) {
             const b = model.boids[i];
@@ -297,7 +288,7 @@ describe('FlockModel', () => {
         }
     });
 
-    it('wander force prevents velocity convergence', () => {
+    it('wander force prevents velocity convergence', async () => {
         // With alignment only, boids converge to uniform velocity.
         // With wander added, direction variance should remain higher.
         const model = createFlockModel({
@@ -310,7 +301,7 @@ describe('FlockModel', () => {
             perceptionRadius: 100,
         });
 
-        stepMs(model, 5000);
+        await advanceTime(5000, model);
 
         // Measure direction spread - should not be near-zero
         let sinSum = 0;
@@ -336,7 +327,7 @@ describe('FlockModel', () => {
         expect(model.visionAngle).toBe(Math.PI);
     });
 
-    it('narrow vision cone reduces effective neighbour count', () => {
+    it('narrow vision cone reduces effective neighbour count', async () => {
         // With full vision, all neighbours are seen. With a narrow forward cone,
         // boids behind are excluded, reducing cohesion (spread stays larger).
         const wideModel = createFlockModel({
@@ -358,8 +349,8 @@ describe('FlockModel', () => {
             perceptionRadius: 100,
         });
 
-        stepMs(wideModel, 3000);
-        stepMs(narrowModel, 3000);
+        await advanceTime(3000, wideModel);
+        await advanceTime(3000, narrowModel);
 
         const wideSpread = computeSpread(wideModel);
         const narrowSpread = computeSpread(narrowModel);

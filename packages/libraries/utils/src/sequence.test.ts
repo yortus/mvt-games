@@ -1,19 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createSequence } from './sequence';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function stepMs(seq: { update: (deltaMs: number) => void }, totalMs: number): void {
-    const step = 16;
-    let remaining = totalMs;
-    while (remaining > 0) {
-        const dt = Math.min(step, remaining);
-        seq.update(dt);
-        remaining -= dt;
-    }
-}
+import { advanceTime } from './tick-api';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -64,22 +51,22 @@ describe('createSequence', () => {
             expect(seq.isActive).toBe(true);
         });
 
-        it('stops being active after all steps complete', () => {
+        it('stops being active after all steps complete', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 100 },
             ]);
             seq.start();
-            stepMs(seq, 100);
+            await advanceTime(100, seq);
             expect(seq.isActive).toBe(false);
         });
 
-        it('stays active while a delayed step has not started', () => {
+        it('stays active while a delayed step has not started', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 50 },
                 { name: 'b', startMs: 100, durationMs: 50 },
             ]);
             seq.start();
-            stepMs(seq, 60);
+            await advanceTime(60, seq);
             // Step 'a' is done, step 'b' hasn't started yet
             expect(seq.steps.a.progress).toBe(1);
             expect(seq.steps.b.isActive).toBe(false);
@@ -95,23 +82,23 @@ describe('createSequence', () => {
             expect(seq.progress).toBeCloseTo(0.5, 2);
         });
 
-        it('overall progress reaches 1 when complete', () => {
+        it('overall progress reaches 1 when complete', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 100 },
             ]);
             seq.start();
-            stepMs(seq, 100);
+            await advanceTime(100, seq);
             expect(seq.progress).toBe(1);
         });
     });
 
     describe('step progress', () => {
-        it('progress is 0 before the step starts', () => {
+        it('progress is 0 before the step starts', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 100, durationMs: 100 },
             ]);
             seq.start();
-            stepMs(seq, 50);
+            await advanceTime(50, seq);
             expect(seq.steps.a.progress).toBe(0);
             expect(seq.steps.a.isActive).toBe(false);
         });
@@ -126,45 +113,45 @@ describe('createSequence', () => {
             expect(seq.steps.a.isActive).toBe(true);
         });
 
-        it('progress reaches 1 when the step completes', () => {
+        it('progress reaches 1 when the step completes', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 100 },
             ]);
             seq.start();
-            stepMs(seq, 100);
+            await advanceTime(100, seq);
             expect(seq.steps.a.progress).toBe(1);
             expect(seq.steps.a.isActive).toBe(false);
         });
 
-        it('progress does not exceed 1', () => {
+        it('progress does not exceed 1', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 100 },
             ]);
             seq.start();
-            stepMs(seq, 200);
+            await advanceTime(200, seq);
             expect(seq.steps.a.progress).toBe(1);
         });
     });
 
     describe('overlapping steps', () => {
-        it('multiple steps can be active simultaneously', () => {
+        it('multiple steps can be active simultaneously', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 200 },
                 { name: 'b', startMs: 50, durationMs: 200 },
             ]);
             seq.start();
-            stepMs(seq, 100);
+            await advanceTime(100, seq);
             expect(seq.steps.a.isActive).toBe(true);
             expect(seq.steps.b.isActive).toBe(true);
         });
 
-        it('earlier step completes while later step is still active', () => {
+        it('earlier step completes while later step is still active', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 100 },
                 { name: 'b', startMs: 50, durationMs: 200 },
             ]);
             seq.start();
-            stepMs(seq, 120);
+            await advanceTime(120, seq);
             expect(seq.steps.a.progress).toBe(1);
             expect(seq.steps.a.isActive).toBe(false);
             expect(seq.steps.b.isActive).toBe(true);
@@ -185,13 +172,13 @@ describe('createSequence', () => {
     });
 
     describe('start() reset', () => {
-        it('resets progress to 0 for all steps', () => {
+        it('resets progress to 0 for all steps', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 100 },
                 { name: 'b', startMs: 0, durationMs: 200 },
             ]);
             seq.start();
-            stepMs(seq, 150);
+            await advanceTime(150, seq);
             expect(seq.steps.a.progress).toBe(1);
 
             seq.start();
@@ -200,12 +187,12 @@ describe('createSequence', () => {
             expect(seq.isActive).toBe(true);
         });
 
-        it('can be restarted mid-sequence', () => {
+        it('can be restarted mid-sequence', async () => {
             const seq = createSequence([
                 { name: 'a', startMs: 0, durationMs: 200 },
             ]);
             seq.start();
-            stepMs(seq, 100);
+            await advanceTime(100, seq);
             expect(seq.steps.a.isActive).toBe(true);
 
             seq.start();
