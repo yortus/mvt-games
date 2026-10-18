@@ -1,6 +1,6 @@
 import type { ESLint, Linter } from 'eslint';
 import { version } from '../package.json';
-import { noDeepImports, noEmDash, noModuleState, noNull, noThis, noWallClock } from './rules';
+import { noDeepImports, noEmDash, noModuleState, noNull, noRelativeImportsIntoSrc, noThis, noWallClock } from './rules';
 
 // ---------------------------------------------------------------------------
 // Plugin
@@ -25,6 +25,7 @@ const plugin = {
         'no-em-dash': noEmDash,
         'no-module-state': noModuleState,
         'no-null': noNull,
+        'no-relative-imports-into-src': noRelativeImportsIntoSrc,
         'no-this': noThis,
         'no-wall-clock': noWallClock,
     },

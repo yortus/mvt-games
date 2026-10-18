@@ -142,6 +142,18 @@ export default tseslint.config(
         },
     },
     {
+        // Every file in a package, wherever it is: a file outside a package's
+        // src/ imports its modules by the package's name, or through an
+        // `imports` mapping (`#highscores`), never by a relative path.
+        files: ['packages/**/*.{ts,tsx,js,mjs,cjs}'],
+        plugins: {
+            '@mvtjs': mvt,
+        },
+        rules: {
+            '@mvtjs/no-relative-imports-into-src': 'error',
+        },
+    },
+    {
         // A package's config files are loaded by Node itself, which imports a
         // file, not a folder. So they import a folder's barrel by its index
         // file, such as `./scripts/index.ts`.

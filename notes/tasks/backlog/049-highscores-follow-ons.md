@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-15 |
-| Updated  | 2026-10-15 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
@@ -67,7 +67,13 @@ These are from 046's section 11, step 9. Each needs its own decision.
   through the game's model and recompute the score. Only Neon Monsoon uses
   seeded random numbers today. See 046 section 8.3.
 
-### A lint rule for imports into `src/`
+### ~~A lint rule for imports into `src/`~~
+
+Done 2026-10-18: `@mvtjs/no-relative-imports-into-src` reports a relative
+import into a package's `src/` from a file outside it, and runs on every
+file in `packages/`. It found two, in the playground's library entries,
+which now import `#project-api` and `#sandbox`, mapped in its
+`package.json`. Originally:
 
 The Worker's code once imported `'../src/highscores'` from outside `src/`.
 Lint did not catch it, because the barrel-import rules cover only files
@@ -83,10 +89,12 @@ relative path would catch the next one.
 - [ ] Each Worker has an admin token, and the test row is gone, or both are
       left as they are on purpose.
 - [ ] Each later idea is built, or dropped.
-- [ ] Lint stops relative imports into a package's `src/` from outside it,
+- [x] Lint stops relative imports into a package's `src/` from outside it,
       or the item is dropped.
 
 ## Progress Log
 
 - **2026-10-15.** Created from 046's loose ends, as 046 was archived. The
   first item is the owner's, from reviewing `GAMES` during the hand-over.
+- **2026-10-18.** Added the lint rule against relative imports into a
+  package's `src/`, and moved the playground's two such imports to mappings.

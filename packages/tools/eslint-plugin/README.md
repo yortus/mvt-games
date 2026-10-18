@@ -12,10 +12,12 @@ meant to be published once there are enough of them to be useful to others.
 | `@mvtjs/no-null` | `style` | `null` that our own code or APIs introduce: as a value, or in a type outside a function body. Comparisons and local types, which handle third-party values, are allowed |
 | `@mvtjs/no-this` | `style` | `this` |
 | `@mvtjs/no-deep-imports` | none | Imports that reach past a folder's `index.ts` (`../models/ship-model`), or into a package that has no `exports` field (`lz-string/libs/lz-string.js`). A package's `exports` field is left to TypeScript, which already refuses paths it doesn't list. The `allowIndexFile` option allows a folder's index file by its full name (`./scripts/index.ts`), for files that Node loads itself |
+| `@mvtjs/no-relative-imports-into-src` | none | Relative imports into a package's `src/` folder from a file outside it, such as `'../src/highscores'` from a worker or a script beside `src/`. Import by the package's name, or through an `imports` mapping in its `package.json` (`#highscores`) |
 
 The repo's `eslint.config.ts` applies `style` to all code and `architecture`
 to model files, and exempts the few files that need `this`. It applies
-`no-deep-imports` to each package's code, scripts and config files.
+`no-deep-imports` to each package's code, scripts and config files, and
+`no-relative-imports-into-src` to every file in a package.
 
 ## Working on the rules
 

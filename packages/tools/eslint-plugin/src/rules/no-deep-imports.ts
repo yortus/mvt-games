@@ -2,6 +2,7 @@ import type { Rule } from 'eslint';
 import { existsSync, readFileSync } from 'node:fs';
 import { isBuiltin } from 'node:module';
 import { dirname, join } from 'node:path';
+import { type PathNode, visitImportSources } from './import-sources';
 
 // ---------------------------------------------------------------------------
 // Rule
@@ -65,38 +66,13 @@ export const noDeepImports: Rule.RuleModule = {
             }
         };
 
-        return {
-            'ImportDeclaration': (node: Rule.Node) => {
-                if (node.type === 'ImportDeclaration') check(node.source);
-            },
-            'ExportNamedDeclaration, ExportAllDeclaration': (node: Rule.Node) => {
-                if (node.type !== 'ExportNamedDeclaration' && node.type !== 'ExportAllDeclaration') return;
-                if (node.source) check(node.source);
-            },
-            'ImportExpression': (node: Rule.Node) => {
-                if (node.type === 'ImportExpression' && node.source.type === 'Literal') check(node.source);
-            },
-            // A type imported inline, `import('../models/ship-model').ShipModel`.
-            'TSImportType': (node: Rule.Node) => {
-                check((node as unknown as TSImportType).source);
-            },
-        };
+        return visitImportSources(check);
     },
 };
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/** The part of an import's path node that the rule reads: a string literal's value. */
-interface PathNode {
-    readonly value?: unknown;
-}
-
-/** The part of typescript-eslint's `TSImportType` node that the rule reads. */
-interface TSImportType {
-    readonly source: PathNode;
-}
 
 /**
  * Whether a relative path names something inside a folder, after its leading
