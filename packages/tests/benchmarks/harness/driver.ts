@@ -65,7 +65,7 @@ export function defaultJobs(): number {
  * Counts-only cases run first, several processes at once; then every timed
  * case, one process at a time. With `save`, a suite whose inputs (its bundle,
  * cases, run policy, this driver and the environment) match its saved results
- * is skipped, unless `force` is set.
+ * is skipped, unless `force` is set. A suite with a failed case is not saved.
  */
 export async function runSuite(suite: Suite, options: RunOptions): Promise<void> {
     const matching = suite.cases.filter((c) => matches(c.params, options.filters));
@@ -95,10 +95,20 @@ export async function runSuite(suite: Suite, options: RunOptions): Promise<void>
             ? asAsync(browserRunner(bundle, outDir))
             : nodeRunner(bundle, suite, cacheDir);
         const results = await runCases(run, suite, cases, policy, options.jobs);
+        // A failed case is left out of the results. Saved results always cover
+        // the whole suite, so a run with a failure keeps the last save. That
+        // includes a run stopped partway, whose cases fail as their processes
+        // are stopped.
+        const failedCount = cases.length - results.length;
         if (options.save && !options.extended && saved !== undefined) carryOverExtended(suite, results, saved);
         const markdown = formatTables(suite, results, policy);
         process.stdout.write(`\n${markdown}\n`);
-        if (options.save) save(suite, results, policy, markdown, isBrowser ? browserVersion : undefined, inputsHash);
+        if (options.save && failedCount > 0) {
+            process.stdout.write(`\nNot saved: ${failedCount} of ${cases.length} cases failed, so results/${suite.name} keeps its last save.\n`);
+        }
+        else if (options.save) {
+            save(suite, results, policy, markdown, isBrowser ? browserVersion : undefined, inputsHash);
+        }
     }
     finally {
         rmSync(outDir, { recursive: true, force: true });

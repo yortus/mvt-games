@@ -96,8 +96,13 @@ Settled questions that should not be reopened without new information are in
   also advances in `update(deltaMs)`, scaled to match the old speed at
   60fps.
 
-- **An interrupted `npm run bench -- all --save` empties every results
-  file.** Stopping one partway through (2026-09-27, during its first suite)
+- ~~**An interrupted `npm run bench -- all --save` empties every results
+  file.**~~ Done 2026-10-18. The driver already saved a suite only once its
+  run ended, but it left a failed case out and saved the rest. Stopping a
+  run stops its case processes, so each case failed, and every suite after
+  it "finished" empty and was saved. Now a suite with a failed case is not
+  saved, and keeps its last save. Checked by failing every case of
+  `hot-path-rules --save --force`. Originally: stopping one partway through (2026-09-27, during its first suite)
   rewrote all nine `packages/tests/benchmarks/results/*.md` and `.json` files with their
   headers but no tables, removing about 4,000 lines; they were restored from
   git. A save should write only the suites that finished, or write nothing
@@ -560,3 +565,5 @@ falling-sand demo. Each is a new variant, measured with
   `advanceTime`, in the docs and four test files.
 - 2026-10-18: Renamed Fuel Run's and Galaxy Raiders' ship textures, which
   shared names in Pixi's cache, and added a test against it.
+- 2026-10-18: A benchmark suite with a failed case is no longer saved, so
+  an interrupted `all --save` can't empty the results.

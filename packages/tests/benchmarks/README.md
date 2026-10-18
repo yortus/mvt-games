@@ -47,7 +47,9 @@ only as quiet as the machine.
   come from other code.
 
 `--save` refuses to run with filters, so saved results always cover a whole
-suite. It writes `results/<suite>.json` (every run's numbers, the machine and
+suite. For the same reason, a suite with a case that failed is not saved, and
+keeps its last save. So stopping `all --save` partway loses only the suite it
+was running. It writes `results/<suite>.json` (every run's numbers, the machine and
 library versions, and the inputs' hash) and `results/<suite>.md` (the tables,
 which the docs include).
 
