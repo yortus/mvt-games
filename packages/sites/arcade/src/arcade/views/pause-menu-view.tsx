@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { focusOnOpen } from './focus-on-open';
+import { PixelTextView } from './pixel-text-view';
 import { SoundControlView } from './sound-control-view';
 
 // ---------------------------------------------------------------------------
@@ -10,6 +11,8 @@ import { SoundControlView } from './sound-control-view';
 export interface PauseMenuViewBindings {
     /** Whether the menu is open. It is open while the entry is paused. */
     readonly isOpen: () => boolean;
+    /** The menu's heading, in the pixel font: GAME PAUSED, or DEMO PAUSED. */
+    readonly heading: () => string;
     /** The music's volume, from 0 to 1. 0 is off. */
     readonly musicVolume: () => number;
     /** The sound effects' volume, from 0 to 1. 0 is off. */
@@ -35,15 +38,17 @@ export interface PauseMenuViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Shows the menu over a paused entry: Resume, Restart, the music's and the
- * sound effects' volumes, and Exit. How to play the entry, and its
- * highscores, are in its info panel, which the runner's (i) opens. The menu
- * is in HTML, so it works over an entry of any renderer.
+ * Shows the menu over a paused entry: its heading, in the pixel font, then
+ * Resume, Restart and Exit in a row, then the music's and the sound
+ * effects' volumes. How to play the entry, and its highscores, are in its
+ * info panel, which the runner's (i) opens. The menu is in HTML, so it works
+ * over an entry of any renderer.
  *
  * The menu is quick to leave from the keyboard. It opens with Resume
- * focused, so Enter resumes. Up and Down, or W and S, move through its
- * choices and wrap round, so Up then Enter leaves. Three keys act at once,
- * and each is shown on its button. Escape resumes, R restarts and X leaves.
+ * focused, so Enter resumes. Left and Right, or A and D, move along the
+ * row, round, so Left then Enter leaves. Up and Down, or W and S, move from
+ * the row to each slider, round. Three keys act at once, and each is shown
+ * on its button. Escape resumes, R restarts and X leaves.
  */
 export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
     // Enter resumes
@@ -63,22 +68,32 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
         >
             <div class="pause-menu" visible={bindings.isOpen}>
                 <section class="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pause-title" ref={(e) => { panel = e; }}>
-                    <h2 id="pause-title" class="visually-hidden" text="Paused" />
+                    <h2 id="pause-title" class="pause-title">{PixelTextView({ text: bindings.heading })}</h2>
                     <div class="pause-page">
-                        <ChoiceView
-                            label="Resume"
-                            keyText="Esc"
-                            keyShortcut="Escape"
-                            className="pause-resume"
-                            onPressed={() => bindings.onResumePressed?.()}
-                        />
-                        <ChoiceView
-                            label="Restart"
-                            keyText="R"
-                            keyShortcut="R"
-                            className="pause-restart"
-                            onPressed={() => bindings.onRestartPressed?.()}
-                        />
+                        <div class="pause-choices">
+                            <ChoiceView
+                                label="Resume"
+                                keyText="Esc"
+                                keyShortcut="Escape"
+                                className="pause-resume"
+                                onPressed={() => bindings.onResumePressed?.()}
+                            />
+                            <ChoiceView
+                                label="Restart"
+                                keyText="R"
+                                keyShortcut="R"
+                                className="pause-restart"
+                                onPressed={() => bindings.onRestartPressed?.()}
+                            />
+                            <ChoiceView
+                                label="Exit"
+                                title="Exit to the arcade"
+                                keyText="X"
+                                keyShortcut="X"
+                                className="pause-exit"
+                                onPressed={() => bindings.onExitPressed?.()}
+                            />
+                        </div>
                         <div class="pause-sound" role="group" aria-label="Sound">
                             <SoundControlView
                                 label="Music"
@@ -97,13 +112,6 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
                                 onIconPressed={() => bindings.onEffectsIconPressed?.()}
                             />
                         </div>
-                        <ChoiceView
-                            label="Exit to the arcade"
-                            keyText="X"
-                            keyShortcut="X"
-                            className="pause-exit"
-                            onPressed={() => bindings.onExitPressed?.()}
-                        />
                     </div>
                 </section>
             </div>
@@ -112,8 +120,10 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
 
     /**
      * Handles the menu's keys while it is open. R restarts and X leaves,
-     * wherever the focus is. Up and Down move through its choices, and wrap
-     * round. Enter and Space press the focused button, as they always do.
+     * wherever the focus is. Left and Right move along the row of choices,
+     * round, but not on a slider, which they move. Up and Down move from the
+     * row to each slider, round, and back to the row at Resume. Enter and
+     * Space press the focused button, as they always do.
      */
     function onKeyDown(e: KeyboardEvent): void {
         if (!bindings.isOpen() || panel === undefined || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -126,16 +136,26 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
             else bindings.onExitPressed?.();
             return;
         }
+        const choices = [...panel.querySelectorAll<HTMLElement>('.pause-choices button')];
+        const sliders = [...panel.querySelectorAll<HTMLElement>('.pause-sound input')];
+        if (choices.length === 0) return;
+        const focused = document.activeElement;
+        const isOnSlider = focused instanceof HTMLInputElement && focused.type === 'range';
+        const across = toAcrossStep(e.key);
+        if (across !== 0 && !isOnSlider) {
+            const current = choices.findIndex((choice) => choice === focused);
+            choices[current < 0 ? 0 : (current + across + choices.length) % choices.length].focus();
+            e.preventDefault();
+            return;
+        }
         const step = toMenuStep(e.key);
         if (step === 0) return;
-        const page = panel.querySelector('.pause-page');
-        if (page === null) return;
-        // A control's icon is left out, so the keys stop once on each control
-        const choices = [...page.querySelectorAll<HTMLElement>('button:not([tabindex="-1"]), input')];
-        if (choices.length === 0) return;
-        const current = choices.findIndex((choice) => choice === document.activeElement);
-        const next = current < 0 ? (step > 0 ? 0 : choices.length - 1) : (current + step + choices.length) % choices.length;
-        choices[next].focus();
+        // The stops, top to bottom: the row of choices, then each slider
+        const stops = sliders.length + 1;
+        const sliderIndex = sliders.findIndex((slider) => slider === focused);
+        const current = sliderIndex >= 0 ? sliderIndex + 1 : choices.includes(focused as HTMLElement) ? 0 : -1;
+        const next = current < 0 ? (step > 0 ? 0 : stops - 1) : (current + step + stops) % stops;
+        (next === 0 ? choices[0] : sliders[next - 1]).focus();
         e.preventDefault();
     }
 }
@@ -148,6 +168,8 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
 interface ChoiceViewBindings {
     /** The button's text. */
     readonly label: string;
+    /** Its tooltip, where the label says less than it does. */
+    readonly title?: string;
     /** The key shown on the button, such as 'Esc'. */
     readonly keyText: string;
     /** The key that presses the button, as `aria-keyshortcuts` names it, such as 'Escape'. */
@@ -164,7 +186,7 @@ interface ChoiceViewBindings {
  */
 function ChoiceView(bindings: ChoiceViewBindings): Element {
     return (
-        <button type="button" class={bindings.className} aria-keyshortcuts={bindings.keyShortcut} onClick={bindings.onPressed}>
+        <button type="button" class={bindings.className} title={bindings.title} aria-keyshortcuts={bindings.keyShortcut} onClick={bindings.onPressed}>
             <span text={bindings.label} />
             <kbd class="pause-key" aria-hidden="true" text={bindings.keyText} />
         </button>
@@ -177,6 +199,15 @@ function findShortcut(key: string): 'restart' | 'exit' | undefined {
         case 'r': case 'R': return 'restart';
         case 'x': case 'X': return 'exit';
         default: return undefined;
+    }
+}
+
+/** Converts a key to a move along the row of choices. It is -1 for left, 1 for right, and 0 for none. */
+function toAcrossStep(key: string): -1 | 0 | 1 {
+    switch (key) {
+        case 'ArrowLeft': case 'a': case 'A': return -1;
+        case 'ArrowRight': case 'd': case 'D': return 1;
+        default: return 0;
     }
 }
 

@@ -290,6 +290,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 }}
                 onEffectsIconPressed={() => toggleSound(model.effectsVolume, model.turnEffectsOn, model.turnEffectsOff)}
                 title={() => model.activeEntry?.name ?? ''}
+                isGame={() => model.activeEntry?.tags.kind === 'game'}
                 isLandscape={() => (model.activeEntry?.screenWidth ?? 0) > (model.activeEntry?.screenHeight ?? 0)}
                 isTurned={bindings.isTurned}
                 onBackPressed={leaveEntry}

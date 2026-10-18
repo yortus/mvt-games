@@ -248,6 +248,15 @@ The nav copied to the playground and the docs, each keeping its own copy:
 - The site's name starts at the same point (20px in, 15px down) on all
   three sites, so it stays put going from one to another.
 
+The pause menu: a heading in the pixel font (GAME PAUSED, or DEMO PAUSED),
+then Resume, Restart and Exit in one row, each with its key under its
+label, then the volumes. Left and Right move along the row, round; Up and
+Down move from the row to each slider. It has a visual test now. The
+search stays in the head, for now: the owner asked whether it should move
+into the nav as a glyph, and the answer given was to keep it visible (it
+is the wall's main control, and a hidden filter confuses), or to fold it
+to a glyph on phones only.
+
 Still to do: regenerate the Boids and Falling Sand thumbnails
 (`npm run generate-thumbnails -- boids falling-sand`), whose play areas
 changed. Then copy the nav's design to the docs and the playground once it

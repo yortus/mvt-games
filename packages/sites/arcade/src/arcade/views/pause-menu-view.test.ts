@@ -55,7 +55,12 @@ describe('PauseMenuView', () => {
         expect(reports.musicVolume).toBeCloseTo(step / steps, 9);
     });
 
-    it('goes down from Restart through the two sliders to Exit', () => {
+    it('heads the menu with its heading, in the pixel font', () => {
+        const { menu } = setUp();
+        expect(menu.querySelector('#pause-title svg')?.getAttribute('aria-label')).toBe('GAME PAUSED');
+    });
+
+    it('goes down from the row of choices through the two sliders, and round to Resume', () => {
         const { menu } = setUp();
         focus(menu, '.pause-restart');
         const visited: (string | undefined)[] = [];
@@ -63,16 +68,25 @@ describe('PauseMenuView', () => {
             press('ArrowDown');
             visited.push(document.activeElement?.id || document.activeElement?.className);
         }
-        expect(visited).toEqual(['pause-music-volume', 'pause-effects-volume', 'pause-exit']);
+        expect(visited).toEqual(['pause-music-volume', 'pause-effects-volume', 'pause-resume']);
     });
 
-    it('goes up from Resume round to Exit, so Up then Enter leaves', () => {
+    it('moves along the row with left and right, round, so Left then Enter leaves', () => {
         const { menu } = setUp();
         focus(menu, '.pause-resume');
-        press('ArrowUp');
+        press('ArrowLeft');
         expect(document.activeElement?.classList.contains('pause-exit')).toBe(true);
-        press('ArrowDown');
+        press('d');
         expect(document.activeElement?.classList.contains('pause-resume')).toBe(true);
+        press('ArrowRight');
+        expect(document.activeElement?.classList.contains('pause-restart')).toBe(true);
+    });
+
+    it('leaves left and right to a slider, which they move', () => {
+        const { menu } = setUp();
+        focus(menu, '#pause-music-volume');
+        press('ArrowLeft');
+        expect(document.activeElement?.id).toBe('pause-music-volume');
     });
 
     it('restarts with R and leaves with X, wherever the focus is, once for a key held down', () => {
@@ -114,6 +128,7 @@ function setUp(initial: { isOpen?: boolean } = {}) {
     const reports = { musicVolume: -1, effectsIconPresses: 0, restarts: 0, exits: 0 };
     const menu = PauseMenuView({
         isOpen: () => state.isOpen,
+        heading: () => 'GAME PAUSED',
         musicVolume: () => state.musicVolume,
         effectsVolume: () => state.effectsVolume,
         onMusicVolumeChanged: (volume) => { reports.musicVolume = volume; },

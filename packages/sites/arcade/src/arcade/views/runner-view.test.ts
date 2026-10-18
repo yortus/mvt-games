@@ -131,6 +131,7 @@ function setUp(): { runner: Element; state: RunnerState } {
             state.infoPresses++;
         },
         title: () => 'Entry',
+        isGame: () => true,
         isLandscape: () => false,
         isTurned: () => false,
     });

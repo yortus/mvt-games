@@ -29,6 +29,8 @@ export interface RunnerViewBindings {
     readonly effectsVolume: () => number;
     /** The chosen entry's name. */
     readonly title: () => string;
+    /** Whether the chosen entry is a game, rather than a demo, which the pause menu's heading says. */
+    readonly isGame: () => boolean;
     /** Whether the entry's play area is wider than tall. On a phone held upright, a hint suggests turning it, unless the runner is turned for it. */
     readonly isLandscape: () => boolean;
     /** Whether the runner is turned a quarter turn, for a game wider than tall on a phone held upright. No hint is needed then. */
@@ -207,6 +209,7 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
             </div>
             <PauseMenuView
                 isOpen={() => bindings.isPaused() && !bindings.isInfoOpen()}
+                heading={() => (bindings.isGame() ? 'GAME PAUSED' : 'DEMO PAUSED')}
                 musicVolume={bindings.musicVolume}
                 effectsVolume={bindings.effectsVolume}
                 onMusicVolumeChanged={bindings.onMusicVolumeChanged}

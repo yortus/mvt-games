@@ -857,11 +857,11 @@ button { font: inherit; color: inherit; }
 .pause-panel {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
     width: 100%;
-    max-width: 360px;
+    max-width: 380px;
     max-height: 100%;
-    padding: 18px 22px 22px;
+    padding: 22px;
     border-radius: 12px;
     border: 1px solid #30363d;
     background: #161b22;
@@ -876,9 +876,22 @@ button { font: inherit; color: inherit; }
 }
 .pause-panel button:hover { border-color: var(--site-accent, #58a6ff); }
 .pause-panel .pause-resume { background: #238636; border-color: #2ea043; color: #fff; font-weight: 600; }
+/* The heading, in the pixel font, three pixels to a cell, in the highscore panel's yellow */
+.pause-title { display: flex; justify-content: center; color: #ffd83d; }
+.pause-title .pixel-text { display: block; height: 21px; width: auto; }
+/* Resume, Restart and Exit, side by side, each with its key under its label */
+.pause-choices { display: flex; gap: 8px; }
+.pause-panel .pause-choices button {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 10px 6px;
+}
 /* The key that presses a choice, shown on it */
 .pause-key {
-    margin-left: 10px;
     padding: 1px 6px;
     border-radius: 4px;
     border: 1px solid currentColor;
