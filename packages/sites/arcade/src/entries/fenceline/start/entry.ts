@@ -17,6 +17,7 @@ export const entry: ArcadeEntry = {
     thumbnail,
     // The colour of its pasture
     cardColor: 'mint',
+    hasHighscores: true,
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
 };

@@ -51,6 +51,11 @@ export const load = definePixiLoader(async () => {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                // A run ends only at game over: a farm fenced moves on to the next
+                scoring: {
+                    score: () => gameModel.score,
+                    isOver: () => gameModel.phase === 'game-over',
+                },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
                 inputConfig: {

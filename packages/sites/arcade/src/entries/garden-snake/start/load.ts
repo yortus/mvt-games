@@ -35,6 +35,10 @@ export const load = definePixiLoader(async () => {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                scoring: {
+                    score: () => gameModel.score,
+                    isOver: () => gameModel.phase === 'game-over',
+                },
                 inputConfig: {
                     // A touch screen steers by swiping, in the view
                     showDpad: !isTouchDevice(),

@@ -18,8 +18,12 @@ export const GAMES: GameRulesTable = {
     'burrow-bust': { version: 1, maxScore: OPEN_ENDED },
     // 252 crumbs at 10 each, all of them to win
     'crumb-chase': { version: 1, maxScore: 2520 },
+    // The whole metres dived before the crash
+    'deep-dive': { version: 1, maxScore: OPEN_ENDED },
+    'fenceline': { version: 1, maxScore: OPEN_ENDED },
     'fuel-run': { version: 1, maxScore: OPEN_ENDED },
     'galaxy-raiders': { version: 1, maxScore: OPEN_ENDED },
+    'garden-snake': { version: 1, maxScore: OPEN_ENDED },
     'kwazy-cactii': { version: 1, maxScore: OPEN_ENDED },
     // Two loops, chains up to x32: six or seven digits for a good run
     'neon-monsoon': { version: 1, maxScore: 99_999_999 },

@@ -215,6 +215,14 @@ Seventh round:
   than being centred. The selected tab and its page share a lighter shade
   than the panel.
 
+Also, at the owner's request: Fenceline, Garden Snake and Deep Dive keep
+highscore tables. 046 surveyed the games before Fenceline reached its
+branch, and the other two came after it. Each entry says `hasHighscores`,
+its session reports `scoring` (Deep Dive's score is its whole metres), and
+`highscores/rules/games.ts` lists it. Fenceline's run ends only at game
+over: a farm fenced moves on to the next. The Worker redeploys from the
+workflow as `games.ts` reaches `main`.
+
 Still to do: regenerate the Boids and Falling Sand thumbnails
 (`npm run generate-thumbnails -- boids falling-sand`), whose play areas
 changed. Then copy the nav's design to the docs and the playground once it

@@ -33,6 +33,11 @@ export const load = definePixiLoader(async () => {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
                 },
+                // The score is the whole metres dived, as the HUD shows it
+                scoring: {
+                    score: () => Math.floor(gameModel.distance),
+                    isOver: () => gameModel.phase === 'crashed',
+                },
                 inputConfig: {
                     showPrimary: true,
                     primaryLabel: 'Rise',

@@ -15,6 +15,7 @@ export const entry: ArcadeEntry = {
     screenHeight: 280,
     thumbnail,
     cardColor: 'mint',
+    hasHighscores: true,
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
 };
