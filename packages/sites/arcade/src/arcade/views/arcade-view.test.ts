@@ -6,6 +6,7 @@ import { destroyElement, refreshView } from '@mvtjs/html';
 import type { ArcadeEntry, EntryStarter } from '../../entry-types';
 import { type ArcadeModel, createArcadeModel, DEFAULT_SOUND_SETTINGS } from '../models';
 import { ArcadeView } from './arcade-view';
+import { createPerformanceMeter, PerfmonFloatView } from './perfmon-float-view';
 import { NO_RECT } from './rect';
 
 describe('ArcadeView', () => {
@@ -221,6 +222,8 @@ const ENTRY: ArcadeEntry = {
     load: () => Promise.resolve(STARTER),
 };
 
+const PERFMON = { PerfmonFloatView, createPerformanceMeter };
+
 function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: ArcadeModel; navTools: HTMLElement; view: Element; tick: () => void } {
     const model = createArcadeModel({
         entries: [ENTRY],
@@ -247,6 +250,8 @@ function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: A
         docsHref: '/docs/',
         performance: () => undefined,
         unmeasuredMetrics: () => [],
+        // As loaded, so the panel is built
+        perfmon: () => PERFMON,
         homeLinks: options.homeLinks,
     });
     document.body.replaceChildren(view, navTools);

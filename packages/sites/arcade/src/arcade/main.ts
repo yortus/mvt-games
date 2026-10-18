@@ -1,7 +1,7 @@
 import { ENTRY_FACTS } from 'virtual:entry-facts';
 import { createFetchHighscoreStore, createMemoryHighscoreStore, GAMES, type HighscoreStore } from '../highscores';
 import { refreshView, updateView } from '@mvtjs/html';
-import { assert, createPerformanceMeter, type MetricKind, type PerformanceMeter, watch } from '@mvtjs/utils';
+import { assert, type MetricKind, type PerformanceMeter, watch } from '@mvtjs/utils';
 import { CATALOGUE, findEntry } from '../entries';
 import type { ArcadeEntry, EntryStarter } from '../entry-types';
 import { isHandheldDevice } from '../device';
@@ -18,7 +18,7 @@ import {
     parseEntryPath,
     parseSoundSettings,
 } from './models';
-import { type ArcadeAudioViews, ArcadeView, loadArcadeAudioViews } from './views';
+import { type ArcadeAudioViews, ArcadeView, loadArcadeAudioViews, loadPerfmon, type Perfmon } from './views';
 import './arcade.css';
 
 // The Arcade's page. One loop runs everything, in the MVT order. It updates
@@ -162,6 +162,7 @@ root.append(ArcadeView({
     entryHref: (entry) => formatEntryPath(ARCADE_PATH, entry.id),
     docsHref: `${SITE_PATH}docs/`,
     performance: () => meter,
+    perfmon: () => perfmon,
     unmeasuredMetrics,
     onLiveWanted: playLive,
     playRectFor: (entry, starter) => host.playRectFor({
@@ -224,6 +225,8 @@ window.addEventListener('popstate', onHistoryStep);
 let lastTimeMs: number | undefined;
 /** Measures each frame, while the Perfmon is open. */
 let meter: PerformanceMeter | undefined;
+/** The Perfmon's panel and its meter, once they have loaded, the first time the Perfmon opens. */
+let perfmon: Perfmon | undefined;
 requestAnimationFrame(frame);
 // The entries' long text loads once the wall is first drawn, not before it,
 // so the home page's first load holds only what the cards show. A search
@@ -382,12 +385,20 @@ const DEV = import.meta.env.DEV;
 /**
  * Starts measuring each frame, for the Perfmon, or stops. Each opening starts
  * afresh. The meter and the GPU's timer cost a little each frame, so they run
- * only while the Perfmon is open.
+ * only while the Perfmon is open. The first opening loads the Perfmon, and
+ * measuring starts once it has, if the Perfmon is open still.
  */
 function measurePerformance(isOn: boolean): void {
     meter?.destroy();
+    meter = undefined;
     host.isGpuTimed = isOn;
-    meter = isOn ? createPerformanceMeter({ takeGpuMs: host.takeGpuMs }) : undefined;
+    if (!isOn) return;
+    loadPerfmon().then((loaded) => {
+        perfmon = loaded;
+        if (model.isPerfmonOpen && meter === undefined) meter = loaded.createPerformanceMeter({ takeGpuMs: host.takeGpuMs });
+    }).catch((error: unknown) => {
+        console.warn('The Perfmon could not load.', error);
+    });
 }
 
 /** The starter the list of metrics not measured was last made for, and the list. */

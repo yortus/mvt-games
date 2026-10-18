@@ -11,10 +11,10 @@ import { createCardWallLayout } from './card-wall-layout';
 import { CardWallView, photoPoseIn } from './card-wall-view';
 import { EntryInfoView } from './entry-info-view';
 import type { ArcadeAudioViews } from './load-arcade-audio-views';
+import type { Perfmon } from './load-perfmon';
 import { NavPerfmonView } from './nav-perfmon-view';
 import { NavSearchView } from './nav-search-view';
 import { NavSoundView } from './nav-sound-view';
-import { PerfmonFloatView } from './perfmon-float-view';
 import { PlacingView } from './placing-view';
 import { NO_RECT, type Rect } from './rect';
 import { ResumeOfferView } from './resume-offer-view';
@@ -99,6 +99,12 @@ export interface ArcadeViewBindings {
     readonly performance: () => PerformanceMetrics | undefined;
     /** The metrics the page can't measure as things stand, such as the GPU's time for an entry not drawn with Pixi. The Perfmon shows them as n/a. */
     readonly unmeasuredMetrics: () => readonly MetricKind[];
+    /**
+     * The Perfmon's panel, once the page has loaded it. It is undefined until
+     * then. The page loads it the first time the Perfmon opens, so its first
+     * load holds none of it.
+     */
+    readonly perfmon: () => Perfmon | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -313,11 +319,9 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 }}
                 onRestartPressed={model.restart}
             />
-            <PerfmonFloatView
-                isOpen={() => model.isPerfmonOpen}
-                metrics={bindings.performance}
-                unmeasured={bindings.unmeasuredMetrics}
-            />
+            <Switch>
+                <Match when={() => bindings.perfmon() !== undefined}>{PerfmonPanelView}</Match>
+            </Switch>
             <ResumeOfferView
                 isOpen={() => model.phase === 'playing' && model.isResumeOffered}
                 title={() => model.activeEntry?.name ?? ''}
@@ -344,6 +348,17 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             />
         </div>
     );
+
+    /** Builds the Perfmon's floating panel. It runs once, when the Perfmon has loaded. */
+    function PerfmonPanelView(): Element {
+        const perfmon = bindings.perfmon();
+        assert(perfmon !== undefined, 'arcade: the Perfmon\'s panel is built only once it has loaded');
+        return perfmon.PerfmonFloatView({
+            isOpen: () => model.isPerfmonOpen,
+            metrics: bindings.performance,
+            unmeasured: bindings.unmeasuredMetrics,
+        });
+    }
 
     /**
      * Builds the views that play the Arcade's sounds and the pause menu's

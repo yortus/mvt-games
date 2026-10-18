@@ -2,6 +2,10 @@
 import { PerfmonView } from '@mvtjs/html';
 import type { MetricKind, PerformanceMetrics } from '@mvtjs/utils';
 
+// The meter goes with the panel, so the page loads it with the panel, the
+// first time the Perfmon opens (`loadPerfmon`), and its first load holds neither
+export { createPerformanceMeter } from '@mvtjs/utils';
+
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
