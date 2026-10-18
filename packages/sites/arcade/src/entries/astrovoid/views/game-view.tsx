@@ -91,7 +91,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 height={ARENA_HEIGHT}
                 isVisible={() => model.phase === 'game-over' || model.phase === 'wave-clear'}
                 text={() => (model.phase === 'game-over' ? gameOverText : 'WAVE CLEAR!')}
-                onRestartPressed={(pressed) => { model.playerInput.restartPressed = pressed; }}
+                onPressed={model.startNewRun}
             />
         </container>
     );

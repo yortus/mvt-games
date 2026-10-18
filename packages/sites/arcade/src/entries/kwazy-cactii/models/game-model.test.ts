@@ -5,6 +5,17 @@ import { createGameModel, type GameModel } from './game-model';
 import { wouldMatchAfterSwap } from './grid-helpers';
 
 describe('GameModel', () => {
+    it('drops a new game asked for during play, and plays on', () => {
+        const model = createGameModel();
+        playSwaps(model, 1);
+        const board = model.board;
+        const score = model.score;
+        model.startNewRun();
+        model.update(STEP_MS);
+        expect(model.board).toBe(board);
+        expect(model.score).toBe(score);
+    });
+
     describe('saving', () => {
         it('loads a game it saved, as it was', () => {
             const model = createGameModel();

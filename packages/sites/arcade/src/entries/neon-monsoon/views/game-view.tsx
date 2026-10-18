@@ -239,7 +239,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 height={SCREEN_HEIGHT}
                 isVisible={() => model.phase === 'tally' || model.phase === 'game-over' || model.phase === 'all-clear'}
                 text={() => overlayText(model.phase)}
-                onRestartPressed={(pressed) => { model.playerInput.restartPressed = pressed; }}
+                onPressed={model.startNewRun}
             />
         </container>
     );

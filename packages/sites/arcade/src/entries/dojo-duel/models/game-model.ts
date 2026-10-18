@@ -1,10 +1,11 @@
 import gsap from 'gsap';
-import { watch } from '@mvtjs/utils';
 import {
     type DefeatVariant,
     type FighterMove,
     type GamePhase,
     type MoveKind,
+    type XDirection,
+    type YDirection,
     MOVE_DATA,
     FIGHTER_START_LEFT_X,
     FIGHTER_START_RIGHT_X,
@@ -21,7 +22,6 @@ import {
 } from './model-constants';
 import { createAiModel, type AiModel } from './ai-model';
 import { createFighterModel, type FighterModel } from './fighter-model';
-import { createPlayerInput, type PlayerInput } from './player-input';
 import { createMatchModel, type MatchModel } from './match-model';
 
 // ---------------------------------------------------------------------------
@@ -33,9 +33,20 @@ export interface GameModel {
     readonly player: FighterModel;
     readonly opponent: FighterModel;
     readonly match: MatchModel;
-    readonly playerInput: PlayerInput;
     readonly roundTimeRemainingMs: number;
+    /**
+     * The way the player is leaning the fighter across the screen. With
+     * `verticalLean` and `isAttacking`, it picks the fighter's move, counted
+     * forward or backward from the way the fighter faces.
+     */
+    horizontalLean: XDirection;
+    /** Which way the player is leaning the fighter up or down, if either: up to jump, down to go low. */
+    verticalLean: YDirection;
+    /** Whether the player is attacking, which turns each lean into its attacking move. */
+    isAttacking: boolean;
     reset: () => void;
+    /** Asks for a new match. It starts at the next update, if the last match is over. */
+    startNewRun: () => void;
     update: (deltaMs: number) => void;
 }
 
@@ -59,11 +70,11 @@ export function createGameModel(): GameModel {
     });
 
     const matchModel = createMatchModel();
-    const playerInput = createPlayerInput();
     const ai: AiModel = createAiModel();
 
     let gamePhase: GamePhase = 'round-intro';
     let roundTimeRemainingMs = ROUND_TIMER_MS;
+    let isNewRunRequested = false;
 
     // Input settle state (same pattern as playtest-model)
     let settledMove: FighterMove = 'idle';
@@ -75,7 +86,6 @@ export function createGameModel(): GameModel {
     const INPUT_SETTLE_MS = 50;
 
     const phaseTimeline = gsap.timeline({ paused: true });
-    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // Schedule the initial round-intro delay
     scheduleRoundIntro();
@@ -93,12 +103,12 @@ export function createGameModel(): GameModel {
         get match() {
             return matchModel;
         },
-        get playerInput() {
-            return playerInput;
-        },
         get roundTimeRemainingMs() {
             return roundTimeRemainingMs;
         },
+        horizontalLean: 'none',
+        verticalLean: 'none',
+        isAttacking: false,
 
         reset(): void {
             matchModel.reset();
@@ -106,6 +116,10 @@ export function createGameModel(): GameModel {
             resetInputSettle();
             roundTimeRemainingMs = ROUND_TIMER_MS;
             scheduleRoundIntro();
+        },
+
+        startNewRun(): void {
+            isNewRunRequested = true;
         },
 
         update(deltaMs: number): void {
@@ -117,13 +131,13 @@ export function createGameModel(): GameModel {
             // Advance phase timeline (handles delays/transitions)
             phaseTimeline.time(phaseTimeline.time() + deltaMs * 0.001);
 
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
-                if (gamePhase === 'match-over') {
-                    model.reset();
-                    return;
-                }
+            // A new match starts only once the last is over; a request made
+            // during a match is dropped
+            const isNewRunDue = isNewRunRequested && gamePhase === 'match-over';
+            isNewRunRequested = false;
+            if (isNewRunDue) {
+                model.reset();
+                return;
             }
 
             if (gamePhase === 'fighting' && phaseBefore === 'fighting') {
@@ -131,7 +145,7 @@ export function createGameModel(): GameModel {
                 roundTimeRemainingMs -= deltaMs;
 
                 // Resolve and apply player input with settle logic
-                applyPlayerInput(deltaMs);
+                applyPlayerLean(deltaMs);
 
                 // AI updates and applies move to opponent
                 ai.update(deltaMs, player, opponent);
@@ -173,13 +187,13 @@ export function createGameModel(): GameModel {
         lastPlayerFacing = player.facing;
     }
 
-    function applyPlayerInput(deltaMs: number): void {
+    function applyPlayerLean(deltaMs: number): void {
         const rawDir = resolveInputDirection(
-            playerInput.xDirection,
-            playerInput.yDirection,
+            model.horizontalLean,
+            model.verticalLean,
             player.facing,
         );
-        const rawMove = resolveMove(rawDir, playerInput.attackPressed);
+        const rawMove = resolveMove(rawDir, model.isAttacking);
 
         // Neutral move applies immediately
         if (rawMove === 'idle') {
@@ -210,11 +224,11 @@ export function createGameModel(): GameModel {
         if (player.facing !== lastPlayerFacing) {
             lastPlayerFacing = player.facing;
             const updatedDir = resolveInputDirection(
-                playerInput.xDirection,
-                playerInput.yDirection,
+                model.horizontalLean,
+                model.verticalLean,
                 player.facing,
             );
-            const updatedMove = resolveMove(updatedDir, playerInput.attackPressed);
+            const updatedMove = resolveMove(updatedDir, model.isAttacking);
             settledMove = updatedMove;
             pendingMove = updatedMove;
             lastAcceptedMove = updatedMove;
@@ -356,7 +370,7 @@ export function createGameModel(): GameModel {
     function scheduleMatchOver(): void {
         gamePhase = 'match-over';
         phaseTimeline.clear().time(0);
-        // Wait for restart input (handled in update loop)
+        // Wait for a new match to be asked for (handled in update loop)
     }
 
     function handleTimerExpiry(): void {

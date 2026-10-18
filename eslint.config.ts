@@ -213,7 +213,7 @@ export default tseslint.config(
             }],
         },
     },
-    // MVT's own rules (packages/tools/eslint-plugin), for models: no wall-clock time
+    // MVT's own rules (packages/tools/eslint-plugin), for models: no wall-clock time, no module state, no members named for a control
     {
         files: [
             'packages/sites/arcade/src/**/models/**/*.{ts,tsx}', 'packages/sites/arcade/src/**/*-model.ts',
@@ -222,6 +222,11 @@ export default tseslint.config(
         ],
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,
+    },
+    // A view model is part of a view, which is where a control's keys and presses are handled
+    {
+        files: ['packages/sites/**/views/**/*-model.ts'],
+        rules: { '@mvtjs/no-control-names': 'off' },
     },
     // This repo's own style rules (packages/tools/eslint-plugin): no em-dashes, no
     // `null`, no `this`

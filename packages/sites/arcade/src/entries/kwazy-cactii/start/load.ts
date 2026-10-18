@@ -44,7 +44,7 @@ export const load = definePixiLoader(async () => {
                 loadGame: gameModel.load,
                 inputConfig: {
                     showDpad: false,
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

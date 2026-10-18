@@ -9,7 +9,7 @@ describe('GameModel', () => {
             const releaseTimes = CAT_SPAWNS.map(() => -1);
             for (let t = 0; t < 20_000 && model.phase === 'playing'; t += STEP_MS) {
                 // The mouse stays out of reach, so the game runs on
-                model.playerInput.direction = 'left';
+                model.direction = 'left';
                 model.update(STEP_MS);
                 for (let i = 0; i < model.cats.length; i++) {
                     if (releaseTimes[i] < 0 && model.cats[i].releaseInMs === 0) releaseTimes[i] = t;
@@ -28,6 +28,32 @@ describe('GameModel', () => {
                 hasChased = model.catMode === 'chase';
             }
             expect(hasChased).toBe(true);
+        });
+    });
+
+    describe('a new game', () => {
+        it('starts when asked for once the last game is over', () => {
+            const model = makeGame();
+            for (let t = 0; t < 120_000 && model.phase === 'playing'; t += STEP_MS) model.update(STEP_MS);
+            expect(model.phase).not.toBe('playing');
+            model.startNewRun();
+            model.update(STEP_MS);
+            // It plays its first step as a fresh game would
+            const fresh = makeGame();
+            fresh.update(STEP_MS);
+            expect(model.phase).toBe('playing');
+            expect(model.score).toBe(fresh.score);
+            expect(model.maze.remainingCrumbs).toBe(fresh.maze.remainingCrumbs);
+        });
+
+        it('is dropped when asked for during play, rather than starting as soon as the game ends', () => {
+            const model = makeGame();
+            model.startNewRun();
+            for (let t = 0; t < 120_000 && model.phase === 'playing'; t += STEP_MS) model.update(STEP_MS);
+            const phase = model.phase;
+            model.update(STEP_MS);
+            expect(model.phase).toBe(phase);
+            expect(phase).not.toBe('playing');
         });
     });
 

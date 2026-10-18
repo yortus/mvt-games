@@ -2,19 +2,6 @@ import type { CactusCell, CactusKind, GamePhase } from './common';
 import { ALL_CACTUS_KINDS } from './common';
 import { createBoardModel, type BoardModel } from './board-model';
 import { findMatches, hasAvailableMove } from './grid-helpers';
-import { watch } from '@mvtjs/utils';
-
-// ---------------------------------------------------------------------------
-// Input
-// ---------------------------------------------------------------------------
-
-export interface CactiiPlayerInput {
-    restartPressed: boolean;
-}
-
-export function createCactiiPlayerInput(): CactiiPlayerInput {
-    return { restartPressed: false };
-}
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -26,7 +13,8 @@ export interface GameModel {
     readonly score: number;
     /** Monotonic clock accumulated from update(deltaMs). */
     readonly clockMs: number;
-    readonly playerInput: CactiiPlayerInput;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     /** Attempt to swap two cells. Returns true if accepted. */
     trySwap: (cell1: CactusCell, cell2: CactusCell) => boolean;
     /** Reset the game to initial state. */
@@ -75,16 +63,17 @@ export function createGameModel(options: GameModelOptions = {}): GameModel {
     let clockMs = 0;
     /** The board as it stood before the swap now playing out, for a save made before it comes to rest. */
     let savedBeforeSwap: SavedGame | undefined;
-
-    const playerInput = createCactiiPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
+    let isNewRunRequested = false;
 
     const model: GameModel = {
         get phase() { return gamePhase; },
         get board() { return board; },
         get score() { return board.score; },
         get clockMs() { return clockMs; },
-        get playerInput() { return playerInput; },
+
+        startNewRun(): void {
+            isNewRunRequested = true;
+        },
 
         trySwap(cell1: CactusCell, cell2: CactusCell): boolean {
             if (gamePhase !== 'playing') return false;
@@ -118,13 +107,12 @@ export function createGameModel(options: GameModelOptions = {}): GameModel {
         },
 
         update(deltaMs: number): void {
-            // Process restart request (allowed from any non-playing phase)
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
-                if (gamePhase !== 'playing') {
-                    model.reset();
-                }
+            // A new game is allowed from any non-playing phase. One asked
+            // for during play is dropped, not kept for later
+            if (isNewRunRequested && gamePhase !== 'playing') {
+                model.reset();
             }
+            isNewRunRequested = false;
 
             if (gamePhase !== 'playing') return;
             clockMs += deltaMs;

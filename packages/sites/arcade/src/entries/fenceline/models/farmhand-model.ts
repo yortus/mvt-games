@@ -1,7 +1,6 @@
 import { DIRECTION_DELTA, reverse, type Direction, type HeldDirection } from './common';
 import type { FieldModel } from './field-model';
 import { measureSegmentDistanceSquared } from './geometry';
-import type { PlayerInput } from './player-input';
 import { SLACK_DELAY_MS, SLACK_SPEED } from './model-constants';
 
 // ---------------------------------------------------------------------------
@@ -51,6 +50,13 @@ export interface FarmhandModel {
     readonly hasWireSnapped: boolean;
     /** Whether the wire, or the farmhand at its end, is closer than `reach` cells to (row, col). False with no wire out. */
     isWireWithin: (row: number, col: number, reach: number) => boolean;
+    /**
+     * Sets the farmhand going `direction`, and keeps them going, until told
+     * otherwise. They forget it when caught.
+     */
+    steer: (direction: Direction) => void;
+    /** Stops the farmhand at the next grid point, until steered again. */
+    stop: () => void;
     update: (deltaMs: number) => void;
     /** Takes in the wire once it has been tied off as fence. The farmhand walks on from where they are. */
     tieOff: () => void;
@@ -72,7 +78,6 @@ export interface FarmhandModelOptions {
     readonly col: number;
     /** Grid steps per second. */
     readonly speed: number;
-    readonly input: PlayerInput;
     readonly field: Pick<FieldModel, 'rows' | 'cols' | 'isWalkable' | 'canString' | 'isOnFence'>;
 }
 
@@ -82,7 +87,7 @@ export interface FarmhandModelOptions {
 
 /** Creates the farmhand, standing on a fence at a grid point. */
 export function createFarmhandModel(options: FarmhandModelOptions): FarmhandModel {
-    const { speed, input, field } = options;
+    const { speed, field } = options;
     const pointCount = (field.rows + 1) * (field.cols + 1);
     const wireRows = new Int16Array(pointCount);
     const wireCols = new Int16Array(pointCount);
@@ -105,10 +110,8 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
     let slackDistance = 0;
     let hasReachedFence = false;
     let hasWireSnapped = false;
-    // The way the latest swipe set the farmhand going, until the next swipe or a tap
-    let swiped: HeldDirection = 'none';
-    let swipesSeen = input.swipeCount;
-    let tapsSeen = input.tapCount;
+    // The way the farmhand was last steered, until they are stopped or caught
+    let steered: HeldDirection = 'none';
 
     const model: FarmhandModel = {
         get phase() { return phase; },
@@ -138,9 +141,16 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
             return measureSegmentDistanceSquared(row, col, wireRows[last], wireCols[last], model.row, model.col) < reachSquared;
         },
 
+        steer(way) {
+            steered = way;
+        },
+
+        stop() {
+            steered = 'none';
+        },
+
         update(deltaMs) {
             isMoving = false;
-            readSwipes();
             if (phase === 'snapped' || hasReachedFence || hasWireSnapped) return;
             move(speed * deltaMs * 0.001);
             if (phase === 'stringing') advanceSlack(deltaMs);
@@ -154,7 +164,7 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
 
         snap() {
             isUnderWay = false;
-            swiped = 'none';
+            steered = 'none';
             phase = 'snapped';
             isOnLine = false;
             progress = 0;
@@ -163,7 +173,7 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
 
         respawn() {
             isUnderWay = false;
-            swiped = 'none';
+            steered = 'none';
             if (wireLength > 0) {
                 pointRow = wireRows[0];
                 pointCol = wireCols[0];
@@ -205,7 +215,7 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
                 isUnderWay = true;
                 progress = 0;
             }
-            else if (phase === 'walking' && findHeldDirection() === reverse(direction)) {
+            else if (phase === 'walking' && steered === reverse(direction)) {
                 // Turning back along the same fence, from partway along it
                 pointRow += DIRECTION_DELTA[direction][0];
                 pointCol += DIRECTION_DELTA[direction][1];
@@ -225,39 +235,19 @@ export function createFarmhandModel(options: FarmhandModelOptions): FarmhandMode
 
     /**
      * Returns the way to go on from the point the farmhand is at, or none.
-     * On a fence, they go the way held if a fence or open meadow lies that
+     * On a fence, they go the way steered if a fence or open meadow lies that
      * way, starting a wire into the meadow. Otherwise, if under way, they keep
-     * going the way they were, so a way pressed early is taken at the next
-     * corner. With wire out, they go only the way held, never back onto the
-     * wire.
+     * going the way they were, so a way steered early is taken at the next
+     * corner. With wire out, they go only the way steered, never back onto
+     * the wire.
      */
     function chooseDirection(): HeldDirection {
-        const held = findHeldDirection();
-        if (held === 'none') return 'none';
-        if (phase === 'stringing') return canStringTo(held) ? held : 'none';
-        if (field.isWalkable(pointRow, pointCol, held)) return held;
-        if (field.canString(pointRow, pointCol, held)) return held;
-        if (isUnderWay && held !== reverse(direction) && field.isWalkable(pointRow, pointCol, direction)) return direction;
+        if (steered === 'none') return 'none';
+        if (phase === 'stringing') return canStringTo(steered) ? steered : 'none';
+        if (field.isWalkable(pointRow, pointCol, steered)) return steered;
+        if (field.canString(pointRow, pointCol, steered)) return steered;
+        if (isUnderWay && steered !== reverse(direction) && field.isWalkable(pointRow, pointCol, direction)) return direction;
         return 'none';
-    }
-
-    // ---- Steering ----------------------------------------------------------
-
-    /** Takes in any new swipe or tap. A tap stops the farmhand. If both came at once, the tap wins. */
-    function readSwipes(): void {
-        if (input.swipeCount !== swipesSeen) {
-            swipesSeen = input.swipeCount;
-            swiped = input.swipeDirection;
-        }
-        if (input.tapCount !== tapsSeen) {
-            tapsSeen = input.tapCount;
-            swiped = 'none';
-        }
-    }
-
-    /** Returns the way the farmhand is steered. That is the way held, or else the way last swiped. */
-    function findHeldDirection(): HeldDirection {
-        return input.direction !== 'none' ? input.direction : swiped;
     }
 
     function canStringTo(way: Direction): boolean {

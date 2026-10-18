@@ -1,8 +1,7 @@
 import gsap from 'gsap';
-import { watch } from '@mvtjs/utils';
 import { BLOW_OUT_POINTS, BONUS_PER_PERCENT, EXTRA_LIFE_POINTS, FARM_SPEED_UP, POINTS_PER_CELL, type RoundConfig, SHEEP_POINTS } from '../data';
 import { createBeetleModel, type BeetleModel } from './beetle-model';
-import type { GamePhase } from './common';
+import type { Direction, GamePhase, HeldDirection } from './common';
 import type { DevilTarget, DustDevilModel } from './dust-devil-model';
 import { createFarmhandModel, type FarmhandModel } from './farmhand-model';
 import { createFieldModel, type FieldModel } from './field-model';
@@ -18,7 +17,6 @@ import {
     START_LIVES,
     STARVE_SHARE,
 } from './model-constants';
-import { createPlayerInput, type PlayerInput } from './player-input';
 import { createRandom } from './random';
 import { placeBeetles, placeDevils, placeSheep } from './round-setup';
 import type { SheepModel } from './sheep-model';
@@ -74,7 +72,16 @@ export interface GameModel {
     readonly lastClosurePoints: number;
     /** The bonus for the share fenced off past the target, as the latest round was cleared. */
     readonly roundBonus: number;
-    readonly playerInput: PlayerInput;
+    /**
+     * Sets the farmhand going `direction`, and keeps them going, until told
+     * otherwise. The latest order wins. The farmhand takes it at their next
+     * step in play, and forgets it when caught.
+     */
+    steer: (direction: Direction) => void;
+    /** Stops the farmhand at the next grid point, until steered again. They take it at their next step in play. */
+    stop: () => void;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     /** Starts a new game from round 1. */
     reset: () => void;
     /**
@@ -140,8 +147,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     const startLives = options.startLives ?? START_LIVES;
     const extraLifePoints = options.extraLifePoints ?? EXTRA_LIFE_POINTS;
     const random = createRandom({ seed: options.seed ?? 1 });
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
     const phaseTimeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
     let phase: GamePhase = 'ready';
@@ -165,6 +170,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let roundStartLivesEarned = 0;
     /** The random numbers' state as this round started, before its dust devils and sheep were placed. */
     let roundStartRandomState = random.state;
+    /** The latest order to steer or stop that the farmhand has yet to take, or undefined for none. */
+    let order: HeldDirection | undefined;
+    /** Whether a new game was asked for since the last update. */
+    let isNewRunRequested = false;
 
     let field = createFieldModel({ rows, cols, obstacles: [] });
     let farmhand = buildFarmhand();
@@ -202,7 +211,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get extraLivesEarned() { return extraLivesEarned; },
         get lastClosurePoints() { return lastClosurePoints; },
         get roundBonus() { return roundBonus; },
-        playerInput,
+        steer: (direction) => { order = direction; },
+        stop: () => { order = 'none'; },
+        startNewRun: () => { isNewRunRequested = true; },
 
         reset() {
             round = 1;
@@ -245,8 +256,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs) {
-            const watched = watcher.poll();
-            if (phase === 'game-over' && watched.restart.changed && watched.restart.value) model.reset();
+            // A new game asked for while one is under way is dropped, not kept for later
+            if (isNewRunRequested && phase === 'game-over') model.reset();
+            isNewRunRequested = false;
 
             // A long update runs as several short steps, so nothing jumps a
             // fence. A faster farm packs more play into each step, so its
@@ -273,6 +285,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     /** Advances play by `deltaMs` of the meadow's time, which runs faster on a faster farm. */
     function play(deltaMs: number): void {
+        if (order !== undefined) {
+            if (order === 'none') farmhand.stop();
+            else farmhand.steer(order);
+            order = undefined;
+        }
         farmhand.update(deltaMs);
         for (let i = 0; i < devils.length; i++) devils[i].update(deltaMs);
         for (let i = 0; i < beetles.length; i++) beetles[i].update(deltaMs);
@@ -506,7 +523,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             row: rows,
             col: Math.floor(cols / 2),
             speed: FARMHAND_SPEED,
-            input: playerInput,
             field,
         });
     }

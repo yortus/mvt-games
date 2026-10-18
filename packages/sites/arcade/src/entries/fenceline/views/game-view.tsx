@@ -45,14 +45,13 @@ export interface GameViewBindings {
  * devils, which tower over everything, and the points come last. The HUD
  * runs across the top, and the overlay covers the meadow between rounds.
  * When a whole farm is fenced, its celebration covers the meadow instead.
- * Each farm's dry grass has its own colours. On a touch screen, swipes and
- * taps anywhere on the screen steer the farmhand, but the overlay's own
- * taps come first.
+ * Each farm's dry grass has its own colours. On a touch screen, a swipe
+ * anywhere on the screen sets the farmhand going that way, and a tap stops
+ * them, but the overlay's own taps come first.
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, sound } = bindings;
     const overlayText = memoiseLast((phase: GamePhase) => describePhase(phase, model));
-    const input = model.playerInput;
 
     return (
         <container>
@@ -78,11 +77,8 @@ export function GameView(bindings: GameViewBindings): Container {
                 width={SCREEN_WIDTH * 5}
                 height={SCREEN_HEIGHT * 4}
                 swipeDistance={SWIPE_DISTANCE}
-                onSwiped={(direction) => {
-                    input.swipeDirection = direction;
-                    input.swipeCount++;
-                }}
-                onTapped={() => { input.tapCount++; }}
+                onSwiped={(direction) => model.steer(direction)}
+                onTapped={() => model.stop()}
             />
             <container x={FIELD_X} y={FIELD_Y}>
                 <MeadowView
@@ -177,7 +173,7 @@ export function GameView(bindings: GameViewBindings): Container {
                     height={FIELD_HEIGHT}
                     isVisible={() => model.phase === 'ready' || model.phase === 'round-clear' || model.phase === 'game-over'}
                     text={() => overlayText(model.phase)}
-                    onRestartPressed={(pressed) => { model.playerInput.restartPressed = pressed; }}
+                    onPressed={model.startNewRun}
                 />
                 <FarmFencedView
                     width={FIELD_WIDTH}

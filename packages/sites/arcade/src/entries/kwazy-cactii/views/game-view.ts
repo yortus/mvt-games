@@ -62,9 +62,7 @@ export function GameView(bindings: GameViewBindings): Container {
             height: boardHeight,
             isVisible: () => game.phase === 'game-over',
             text: () => `GAME OVER\n\n${restartHint}`,
-            onRestartPressed: (pressed) => {
-                game.playerInput.restartPressed = pressed;
-            },
+            onPressed: game.startNewRun,
         });
         view.addChild(overlayView);
 

@@ -55,22 +55,26 @@ export const load = definePixiLoader(async () => {
                     primaryLabel: 'Pump',
                     onXDirectionChanged: (dir) => {
                         lastXDir = dir;
-                        if (dir === 'left') gameModel.playerInput.direction = 'left';
-                        else if (dir === 'right') gameModel.playerInput.direction = 'right';
-                        else if (lastYDir === 'up') gameModel.playerInput.direction = 'up';
-                        else if (lastYDir === 'down') gameModel.playerInput.direction = 'down';
-                        else gameModel.playerInput.direction = 'none';
+                        if (dir === 'left') gameModel.direction = 'left';
+                        else if (dir === 'right') gameModel.direction = 'right';
+                        else if (lastYDir === 'up') gameModel.direction = 'up';
+                        else if (lastYDir === 'down') gameModel.direction = 'down';
+                        else gameModel.direction = 'none';
                     },
                     onYDirectionChanged: (dir) => {
                         lastYDir = dir;
-                        if (dir === 'up') gameModel.playerInput.direction = 'up';
-                        else if (dir === 'down') gameModel.playerInput.direction = 'down';
-                        else if (lastXDir === 'left') gameModel.playerInput.direction = 'left';
-                        else if (lastXDir === 'right') gameModel.playerInput.direction = 'right';
-                        else gameModel.playerInput.direction = 'none';
+                        if (dir === 'up') gameModel.direction = 'up';
+                        else if (dir === 'down') gameModel.direction = 'down';
+                        else if (lastXDir === 'left') gameModel.direction = 'left';
+                        else if (lastXDir === 'right') gameModel.direction = 'right';
+                        else gameModel.direction = 'none';
                     },
-                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.pumpPressed = pressed; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                    // Holding the button keeps the harpoon out, and each press pumps
+                    onPrimaryButtonChanged: (isDown) => {
+                        gameModel.isHarpoonOut = isDown;
+                        if (isDown) gameModel.pump();
+                    },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

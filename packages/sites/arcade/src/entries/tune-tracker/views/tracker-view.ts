@@ -75,7 +75,7 @@ export function TrackerView(bindings: TrackerViewBindings): Container {
         playedMs: () => model.playedMs,
         orderIndex,
         row,
-        onPlayPressed: () => model.pressPlay(),
+        onPlayPressed: () => model.playOrStop(),
     }));
 
     const tuneList = TuneListView({

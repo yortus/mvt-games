@@ -13,7 +13,7 @@ import {
 } from '../data';
 import { createBossModel, type BossModel, type BossPhase } from './boss-model';
 import { createBulletField, type BulletField } from './bullet-field';
-import type { ExplosionSize, GamePhase, ShotKind } from './common';
+import type { ExplosionSize, GamePhase, ShotKind, XDirection, YDirection } from './common';
 import { createEnemyModel, type EnemyModel } from './enemy-model';
 import { createExplosionModel, type ExplosionModel } from './explosion-model';
 import { createGemField, type GemField } from './gem-field';
@@ -56,7 +56,6 @@ import {
     TALLY_MS,
     WARNING_MS,
 } from './model-constants';
-import { createPlayerInput, type PlayerInput } from './player-input';
 import { createRandom } from './random';
 import { createScoreModel, type ScoreModel } from './score-model';
 import { createShipModel, type ShipModel } from './ship-model';
@@ -125,7 +124,21 @@ export interface GameModel {
     readonly enemyBullets: BulletField<BulletKind>;
     readonly playerShots: BulletField<ShotKind>;
     readonly gems: GemField;
-    readonly playerInput: PlayerInput;
+
+    /** Which way across the arena the player is flying the ship, if either. */
+    headingX: XDirection;
+    /** Which way up or down the arena the player is flying the ship, if either. */
+    headingY: YDirection;
+    /** Whether the player is focusing: the ship flies slowly, shows its hitbox, and fires the narrow column. */
+    isFocusing: boolean;
+    /**
+     * Asks for a bomb. It goes off at the next step, if the game is being
+     * played, the ship is alive and has a bomb, and none is going off. If not,
+     * the request is dropped, not kept for later.
+     */
+    dropBomb: () => void;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
 
     /** Start a new game. The high score is kept. */
     reset: () => void;
@@ -184,14 +197,13 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     const random = createRandom(seed);
     const scoring = createScoreModel();
-    const playerInput = createPlayerInput();
     const enemyBullets = createBulletField<BulletKind>({
         capacity: MAX_ENEMY_BULLETS, hitRadii: BULLET_HIT_RADII, width: ARENA_WIDTH, height: ARENA_HEIGHT, margin: BULLET_MARGIN,
     });
     const playerShots = createBulletField<ShotKind>({
         capacity: MAX_PLAYER_SHOTS, hitRadii: SHOT_HIT_RADII, width: ARENA_WIDTH, height: ARENA_HEIGHT, margin: BULLET_MARGIN,
     });
-    const ship = createShipModel({ input: playerInput, shots: playerShots });
+    const ship = createShipModel({ shots: playerShots });
     const gems = createGemField({ capacity: MAX_GEMS, target: ship, margin: BULLET_MARGIN });
     const stage = createStageModel({ events, scrollSpeed: SCROLL_SPEED });
     const boss = createBossModel({ attacks: bossAttacks, bullets: enemyBullets, target: ship });
@@ -222,14 +234,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let untilBossExplosionMs = 0;
     // Whether the current boss attack has gone without a death or a bomb.
     let isAttackClean = true;
+    let isNewRunRequested = false;
+    let isBombRequested = false;
     /** The game as this loop started, which a save keeps. The loop's own points are won again on resuming. */
     let loopStart = checkpoint();
     /** The extra lives given by this loop's start. Those given since are won again on resuming. */
     let loopStartExtendsGiven = extendsGiven;
 
-    // Edges: a restart or bomb press, and the boss changing phase.
-    const restartWatcher = watch({ isPressed: () => playerInput.restartPressed });
-    const bombWatcher = watch({ isPressed: () => playerInput.bombPressed });
+    // The boss changing phase.
     const bossWatcher = watch({ phase: () => boss.phase });
 
     // Callbacks for the slot lists' walks, made once rather than every step.
@@ -295,7 +307,17 @@ export function createGameModel(options: GameModelOptions): GameModel {
         enemyBullets,
         playerShots,
         gems,
-        playerInput,
+        headingX: 'none',
+        headingY: 'none',
+        isFocusing: false,
+
+        dropBomb() {
+            isBombRequested = true;
+        },
+
+        startNewRun() {
+            isNewRunRequested = true;
+        },
 
         reset() {
             loop = 1;
@@ -345,10 +367,16 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs) {
-            const restart = restartWatcher.poll().isPressed;
-            if (restart.changed && restart.value && (phase === 'game-over' || phase === 'all-clear')) {
+            // A new game starts only once the last is over; a request made
+            // during a game is dropped
+            if (isNewRunRequested && (phase === 'game-over' || phase === 'all-clear')) {
                 model.reset();
             }
+            isNewRunRequested = false;
+
+            // The ship flies as the player says for every step of this update
+            ship.setHeading(model.headingX, model.headingY);
+            ship.setFocusing(model.isFocusing);
 
             // Run whole steps. After a long frame, drop what is left over
             // MAX_STEPS_PER_UPDATE, so the game slows down instead of jumping.
@@ -371,6 +399,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- One step ----------------------------------------------------------
 
     function step(): void {
+        // A bomb asked for goes off at this step, if it can, or not at all
+        const isBombDue = isBombRequested;
+        isBombRequested = false;
         if (phase === 'game-over' || phase === 'all-clear') return;
         stepCount++;
         phaseMs += STEP_MS;
@@ -378,7 +409,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         // Advance everything.
         stage.update(STEP_MS);
         runDueStageEvents();
-        if (phase === 'playing') handleBombButton();
+        if (phase === 'playing' && isBombDue) dropBombIfAble();
         ship.update(STEP_MS);
         updateEach(airEnemies);
         updateEach(groundEnemies);
@@ -604,9 +635,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // ---- Bombs -------------------------------------------------------------
 
-    function handleBombButton(): void {
-        const press = bombWatcher.poll().isPressed;
-        if (!press.changed || !press.value) return;
+    function dropBombIfAble(): void {
         if (bombs === 0 || bombMsLeft > 0 || !ship.isAlive) return;
         bombs--;
         bombMsLeft = BOMB_MS;
@@ -687,6 +716,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         gems.clear();
         scoring.breakChain();
         bombMsLeft = 0;
+        // A new game, or a game loaded, starts with no bomb asked for
+        isBombRequested = false;
         warningMsLeft = 0;
         if (!ship.isAlive) ship.respawn(0);
         enterPhase('playing');

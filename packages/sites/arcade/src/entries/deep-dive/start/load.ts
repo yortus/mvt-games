@@ -41,9 +41,10 @@ export const load = definePixiLoader(async () => {
                 inputConfig: {
                     showPrimary: true,
                     primaryLabel: 'Rise',
-                    onPrimaryButtonChanged: (pressed) => { gameModel.risePressed = pressed; },
-                    onYDirectionChanged: (dir) => { gameModel.risePressed = dir === 'up'; },
-                    onRestartButtonChanged: (pressed) => { gameModel.restartPressed = pressed; },
+                    // Rise, or up, blows the tanks for as long as it is held
+                    onPrimaryButtonChanged: (isDown) => { gameModel.isBlowingTanks = isDown; },
+                    onYDirectionChanged: (dir) => { gameModel.isBlowingTanks = dir === 'up'; },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

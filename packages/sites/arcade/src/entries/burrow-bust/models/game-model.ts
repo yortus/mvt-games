@@ -1,12 +1,10 @@
 import gsap from 'gsap';
-import { watch } from '@mvtjs/utils';
 import type { TileKind, DepthLayer, LevelConfig } from '../data';
 import { DEPTH_LAYERS } from '../data';
 import { createFieldModel, type FieldModel } from './field-model';
 import { createDiggerModel, type DiggerModel } from './digger-model';
 import { createEnemyModel, type EnemyModel } from './enemy-model';
 import { createRockModel, type RockModel } from './rock-model';
-import { createPlayerInput, type PlayerInput } from './player-input';
 import type { GamePhase, Direction } from './common';
 import { DIRECTION_DELTA } from './common';
 
@@ -23,7 +21,26 @@ export interface GameModel {
     readonly score: number;
     readonly lives: number;
     readonly level: number;
-    readonly playerInput: PlayerInput;
+    /**
+     * The way the player steers the digger, or 'none' to stop. In play, the
+     * digger turns and tunnels this way.
+     */
+    direction: Direction;
+    /**
+     * Whether the player is keeping the harpoon out. While it is, the digger
+     * stops, shoots its harpoon the way it faces, and keeps it out, holding
+     * any creature it hits. Once it is not, the digger draws the harpoon back
+     * in, unless it holds a creature.
+     */
+    isHarpoonOut: boolean;
+    /**
+     * Pumps the creature the harpoon holds, once, at the next update. A pump
+     * with nothing held does nothing, since a creature the harpoon hits is
+     * pumped as it is hit.
+     */
+    pump: () => void;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     reset: () => void;
     /**
      * Returns the game as a value JSON can hold, for `load` to restore. A
@@ -85,8 +102,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     /** Index of the enemy currently attached to the harpoon, or -1. */
     let harpoonTarget = -1;
-    /** Whether we've already inflated for the current pump hold. */
-    let pumpConsumed = false;
+    /** Whether a pump was asked for since the last update. */
+    let isPumpRequested = false;
+    /** Whether a new game was asked for since the last update. */
+    let isNewRunRequested = false;
 
     const phaseTimeline = gsap.timeline({ paused: true });
 
@@ -96,8 +115,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let digger = buildDigger(field);
     let enemies = buildEnemies(field);
     let rocks = buildRocks(field);
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Public model record -----------------------------------------------
 
@@ -126,9 +143,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get level() {
             return level;
         },
-        get playerInput() {
-            return playerInput;
-        },
+        direction: 'none',
+        isHarpoonOut: false,
+        pump: () => { isPumpRequested = true; },
+        startNewRun: () => { isNewRunRequested = true; },
 
         reset(): void {
             score = 0;
@@ -160,18 +178,17 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
-                if (gamePhase === 'game-over') {
-                    model.reset();
-                }
-            }
+            // A new game asked for while one is under way is dropped, not kept for later
+            if (isNewRunRequested && gamePhase === 'game-over') model.reset();
+            isNewRunRequested = false;
+            // A pump counts at this update only: with nothing to pump, it is dropped
+            const isPumping = isPumpRequested;
+            isPumpRequested = false;
 
             // Apply input
             if (gamePhase === 'playing') {
-                digger.setDirection(playerInput.direction);
-                if (playerInput.pumpPressed) {
+                digger.setDirection(model.direction);
+                if (model.isHarpoonOut) {
                     digger.startPump();
                 }
                 else {
@@ -195,7 +212,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
             // Collision checks
             checkDigging();
-            checkHarpoonHits();
+            checkHarpoonHits(isPumping);
             checkRockDestabilization();
             checkRockCrush();
             if (gamePhase === 'playing') checkEnemyDiggerCollision();
@@ -333,7 +350,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         enemies = buildEnemies(field);
         rocks = buildRocks(field);
         harpoonTarget = -1;
-        pumpConsumed = false;
         gamePhase = 'playing';
         phaseTimeline.clear().time(0);
     }
@@ -381,17 +397,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
     }
 
-    function checkHarpoonHits(): void {
+    /** Hooks a creature at the harpoon's tip, and pumps the one it holds if `isPumping`. */
+    function checkHarpoonHits(isPumping: boolean): void {
         if (!digger.isHarpoonExtended) {
             harpoonTarget = -1;
-            pumpConsumed = false;
             digger.lockHarpoon(false);
             return;
-        }
-
-        // Reset consumed flag when pump is released (allows next press to inflate)
-        if (!playerInput.pumpPressed) {
-            pumpConsumed = false;
         }
 
         // If we already have a target, keep pumping that one
@@ -404,9 +415,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
             }
             // Keep the harpoon locked at its current distance
             digger.lockHarpoon(true);
-            // Inflate once per pump press
-            if (playerInput.pumpPressed && !pumpConsumed) {
-                pumpConsumed = true;
+            // Inflate once per pump
+            if (isPumping) {
                 const popped = target.inflate();
                 if (popped) {
                     const layer = depthLayerIndex(target.row);
@@ -436,7 +446,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             const dist = (enemy.col - tipCol) ** 2 + (enemy.row - tipRow) ** 2;
             if (dist < COLLISION_THRESHOLD_SQ) {
                 harpoonTarget = i;
-                pumpConsumed = true;
                 digger.lockHarpoon(true);
                 // First pump hit
                 const popped = enemy.inflate();

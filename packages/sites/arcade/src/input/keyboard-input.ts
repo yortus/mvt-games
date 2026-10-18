@@ -29,6 +29,10 @@ export interface KeyboardInputBindings {
  * arrow keys or WASD set the direction, Space and Shift press the two
  * buttons, and Enter restarts. Returns a function that stops listening.
  *
+ * Each control is reported only as it changes: a button as it goes down
+ * and as it comes up, never again while a held key repeats. So a press can
+ * call a model's action, once, with nothing to tell a repeat from a press.
+ *
  * It ignores key presses inside a modal dialog, such as the pause menu, so
  * the dialog gets them. It still counts a key's release there, so a key held
  * as the dialog opens is let go. While it is not active, it ignores every key
@@ -89,7 +93,10 @@ export function listenToKeyboard(bindings: KeyboardInputBindings): () => void {
         if (oldUp !== newUp) bindings.onYDirectionChanged?.(newUp ? 'up' : newDown ? 'down' : 'none');
         if (oldDown !== newDown) bindings.onYDirectionChanged?.(newDown ? 'down' : newUp ? 'up' : 'none');
         const buttonFlag = BUTTON_FLAGS[e.key] ?? 0;
+        const oldButtons = pressedButtons;
         pressedButtons = isDown ? pressedButtons | buttonFlag : pressedButtons & ~buttonFlag;
+        // A key held down repeats its keydown: that is no change
+        if (pressedButtons === oldButtons) return;
         if (e.key === ' ') bindings.onPrimaryButtonChanged?.(isDown);
         if (e.key === 'Shift') bindings.onSecondaryButtonChanged?.(isDown);
         if (e.key === 'Enter') bindings.onRestartButtonChanged?.(isDown);

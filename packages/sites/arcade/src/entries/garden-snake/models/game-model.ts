@@ -31,8 +31,8 @@ export interface GameModel {
      * cell it is sliding toward, then turns, unless that would double it back.
      */
     direction: Direction;
-    /** Whether the restart control is held. Once the game is over, it starts another. */
-    restartPressed: boolean;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     update: (deltaMs: number) => void;
 }
 
@@ -48,6 +48,7 @@ export function createGameModel(): GameModel {
     let score: number;
     let heading: Direction;
     let msIntoStep: number;
+    let isNewRunRequested = false;
 
     const model: GameModel = {
         get phase() { return phase; },
@@ -57,10 +58,13 @@ export function createGameModel(): GameModel {
         colAt: (index) => slide(cells[index].col, index === 0 ? cells[0].col + COL_STEP[heading] : cells[index - 1].col),
         berry,
         direction: 'right',
-        restartPressed: false,
+        startNewRun: () => { isNewRunRequested = true; },
         update(deltaMs) {
+            // A new game asked for while one is under way is dropped, not kept for later
+            const isNewRunDue = isNewRunRequested;
+            isNewRunRequested = false;
             if (phase === 'game-over') {
-                if (model.restartPressed) restart();
+                if (isNewRunDue) restart();
                 return;
             }
             msIntoStep += deltaMs;

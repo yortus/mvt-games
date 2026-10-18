@@ -140,6 +140,14 @@ User input reported through a relay binding may be processed immediately or
 queued and processed on the next `update()` call. Prefer delayed processing
 to maintain the one-directional data flow within each frame.
 
+The wiring is also where an input gets its meaning, so the model is given
+the meaning, never the control. A button held to thrust sets something like
+`ship.isThrusting`, and a press of Restart calls something like
+`game.startNewRun()`, which starts the run at the next update. A model with
+fields named for its controls (`thrustPressed`, `restartPressed`) has to
+know what each control means, and to watch for the moment one is pressed.
+That is the view's and the wiring's job.
+
 ## Wiring
 
 The code that constructs a view is responsible for wiring its bindings -

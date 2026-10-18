@@ -1,6 +1,6 @@
 import type { ESLint, Linter } from 'eslint';
 import { version } from '../package.json';
-import { noDeepImports, noEmDash, noModuleState, noNull, noRelativeImportsIntoSrc, noThis, noWallClock } from './rules';
+import { noControlNames, noDeepImports, noEmDash, noModuleState, noNull, noRelativeImportsIntoSrc, noThis, noWallClock } from './rules';
 
 // ---------------------------------------------------------------------------
 // Plugin
@@ -14,13 +14,15 @@ import { noDeepImports, noEmDash, noModuleState, noNull, noRelativeImportsIntoSr
  * Presets:
  *
  * - `architecture`: rules that enforce MVT itself. Apply it to model files:
- *   no wall-clock time, no state at module level.
+ *   no wall-clock time, no state at module level, no members named for a
+ *   control.
  * - `style`: what this repo's style guide says that other rules do not
  *   check: no em-dashes, no `null`, no `this`.
  */
 const plugin = {
     meta: { name: '@mvtjs/eslint-plugin', version },
     rules: {
+        'no-control-names': noControlNames,
         'no-deep-imports': noDeepImports,
         'no-em-dash': noEmDash,
         'no-module-state': noModuleState,
@@ -38,6 +40,7 @@ plugin.configs.architecture = {
     rules: {
         '@mvtjs/no-wall-clock': 'error',
         '@mvtjs/no-module-state': 'error',
+        '@mvtjs/no-control-names': 'error',
     },
 };
 

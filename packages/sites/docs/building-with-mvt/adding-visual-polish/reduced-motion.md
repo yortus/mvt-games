@@ -144,14 +144,17 @@ change.
 The Arcade's way into an entry has a quiet path. The full one burns the
 wall away, floats the card's photo up to the play area and powers the
 screen on. The quiet one fades the page, then the photo, then fades the
-entry up. The page reads `prefers-reduced-motion` in `main.ts`, and passes
-`isMotionReduced` to `ArcadeView`, which hands it to the transition's view
-model, the card wall's layout, and attract mode, which stays off. The view
-model reads it as each transition starts, and its tests run both paths:
+entry up. The Arcade's model times the way in, and both paths draw each
+part over the same stretch of the model's time, so the entry starts and
+runs at the same moment on either. The page reads
+`prefers-reduced-motion` in `main.ts`, and passes `isMotionReduced` to
+`ArcadeView`, which hands it to the transition's view model, the card
+wall's layout, and attract mode, which stays off. The view model reads it
+as each transition starts, and its tests run both paths:
 
 - [`main.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/main.ts)
-- [`transition-view-model.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/transition-view-model.ts)
-  and its [tests](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/transition-view-model.test.ts)
+- [`entry-transition-view-model.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/entry-transition-view-model.ts)
+  and its [tests](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/entry-transition-view-model.test.ts)
 - [`card-wall-layout.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/card-wall-layout.ts)
 
 ---

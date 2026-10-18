@@ -1,13 +1,13 @@
 /** @jsxImportSource @mvtjs/html */
-import type { TransitionViewModel } from './transition-view-model';
+import type { EntryTransitionViewModel } from './entry-transition-view-model';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
-export interface TransitionViewBindings {
+export interface EntryTransitionViewBindings {
     /** The transition's presentation state, owned by the arcade view. */
-    readonly transition: TransitionViewModel;
+    readonly transition: EntryTransitionViewModel;
     /** The picture: the entry's thumbnail. */
     readonly thumbnail: () => string;
     /** The entry's last frame, shown in place of its thumbnail as the entry leaves, if there is one. */
@@ -32,7 +32,7 @@ export interface TransitionViewBindings {
  * white-hot line of a tube powering on or off. As the entry starts, this
  * view squashes and brightens the stage too, as its screen powers on.
  */
-export function TransitionView(bindings: TransitionViewBindings): Element {
+export function EntryTransitionView(bindings: EntryTransitionViewBindings): Element {
     const { transition, stage } = bindings;
     const { picture, glow } = transition;
 

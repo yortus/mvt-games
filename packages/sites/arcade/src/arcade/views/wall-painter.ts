@@ -1,5 +1,5 @@
 import type { Rect } from './rect';
-import type { WallEffectKind } from './transition-view-model';
+import type { WallEffectKind } from './entry-transition-view-model';
 
 // ---------------------------------------------------------------------------
 // Interface

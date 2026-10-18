@@ -23,10 +23,10 @@ export interface GameModel {
     /** The cave's roof and floor, `x` cave units from its mouth, in cave units down from the top. */
     ceilingAt: (x: number) => number;
     floorAt: (x: number) => number;
-    /** Whether the rise control is held. The first press starts the run. */
-    risePressed: boolean;
-    /** Whether the restart control is held. After a crash, it starts another run. */
-    restartPressed: boolean;
+    /** Whether the submarine's tanks are being blown, which lifts it. The first time they are, the run starts. */
+    isBlowingTanks: boolean;
+    /** Asks for a new run. It starts at the next update, if the last run is over. */
+    startNewRun: () => void;
     update: (deltaMs: number) => void;
 }
 
@@ -43,6 +43,7 @@ export function createGameModel(): GameModel {
     let ySpeed: number;
     let bendA: number;
     let bendB: number;
+    let isNewRunRequested = false;
     restart();
 
     const model: GameModel = {
@@ -53,15 +54,17 @@ export function createGameModel(): GameModel {
         get ySpeed() { return ySpeed; },
         ceilingAt: (x) => middleAt(x) - gapAt(x) / 2,
         floorAt: (x) => middleAt(x) + gapAt(x) / 2,
-        risePressed: false,
-        restartPressed: false,
+        isBlowingTanks: false,
+        startNewRun: () => { isNewRunRequested = true; },
         update(deltaMs) {
-            if (phase === 'crashed' && model.restartPressed) restart();
-            if (phase === 'ready' && model.risePressed) phase = 'cruising';
+            // A new run asked for while one is under way is dropped, not kept for later
+            if (isNewRunRequested && phase === 'crashed') restart();
+            isNewRunRequested = false;
+            if (phase === 'ready' && model.isBlowingTanks) phase = 'cruising';
             if (phase !== 'cruising') return;
 
             const deltaSec = deltaMs / 1000;
-            ySpeed += (model.risePressed ? -SINKING : SINKING) * deltaSec;
+            ySpeed += (model.isBlowingTanks ? -SINKING : SINKING) * deltaSec;
             ySpeed = Math.min(Math.max(ySpeed, -MAX_Y_SPEED), MAX_Y_SPEED);
             y += ySpeed * deltaSec;
             distance += (START_SPEED + distance * SPEED_GAIN) * deltaSec;

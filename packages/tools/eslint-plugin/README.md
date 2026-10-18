@@ -9,6 +9,7 @@ rest are this repo's own conventions.
 | --- | --- | --- |
 | `@mvtjs/no-wall-clock` | `architecture` | Timers (`setTimeout`, `setInterval`, `requestAnimationFrame`), clock reads (`Date.now()`, `new Date()`, `performance.now()`) and GSAP tweens made without `paused: true`. Apply it to model files |
 | `@mvtjs/no-module-state` | `architecture` | `let` and `var` at module level, exported or not. Every model the file makes would share that state, in every game played on the same page. Apply it to model files |
+| `@mvtjs/no-control-names` | `architecture` | Members of interfaces and type literals named for a control or a gesture: `restartPressed`, `cellTapped`, `swipeCount`, `pressPlay`. A model takes what the player means, so name held state for what it does (`isThrusting`), and make a one-off command an action (`startNewRun()`). Apply it to model files |
 | `@mvtjs/no-em-dash` | `style` | Em-dashes in comments, strings, template literals and JSX text. Auto-fixes each to a hyphen |
 | `@mvtjs/no-null` | `style` | `null` that our own code or APIs introduce: as a value, or in a type outside a function body. Comparisons and local types, which handle third-party values, are allowed |
 | `@mvtjs/no-this` | `style` | `this` |

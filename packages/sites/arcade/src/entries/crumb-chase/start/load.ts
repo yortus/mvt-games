@@ -56,9 +56,9 @@ export const load = definePixiLoader(async () => {
                 inputConfig: {
                     // On a touch screen, the game view's swipes steer, so no controls are drawn
                     showDpad: !isTouchDevice(),
-                    onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
-                    onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.playerInput.direction = dir; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                    onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
+                    onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

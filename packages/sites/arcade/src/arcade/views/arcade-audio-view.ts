@@ -6,7 +6,7 @@ import {
     POWER_ON, RESUME, TAG_ADD, TAG_REMOVE,
 } from '../data';
 import type { ArcadePhase } from '../models';
-import type { TransitionPhase, WallEffectKind } from './transition-view-model';
+import type { EntryTransitionPhase, WallEffectKind } from './entry-transition-view-model';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -31,7 +31,7 @@ export interface ArcadeAudioViewBindings {
     /** Why the last launch failed, if it did. */
     readonly loadFailure: () => string | undefined;
     /** Where the way into or out of an entry is. */
-    readonly transitionPhase: () => TransitionPhase;
+    readonly transitionPhase: () => EntryTransitionPhase;
     /**
      * Whether the tube's beam is concentrated into a line or a dot, as the
      * screen powers on or off. Each burst of static lasts as long as the
@@ -86,7 +86,7 @@ export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement 
         const w = watcher.poll();
         if (w.phase.changed && w.phase.previous === 'browsing') sound.play(LAUNCH);
         // A pause or resume chimes only while the entry keeps playing. Leaving the entry also clears the pause, and that plays nothing.
-        if (w.isPaused.changed && !w.phase.changed && w.phase.value === 'playing') sound.play(w.isPaused.value ? PAUSE : RESUME);
+        if (w.isPaused.changed && !w.phase.changed && (w.phase.value === 'revealing' || w.phase.value === 'playing')) sound.play(w.isPaused.value ? PAUSE : RESUME);
         if (w.isPanelOpen.changed) sound.play(w.isPanelOpen.value ? PANEL_OPEN : PANEL_CLOSE);
 
         // Choosing or removing a tag can change the search's text too. Only the tag's sound plays for that one action.

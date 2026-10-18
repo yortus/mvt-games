@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { advanceTime } from '@mvtjs/html';
 import { createMemoryHighscoreStore, type HighscoreStore } from '../../highscores';
 import type { ArcadeEntry, EntryDetails, EntryFacts, EntryStarter, EntryTags } from '../../entry-types';
+import { LAUNCH_MS, REVEAL_MS } from '../data';
 import { createArcadeModel, type ArcadeModelOptions } from './arcade-model';
 import { DEFAULT_SOUND_SETTINGS } from './sound-settings';
 
@@ -131,12 +133,13 @@ describe('ArcadeModel', () => {
             expect(shownIds(model)).toEqual(['maze-game', 'shooter-game']);
         });
 
-        it('clears the words when a chip is chosen', () => {
+        it('leaves the words as they are when a chip is chosen', () => {
             const model = createArcadeModel(options());
             model.searchText = 'sim';
             choose(model, 'genre', 'simulation');
-            expect(model.searchText).toBe('');
+            expect(model.searchText).toBe('sim');
             expect(model.activeChipAt(0)).toBe(chipIndex(model, 'genre', 'simulation'));
+            expect(shownIds(model)).toEqual(['sim-demo']);
         });
 
         it('keeps the active chips in the order they were chosen', () => {
@@ -191,28 +194,80 @@ describe('ArcadeModel', () => {
     });
 
     describe('running an entry', () => {
-        it('loads an entry, holds it ready, then plays it when told', async () => {
+        it('loads an entry, starts it once the way in has had its time, and lets it run once it is revealed', async () => {
             const model = createArcadeModel(options());
             model.launch('maze-game');
-            expect(model.phase).toBe('loading');
+            expect(model.phase).toBe('launching');
             expect(model.activeEntry?.id).toBe('maze-game');
             await settle();
-            expect(model.phase).toBe('ready');
             expect(model.starter).toBe(STARTER);
-            model.startPlaying();
+            // Loaded already, but the way out of the wall takes its time
+            await advanceTime(LAUNCH_MS - 1, model);
+            expect(model.phase).toBe('launching');
+            expect(model.isEntryStarted).toBe(false);
+            await advanceTime(1, model);
+            expect(model.phase).toBe('revealing');
+            expect(model.isEntryStarted).toBe(true);
+            expect(model.isEntryFrozen).toBe(true);
+            await advanceTime(REVEAL_MS - 1, model);
+            expect(model.phase).toBe('revealing');
+            await advanceTime(1, model);
             expect(model.phase).toBe('playing');
+            expect(model.isEntryFrozen).toBe(false);
         });
 
-        it('holds a started entry still until letGo, and stops holding it on exit', async () => {
+        it('counts how long each phase has lasted', async () => {
             const model = createArcadeModel(options());
-            await play(model, 'maze-game');
-            expect(model.isHeld).toBe(true);
-            model.letGo();
-            expect(model.isHeld).toBe(false);
+            model.launch('maze-game');
+            expect(model.elapsedMs).toBe(0);
+            await advanceTime(100, model);
+            expect(model.elapsedMs).toBe(100);
+            await advanceTime(LAUNCH_MS - 100 + 40, model);
+            expect(model.phase).toBe('revealing');
+            expect(model.elapsedMs).toBeLessThan(40);
+        });
+
+        it('waits in launching for a slow load, for as long as it takes', async () => {
+            let finishLoad: (starter: EntryStarter) => void = () => undefined;
+            const model = createArcadeModel(options({
+                loadEntry: () => new Promise((resolve) => {
+                    finishLoad = resolve;
+                }),
+            }));
+            model.launch('maze-game');
+            await advanceTime(LAUNCH_MS * 3, model);
+            expect(model.phase).toBe('launching');
+            finishLoad(STARTER);
+            await settle();
+            await advanceTime(16, model);
+            expect(model.phase).toBe('revealing');
+        });
+
+        it('starts an entry launched directly as soon as it has loaded, with no wall to leave', async () => {
+            const model = createArcadeModel(options());
+            model.launch('maze-game', { isDirect: true });
+            await settle();
+            await advanceTime(16, model);
+            expect(model.phase).toBe('revealing');
+            // The next launch from the wall takes its time again
             model.exit();
-            await play(model, 'maze-game');
+            model.launch('maze-game');
+            await settle();
+            await advanceTime(16, model);
+            expect(model.phase).toBe('launching');
+        });
+
+        it('leaves an entry from any phase, and the next launch starts afresh', async () => {
+            const model = createArcadeModel(options());
+            await start(model, 'maze-game');
             model.exit();
-            expect(model.isHeld).toBe(false);
+            expect(model.phase).toBe('browsing');
+            expect(model.isEntryStarted).toBe(false);
+            expect(model.isEntryFrozen).toBe(false);
+            await advanceTime(REVEAL_MS, model);
+            expect(model.phase).toBe('browsing');
+            model.launch('maze-game');
+            expect(model.elapsedMs).toBe(0);
         });
 
         it('launches only from the wall, and only entries it lists', () => {
@@ -246,10 +301,27 @@ describe('ArcadeModel', () => {
             expect(model.loadFailure).toBeUndefined();
         });
 
-        it('pauses only a playing entry, and unpauses on restart and exit', async () => {
+        it('pauses only an entry started, and one paused as it is revealed stays paused as it plays', async () => {
             const model = createArcadeModel(options());
             model.isPaused = true;
             expect(model.isPaused).toBe(false);
+            model.launch('maze-game');
+            model.isPaused = true;
+            expect(model.isPaused).toBe(false);
+            model.exit();
+            await start(model, 'maze-game');
+            model.isPaused = true;
+            expect(model.isPaused).toBe(true);
+            await advanceTime(REVEAL_MS, model);
+            expect(model.phase).toBe('playing');
+            expect(model.isPaused).toBe(true);
+            expect(model.isEntryFrozen).toBe(true);
+            model.isPaused = false;
+            expect(model.isEntryFrozen).toBe(false);
+        });
+
+        it('unpauses on restart and exit', async () => {
+            const model = createArcadeModel(options());
             await play(model, 'maze-game');
             model.isPaused = true;
             expect(model.isPaused).toBe(true);
@@ -278,10 +350,10 @@ describe('ArcadeModel', () => {
     describe('highscores', () => {
         it('freezes the entry while a score of its places, and lets it run when the placing closes', async () => {
             const model = createArcadeModel(options());
-            await play(model, 'maze-game');
-            // Held still as it starts, until let go
+            await start(model, 'maze-game');
+            // Still as it is revealed, then running
             expect(model.isEntryFrozen).toBe(true);
-            model.letGo();
+            await advanceTime(REVEAL_MS, model);
             expect(model.isEntryFrozen).toBe(false);
             model.runEnded(10);
             expect(model.highscores.placing).toBe('asking');
@@ -560,7 +632,6 @@ describe('ArcadeModel', () => {
         it('offers to resume an entry with a saved game, and holds it still meanwhile', async () => {
             const model = createArcadeModel(options({ hasSavedGame: (id) => id === 'maze-game' }));
             await play(model, 'maze-game');
-            model.letGo();
             expect(model.isResumeOffered).toBe(true);
             expect(model.isEntryFrozen).toBe(true);
             model.isPaused = true;
@@ -571,9 +642,10 @@ describe('ArcadeModel', () => {
             expect(model.restartCount).toBe(0);
         });
 
-        it('starts afresh when asked, as a restart does', async () => {
+        it('starts afresh when asked, as a restart does, even as the entry is revealed', async () => {
             const model = createArcadeModel(options({ hasSavedGame: () => true }));
-            await play(model, 'maze-game');
+            await start(model, 'maze-game');
+            expect(model.isResumeOffered).toBe(true);
             model.startAfresh();
             expect(model.isResumeOffered).toBe(false);
             expect(model.restartCount).toBe(1);
@@ -692,10 +764,17 @@ function isOffered(model: ReturnType<typeof createArcadeModel>, group: string, v
     return model.isChipOfferedAt(chipIndex(model, group, value));
 }
 
-async function play(model: ReturnType<typeof createArcadeModel>, id: string): Promise<void> {
+/** Launches the entry with `id`, and steps the model until the entry has started, and is being revealed. */
+async function start(model: ReturnType<typeof createArcadeModel>, id: string): Promise<void> {
     model.launch(id);
     await settle();
-    model.startPlaying();
+    await advanceTime(LAUNCH_MS, model);
+}
+
+/** Launches the entry with `id`, and steps the model until the entry is playing. */
+async function play(model: ReturnType<typeof createArcadeModel>, id: string): Promise<void> {
+    await start(model, id);
+    await advanceTime(REVEAL_MS, model);
 }
 
 /** Lets loads that have finished report back. */

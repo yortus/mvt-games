@@ -19,8 +19,8 @@ export interface OverlayViewBindings {
      * Read once. Defaults to `'system'`.
      */
     font?: 'system' | 'pixel';
-    /** The overlay was pressed (`true`) or released (`false`), e.g. to restart. */
-    onRestartPressed?: (pressed: boolean) => void;
+    /** The overlay was pressed. A game wires it to what a press means there, such as starting a new run. */
+    onPressed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -29,21 +29,14 @@ export interface OverlayViewBindings {
 
 /**
  * A dimmed panel over the play area with a centred message, such as "GAME
- * OVER". Pressable when it has an `onRestartPressed` relay binding.
+ * OVER". Pressable when it has an `onPressed` relay binding.
  */
 export function OverlayView(bindings: OverlayViewBindings): Container {
-    const { width, height, onRestartPressed } = bindings;
+    const { width, height, onPressed } = bindings;
     const style = { ...LABEL_STYLE, fontSize: Math.round(width * 0.05) };
 
-    // Presentation state: a release waiting to be relayed. A model sees a
-    // press only by polling in its update, so a tap whose press and release
-    // both arrive between two updates would be missed. The release is held
-    // back until this view's update, which runs after the model's in the same
-    // frame, so the model always sees the press first.
-    let isReleasePending = false;
-
     return (
-        <container label="overlay" visible={bindings.isVisible} onUpdate={relayPendingRelease}>
+        <container label="overlay" visible={bindings.isVisible}>
             <graphics ref={(g) => drawBackdrop(g, width, height)} {...pressHandlers()} />
             {createMessage()}
         </container>
@@ -68,26 +61,8 @@ export function OverlayView(bindings: OverlayViewBindings): Container {
 
     /** The backdrop's pointer handlers: none, so it is not interactive, without a relay binding to call. */
     function pressHandlers(): PressHandlers {
-        if (onRestartPressed === undefined) return {};
-        const release = (): void => {
-            isReleasePending = true;
-        };
-        return {
-            cursor: 'pointer',
-            onPointerDown: () => {
-                isReleasePending = false;
-                onRestartPressed(true);
-            },
-            onPointerUp: release,
-            onPointerUpOutside: release,
-            onPointerCancel: release,
-        };
-    }
-
-    function relayPendingRelease(): void {
-        if (!isReleasePending) return;
-        isReleasePending = false;
-        onRestartPressed?.(false);
+        if (onPressed === undefined) return {};
+        return { cursor: 'pointer', onPointerDown: () => onPressed() };
     }
 }
 
@@ -114,7 +89,4 @@ function drawBackdrop(g: Graphics, width: number, height: number): void {
 interface PressHandlers {
     cursor?: Cursor;
     onPointerDown?: () => void;
-    onPointerUp?: () => void;
-    onPointerUpOutside?: () => void;
-    onPointerCancel?: () => void;
 }

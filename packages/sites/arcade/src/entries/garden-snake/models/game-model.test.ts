@@ -36,17 +36,26 @@ describe('the garden snake game', () => {
         for (let i = 1; i < model.length; i++) expect(model.colAt(i)).toBeLessThanOrEqual(col + 1);
     });
 
-    it('ends at the fence, and starts again when restart is pressed', () => {
+    it('ends at the fence, and starts again when a new game is asked for', () => {
         // The berry lands in the top left corner, out of the way
         vi.spyOn(Math, 'random').mockReturnValue(0);
         const model = createGameModel();
         stepUntil(model, () => model.phase === 'game-over');
         expect(model.colAt(0)).toBe(COLS - 1);
 
-        model.restartPressed = true;
+        model.startNewRun();
         model.update(16);
         expect(model.phase).toBe('playing');
         expect(model.score).toBe(0);
+    });
+
+    it('drops a new game asked for during play, rather than starting one as soon as it ends', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        const model = createGameModel();
+        model.startNewRun();
+        stepUntil(model, () => model.phase === 'game-over');
+        model.update(16);
+        expect(model.phase).toBe('game-over');
     });
 });
 

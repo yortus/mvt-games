@@ -64,35 +64,35 @@ describe('GameModel', () => {
     });
 
     describe('firing', () => {
-        it('fires a bullet on fire press', () => {
+        it('fires a bullet when asked', () => {
             const g = makeGame();
-            g.playerInput.firePressed = true;
+            g.fire();
             g.update(16);
             expect(g.bullets.liveCount).toBe(1);
         });
 
-        it('does not fire more than one bullet per press', () => {
+        it('fires one bullet however many times it is asked between two updates, and none in the updates after', () => {
             const g = makeGame();
-            g.playerInput.firePressed = true;
+            g.fire();
+            g.fire();
             g.update(16);
-            g.update(16); // same press held
+            g.update(16);
             expect(g.bullets.liveCount).toBe(1);
         });
 
-        it('fires another bullet after releasing and pressing again', () => {
+        it('fires another bullet when asked again', () => {
             const g = makeGame();
-            g.playerInput.firePressed = true;
+            g.fire();
             g.update(16);
-            g.playerInput.firePressed = false;
             g.update(16);
-            g.playerInput.firePressed = true;
+            g.fire();
             g.update(16);
             expect(g.bullets.liveCount).toBe(2);
         });
 
-        it('drops a bomb on bomb press', () => {
+        it('drops a bomb when asked', () => {
             const g = makeGame();
-            g.playerInput.bombPressed = true;
+            g.dropBomb();
             g.update(16);
             expect(g.bombs.liveCount).toBe(1);
         });
@@ -101,13 +101,11 @@ describe('GameModel', () => {
     describe('what it keeps for the views to hear', () => {
         it('counts shots fired and bombs dropped, and starts again at 0 with a new game', () => {
             const g = makeGame();
-            g.playerInput.firePressed = true;
-            g.playerInput.bombPressed = true;
+            g.fire();
+            g.dropBomb();
             g.update(16);
-            g.playerInput.firePressed = false;
-            g.playerInput.bombPressed = false;
             g.update(16);
-            g.playerInput.firePressed = true;
+            g.fire();
             g.update(16);
             expect(g.shotsFired).toBe(2);
             expect(g.bombsDropped).toBe(1);
@@ -137,7 +135,7 @@ describe('GameModel', () => {
             // A row of tanks, one in each slot, under the first bomb's path
             const spawns = Array.from({ length: MAX_FUEL_TANKS }, (_, i) => ({ col: 6 + i, row: 0, kind: 'fuel-tank' as const }));
             const g = createGameModel({ sections: [{ ...makeSection(100), spawns }] });
-            g.playerInput.bombPressed = true;
+            g.dropBomb();
             for (let i = 0; i < 120; i++) g.update(1000 / 60);
             expect(g.enemiesDestroyed).toBe(1);
             expect(g.fuelTanksDestroyed).toBe(1);
@@ -147,7 +145,7 @@ describe('GameModel', () => {
         it('counts the base destroyed by a bomb as a base, not as an enemy', () => {
             // A bomb dropped as the game starts lands at about column 9
             const g = createGameModel({ sections: [{ ...makeSection(100), spawns: [{ col: 9, row: 0, kind: 'base' }] }] });
-            g.playerInput.bombPressed = true;
+            g.dropBomb();
             for (let i = 0; i < 120; i++) g.update(1000 / 60);
             expect(g.isBaseAlive).toBe(false);
             expect(g.basesDestroyed).toBe(1);
@@ -173,13 +171,22 @@ describe('GameModel', () => {
             // The fuel runs out for each ship in turn
             for (let i = 0; i < 10000 && g.phase !== 'game-over'; i++) g.update(100);
             expect(g.phase).toBe('game-over');
-            g.playerInput.restartPressed = true;
+            g.startNewRun();
             g.update(16);
             expect(g.phase).toBe('playing');
             expect(g.scrollCol).toBe(0);
             expect(g.rocketsLaunched).toBe(0);
             g.update(16);
             expect(g.rocketsLaunched).toBe(1);
+        });
+
+        it('drops a new game asked for before the game is over, rather than starting it once the game ends', () => {
+            const g = makeGame();
+            g.startNewRun();
+            for (let i = 0; i < 10000 && g.phase !== 'game-over'; i++) g.update(100);
+            expect(g.phase).toBe('game-over');
+            g.update(16);
+            expect(g.phase).toBe('game-over');
         });
     });
 
@@ -250,7 +257,7 @@ describe('GameModel', () => {
         it('saves nothing in the first section of a new game, even once it has points, since a restart is as good', () => {
             const g = createGameModel({ sections: makeTankSections() });
             expect(g.save()).toBeUndefined();
-            g.playerInput.bombPressed = true;
+            g.dropBomb();
             runFor(g, 2000);
             expect(g.score).toBe(SCORE_FUEL_TANK);
             expect(g.save()).toBeUndefined();
@@ -264,9 +271,7 @@ describe('GameModel', () => {
             const sectionStartFuel = g.fuel.fuel;
 
             // A bomb on the section's tanks wins points and fuel, which a save does not keep
-            g.playerInput.bombPressed = false;
-            g.update(TICK_MS);
-            g.playerInput.bombPressed = true;
+            g.dropBomb();
             runFor(g, 2000);
             expect(g.score).toBe(sectionStartScore + SCORE_FUEL_TANK);
             const saved = g.save();
@@ -393,7 +398,7 @@ function makeTankSections(): SectionProfile[] {
 
 /** Plays a game of `makeTankSections` into its second section, bombing a tank in the first on the way. */
 function playToSecondSection(g: GameModel): void {
-    g.playerInput.bombPressed = true;
+    g.dropBomb();
     for (let i = 0; i < LONGEST_RUN_TICKS && g.sectionIndex === 0; i++) g.update(TICK_MS);
     expect(g.sectionIndex).toBe(1);
     expect(g.score).toBe(SCORE_FUEL_TANK);

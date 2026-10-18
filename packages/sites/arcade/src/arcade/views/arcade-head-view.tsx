@@ -45,7 +45,11 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
         activeCount: () => model.activeChipCount,
         text: () => model.searchText,
         onTextChanged: (text) => { model.searchText = text; },
-        onChipChosen: model.chooseChipAt,
+        // A tag chosen from the suggestions takes the place of the words typed to find it
+        onChipChosen: (index) => {
+            model.chooseChipAt(index);
+            model.searchText = '';
+        },
         onChipRemoved: model.removeChipAt,
         onClearPressed: model.clearSearch,
         onLeft: () => bindings.onSearchLeft?.(),

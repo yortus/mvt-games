@@ -119,13 +119,13 @@ export function resolveInputDirection(xDir: XDirection, yDir: YDirection, facing
 // ---------------------------------------------------------------------------
 
 /**
- * Maps a relative InputDirection + attack-button state to a FighterMove.
+ * Maps a relative InputDirection, and whether the fighter is attacking, to a FighterMove.
  * Encodes the full control scheme table from the design doc.
  */
-export function resolveMove(inputDir: InputDirection, attackPressed: boolean): FighterMove {
+export function resolveMove(inputDir: InputDirection, isAttacking: boolean): FighterMove {
     if (inputDir === 'none') return 'idle';
 
-    if (!attackPressed) {
+    if (!isAttacking) {
         // prettier-ignore
         switch (inputDir) {
             case 'up':            return 'jump';

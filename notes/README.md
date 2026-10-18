@@ -132,7 +132,9 @@ loose ends are tasks 057 to 064.
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
 | 039 | [Link Previews for Each Entry](tasks/active/039-entry-link-previews.md) | low | 2026-10-18 |
+| 053 | [Models Name What the Player Means, Not the Controls](tasks/active/053-models-name-intent-not-input.md) | medium | 2026-10-16 |
 | 056 | [A Perfmon Throughout the Arcade, and a New Nav](tasks/active/056-floating-perfmon-in-the-arcade.md) | medium | 2026-10-17 |
+| 066 | [The Arcade's Way Into an Entry, Timed by the Model](tasks/active/066-arcade-way-in-timed-by-the-model.md) | medium | 2026-10-18 |
 
 ### Backlog
 
@@ -144,7 +146,6 @@ loose ends are tasks 057 to 064.
 | 048 | [Sound: Follow-Ons From the Audio80](tasks/backlog/048-sound-follow-ons.md) | low | 2026-10-09 |
 | 049 | [Highscores: Follow-Ons](tasks/backlog/049-highscores-follow-ons.md) | low | 2026-10-15 |
 | 050 | [Visitor Analytics: Who Comes, and From Where](tasks/backlog/050-visitor-analytics.md) | low | 2026-10-15 |
-| 053 | [Models Name What the Player Means, Not the Controls](tasks/backlog/053-models-name-intent-not-input.md) | medium | 2026-10-16 |
 | 054 | [Smooth Window Resizes While an Entry Plays](tasks/backlog/054-smooth-window-resizes.md) | low | 2026-10-16 |
 | 057 | [Open an Arcade Entry in the Playground, From GitHub](tasks/backlog/057-open-arcade-entries-in-the-playground.md) | medium | 2026-10-17 |
 | 058 | [Playground: Swap the Views, Keep the Model](tasks/backlog/058-swap-views-keep-the-model.md) | medium | 2026-10-17 |
@@ -154,7 +155,6 @@ loose ends are tasks 057 to 064.
 | 062 | [Check the Playground on Real Phones and in Safari](tasks/backlog/062-playground-on-phones-and-safari.md) | medium | 2026-10-17 |
 | 063 | [Playground: Shortcuts While the Preview Has the Keyboard](tasks/backlog/063-playground-shortcuts-while-the-preview-has-focus.md) | low | 2026-10-17 |
 | 065 | [Audio90: Follow-Ons](tasks/backlog/065-audio90-follow-ons.md) | low | 2026-10-17 |
-| 066 | [The Arcade's Way Into an Entry, Timed by the Model](tasks/backlog/066-arcade-way-in-timed-by-the-model.md) | medium | 2026-10-18 |
 
 ## Archive
 

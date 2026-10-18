@@ -13,7 +13,7 @@ Add Fuel Run, a side-scrolling shooter in the style of golden-age arcade games, 
 **Steps:**
 
 1. **File scaffold + data layer** - Create `src/games/fuel-run/` directory (28 new files total). Define all tuning constants in stage-data.ts, 3 section terrain height profiles + spawn lists in section-data.ts, texture registry in textures.ts, and a `scripts/generate-fuel-run-textures.ts` script
-2. **Common types + player input** - `TileKind`, `SpawnKind`, `GamePhase`, direction types in `common.ts`; `PlayerInput` record in `player-input.ts` (pattern: Astrovoid `createPlayerInput`)
+2. **Common types** - `TileKind`, `SpawnKind`, `GamePhase`, direction types in `common.ts`. The player's intent goes on the game model, named for what the ship does rather than for the controls: `thrustX`/`thrustY` for the way the ship is pushed, and `fire()`/`dropBomb()` actions that take effect at the next update
 3. **Terrain model** - `createTerrainModel(sections)` expands height profiles into a flat typed array tile grid; exposes `getTile(col, row)`, `isSolid()`, `getSectionIndex()`; reference: Burrow Bust `createFieldModel`
 4. **Ship model** - `createShipModel(options)` with `worldCol`/`worldRow` in tile units; worldCol advances at scroll speed + player input, clamped to screen bounds; physics: instant velocity, no drag
 5. **Bullet + bomb models** - `BulletModel`: pool of 4, fires rightward at `BULLET_SPEED`, auto-expires. `BombModel`: pool of 2, parabolic arc via `BOMB_GRAVITY * dt` accumulation on vertical velocity (new physics not in other games)

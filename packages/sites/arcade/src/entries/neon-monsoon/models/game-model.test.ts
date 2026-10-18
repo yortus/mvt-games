@@ -97,6 +97,8 @@ describe('GameModel', () => {
 
         it('ends the game with the last life, and starts a new one on restart', () => {
             const game = makeGame();
+            // A new game asked for during play is dropped, not kept for the game over
+            game.startNewRun();
             for (let life = 0; life < INITIAL_LIVES; life++) {
                 play(game, 3000);
                 bulletAtShip(game);
@@ -106,8 +108,9 @@ describe('GameModel', () => {
             const frozenStep = game.stepCount;
             play(game, 1000);
             expect(game.stepCount).toBe(frozenStep);
+            expect(game.phase).toBe('game-over');
 
-            game.playerInput.restartPressed = true;
+            game.startNewRun();
             game.update(STEP_MS);
             expect(game.phase).toBe('playing');
             expect(game.lives).toBe(INITIAL_LIVES);
@@ -118,7 +121,7 @@ describe('GameModel', () => {
         it('turn every bullet into a gem, which flies to the ship and scores', () => {
             const game = makeGame();
             for (let i = 0; i < 10; i++) game.enemyBullets.fire(20 + i * 20, 40, 0, 'orb-amber', { speed: 0 });
-            game.playerInput.bombPressed = true;
+            game.dropBomb();
             game.update(STEP_MS);
             expect(game.isBombing).toBe(true);
             expect(game.bombs).toBe(BOMBS_PER_LIFE - 1);
@@ -131,11 +134,23 @@ describe('GameModel', () => {
             expect(game.scoring.score).toBeGreaterThan(0);
         });
 
-        it('go off once per press', () => {
+        it('go off once each time one is asked for', () => {
             const game = makeGame();
-            game.playerInput.bombPressed = true;
+            game.dropBomb();
             play(game, 5000);
             expect(game.bombs).toBe(BOMBS_PER_LIFE - 1);
+        });
+
+        it('are not kept for later when asked for while the ship is exploding', () => {
+            const game = makeGame();
+            bulletAtShip(game);
+            game.update(STEP_MS);
+            expect(game.phase).toBe('dying');
+            game.dropBomb();
+            play(game, DYING_MS + 1000);
+            expect(game.phase).toBe('playing');
+            expect(game.isBombing).toBe(false);
+            expect(game.bombs).toBe(BOMBS_PER_LIFE);
         });
     });
 
@@ -177,7 +192,7 @@ describe('GameModel', () => {
             ]);
             for (let i = 0; i < 1200 && game.itemsCollected === 0; i++) game.update(STEP_MS);
             for (let i = 0; i < 10; i++) game.enemyBullets.fire(20 + i * 20, 40, 0, 'orb-amber', { speed: 0 });
-            game.playerInput.bombPressed = true;
+            game.dropBomb();
             play(game, 2000);
             expect(game.explosionsStarted).toBeGreaterThan(0);
             expect(game.itemsCollected).toBeGreaterThan(0);
@@ -223,13 +238,12 @@ describe('GameModel', () => {
         /** Thirty seconds of the real stage, steering left and right, focusing and bombing on a schedule. */
         function playScripted() {
             const game = makeGame(STAGE_EVENTS);
-            const input = game.playerInput;
             for (let frame = 0; frame < 30 * 60; frame++) {
                 const second = Math.floor(frame / 60);
-                input.xDirection = second % 4 === 0 ? 'left' : second % 4 === 2 ? 'right' : 'none';
-                input.yDirection = second % 6 === 1 ? 'up' : second % 6 === 4 ? 'down' : 'none';
-                input.focusPressed = second % 5 === 3;
-                input.bombPressed = frame % 600 === 300;
+                game.headingX = second % 4 === 0 ? 'left' : second % 4 === 2 ? 'right' : 'none';
+                game.headingY = second % 6 === 1 ? 'up' : second % 6 === 4 ? 'down' : 'none';
+                game.isFocusing = second % 5 === 3;
+                if (frame % 600 === 300) game.dropBomb();
                 game.update(STEP_MS);
             }
             return {
@@ -261,7 +275,7 @@ describe('GameModel', () => {
             ], { bombs: BOMBS_PER_LIFE, power: 1 });
             const start = { score: game.scoring.score, grazeCount: game.scoring.grazeCount, lives: game.lives };
             // The bomb shields the ship from the bullets the kite leaves on later loops.
-            game.playerInput.bombPressed = true;
+            game.dropBomb();
             for (let i = 0; i < 1200 && game.itemsCollected === 0; i++) game.update(STEP_MS);
             expect(game.scoring.score).toBeGreaterThan(start.score);
             expect(game.lives).toBe(start.lives);
@@ -351,7 +365,7 @@ describe('GameModel', () => {
 
         it('loads nothing that is not a saved game, and plays on as it was', () => {
             const game = makeGame();
-            game.playerInput.bombPressed = true;
+            game.dropBomb();
             play(game, 1000);
             const saved = saveAtTally();
             const maxLives = INITIAL_LIVES + EXTEND_SCORES.length;

@@ -247,6 +247,7 @@ Re-export through the directory's barrel file (`index.ts`).
 | Module-level `let` in a model file     | M-isolation  | State in the factory's closure: every model the file makes would share it (lint: `@mvtjs/no-module-state`) |
 | Importing a view or view module        | M-isolation  | Models never reference views                  |
 | Storing pixel coordinates              | M-domain     | Use domain units (row/col, world units)       |
+| Fields named for controls (`firePressed`, `swipeCount`), or watching one for a press | M-domain | State named for what a held control does (`isFiring`); an action for a one-off command (`startNewRun()`), which acts at the next update (lint: `@mvtjs/no-control-names`) |
 | Using `class`                          | Style        | Factory function + plain record               |
 | Using `enum` or const-object enum      | Style        | String-literal union                          |
 | Using `null`                           | Style        | Use `undefined`                               |

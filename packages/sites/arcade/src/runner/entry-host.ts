@@ -94,6 +94,8 @@ export interface EntryHost {
      * pixels. The area is centred in the host's element and scaled to fit it,
      * as the host would scale it. While the host is turned, the rectangle is
      * the play area's own width and height, about the centre where it shows.
+     * Until the host's element has a size, as before the page first lays it
+     * out, the rectangle is empty, at the element's corner.
      */
     playRectFor: (target: PlayTarget) => Rect;
     /** Removes the host and everything it made. */
@@ -283,6 +285,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
 
         playRectFor(target) {
+            // Nowhere to play yet: fitting to nothing would give the play area at its own size, wherever it fell
+            if (areaRect.width <= 0 || areaRect.height <= 0) return { x: areaRect.x, y: areaRect.y, width: 0, height: 0 };
             const pixiStarter = target.starter?.kind === 'pixi' ? target.starter : undefined;
             const screenWidth = pixiStarter?.screenWidth ?? target.screenWidth;
             const screenHeight = pixiStarter?.screenHeight ?? target.screenHeight;

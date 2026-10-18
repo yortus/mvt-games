@@ -9,12 +9,12 @@ describe('createTrackerModel', () => {
         expect([model.tuneIndex, model.isPlaying, model.starts, model.playedMs]).toEqual([0, false, 0, 0]);
     });
 
-    it('starts the tune chosen, counts how long it plays, and stops it at the next press', () => {
+    it('starts the tune chosen, counts how long it plays, and stops it when asked again', () => {
         const model = create();
-        model.pressPlay();
+        model.playOrStop();
         model.update(250);
         expect([model.isPlaying, model.starts, model.playedMs]).toEqual([true, 1, 250]);
-        model.pressPlay();
+        model.playOrStop();
         model.update(250);
         expect([model.isPlaying, model.starts, model.playedMs]).toEqual([false, 1, 0]);
     });
@@ -23,7 +23,7 @@ describe('createTrackerModel', () => {
         const model = create();
         model.chooseTune(2);
         expect([model.tuneIndex, model.isPlaying, model.starts]).toEqual([2, false, 0]);
-        model.pressPlay();
+        model.playOrStop();
         model.update(1000);
         model.chooseTune(3);
         expect([model.tuneIndex, model.isPlaying, model.starts, model.playedMs]).toEqual([3, true, 2, 0]);

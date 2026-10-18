@@ -48,7 +48,6 @@ function run(game: GameModel, ms: number): void {
  * Stops early if the game leaves play.
  */
 function travel(game: GameModel, ...points: (readonly [number, number])[]): void {
-    const input = game.playerInput;
     for (const [row, col] of points) {
         for (let frame = 0; frame < 2000; frame++) {
             const farmhand = game.farmhand;
@@ -56,15 +55,15 @@ function travel(game: GameModel, ...points: (readonly [number, number])[]): void
             const nextRow = isAtPoint ? farmhand.pointRow : farmhand.pointRow + DIRECTION_DELTA[farmhand.direction][0];
             const nextCol = isAtPoint ? farmhand.pointCol : farmhand.pointCol + DIRECTION_DELTA[farmhand.direction][1];
             if (isAtPoint && nextRow === row && nextCol === col) break;
-            input.direction = nextRow === row && nextCol === col ? 'none' : directionTowards(nextRow, nextCol, row, col);
+            hold(game, nextRow === row && nextCol === col ? 'none' : directionTowards(nextRow, nextCol, row, col));
             game.update(STEP_MS);
             if (game.phase !== 'playing') {
-                input.direction = 'none';
+                game.stop();
                 return;
             }
         }
     }
-    input.direction = 'none';
+    game.stop();
 }
 
 /** Fences off the bottom left corner, 110 cells, which clears a `QUICK_ROUND`. */
@@ -75,10 +74,16 @@ function clearCorner(game: GameModel): void {
 /** Walks the farmhand left along the fence for `ms`, and returns how far they went, in grid steps. */
 function walkLeft(game: GameModel, ms: number): number {
     const startCol = game.farmhand.col;
-    game.playerInput.direction = 'left';
+    game.steer('left');
     run(game, ms);
-    game.playerInput.direction = 'none';
+    game.stop();
     return startCol - game.farmhand.col;
+}
+
+/** Steers the farmhand `way`, or stops them for none, as a key held or let go does. */
+function hold(game: GameModel, way: HeldDirection): void {
+    if (way === 'none') game.stop();
+    else game.steer(way);
 }
 
 function directionTowards(row: number, col: number, toRow: number, toCol: number): HeldDirection {
@@ -96,6 +101,27 @@ describe('GameModel', () => {
         run(game, READY_MS);
         expect(game.phase).toBe('playing');
         expect(game.lives).toBe(START_LIVES);
+    });
+
+    it('passes the latest order on to the farmhand as play begins, and the farmhand keeps it', () => {
+        const game = createGameModel({ rounds: [QUIET_ROUND], rows: ROWS, cols: COLS });
+        const startCol = game.farmhand.col;
+        game.steer('right');
+        game.stop();
+        game.steer('left');
+        run(game, READY_MS + 1000);
+        expect(game.farmhand.isMoving).toBe(true);
+        expect(game.farmhand.col).toBeLessThan(startCol);
+    });
+
+    it('stops the farmhand at a grid point when told to', () => {
+        const game = makeGame();
+        game.steer('left');
+        run(game, 500);
+        game.stop();
+        run(game, 1000);
+        expect(game.farmhand.isMoving).toBe(false);
+        expect(Number.isInteger(game.farmhand.col)).toBe(true);
     });
 
     it('fences off a corner with no dust devil in it, scoring its cells and penning its sheep', () => {
@@ -217,14 +243,18 @@ describe('GameModel', () => {
         expect(game.lives).toBe(START_LIVES - 1);
     });
 
-    it('ends the game when the last life is lost, and starts again on restart', () => {
+    it('ends the game when the last life is lost, and starts again when asked', () => {
         const game = makeGame({ startBeetles: 2, maxBeetles: 2, beetleSpeed: 25 });
+        // A new game asked for during play is dropped, not kept for later
+        game.startNewRun();
         for (let i = 0; i < 100 && game.phase !== 'game-over'; i++) run(game, 1000);
         expect(game.phase).toBe('game-over');
         expect(game.lives).toBe(0);
-        game.playerInput.restartPressed = true;
         game.update(STEP_MS);
-        game.playerInput.restartPressed = false;
+        expect(game.phase).toBe('game-over');
+        game.startNewRun();
+        expect(game.phase).toBe('game-over');
+        game.update(STEP_MS);
         expect(game.phase).toBe('ready');
         expect(game.lives).toBe(START_LIVES);
         expect(game.score).toBe(0);

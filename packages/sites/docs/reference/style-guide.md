@@ -42,7 +42,7 @@ is written and organized in this project.
 | ---------------------- | ---------------------------- | --------------------------------------------- |
 | Files                  | `lower-kebab-case.ts`        | `score-model.ts`, `tile-kind.ts`              |
 | Types / Interfaces     | `PascalCase`                 | `ScoreModel`, `GameViewBindings`              |
-| Model types            | Suffix with `Model`          | `ScoreModel`, `PlayerInputModel`              |
+| Model types            | Suffix with `Model`          | `ScoreModel`, `ShipModel`                     |
 | View functions         | `PascalCase`, ending `View`  | `HudView`, `ShipView`                         |
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
 | Factory functions      | `create` + `PascalCase` noun | `createScoreModel`, `createSlotList`          |
@@ -50,6 +50,7 @@ is written and organized in this project.
 | Boolean properties     | `is` / `has` / `can` prefix  | `isAlive`, `hasAutoTurn`, `canFire`           |
 | Query bindings         | What they return             | `score`, `screenX`, `isAlive`, `tileKindAt`   |
 | Relay bindings         | `on` + what the user did     | `onFirePressed`, `onTileTapped`               |
+| A model's input        | What the player means, never the control | `isThrusting`, `startNewRun()` ✅ · `thrustPressed`, `restartPressed` ❌ |
 | Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` ✅ · `TileType` ❌                |
 | Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` ✅ · `state: GameState` ❌|
 | Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`                    |

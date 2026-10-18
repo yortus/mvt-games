@@ -24,7 +24,7 @@ export interface TrackerModel {
     /** Moves the choice by `step`, round and round. */
     moveChoice: (step: number) => void;
     /** Starts the tune chosen, or stops it if it is playing. */
-    pressPlay: () => void;
+    playOrStop: () => void;
     /** Stops the tune playing, if one is. */
     stop: () => void;
     update: (deltaMs: number) => void;
@@ -82,7 +82,7 @@ export function createTrackerModel(options: TrackerModelOptions): TrackerModel {
             model.chooseTune(wrap(tuneIndex + step, tuneCount));
         },
 
-        pressPlay() {
+        playOrStop() {
             if (isPlaying) model.stop();
             else start();
         },

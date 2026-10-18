@@ -23,7 +23,7 @@ This was task 026's last criterion; 026 was absorbed into 036.
 - [ ] **Changing styles need an `onRefresh` step.** `style` is fixed, so
   the cards and the transition, which move every frame, each write their
   styles in an `onRefresh` step with change checks of their own
-  (`card-view.tsx`, `transition-view.tsx`). A changeable attribute per style
+  (`card-view.tsx`, `entry-transition-view.tsx`). A changeable attribute per style
   property, or one for CSS custom properties (`style-` or `var-`, as `data-`
   and `aria-` are prefixes now), would remove that boilerplate.
 - [ ] **An element hidden by its own `visible` binding skips its `onRefresh`,

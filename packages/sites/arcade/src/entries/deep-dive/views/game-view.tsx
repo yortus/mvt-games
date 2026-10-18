@@ -63,7 +63,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 height={SCREEN_HEIGHT}
                 isVisible={() => model.phase === 'crashed'}
                 text={() => crashText}
-                onRestartPressed={(pressed) => { model.restartPressed = pressed; }}
+                onPressed={model.startNewRun}
             />
         </container>
     );
@@ -73,7 +73,7 @@ export function GameView(bindings: GameViewBindings): Container {
         for (let i = 0; i < bubbles.length; i++) bubbles[i].ageMs += deltaMs;
         msToNextBubble -= deltaMs;
         if (model.phase === 'crashed' || msToNextBubble > 0) return;
-        msToNextBubble = model.risePressed ? 80 : 300;
+        msToNextBubble = model.isBlowingTanks ? 80 : 300;
         const bubble = bubbles[nextBubble];
         nextBubble = (nextBubble + 1) % bubbles.length;
         bubble.x = model.distance + SUB_X - 0.75;

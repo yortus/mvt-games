@@ -31,11 +31,11 @@ function advanceToFighting(game: GameModel): void {
  */
 function walkFightersClose(game: GameModel): void {
     // Walk player forward for enough time to close the distance
-    game.playerInput.xDirection = 'right';
+    game.horizontalLean = 'right';
     for (let i = 0; i < 100; i++) {
         advance(game, 16);
     }
-    game.playerInput.xDirection = 'none';
+    game.horizontalLean = 'none';
     advance(game, 16);
 }
 
@@ -121,11 +121,11 @@ describe('GameModel', () => {
             walkFightersClose(game);
 
             // Start an attack
-            game.playerInput.yDirection = 'down';
-            game.playerInput.xDirection = 'none';
+            game.verticalLean = 'down';
+            game.horizontalLean = 'none';
             // foot-sweep has a forgiving hitbox
             advance(game, 16);
-            game.playerInput.yDirection = 'none';
+            game.verticalLean = 'none';
 
             // Advance through the attack to the hitbox-active frames
             const moveData = MOVE_DATA['foot-sweep'];
@@ -147,11 +147,11 @@ describe('GameModel', () => {
 
             // Opponent should be idle and facing the player
             // Player does a blockable attack (high-punch)
-            game.playerInput.yDirection = 'up';
-            game.playerInput.xDirection = 'right';
+            game.verticalLean = 'up';
+            game.horizontalLean = 'right';
             advance(game, 60); // settle
-            game.playerInput.yDirection = 'none';
-            game.playerInput.xDirection = 'none';
+            game.verticalLean = 'none';
+            game.horizontalLean = 'none';
 
             // Advance through the attack
             for (let i = 0; i < 20; i++) {
@@ -294,8 +294,8 @@ describe('GameModel', () => {
 
             expect(game.phase).toBe('match-over');
 
-            // Press restart
-            game.playerInput.restartPressed = true;
+            // Ask for a new match
+            game.startNewRun();
             advance(game, 16);
 
             expect(game.phase).toBe('round-intro');
@@ -307,11 +307,31 @@ describe('GameModel', () => {
         it('does not reset during fighting phase', () => {
             const game = makeGameInFighting();
 
-            game.playerInput.restartPressed = true;
+            game.startNewRun();
             advance(game, 16);
 
             // Should still be fighting
             expect(game.phase).toBe('fighting');
+        });
+
+        it('drops a new match asked for during a fight, rather than keeping it for later', () => {
+            const game = makeGameInFighting();
+            game.startNewRun();
+            advance(game, 16);
+
+            // Win two rounds by points
+            for (let round = 0; round < 2; round++) {
+                if (game.phase !== 'fighting') advanceToFighting(game);
+                game.match.scorePoint('player');
+                game.match.scorePoint('player');
+                game.match.scorePoint('player');
+                advance(game, ROUND_TIMER_MS + 1);
+                advance(game, ROUND_OVER_DELAY_MS + 1);
+            }
+            expect(game.phase).toBe('match-over');
+
+            advance(game, 16);
+            expect(game.phase).toBe('match-over');
         });
     });
 

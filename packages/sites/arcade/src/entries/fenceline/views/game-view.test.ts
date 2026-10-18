@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { type Container, Text } from 'pixi.js';
+import { describe, expect, it, vi } from 'vitest';
+import { type Container, type FederatedPointerEvent, Text } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { FIELD_COLS, FIELD_ROWS, type RoundConfig, ROUNDS, SHEEP_POINTS } from '../data';
-import { createGameModel, type HeldDirection } from '../models';
+import { createGameModel, type GameModel, type HeldDirection } from '../models';
 import { GameView } from './game-view';
+import { SCREEN_WIDTH } from './view-constants';
 
 const STEP_MS = 1000 / 60;
 
@@ -27,7 +28,7 @@ describe('GameView', () => {
         let frame = 0;
         let mostClosures = 0;
         while (game.phase !== 'game-over' && frame < 60 * 60 * 10) {
-            game.playerInput.direction = WANDER[Math.floor(frame / 40) % WANDER.length];
+            hold(game, WANDER[Math.floor(frame / 40) % WANDER.length]);
             tick();
             mostClosures = Math.max(mostClosures, game.field.closureCount);
             frame++;
@@ -37,9 +38,8 @@ describe('GameView', () => {
         tick();
         expect(listTexts(view).some((text) => text.startsWith('GAME OVER'))).toBe(true);
 
-        game.playerInput.restartPressed = true;
+        game.startNewRun();
         tick();
-        game.playerInput.restartPressed = false;
         tick();
         expect(listTexts(view)).toContain('BREEZY ACRES\nROUND 1\n\nFence off 70% of the meadow');
         view.destroy({ children: true });
@@ -76,10 +76,9 @@ describe('GameView', () => {
         };
 
         // From the bottom middle, left along the edge, then a wire up and across the corner
-        const input = game.playerInput;
         const moves: readonly [HeldDirection, number][] = [['none', 1800], ['left', 2200], ['up', 700], ['left', 1200]];
         for (const [direction, ms] of moves) {
-            input.direction = direction;
+            hold(game, direction);
             for (let elapsed = 0; elapsed < ms && game.sheepPennedCount === 0; elapsed += STEP_MS) tick();
         }
         expect(game.sheepPennedCount).toBe(1);
@@ -109,13 +108,12 @@ describe('GameView', () => {
             refreshView(view);
         };
 
-        const input = game.playerInput;
         const moves: readonly [HeldDirection, number][] = [['none', 1800], ['left', 2200], ['up', 700], ['left', 1200]];
         for (const [direction, ms] of moves) {
-            input.direction = direction;
+            hold(game, direction);
             for (let elapsed = 0; elapsed < ms && game.phase !== 'round-clear'; elapsed += STEP_MS) tick();
         }
-        input.direction = 'none';
+        game.stop();
         expect(game.phase).toBe('round-clear');
         while (game.phase === 'round-clear') tick();
         expect(game.phase).toBe('farm-fenced');
@@ -131,6 +129,44 @@ describe('GameView', () => {
         expect(listTexts(view)).not.toContain('FARM FENCED!');
         view.destroy({ children: true });
     });
+
+    it('steers the farmhand the way swiped on a touch screen, and stops them on a tap', () => {
+        // A touch screen, where the view takes swipes and taps
+        vi.stubGlobal('ontouchstart', vi.fn());
+        try {
+            const round: RoundConfig = { ...ROUNDS[0], devilSpeed: 0, startBeetles: 0, maxBeetles: 0 };
+            const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
+            const { audio80, controls } = createHeadlessAudio80();
+            const view = GameView({ model: game, sound: audio80 });
+            const tick = (): void => {
+                game.update(STEP_MS);
+                controls.update(STEP_MS);
+                updateView(view, STEP_MS);
+                refreshView(view);
+            };
+            const swipes = findByLabel(view, 'swipe-input');
+            while (game.phase !== 'playing') tick();
+
+            // A swipe left along the bottom fence, well past how far a finger must slide
+            const startCol = game.farmhand.col;
+            swipes.emit('pointerdown', touch(SCREEN_WIDTH / 2, 0));
+            swipes.emit('pointerup', touch(SCREEN_WIDTH / 4, 0));
+            for (let i = 0; i < 60; i++) tick();
+            expect(game.farmhand.isMoving).toBe(true);
+            expect(game.farmhand.col).toBeLessThan(startCol);
+
+            // A tap, which stops them at the next grid point
+            swipes.emit('pointerdown', touch(SCREEN_WIDTH / 2, 0));
+            swipes.emit('pointerup', touch(SCREEN_WIDTH / 2, 0));
+            for (let i = 0; i < 60; i++) tick();
+            expect(game.farmhand.isMoving).toBe(false);
+            expect(Number.isInteger(game.farmhand.col)).toBe(true);
+            view.destroy({ children: true });
+        }
+        finally {
+            vi.unstubAllGlobals();
+        }
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -138,6 +174,33 @@ describe('GameView', () => {
 // ---------------------------------------------------------------------------
 
 const WANDER: readonly HeldDirection[] = ['up', 'left', 'up', 'right', 'down', 'right', 'up', 'left', 'down'];
+
+/** Steers the farmhand `way`, or stops them for none, as a key held or let go does. */
+function hold(game: GameModel, way: HeldDirection): void {
+    if (way === 'none') game.stop();
+    else game.steer(way);
+}
+
+/** A touch of the first finger at (x, y), in the view's pixels. */
+function touch(x: number, y: number): FederatedPointerEvent {
+    return { pointerId: 1, getLocalPosition: () => ({ x, y }) } as unknown as FederatedPointerEvent;
+}
+
+/** Returns the first display object in the view labelled `label`. */
+function findByLabel(view: Container, label: string): Container {
+    const found = search(view);
+    if (found === undefined) throw new Error(`Nothing is labelled ${label}`);
+    return found;
+
+    function search(node: Container): Container | undefined {
+        if (node.label === label) return node;
+        for (const child of node.children) {
+            const inChild = search(child);
+            if (inChild !== undefined) return inChild;
+        }
+        return undefined;
+    }
+}
 
 /** The text of every visible text object in the view, and every visible label, which is how pixel text tells what it spells. */
 function listTexts(view: Container): string[] {

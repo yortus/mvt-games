@@ -52,9 +52,9 @@ export const load = definePixiLoader(async () => {
                     showDpad: true,
                     showPrimary: true,
                     primaryLabel: 'Fire',
-                    onXDirectionChanged: (dir) => { gameModel.playerInput.direction = dir; },
-                    onPrimaryButtonChanged: (pressed) => { gameModel.playerInput.firePressed = pressed; },
-                    onRestartButtonChanged: (pressed) => { gameModel.playerInput.restartPressed = pressed; },
+                    onXDirectionChanged: (dir) => { gameModel.direction = dir; },
+                    onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.fire(); },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },
@@ -71,5 +71,8 @@ const THUMBNAIL_ADVANCE_MS = 2000;
 /** When the thumbnail's two shots are fired: late enough that both are still in the air. */
 const THUMBNAIL_SHOTS_MS = [1500, 1750];
 
-/** How long each press is held: a few frames. */
-const THUMBNAIL_PRESS_MS = 50;
+/**
+ * How long each press is held: one step of the thumbnail's advance, which is
+ * a frame. Each press then goes down in one step only, and fires one shot.
+ */
+const THUMBNAIL_PRESS_MS = 16;

@@ -1,5 +1,6 @@
 import type { HighscoreStore } from '../../highscores';
 import type { ArcadeEntry, EntryDetails, EntryFacts, EntryStarter } from '../../entry-types';
+import { LAUNCH_MS, REVEAL_MS } from '../data';
 import { type ArcadeQuery, parseArcadeQuery } from './arcade-query';
 import { createHighscoresModel, type HighscoresModel } from './highscores-model';
 import {
@@ -41,9 +42,9 @@ export interface ArcadeModel {
     /** Every tag some entry has, group by group, in a fixed order. Other members address them by their index in it. */
     readonly chips: readonly TagChip[];
     /**
-     * How many entries the wall would show if this chip were chosen. These
-     * are the entries with its tag and every active one, whatever the words,
-     * because choosing a chip clears the words.
+     * How many entries have this chip's tag and every active one, whatever
+     * the words. It is how many the wall would show were the chip chosen in
+     * place of the words.
      */
     readonly chipCountAt: (index: number) => number;
     /**
@@ -55,7 +56,7 @@ export interface ArcadeModel {
     readonly activeChipCount: number;
     /** The active chip chosen `position`th, as its index in `chips`. The chips are in the order they were chosen. */
     readonly activeChipAt: (position: number) => number;
-    /** Makes the chip's tag active, and clears the words typed to find it. */
+    /** Makes the chip's tag active. The words stay as they are. */
     readonly chooseChipAt: (index: number) => void;
     /** Makes the chip's tag no longer active. */
     readonly removeChipAt: (index: number) => void;
@@ -93,41 +94,44 @@ export interface ArcadeModel {
 
     // --- Running ------------------------------------------------------------
 
-    /** Where the Arcade is. It is browsing, or an entry is loading, loaded or playing. */
+    /** Where the Arcade is. It is browsing, or an entry is launching, revealing or playing. */
     readonly phase: ArcadePhase;
+    /** How long the phase has lasted, in milliseconds. The way into an entry is drawn from it. */
+    readonly elapsedMs: number;
+    /**
+     * Whether the active entry has started: it is revealing or playing. The
+     * page runs a session of it from the moment it starts until the visitor
+     * leaves.
+     */
+    readonly isEntryStarted: boolean;
     /** The entry chosen last. It is running, loading, or the one just left. */
     readonly activeEntry: ArcadeEntry | undefined;
-    /** The active entry, loaded, from `'ready'` on. */
+    /** The active entry, once it has loaded. */
     readonly starter: EntryStarter | undefined;
     /** Why the last launch failed, until the visitor dismisses it or launches again. */
     readonly loadFailure: string | undefined;
     /**
-     * Whether the entry running is paused. Only a playing entry can be, and
-     * not while a score of its is placing, or while it offers to resume.
+     * Whether the entry started is paused. Only an entry started can be, and
+     * not while a score of its is placing, or while it offers to resume. One
+     * paused as it is revealed stays paused once it is.
      */
     isPaused: boolean;
     /**
-     * Whether the entry running stands still: held at its start (`isHeld`),
-     * paused, offering to resume a saved game, or waiting while a score of
-     * its places, so that nothing can restart the run behind the prompt. The
-     * page stops the entry while it is.
+     * Whether the entry started stands still: revealing, paused, offering to
+     * resume a saved game, or waiting while a score of its places, so that
+     * nothing can restart the run behind the prompt. The page stops the entry
+     * while it is.
      */
     readonly isEntryFrozen: boolean;
     /** Counts restarts, so the page knows when to start the entry afresh. */
     readonly restartCount: number;
-    /** Loads the entry with `id`. Does nothing unless the phase is `'browsing'`. */
-    readonly launch: (id: string) => void;
-    /** Starts the loaded entry, held still until `letGo`. Does nothing unless the phase is `'ready'`. */
-    readonly startPlaying: () => void;
     /**
-     * Whether the started entry is held still. It shows its first frame but
-     * does not run, from `startPlaying` until `letGo` or `exit`. A held entry
-     * stays still whether or not it is paused.
+     * Launches the entry with `id`: loads it, starts it once the way in has
+     * had its time, and lets it run once it has been revealed. Does nothing
+     * unless the phase is `'browsing'`.
      */
-    readonly isHeld: boolean;
-    /** Lets the held entry run. Does nothing if no entry is held. */
-    readonly letGo: () => void;
-    /** Starts the playing entry again, from the beginning. */
+    readonly launch: (id: string, options?: LaunchOptions) => void;
+    /** Starts the entry started again, from the beginning. */
     readonly restart: () => void;
     /** Leaves the entry, whether it is loading or running, and goes back to the wall. */
     readonly exit: () => void;
@@ -212,16 +216,34 @@ export interface ArcadeModel {
      */
     isPerfmonOpen: boolean;
 
-    /** Does nothing. Nothing in the Arcade moves with time, and its entries' sessions are the page's. */
+    /**
+     * Times the way into an entry, and advances the highscores. Nothing else
+     * in the Arcade moves with time, and its entries' sessions are the page's.
+     */
     readonly update: (deltaMs: number) => void;
 }
 
 /**
- * Where the Arcade is. It shows its wall (`'browsing'`), loads an entry the
- * visitor chose (`'loading'`), holds it loaded until the way into it hands
- * over (`'ready'`), or runs it (`'playing'`).
+ * Where the Arcade is:
+ * - `'browsing'`: it shows its wall.
+ * - `'launching'`: it loads the entry the visitor chose, while the way in
+ *   leaves the wall. It lasts until the entry has loaded, and for at least
+ *   `LAUNCH_MS` after a launch from the wall.
+ * - `'revealing'`: the entry has started, and stands still while it shows,
+ *   for `REVEAL_MS`.
+ * - `'playing'`: the entry runs.
  */
-export type ArcadePhase = 'browsing' | 'loading' | 'ready' | 'playing';
+export type ArcadePhase = 'browsing' | 'launching' | 'revealing' | 'playing';
+
+/** How an entry is launched. */
+export interface LaunchOptions {
+    /**
+     * Whether the visitor came straight to the entry, by its own address,
+     * with no wall to leave. Then there is no way out of the wall to wait
+     * for, and the entry starts as soon as it has loaded. Defaults to false.
+     */
+    readonly isDirect?: boolean;
+}
 
 // ---------------------------------------------------------------------------
 // Options
@@ -287,11 +309,13 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     deriveFromSearch();
 
     let phase: ArcadePhase = 'browsing';
+    let elapsedMs = 0;
+    /** The shortest time this launch lasts: none for a direct one, which has no wall to leave. */
+    let launchMs = 0;
     let activeEntry: ArcadeEntry | undefined;
     let starter: EntryStarter | undefined;
     let loadFailure: string | undefined;
     let isPaused = false;
-    let isHeld = false;
     let restartCount = 0;
     let isResumeOffered = false;
     let soundSettings = options.soundSettings ?? DEFAULT_SOUND_SETTINGS;
@@ -323,7 +347,6 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         activeChipAt: (position) => chosen[position],
         chooseChipAt(index) {
             if (!isChosenAt[index]) chosen.push(index);
-            searchText = '';
             changed();
         },
         removeChipAt(index) {
@@ -372,6 +395,12 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         get phase() {
             return phase;
         },
+        get elapsedMs() {
+            return elapsedMs;
+        },
+        get isEntryStarted() {
+            return isEntryStarted();
+        },
         get activeEntry() {
             return activeEntry;
         },
@@ -385,10 +414,10 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             return isPaused;
         },
         set isPaused(value) {
-            isPaused = phase === 'playing' && highscores.placing === 'none' && !isResumeOffered && value;
+            isPaused = isEntryStarted() && highscores.placing === 'none' && !isResumeOffered && value;
         },
         get isEntryFrozen() {
-            return isHeld || isPaused || isResumeOffered || highscores.placing !== 'none';
+            return phase === 'revealing' || isPaused || isResumeOffered || highscores.placing !== 'none';
         },
         get restartCount() {
             return restartCount;
@@ -431,7 +460,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             changeSound({ isMuted: value });
         },
 
-        launch(id) {
+        launch(id, launchOptions) {
             if (phase !== 'browsing') return;
             const entry = entries.find((e) => e.id === id);
             if (entry === undefined) return;
@@ -440,39 +469,24 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             starter = undefined;
             loadFailure = undefined;
             panel = undefined;
-            phase = 'loading';
+            launchMs = launchOptions?.isDirect === true ? 0 : LAUNCH_MS;
+            enter('launching');
             const launch = ++launchCount;
             loadEntry(entry).then(
                 (loaded) => {
-                    if (launch !== launchCount || phase !== 'loading') return;
+                    // The next update starts it, once the way in has had its time
+                    if (launch !== launchCount || phase !== 'launching') return;
                     starter = loaded;
-                    phase = 'ready';
                 },
                 (error: unknown) => {
-                    if (launch !== launchCount || phase !== 'loading') return;
+                    if (launch !== launchCount || phase !== 'launching') return;
                     loadFailure = `${entry.name} could not be loaded: ${error instanceof Error ? error.message : String(error)}`;
-                    phase = 'browsing';
+                    enter('browsing');
                 },
             );
         },
-        startPlaying() {
-            if (phase !== 'ready') return;
-            phase = 'playing';
-            isPaused = false;
-            // Fresh tables, for where a run will place, and for the game's "HI"
-            if (activeEntry?.hasHighscores === true) highscores.reload();
-            isHeld = true;
-            isResumeOffered = activeEntry !== undefined && options.hasSavedGame?.(activeEntry.id) === true;
-        },
-        get isHeld() {
-            return isHeld;
-        },
-        letGo() {
-            if (phase !== 'playing') return;
-            isHeld = false;
-        },
         restart() {
-            if (phase !== 'playing') return;
+            if (!isEntryStarted()) return;
             isPaused = false;
             isResumeOffered = false;
             highscores.close();
@@ -482,10 +496,9 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             if (phase === 'browsing') return;
             // A load still running is ignored when it finishes
             launchCount++;
-            phase = 'browsing';
+            enter('browsing');
             starter = undefined;
             isPaused = false;
-            isHeld = false;
             isResumeOffered = false;
             highscores.close();
         },
@@ -506,7 +519,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
 
         highscores,
         runEnded(score) {
-            if (phase !== 'playing' || activeEntry?.hasHighscores !== true) return;
+            if (!isEntryStarted() || activeEntry?.hasHighscores !== true) return;
             highscores.runEnded(activeEntry.id, score);
             // The page sees a run end a frame after it does, and the visitor
             // may have paused since: a score that places takes over from the menu
@@ -543,12 +556,32 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
 
         update(deltaMs) {
-            // Nothing of the arcade's own to advance
             highscores.update(deltaMs);
+            elapsedMs += deltaMs;
+            if (phase === 'launching' && starter !== undefined && elapsedMs >= launchMs) startEntry();
+            else if (phase === 'revealing' && elapsedMs >= REVEAL_MS) enter('playing');
         },
     };
 
     return model;
+
+    function enter(next: ArcadePhase): void {
+        phase = next;
+        elapsedMs = 0;
+    }
+
+    function isEntryStarted(): boolean {
+        return phase === 'revealing' || phase === 'playing';
+    }
+
+    /** Starts the loaded entry, which stands still while it is revealed. */
+    function startEntry(): void {
+        enter('revealing');
+        isPaused = false;
+        // Fresh tables, for where a run will place, and for the game's "HI"
+        if (activeEntry?.hasHighscores === true) highscores.reload();
+        isResumeOffered = activeEntry !== undefined && options.hasSavedGame?.(activeEntry.id) === true;
+    }
 
     /**
      * Loads the long text of the entry at `index`, unless it has been asked

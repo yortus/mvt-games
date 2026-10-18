@@ -24,9 +24,8 @@ describe('GameModel: what it keeps for the views to hear', () => {
     it('counts each shot fired, and starts again at 0 with a new game', () => {
         const model = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
         for (let shot = 0; shot < 3; shot++) {
-            model.playerInput.firePressed = true;
+            model.fire();
             model.update(TICK_MS);
-            model.playerInput.firePressed = false;
             model.update(TICK_MS);
         }
         expect(model.shotsFired).toBe(3);
@@ -159,14 +158,14 @@ describe('GameModel: saving', () => {
 // ---------------------------------------------------------------------------
 
 /**
- * Spins the ship and fires in bursts until the first wave is cleared or the
- * game is over. After each tick, it calls `check` with the rocks that were
- * alive before the tick.
+ * Spins the ship and fires every 8 ticks until the first wave is cleared
+ * or the game is over. After each tick, it calls `check` with the rocks
+ * that were alive before the tick.
  */
 function playUntilWaveEnds(model: GameModel, check: (before: AsteroidModel[]) => void): void {
-    model.playerInput.rotationDirection = 'left';
+    model.turning = 'left';
     for (let i = 0; i * TICK_MS < LONGEST_RUN_MS && !hasWaveEnded(model); i++) {
-        model.playerInput.firePressed = i % 8 < 4;
+        if (i % 8 === 0) model.fire();
         const before = listRocks(model).filter((rock) => rock.isAlive);
         model.update(TICK_MS);
         check(before);

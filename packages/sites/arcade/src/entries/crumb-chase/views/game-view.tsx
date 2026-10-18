@@ -55,7 +55,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 width={SCREEN_WIDTH * 5}
                 height={SCREEN_HEIGHT * 4}
                 swipeDistance={SWIPE_DISTANCE}
-                onSwiped={(direction) => { model.playerInput.direction = direction; }}
+                onSwiped={(direction) => { model.direction = direction; }}
             />
             <GameAudioView
                 sound={sound}
@@ -86,7 +86,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 height={canvasH}
                 isVisible={() => model.phase !== 'playing'}
                 text={() => (model.phase === 'game-over' ? gameOverText : winText)}
-                onRestartPressed={(pressed) => { model.playerInput.restartPressed = pressed; }}
+                onPressed={model.startNewRun}
             />
             <List items={() => model.cats}>
                 {(cat, index) => (

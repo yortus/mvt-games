@@ -62,9 +62,8 @@ describe('GameAudioView', () => {
         const tick = createTicker({ controls, view, model });
         tick();
         for (let shot = 0; shot < SHOTS; shot++) {
-            model.playerInput.firePressed = true;
+            model.fire();
             tick();
-            model.playerInput.firePressed = false;
             tick();
         }
         expect(model.shotsFired).toBe(SHOTS);

@@ -76,7 +76,7 @@ packages/sites/arcade/src/entries/breakout/
 │   ├── model-constants.ts  Model-only constants (physics, scoring, timing)
 │   ├── common.ts         Domain types (BrickKind, GamePhase, etc.)
 │   ├── ball-model.ts     Ball position, velocity, bouncing
-│   ├── paddle-model.ts   Paddle position, input
+│   ├── paddle-model.ts   Paddle position, and the way it is steered
 │   └── game-model.ts     Root model - composes children
 └── views/
     ├── index.ts           Barrel - re-exports GameView and view constants
@@ -361,6 +361,21 @@ removes the view and cleans up.
 
 A game gives an `inputConfig`: the controls it takes. The host turns the
 keyboard, and touch controls on a touch screen, into the calls it lists.
+Its callbacks are named for the controls (`onPrimaryButtonChanged`), and
+the wiring is where you say what each one means. Give the model the
+meaning, never the control. A button held to steer sets state named for
+what it does (`paddle.direction`, `ship.isThrusting`), and a press that asks
+for something once calls an action:
+
+```ts
+onRestartButtonChanged: (isDown) => {
+    if (isDown) gameModel.startNewRun();
+},
+```
+
+So the model never knows there is a button, and never watches for the
+moment one is pressed. The host reports a button only when it goes down or
+up, never again as a key repeats.
 The starter's other options say how the host should show the entry:
 `pixelArt` (nearest-neighbour textures, no antialiasing), `integerScale`
 (scale by whole numbers only, for crisp pixels), `fitTo` (for an entry that

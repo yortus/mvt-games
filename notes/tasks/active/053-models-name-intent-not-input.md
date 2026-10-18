@@ -4,7 +4,8 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-10-16 |
-| Updated  | 2026-10-16 |
+| Updated  | 2026-10-18 |
+| Status   | Done in the `mvt-alignment` worktree, for review |
 
 ## Description
 
@@ -111,29 +112,74 @@ them.
 
 ## Acceptance Criteria
 
-- [ ] Decided: what an input record becomes, renamed or folded into the
-      models, and recorded in this task
-- [ ] No model's interface names a control or a gesture (`Pressed`, `Held`,
+- [x] Decided: what an input record becomes, renamed or folded into the
+      models, and recorded in this task (folded, see the log)
+- [x] No model's interface names a control or a gesture (`Pressed`,
       `Tapped`, `Swiped`, `swipeCount`, `tapCount`). Held controls are state
       named for what they do; one-off commands, starting with restart, are
-      actions that take effect at the next update
-- [ ] No model watches its own input for the moment a control is pressed
-      (Kwazy Cactii's `watch` over `restartPressed`)
-- [ ] Fenceline's swipes and taps are read in its view or wiring, and its
+      actions that take effect at the next update. (`Held` was dropped from
+      the list: being held is often the domain's own state, such as the
+      playground's grabbed ball, and Fenceline's `HeldDirection` type means
+      "a way, or none")
+- [x] No model watches its own input for the moment a control is pressed
+      (Kwazy Cactii's `watch` over `restartPressed`), or keeps a `*Consumed`
+      flag to tell a press from a hold
+- [x] Fenceline's swipes and taps are read in its view or wiring, and its
       model is told what they mean
-- [ ] `OverlayView` reports a plain tap, its held-back release is gone, and
-      every game still restarts from a tap on its overlay
-- [ ] Every game plays as before. Unit tests pass, and every visual test's
-      reference image is unchanged
-- [ ] The rule is written down: a model rule in
-      [Architecture Rules](../../../packages/sites/docs/architecture/rules.md),
-      a row in the style guide's naming table, a line in the model skill's
-      forbidden patterns, and the docs' examples updated
-- [ ] Considered: a lint rule, like `@mvtjs/no-wall-clock`, that flags
-      control names in model files
+- [x] `OverlayView` reports a plain press (`onPressed`, as the pointer goes
+      down, as restarts did before), its held-back release is gone, and
+      every game still restarts from a press on its overlay
+- [x] Every game plays as before, but for the changes in the log. Unit tests
+      pass, and every visual test's reference image is unchanged
+- [x] The rule is written down: under **M-domain** in
+      [Architecture Rules](../../../packages/sites/docs/architecture/rules.md)
+      (a control's name is not a domain term, so it needs no rule of its
+      own), a paragraph in the architecture's bindings page, a row in the style guide's naming table (and the code-style
+      skill's), a line in the model skill's forbidden patterns, the review
+      skill's checklist, `AGENTS.md`, and the docs' examples updated
+- [x] Considered: a lint rule. Added `@mvtjs/no-control-names`, in the
+      `architecture` preset, which checks members of interfaces and type
+      literals in model files. View models are exempt in `eslint.config.ts`:
+      handling keys is a view's job
 
 ## Progress Log
 
 - 2026-10-16: Created. Raised while reviewing Deep Dive's `risePressed` and
   `restartPressed`. Every game has the same pattern, so the fix is one change
   across all of them, after the rule is written.
+- 2026-10-18: Done, in the `mvt-alignment` worktree. Decided with the owner:
+  - **Input records fold into the models they drive.** Every
+    `player-input.ts` and Kwazy Cactii's `CactiiPlayerInput` are gone. The
+    intent is on each game model's interface. Where a sub-model read the
+    record (Fenceline's farmhand, Neon Monsoon's ship), the game model
+    passes the intent on to it in its update.
+  - **One-off commands are guarded actions** that take effect at the next
+    update, and a request the game can't take then is dropped, not kept:
+    `startNewRun()` in every game, and one shot per press as `fire()`,
+    `dropBomb()` and Burrow Bust's `pump()`. That removed every `watch` over
+    an input field and every `*Consumed` flag. Neon Monsoon takes a bomb at
+    its next fixed step, since an update can run no step on a fast screen.
+  - **The host's keyboard reports a button only as it changes**, never on a
+    key's repeat, so a press calls an action once.
+  - **Held state**, named per game: Astrovoid `turning`, `isThrusting`; Deep
+    Dive `isBlowingTanks`; Dojo Duel `horizontalLean`, `verticalLean`,
+    `isAttacking` (its move table and settle delay stay in the model, as the
+    game's move list); Fuel Run `thrustX`, `thrustY`; Neon Monsoon
+    `headingX`, `headingY`, `isFocusing`; Burrow Bust `direction`,
+    `isHarpoonOut`; Crumb Chase, Garden Snake and Galaxy Raiders keep
+    `direction`. Tune Tracker's `pressPlay` is `playOrStop`.
+  - **Fenceline** has `steer(direction)` and `stop()`. Keys, swipes and taps
+    all give orders, and the latest wins. The farmhand forgets its order
+    when caught, as it forgot a swipe.
+  - Changes in play, all accepted: holding Enter as a run ends no longer
+    restarts it (Deep Dive and Garden Snake did); a fire or bomb button held
+    from before play no longer fires on the first playing step; in Fenceline
+    a held key no longer beats a swipe, and a key still held as the
+    farmhand is caught no longer keeps it going after it respawns.
+  - Galaxy Raiders' `thumbnailInput` presses for one step (16 ms) instead of
+    50, since it reports the button down on every step of its window and
+    each report now fires. The thumbnail is unchanged. A loose end: the
+    starters' `thumbnailInput` could report only changes, as the keyboard
+    now does, so a press window needn't match the step.
+  - Most games say "a new game" (Dojo Duel "a new match") in
+    `startNewRun`'s doc, but keep the one name across games.

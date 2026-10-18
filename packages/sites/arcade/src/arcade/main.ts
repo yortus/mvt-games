@@ -28,8 +28,8 @@ import './arcade.css';
 // chip, which plays the Arcade's sounds, advances its clock before those
 // views and sends what they wrote after them.
 //
-// The page starts and ends the entry's sessions as the model's phase
-// changes. It keeps the URL in step with the model. The search is in the
+// The page starts and ends the entry's sessions as the model starts and
+// leaves the entry. It keeps the URL in step with the model. The search is in the
 // query, and the entry is in the path: each entry's address is the Arcade's,
 // with the entry's id added (`arcade/crumb-chase/`). The build makes a copy
 // of this page at each one, with the entry's own title and link preview. An
@@ -187,6 +187,7 @@ let ownStepsBack = 0;
 
 const watcher = watch({
     phase: () => model.phase,
+    isEntryStarted: () => model.isEntryStarted,
     restarts: () => model.restartCount,
     query: () => model.queryRevision,
     panel: panelStep,
@@ -264,19 +265,21 @@ function frame(timeMs: number): void {
     requestAnimationFrame(frame);
 }
 
-/** Starts and ends the entry's sessions as the model's phase changes, and writes the URL. */
+/** Starts and ends the entry's sessions as the model starts and leaves the entry, and writes the URL. */
 function followModel(): void {
-    const { phase, restarts, query, panel, isRunOver, initials, isPerfmonOpen } = watcher.poll();
-    if (phase.changed) {
-        if (phase.value === 'playing') {
+    const { phase, isEntryStarted, restarts, query, panel, isRunOver, initials, isPerfmonOpen } = watcher.poll();
+    if (isEntryStarted.changed) {
+        // The session starts as the entry is revealed, and draws its first
+        // frame, standing still, before the Arcade's views next draw
+        if (isEntryStarted.value) {
             exitFrame = undefined;
             const { starter, activeEntry } = model;
-            assert(starter !== undefined && activeEntry !== undefined, 'arcade: an entry plays only once it has loaded');
+            assert(starter !== undefined && activeEntry !== undefined, 'arcade: an entry starts only once it has loaded');
             host.start(starter, { bestScore: () => model.highscores.bestScoreFor(activeEntry.id) });
             playedSinceSaveMs = 0;
             if (model.isResumeOffered) loadSavedGame(activeEntry);
         }
-        else if (phase.previous === 'playing') {
+        else if (isEntryStarted.previous === true) {
             saveGame();
             exitFrame = host.stop();
         }
@@ -288,7 +291,7 @@ function followModel(): void {
     }
     // A run has ended, and its score may place
     if (isRunOver.changed && isRunOver.value) model.runEnded(host.session?.scoring?.score() ?? 0);
-    // The host stays paused while the entry is frozen: held still as it first shows, paused by the visitor, or waiting while a score places.
+    // The host stays paused while the entry is frozen: standing still as it is revealed, paused by the visitor, or waiting while a score places.
     host.isPaused = model.isEntryFrozen;
     host.isTurned = isRunnerTurned();
     // Blocked storage means the initials are offered for the rest of this visit only
@@ -617,7 +620,8 @@ function followUrl(): void {
         writeUrl('replace');
         return;
     }
-    if (model.phase === 'browsing') model.launch(id);
+    // Straight to the entry, from a link or a step through history: there is no wall to leave
+    if (model.phase === 'browsing') model.launch(id, { isDirect: true });
 }
 
 /** Whether `entry` draws with one WebGL renderer, Pixi or three.js, with or without HTML beside it. */

@@ -1,6 +1,6 @@
 import { ARENA_HEIGHT, ARENA_WIDTH } from '../data';
 import type { BulletField } from './bullet-field';
-import type { ShotKind } from './common';
+import type { ShotKind, XDirection, YDirection } from './common';
 import {
     FOCUSED_SHOT_SPACING,
     FOCUSED_SHOT_SPEED,
@@ -14,14 +14,13 @@ import {
     SHOT_SPEED,
     SHOT_SPREAD_DEG,
 } from './model-constants';
-import type { PlayerInput } from './player-input';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * The player's interceptor. It flies as the input says, and fires on its own
+ * The player's interceptor. It flies as the game tells it, and fires on its own
  * while alive: a wide spread normally, a narrow column while focused.
  */
 export interface ShipModel {
@@ -31,12 +30,19 @@ export interface ShipModel {
     /** The hitbox's radius: far smaller than the sprite. */
     readonly hitRadius: number;
     readonly isAlive: boolean;
-    /** Flying slowly, with the hitbox shown and the narrow column firing. */
+    /** Flying slowly, with the hitbox shown and the narrow column firing: alive, with the player focusing. */
     readonly isFocused: boolean;
     /** From 1 to `MAX_POWER`: how many streams the ship fires. */
     readonly power: number;
     readonly isInvulnerable: boolean;
     readonly invulnerableMs: number;
+    /**
+     * Sets the way the ship flies, across and up or down the arena. `'none'`
+     * on both holds it still. A diagonal is no faster than a straight line.
+     */
+    setHeading: (x: XDirection, y: YDirection) => void;
+    /** Sets whether the player is focusing, which makes the ship `isFocused` while it is alive. */
+    setFocusing: (isFocusing: boolean) => void;
     /** Raise the power by one; false if it was already at most. */
     powerUp: () => boolean;
     /** Make the ship immune to bullets for `durationMs`, as while a bomb goes off; never shortens a shield it has. */
@@ -54,7 +60,6 @@ export interface ShipModel {
 // ---------------------------------------------------------------------------
 
 export interface ShipModelOptions {
-    readonly input: PlayerInput;
     /** Where the ship's shots go. */
     readonly shots: BulletField<ShotKind>;
 }
@@ -64,7 +69,7 @@ export interface ShipModelOptions {
 // ---------------------------------------------------------------------------
 
 export function createShipModel(options: ShipModelOptions): ShipModel {
-    const { input, shots } = options;
+    const { shots } = options;
 
     let x = START_X;
     let y = SHIP_START_Y;
@@ -72,6 +77,9 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
     let power = 1;
     let invulnerableMs = 0;
     let untilShotMs = 0;
+    let headingX: XDirection = 'none';
+    let headingY: YDirection = 'none';
+    let isFocusing = false;
 
     const model: ShipModel = {
         get x() {
@@ -85,7 +93,7 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             return isAlive;
         },
         get isFocused() {
-            return isAlive && input.focusPressed;
+            return isAlive && isFocusing;
         },
         get power() {
             return power;
@@ -95,6 +103,15 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
         },
         get invulnerableMs() {
             return invulnerableMs;
+        },
+
+        setHeading(x, y) {
+            headingX = x;
+            headingY = y;
+        },
+
+        setFocusing(focusing) {
+            isFocusing = focusing;
         },
 
         powerUp() {
@@ -137,8 +154,8 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
     return model;
 
     function move(deltaMs: number): void {
-        const dx = input.xDirection === 'left' ? -1 : input.xDirection === 'right' ? 1 : 0;
-        const dy = input.yDirection === 'up' ? -1 : input.yDirection === 'down' ? 1 : 0;
+        const dx = headingX === 'left' ? -1 : headingX === 'right' ? 1 : 0;
+        const dy = headingY === 'up' ? -1 : headingY === 'down' ? 1 : 0;
         if (dx === 0 && dy === 0) return;
 
         // Diagonals are no faster than straight lines.

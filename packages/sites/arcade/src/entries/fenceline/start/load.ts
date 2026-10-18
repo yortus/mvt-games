@@ -31,15 +31,20 @@ export const load = definePixiLoader(async () => {
             const gameModel = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS });
             const gameView = GameView({ model: gameModel, sound });
             stage.addChild(gameView);
-            const input = gameModel.playerInput;
 
-            // The way held is the latest of the two axes pressed, so a new press turns at once
+            // The way held is the latest of the two axes pressed, so a new press turns at once.
+            // Holding a way steers the farmhand that way, and letting go of every way stops them.
             let xDirection: HeldDirection = 'none';
             let yDirection: HeldDirection = 'none';
             let isYLatest = false;
+            let heldDirection: HeldDirection = 'none';
             const updateDirection = (): void => {
                 const latest = isYLatest ? yDirection : xDirection;
-                input.direction = latest !== 'none' ? latest : isYLatest ? xDirection : yDirection;
+                const held = latest !== 'none' ? latest : isYLatest ? xDirection : yDirection;
+                if (held === heldDirection) return;
+                heldDirection = held;
+                if (held === 'none') gameModel.stop();
+                else gameModel.steer(held);
             };
 
             return {
@@ -72,7 +77,7 @@ export const load = definePixiLoader(async () => {
                         yDirection = direction;
                         updateDirection();
                     },
-                    onRestartButtonChanged: (pressed) => { input.restartPressed = pressed; },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

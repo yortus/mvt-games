@@ -12,5 +12,4 @@ export { createFieldModel, type FieldModel, type FieldModelOptions } from './fie
 export { createDiggerModel, type DiggerModel, type DiggerModelOptions } from './digger-model';
 export { createEnemyModel, type EnemyModel, type EnemyModelOptions } from './enemy-model';
 export { createRockModel, type RockModel, type RockModelOptions } from './rock-model';
-export { createPlayerInput, type PlayerInput } from './player-input';
 export { createGameModel, type GameModel, type GameModelOptions, type SavedGame } from './game-model';

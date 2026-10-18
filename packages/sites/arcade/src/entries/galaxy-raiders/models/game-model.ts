@@ -1,5 +1,4 @@
 import gsap from 'gsap';
-import { watch } from '@mvtjs/utils';
 import type { WaveConfig } from '../data';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import {
@@ -15,11 +14,10 @@ import {
     SHIP_SPEED,
     SHIP_HALF_WIDTH,
 } from './model-constants';
-import type { EnemyKind, GamePhase } from './common';
+import type { Direction, EnemyKind, GamePhase } from './common';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createEnemyModel, type EnemyModel } from './enemy-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
-import { createPlayerInput, type PlayerInput } from './player-input';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -42,7 +40,12 @@ export interface GameModel {
     readonly shotsFired: number;
     /** How many raiders are still alive in this wave. */
     readonly enemiesLeft: number;
-    readonly playerInput: PlayerInput;
+    /** The way the player is moving the ship, or 'none' to keep it still. It moves while the game is playing. */
+    direction: Direction;
+    /** Fires a shot. It leaves at the next update, if the game is playing and a bullet is free. */
+    fire: () => void;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     reset: () => void;
     /**
      * Returns the game as a value JSON can hold, for `load` to restore. A
@@ -97,7 +100,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let formationOffsetX = 0;
     let formationOffsetY = 0;
     let diveTimer = 0;
-    let fireConsumed = false;
+    /** Whether a shot was asked for since the last update. */
+    let isFireRequested = false;
+    /** Whether a new game was asked for since the last update. */
+    let isNewRunRequested = false;
     let score = 0;
     let lives = START_LIVES;
     let stage = 1;
@@ -113,8 +119,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let enemies = buildEnemies();
     let playerBullets = buildBulletPool(MAX_PLAYER_BULLETS);
     let enemyBullets = buildBulletPool(MAX_ENEMY_BULLETS);
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Public record -----------------------------------------------------
 
@@ -149,8 +153,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get enemiesLeft() {
             return aliveEnemyCount();
         },
-        get playerInput() {
-            return playerInput;
+        direction: 'none',
+
+        fire(): void {
+            isFireRequested = true;
+        },
+
+        startNewRun(): void {
+            isNewRunRequested = true;
         },
 
         reset(): void {
@@ -185,25 +195,20 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
+            // A new game starts only once the last is over. A request made sooner is dropped
+            if (isNewRunRequested) {
+                isNewRunRequested = false;
                 if (gamePhase === 'game-over') {
                     model.reset();
                 }
             }
 
-            // Apply input
+            // Apply the player's intent. A shot asked for while the game isn't playing is dropped
             if (gamePhase === 'playing') {
-                ship.setDirection(playerInput.direction);
-
-                if (playerInput.firePressed) {
-                    tryPlayerFire();
-                }
-                else {
-                    fireConsumed = false;
-                }
+                ship.setDirection(model.direction);
+                if (isFireRequested) tryPlayerFire();
             }
+            isFireRequested = false;
 
             // Advance phase timeline (dying / stage-clear delays)
             phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
@@ -315,7 +320,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         enemyBullets = buildBulletPool(MAX_ENEMY_BULLETS);
         diveTimer = 0;
         breathTimer = 0;
-        fireConsumed = false;
         gamePhase = 'playing';
         phaseTimeline.clear().time(0);
     }
@@ -400,15 +404,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Firing ------------------------------------------------------------
 
     function tryPlayerFire(): void {
-        if (!ship.isAlive || !playerInput.firePressed) return;
-        if (!fireConsumed) {
-            fireConsumed = true;
-            for (let b = 0; b < playerBullets.length; b++) {
-                if (!playerBullets[b].isActive) {
-                    playerBullets[b].fire(ship.x, ship.y - 8, -BULLET_SPEED);
-                    shotsFired++;
-                    break;
-                }
+        if (!ship.isAlive) return;
+        for (let b = 0; b < playerBullets.length; b++) {
+            if (!playerBullets[b].isActive) {
+                playerBullets[b].fire(ship.x, ship.y - 8, -BULLET_SPEED);
+                shotsFired++;
+                break;
             }
         }
     }

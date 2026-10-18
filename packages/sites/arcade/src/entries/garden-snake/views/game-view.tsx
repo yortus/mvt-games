@@ -64,7 +64,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 height={SCREEN_HEIGHT}
                 isVisible={() => model.phase === 'game-over'}
                 text={() => gameOverText}
-                onRestartPressed={(pressed) => { model.restartPressed = pressed; }}
+                onPressed={model.startNewRun}
             />
         </container>
     );

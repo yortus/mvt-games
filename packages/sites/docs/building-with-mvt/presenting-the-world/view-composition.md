@@ -34,7 +34,7 @@ function GameView(bindings: GameViewBindings): Container {
             />
             <HudView score={() => model.score.score} />
             <KeyboardInputView
-                onDirectionChanged={(dir) => { model.playerInput.direction = dir; }}
+                onDirectionChanged={(dir) => { model.player.heading = dir; }}
             />
         </container>
     );

@@ -58,7 +58,7 @@ export const load = definePixiLoader(async () => {
                         if (direction !== 'none') model.moveChoice(direction === 'left' ? -1 : 1);
                     },
                     onPrimaryButtonChanged(isPressed) {
-                        if (isPressed) model.pressPlay();
+                        if (isPressed) model.playOrStop();
                     },
                 },
             };

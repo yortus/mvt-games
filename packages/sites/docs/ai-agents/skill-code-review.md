@@ -30,7 +30,7 @@ These are non-negotiable. Violations produce incorrect code.
 
 | Rule | What to check | Common violation |
 | ---- | ------------- | ---------------- |
-| M-time, M-isolation, M-domain, M-composition | Models own all domain state; advance via `update(deltaMs)` only; no view/ticker references; domain-level coordinates; parent delegates to children | Model importing a view type; model using `Date.now()`; model storing pixel coordinates |
+| M-time, M-isolation, M-domain, M-composition | Models own all domain state; advance via `update(deltaMs)` only; no view/ticker references; domain-level coordinates and terms, input included; parent delegates to children | Model importing a view type; model using `Date.now()`; model storing pixel coordinates; a `restartPressed` flag the model watches for a press |
 | V-stateless through V-tree | Views are stateless; `refresh()` is idempotent, side-effect-free; bindings re-read every frame; presentation state only when purely cosmetic | View caching a binding value at construction; `refresh()` mutating model state; domain logic in a view |
 | T-sequence through T-control | Ticker sequence is update-refresh-render; `deltaMs` is capped; no domain logic in ticker | Ticker performing collision checks |
 | B-contract through B-wiring | Query bindings read state, relay bindings report input; leaf views use bindings; relay bindings are optional; wired at construction site | View reaching into model internals instead of using bindings; a query binding declared as a function but read only at construction |

@@ -15,7 +15,7 @@ conventions.
 | ---------------------- | ---------------------------- | --------------------------------------------- |
 | Files                  | `lower-kebab-case.ts`        | `score-model.ts`, `tile-kind.ts`              |
 | Types / Interfaces     | `PascalCase`                 | `ScoreModel`, `GameViewBindings`              |
-| Model types            | Suffix with `Model`          | `ScoreModel`, `PlayerInputModel`              |
+| Model types            | Suffix with `Model`          | `ScoreModel`, `ShipModel`                     |
 | View functions         | `PascalCase`, ending `View`  | `HudView`, `ShipView`                         |
 | Bindings types         | `XxxViewBindings`            | `HudViewBindings` (never `Props`)             |
 | Functions / Variables  | `camelCase`                  | `createScoreModel`, `deltaMs`                 |
@@ -26,6 +26,7 @@ conventions.
 | ... with position/index | Suffix `At`                 | `tileKindAt(row, col)`                        |
 | ... with a key         | Suffix `For`                 | `colorFor(kind)`                              |
 | Relay bindings         | `on` + what the user did     | `onFirePressed`, `onTileTapped`               |
+| A model's input        | What the player means, never the control | `isThrusting`, `startNewRun()`, not `thrustPressed`, `restartPressed` |
 | Enum-like type names   | Use `Kind`, not `Type`       | `TileKind` not `TileType`                     |
 | Lifecycle properties   | Use `phase`, not `state`     | `phase: GamePhase` not `state: GameState`     |
 | Unused parameters      | `_` prefix                   | `update(_deltaMs: number)`                    |

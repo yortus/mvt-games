@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createSlotList, type Slot, type SlotList, watch } from '@mvtjs/utils';
+import { createSlotList, type Slot, type SlotList } from '@mvtjs/utils';
 import {
     SHIP_ROTATION_SPEED,
     SHIP_THRUST,
@@ -27,11 +27,10 @@ import {
     RESPAWN_ANIM_MS,
     SPAWN_SAFE_RADIUS,
 } from './model-constants';
-import type { AsteroidSize, GamePhase } from './common';
+import type { AsteroidSize, GamePhase, RotationDirection } from './common';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createAsteroidModel, type AsteroidModel } from './asteroid-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
-import { createPlayerInput, type PlayerInput } from './player-input';
 import { createDebrisModel, type DebrisModel } from './debris-model';
 
 // ---------------------------------------------------------------------------
@@ -67,7 +66,14 @@ export interface GameModel {
      * ones. It falls by 1 with each break, and is 0 once the wave is cleared.
      */
     readonly breaksLeft: number;
-    readonly playerInput: PlayerInput;
+    /** The way the player is turning the ship. It turns this way while the game is playing. */
+    turning: RotationDirection;
+    /** Whether the player is running the ship's engine, which pushes it the way it faces. It pushes while the game is playing. */
+    isThrusting: boolean;
+    /** Fires a shot. It leaves at the next update, if the game is playing and a bullet is free. */
+    fire: () => void;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     reset: () => void;
     /**
      * Returns the game as a value JSON can hold, for `load` to restore. A
@@ -114,7 +120,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
     const { arenaWidth, arenaHeight } = options;
 
     let gamePhase: GamePhase = 'playing';
-    let fireConsumed = false;
+    /** Whether a shot was asked for since the last update. */
+    let isFireRequested = false;
+    /** Whether a new game was asked for since the last update. */
+    let isNewRunRequested = false;
     let score = 0;
     let lives = START_LIVES;
     let wave = 1;
@@ -135,8 +144,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let bullets = buildBulletPool();
     const asteroids = createSlotList<AsteroidModel>();
     const debrisModel = createDebrisModel({ lifetimeMs: DYING_DELAY_MS });
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // Spawn first wave
     spawnWaveAsteroids(asteroidCountForWave(1));
@@ -180,8 +187,15 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get breaksLeft() {
             return breaksLeft;
         },
-        get playerInput() {
-            return playerInput;
+        turning: 'none',
+        isThrusting: false,
+
+        fire(): void {
+            isFireRequested = true;
+        },
+
+        startNewRun(): void {
+            isNewRunRequested = true;
         },
 
         reset(): void {
@@ -215,26 +229,21 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
+            // A new game starts only once the last is over. A request made sooner is dropped
+            if (isNewRunRequested) {
+                isNewRunRequested = false;
                 if (gamePhase === 'game-over') {
                     model.reset();
                 }
             }
 
-            // Apply input
+            // Apply the player's intent. A shot asked for while the game isn't playing is dropped
             if (gamePhase === 'playing') {
-                ship.setRotationDirection(playerInput.rotationDirection);
-                ship.setThrust(playerInput.thrustPressed);
-
-                if (playerInput.firePressed) {
-                    tryFire();
-                }
-                else {
-                    fireConsumed = false;
-                }
+                ship.setRotationDirection(model.turning);
+                ship.setThrust(model.isThrusting);
+                if (isFireRequested) tryFire();
             }
+            isFireRequested = false;
 
             // Advance phase timeline (dying / wave-clear / respawn delays)
             phaseTimeline.time(phaseTimeline.time() + 0.001 * deltaMs);
@@ -400,7 +409,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         breaksLeft = 0;
         spawnWaveAsteroids(asteroidCountForWave(wave));
         debrisModel.clear();
-        fireConsumed = false;
         gamePhase = 'playing';
         phaseTimeline.clear().time(0);
     }
@@ -468,17 +476,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Firing ------------------------------------------------------------
 
     function tryFire(): void {
-        if (!ship.isAlive || !playerInput.firePressed) return;
-        if (!fireConsumed) {
-            fireConsumed = true;
-            for (let b = 0; b < bullets.length; b++) {
-                if (!bullets[b].isActive) {
-                    const bvx = Math.sin(ship.angle) * BULLET_SPEED;
-                    const bvy = -Math.cos(ship.angle) * BULLET_SPEED;
-                    bullets[b].fire(ship.x, ship.y, bvx, bvy);
-                    shotsFired++;
-                    break;
-                }
+        if (!ship.isAlive) return;
+        for (let b = 0; b < bullets.length; b++) {
+            if (!bullets[b].isActive) {
+                const bvx = Math.sin(ship.angle) * BULLET_SPEED;
+                const bvy = -Math.cos(ship.angle) * BULLET_SPEED;
+                bullets[b].fire(ship.x, ship.y, bvx, bvy);
+                shotsFired++;
+                break;
             }
         }
     }

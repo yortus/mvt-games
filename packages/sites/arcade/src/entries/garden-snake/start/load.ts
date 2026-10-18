@@ -45,7 +45,7 @@ export const load = definePixiLoader(async () => {
                     // A direction held stays the snake's way until another is pressed
                     onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
                     onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
-                    onRestartButtonChanged: (pressed) => { gameModel.restartPressed = pressed; },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

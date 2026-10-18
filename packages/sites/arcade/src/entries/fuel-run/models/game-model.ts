@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createSlotList, type Slot, type SlotList, watch } from '@mvtjs/utils';
+import { createSlotList, type Slot, type SlotList } from '@mvtjs/utils';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import {
     SCROLL_SPEED,
@@ -43,12 +43,11 @@ import {
     EXPLOSION_DURATION_MS,
 } from './model-constants';
 import type { SectionProfile, SpawnKind } from '../data';
-import type { GamePhase } from './common';
+import type { GamePhase, XDirection, YDirection } from './common';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
 import { createBombModel, type BombModel } from './bomb-model';
 import { createTerrainModel, type TerrainModel } from './terrain-model';
-import { createPlayerInput, type PlayerInput } from './player-input';
 import { createRocketModel, type RocketModel } from './rocket-model';
 import { createUfoModel, type UfoModel } from './ufo-model';
 import { createFuelTankModel, type FuelTankModel } from './fuel-tank-model';
@@ -76,7 +75,14 @@ export interface GameModel {
     readonly loop: number;
     readonly scrollCol: number;
     readonly scrollSpeed: number;
-    readonly playerInput: PlayerInput;
+    /**
+     * The way the player is pushing the ship along the screen, on top of the
+     * scroll. 'left' holds it back against the scroll, and 'right' speeds it
+     * ahead. It stays within its part of the screen.
+     */
+    thrustX: XDirection;
+    /** The way the player is pushing the ship up or down the screen: 'up' climbs and 'down' dives, within the screen. */
+    thrustY: YDirection;
     readonly isBaseAlive: boolean;
     readonly baseWorldCol: number;
     readonly baseWorldRow: number;
@@ -106,6 +112,12 @@ export interface GameModel {
     readonly fuelTanksDestroyed: number;
     /** The number of times the base has been destroyed this game. There is one base on each loop of the sections. */
     readonly basesDestroyed: number;
+    /** Fires a shot ahead. It leaves at the next update, if the game is playing and a bullet is free. */
+    fire: () => void;
+    /** Drops a bomb. It drops at the next update, if the game is playing and a bomb is free. */
+    dropBomb: () => void;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     reset: () => void;
     /**
      * Returns the game as a value JSON can hold, for `load` to restore. A
@@ -158,8 +170,12 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let gamePhase: GamePhase = 'playing';
     let scrollCol = 0;
     let currentScrollSpeed = SCROLL_SPEED;
-    let fireConsumed = false;
-    let bombConsumed = false;
+    /** Whether a shot was asked for since the last update. */
+    let isFireRequested = false;
+    /** Whether a bomb was asked for since the last update. */
+    let isBombRequested = false;
+    /** Whether a new game was asked for since the last update. */
+    let isNewRunRequested = false;
     let baseSlot: Slot<FuelTankModel> | undefined;
     let scrollClamped = false;
     let score = 0;
@@ -197,8 +213,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
     const ufos = createSlotList<UfoModel>({ maxSlots: MAX_UFOS });
     const fuelTanks = createSlotList<FuelTankModel>({ maxSlots: MAX_FUEL_TANKS });
     const explosions = createSlotList<ExplosionModel>({ maxSlots: MAX_EXPLOSIONS, releaseDelayMs: EXPLOSION_DURATION_MS });
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
 
     // ---- Public record -----------------------------------------------------
 
@@ -251,9 +265,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get scrollSpeed() {
             return currentScrollSpeed;
         },
-        get playerInput() {
-            return playerInput;
-        },
+        thrustX: 'none',
+        thrustY: 'none',
         get isBaseAlive() {
             return isBaseLive();
         },
@@ -285,6 +298,18 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return basesDestroyed;
         },
 
+        fire(): void {
+            isFireRequested = true;
+        },
+
+        dropBomb(): void {
+            isBombRequested = true;
+        },
+
+        startNewRun(): void {
+            isNewRunRequested = true;
+        },
+
         reset(): void {
             scrollCol = 0;
             currentScrollSpeed = SCROLL_SPEED;
@@ -309,8 +334,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             ufos.clear();
             fuelTanks.clear();
             explosions.clear();
-            fireConsumed = false;
-            bombConsumed = false;
             gamePhase = 'playing';
             phaseTimeline.clear().time(0);
             markSectionStart();
@@ -344,17 +367,22 @@ export function createGameModel(options: GameModelOptions): GameModel {
             lives = value.lives;
             fuelModel.setFuel(value.fuel);
             explosions.clear();
-            fireConsumed = false;
-            bombConsumed = false;
             phaseTimeline.clear().time(0);
             startSection();
             return true;
         },
 
         update(deltaMs: number): void {
-            // Restart handling
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
+            // Take what the player asked for since the last update. What the game can't do now is dropped
+            const wasFireAsked = isFireRequested;
+            const wasBombAsked = isBombRequested;
+            const wasNewRunAsked = isNewRunRequested;
+            isFireRequested = false;
+            isBombRequested = false;
+            isNewRunRequested = false;
+
+            // A new game starts only once the last is over
+            if (wasNewRunAsked) {
                 if (gamePhase === 'game-over') {
                     // The new game starts on the next tick. So nothing happens in the
                     // tick its counts go back to 0, and each count's next change is a rise.
@@ -378,31 +406,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 markSectionStart();
             }
 
-            // Route input
-            ship.setXDirection(playerInput.xDirection);
-            ship.setYDirection(playerInput.yDirection);
-
-            // Fire bullets
-            if (playerInput.firePressed) {
-                if (!fireConsumed) {
-                    fireConsumed = true;
-                    tryFireBullet();
-                }
-            }
-            else {
-                fireConsumed = false;
-            }
-
-            // Drop bombs
-            if (playerInput.bombPressed) {
-                if (!bombConsumed) {
-                    bombConsumed = true;
-                    tryDropBomb();
-                }
-            }
-            else {
-                bombConsumed = false;
-            }
+            // Apply the player's intent
+            ship.setXDirection(model.thrustX);
+            ship.setYDirection(model.thrustY);
+            if (wasFireAsked) tryFireBullet();
+            if (wasBombAsked) tryDropBomb();
 
             // Spawn entities from cursor
             advanceSpawnCursor();

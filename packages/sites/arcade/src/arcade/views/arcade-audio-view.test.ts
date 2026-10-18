@@ -8,7 +8,7 @@ import {
     POWER_ON, RESUME, TAG_ADD, TAG_REMOVE,
 } from '../data';
 import type { ArcadePhase } from '../models';
-import { POWER_OFF_BEAM_MS, POWER_ON_BEAM_MS, type TransitionPhase, type WallEffectKind } from './transition-view-model';
+import { POWER_OFF_BEAM_MS, POWER_ON_BEAM_MS, type EntryTransitionPhase, type WallEffectKind } from './entry-transition-view-model';
 import { ArcadeAudioView } from './arcade-audio-view';
 
 describe('ArcadeAudioView', () => {
@@ -52,7 +52,7 @@ describe('ArcadeAudioView', () => {
 
     it('plays the coin, the burn, the screen powering on and off, and the cards developing, on the way in and out', () => {
         const { chip, state, tick } = setUp();
-        state.phase = 'loading';
+        state.phase = 'launching';
         state.transitionPhase = 'entering';
         state.wallEffect = 'burn';
         tick();
@@ -121,7 +121,7 @@ interface State {
     chosenTagCount: number;
     shownCount: number;
     loadFailure: string | undefined;
-    transitionPhase: TransitionPhase;
+    transitionPhase: EntryTransitionPhase;
     wallEffect: WallEffectKind;
     isBeamOn: boolean;
     cardKeyMoves: number;

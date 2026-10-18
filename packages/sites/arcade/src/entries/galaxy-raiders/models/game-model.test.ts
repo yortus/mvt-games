@@ -128,13 +128,12 @@ describe('GameModel: saving', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Ticks the game until `isDone`, firing in bursts if `isFiring`, or for a few minutes at most. */
+/** Ticks the game until `isDone`, firing every 8 ticks if `isFiring`, or for a few minutes at most. */
 function playUntil(model: GameModel, isDone: () => boolean, isFiring: boolean): void {
     for (let i = 0; i * TICK_MS < LONGEST_RUN_MS && !isDone(); i++) {
-        model.playerInput.firePressed = isFiring && i % 8 < 4;
+        if (isFiring && i % 8 === 0) model.fire();
         model.update(TICK_MS);
     }
-    model.playerInput.firePressed = false;
 }
 
 /** Fires from where the ship starts until a raider is shot. */

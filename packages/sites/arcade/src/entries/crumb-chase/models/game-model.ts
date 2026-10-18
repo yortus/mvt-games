@@ -1,10 +1,8 @@
-import { watch } from '@mvtjs/utils';
 import type { TileKind } from '../data';
 import type { Direction } from './common';
 import { createMazeModel, type MazeModel } from './maze-model';
 import { createMouseModel, type MouseModel } from './mouse-model';
 import { createCatModel, type CatModel, type CatBehavior, type CatMode } from './cat-model';
-import { createPlayerInput, type PlayerInput } from './player-input';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -24,7 +22,13 @@ export interface GameModel {
      */
     readonly catMode: CatMode;
     readonly score: number;
-    readonly playerInput: PlayerInput;
+    /**
+     * The way the player last steered. The mouse turns that way at the
+     * first tile where it can, and runs on that way until steered again.
+     */
+    direction: Direction;
+    /** Asks for a new game. It starts at the next update, if the last game is over. */
+    startNewRun: () => void;
     reset: () => void;
     /**
      * Returns the game as it stands, as a value JSON can hold, for `load` to
@@ -111,9 +115,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let cats = buildCats(maze);
     let score = 0;
 
-    // Player input - persists across resets (input device outlives a single game)
-    const playerInput = createPlayerInput();
-    const watcher = watch({ restart: () => playerInput.restartPressed });
+    let isNewRunRequested = false;
 
     // ---- Public model record -----------------------------------------------
 
@@ -136,8 +138,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get score() {
             return score;
         },
-        get playerInput() {
-            return playerInput;
+        // The way the player steers carries over from one game to the next
+        direction: 'left',
+
+        startNewRun(): void {
+            isNewRunRequested = true;
         },
 
         reset(): void {
@@ -188,24 +193,23 @@ export function createGameModel(options: GameModelOptions): GameModel {
             score = saved.score;
             gamePhase = 'playing';
             // The mouse runs on the way it was going, until the player steers it
-            playerInput.direction = saved.mouse.direction;
+            model.direction = saved.mouse.direction;
             return true;
         },
 
         update(deltaMs: number): void {
-            // Process restart request (allowed from any non-playing phase)
-            const watched = watcher.poll();
-            if (watched.restart.changed && watched.restart.value) {
-                if (gamePhase !== 'playing') {
-                    model.reset();
-                }
+            // A new game is allowed from any non-playing phase. One asked
+            // for during play is dropped, not kept for later
+            if (isNewRunRequested && gamePhase !== 'playing') {
+                model.reset();
             }
+            isNewRunRequested = false;
 
             // Apply current direction every tick (not via watch - a watch
             // would "consume" a direction the player repeats after a failed
             // turn attempt, making input feel unresponsive).
             if (gamePhase === 'playing') {
-                mouse.setDirection(playerInput.direction);
+                mouse.setDirection(model.direction);
             }
 
             if (gamePhase !== 'playing') return;

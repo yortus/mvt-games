@@ -115,9 +115,7 @@ export function GameView(bindings: GameViewBindings): Container {
             isVisible: () => game.phase === 'round-intro'
                 || game.phase === 'match-over',
             text: () => resolveOverlayText(game, restartHint),
-            onRestartPressed: (pressed) => {
-                game.playerInput.restartPressed = pressed;
-            },
+            onPressed: game.startNewRun,
         }),
     );
 

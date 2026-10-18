@@ -19,8 +19,8 @@ import { PlacingView } from './placing-view';
 import { NO_RECT, type Rect } from './rect';
 import { ResumeOfferView } from './resume-offer-view';
 import { RunnerView } from './runner-view';
-import { TransitionView } from './transition-view';
-import { createTransitionViewModel, type PicturePose } from './transition-view-model';
+import { EntryTransitionView } from './entry-transition-view';
+import { createEntryTransitionViewModel, type PicturePose } from './entry-transition-view-model';
 import { WallEffectView } from './wall-effect-view';
 
 // ---------------------------------------------------------------------------
@@ -154,13 +154,11 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     // Presentation state: how many times the keyboard has moved the selection to another card.
     // The Arcade's audio view ticks each time it rises.
     let cardKeyMoves = 0;
-    const transition = createTransitionViewModel({
+    const transition = createEntryTransitionViewModel({
         target: playRect,
         turn: () => (bindings.isTurned() ? 90 : 0),
-        isReady: () => model.phase === 'ready',
-        isPlaying: () => model.phase === 'playing',
-        onHandOver: model.startPlaying,
-        onShown: model.letGo,
+        arcadePhase: () => model.phase,
+        arcadeElapsedMs: () => model.elapsedMs,
         isMotionReduced: bindings.isMotionReduced,
     });
     const phaseWatcher = watch({ phase: () => model.phase });
@@ -283,7 +281,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             <RunnerView
                 stage={bindings.stage}
                 isOpen={() => model.phase !== 'browsing'}
-                isPlaying={() => model.phase === 'playing'}
+                isPlaying={isEntryShown}
                 isPaused={() => model.isPaused}
                 isInfoOpen={isInfoOverEntry}
                 onInfoPressed={toggleInfoOverEntry}
@@ -323,7 +321,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 <Match when={() => bindings.perfmon() !== undefined}>{PerfmonPanelView}</Match>
             </Switch>
             <ResumeOfferView
-                isOpen={() => model.phase === 'playing' && model.isResumeOffered}
+                isOpen={() => isEntryShown() && model.isResumeOffered}
                 title={() => model.activeEntry?.name ?? ''}
                 onResumePressed={model.resume}
                 onRestartPressed={model.startAfresh}
@@ -339,7 +337,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 onSkipPressed={highscores.close}
                 onContinuePressed={highscores.close}
             />
-            <TransitionView
+            <EntryTransitionView
                 transition={transition}
                 thumbnail={() => model.activeEntry?.thumbnail ?? ''}
                 frame={() => (model.phase === 'browsing' ? bindings.exitFrame() : undefined)}
@@ -422,7 +420,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         if (entry === undefined) return;
         launchedFrom = from === undefined ? undefined : { ...from, frame: frameForCrop(entry, from.window) };
         model.launch(entry.id);
-        if (model.phase !== 'loading') launchedFrom = undefined;
+        if (model.phase !== 'launching') launchedFrom = undefined;
     }
 
     /** Whether the wall is what the visitor is looking at: browsing, with no panel or transition over it. */
@@ -520,7 +518,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
 
     /**
      * Escape closes the info panel, pauses or resumes the entry playing (a
-     * game or a demo, alike), or leaves one still loading. Not while a score
+     * game or a demo, alike), or leaves one still on its way in. Not while a score
      * places, or while a saved game is offered: their views have the keys then.
      */
     function stepBack(e: KeyboardEvent): void {
@@ -530,6 +528,15 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         else if (model.phase !== 'browsing') model.exit();
         else return;
         e.preventDefault();
+    }
+
+    /**
+     * Whether the entry is on the screen: started, and no longer behind the
+     * polaroid receding on the way in. The runner shows it, and its offer to
+     * resume a saved game, from then on.
+     */
+    function isEntryShown(): boolean {
+        return model.isEntryStarted && transition.phase !== 'receding';
     }
 
     /** Whether the entry's info panel is open over the entry, which is paused behind it. */
@@ -549,7 +556,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         }
         const entry = model.activeEntry;
         if (entry === undefined) return;
-        if (model.phase === 'playing' && !model.isPaused) {
+        if (model.isEntryStarted && !model.isPaused) {
             model.isPaused = true;
             isPausedForInfo = true;
         }
@@ -561,7 +568,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         model.closeInfo();
         if (!isPausedForInfo) return;
         isPausedForInfo = false;
-        if (model.phase === 'playing') model.isPaused = false;
+        if (model.isEntryStarted) model.isPaused = false;
     }
 
     /** Leaves the entry, from the runner's back button or the pause menu's Exit, closing its info panel, if open, first. */

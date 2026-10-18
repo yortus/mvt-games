@@ -123,7 +123,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 height={canvasH}
                 isVisible={() => model.phase === 'game-over' || model.phase === 'level-clear'}
                 text={() => (model.phase === 'game-over' ? gameOverText : 'LEVEL CLEAR!')}
-                onRestartPressed={(pressed) => { model.playerInput.restartPressed = pressed; }}
+                onPressed={model.startNewRun}
             />
         </container>
     );

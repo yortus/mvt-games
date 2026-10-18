@@ -2,8 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
 import { createMemoryHighscoreStore } from '../../highscores';
-import { destroyElement, refreshView } from '@mvtjs/html';
+import { advanceTime, destroyElement, refreshView } from '@mvtjs/html';
 import type { ArcadeEntry, EntryStarter } from '../../entry-types';
+import { LAUNCH_MS, REVEAL_MS } from '../data';
 import { type ArcadeModel, createArcadeModel, DEFAULT_SOUND_SETTINGS } from '../models';
 import { ArcadeView } from './arcade-view';
 import { createPerformanceMeter, PerfmonFloatView } from './perfmon-float-view';
@@ -39,6 +40,18 @@ describe('ArcadeView', () => {
             model.searchText = '';
             tick();
             expect(view.querySelector('.search-slot')!.classList.contains('is-open')).toBe(false);
+            destroyElement(view);
+        });
+
+        it('puts a tag chosen from the suggestions in place of the words typed to find it', () => {
+            const { model, tick, view } = setUp();
+            const maze = model.chips.findIndex((chip) => chip.group === 'genre' && chip.value === 'maze');
+            model.searchText = 'ma';
+            tick();
+            view.querySelector<HTMLElement>(`#search-tag-${maze}`)!.click();
+            expect(model.activeChipCount).toBe(1);
+            expect(model.activeChipAt(0)).toBe(maze);
+            expect(model.searchText).toBe('');
             destroyElement(view);
         });
     });
@@ -267,7 +280,7 @@ function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: A
 async function playPaused(model: ArcadeModel): Promise<void> {
     model.launch(ENTRY.id);
     await new Promise((resolve) => setTimeout(resolve, 0));
-    model.startPlaying();
+    await advanceTime(LAUNCH_MS + REVEAL_MS, model);
     model.isPaused = true;
 }
 

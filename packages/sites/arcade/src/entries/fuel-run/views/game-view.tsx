@@ -155,7 +155,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 height={PLAY_HEIGHT}
                 isVisible={() => model.phase === 'game-over' || model.phase === 'section-clear'}
                 text={() => (model.phase === 'section-clear' ? 'SECTION CLEAR!' : gameOverText)}
-                onRestartPressed={(pressed) => { model.playerInput.restartPressed = pressed; }}
+                onPressed={model.startNewRun}
             />
 
             <SectionAnnouncementView

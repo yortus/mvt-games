@@ -11,7 +11,7 @@ canvasTest('at the mouth of the cave', SIZE, () => GameView({ model: createGameM
 canvasTest('rising', SIZE, async () => {
     const model = createGameModel();
     const view = GameView({ model });
-    model.risePressed = true;
+    model.isBlowingTanks = true;
     await advanceTime(300, model, view);
     return view;
 });
@@ -20,9 +20,9 @@ canvasTest('rising', SIZE, async () => {
 canvasTest('crashed', SIZE, async () => {
     const model = createGameModel();
     const view = GameView({ model });
-    model.risePressed = true;
+    model.isBlowingTanks = true;
     await advanceTime(16, model, view);
-    model.risePressed = false;
+    model.isBlowingTanks = false;
     await advanceTime(5000, model, view);
     return view;
 });

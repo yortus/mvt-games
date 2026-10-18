@@ -1,20 +1,66 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BASE_FIELD, DIGGER_SPAWN, FIELD_COLS, FIELD_ROWS, LEVELS } from '../data';
+import type { EnemyModel } from './enemy-model';
 import { createGameModel, type GameModel, type SavedGame } from './game-model';
 
 const TICK_MS = 1000 / 60;
 /** Long enough for the creatures to catch a digger that stands still, three times over. */
 const LONGEST_RUN_MS = 120_000;
 
-describe('GameModel: saving', () => {
-    // Seed the random numbers, so the creatures patrol the same way on every run
-    beforeEach(() => {
-        let state = 12345;
-        vi.spyOn(Math, 'random').mockImplementation(() => {
-            state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-            return state / 4294967296;
-        });
+describe('GameModel: pumping', () => {
+    beforeEach(seedRandom);
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
+
+    it('pumps a hooked creature once for each pump, and not for keeping the harpoon out', () => {
+        const model = createModel();
+        const hooked = hookCreature(model);
+        // Keeping the harpoon out holds the creature, but never pumps it up
+        model.isHarpoonOut = true;
+        let stage = hooked.inflationStage;
+        for (let i = 0; i < 30; i++) {
+            model.update(TICK_MS);
+            expect(hooked.inflationStage).toBeLessThanOrEqual(stage);
+            stage = hooked.inflationStage;
+        }
+        // Two pumps between the same two updates make one
+        model.pump();
+        model.pump();
+        model.update(TICK_MS);
+        expect(hooked.inflationStage).toBe(stage + 1);
+    });
+});
+
+describe('GameModel: starting a new game', () => {
+    beforeEach(seedRandom);
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('starts a new game asked for once the game is over, and drops one asked for during play', () => {
+        const model = createModel();
+        // The digger stands still on the surface until the creatures catch it
+        model.startNewRun();
+        for (let i = 0; i * TICK_MS < LONGEST_RUN_MS && model.phase !== 'game-over'; i++) {
+            model.update(TICK_MS);
+        }
+        expect(model.phase).toBe('game-over');
+        // The ask made during play was dropped, not kept for later
+        model.update(TICK_MS);
+        expect(model.phase).toBe('game-over');
+
+        model.startNewRun();
+        expect(model.phase).toBe('game-over');
+        model.update(TICK_MS);
+        expect(model.phase).toBe('playing');
+        expect(model.lives).toBe(createModel().lives);
+        expect(model.level).toBe(1);
+    });
+});
+
+describe('GameModel: saving', () => {
+    beforeEach(seedRandom);
     afterEach(() => {
         vi.restoreAllMocks();
     });
@@ -112,6 +158,15 @@ describe('GameModel: saving', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
+/** Seeds the random numbers, so the creatures patrol the same way on every run. */
+function seedRandom(): void {
+    let state = 12345;
+    vi.spyOn(Math, 'random').mockImplementation(() => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state / 4294967296;
+    });
+}
+
 function createModel(): GameModel {
     return createGameModel({
         levels: LEVELS,
@@ -132,11 +187,31 @@ function playUntilScored(model: GameModel): void {
     const pumpRow = findTunnelBelowSpawn() - 1;
     for (let i = 0; i * TICK_MS < LONGEST_RUN_MS && model.phase === 'playing' && model.score === startScore; i++) {
         const isDugIn = model.digger.row >= pumpRow;
-        model.playerInput.direction = isDugIn ? 'none' : 'down';
-        model.playerInput.pumpPressed = isDugIn && i % 8 < 4;
+        model.direction = isDugIn ? 'none' : 'down';
+        // Each burst holds the harpoon out, and pumps as it starts
+        model.isHarpoonOut = isDugIn && i % 8 < 4;
+        if (isDugIn && i % 8 === 0) model.pump();
         model.update(TICK_MS);
     }
-    model.playerInput.pumpPressed = false;
+    model.isHarpoonOut = false;
+}
+
+/**
+ * Digs down and shoots the harpoon in bursts as `playUntilScored` does, but
+ * never pumps, until it hooks a creature, and returns that creature.
+ */
+function hookCreature(model: GameModel): EnemyModel {
+    const pumpRow = findTunnelBelowSpawn() - 1;
+    for (let i = 0; i * TICK_MS < LONGEST_RUN_MS && model.phase === 'playing'; i++) {
+        const isDugIn = model.digger.row >= pumpRow;
+        model.direction = isDugIn ? 'none' : 'down';
+        model.isHarpoonOut = isDugIn && i % 8 < 4;
+        model.update(TICK_MS);
+        for (let j = 0; j < model.enemies.length; j++) {
+            if (model.enemies[j].inflationStage > 0) return model.enemies[j];
+        }
+    }
+    throw new Error('The harpoon hooked no creature');
 }
 
 /** Scores in the first level, then pops every creature left, which clears it. */

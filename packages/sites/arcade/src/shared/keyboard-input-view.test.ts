@@ -44,8 +44,20 @@ describe('KeyboardInputView', () => {
         press('Enter');
         press(' ', 'keyup');
         state.isActive = true;
+        // Enter went down while the entry was held: its release is no change to the entry
         press('Enter', 'keyup');
-        expect(state.buttons).toEqual(['primary:true', 'primary:false', 'restart:false']);
+        expect(state.buttons).toEqual(['primary:true', 'primary:false']);
+        view.destroy();
+    });
+
+    it('reports a button as it goes down and up, and not again while its key repeats', () => {
+        const { view, state, press } = setUp();
+        state.isActive = true;
+        press('Enter');
+        press('Enter');
+        press('Enter');
+        press('Enter', 'keyup');
+        expect(state.buttons).toEqual(['restart:true', 'restart:false']);
         view.destroy();
     });
 });

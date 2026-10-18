@@ -27,7 +27,6 @@ export const load = definePixiLoader(async () => {
             const gameModel = createGameModel({ events: STAGE_EVENTS, bossAttacks: BOSS_ATTACKS });
             const gameView = GameView({ model: gameModel, sound, bestScore });
             stage.addChild(gameView);
-            const input = gameModel.playerInput;
 
             return {
                 // The host ticks the view with the rest of the stage
@@ -51,11 +50,11 @@ export const load = definePixiLoader(async () => {
                     showSecondary: true,
                     primaryLabel: 'Bomb',
                     secondaryLabel: 'Focus',
-                    onXDirectionChanged: (dir) => { input.xDirection = dir; },
-                    onYDirectionChanged: (dir) => { input.yDirection = dir; },
-                    onPrimaryButtonChanged: (pressed) => { input.bombPressed = pressed; },
-                    onSecondaryButtonChanged: (pressed) => { input.focusPressed = pressed; },
-                    onRestartButtonChanged: (pressed) => { input.restartPressed = pressed; },
+                    onXDirectionChanged: (dir) => { gameModel.headingX = dir; },
+                    onYDirectionChanged: (dir) => { gameModel.headingY = dir; },
+                    onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.dropBomb(); },
+                    onSecondaryButtonChanged: (isDown) => { gameModel.isFocusing = isDown; },
+                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },
