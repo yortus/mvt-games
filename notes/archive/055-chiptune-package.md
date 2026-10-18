@@ -75,8 +75,8 @@ reader so. Publishing it removes those workarounds.
       `libraries/audio`, except this task.
 - [x] Audio views, the chips' names and `sound` keep their names.
 - [x] It builds for publishing with the other libraries.
-- [ ] It is on npm. The owner publishes its first version by hand, at the
-      next release, as `.changeset/README.md` says.
+- [x] It is on npm: 0.3.0 by hand, then 0.4.0 through the release
+      workflow, with provenance.
 - [x] An exported playground project plays sound, and Help no longer says it
       can't.
 - [x] Lint, type checks, the unit tests and the visual tests pass, and the
@@ -145,3 +145,12 @@ renders by less than -150 dBFS. Fuse Box differs more, from 20.7 s: its acid
 line is a resonant ladder near self-oscillation, which turns any change in
 the last digit into a different squelch with the same notes. No Audio80
 hash changed.
+
+With the fix in, the owner started the release workflow by hand, since the
+commit changed no `package.json`. It passed, and published all five
+libraries at 0.4.0 with provenance. The same commit added `.gitattributes`,
+which checks every text file out with LF (see 065). npm also lists a
+`0.0.0-stage` version of the package, made as it processed the first
+publish. It isn't `latest`, so it can be deprecated or left.
+
+Done, and archived.
