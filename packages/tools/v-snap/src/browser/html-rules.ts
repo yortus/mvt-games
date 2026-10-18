@@ -95,6 +95,33 @@ export function pixelateRotatedImages(host: HTMLElement): void {
 }
 
 /**
+ * Makes the browser draw each scroll container with rounded corners under
+ * the host as part of the page, not as a layer of its own. Chrome draws a
+ * scroll container that the user can scroll as a separate layer, and clips
+ * that layer to the container's rounded corners. arm64 processors round the
+ * edge of that clip differently, by up to 10 levels of 255. So such a
+ * container's `overflow` becomes `hidden`. A container with hidden overflow
+ * is laid out and clipped the same way, and stays scrolled where it was,
+ * but the user can't scroll it, so Chrome draws it with the page. The test
+ * page hides scrollbars, so no scrollbar disappears. A `<textarea>` or a
+ * `<select>` is left as it is, since its own size depends on its overflow.
+ */
+export function flattenScrollContainers(host: HTMLElement): void {
+    for (const element of listElements(host)) {
+        if (!(element instanceof HTMLElement) || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) continue;
+        const computed = getComputedStyle(element);
+        const scrollsX = SCROLLING_OVERFLOWS.has(computed.overflowX);
+        const scrollsY = SCROLLING_OVERFLOWS.has(computed.overflowY);
+        if ((!scrollsX && !scrollsY) || !hasRoundedCorners(computed)) continue;
+        const { scrollLeft, scrollTop } = element;
+        if (scrollsX) element.style.setProperty('overflow-x', 'hidden', 'important');
+        if (scrollsY) element.style.setProperty('overflow-y', 'hidden', 'important');
+        element.scrollLeft = scrollLeft;
+        element.scrollTop = scrollTop;
+    }
+}
+
+/**
  * Rounds every element's font size to the nearest quarter pixel. It sets
  * each size as an inline style that outranks the page's own. Linux scales
  * fonts in 64ths of a pixel, and Windows and macOS do not. So at a size like
@@ -135,6 +162,15 @@ export function quantizeFontSizes(host: HTMLElement): () => void {
 // ---------------------------------------------------------------------------
 
 const BLANK_FAMILY = 'Visual Blank';
+
+/** The computed `overflow` values that make an element a scroll container that the user can scroll. */
+const SCROLLING_OVERFLOWS: ReadonlySet<string> = new Set(['auto', 'scroll']);
+
+/** Returns whether any of an element's corners is rounded, by its computed style. */
+function hasRoundedCorners(computed: CSSStyleDeclaration): boolean {
+    return [computed.borderTopLeftRadius, computed.borderTopRightRadius, computed.borderBottomRightRadius, computed.borderBottomLeftRadius]
+        .some((radius) => radius !== '' && !/^0(?:px)?(?: 0(?:px)?)?$/.test(radius));
+}
 
 /** The rules that `installHtmlRules` describes. */
 const HTML_RULES = `

@@ -229,8 +229,20 @@ backgrounds. It also stops the view's animations and transitions, as
 Playwright's screenshots do with `animations: 'disabled'`. An animation
 that would end jumps to its end. One that repeats forever, such as a
 spinner, is removed, so the image shows the view without it. A text
-field's caret is hidden too. That way, the image never catches a moment
-that differs from one run to the next.
+field's caret is hidden too. Then v-snap waits for two frames. Some views
+lay themselves out in a frame after they're added to the page, as a code
+editor such as CodeMirror does when it measures its lines. The wait lets
+them settle, however slow the machine is. That way, the image never
+catches a moment that differs from one run to the next.
+
+v-snap also draws each scroll container with rounded corners as part of
+the page. Browsers usually draw a container that you can scroll as a
+layer of its own, and arm64 processors round the edges of that layer's
+rounded corners differently. So while v-snap takes the image, it sets the
+container's `overflow` to `hidden`. The container keeps its layout, and
+stays scrolled where it was, so the image looks the same as before. A
+`<textarea>` or a `<select>` keeps its own overflow, since its size
+depends on it.
 
 The page prefers a dark colour scheme, unless v-snap's `colorScheme`
 option or the test's own says otherwise. It also prefers reduced motion.

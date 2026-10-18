@@ -18,6 +18,34 @@ htmlTest('a styled control', () => createBlock('<button style="font:inherit;padd
 
 htmlTest('a rotated image', () => createBlock(`<img style="width:80px;transform:rotate(-4deg)" src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="#2a1766"/><circle cx="20" cy="15" r="10" fill="#5bd1ff"/></svg>')}">`));
 
+// A scroll container with rounded corners is drawn as part of the page, not
+// as a layer of its own, since arm64 processors round the clip of such a
+// layer differently. It stays scrolled where the act step left it, so the
+// image starts at the second row.
+htmlTest('a scroll container with rounded corners, scrolled', {
+    act: (block) => {
+        (block.querySelector('ul') as HTMLElement).scrollTop = 26;
+    },
+}, () => createBlock(`
+    <ul style="margin:0;padding:6px;width:120px;height:60px;overflow:auto;list-style:none;border:1px solid #30363d;border-radius:8px;background:#21262d">
+        <li style="height:20px;margin-bottom:6px;background:#5bd1ff"></li>
+        <li style="height:20px;margin-bottom:6px;background:#ff4f8b"></li>
+        <li style="height:20px;margin-bottom:6px;background:#3fb950"></li>
+        <li style="height:20px;background:#d29922"></li>
+    </ul>`));
+
+// A view that lays itself out in an animation frame, as CodeMirror does when
+// it measures its lines, is captured once it has settled: the bar is 40
+// pixels tall, not 10.
+htmlTest('a view laid out in an animation frame', () => {
+    const block = createBlock('<div style="width:40px;height:10px;background:#5bd1ff"></div>');
+    const bar = block.firstElementChild as HTMLElement;
+    requestAnimationFrame(() => {
+        bar.style.height = '40px';
+    });
+    return block;
+});
+
 htmlTest('at a fixed size', { width: 120, height: 80 }, () => createBlock('<div style="width:40px;height:40px;background:#ff4f8b"></div>'));
 
 // Animations are brought to rest before the capture: the spinner, which

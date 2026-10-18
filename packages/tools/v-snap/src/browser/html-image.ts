@@ -1,6 +1,6 @@
 import { inject } from 'vitest';
 import { page } from 'vitest/browser';
-import { adoptHtmlRules, listElements, pixelateRotatedImages, quantizeFontSizes, settleAnimations } from './html-rules';
+import { adoptHtmlRules, flattenScrollContainers, listElements, pixelateRotatedImages, quantizeFontSizes, settleAnimations } from './html-rules';
 import { visualCommands } from './judge';
 import { fitImage } from '../shared';
 import type { ColorScheme, VisualImageId, VisualRect, VisualVerdict } from '../protocol';
@@ -94,6 +94,7 @@ export async function captureHtmlImage(
         unround();
         quantizeFontSizes(host);
         pixelateRotatedImages(host);
+        flattenScrollContainers(host);
         // Wait until every `<img>` element is loaded and decoded, lazy ones
         // too. A lazy one that is off screen never loads, so each one is made
         // eager.
@@ -103,6 +104,11 @@ export async function captureHtmlImage(
         }));
         await loadStyleImages(host);
         await settleAnimations(host);
+        // A view may lay itself out in an animation frame, as CodeMirror does
+        // when it measures its lines, or in a ResizeObserver callback. Two
+        // frames give it time to settle, however slow the machine is, so the
+        // image never catches it halfway.
+        for (let i = 0; i < 2; i++) await new Promise((resolve) => requestAnimationFrame(resolve));
         // The host is at the page's top left. A pose or an earlier test that
         // focused an element lower down may have scrolled the page.
         scrollTo(0, 0);
