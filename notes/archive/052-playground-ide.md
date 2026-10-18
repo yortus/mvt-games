@@ -71,8 +71,8 @@ first draft had.
 [045](../archive/045-sound-chip.md) (the Audio80, which a project's views can play) -
 [051](./051-audio90-chip.md) (entries choosing their chip, which a project would follow) -
 [011](../archive/011-multi-package-repo.md) (the workspace of packages that this adds one to) -
-[017](../tasks/backlog/017-misc-loose-ends.md) (old playground links that assign `view.onRefresh`) -
-[047](../tasks/backlog/047-pixel-art-as-multiline-strings.md) (pixel art in code, which suits a playground with no image files) -
+[017a](./017a-misc-loose-ends-done.md) (old playground links that assign `view.onRefresh`) -
+[047](./047-pixel-art-as-multiline-strings.md) (pixel art in code, which suits a playground with no image files) -
 [050](../tasks/backlog/050-visitor-analytics.md) (which pages report visits) -
 [Project Structure](../../packages/sites/docs/reference/project-structure.md) -
 [Quickstart](../../packages/sites/docs/building-with-mvt/quickstart.md) (links into the playground) -

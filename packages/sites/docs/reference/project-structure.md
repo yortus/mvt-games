@@ -25,7 +25,7 @@ packages/
 │   └── chiptune/        @mvtjs/chiptune: the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
-│   └── eslint-plugin/   @mvtjs/eslint-plugin (private for now): this repo's lint rules
+│   └── eslint-plugin/   @mvtjs/eslint-plugin (private): this repo's lint rules
 ├── sites/               What gets deployed
 │   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite), and the Cloudflare Worker that keeps the highscore tables
 │   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite)

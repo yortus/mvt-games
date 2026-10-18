@@ -1,8 +1,9 @@
 # @mvtjs/eslint-plugin
 
 This repo's ESLint rules, in the plain ESLint v9 plugin format, so they also
-load in Oxlint as a JS plugin. Private for now: the `architecture` rules are
-meant to be published once there are enough of them to be useful to others.
+load in Oxlint as a JS plugin. It's private, and isn't published: its
+`architecture` rules are too few to be worth publishing on their own, and the
+rest are this repo's own conventions.
 
 | Rule | Preset | Reports |
 | --- | --- | --- |
@@ -27,7 +28,8 @@ loads a TypeScript config through jiti, which compiles the config and what it
 imports as it loads them, so nothing needs building first, and
 `npm run lint` always runs the current rules. An editor's ESLint server keeps
 the config it loaded: after editing a rule, restart the server to lint with
-the change. The package's `build` makes `dist/`, for publishing.
+the change. It has no build, since nothing loads it but the repo's own
+tools.
 
 Each rule has a test beside it, run with ESLint's `RuleTester` under Vitest
 (`npm test`).

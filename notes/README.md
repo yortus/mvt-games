@@ -170,6 +170,7 @@ loose ends are tasks 057 to 064.
 | 014 | [Review: Kwazy Cactii](archive/014-review-cactii.md) | 2026-04-10 |
 | 015 | [Documentation Overhaul](archive/015-documentation-overhaul/task.md) | 2026-04-19 |
 | 016 | [Falling Sand Demo](archive/016-falling-sand-demo/task.md) | 2026-09-26 |
+| 017a | [Miscellaneous Loose Ends: Finished](archive/017a-misc-loose-ends-done.md) (the finished items of 017, split out of it) | 2026-10-18 |
 | 018 | [Proposal: one view convention](archive/018-one-view-convention.md) | 2026-09-27 |
 | 020 | [Proposal: falling sand as an implementation lab](archive/020-falling-sand-variants.md) | 2026-09-27 |
 | 021 | [JSX and Teardown Quick Wins](archive/021-jsx-and-teardown-quick-wins.md) | 2026-09-28 |
@@ -190,11 +191,11 @@ loose ends are tasks 057 to 064.
 | 044 | [Tick API: One Copy, or a Loud Failure](archive/044-one-copy-or-a-loud-failure.md) (a second copy of `@mvtjs/utils`, or of a renderer, throws as it loads, saying how to keep one; the sharing between copies, `PROTOCOL` and its fields removed) | 2026-10-18 |
 | 045 | [Proposal: a virtual sound chip, and sound for the Arcade](archive/045-sound-chip.md) (the Audio80, an eight-voice mono chip in `@mvtjs/chiptune`, played by audio views that poll with `watch`, with sound for all nine games and the Arcade. Loose ends are in 048) | 2026-10-09 |
 | 046 | [Proposal: highscores for the Arcade](archive/046-arcade-highscores.md) (one global table of ten for each game with a score, kept by a Cloudflare Worker with one Durable Object, in `packages/sites/arcade/highscores-worker/`, sharing its rules with the page in `src/highscores/`; three-letter initials entered cabinet-style in the pixel font; games report `scoring` from their sessions; a Highscores tab in the pause menu. Loose ends are task 049) | 2026-10-15 |
+| 047 | [Pixel Art as Multiline Strings](archive/047-pixel-art-as-multiline-strings.md) (each texture script's pictures read by `parsePixelArt`) | 2026-10-18 |
 | 051 | [Proposal: the Audio90, and entries that choose their sound chip](archive/051-audio90-chip.md) (a second chip in `@mvtjs/chiptune`: sixteen stereo voices of FM, analog or samples bounced from its own engines, with a reverb, a stereo echo, a chorus and a pump; each entry's starter names its chip; the Tune Tracker plays fifteen original tunes of the 1990s; Neon Monsoon rescored; shared pixel glyphs for the older entries; the cards' long text after the first paint. Loose ends are task 065) | 2026-10-17 |
 | 052 | [Proposal: a playground that works like a small IDE](archive/052-playground-ide.md) (the playground became a package of its own, `packages/sites/playground/`, and the website became the Arcade: a project of real TypeScript files with real imports from a fixed list of libraries, intellisense from TypeScript in a worker, each run a fresh sandboxed iframe of ES modules, projects kept in IndexedDB, share links, Export as a Vite project, a file tree with kept barrels, themes, Help, and a Performance tab on `@mvtjs/html`'s new `PerfmonView`. Loose ends are tasks 057 to 064) | 2026-10-17 |
 | 055 | [Rename `@mvtjs/audio` to `@mvtjs/chiptune`, and Publish It](archive/055-chiptune-package.md) (the package renamed and published, 0.3.0 by hand then 0.4.0 with the other four; each worklet inlined as a Blob URL in the published build; exported playground projects play sound; the chips stopped using `Math.pow`, whose last digit differs between Linux and Windows) | 2026-10-18 |
 | 064 | [HTML JSX: A Fixed `value` on a `<select>` Is Lost](archive/064-html-jsx-select-fixed-value.md) (kept until its option is added) | 2026-10-18 |
-| 047 | [Pixel Art as Multiline Strings](archive/047-pixel-art-as-multiline-strings.md) (each texture script's pictures read by `parsePixelArt`) | 2026-10-18 |
 
 ## Elsewhere
 

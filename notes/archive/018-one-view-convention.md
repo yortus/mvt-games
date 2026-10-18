@@ -27,7 +27,7 @@ uncommitted boids changes. Counts are from `grep` over `src/`.
 [Bindings](../../docs/building-with-mvt/presenting-the-world/bindings.md) and
 [Bindings in Depth](../../docs/building-with-mvt/presenting-the-world/bindings-in-depth.md),
 [Style Guide](../../docs/reference/style-guide.md),
-[017 - Miscellaneous loose ends](../tasks/backlog/017-misc-loose-ends.md) (the
+[017a - Miscellaneous loose ends, finished](./017a-misc-loose-ends-done.md) (the
 method-syntax item and the parked `<List>` guide item),
 [011 - Multi-package repo](./011-multi-package-repo.md).
 
@@ -417,7 +417,7 @@ do not, and that it is ambiguous when `T` is itself a function type.
 
 A sweep on 2026-09-27 found these, plus some lesser cases; the full list,
 and the views checked and found live, is in
-[017](../tasks/backlog/017-misc-loose-ends.md)'s Fix list.
+[017a](./017a-misc-loose-ends-done.md)'s Fix list.
 
 Each declares a query binding that may change and silently stops following
 it. The fix is to declare what the view supports: `T` if it only handles a
