@@ -36,6 +36,8 @@ jobs:
             - run: npm run build:playground
               env:
                   BASE_URL: /
+            # With the Arcade and the playground built: each holds one copy of @mvtjs/utils, as a second throws on load
+            - run: npm run check:one-copy-of-utils
             - run: npm run build:docs
               env:
                   BASE_URL: /
