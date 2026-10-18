@@ -1239,8 +1239,12 @@ html.is-runner-turned .runner-sound-hint {
     z-index: 9998;
     width: 240px;
 }
-/* Over the entry, while the runner is open, and still under its bar */
-.runner.is-open ~ .perfmon-float { z-index: 10005; }
+/*
+ * Over the entry, while the runner is open, and still under its bar. The
+ * panel loads late, so it sits inside the group that holds its place, after
+ * the runner, rather than beside the runner itself
+ */
+.runner.is-open ~ * .perfmon-float { z-index: 10005; }
 .perfmon-float .mvt-perfmon {
     /* Opaque, so what is under it never shows through its figures */
     --mvt-perfmon-background: var(--site-nav-bg);
