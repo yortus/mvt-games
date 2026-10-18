@@ -36,8 +36,7 @@ Points to settle while adding it:
   Pages site by `deploy.yml`) each need the tag, or a decision to leave one
   out. The playground's sandbox runs visitors' code in an iframe of its own,
   which should not report.
-- **Production only.** The test deploy to Surge (`test-deploy.yml`) and the
-  dev server should not report. Passing the site token only in `deploy.yml`,
+- **Production only.** The dev server should not report. Passing the site token only in `deploy.yml`,
   for example as a `VITE_` variable, and adding the tag only when it is set,
   would do it.
 - **The home page's size budget.** The script loads from Cloudflare,

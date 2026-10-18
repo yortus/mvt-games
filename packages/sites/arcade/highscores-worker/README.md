@@ -88,7 +88,7 @@ There are two environments, each with tables of its own. Both are set in
 | Environment | Address | Pages allowed to post |
 | --- | --- | --- |
 | Production | `https://highscores.yortus.workers.dev` | The site on GitHub Pages, and `yortus.com` |
-| `test` | `https://highscores-test.yortus.workers.dev` | The test site on Surge, and `localhost` on any port |
+| `test` | `https://highscores-test.yortus.workers.dev` | `localhost` on any port |
 
 The site finds its Worker from `VITE_HIGHSCORES_URL` when it is built. The
 site's workflows set it. Without it, as in `npm run dev`, the site keeps its
@@ -107,7 +107,7 @@ tables in memory, by the same rules, and forgets them when the page closes.
 The workflow
 [`deploy-highscores.yml`](../../../../.github/workflows/deploy-highscores.yml)
 deploys the Worker when it, or the code it shares, changes. A push to `main` deploys
-production, and a push to `test` deploys the `test` environment. It needs
+production. Run it by hand on any other branch to deploy the `test` environment. It needs
 two repository secrets, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 A newly deployed Worker can answer 404 for a minute or so, while the

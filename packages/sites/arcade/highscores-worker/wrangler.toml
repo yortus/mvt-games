@@ -25,13 +25,13 @@ name = "POST_LIMIT"
 namespace_id = "1001"
 simple = { limit = 5, period = 60 }
 
-# highscores-test.yortus.workers.dev: the Surge test site, and the site in development
+# highscores-test.yortus.workers.dev: the site in development
 [env.test]
 workers_dev = true
 preview_urls = false
 
 [env.test.vars]
-ALLOWED_ORIGINS = "https://mvt-games-test.surge.sh,http://localhost:*,https://localhost:*,http://127.0.0.1:*"
+ALLOWED_ORIGINS = "http://localhost:*,https://localhost:*,http://127.0.0.1:*"
 
 [[env.test.durable_objects.bindings]]
 name = "HIGHSCORES"

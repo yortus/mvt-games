@@ -131,7 +131,6 @@ loose ends are tasks 057 to 064.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
-| 067 | [Better Link Previews](tasks/active/067-better-link-previews.md) | medium | 2026-10-18 |
 
 ### Backlog
 
@@ -197,6 +196,7 @@ loose ends are tasks 057 to 064.
 | 056 | [A Perfmon Throughout the Arcade, and a New Nav](archive/056-floating-perfmon-in-the-arcade.md) (the Arcade drives one performance meter from its own loop, shown in a floating `PerfmonView` over the wall or any entry, with the GPU timed only while it is open; Boids and Falling Sand dropped their own panels; `@mvtjs/pixi`'s `createPerformanceMetrics` removed; the nav and the runner's bar touched up, and carried to the docs and the playground) | 2026-10-18 |
 | 064 | [HTML JSX: A Fixed `value` on a `<select>` Is Lost](archive/064-html-jsx-select-fixed-value.md) (kept until its option is added) | 2026-10-18 |
 | 066 | [The Arcade's Way Into an Entry, Timed by the Model](archive/066-arcade-way-in-timed-by-the-model.md) (the Arcade's model times the way in, in phases `'launching'` and `'revealing'`, with durations shared in `data/way-in.ts`; `EntryTransitionViewModel` draws from them, and keeps its own clock for the way out; a link straight to an entry no longer shows a small picture in the corner) | 2026-10-18 |
+| 067 | [Better Link Previews](archive/067-better-link-previews.md) (a 1200x630 share image for each entry, made by `generate-thumbnails`, and one of the card wall for the rest of the site; `og:image` with its size and alt, and `twitter:card`, on every page of the Arcade, the docs and the playground; `check:link-previews` after each build; the test site on Surge removed) | 2026-10-18 |
 
 ## Elsewhere
 

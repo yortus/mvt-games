@@ -2,17 +2,17 @@ name: Deploy the highscores Worker
 
 # Deploys the Cloudflare Worker that keeps the Arcade's highscore tables
 # (packages/sites/arcade/highscores-worker). A push to main deploys production, at
-# highscores.yortus.workers.dev, for the site on GitHub Pages. A push to test,
-# or a manual run on any other branch, deploys the test environment, at
-# highscores-test.yortus.workers.dev, for the site on Surge. Each has tables
-# of its own. It runs only when the Worker, or the code it shares with the
+# highscores.yortus.workers.dev, for the site on GitHub Pages. A manual run on
+# any other branch deploys the test environment, at
+# highscores-test.yortus.workers.dev, for the site in development. Each has
+# tables of its own. It runs only when the Worker, or the code it shares with the
 # site (packages/sites/arcade/src/highscores), changes. It needs two secrets:
 # CLOUDFLARE_API_TOKEN, from the "Edit Cloudflare Workers" template, and
 # CLOUDFLARE_ACCOUNT_ID.
 
 on:
     push:
-        branches: [main, test]
+        branches: [main]
         paths:
             - packages/sites/arcade/highscores-worker/**
             - packages/sites/arcade/src/highscores/**

@@ -71,9 +71,10 @@ Checks:
     absolute `https://` address. The plugin already stops the build when a
     thumbnail is missing. This would also catch a build with no
     `SITE_ORIGIN`.
-11. **Deploy the test site again.** On 2026-10-18,
+11. ~~**Deploy the test site again.** On 2026-10-18,
     `https://mvt-games-test.surge.sh/arcade/crumb-chase/` gave a 404, so
-    changes to the tags can't be tried there before they go live.
+    changes to the tags can't be tried there before they go live.~~ Dropped:
+    the test site on Surge was removed instead (see the progress log).
 12. **After deploying, check again with each platform's tool:** Facebook's
     Sharing Debugger ("Scrape Again") and LinkedIn's Post Inspector, which
     also clear their caches, and a Slack or Discord message to yourself.
@@ -108,7 +109,7 @@ with absolute image addresses only when `SITE_ORIGIN` is set.
 - [x] The build fails when an entry page's tags are incomplete, or its
       image address is not absolute. (`check:link-previews`, after the
       build and in both deploys.)
-- [ ] Checked after deploying: LinkedIn's Post Inspector shows an entry's
+- [x] Checked after deploying: LinkedIn's Post Inspector shows an entry's
       image crisp, and Facebook's Sharing Debugger, X and a chat app show
       the large card.
 
@@ -150,3 +151,10 @@ with absolute image addresses only when `SITE_ORIGIN` is set.
     bytes from run to run, so the rewritten ones were restored.
   - Left: item 11 (deploy the test site) and item 12 (check with each
     platform's tool after deploying).
+- 2026-10-18: Item 12 done: the owner checked the previews again with each
+  platform's tool. Item 11 dropped: the test site on Surge was removed, as
+  little used, and not a faithful copy of Pages (it needed its own CORS file,
+  and answered 404 for an entry's address). `test-deploy.yml` is deleted,
+  the highscores Worker's test environment no longer allows its origin, and
+  only a manual run deploys that environment now. The test environment stays,
+  for the site in development. Finished.
