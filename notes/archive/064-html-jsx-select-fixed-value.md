@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-17 |
-| Updated  | 2026-10-17 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
@@ -33,11 +33,11 @@ playground's theme menu (052, step 7).
 
 ## Acceptance Criteria
 
-- [ ] `<select value="b">` with options `a` and `b` shows `b`.
-- [ ] A test in `@mvtjs/html` covers it, with `<option>`s given directly
+- [x] `<select value="b">` with options `a` and `b` shows `b`.
+- [x] A test in `@mvtjs/html` covers it, with `<option>`s given directly
       and through `<optgroup>`.
-- [ ] The conformance tests still pass for every JSX target.
-- [ ] A changeset for `@mvtjs/html`.
+- [x] The conformance tests still pass for every JSX target.
+- [x] A changeset for `@mvtjs/html`.
 
 ## Progress Log
 
@@ -45,3 +45,15 @@ playground's theme menu (052, step 7).
 
 Created when 052 was archived. Found while adding `<optgroup>` in 052's
 step 7, and left for later.
+
+### 2026-10-18
+
+Fixed with the second way: `<select>`'s `value` has its own write in the
+element table (`writeSelectValue`, in `html-elements.ts`). While the select
+has no options, it keeps the value instead of writing it. The HTML target's
+`append` then selects the kept value when an `<option>` with it, or an
+`<optgroup>` holding one, is added. The JSX core's order is unchanged, so no
+other renderer is affected. A value that names no option leaves the first
+option selected, as the browser does. Four tests in `html-jsx.test.tsx`, and
+a patch changeset. `<textarea>` needs nothing: its `value` doesn't depend on
+children.

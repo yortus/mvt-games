@@ -279,6 +279,58 @@ describe('@mvtjs/html JSX', () => {
         });
     });
 
+    describe('<select>', () => {
+        // A select's attributes are written before its options are added,
+        // when it has no option to select yet. A fixed value must still
+        // select its option once the options arrive.
+        it('selects the option a fixed value names', () => {
+            const select = (
+                <select value="b">
+                    <option value="a" text="A" />
+                    <option value="b" text="B" />
+                </select>
+            ) as HTMLSelectElement;
+            expect(select.value).toBe('b');
+        });
+
+        it('selects the option a fixed value names inside an <optgroup>', () => {
+            const select = (
+                <select value="c">
+                    <optgroup label="First">
+                        <option value="a" text="A" />
+                        <option value="b" text="B" />
+                    </optgroup>
+                    <optgroup label="Second">
+                        <option value="c" text="C" />
+                    </optgroup>
+                </select>
+            ) as HTMLSelectElement;
+            expect(select.value).toBe('c');
+        });
+
+        it('selects the first option when a fixed value names none of them', () => {
+            const select = (
+                <select value="z">
+                    <option value="a" text="A" />
+                    <option value="b" text="B" />
+                </select>
+            ) as HTMLSelectElement;
+            expect(select.value).toBe('a');
+        });
+
+        it('leaves the user\'s choice alone once the fixed value is selected', () => {
+            const select = (
+                <select value="b">
+                    <option value="a" text="A" />
+                    <option value="b" text="B" />
+                </select>
+            ) as HTMLSelectElement;
+            select.value = 'a';
+            refreshView(select);
+            expect(select.value).toBe('a');
+        });
+    });
+
     describe('typing hints', () => {
         it('set autocomplete on fields, and spellcheck on any element', () => {
             const input = <input autocomplete="off" spellcheck={false} /> as HTMLInputElement;

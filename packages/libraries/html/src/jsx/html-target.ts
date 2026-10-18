@@ -1,6 +1,7 @@
 import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
 import { assert } from '@mvtjs/utils';
 import { destroyElement, onDestroyed } from '../element-mixin';
+import { selectPendingValue } from './html-elements';
 import { hasOwnedText } from './owned-text';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,8 @@ export const htmlTarget: JsxTarget<Element> = {
             assert(!hasOwnedText(parent), () => `[@mvtjs/html] <${parent.localName}> has text, so it cannot also have element children; put the text in a child element`);
         }
         parent.appendChild(child);
+        // A fixed `value` on a `<select>` is written before its options exist
+        if (parent instanceof HTMLSelectElement) selectPendingValue(parent, child);
     },
     replace: (parent, current, next) => {
         parent.replaceChild(next, current);

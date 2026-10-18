@@ -20,6 +20,7 @@ const html = attributesOf<HTMLElement>();
 const field = attributesOf<FormField>();
 const input = attributesOf<HTMLInputElement>();
 const textArea = attributesOf<HTMLTextAreaElement>();
+const select = attributesOf<HTMLSelectElement>();
 const button = attributesOf<HTMLButtonElement>();
 const anchor = attributesOf<HTMLAnchorElement>();
 const image = attributesOf<HTMLImageElement>();
@@ -124,9 +125,9 @@ export const htmlElements = defineElements({
     }, globalPatterns),
     select: element(() => document.createElement('select'), {
         ...globalAttributes,
-        value: field.everyFrame(writeValue),
-        disabled: attributesOf<HTMLSelectElement>().onChange('disabled'),
-        name: attributesOf<HTMLSelectElement>().fixed('name'),
+        value: select.everyFrame(writeSelectValue),
+        disabled: select.onChange('disabled'),
+        name: select.fixed('name'),
     }, globalPatterns),
     option: element(() => document.createElement('option'), {
         ...globalAttributes,
@@ -238,6 +239,45 @@ function elementsFor<K extends keyof HTMLElementTagNameMap>(
  */
 function writeValue(e: FormField, v: string): void {
     if (e.value !== v && !isBeingTyped(e)) e.value = v;
+}
+
+/**
+ * A `<select>`'s `value` write: `writeValue`, unless the select has no
+ * options yet. A select takes only a value one of its options has, and a
+ * fixed value is written before the options are added. The browser would
+ * drop it, and select the first option once they arrive. So the value is
+ * kept, and `selectPendingValue` selects it when its option is added.
+ */
+function writeSelectValue(e: HTMLSelectElement, v: string): void {
+    if (e.length === 0) pendingSelectValues.set(e, v);
+    else writeValue(e, v);
+}
+
+/** Values written to a `<select>` before it had any options. */
+const pendingSelectValues = new WeakMap<HTMLSelectElement, string>();
+
+/**
+ * Selects the value written to `select` before it had options, if `child`,
+ * just added to it, is an `<option>` with that value, or an `<optgroup>`
+ * holding one. Then the value is no longer kept.
+ */
+export function selectPendingValue(select: HTMLSelectElement, child: Element): void {
+    const value = pendingSelectValues.get(select);
+    if (value === undefined) return;
+    if (!hasOptionWithValue(child, value)) return;
+    select.value = value;
+    pendingSelectValues.delete(select);
+}
+
+function hasOptionWithValue(e: Element, value: string): boolean {
+    if (e instanceof HTMLOptionElement) return e.value === value;
+    if (!(e instanceof HTMLOptGroupElement)) return false;
+    const children = e.children;
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (child instanceof HTMLOptionElement && child.value === value) return true;
+    }
+    return false;
 }
 
 /** `valueAsNumber`'s write: `writeValue`, for a number. */
