@@ -132,6 +132,16 @@ Settled questions that should not be reopened without new information are in
   expressions and URLs). Fix those, add both rules, and add the convention
   to the style guide.
 
+  **Measured again 2026-10-18, over `packages/` (about 170,000 lines):**
+  the code no longer keeps to 120. `object-curly-newline` as above reports
+  372 multi-line imports and exports. Lines over each length, ignoring the
+  same things: 980 over 120 (in 389 files, 103 of them in
+  `utils/src/jsx/refresh-copies.ts`), 237 over 140 (152 files), 45 over 160
+  (31 files), 11 over 180, and 1 over 200. So the length to enforce needs
+  deciding first: 120 means rewrapping about a thousand lines, and 160
+  about fifty. Joining the multi-line imports waits on it, since a joined
+  import must fit too.
+
 - ~~**Vite 8's config-loader warning.**~~ Done 2026-10-16, when the
   packages were grouped into folders: the config reads
   `import.meta.dirname`, and imports `./scripts/index.ts` with its
@@ -567,3 +577,6 @@ falling-sand demo. Each is a new variant, measured with
   shared names in Pixi's cache, and added a test against it.
 - 2026-10-18: A benchmark suite with a failed case is no longer saved, so
   an interrupted `all --save` can't empty the results.
+- 2026-10-18: Measured the line lengths again for the import and line
+  length item. The code has outgrown 120 columns, so the length to enforce
+  needs the owner's decision first.
