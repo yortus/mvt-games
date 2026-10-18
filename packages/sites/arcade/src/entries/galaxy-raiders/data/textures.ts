@@ -7,7 +7,7 @@ export const textures = createTextureRegistry(`${import.meta.env.BASE_URL}assets
         scout: 'scout',
     },
     ship: {
-        sprite: 'ship',
-        icon: 'ship-icon',
+        sprite: 'fighter',
+        icon: 'fighter-icon',
     },
 });

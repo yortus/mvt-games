@@ -5,6 +5,8 @@ import { CATALOGUE, findEntry } from './catalogue';
 
 /** Every entry directory's barrel, as `./crumb-chase/index.ts` and so on. */
 const ENTRY_BARRELS = Object.keys(import.meta.glob('./*/index.ts'));
+/** Every texture an entry packs, as `./fuel-run/assets/jet.png` and so on. */
+const TEXTURE_FILES = Object.keys(import.meta.glob('./*/assets/*.png'));
 
 describe('the catalogue', () => {
     it('lists each entry once', () => {
@@ -72,6 +74,19 @@ describe('the catalogue', () => {
         const withTables = CATALOGUE.filter((entry) => entry.hasHighscores === true);
         expect(withTables.map((entry) => entry.id).sort()).toEqual(Object.keys(GAMES).sort());
         for (const entry of withTables) expect(entry.tags.kind, entry.id).toBe('game');
+    });
+
+    // Pixi keeps every loaded texture in one cache, by name, so a name two
+    // entries share makes Pixi warn, and one entry may draw the other's.
+    it('gives no two entries a texture of the same name', () => {
+        const owners = new Map<string, string>();
+        for (const path of TEXTURE_FILES) {
+            const [, entryId, , file] = path.split('/');
+            const name = file.slice(0, -'.png'.length);
+            expect(owners.get(name), `${entryId} and ${owners.get(name)} both have a texture named '${name}'`).toBeUndefined();
+            owners.set(name, entryId);
+        }
+        expect(owners.size).toBeGreaterThan(0);
     });
 
     it('finds an entry by id', () => {

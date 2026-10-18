@@ -211,8 +211,8 @@ function encode(rows: string[]): Buffer {
 // ---------------------------------------------------------------------------
 
 const allTextures: Array<[string, string[]]> = [
-    ['ship.png', SHIP],
-    ['ship-icon.png', SHIP_ICON],
+    ['jet.png', SHIP],
+    ['jet-icon.png', SHIP_ICON],
     ['bullet.png', BULLET],
     ['bomb.png', BOMB],
     ['rocket-idle.png', ROCKET_IDLE],

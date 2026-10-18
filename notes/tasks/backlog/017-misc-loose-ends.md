@@ -369,7 +369,11 @@ Settled questions that should not be reopened without new information are in
   commit before it measures the same (127 and 159-164 µs) in interleaved
   runs. To attribute: run both cases on Node 22 and 26 at that commit, then
   at the commit before 028's phases 1-4.
-- **Pixi's "[Cache] already has key" warnings** (`ship-icon`, `ship`) when
+- ~~**Pixi's "[Cache] already has key" warnings**~~ Done 2026-10-18: Fuel
+  Run's ship textures are now `jet` and `jet-icon`, and Galaxy Raiders'
+  `fighter` and `fighter-icon`, with the same pixels. A catalogue test fails
+  when two entries have a texture of the same name. Originally: the
+  warnings (`ship-icon`, `ship`) when
   the cabinet loads. Seen during task 028's browser checks, with `ghost-eyes`
   too until only Burrow Bust had an eyes texture. They predate the rework:
   Galaxy Raiders and Fuel Run register textures under the same names.
@@ -480,7 +484,7 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] 027's remaining dev checks each built or dropped
 - [ ] DOM churn cost since the tick API explained, or recorded
 - [ ] Churn and falling-sand slowdowns between the September and October saves attributed
-- [ ] Pixi's texture cache warnings fixed, or recorded as harmless
+- [x] Pixi's texture cache warnings fixed, or recorded as harmless
 - [ ] 020's experiments each run, or dropped
 - [x] Vite's config-loader warning gone
 - [ ] An allocation budget check built, or dropped
@@ -554,3 +558,5 @@ falling-sand demo. Each is a new variant, measured with
   2026-10-16.
 - 2026-10-18: Replaced the hand-written `stepMs` helpers with
   `advanceTime`, in the docs and four test files.
+- 2026-10-18: Renamed Fuel Run's and Galaxy Raiders' ship textures, which
+  shared names in Pixi's cache, and added a test against it.

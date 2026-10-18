@@ -185,10 +185,10 @@ const textures: Array<[string, string[]]> = [
     ['carrier.png', CARRIER],
     ['striker.png', STRIKER],
     ['scout.png', SCOUT],
-    ['ship.png', SHIP],
+    ['fighter.png', SHIP],
     ['bullet-player.png', BULLET_PLAYER],
     ['bullet-enemy.png', BULLET_ENEMY],
-    ['ship-icon.png', SHIP_ICON],
+    ['fighter-icon.png', SHIP_ICON],
 ];
 
 for (const [name, rows] of textures) {
