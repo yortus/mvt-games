@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'fractalscope',
     name: 'Fractalscope',
     summary: 'Zoom into eight fractals, from the Mandelbrot set to the Burning Ship, with a pinch or the mouse wheel.',
-    tags: { kind: 'demo', genres: ['ui'] },
+    tags: { kind: 'demo', genres: ['ui', 'art'] },
     // It fills whatever it is given; this is the shape of a typical one.
     screenWidth: 1280,
     screenHeight: 800,

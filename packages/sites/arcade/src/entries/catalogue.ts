@@ -3,6 +3,7 @@ import { entry as astrovoidEntry } from './astrovoid';
 import { entry as boidsEntry } from './boids';
 import { entry as boids3dEntry } from './boids-3d';
 import { entry as burrowBustEntry } from './burrow-bust';
+import { entry as coralEntry } from './coral';
 import { entry as crumbChaseEntry } from './crumb-chase';
 import { entry as deepDiveEntry } from './deep-dive';
 import { entry as dojoDuelEntry } from './dojo-duel';
@@ -10,6 +11,7 @@ import { entry as doublePendulumEntry } from './double-pendulum';
 import { entry as fallingSandEntry } from './falling-sand';
 import { entry as fencelineEntry } from './fenceline';
 import { entry as fireworksEntry } from './fireworks';
+import { entry as fractalForestEntry } from './fractal-forest';
 import { entry as fractalscopeEntry } from './fractalscope';
 import { entry as fruitMachineEntry } from './fruit-machine';
 import { entry as fuelRunEntry } from './fuel-run';
@@ -49,6 +51,8 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     doublePendulumEntry,
     fireworksEntry,
     tuneTrackerEntry,
+    coralEntry,
+    fractalForestEntry,
 ];
 
 /** The entry with `id`, if there is one. */

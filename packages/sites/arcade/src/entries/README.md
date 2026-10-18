@@ -8,8 +8,8 @@ See the [MVT documentation](../../../docs/index.md) for architecture background.
 
 ## Overview
 
-Everything the Arcade lists is an **entry**: a game, a demo, or one day an
-art piece. Each is a self-contained module under
+Everything the Arcade lists is an **entry**: a game or a demo. A demo shows
+a technique, or is a piece of art to watch. Each is a self-contained module under
 `packages/sites/arcade/src/entries/<id>/`, named for its id. Games and demos are
 built the same way; the difference is in their metadata, such as their
 `kind` tag and a game's instructions. To add one, you need:
@@ -479,9 +479,9 @@ export const details: EntryDetails = {
 
 - **`id`** is the directory's name, and the entry's address: `/#breakout`
   launches it.
-- **`tags`** are what the search filters by: its `kind` (`game`, `demo` or
-  `art`), an `era` if it is in the style of one, and the `genres` that say
-  what it is. The values are listed in
+- **`tags`** are what the search filters by: its `kind` (`game` or `demo`),
+  an `era` if it is in the style of one, and the `genres` that say what it
+  is, such as `art` for a demo made to be looked at. The values are listed in
   [`arcade-entry.ts`](../entry-types/arcade-entry.ts).
 - **`screenWidth`** and **`screenHeight`** are the play area, in the entry's
   own pixels: the same numbers its views use, written out, since importing

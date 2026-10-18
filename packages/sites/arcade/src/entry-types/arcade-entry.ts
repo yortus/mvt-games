@@ -5,10 +5,10 @@ import type { EntryStarter } from './entry-starter';
 // ---------------------------------------------------------------------------
 
 /**
- * Something the site lists and runs: a game, a demo or an art piece. It holds
- * only what the arcade's cards show, so listing every entry loads no entry's
- * code, and none of its long text. `loadDetails` imports the long text, and
- * `load` imports the code and loads its assets.
+ * Something the site lists and runs: a game or a demo. It holds only what
+ * the arcade's cards show, so listing every entry loads no entry's code, and
+ * none of its long text. `loadDetails` imports the long text, and `load`
+ * imports the code and loads its assets.
  */
 export interface ArcadeEntry {
     /** Unique, and the name of the entry's directory (`'crumb-chase'`). */
@@ -98,17 +98,19 @@ export interface EntryTags {
 }
 
 /**
- * A game is played, a demo shows a technique (its info panel explains how),
- * and an art piece is there to be watched (its info panel says what it is).
+ * A game is played. A demo is there to be watched or explored: it shows a
+ * technique (its info panel explains how), or it is a piece of art (its
+ * genres include `'art'`, and its info panel says what it is).
  */
-export type EntryKind = 'game' | 'demo' | 'art';
+export type EntryKind = 'game' | 'demo';
 
 /** The decade an entry is in the style of. */
 export type Era = '1970s' | '1980s' | '1990s' | '2000s' | '2010s';
 
 /**
- * What sort of game, or what a demo is about. `'tiny'` marks an entry kept
- * as small as it can be, about a model and a view, as a first one to read.
+ * What sort of game, or what a demo is about. `'art'` marks a demo made to be
+ * looked at, more than to show a technique. `'tiny'` marks an entry kept as
+ * small as it can be, about a model and a view, as a first one to read.
  */
 export type Genre =
     | 'shooter'
@@ -121,6 +123,7 @@ export type Genre =
     | '3d'
     | 'ui'
     | 'demoscene'
+    | 'art'
     | 'tiny'
     | 'sound';
 
@@ -131,10 +134,10 @@ export type CardColor = 'bubblegum' | 'peach' | 'apricot' | 'lemon' | 'mint' | '
 export type RendererKind = 'pixi' | 'three' | 'html';
 
 /** Every value of each tag, and of the card colours, in the order the arcade lists them. */
-export const ENTRY_KINDS: readonly EntryKind[] = ['game', 'demo', 'art'];
+export const ENTRY_KINDS: readonly EntryKind[] = ['game', 'demo'];
 export const ERAS: readonly Era[] = ['1970s', '1980s', '1990s', '2000s', '2010s'];
 export const GENRES: readonly Genre[] = [
-    'shooter', 'maze', 'action', 'fighting', 'scrolling', 'puzzle', 'simulation', '3d', 'ui', 'demoscene', 'tiny', 'sound',
+    'shooter', 'maze', 'action', 'fighting', 'scrolling', 'puzzle', 'simulation', '3d', 'ui', 'demoscene', 'art', 'tiny', 'sound',
 ];
 export const RENDERER_KINDS: readonly RendererKind[] = ['pixi', 'three', 'html'];
 export const CARD_COLORS: readonly CardColor[] = [

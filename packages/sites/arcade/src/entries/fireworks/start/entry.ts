@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'fireworks',
     name: 'Harbour Fireworks',
     summary: 'Rockets climb over a city at night and burst into rings of colour, mirrored in the harbour below.',
-    tags: { kind: 'art', genres: ['tiny'] },
+    tags: { kind: 'demo', genres: ['art', 'tiny'] },
     screenWidth: 360,
     screenHeight: 300,
     thumbnail,
