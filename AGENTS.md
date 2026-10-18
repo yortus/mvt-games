@@ -110,8 +110,8 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 
 | Command                | Purpose                       |
 | ---------------------- | ----------------------------- |
-| `npm run dev`          | Start Vite dev server         |
-| `npm run dev:https`    | The same over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
+| `npm run dev`          | Start the three sites' dev servers together (the Arcade's at :5173 serves /docs/ and /playground/ from the other two); Ctrl+C stops all three. It starts nothing if one is running already. One site alone: `npm run dev -w @mvtjs/docs` |
+| `npm run dev:https`    | The same, with the Arcade over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check + production build |
 | `npm run build:playground` | Build the playground alone, into `dist/playground/` |
 | `npm run lint`         | Check lint and formatting     |
@@ -124,8 +124,6 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 | `npm run test:visual:update` | Also write changed actual images as reference images, and delete orphaned references; look at each before committing. `npx vitest run <test file> -u` for one file |
 | `npm run test:vsnap`   | All of v-snap's own tests, unit and visual, from its own config |
 | `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
-| `npm run docs:dev`     | Start the VitePress dev server |
-| `npm run playground:dev` | Start the playground's dev server, which `npm run dev` serves at /playground/ |
 | `npm run build:packages` | Build the five libraries for publishing (tsdown, publint, attw), then check their published types |
 | `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/tests/checks/](packages/tests/checks/README.md)) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |

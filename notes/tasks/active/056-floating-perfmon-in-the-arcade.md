@@ -223,6 +223,14 @@ its session reports `scoring` (Deep Dive's score is its whole metres), and
 over: a farm fenced moves on to the next. The Worker redeploys from the
 workflow as `games.ts` reaches `main`.
 
+Before copying the nav to the docs and the playground: `npm run dev` (and
+`dev:https`) starts all three sites' dev servers together, through
+`packages/sites/arcade/scripts/run-dev-servers.ts`, so the links between
+them work. Each line of output is labelled with its server; Ctrl+C, or any
+one server stopping, stops all three. It starts nothing if any of their
+ports is in use (IPv4 or IPv6). `docs:dev` and `playground:dev` are gone:
+`npm run dev -w @mvtjs/docs` runs one site alone.
+
 Still to do: regenerate the Boids and Falling Sand thumbnails
 (`npm run generate-thumbnails -- boids falling-sand`), whose play areas
 changed. Then copy the nav's design to the docs and the playground once it

@@ -10,8 +10,8 @@
         "#eslint-plugin": "./packages/tools/eslint-plugin/src/index.ts"
     },
     "scripts": {
-        "dev": "npm run dev -w @mvtjs/arcade",
-        "dev:https": "npm run dev:https -w @mvtjs/arcade",
+        "dev": "tsx packages/sites/arcade/scripts/run-dev-servers.ts",
+        "dev:https": "tsx packages/sites/arcade/scripts/run-dev-servers.ts --https",
         "build": "tsc -b && npm run build -w @mvtjs/arcade && npm run check:home-page-budget && npm run build -w @mvtjs/playground && npm run check:one-copy-of-utils && npm run build -w @mvtjs/docs",
         "build:arcade": "tsc -b && npm run build -w @mvtjs/arcade && npm run check:home-page-budget",
         "build:docs": "npm run build -w @mvtjs/docs",
@@ -20,8 +20,6 @@
         "check:home-page-budget": "npm run check:home-page-budget -w @mvtjs/checks",
         "check:one-copy-of-utils": "npm run check:one-copy-of-utils -w @mvtjs/checks",
         "check:view-type-registration": "npm run check:view-type-registration -w @mvtjs/checks",
-        "docs:dev": "npm run dev -w @mvtjs/docs",
-        "playground:dev": "npm run dev -w @mvtjs/playground",
         "preview": "npm run preview -w @mvtjs/arcade",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",

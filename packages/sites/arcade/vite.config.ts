@@ -44,7 +44,9 @@ function trailingSlashPlugin(): Plugin {
 
 /**
  * Answers a request the proxy cannot pass on, because the dev server behind
- * it is not running, with a page that says how to start it.
+ * it is not running, with a page that says how to start it. `npm run dev`,
+ * from the repo's root, starts all three together; this shows when the
+ * Arcade's was started alone.
  */
 function showNotRunning(proxy: HttpProxy.ProxyServer, title: string, server: string, command: string): void {
     proxy.on('error', (_err, _req, res) => {
@@ -100,14 +102,14 @@ export default defineConfig(({ mode }) => ({
             '/docs': {
                 target: `http://localhost:${VITEPRESS_DEV_PORT}`,
                 changeOrigin: true,
-                configure: (proxy) => showNotRunning(proxy, 'Docs', 'VitePress dev server', 'npm run docs:dev'),
+                configure: (proxy) => showNotRunning(proxy, 'Docs', 'VitePress dev server', 'npm run dev -w @mvtjs/docs'),
             },
             '/playground/': {
                 target: `http://localhost:${PLAYGROUND_DEV_PORT}`,
                 changeOrigin: true,
                 // Vite's own updates to the page, as files change
                 ws: true,
-                configure: (proxy) => showNotRunning(proxy, 'Playground', 'playground\'s dev server', 'npm run playground:dev'),
+                configure: (proxy) => showNotRunning(proxy, 'Playground', 'playground\'s dev server', 'npm run dev -w @mvtjs/playground'),
             },
         },
     },

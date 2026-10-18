@@ -58,9 +58,8 @@ npm run dev
 
 | Command                | Description                                      |
 | ---------------------- | ------------------------------------------------ |
-| `npm run dev`          | Start the Vite dev server with hot reload        |
-| `npm run dev:https`    | The same over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
-| `npm run playground:dev` | Start the playground's dev server, which `npm run dev` serves at `/playground/` |
+| `npm run dev`          | Start the three sites' dev servers, with hot reload: open `http://localhost:5173/arcade/`, where the docs are at `/docs/` and the playground at `/playground/`. Ctrl+C stops all three |
+| `npm run dev:https`    | The same, with the Arcade over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check with `tsc`, then build the Arcade, the playground and the docs for production |
 | `npm run build:playground` | Build the playground alone                   |
 | `npm run preview`      | Preview the production build locally             |
