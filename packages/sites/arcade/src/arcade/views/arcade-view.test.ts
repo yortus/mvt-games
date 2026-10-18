@@ -127,6 +127,8 @@ function setUp(): { model: ArcadeModel; navTools: HTMLElement; view: Element; ti
         audioViews: () => undefined,
         isSoundOffByDefault: () => false,
         isTurned: () => false,
+        entryHref: (entry) => `/arcade/${entry.id}/`,
+        docsHref: '/docs/',
     });
     document.body.replaceChildren(view, navTools);
     const tick = (): void => {

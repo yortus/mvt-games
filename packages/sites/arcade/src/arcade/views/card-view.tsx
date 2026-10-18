@@ -13,6 +13,8 @@ import { PixelTextView } from './pixel-text-view';
 export interface CardViewBindings {
     /** The entry this card always shows. */
     readonly entry: ArcadeEntry;
+    /** The entry's address, for the card's link. */
+    readonly href: string;
     /** Where the card is drawn on the wall, and how wide, in CSS pixels. */
     readonly x: () => number;
     readonly y: () => number;
@@ -99,7 +101,7 @@ export function CardView(bindings: CardViewBindings): Element {
             onContextMenu={(e) => e.preventDefault()}
         >
             <h3 class="card-name" title={entry.name}>{PixelTextView({ text: entry.name.toUpperCase(), label: entry.name })}</h3>
-            <a class="card-link" href={`#${entry.id}`} aria-label={entry.name} ref={keepLink} onClick={launch}>
+            <a class="card-link" href={bindings.href} aria-label={entry.name} ref={keepLink} onClick={launch}>
                 <div class="card-picture">
                     <div class="card-polaroid" style={`--tilt: ${look.tilt.toFixed(2)}deg`} ref={(e) => { polaroid = e; }}>
                         <div class="card-photo" ref={(e) => { photo = e; }}>
@@ -246,7 +248,7 @@ export function CardView(bindings: CardViewBindings): Element {
     }
 
     function launch(e: MouseEvent): void {
-        // Opening in a new tab or window is the browser's: the link's fragment launches it there
+        // Opening in a new tab or window is the browser's: the entry's address launches it there
         if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
         e.preventDefault();
         if (photo === undefined || polaroid === undefined) return;

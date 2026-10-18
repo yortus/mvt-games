@@ -59,8 +59,9 @@ Which state belongs to the model, and which to the views?
   the phase (`'browsing' | 'loading' | 'ready' | 'playing'`), the entry
   launched, whether it is paused, and which info panel is open (an entry's,
   or the Arcade's own; one at a time). These are what the visitor asked for.
-  The URL is a projection of them: `main.ts` writes the query and the
-  fragment from the model (`writeUrl`), and reads them back on load. Going
+  The URL is a projection of them: `main.ts` writes the query and the path
+  from the model (`writeUrl`), and reads them back on load. An entry's path
+  is the Arcade's with the entry's id added (`arcade/crumb-chase/`). Going
   into an entry adds a history step, so Back returns to the wall, and so does
   opening an info panel (`writePanelStep`), so Back closes it, as a phone's
   back button is expected to. The model also holds the visitor's sound

@@ -11,6 +11,8 @@ import { WordmarkView } from './wordmark-view';
 export interface ArcadeHeadViewBindings {
     /** The arcade, whose search the head shows. */
     readonly model: ArcadeModel;
+    /** The address of the docs, which the note about the Arcade links to. */
+    readonly docsHref: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +56,7 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
             <div class="arcade-title" ref={(e) => { title = e; }}>
                 <h1 class="arcade-name">{WordmarkView({ text: 'MVT ARCADE', label: 'MVT Arcade' })}</h1>
                 <AboutView
-                    docsHref="./docs/"
+                    docsHref={bindings.docsHref}
                     isOpen={() => model.isAboutOpen}
                     onAboutPressed={toggleAbout}
                     onDismissed={model.closeAbout}

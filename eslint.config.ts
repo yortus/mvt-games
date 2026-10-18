@@ -236,6 +236,7 @@ export default tseslint.config(
         files: [
             'packages/libraries/pixi/src/container-mixin.ts',
             'packages/libraries/three/src/object3d-mixin.ts',
+            'packages/sites/arcade/scripts/vite-plugin-entry-pages.ts',
             'packages/sites/arcade/scripts/vite-plugin-spritesheet.ts',
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',
             'packages/libraries/chiptune/src/web/register-chip-processor.ts',

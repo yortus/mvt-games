@@ -477,8 +477,10 @@ export const details: EntryDetails = {
 };
 ```
 
-- **`id`** is the directory's name, and the entry's address: `/#breakout`
-  launches it.
+- **`id`** is the directory's name, and the entry's address:
+  `/arcade/breakout/` launches it. The build gives that address a page of
+  its own, a copy of the Arcade's, so a link to it shows the entry's name,
+  summary and thumbnail when it is shared.
 - **`tags`** are what the search filters by: its `kind` (`game` or `demo`),
   an `era` if it is in the style of one, and the `genres` that say what it
   is, such as `art` for a demo made to be looked at. The values are listed in

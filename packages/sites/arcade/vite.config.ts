@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defaultClientConditions, defaultServerConditions, defineConfig, type HttpProxy, type Plugin } from 'vite';
-import { entryFactsPlugin, spritesheetPlugin } from './scripts/index.ts';
+import { entryFactsPlugin, entryPagesPlugin, spritesheetPlugin } from './scripts/index.ts';
 
 const VITEPRESS_DEV_PORT = 5200;
 /** The playground's own dev server (packages/sites/playground). */
@@ -14,6 +14,13 @@ const SOURCE_CONDITION = '@mvtjs/source';
 
 /** The mode (`--mode https`) in which the dev server serves over HTTPS. */
 const HTTPS_MODE = 'https';
+
+/**
+ * The folder the Arcade's page is in, under the site's base. Each entry's
+ * page is in a folder inside it. `src/arcade/main.ts` and the page's nav name
+ * it too, for the page's own links.
+ */
+const ARCADE_DIR = 'arcade';
 
 /**
  * Creates a plugin that redirects `/playground` to `/playground/`, which the
@@ -56,7 +63,9 @@ function showNotRunning(proxy: HttpProxy.ProxyServer, title: string, server: str
     });
 }
 
-// The HTML pages sit at the site's root, beside src/, which they load as /src/...
+// The HTML pages sit in the package, beside src/, which they load as
+// /src/... The site's root page sends the visitor on to the Arcade's, in
+// arcade/.
 export default defineConfig(({ mode }) => ({
     appType: 'mpa',
     root: SITE_ROOT,
@@ -65,6 +74,7 @@ export default defineConfig(({ mode }) => ({
     plugins: [
         spritesheetPlugin(),
         entryFactsPlugin(),
+        entryPagesPlugin({ arcadeDir: ARCADE_DIR }),
         trailingSlashPlugin(),
         // `npm run dev:https` serves the site over HTTPS with a self-signed
         // certificate, so a phone on the network can play sound. Sound needs a
@@ -83,7 +93,7 @@ export default defineConfig(({ mode }) => ({
     // In development, requests for /docs go to VitePress's dev server, and
     // requests for /playground/ to the playground's own dev server. In
     // production, each writes static files to the top-level dist/, which Pages
-    // serves. The site is at its root, the docs are in docs/, and the
+    // serves. The Arcade is in arcade/, the docs are in docs/, and the
     // playground is in playground/.
     server: {
         proxy: {
@@ -106,7 +116,8 @@ export default defineConfig(({ mode }) => ({
         emptyOutDir: true,
         rollupOptions: {
             input: {
-                'main': resolve(SITE_ROOT, 'index.html'),
+                'root': resolve(SITE_ROOT, 'index.html'),
+                'main': resolve(SITE_ROOT, ARCADE_DIR, 'index.html'),
             },
         },
     },

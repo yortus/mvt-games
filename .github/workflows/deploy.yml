@@ -45,6 +45,8 @@ jobs:
             - run: npm run build:arcade
               env:
                   BASE_URL: /${{ github.event.repository.name }}/
+                  # Where the site is served, for the full addresses each entry's link preview needs
+                  SITE_ORIGIN: https://yortus.com
                   # The Worker that keeps the Arcade's highscore tables (deploy-highscores.yml)
                   VITE_HIGHSCORES_URL: https://highscores.yortus.workers.dev
             - run: npm run build:playground

@@ -131,6 +131,7 @@ loose ends are tasks 057 to 064.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
+| 039 | [Link Previews for Each Entry](tasks/active/039-entry-link-previews.md) | low | 2026-10-18 |
 
 ### Backlog
 
@@ -138,7 +139,6 @@ loose ends are tasks 057 to 064.
 | --- | --- | --- | --- |
 | 017 | [Miscellaneous Loose Ends](tasks/backlog/017-misc-loose-ends.md) | medium | 2026-09-26 |
 | 038 | [HTML JSX Runtime: Findings from the Arcade](tasks/backlog/038-html-jsx-findings-from-the-arcade.md) | medium | 2026-10-05 |
-| 039 | [Link Previews for Each Entry](tasks/backlog/039-entry-link-previews.md) | low | 2026-10-18 |
 | 040 | [Touch Controls in HTML](tasks/backlog/040-html-touch-controls.md) | low | 2026-10-05 |
 | 048 | [Sound: Follow-Ons From the Audio80](tasks/backlog/048-sound-follow-ons.md) | low | 2026-10-09 |
 | 049 | [Highscores: Follow-Ons](tasks/backlog/049-highscores-follow-ons.md) | low | 2026-10-15 |

@@ -80,6 +80,10 @@ export interface ArcadeViewBindings {
      * over them then show for the phone turned on its side.
      */
     readonly isTurned: () => boolean;
+    /** The address of `entry`, for its card's link, so a middle click opens the entry in a new tab. Read once for each entry. */
+    readonly entryHref: (entry: ArcadeEntry) => string;
+    /** The address of the docs, which the Arcade's own info panel links to. Read once. */
+    readonly docsHref: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +149,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const wall = CardWallView({
         entries,
         layout,
+        hrefAt: (index) => bindings.entryHref(entries[index]),
         shownCount: () => model.shownCount,
         shownIndexAt: model.shownIndexAt,
         liftedIndex: () => (transition.phase === 'idle' && model.phase === 'browsing' ? -1 : activeIndex()),
@@ -163,7 +168,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     });
     const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
 
-    const head = ArcadeHeadView({ model });
+    const head = ArcadeHeadView({ model, docsHref: bindings.docsHref });
     const navSearch = NavSearchView({
         search: head,
         isActive: isWallActive,

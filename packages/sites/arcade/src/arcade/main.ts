@@ -12,8 +12,10 @@ import {
     createArcadeModel,
     DEFAULT_SOUND_SETTINGS,
     formatArcadeQuery,
+    formatEntryPath,
     formatSoundSettings,
     HANDHELD_SOUND_SETTINGS,
+    parseEntryPath,
     parseSoundSettings,
 } from './models';
 import { type ArcadeAudioViews, ArcadeView, loadArcadeAudioViews } from './views';
@@ -28,8 +30,11 @@ import './arcade.css';
 //
 // The page starts and ends the entry's sessions as the model's phase
 // changes. It keeps the URL in step with the model. The search is in the
-// query, and the entry is in the fragment. An info panel that is open, an
-// entry's or the Arcade's, has a history step of its own. The page also
+// query, and the entry is in the path: each entry's address is the Arcade's,
+// with the entry's id added (`arcade/crumb-chase/`). The build makes a copy
+// of this page at each one, with the entry's own title and link preview. An
+// info panel that is open, an entry's or the Arcade's, has a history step of
+// its own. The page also
 // plays an entry live on its card (attract mode) when the wall asks, in a
 // second host that takes no input.
 //
@@ -46,6 +51,10 @@ import './arcade.css';
 // ---------------------------------------------------------------------------
 
 const root = pageElement('arcade');
+/** The site's root, where the docs and the playground are too. */
+const SITE_PATH = import.meta.env.BASE_URL;
+/** The Arcade's own path, in the site. `vite.config.ts` builds the page into this folder. */
+const ARCADE_PATH = `${SITE_PATH}arcade/`;
 
 const isTouch = isTouchDevice();
 const stage = document.createElement('div');
@@ -146,6 +155,8 @@ root.append(ArcadeView({
     // The model replaces its settings object whenever one changes, so the first object still there means no change
     isSoundOffByDefault: () => savedSoundSettings === undefined && model.soundSettings === firstSoundSettings && model.isSoundMuted,
     isTurned: isRunnerTurned,
+    entryHref: (entry) => formatEntryPath(ARCADE_PATH, entry.id),
+    docsHref: `${SITE_PATH}docs/`,
     onLiveWanted: playLive,
     playRectFor: (entry, starter) => host.playRectFor({
         screenWidth: entry.screenWidth,
@@ -156,6 +167,8 @@ root.append(ArcadeView({
 }));
 
 // Declared before the page follows the URL below, which reads them
+/** The page's title on the wall, as its `<title>` has it. Each entry's copy of the page puts the entry's name before it. */
+const ARCADE_TITLE = 'MVT Arcade';
 /** Marks the history step an entry's URL was pushed on, so leaving it knows to step back. */
 const ENTRY_STEP = 'arcade-entry';
 /** Begins the mark of the history step an entry's info panel was opened on, which ends with the entry's id. */
@@ -192,10 +205,9 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveGame();
 });
 
-// A link to an entry (`#crumb-chase`) launches it; going back or forward in history follows,
+// A link to an entry (`arcade/crumb-chase/`) launches it; going back or forward in history follows,
 // so Back from an entry returns to the wall, and Back from an info panel closes it
-launchFromFragment();
-window.addEventListener('hashchange', launchFromFragment);
+followUrl();
 window.addEventListener('popstate', onHistoryStep);
 
 // ---------------------------------------------------------------------------
@@ -424,29 +436,32 @@ function pageElement(id: string): HTMLElement {
  * entry. Played from its info panel, the entry takes over the panel's step
  * instead, so Back from it returns to the wall, not to the panel. Leaving the
  * entry some other way (its exit, or a failed load) takes its step back off.
- * Everything else rewrites the step the page is on.
+ * Everything else rewrites the step the page is on. The page's title names
+ * the entry playing, as its own copy of the page does.
  */
 function writeUrl(step: 'enter' | 'leave' | 'replace'): void {
     const wall = wallUrl();
     const entry = model.phase === 'browsing' ? undefined : model.activeEntry;
+    const url = entry === undefined ? wall : entryUrl(entry);
     const state: unknown = history.state;
+    document.title = entry === undefined ? ARCADE_TITLE : `${entry.name} - ${ARCADE_TITLE}`;
     if (step === 'enter' && entry !== undefined && state !== ENTRY_STEP) {
         if (isPanelState(state)) {
-            history.replaceState(ENTRY_STEP, '', `${wall}#${entry.id}`);
+            history.replaceState(ENTRY_STEP, '', url);
         }
         else {
             history.replaceState(undefined, '', wall);
-            history.pushState(ENTRY_STEP, '', `${wall}#${entry.id}`);
+            history.pushState(ENTRY_STEP, '', url);
         }
     }
     else if (step === 'leave' && state === ENTRY_STEP) {
-        // The hashchange this brings finds the Arcade already browsing
+        // The step back finds the Arcade already browsing
         stepBack();
     }
     else {
         // An entry's or a panel's step stays one through a reload, or Forward back to it
         const kept = state === ENTRY_STEP || isPanelState(state) ? state : undefined;
-        history.replaceState(kept, '', entry === undefined ? wall : `${wall}#${entry.id}`);
+        history.replaceState(kept, '', url);
     }
 }
 
@@ -463,9 +478,14 @@ function writePanelStep(): void {
     else if (isPanelStep) stepBack();
 }
 
-/** The wall's URL: the page's, with the search in its query. */
+/** The wall's URL: the Arcade's path, with the search in its query. */
 function wallUrl(): string {
-    return location.pathname + formatArcadeQuery(location.search, model.query, model.chips);
+    return ARCADE_PATH + formatArcadeQuery(location.search, model.query, model.chips);
+}
+
+/** The URL of `entry` playing: its own path, keeping the search in the query for the way back to the wall. */
+function entryUrl(entry: ArcadeEntry): string {
+    return formatEntryPath(ARCADE_PATH, entry.id) + formatArcadeQuery(location.search, model.query, model.chips);
 }
 
 /** The mark of the history step for the info panel open, if one is. */
@@ -491,11 +511,12 @@ function stepBack(): void {
 
 /**
  * Follows a step through history. A step the visitor made, with Back or
- * Forward, opens or closes the info panels as the step says. A step the page
- * made itself has nothing to tell the model. The panels may also have
- * changed since the page made it, as when a card's info opened as the
- * Arcade's closed. So the history follows the model instead, and the panel
- * that is open gets its step.
+ * Forward, opens or closes the info panels as the step says, and goes into
+ * or out of an entry as its URL says. A step the page made itself has
+ * nothing to tell the model. The panels may also have changed since the page
+ * made it, as when a card's info opened as the Arcade's closed. So the
+ * history follows the model instead, and the panel that is open gets its
+ * step.
  */
 function onHistoryStep(): void {
     if (ownStepsBack > 0) {
@@ -504,6 +525,7 @@ function onHistoryStep(): void {
     }
     else {
         followPanelStep();
+        followUrl();
     }
 }
 
@@ -523,13 +545,18 @@ function followPanelStep(): void {
     }
 }
 
-function launchFromFragment(): void {
-    const id = decodeURIComponent(location.hash.slice(1));
+/**
+ * Follows the URL's path. An entry's path launches the entry, and the
+ * Arcade's own path leaves any entry for the wall. A path that names no
+ * entry, as the site's 404 page may be shown at, is rewritten to the wall's.
+ */
+function followUrl(): void {
+    const id = parseEntryPath(location.pathname, ARCADE_PATH);
     if (id === '') {
         model.exit();
         return;
     }
-    if (findEntry(id) === undefined) {
+    if (id === undefined || findEntry(id) === undefined) {
         writeUrl('replace');
         return;
     }

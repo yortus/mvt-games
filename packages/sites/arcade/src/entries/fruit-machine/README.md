@@ -6,7 +6,7 @@ control panel, and a text terminal. Spin from any of them (the Pixi button,
 the 3D lever, the panel's Spin, or `spin` in the terminal) and all four
 follow. None of them knows the others exist.
 
-It runs in the Arcade, as `/#fruit-machine`. It is an `element` entry, like
+It runs in the Arcade, as `/arcade/fruit-machine/`. It is an `element` entry, like
 Boids in 3D: it builds its own renderers in the element the Arcade gives it.
 
 ## The game

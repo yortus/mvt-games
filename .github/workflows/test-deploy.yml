@@ -29,6 +29,8 @@ jobs:
             - run: npm run build:arcade
               env:
                   BASE_URL: /
+                  # Where the site is served, for the full addresses each entry's link preview needs
+                  SITE_ORIGIN: https://mvt-games-test.surge.sh
                   # The highscores Worker's test environment, with tables of its own (deploy-highscores.yml)
                   VITE_HIGHSCORES_URL: https://highscores-test.yortus.workers.dev
             - run: npm run build:playground

@@ -38,7 +38,8 @@ const FORBIDDEN: readonly { readonly name: string; readonly path: string }[] = [
 // ---------------------------------------------------------------------------
 
 const arcadeRoot = fileURLToPath(new URL('../../../sites/arcade/', import.meta.url));
-const homePage = arcadeRoot + 'index.html';
+// The site's root page only sends the visitor on to the Arcade's, which is the one to measure
+const homePage = arcadeRoot + 'arcade/index.html';
 
 const output = await build({
     configFile: arcadeRoot + 'vite.config.ts',

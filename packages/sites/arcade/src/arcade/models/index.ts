@@ -1,4 +1,5 @@
 export { type ArcadeModel, type ArcadeModelOptions, type ArcadePhase, createArcadeModel } from './arcade-model';
+export { formatEntryPath, parseEntryPath } from './arcade-path';
 export { type ArcadeQuery, formatArcadeQuery, parseArcadeQuery } from './arcade-query';
 export {
     createHighscoresModel, type HighscoresModel, type HighscoresModelOptions, type HighscoresStatus, type PlacingPhase,

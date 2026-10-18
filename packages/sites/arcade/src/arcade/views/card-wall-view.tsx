@@ -15,6 +15,8 @@ export interface CardWallViewBindings {
     readonly entries: readonly ArcadeEntry[];
     /** Where each card goes, shared with the Arcade's view, which reads where the cards are as a transition starts. */
     readonly layout: CardWallLayout;
+    /** The address of card `index`'s entry, for the card's link. Read once for each card. */
+    readonly hrefAt: (index: number) => string;
     /** How many cards are shown, and which, in order: the order the keyboard moves through. */
     readonly shownCount: () => number;
     readonly shownIndexAt: (position: number) => number;
@@ -84,6 +86,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
 
     const cards = entries.map((entry, index) => CardView({
         entry,
+        href: bindings.hrefAt(index),
         x: () => layout.xAt(index),
         y: () => layout.yAt(index),
         width: () => layout.columnWidth,
