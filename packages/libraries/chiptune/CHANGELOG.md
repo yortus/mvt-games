@@ -1,5 +1,11 @@
 # @mvtjs/chiptune
 
+## 0.5.0
+
+### Minor Changes
+
+- 112a6fb: `findSounds` finds the sounds inside a module's exported arrays too, each named for its place, such as `FANFARES[2]`.
+
 ## 0.4.0
 
 ### Minor Changes

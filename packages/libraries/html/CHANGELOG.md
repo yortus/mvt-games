@@ -1,5 +1,18 @@
 # @mvtjs/html
 
+## 0.5.0
+
+### Minor Changes
+
+- 0a722e0: A program must now load one copy of each @mvtjs package. A second copy throws an error as it loads, which names both copies and says how to keep one. Before, copies of the same version shared their state, and copies of different versions logged a warning. If you upgrade and see the error, run `npm ls @mvtjs/utils` to find the second copy, then `npm dedupe` or npm `overrides`, and in Vite, list the @mvtjs packages in `resolve.dedupe`. A test that resets its modules, with `vi.resetModules()` or `jest.resetModules()`, loads the packages again too, so keep it in a file of its own. `PROTOCOL`, `shareAcrossCopies` and `registerCopy` are no longer exported from `@mvtjs/utils`. See "Keep one copy" in its README.
+
+### Patch Changes
+
+- bc587e1: A `<select>` given a fixed `value`, such as `<select value="b">`, now shows that option. Before, it showed its first option, since the value was written before the options were added.
+- Updated dependencies [9b362b5]
+- Updated dependencies [0a722e0]
+  - @mvtjs/utils@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
     "name": "@mvtjs/chiptune",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "Virtual sound chips for games: the Audio80 and the Audio90, in the spirit of the 1980s and 1990s, with their tracker notation and the music player that audio views use",
     "license": "MIT",
     "author": "Troy Gerwien",
