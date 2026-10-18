@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-10-11 |
+| Updated  | 2026-10-18 |
 
 ## Description
 
@@ -127,7 +127,11 @@ Settled questions that should not be reopened without new information are in
   expressions and URLs). Fix those, add both rules, and add the convention
   to the style guide.
 
-- **Vite 8's config-loader warning.** Every Vite run warns that
+- ~~**Vite 8's config-loader warning.**~~ Done 2026-10-16, when the
+  packages were grouped into folders: the config reads
+  `import.meta.dirname`, and imports `./scripts/index.ts` with its
+  extension. Checked on 2026-10-18 with `vite build`, which no longer warns.
+  Originally: every Vite run warned that
   `packages/sites/arcade/vite.config.ts` uses two things its coming native config loader will
   not support: `__dirname` (use `import.meta.dirname`, as `vitest.config.ts`
   should too) and the extensionless import of
@@ -474,7 +478,7 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Churn and falling-sand slowdowns between the September and October saves attributed
 - [ ] Pixi's texture cache warnings fixed, or recorded as harmless
 - [ ] 020's experiments each run, or dropped
-- [ ] Vite's config-loader warning gone
+- [x] Vite's config-loader warning gone
 - [ ] An allocation budget check built, or dropped
 - [ ] Parked items each still parked, or moved into their own task
 - [ ] Import and export layout, and line length, enforced by lint
@@ -542,3 +546,5 @@ falling-sand demo. Each is a new variant, measured with
 - 2026-10-11: Added the hand-written time-stepping helpers that the tick
   API's new `advanceTime` covers (Fix), found while giving it its
   variadic form (042).
+- 2026-10-18: Closed Vite's config-loader warning, already fixed on
+  2026-10-16.
