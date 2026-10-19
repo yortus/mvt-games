@@ -491,15 +491,14 @@ function pageElement(id: string): HTMLElement {
  * entry. Played from its info panel, the entry takes over the panel's step
  * instead, so Back from it returns to the wall, not to the panel. Leaving the
  * entry some other way (its exit, or a failed load) takes its step back off.
- * Everything else rewrites the step the page is on. The page's title names
- * the entry playing, as its own copy of the page does.
+ * Everything else rewrites the step the page is on. The title is written
+ * after the steps, or once the step back lands (see writeTitle).
  */
 function writeUrl(step: 'enter' | 'leave' | 'replace'): void {
     const wall = wallUrl();
-    const entry = model.phase === 'browsing' ? undefined : model.activeEntry;
+    const entry = playingEntry();
     const url = entry === undefined ? wall : entryUrl(entry);
     const state: unknown = history.state;
-    document.title = entry === undefined ? ARCADE_TITLE : `${entry.name} - ${ARCADE_TITLE}`;
     if (step === 'enter' && entry !== undefined && state !== ENTRY_STEP) {
         if (isPanelState(state)) {
             history.replaceState(ENTRY_STEP, '', url);
@@ -510,14 +509,33 @@ function writeUrl(step: 'enter' | 'leave' | 'replace'): void {
         }
     }
     else if (step === 'leave' && state === ENTRY_STEP) {
-        // The step back finds the Arcade already browsing
+        // The step back finds the Arcade already browsing, and writes the title when it lands
         stepBack();
+        return;
     }
     else {
         // An entry's or a panel's step stays one through a reload, or Forward back to it
         const kept = state === ENTRY_STEP || isPanelState(state) ? state : undefined;
         history.replaceState(kept, '', url);
     }
+    writeTitle();
+}
+
+/**
+ * Writes the page's title, which names the entry playing, as its own copy of
+ * the page does. Chrome keeps a title with each history step and shows that
+ * step's title when the page steps back to it. Then it updates the tab only if
+ * the title changes. So the title is written once the history step it belongs
+ * to is current, never before the step is written or stepped back to.
+ */
+function writeTitle(): void {
+    const entry = playingEntry();
+    document.title = entry === undefined ? ARCADE_TITLE : `${entry.name} - ${ARCADE_TITLE}`;
+}
+
+/** The entry playing, if one is: from its launch until the Arcade is back on the wall. */
+function playingEntry(): ArcadeEntry | undefined {
+    return model.phase === 'browsing' ? undefined : model.activeEntry;
 }
 
 /**
@@ -581,6 +599,7 @@ function stepBack(): void {
 function onHistoryStep(): void {
     if (ownStepsBack > 0) {
         ownStepsBack--;
+        writeTitle();
         writePanelStep();
     }
     else {
