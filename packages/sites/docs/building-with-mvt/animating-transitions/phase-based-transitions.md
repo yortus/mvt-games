@@ -123,7 +123,7 @@ function createBannerModel(): BannerModel {
     return {
         get phase() { return phase; },
         get progress() {
-            if (durationMs <= 0) return 0;
+            if (durationMs <= 0) return 1;
             return Math.min(1, elapsedMs / durationMs);
         },
 
@@ -157,7 +157,9 @@ Key points:
 - **`phase` is always explicit.** You can read it at any time and know
   exactly what the model is doing.
 - **`progress` is derived.** It is computed from `elapsedMs / durationMs`,
-  so there is no extra state to keep in sync.
+  so there is no extra state to keep in sync. In `closed`, which has no
+  duration, it stays at 1, where `closing` left it. The
+  [next page](open-ended-phases.md#why-progress-stays-at-1) explains why.
 - **`advance()` is a simple state machine.** Each phase knows which phase
   comes next. The transitions are linear and predictable.
 - **Durations are in the model.** The model owns the timing because the

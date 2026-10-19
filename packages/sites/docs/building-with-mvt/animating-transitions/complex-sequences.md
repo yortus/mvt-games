@@ -344,11 +344,12 @@ There are two approaches, depending on the use case.
 ### Cyclic effects from elapsed time
 
 For simple repeating effects (bobbing, pulsing, rotating), you don't need
-a sequence at all. Derive the animation from elapsed time, as described in
-[Open-Ended Phases](open-ended-phases.md):
+a sequence at all. The view keeps a timer, advances it in its update step,
+and derives the animation from it, as described in
+[Open-Ended Phases](open-ended-phases.md#cyclic-animations-in-open-ended-phases):
 
 ```ts
-const bob = Math.sin(elapsed / 2000 * Math.PI * 2) * 4;
+const bob = Math.sin(bobMs / 2000 * Math.PI * 2) * 4;
 ```
 
 This is the simplest approach and should be preferred when the loop is a
@@ -470,7 +471,7 @@ presentation state.
 - **Model-driven sequences** set `sequence.progress` from a model's 0..1
   value. No presentation state, no `update(deltaMs)` - the same step
   API works in both modes.
-- **Looping**: derive simple cycles from elapsed time; for multi-step
+- **Looping**: derive simple cycles from a timer the view keeps; for multi-step
   loops, restart the sequence when it completes.
 
 ---
