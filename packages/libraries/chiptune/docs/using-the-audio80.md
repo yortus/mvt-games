@@ -142,7 +142,7 @@ writing to the chip. The chip handles those writes in three ways:
   played something else.
 
 `createWebAudio80` also takes two optional settings. `leadMs` is how far
-playback stays behind the newest tick. It is 35 by default, and
+playback stays behind the newest tick, at least. It is 35 by default, and
 [Time](#time-the-chip-runs-on-game-time) says more about it. `character`
 sets how gritty the chip sounds. A sharp jump in a wave adds a harsh,
 out-of-tune buzz to high notes. This buzz is called aliasing. Band
@@ -229,15 +229,21 @@ exactly that time, to the sample. That has three results:
 
 - **Pausing pauses the sound.** When the ticks stop, the sound fades out
   and every voice holds where it is. When the game resumes, the chip waits
-  until it is a full `leadMs` behind again. Then it fades back in, and the
+  until it is a full lead behind again. Then it fades back in, and the
   notes continue from where they stopped.
 - **Music keeps its tempo** at any frame rate, however uneven the frames.
 - **The same ticks make the same sound.** That makes the sound testable.
 
-In a browser, the chip plays a steady 35 ms behind the newest tick. This
-delay is `leadMs`, and it smooths out uneven frames. **Sound effects** are
-the exception. They play as soon as they arrive, because a shot should be
-heard when it is seen.
+In a browser, the chip plays 35 ms behind the newest tick. This
+delay is called the lead, and it smooths out uneven frames. You set it with
+`leadMs`. On a slow device, such as an older phone, frames can come later
+than the lead allows for. The chip then runs out of time to play, and the
+sound drops out for a moment. Each time that happens, the chip plays
+further behind from then on, by as much as it was short, up to 150 ms. So
+you may hear a dropout or two as a game starts, and then none. A gap of
+more than 100 ms is a pause or a stall, not a late tick, so it leaves the
+lead as it is. **Sound effects** are the exception. They play as soon as
+they arrive, because a shot should be heard when it is seen.
 
 ---
 

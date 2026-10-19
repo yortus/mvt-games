@@ -59,7 +59,7 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
     readonly sampleRate: number;
     /** How many channels the chip renders: 1 for mono, 2 for stereo. */
     readonly channelCount: number;
-    /** The lead the clock keeps, in ms. Defaults to 35. */
+    /** The lead the clock starts with, and the least it keeps, in ms. Defaults to 35. */
     readonly leadMs?: number;
     /** The chip's synthesiser. */
     readonly synthesiser: RunnerSynthesiser<D>;

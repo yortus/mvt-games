@@ -11,7 +11,7 @@ export type Audio80PassedMessage = Extract<Audio80ChipMessage, { readonly kind: 
 
 /** The settings the main thread gives the Audio80's processor when it is made. */
 export interface Audio80RunnerSettings {
-    /** The lead the clock keeps, in ms. Defaults to 35. */
+    /** The lead the clock starts with, and the least it keeps, in ms. Defaults to 35. */
     readonly leadMs?: number;
     /** How the chip sounds. Defaults to `'classic'`. */
     readonly character?: Audio80Character;

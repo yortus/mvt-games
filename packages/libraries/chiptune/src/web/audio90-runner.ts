@@ -26,7 +26,7 @@ export interface Audio90ScopeReply {
 
 /** The settings the main thread gives the Audio90's processor when it is made. */
 export interface Audio90RunnerSettings {
-    /** The lead the clock keeps, in ms. Defaults to 35. */
+    /** The lead the clock starts with, and the least it keeps, in ms. Defaults to 35. */
     readonly leadMs?: number;
     /** How the chip sounds until a song sets it. Defaults to `'studio'`. */
     readonly character?: Audio90Character;

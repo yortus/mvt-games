@@ -19,6 +19,11 @@
  * - **Running dry** means it has played all the chip time it was given, as
  *   in a pause, a hidden tab or a long frame. It then fades out over its last
  *   block and stops, holding every voice where it is.
+ * - **Late ticks** that run it dry make its lead grow, by as much as it fell
+ *   short. Frames on a slow device come later, and less evenly, than the
+ *   lead it starts with allows for. It grows while it is silent anyway, so
+ *   growing only makes that one gap a little longer. A long wait, as in a
+ *   pause, is not a late tick, and leaves the lead as it is.
  *
  * For each block, `plan` decides how much chip time the block covers. The
  * plan is then in `fromMs`, `msPerSample`, `gainFrom`, `gainTo` and
@@ -34,6 +39,8 @@ export interface ChipClock {
     readonly isPlaying: boolean;
     /** The lead just after each tick arrives, in ms, smoothed over recent ticks. */
     readonly leadMs: number;
+    /** The lead it keeps, in ms. It starts at the `leadMs` it was made with, and grows each time a late tick runs it dry. */
+    readonly targetLeadMs: number;
     /** The chip time, in ms, the planned block starts at. */
     readonly fromMs: number;
     /**
@@ -52,7 +59,10 @@ export interface ChipClock {
     receive: (horizonMs: number) => void;
     /** Plans the next block of `frames` samples. */
     plan: (frames: number) => void;
-    /** Forgets the chip time received, so it waits for a full lead again. */
+    /**
+     * Forgets the chip time received, so it waits for a full lead again. It
+     * keeps the lead it has grown to, which suits the device, not the sound.
+     */
     reset: () => void;
 }
 
@@ -64,9 +74,9 @@ export interface ChipClock {
 export interface ChipClockOptions {
     /** The sound card's sample rate, in Hz. */
     readonly sampleRate: number;
-    /** The lead it keeps, just after a tick arrives, in ms. Defaults to 35. */
+    /** The lead it starts with, and the least it keeps, just after a tick arrives, in ms. Defaults to 35. */
     readonly leadMs?: number;
-    /** Beyond this lead, in ms, it jumps forward. Defaults to `leadMs` + 200. */
+    /** The most its lead grows to, in ms, however late the ticks. Defaults to 150, or `leadMs` if that is more. */
     readonly maxLeadMs?: number;
     /** How much faster or slower than real time it may play chip time to correct drift, as a fraction (0.005 is 0.5%). Defaults to 0.005. */
     readonly maxRateChange?: number;
@@ -79,8 +89,8 @@ export interface ChipClockOptions {
 /** Creates a clock that has received no chip time yet, so it plans silence. */
 export function createChipClock(options: ChipClockOptions): ChipClock {
     const nominalMsPerSample = 1000 / options.sampleRate;
-    const targetLead = options.leadMs ?? DEFAULT_LEAD_MS;
-    const maxLead = options.maxLeadMs ?? targetLead + DEFAULT_JUMP_MARGIN_MS;
+    const leastLead = options.leadMs ?? DEFAULT_LEAD_MS;
+    const mostLead = Math.max(leastLead, options.maxLeadMs ?? DEFAULT_MAX_LEAD_MS);
     const maxRateChange = options.maxRateChange ?? DEFAULT_MAX_RATE_CHANGE;
 
     let hasHorizon = false;
@@ -89,6 +99,11 @@ export function createChipClock(options: ChipClockOptions): ChipClock {
     let isPlaying = false;
     let smoothedLead = 0;
     let gain = 0;
+    let targetLead = leastLead;
+    // Whether it ran dry while playing, and has had no new chip time since. It
+    // then counts how long it has waited, in ms of the sound card's time
+    let isWaitingForLateTick = false;
+    let waitedMs = 0;
 
     // The planned block
     let fromMs = 0;
@@ -125,6 +140,9 @@ export function createChipClock(options: ChipClockOptions): ChipClock {
         get leadMs() {
             return smoothedLead;
         },
+        get targetLeadMs() {
+            return targetLead;
+        },
 
         receive(horizonMs) {
             if (!hasHorizon) {
@@ -133,12 +151,20 @@ export function createChipClock(options: ChipClockOptions): ChipClock {
                 playhead = horizonMs;
                 return;
             }
-            if (horizonMs > horizon) horizon = horizonMs;
+            if (horizonMs > horizon) {
+                horizon = horizonMs;
+                if (isWaitingForLateTick) {
+                    isWaitingForLateTick = false;
+                    // The lead fell short by the time it waited. A wait longer than a late tick is a pause, which no lead should cover
+                    if (waitedMs <= MAX_LATE_TICK_MS) targetLead = Math.min(mostLead, targetLead + waitedMs + GROWTH_MARGIN_MS);
+                }
+            }
             if (isPlaying) smoothedLead += (horizon - playhead - smoothedLead) * LEAD_SMOOTHING;
         },
 
         plan(frames) {
             if (!isPlaying) {
+                if (isWaitingForLateTick) waitedMs += frames * nominalMsPerSample;
                 if (!hasHorizon || horizon - playhead < targetLead) {
                     isSilent = true;
                     gainFrom = gainTo = 0;
@@ -149,7 +175,7 @@ export function createChipClock(options: ChipClockOptions): ChipClock {
                 if (horizon - playhead > targetLead) playhead = horizon - targetLead;
                 smoothedLead = horizon - playhead;
             }
-            if (horizon - playhead > maxLead) {
+            if (horizon - playhead > targetLead + JUMP_MARGIN_MS) {
                 playhead = horizon - targetLead;
                 smoothedLead = targetLead;
             }
@@ -162,8 +188,11 @@ export function createChipClock(options: ChipClockOptions): ChipClock {
             gainFrom = gain;
             gain = 1;
             if (playhead + frames * msPerSample > horizon) {
-                // It has run dry. Play what is left, fading out, and wait
-                msPerSample = Math.max(0, horizon - playhead) / frames;
+                // It has run dry. Play what is left, fading out, and wait. The wait counts from where the chip time ran out
+                const leftMs = Math.max(0, horizon - playhead);
+                isWaitingForLateTick = true;
+                waitedMs = frames * nominalMsPerSample - leftMs;
+                msPerSample = leftMs / frames;
                 isPlaying = false;
                 gain = 0;
             }
@@ -174,6 +203,7 @@ export function createChipClock(options: ChipClockOptions): ChipClock {
         reset() {
             hasHorizon = false;
             isPlaying = false;
+            isWaitingForLateTick = false;
             horizon = playhead = smoothedLead = gain = 0;
         },
     };
@@ -186,7 +216,16 @@ export function createChipClock(options: ChipClockOptions): ChipClock {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_LEAD_MS = 35;
-const DEFAULT_JUMP_MARGIN_MS = 200;
+const DEFAULT_MAX_LEAD_MS = 150;
+/** Beyond its lead and this much more, in ms, it jumps forward. */
+const JUMP_MARGIN_MS = 200;
+/**
+ * The longest wait after running dry, in ms, that counts as a late tick and
+ * makes the lead grow. A longer wait is a pause, a hidden tab or a stall.
+ */
+const MAX_LATE_TICK_MS = 100;
+/** How much more, in ms, the lead grows than it fell short by, so the next tick as late as the last one does not run it dry. */
+const GROWTH_MARGIN_MS = 10;
 const DEFAULT_MAX_RATE_CHANGE = 0.005;
 /**
  * How much of the gap between each tick's lead and the smoothed lead closes
