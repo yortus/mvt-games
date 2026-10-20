@@ -223,7 +223,8 @@ view uses, and a view can choose whichever suits it:
 
 The [Style Guide](../../reference/style-guide.md#writing-the-body) has more
 on choosing, and the rest of this guide uses whichever reads better for each
-example.
+example. [Declarative Views](declarative-views.md) explains what JSX does for
+you, and where it stops helping.
 
 ## What Does NOT Belong in a View
 

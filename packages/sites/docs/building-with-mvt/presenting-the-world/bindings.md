@@ -4,7 +4,7 @@
 > *Query bindings* read state; *relay bindings* report user input. This keeps
 > views decoupled from models and independently testable.
 
-**Previous:** [Views](views.md) · **Next:** [View Composition](view-composition.md)
+**Previous:** [Views](views.md) · **Next:** [Declarative Views](declarative-views.md)
 
 ---
 
@@ -244,4 +244,4 @@ advanced access patterns, see [Bindings in Depth](bindings-in-depth.md).
 
 ---
 
-**Next:** [View Composition](view-composition.md)
+**Next:** [Declarative Views](declarative-views.md)

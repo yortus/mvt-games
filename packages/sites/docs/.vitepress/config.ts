@@ -122,6 +122,7 @@ export default withMermaid(defineConfig({
                         items: [
                             { text: 'Views', link: '/building-with-mvt/presenting-the-world/views' },
                             { text: 'Bindings', link: '/building-with-mvt/presenting-the-world/bindings' },
+                            { text: 'Declarative Views', link: '/building-with-mvt/presenting-the-world/declarative-views' },
                             { text: 'View Composition', link: '/building-with-mvt/presenting-the-world/view-composition' },
                             { text: 'Bindings in Depth', link: '/building-with-mvt/presenting-the-world/bindings-in-depth' },
                             { text: 'Presenting Collections', link: '/building-with-mvt/presenting-the-world/collections' },
