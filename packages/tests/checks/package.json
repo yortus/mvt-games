@@ -10,10 +10,10 @@
         "check:view-type-registration": "node scripts/view-type-registration.ts"
     },
     "devDependencies": {
-        "@mvtjs/html": "^0.6.1",
-        "@mvtjs/pixi": "^0.6.1",
-        "@mvtjs/three": "^0.6.1",
-        "@mvtjs/utils": "^0.6.1",
+        "@mvtjs/html": "^0.7.0",
+        "@mvtjs/pixi": "^0.7.0",
+        "@mvtjs/three": "^0.7.0",
+        "@mvtjs/utils": "^0.7.0",
         "typescript": "~5.9.3",
         "vite": "^8.3.2",
         "vitest": "^5.0.1"

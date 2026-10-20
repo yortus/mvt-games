@@ -30,11 +30,11 @@
         "highscores:types": "wrangler types -c highscores-worker/wrangler.toml --include-env=false highscores-worker/worker-configuration.d.ts"
     },
     "dependencies": {
-        "@mvtjs/chiptune": "^0.6.1",
-        "@mvtjs/html": "^0.6.1",
-        "@mvtjs/pixi": "^0.6.1",
-        "@mvtjs/three": "^0.6.1",
-        "@mvtjs/utils": "^0.6.1",
+        "@mvtjs/chiptune": "^0.7.0",
+        "@mvtjs/html": "^0.7.0",
+        "@mvtjs/pixi": "^0.7.0",
+        "@mvtjs/three": "^0.7.0",
+        "@mvtjs/utils": "^0.7.0",
         "gsap": "^3.14.2",
         "pixi-solid": "^1.0.0",
         "pixi.js": "^8.16.0",

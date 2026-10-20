@@ -1,5 +1,11 @@
 # @mvtjs/three
 
+## 0.7.0
+
+### Patch Changes
+
+- @mvtjs/utils@0.7.0
+
 ## 0.6.1
 
 No changes in this release.
