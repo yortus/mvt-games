@@ -49,9 +49,11 @@ export interface PageSound {
     /** Whether every chip is muted, the page's own and every entry chip, at once or when it loads. */
     isMuted: boolean;
     /**
-     * How many times the page's chips have stalled, all told, since the page
+     * How many times the entry chips have stalled, all told, since the page
      * loaded. Each stall is a moment the music stood still, because a frame
-     * came later than the chip's lead allows for.
+     * came later than the chip's lead allows for. The page's own chip is left
+     * out. It plays only the menus' short sounds, so its stalls are almost
+     * never heard, and it stalls on the same late frames as the entry chips.
      */
     readonly stallCount: number;
     /**
@@ -120,7 +122,8 @@ export function createPageSound(options: PageSoundOptions): PageSound {
     };
     const pageSlot = createAudio80Slot();
     // Every chip's controls, for what is done to them all
-    const allControls: readonly AudioControls[] = [pageSlot.controls, ...Object.values(entrySlots).map((slot) => slot.controls)];
+    const entryControls: readonly AudioControls[] = Object.values(entrySlots).map((slot) => slot.controls);
+    const allControls: readonly AudioControls[] = [pageSlot.controls, ...entryControls];
     let context: AudioContext | undefined;
     // The chips' code, once it has loaded
     let makers: ChipMakers | undefined;
@@ -151,7 +154,7 @@ export function createPageSound(options: PageSoundOptions): PageSound {
         },
         get stallCount() {
             let count = 0;
-            for (let i = 0; i < allControls.length; i++) count += allControls[i].stallCount;
+            for (let i = 0; i < entryControls.length; i++) count += entryControls[i].stallCount;
             return count;
         },
 
