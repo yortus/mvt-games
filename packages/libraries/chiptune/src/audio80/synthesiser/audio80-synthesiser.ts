@@ -69,7 +69,8 @@ export interface Audio80Synthesiser {
      * ms after the one before. Each queued command applies at the first
      * sample at or after its stamp. A command stamped at or before `fromMs`
      * applies at the first sample. So does one stamped `-Infinity`, which
-     * means as soon as possible.
+     * means as soon as possible. An `msPerSample` of 0 holds chip time
+     * still: the voices sound on, and only those commands apply.
      */
     render: (output: Float32Array, offset: number, frames: number, fromMs: number, msPerSample: number) => void;
     /**

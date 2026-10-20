@@ -59,12 +59,18 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
     readonly sampleRate: number;
     /** How many channels the chip renders: 1 for mono, 2 for stereo. */
     readonly channelCount: number;
-    /** The lead the clock starts with, and the least it keeps, in ms. Defaults to 35. */
+    /** The lead the clock keeps, in ms. Defaults to 100. */
     readonly leadMs?: number;
     /** The chip's synthesiser. */
     readonly synthesiser: RunnerSynthesiser<D>;
-    /** Sends a batch's buffer back to the main thread, so it can be written into again. */
+    /** Sends a batch's buffer back to the main thread, so it can be written into again, with where the clock is. */
     readonly sendBack: (reply: ChipReply) => void;
+    /**
+     * The audio context's count of frames, at the start of the next block.
+     * The main thread knows when that frame reaches the speaker. Defaults to
+     * counting the frames this runner has rendered.
+     */
+    readonly currentFrame?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +82,8 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
     const { sampleRate, channelCount, synthesiser, sendBack } = options;
     const clock = createChipClock({ sampleRate, leadMs: options.leadMs });
     let isStopped = false;
+    let renderedFrames = 0;
+    const currentFrame = options.currentFrame ?? (() => renderedFrames);
     // Each channel's last sample of the last block. After a reset, `tails` holds those samples, and
     // each fades to 0 over the next block
     const lasts = new Float64Array(channelCount);
@@ -91,7 +99,14 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
                 case 'batch':
                     synthesiser.enqueue(message.commands, message.count);
                     clock.receive(message.horizonMs);
-                    sendBack({ kind: 'buffer', commands: message.commands });
+                    sendBack({
+                        kind: 'buffer',
+                        commands: message.commands,
+                        playheadMs: clock.playheadMs,
+                        frame: currentFrame(),
+                        msPerSample: clock.msPerSample,
+                        stallCount: clock.stallCount,
+                    });
                     break;
                 case 'reset':
                     // Cutting the output from where it is to 0 would click
@@ -110,6 +125,7 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
 
         process(channels) {
             const frames = channels[0].length;
+            renderedFrames += frames;
             if (isStopped) {
                 for (let c = 0; c < channelCount; c++) channels[c].fill(0);
                 return;

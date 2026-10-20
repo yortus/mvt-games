@@ -53,6 +53,40 @@ describe('chip runner, running an Audio80', () => {
         expect(measurePeak(output)).toBeLessThan(1e-3);
     });
 
+    it('keeps a held note sounding through a tick later than its lead, rather than dropping out', () => {
+        const { runner, writer, flush } = setUp();
+        writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        const output = new Float32Array(BLOCK);
+        for (let tick = 0; tick < 20; tick++) {
+            flush(TICK_MS);
+            for (let b = 0; b < BLOCKS_PER_TICK; b++) runner.process([output]);
+        }
+        // No tick for longer than the lead. The clock stalls, and the note rings on
+        const blocks = Math.ceil((LEAD_MS + 40) * SAMPLE_RATE / 1000 / BLOCK);
+        let quietest = Infinity;
+        for (let b = 0; b < blocks; b++) {
+            runner.process([output]);
+            quietest = Math.min(quietest, measurePeak(output));
+        }
+        expect(quietest).toBeGreaterThan(0.01);
+    });
+
+    it('reports where its clock is with each batch\'s buffer', () => {
+        const { runner, flush, lastReply } = setUp();
+        const output = new Float32Array(BLOCK);
+        for (let tick = 0; tick < 20; tick++) {
+            flush(TICK_MS);
+            for (let b = 0; b < BLOCKS_PER_TICK; b++) runner.process([output]);
+        }
+        flush(TICK_MS);
+        const reply = lastReply();
+        expect(reply.frame).toBe(20 * BLOCKS_PER_TICK * BLOCK);
+        expect(reply.playheadMs).toBeGreaterThan(21 * TICK_MS - LEAD_MS - TICK_MS);
+        expect(reply.playheadMs).toBeLessThan(21 * TICK_MS - LEAD_MS + TICK_MS);
+        expect(reply.msPerSample).toBeCloseTo(1000 / SAMPLE_RATE, 4);
+        expect(reply.stallCount).toBe(0);
+    });
+
     it('is silent again after a reset', () => {
         const { runner, writer, flush, receive } = setUp();
         writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
@@ -205,11 +239,13 @@ describe('chip runner, running an Audio90', () => {
 function setUp() {
     const replies: ChipReply[] = [];
     let returned = 0;
+    let last: ChipReply | undefined;
     const runner = createAudio80Runner({
         sampleRate: SAMPLE_RATE,
         leadMs: LEAD_MS,
         sendBack: (reply) => {
             replies.push(reply);
+            last = reply;
             returned++;
         },
     });
@@ -232,7 +268,7 @@ function setUp() {
         receive({ kind: 'batch', commands, count: writer.count, horizonMs: writer.time });
         writer.clear(spare);
     };
-    return { runner, writer, flush, receive, countHandedBack: () => returned };
+    return { runner, writer, flush, receive, countHandedBack: () => returned, lastReply: () => last! };
 }
 
 /** Sets up an Audio90's runner and writer, as `setUp` does an Audio80's. */

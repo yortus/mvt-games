@@ -14,7 +14,7 @@ import {
 } from '../audio90';
 import { type ChipBatch, COMMAND_STRIDE } from '../shared';
 import { AUDIO90_PROCESSOR_NAME } from './audio90-runner';
-import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
+import { createFakeAudioContext, FAKE_BASE_LATENCY_S, FAKE_OUTPUT_LATENCY_S, FAKE_SAMPLE_RATE, type FakeAudioContext } from './fake-audio-context';
 import { createWebAudio90 } from './web-audio90';
 
 const TICK_MS = 16;
@@ -83,6 +83,40 @@ describe('createWebAudio90, with a stand-in audio context', () => {
         fake.reply({ kind: 'scope', data });
         expect(audio90.scope[0]).toBe(0.25);
         expect(fake.messages.at(-1)?.kind).toBe('scope-buffer');
+    });
+
+    it('hears each write as it is made, until the worklet has said where its clock is', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        tick(controls);
+        expect(audio90.heardTime).toBe(audio90.time);
+    });
+
+    it('hears the chip time the worklet\'s clock had reached at the frame now at the speaker, and counts its stalls', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        for (let i = 0; i < 80; i++) tick(controls);
+        const msPerSample = 1000 / FAKE_SAMPLE_RATE;
+        // The worklet was about to render frame 24,000, at chip time 400 ms, when the batch arrived
+        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 400, frame: 24000, msPerSample, stallCount: 2 });
+        // Half a second of frames later, the speaker plays a frame the latency behind
+        fake.setCurrentTime(1);
+        const speakerFrame = FAKE_SAMPLE_RATE * (1 - FAKE_BASE_LATENCY_S - FAKE_OUTPUT_LATENCY_S);
+        expect(audio90.heardTime).toBeCloseTo(400 + (speakerFrame - 24000) * msPerSample, 6);
+        expect(audio90.heardTime).toBeLessThan(audio90.time);
+        expect(controls.stallCount).toBe(2);
+    });
+
+    it('never hears past its own time', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        tick(controls);
+        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE, stallCount: 0 });
+        fake.setCurrentTime(10);
+        expect(audio90.heardTime).toBe(audio90.time);
     });
 
     it('clears its scope when they are turned off or the chip resets, and drops a scope that comes after', async () => {

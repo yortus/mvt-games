@@ -14,6 +14,8 @@ export interface ProcessorContext<S> {
     readonly settings: S | undefined;
     /** The sound card's sample rate, in Hz. */
     readonly sampleRate: number;
+    /** The audio context's count of frames, at the start of the next block. */
+    readonly currentFrame: () => number;
     /** Posts `reply` to the main thread, moving the buffers in `transfer` with it. */
     readonly post: (reply: object, transfer: Transferable[]) => void;
 }
@@ -37,6 +39,7 @@ export function registerChipProcessor<S, D extends PassedMessage>(name: string, 
             const runner = createRunner({
                 settings: options.processorOptions,
                 sampleRate,
+                currentFrame: () => currentFrame,
                 post: (reply, transfer) => port.postMessage(reply, transfer),
             });
             port.onmessage = (event: MessageEvent<RunnerMessage<D>>) => runner.receive(event.data);
@@ -59,6 +62,7 @@ export function registerChipProcessor<S, D extends PassedMessage>(name: string, 
 
 // The audio thread's globals, which TypeScript's DOM library leaves out
 declare const sampleRate: number;
+declare const currentFrame: number;
 declare class AudioWorkletProcessor {
     readonly port: MessagePort;
 }

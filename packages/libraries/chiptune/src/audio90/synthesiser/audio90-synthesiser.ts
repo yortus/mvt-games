@@ -86,7 +86,9 @@ export interface Audio90Synthesiser {
      * Renders `frames` stereo samples into `left` and `right`, from index
      * `offset`. The first sample is at chip time `fromMs`, and each sample is
      * `msPerSample` ms after the one before. Each queued command applies at
-     * the first sample at or after its stamp.
+     * the first sample at or after its stamp. An `msPerSample` of 0 holds
+     * chip time still: the voices sound on, and only the commands stamped at
+     * or before `fromMs` apply.
      */
     render: (left: Float32Array, right: Float32Array, offset: number, frames: number, fromMs: number, msPerSample: number) => void;
     /**

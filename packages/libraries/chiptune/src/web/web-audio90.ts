@@ -19,10 +19,8 @@ export interface WebAudio90Options {
     readonly context: AudioContext;
     /**
      * How far, in ms, the worklet plays behind the newest chip time it has
-     * been sent, at least. This leaves room for ticks that arrive late.
-     * Defaults to 35. When a tick comes so late that the worklet runs out of
-     * chip time, it plays further behind from then on, by as much as it was
-     * short, up to 150 ms. So a slow device stops dropping out.
+     * been sent. This leaves room for ticks that arrive late, so the music
+     * plays on through a late frame. Defaults to 100.
      */
     readonly leadMs?: number;
     /** How the chip sounds until a song sets it. Defaults to `'studio'`. */
@@ -79,6 +77,9 @@ export function createWebAudio90(options: WebAudio90Options): Audio90WithControl
     const audio90: Audio90 = {
         get time() {
             return writer.time;
+        },
+        get heardTime() {
+            return web.heardTime;
         },
         voiceCount: writer.voiceCount,
         play: writer.play,

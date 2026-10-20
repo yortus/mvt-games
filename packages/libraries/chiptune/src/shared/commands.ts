@@ -35,8 +35,20 @@ export interface ChipBatch {
     readonly horizonMs: number;
 }
 
-/** What a chip's worklet sends back: a batch's buffer, so the main thread can write into it again. */
+/**
+ * What a chip's worklet sends back as each batch arrives: the batch's
+ * buffer, so the main thread can write into it again, and where the
+ * worklet's clock is.
+ */
 export interface ChipReply {
     readonly kind: 'buffer';
     readonly commands: Float64Array;
+    /** The chip time, in ms, that the next block the worklet renders starts at. */
+    readonly playheadMs: number;
+    /** The audio context's count of frames, at the start of that block. */
+    readonly frame: number;
+    /** The chip time each sample of the last block covered, in ms. It is 0 while chip time stands still. */
+    readonly msPerSample: number;
+    /** How many times the worklet's clock has stalled, because a tick came later than its lead allows for. */
+    readonly stallCount: number;
 }

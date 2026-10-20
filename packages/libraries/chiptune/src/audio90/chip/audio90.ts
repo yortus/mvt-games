@@ -30,6 +30,14 @@ import type { Audio90Instrument, Audio90SoundEffect } from '../notation';
  */
 export interface Audio90 extends Audio90Writer {
     /**
+     * The chip time, in ms, of the sound reaching the speaker now. In a
+     * browser, it trails `time` by the chip's lead and the sound card's
+     * latency. A view that shows the music as it is heard, as a tracker
+     * does, reads it rather than `time`. A chip with no speaker hears each
+     * write as it is made, so for it this is `time`.
+     */
+    readonly heardTime: number;
+    /**
      * What each voice played last, while scopes are on, for a view to draw:
      * `AUDIO90_SCOPE_POINTS` points a voice, round and round, then each
      * voice's pan from `AUDIO90_SCOPE_PANS`, from -1 (left) to 1 (right). It

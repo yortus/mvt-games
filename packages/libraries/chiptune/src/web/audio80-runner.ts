@@ -11,7 +11,7 @@ export type Audio80PassedMessage = Extract<Audio80ChipMessage, { readonly kind: 
 
 /** The settings the main thread gives the Audio80's processor when it is made. */
 export interface Audio80RunnerSettings {
-    /** The lead the clock starts with, and the least it keeps, in ms. Defaults to 35. */
+    /** The lead the clock keeps, in ms. Defaults to 100. */
     readonly leadMs?: number;
     /** How the chip sounds. Defaults to `'classic'`. */
     readonly character?: Audio80Character;
@@ -32,8 +32,10 @@ export const AUDIO80_PROCESSOR_NAME = 'mvt-audio80';
 export interface Audio80RunnerOptions extends Audio80RunnerSettings {
     /** The sound card's sample rate, in Hz. */
     readonly sampleRate: number;
-    /** Sends a batch's buffer back to the main thread, so it can be written into again. */
+    /** Sends a batch's buffer back to the main thread, so it can be written into again, with where the clock is. */
     readonly sendBack: (reply: ChipReply) => void;
+    /** The audio context's count of frames, at the start of the next block. Defaults to counting the frames rendered. */
+    readonly currentFrame?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,6 +53,7 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
         channelCount: 1,
         leadMs: options.leadMs,
         sendBack: options.sendBack,
+        currentFrame: options.currentFrame,
         synthesiser: {
             enqueue: synthesiser.enqueue,
             reset: synthesiser.reset,

@@ -30,6 +30,8 @@ export function createSilentControls(options: { readonly update: (deltaMs: numbe
     let effectsVolume = 1;
     return {
         ready: Promise.resolve(),
+        // It has no sound card, so it never stalls
+        stallCount: 0,
         update,
         flush: ignore,
         reset: ignore,
@@ -76,6 +78,8 @@ export function createRenderedControls(options: RenderedControlsOptions): AudioC
     let effectsVolume = 1;
     return {
         ready: Promise.resolve(),
+        // It has no sound card, so it never stalls
+        stallCount: 0,
         update: writer.update,
         flush: ignore,
         reset() {

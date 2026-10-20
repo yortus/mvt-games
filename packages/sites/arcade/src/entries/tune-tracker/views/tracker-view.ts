@@ -1,8 +1,10 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 import { type Audio90, type Audio90Instrument, createMusicPlayer } from '@mvtjs/chiptune';
+import { setUpdate } from '@mvtjs/pixi';
 import type { Tune } from '#tunes';
 import type { TrackerModel } from '../models';
 import { ChannelMetersView } from './channel-meters-view';
+import { createHeardRow } from './heard-row';
 import { InstrumentsView } from './instruments-view';
 import { OrderListView } from './order-list-view';
 import { createPatternSheet } from './pattern-sheet';
@@ -40,8 +42,10 @@ export interface TrackerViewBindings {
  * The Tune Tracker's screen: the title bar, the panels of tunes, the song,
  * its order and its instruments, a meter over each channel, and the pattern
  * playing. The view owns the music player, as its view model: the audio
- * view plays through it, and the views that show where the song is read
- * its row. Each tune's patterns are laid out once, as the view is made.
+ * view plays through it. The music player writes each row a little ahead of
+ * the sound, so the views that show where the song is read the row heard
+ * now, which the view also owns. Each tune's patterns are laid out once, as
+ * the view is made.
  */
 export function TrackerView(bindings: TrackerViewBindings): Container {
     const { model, sound, tunes, instrumentNames, font } = bindings;
@@ -50,10 +54,13 @@ export function TrackerView(bindings: TrackerViewBindings): Container {
     const tune = () => tunes[model.tuneIndex];
     const song = () => tunes[model.tuneIndex].song;
     const sheet = () => sheets[model.tuneIndex];
-    const orderIndex = () => music.orderIndex;
-    const row = () => music.row;
+    const heard = createHeardRow({ music, chip: sound });
+    const orderIndex = () => heard.orderIndex;
+    const row = () => heard.row;
 
     const view = new Container();
+    // The view updates before its children, so the heard row sees the music player as the last tick left it
+    setUpdate(view, heard.update);
     const screen = new Sprite(Texture.WHITE);
     screen.tint = SCREEN_COLOR;
     screen.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);

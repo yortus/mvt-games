@@ -145,6 +145,9 @@ function createSilentChip(): Audio90WithControls {
         get time() {
             return clock[0];
         },
+        get heardTime() {
+            return clock[0];
+        },
         voiceCount: AUDIO90_VOICE_COUNT,
         play: ignore,
         noteOn: ignore,
@@ -234,6 +237,9 @@ function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly 
             get time() {
                 return writer.time;
             },
+            get heardTime() {
+                return writer.time;
+            },
             voiceCount: writer.voiceCount,
             play: writer.play,
             noteOn: writer.noteOn,
@@ -254,6 +260,9 @@ function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly 
         const recorder = createRecorder(writer);
         return {
             get time() {
+                return writer.time;
+            },
+            get heardTime() {
                 return writer.time;
             },
             voiceCount: writer.voiceCount,
@@ -311,6 +320,9 @@ function createRecorder(clock: { readonly time: number }): Audio90 & Audio90Log 
     const log: Audio90Write[] = [];
     return {
         get time() {
+            return clock.time;
+        },
+        get heardTime() {
             return clock.time;
         },
         voiceCount: AUDIO90_VOICE_COUNT,

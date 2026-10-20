@@ -164,6 +164,7 @@ root.append(ArcadeView({
     performance: () => meter,
     perfmon: () => perfmon,
     unmeasuredMetrics,
+    stallCount: () => sound.stallCount,
     onLiveWanted: playLive,
     playRectFor: (entry, starter) => host.playRectFor({
         screenWidth: entry.screenWidth,

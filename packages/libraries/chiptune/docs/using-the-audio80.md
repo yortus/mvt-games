@@ -142,7 +142,7 @@ writing to the chip. The chip handles those writes in three ways:
   played something else.
 
 `createWebAudio80` also takes two optional settings. `leadMs` is how far
-playback stays behind the newest tick, at least. It is 35 by default, and
+playback stays behind the newest tick. It is 100 by default, and
 [Time](#time-the-chip-runs-on-game-time) says more about it. `character`
 sets how gritty the chip sounds. A sharp jump in a wave adds a harsh,
 out-of-tune buzz to high notes. This buzz is called aliasing. Band
@@ -227,23 +227,36 @@ only when the game loop advances it, by the same `deltaMs` as the models.
 Every write is stamped with the chip's current time. The chip applies it at
 exactly that time, to the sample. That has three results:
 
-- **Pausing pauses the sound.** When the ticks stop, the sound fades out
-  and every voice holds where it is. When the game resumes, the chip waits
-  until it is a full lead behind again. Then it fades back in, and the
-  notes continue from where they stopped.
+- **Pausing pauses the sound.** When the ticks stop bringing time, the
+  sound fades out at once, and every voice holds where it is. When the game
+  resumes, the sound fades back in at once, and the notes continue from
+  where they stopped.
 - **Music keeps its tempo** at any frame rate, however uneven the frames.
 - **The same ticks make the same sound.** That makes the sound testable.
 
-In a browser, the chip plays 35 ms behind the newest tick. This
-delay is called the lead, and it smooths out uneven frames. You set it with
-`leadMs`. On a slow device, such as an older phone, frames can come later
-than the lead allows for. The chip then runs out of time to play, and the
-sound drops out for a moment. Each time that happens, the chip plays
-further behind from then on, by as much as it was short, up to 150 ms. So
-you may hear a dropout or two as a game starts, and then none. A gap of
-more than 100 ms is a pause or a stall, not a late tick, so it leaves the
-lead as it is. **Sound effects** are the exception. They play as soon as
-they arrive, because a shot should be heard when it is seen.
+In a browser, the chip plays a steady 100 ms behind the newest tick. This
+delay is called the lead, and you can set it with `leadMs`. The game loop
+runs on the page, and the sound plays on its own thread, so the lead is
+what keeps the music playing through a late frame. A busy phone may draw
+at 30 frames a second, and its sound card may ask for 20 ms of sound or
+more at a time, so the lead has to cover both, with room to spare. **Sound
+effects** are the exception. They play as soon as they arrive, because a
+shot should be heard when it is seen. So the lead only delays the music,
+and a game feels just as quick.
+
+A frame later than even the lead is a stall. The chip then holds its time
+still until the ticks have brought half a lead again, while every voice
+keeps sounding. A held note rings on, and the next note starts a little
+late, so the music never drops out. The controls count each one in
+`stallCount`, so you can check that the music plays smoothly on a slow
+device.
+
+Because of the lead, `time` runs ahead of what the listener hears. Most
+views never need to know. A view that shows the music as it plays, as a
+tracker does, reads the chip's `heardTime` instead. It is the chip time of
+the sound reaching the speaker now. The
+[Audio90 guide](using-the-audio90.md#showing-the-music-as-it-is-heard)
+shows how.
 
 ---
 

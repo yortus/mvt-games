@@ -49,6 +49,12 @@ export interface PageSound {
     /** Whether every chip is muted, the page's own and every entry chip, at once or when it loads. */
     isMuted: boolean;
     /**
+     * How many times the page's chips have stalled, all told, since the page
+     * loaded. Each stall is a moment the music stood still, because a frame
+     * came later than the chip's lead allows for.
+     */
+    readonly stallCount: number;
+    /**
      * Loads the page's chip the first time it is called. With `kind`, it also
      * loads the entry chip of that kind, the first time that kind is asked
      * for. It returns a promise that settles once both are ready, and never
@@ -142,6 +148,11 @@ export function createPageSound(options: PageSoundOptions): PageSound {
         },
         set isMuted(value) {
             for (const controls of allControls) controls.isMuted = value;
+        },
+        get stallCount() {
+            let count = 0;
+            for (let i = 0; i < allControls.length; i++) count += allControls[i].stallCount;
+            return count;
         },
 
         prepare(kind) {
@@ -340,6 +351,9 @@ function createAudio90Slot(): ChipSlot<Audio90> {
         get time() {
             return filled === undefined ? 0 : filled.time;
         },
+        get heardTime() {
+            return filled === undefined ? 0 : filled.heardTime;
+        },
         voiceCount: AUDIO90_VOICE_COUNT,
         play: (effect, pan) => filled?.play(effect, pan),
         noteOn: (voice, instrument, note, noteVolume, atMs) => filled?.noteOn(voice, instrument, note, noteVolume, atMs),
@@ -413,6 +427,9 @@ function createControlsSlot(): { readonly controls: AudioControls; readonly fill
         set effectsVolume(value) {
             effectsVolume = value;
             if (filled !== undefined) filled.effectsVolume = value;
+        },
+        get stallCount() {
+            return filled === undefined ? 0 : filled.stallCount;
         },
         destroy: () => filled?.destroy(),
     };

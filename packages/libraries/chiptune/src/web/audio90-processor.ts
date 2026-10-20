@@ -5,10 +5,11 @@ import { registerChipProcessor } from './register-chip-processor';
 // thread. It bundles only the Audio90's synthesiser, so a page whose entries
 // play only on the Audio80 never downloads it.
 
-registerChipProcessor<Audio90RunnerSettings, Audio90PassedMessage>(AUDIO90_PROCESSOR_NAME, ({ settings, sampleRate, post }) =>
+registerChipProcessor<Audio90RunnerSettings, Audio90PassedMessage>(AUDIO90_PROCESSOR_NAME, ({ settings, sampleRate, currentFrame, post }) =>
     createAudio90Runner({
         ...settings,
         sampleRate,
+        currentFrame,
         sendBack: (reply) => post(reply, [reply.commands.buffer]),
         sendScope: (reply) => post(reply, [reply.data.buffer]),
     }));

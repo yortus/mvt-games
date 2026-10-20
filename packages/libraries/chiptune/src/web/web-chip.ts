@@ -15,6 +15,12 @@ export interface WebChip<D extends PassedMessage> {
     /** The chip's controls. */
     readonly controls: AudioControls;
     /**
+     * The chip time, in ms, of the sound reaching the speaker now. It trails
+     * the writer's time by the worklet's lead and the sound card's latency.
+     * Until the worklet runs, it is the writer's time.
+     */
+    readonly heardTime: number;
+    /**
      * Sends a message for the chip's own part of the worklet, such as one
      * that defines an instrument. It is sent even while the audio context is
      * suspended, and kept until the worklet runs if it does not yet. The port
@@ -81,6 +87,12 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
     // message, and moves the transferred buffer, before it returns
     const batch: BatchMessage = { kind: 'batch', commands: EMPTY, count: 0, horizonMs: 0 };
     const transfer: Transferable[] = [EMPTY.buffer];
+    // Where the worklet's clock was as it last replied, and how many frames the speaker trails the context's
+    // count. They are in a typed array, because V8 boxes a double kept in a closure variable each time it is
+    // written, and these are written every tick
+    const heard = new Float64Array(HEARD_FIELDS);
+    let hasHeard = false;
+    let stallCount = 0;
 
     const ready = Promise.resolve().then(async () => {
         await context.audioWorklet.addModule(options.processorUrl);
@@ -99,6 +111,12 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
             const reply = event.data;
             if (isBufferReply(reply)) {
                 if (spares.length < MAX_SPARES) spares.push(reply.commands);
+                heard[PLAYHEAD_MS] = reply.playheadMs;
+                heard[FRAME] = reply.frame;
+                heard[MS_PER_SAMPLE] = reply.msPerSample;
+                heard[SPEAKER_LAG_FRAMES] = measureSpeakerLag();
+                hasHeard = true;
+                stallCount = reply.stallCount;
             }
             else {
                 options.onReply?.(reply);
@@ -146,6 +164,9 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
             effectsVolume = clamped;
             if (node !== undefined) writer.setMix('effects', clamped);
         },
+        get stallCount() {
+            return stallCount;
+        },
         update: writer.update,
 
         flush() {
@@ -179,6 +200,7 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
             writer.forget();
             held.clear();
             waiting.length = 0;
+            hasHeard = false;
             options.onReset?.();
             if (node === undefined) return;
             node.port.postMessage({ kind: 'reset' } satisfies RunnerMessage);
@@ -207,6 +229,13 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
 
     return {
         controls,
+        get heardTime() {
+            if (!hasHeard || context.state !== 'running') return writer.time;
+            // The frame at the speaker now, and the chip time the worklet's clock had reached there
+            const speakerFrame = context.currentTime * context.sampleRate - heard[SPEAKER_LAG_FRAMES];
+            const time = heard[PLAYHEAD_MS] + (speakerFrame - heard[FRAME]) * heard[MS_PER_SAMPLE];
+            return time < writer.time ? time : writer.time;
+        },
         send(message, transfer) {
             if (isDestroyed) return;
             // A message kept until the worklet runs is copied as it is sent then, rather than moved
@@ -215,6 +244,14 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
             else node.port.postMessage(message, transfer);
         },
     };
+
+    /** How many frames the speaker trails the context's count, as the audio context reports it. */
+    function measureSpeakerLag(): number {
+        // Where the browser cannot say when a frame reaches the speaker, it may still say how long it takes
+        const atSpeaker = context.getOutputTimestamp?.().contextTime ?? 0;
+        const lagSeconds = atSpeaker > 0 ? context.currentTime - atSpeaker : (context.baseLatency || 0) + (context.outputLatency || 0);
+        return lagSeconds > 0 ? lagSeconds * context.sampleRate : 0;
+    }
 
     function applyGain(): void {
         output.gain.setTargetAtTime(isMuted ? 0 : volume, context.currentTime, GAIN_SMOOTHING_S);
@@ -234,6 +271,12 @@ interface BatchMessage {
 }
 
 const MAX_SPARES = 2;
+/** Where each field is in `heard`. */
+const PLAYHEAD_MS = 0;
+const FRAME = 1;
+const MS_PER_SAMPLE = 2;
+const SPEAKER_LAG_FRAMES = 3;
+const HEARD_FIELDS = 4;
 /** What the reused batch message holds until the first tick. */
 const EMPTY = new Float64Array(0);
 /** The time constant of a volume or mute change, in seconds. The change settles in about 30 ms, which is slow enough not to click. */

@@ -25,6 +25,8 @@ export interface FakeAudioContext {
     readonly processorNames: readonly string[];
     /** Changes the context's state, as a browser does when audio starts or stops. */
     setState: (state: AudioContextState) => void;
+    /** Moves the context's `currentTime` to `seconds`, as the sound card plays. */
+    setCurrentTime: (seconds: number) => void;
     /** The batches among `messages`. */
     listBatches: () => ChipBatch[];
     /** Delivers `reply` to the node's port, as the worklet would send it. */
@@ -38,6 +40,7 @@ export interface FakeAudioContext {
 /** Creates a stand-in audio context in `state`. Its worklet fails to load with `loadError`, if given. */
 export function createFakeAudioContext(state: AudioContextState, loadError?: Error): FakeAudioContext {
     let current = state;
+    let currentTime = 0;
     const messages: RunnerMessage[] = [];
     const nodeOptions: AudioWorkletNodeOptions[] = [];
     const processorNames: string[] = [];
@@ -53,7 +56,12 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
         get state() {
             return current;
         },
-        currentTime: 0,
+        get currentTime() {
+            return currentTime;
+        },
+        sampleRate: FAKE_SAMPLE_RATE,
+        baseLatency: FAKE_BASE_LATENCY_S,
+        outputLatency: FAKE_OUTPUT_LATENCY_S,
         destination: audioNode,
         createGain: () => ({ ...audioNode, gain: { setTargetAtTime: ignore } }),
         audioWorklet: {
@@ -73,6 +81,9 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
         setState(next) {
             current = next;
         },
+        setCurrentTime(seconds) {
+            currentTime = seconds;
+        },
         listBatches: () => messages.filter((message): message is ChipBatch => message.kind === 'batch'),
         reply(reply) {
             port.onmessage?.({ data: reply });
@@ -83,6 +94,11 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** The stand-in's sample rate, in Hz, and how long its sound takes to reach the speaker, in seconds. */
+export const FAKE_SAMPLE_RATE = 48000;
+export const FAKE_BASE_LATENCY_S = 0.01;
+export const FAKE_OUTPUT_LATENCY_S = 0.03;
 
 function ignore(): void {
     // Nothing to do
