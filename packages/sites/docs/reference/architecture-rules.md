@@ -5,6 +5,7 @@
 > quick-reference tables linking each rule to its documentation.
 
 **See:** [Architecture Rules (full)](../architecture/rules.md) -
+[The Principles Behind MVT](../architecture/principles/index.md) -
 [Style Guide](style-guide.md) -
 [Glossary](glossary.md)
 
@@ -13,7 +14,9 @@
 ## Universal MVT Rules
 
 These apply to any MVT implementation regardless of language or renderer.
-The canonical definitions live in [Architecture Rules](../architecture/rules.md).
+The canonical definitions live in [Architecture Rules](../architecture/rules.md),
+which also links each rule to the
+[principles](../architecture/principles/index.md) it follows from.
 
 ### Model Rules
 

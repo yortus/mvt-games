@@ -30,7 +30,7 @@ export interface LeverViewBindings {
  */
 export function LeverView(bindings: LeverViewBindings): Object3D {
     const { kit } = bindings;
-    let pulledSpin = bindings.spinCount();
+    let previousSpinCount = bindings.spinCount();
     // Starts at rest: the swing is over
     let swingMs = SWING_MS;
 
@@ -58,8 +58,8 @@ export function LeverView(bindings: LeverViewBindings): Object3D {
 
     function advance(deltaMs: number): void {
         const spinCount = bindings.spinCount();
-        if (spinCount !== pulledSpin) {
-            pulledSpin = spinCount;
+        if (spinCount !== previousSpinCount) {
+            previousSpinCount = spinCount;
             swingMs = 0;
         }
         swingMs = Math.min(SWING_MS, swingMs + deltaMs);

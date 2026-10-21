@@ -19,6 +19,7 @@
 |---|---|
 | MVT architecture (language-neutral) | [Architecture section](../architecture/index.md) |
 | Universal MVT rules | [Architecture Rules](../architecture/rules.md) |
+| Why the rules are what they are, and deciding a case no rule covers | [The Principles Behind MVT](../architecture/principles/index.md) |
 | This repo's code style | [Style Guide](../reference/style-guide.md) |
 | Project layout and barrels | [Project Structure](../reference/project-structure.md) |
 | Adding a game or demo, and keeping it original | `packages/sites/arcade/src/entries/README.md` (its Originality section) |

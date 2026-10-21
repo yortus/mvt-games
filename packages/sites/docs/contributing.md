@@ -75,7 +75,7 @@ Use this table to decide where new content belongs:
 | **building-with-mvt/iterating-with-confidence/** | Testing approaches and patterns | Testing, testing models, testing views |
 | **building-with-mvt/avoiding-pitfalls/** | Common mistakes | Common mistakes |
 | **building-with-mvt/performance/** | Performance | Why performance matters, hot paths, performance measurements, benchmarking methods |
-| **architecture/** | Transferable MVT specification | Overview, models, views, bindings, ticker, rules, heritage |
+| **architecture/** | Transferable MVT specification | Overview, models, views, bindings, ticker, rules, principles (in `principles/`), heritage |
 | **reference/** | Terse, scannable, linkable. Complete coverage. | Architecture rules, style guide, glossary, project structure |
 | **ai-agents/** | AI agent orientation and skills files | Agent index, skill-mvt-model, skill-mvt-view |
 
@@ -230,6 +230,7 @@ Current diagram inventory:
 | Barrel import rules | reference/project-structure.md | Mermaid flowchart |
 | Ticker frame sequence | building-with-mvt/the-game-loop.md | Mermaid sequence diagram |
 | Pattern reinforcement | architecture/heritage.md | Mermaid flowchart |
+| How the principles build on one another | architecture/principles/index.md | Mermaid flowchart |
 | JSX runtime: building and refreshing | packages/libraries/utils/src/jsx/README.md (outside the docs site) | Mermaid flowchart |
 | Real game model/view tree | (removed) | Mermaid graph |
 

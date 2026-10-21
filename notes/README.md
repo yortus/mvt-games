@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**070**.
+**074**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -94,7 +94,6 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
 | 068 | [Music on the sound card's clock](./proposals/068-music-on-the-sound-cards-clock.md) | Proposed. Moves a song's place from the page to the audio thread, beside the synthesiser, so a late frame can no longer stall the music. The ticks still gate it, so pausing still pauses it, and a headless chip runs the same sequencer, so the audio views' tests stay exact. Follows the fixed 100 ms lead and stalls that hold, unstaged in main on 2026-10-20 |
 | 069 | [A line length of 120, and single-line imports](./proposals/069-line-length-and-single-line-imports.md) | Proposed. Four stages: write down 120, enforce it with `@stylistic/max-len` (1,045 lines to fix by hand, a package at a time), add `@mvtjs/single-line-imports`, which writes each import and re-export on one line by a cascade of merge, split values from types, then split by length, and turn it on with `lint:fix` (about 180 files) |
-
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
 012's method caching in its generic scene-pass core. 008 concerns
@@ -126,7 +125,9 @@ Test demo was 048's idea, and it rescored 034's game.
 added it to 011's workspace, and renamed what was left after 036's Arcade.
 A project can play the chip that 045 built, or the one 051 chooses. Its
 loose ends are tasks 057 to 064. 068 would move the music player that
-045 built, and 051 extended, onto the audio thread.
+045 built, and 051 extended, onto the audio thread. 070, now archived,
+touched only the docs, and its tasks 071 to 073 bring the code in line with
+its pages.
 
 ## Tasks
 
@@ -154,6 +155,9 @@ loose ends are tasks 057 to 064. 068 would move the music player that
 | 062 | [Check the Playground on Real Phones and in Safari](tasks/backlog/062-playground-on-phones-and-safari.md) | medium | 2026-10-17 |
 | 063 | [Playground: Shortcuts While the Preview Has the Keyboard](tasks/backlog/063-playground-shortcuts-while-the-preview-has-focus.md) | low | 2026-10-17 |
 | 065 | [Audio90: Follow-Ons](tasks/backlog/065-audio90-follow-ons.md) | low | 2026-10-17 |
+| 071 | [Throw on Broken Preconditions](tasks/backlog/071-throw-on-broken-preconditions.md) | medium | 2026-10-06 |
+| 072 | [Update and Refresh Method Names](tasks/backlog/072-update-and-refresh-method-names.md) | low | 2026-10-15 |
+| 073 | [Models Take Their Random Source](tasks/backlog/073-models-take-their-random-source.md) | medium | 2026-10-15 |
 
 ## Archive
 
@@ -200,6 +204,7 @@ loose ends are tasks 057 to 064. 068 would move the music player that
 | 064 | [HTML JSX: A Fixed `value` on a `<select>` Is Lost](archive/064-html-jsx-select-fixed-value.md) (kept until its option is added) | 2026-10-18 |
 | 066 | [The Arcade's Way Into an Entry, Timed by the Model](archive/066-arcade-way-in-timed-by-the-model.md) (the Arcade's model times the way in, in phases `'launching'` and `'revealing'`, with durations shared in `data/way-in.ts`; `EntryTransitionViewModel` draws from them, and keeps its own clock for the way out; a link straight to an entry no longer shows a small picture in the corner) | 2026-10-18 |
 | 067 | [Better Link Previews](archive/067-better-link-previews.md) (a 1200x630 share image for each entry, made by `generate-thumbnails`, and one of the card wall for the rest of the site; `og:image` with its size and alt, and `twitter:card`, on every page of the Arcade, the docs and the playground; `check:link-previews` after each build; the test site on Surge removed) | 2026-10-18 |
+| 070 | [Proposal: the principles behind MVT](archive/070-principles-docs.md) (a Principles group in the Architecture docs: an overview and one page per principle, SoC, SSOT, CQS, DIP, CRP, DbC, MISU and DfT, each with its origin, what it means in MVT, its costs, examples, a checklist and the rules it underpins; linked from the rules, glossary, heritage, code review skill and `AGENTS.md`; a broken precondition throws. Code brought in line by tasks 071 to 073) | 2026-10-21 |
 
 ## Elsewhere
 

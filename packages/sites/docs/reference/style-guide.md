@@ -559,7 +559,7 @@ export function ShipView(bindings: ShipViewBindings): Container {
 Mixing is fine: a JSX view can embed an imperative child, or reach a Pixi
 object directly through a `ref` or an `onRefresh` attribute.
 [Declarative Views](../building-with-mvt/presenting-the-world/declarative-views.md)
-compares the two in depth, with JSX's stengths and limitations.
+compares the two in depth, with JSX's strengths and limitations.
 
 In either body, derive text (or anything else costly) from a changing value
 only when the value changes. `memoiseLast` from `@mvtjs/utils` wraps a one-argument

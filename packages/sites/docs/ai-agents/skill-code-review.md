@@ -40,9 +40,15 @@ Reference: [Architecture Rules](../architecture/rules.md)
 
 ### 2. Software Engineering Principles
 
-These principles apply broadly and keep the codebase maintainable.
+These principles apply broadly and keep the codebase maintainable. Each
+has a page in [The Principles Behind MVT](../architecture/principles/index.md),
+with a checklist; name the principle in a finding, so the author can read
+why it matters. This section keeps only what is specific to reviewing.
 
 #### Isolation and clear interfaces
+
+See [Separation of Concerns](../architecture/principles/separation-of-concerns.md)
+and [Design by Contract](../architecture/principles/design-by-contract.md).
 
 Every part of the system should be understandable, testable, and replaceable
 with minimal knowledge of its surroundings. Practically:
@@ -76,6 +82,8 @@ that the type signature does not convey.
 
 #### Single responsibility (pragmatic, not dogmatic)
 
+See [Separation of Concerns: Cohesion and Coupling](../architecture/principles/separation-of-concerns.md#applied-to-mvt-cohesion-and-coupling).
+
 Each function, file, or module should "do one thing" - but avoid the
 extremes:
 
@@ -85,15 +93,22 @@ extremes:
   files to understand a single flow. The indirection cost exceeds the
   abstraction benefit.
 
-The happy medium: each function body either **orchestrates an entire flow**
-(calling named steps) or **performs all the details of a single step**. Not
-both at the same time.
+The happy medium: a function's steps can be read apart. Putting steps in
+order is a job in itself, so a function that only calls a short list of
+named steps has enough to do. That works when each step can be understood
+from its name, without reading its code or the code around it. Steps that
+only make sense together belong in one function.
 
-**Common finding:** A factory function mixes orchestration with low-level
-detail. **Fix:** extract the detail into a named helper; keep the factory
-body as a readable sequence of steps.
+**Common finding:** A function lists its steps, but writes some of them out
+in full, so the reader has to wade through the detail to follow the order.
+**Fix:** move each step that can be understood from its name into a named
+helper, and keep the function as a readable sequence of steps. Leave steps
+that only make sense together where they are.
 
 #### Explicit dependencies, minimal side effects
+
+See [Dependency Inversion](../architecture/principles/dependency-inversion.md)
+and [Command-Query Separation](../architecture/principles/command-query-separation.md).
 
 Functions should operate on their declared inputs and return their result.
 Prefer pure computations. Flag these during review:
@@ -115,6 +130,8 @@ needed value as a parameter, or document the coupling in the interface
 contract.
 
 #### Contract-driven coupling
+
+See [Design by Contract](../architecture/principles/design-by-contract.md).
 
 Parts of the system should interconnect through typed interfaces with JSDoc
 for anything types alone cannot capture. Review for:

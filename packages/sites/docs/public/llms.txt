@@ -71,6 +71,9 @@ presentation state, refresh views, render. Models settle before views read.
 ## Documentation
 
 - packages/sites/docs/architecture/ - transferable MVT specification (language-neutral)
+- packages/sites/docs/architecture/principles/ - the eight design principles
+  the rules follow from (SoC, SSOT, CQS, DIP, CRP, DbC, MISU, DfT), one page
+  each, for deciding cases no rule covers
 - packages/sites/docs/building-with-mvt/ - progressive guide, from quickstart to
   performance (time, composition, change detection, testing, etc.)
 - packages/sites/docs/reference/ - rules, style guide, glossary, project structure

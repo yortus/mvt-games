@@ -112,4 +112,5 @@ drives a steady frame loop where models advance and views refresh every frame.
 | [Bindings](bindings.md) | The bridging concept, query and relay bindings, why not pass the model |
 | [The Ticker](ticker.md) | Frame sequence, time ownership, determinism |
 | [Rules](rules.md) | Universal MVT constraints |
+| [Principles](principles/index.md) | The design principles the rules follow from, and how to apply them to cases no rule covers |
 | [Heritage](heritage.md) | The established patterns MVT assembles |

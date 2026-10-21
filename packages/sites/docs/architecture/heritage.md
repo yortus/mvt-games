@@ -5,9 +5,14 @@
 > applications. Every piece has decades of proven use.
 
 **Related:** [Architecture Overview](index.md) -
-[Rules](rules.md)
+[Rules](rules.md) -
+[The Principles Behind MVT](principles/index.md)
 
 ---
+
+This page covers the patterns MVT assembles: what it is built from. The
+[principles behind MVT](principles/index.md) cover why it is built that
+way.
 
 ## The Patterns Behind MVT
 
@@ -85,6 +90,12 @@ variations. Benefits:
 - **Independent development** - model and view evolve separately as long as
   the bindings contract holds.
 
+In Alistair Cockburn's **Ports and Adapters** (hexagonal) architecture, the
+models are the application at the centre, and each view is an adapter: it
+turns model state into presentation, and the player's input into calls. A
+leaf view's bindings give the view a port of its own, so it can be reused
+and tested without any particular model.
+
 ### Dirty Checking (Change Detection)
 
 Polling for changes rather than relying on push notifications. The most
@@ -132,6 +143,8 @@ conflicting.
   bindings.
 - John Gossman, "Introduction to Model/View/ViewModel" (2005) - the ViewModel
   concept, structurally identical to bindings.
+- Alistair Cockburn, "Hexagonal Architecture" (2005) - ports and adapters:
+  an application driven equally by users, programs and tests.
 - Gamma, Helm, Johnson, Vlissides, *Design Patterns* (1994) - the Composite
   pattern.
 - Evan Czaplicki, "The Elm Architecture" (2012) - Model, update, view as a

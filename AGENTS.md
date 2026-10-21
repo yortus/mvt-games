@@ -12,7 +12,8 @@
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
 Full reference: [Architecture Overview](packages/sites/docs/architecture/index.md) -
-[Architecture Rules](packages/sites/docs/architecture/rules.md)
+[Architecture Rules](packages/sites/docs/architecture/rules.md) -
+[Principles](packages/sites/docs/architecture/principles/index.md) (why the rules are what they are, for cases no rule covers)
 
 ## Project Structure
 
