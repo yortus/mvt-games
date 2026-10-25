@@ -17,7 +17,7 @@ panel. You could open multiple windows (multiple views) onto the same model
 and they would all stay in sync. You could close all windows and the
 simulation would keep running unchanged.
 
-Views hold **no domain state** and are **timeless** - they don't track what
+Views hold **no [domain state](../../reference/glossary.md)** and are **timeless** - they don't track what
 happened before, and they don't decide what happens next. A `refresh()`
 function runs each frame. (Views *do* hold a retained scene graph and may
 hold [presentation state](#presentation-state) for cosmetic transitions -

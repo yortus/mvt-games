@@ -123,7 +123,9 @@ ticker frame:
 ```
 
 Key constraint: presentation state must not affect domain outcomes. If it
-does, it belongs in the model.
+does, it belongs in the model. Apart from that, a view handles its
+presentation state just as a model handles its domain state; see
+[Two Kinds of State](index.md#two-kinds-of-state).
 
 When presentation logic grows complex enough to warrant separate testing,
 extract it into a **view model** - a plain object with `update(deltaMs)` and

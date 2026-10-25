@@ -58,7 +58,7 @@ Every frame follows the same strict order:
 4. Renderer draws the frame
 ```
 
-Less commmonly, some views may have cosmetic [presentation state](views.md#presentation-state). In this case the top-level view gains an `update(deltaMs)` method, and the ticker loop gains an extra step to call it between steps 2 and 3.
+Less commonly, some views may have cosmetic [presentation state](#two-kinds-of-state). In this case the top-level view gains an `update(deltaMs)` method, and the ticker loop gains an extra step to call it between steps 2 and 3.
 
 One turn of this loop is a [tick](ticker.md#ticks): the ticker ticks the
 models, then the views, then the renderer draws. Ticking a view means calling
@@ -67,6 +67,28 @@ its `update(deltaMs)`, if it has one, then its `refresh()`.
 Models always settle before views read them. Views never see a half-updated
 world. Data flows one direction within each frame: models produce state,
 views consume it.
+
+## Two Kinds of State
+
+An MVT program has two kinds of state, each with a distinct owner.
+
+- **Domain state** is just the state needed to decide every outcome, such
+  as a hit landing or a level ending, however the program is shown. Models
+  own it.
+- **Presentation state** changes only how things are shown, such as how far
+  a fade has got. The view that shows it owns it.
+
+| | Domain state | Presentation state |
+|---|---|---|
+| Owned by | A model | A view |
+| Advances in | The model's `update(deltaMs)` | The view's `update(deltaMs)` |
+| Without it | The program behaves differently | Only the presentation changes |
+
+MVT handles both the same way. Each has one owner, which advances it with
+time from the ticker. The one difference is direction. Presentation state
+may follow domain state, but domain state never reads it. State that would
+change an outcome is
+[domain state, and belongs in a model](../building-with-mvt/adding-visual-polish/presentation-state.md#when-is-presentation-state-really-domain-state).
 
 ## What You Get
 

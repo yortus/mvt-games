@@ -20,20 +20,21 @@
 
 ## What Is Presentation State?
 
-A model is a standalone simulation. It determines outcomes - scores, deaths,
-matches, phase transitions. If you replayed the same inputs with no view at
-all, every outcome would be identical.
+A *model* is a standalone simulation. It determines outcomes - scores, deaths,
+matches, phase transitions. Its state is
+[domain state](../../reference/glossary.md): if you replayed the same inputs
+with no view at all, every outcome would be identical.
 
-Most of the time, a view is a pure projection: it reads model state in
+Most of the time, a *view* is a pure projection: it reads model state in
 `refresh()` and updates the scene graph. A character's position on screen
 tracks the model position. A health bar shrinks when model health decreases.
-No extra state needed.
+No extra state is needed.
 
 But sometimes a view wants to show something the model has no reason to
 know about. A visual flourish, a smooth transition, an intermediate editing
 state. The view needs its own state for this - state that exists purely for
-presentation. We call this **cosmetic state** because removing it would not
-change any domain outcome.
+presentation. We call this **presentation state**, or cosmetic state,
+because removing it would not change any domain outcome.
 
 ### Game example: door fade
 
@@ -151,7 +152,17 @@ Ticker loop:
 Views without presentation state are unchanged - they have no `update()`
 step, just `refresh()`.
 
-The two steps split the work cleanly: `update()` advances presentation state
+Notice that this mirrors a model. Domain state lives in a model and advances
+in the model's `update(deltaMs)`. Presentation state lives in a view and
+advances in the view's `update(deltaMs)`. Both get their time from the
+ticker, so both pause, slow down and speed up together, and neither reads
+the clock. The one difference is the direction they depend on each other.
+Presentation state may follow domain state, as the door's fade below follows
+the door, but domain state never reads presentation state.
+[Two Kinds of State](../../architecture/index.md#two-kinds-of-state) puts
+the two side by side.
+
+The two steps in the view split the work cleanly: `update()` advances presentation state
 and writes nothing else, and `refresh()` writes all presentation output from
 model state and presentation state. That includes structure: adding or
 removing child views and display objects is output, so it happens in

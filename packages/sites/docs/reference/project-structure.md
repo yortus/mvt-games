@@ -332,7 +332,7 @@ packages/sites/arcade/src/entries/<id>/
 ├── start/
 │   ├── index.ts          Barrel - re-exports `entry` from entry.ts
 │   ├── entry.ts          `entry`: what the Arcade's card shows (name, tags, thumbnail...), `loadDetails` and `load`
-│   ├── details.ts        `details`: the long text (description, instructions, techniques), loaded after the first paint
+│   ├── details.ts        `details`: the long text (description, how it's made, instructions, techniques), loaded after the first paint
 │   ├── load.ts           `load()`: the entry's code, imported only when it is launched
 │   ├── thumbnail.webp    Its card's picture, made by `npm run generate-thumbnails`
 │   └── share.png         Its link preview's picture, made by the same script
