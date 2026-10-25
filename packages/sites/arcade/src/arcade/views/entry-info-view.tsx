@@ -42,8 +42,8 @@ export interface EntryInfoViewBindings {
  * An entry's info panel, over the wall, or over the entry as it plays:
  * everything the card leaves out. Its name, its tags (the renderers it draws
  * with among them) and the classic it is inspired by head the panel. Then
- * come tabs, each where the entry has it: Description (what it is, the
- * techniques it shows, and its size), How to Play, and Highscores. Play, or
+ * come tabs, each where the entry has it: Description (what it is, how it's
+ * made, the techniques it shows, and its size), How to Play, and Highscores. Play, or
  * Resume over the entry, and a link to its source end it.
  *
  * It opens on Description, or on How to Play over the entry, where that is
@@ -55,6 +55,7 @@ export interface EntryInfoViewBindings {
 export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
     // Each is worked out once per entry shown, keyed by the entry's id
     const paragraphsOf = memoiseLast((description: string | undefined) => description?.split('\n\n') ?? NONE);
+    const implementationParagraphsOf = memoiseLast((implementation: string | undefined) => implementation?.split('\n\n') ?? NONE);
     const tagsFor = memoiseLast((_id: string | undefined) => describeTags(bindings.entry(), bindings.factsFor));
     const sizeFor = memoiseLast((id: string | undefined) => describeSize(id === undefined ? undefined : bindings.factsFor(id)));
     const inspirationFor = memoiseLast((_id: string | undefined) => describeInspiration(bindings.entry()?.inspiredBy));
@@ -101,6 +102,12 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                             <List items={() => paragraphsOf(bindings.details()?.description)}>
                                 {(paragraph) => <p class="info-description" text={paragraph} />}
                             </List>
+                            <div class="info-section" visible={() => bindings.details()?.implementation !== undefined}>
+                                <h3 text="How It's Made" />
+                                <List items={() => implementationParagraphsOf(bindings.details()?.implementation)}>
+                                    {(paragraph) => <p class="info-description" text={paragraph} />}
+                                </List>
+                            </div>
                             <div class="info-section" visible={() => techniques().length > 0}>
                                 <h3 text="Techniques" />
                                 <ul class="info-techniques">

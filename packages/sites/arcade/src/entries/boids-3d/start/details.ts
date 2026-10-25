@@ -6,7 +6,8 @@ import type { EntryDetails } from '../../../entry-types';
 
 /** The flock in 3D's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
-    description: [
+    description: 'The boids demo\'s flock, in 3D: the same birds, flying over the ground, with a settings panel beside them.',
+    implementation: [
         'The boids demo\'s flock model, unchanged, drawn with three.js through the same JSX runtime as the Pixi '
         + 'games. The settings panel is HTML, through that runtime too, following the same model: two views of '
         + 'one model, on two renderers.',

@@ -61,11 +61,17 @@ export interface ArcadeEntry {
 
 /** An entry's long text: what its info panel tells beyond its card, and what the search reads beyond its summary. */
 export interface EntryDetails {
-    /** A paragraph or two, for the entry's info panel. Paragraphs are separated by a blank line. */
+    /** What the entry is, for a player: a paragraph or two, for the entry's info panel. Paragraphs are separated by a blank line. */
     readonly description: string;
+    /**
+     * How the entry is built, for a developer: a paragraph or two, which the
+     * info panel shows under How It's Made, after the description.
+     * Paragraphs are separated by a blank line.
+     */
+    readonly implementation?: string;
     /** How to play, for the info panel's How to Play tab, which the runner's (i) opens over the game. */
     readonly howToPlay?: HowToPlay;
-    /** The techniques and patterns the entry shows, for the info panel. */
+    /** The techniques and patterns the entry shows, for the info panel, under How It's Made. */
     readonly techniques?: readonly string[];
 }
 

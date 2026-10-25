@@ -71,9 +71,9 @@ export function searchWordsOf(text: string): string[] {
 /**
  * Whether `entry` matches every word of a search: each is somewhere in its
  * name, or begins a word of its summary, the title it is inspired by, its
- * description or its techniques (`'flock'` finds flocking), or begins one of
- * its tags (`'sim'` finds simulations). Without its `details`, which load
- * after the cards, the description and techniques are not searched.
+ * description, how it's made or its techniques (`'flock'` finds flocking), or
+ * begins one of its tags (`'sim'` finds simulations). Without its `details`,
+ * which load after the cards, its long text is not searched.
  */
 export function matchesWords(entry: ArcadeEntry, facts: EntryFacts | undefined, details: EntryDetails | undefined, words: readonly string[]): boolean {
     if (words.length === 0) return true;
@@ -104,7 +104,7 @@ const NONE: readonly string[] = [];
 /** Each entry's summary and the title it is inspired by, as lower-case words: worked out once. */
 const cardWords = new WeakMap<ArcadeEntry, readonly string[]>();
 
-/** Each entry's description and techniques, as lower-case words: worked out once they load. */
+/** Each entry's long text, as lower-case words: worked out once it loads. */
 const detailWords = new WeakMap<EntryDetails, readonly string[]>();
 
 function cardWordsOf(entry: ArcadeEntry): readonly string[] {
@@ -119,7 +119,7 @@ function cardWordsOf(entry: ArcadeEntry): readonly string[] {
 function detailWordsOf(details: EntryDetails): readonly string[] {
     let words = detailWords.get(details);
     if (words === undefined) {
-        words = wordsOf([details.description, ...(details.techniques ?? [])]);
+        words = wordsOf([details.description, details.implementation ?? '', ...(details.techniques ?? [])]);
         detailWords.set(details, words);
     }
     return words;

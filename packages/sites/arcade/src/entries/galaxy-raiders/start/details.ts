@@ -6,10 +6,8 @@ import type { EntryDetails } from '../../../entry-types';
 
 /** Galaxy Raiders' long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
-    description: [
-        'A fixed shooter. Raiders fly in to form ranks above you, then peel off in curving dives, firing as they come.',
-        'Each wave is data, and each raider a small model with its own phase: flying in, in formation, or diving.',
-    ].join('\n\n'),
+    description: 'A fixed shooter. Raiders fly in to form ranks above you, then peel off in curving dives, firing as they come.',
+    implementation: 'Each wave is data, and each raider a small model with its own phase: flying in, in formation, or diving.',
     howToPlay: {
         intro: 'Shoot down every raider to clear the stage.',
         controls: [

@@ -39,6 +39,7 @@ describe('the catalogue', () => {
         for (const entry of CATALOGUE) {
             const details = await entry.loadDetails();
             expect(details.description.trim(), entry.id).toBeTruthy();
+            if (details.implementation !== undefined) expect(details.implementation.trim(), entry.id).toBeTruthy();
             for (const technique of details.techniques ?? []) expect(technique.trim(), entry.id).toBeTruthy();
         }
     });

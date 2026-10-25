@@ -6,12 +6,13 @@ import type { EntryDetails } from '../../../entry-types';
 
 /** The falling-sand demo's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
-    description: [
-        'An aquarium of sand, water and walls, and a stress test for the MVT game loop. Every grain is its own '
-        + 'item in the model and its own sprite in the view, so the refresh pass touches every grain in the tank '
-        + 'every frame, while the simulation only touches the grains that are moving.',
-        'Open the Perfmon with the gauge at the top of the page, and pour until the frame timings climb. Then '
-        + 'flip the tank to set everything moving at once. Switches below the tank restart it with other '
+    description: 'An aquarium of sand, water and walls, and a stress test for the MVT game loop. Pour sand and water '
+        + 'in, and flip the tank to set everything moving at once.',
+    implementation: [
+        'Every grain is its own item in the model and its own sprite in the view, so the refresh step touches '
+        + 'every grain in the tank every frame, while the simulation only touches the grains that are moving.',
+        'Open the Perfmon with the gauge at the top of the page, and pour until the frame timings climb, then '
+        + 'flip the tank. Switches below the tank restart it with other '
         + 'implementations of the model and the view, to compare their cost.',
     ].join('\n\n'),
     techniques: [

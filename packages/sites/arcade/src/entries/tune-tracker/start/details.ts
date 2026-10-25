@@ -20,8 +20,10 @@ export const details: EntryDetails = {
         + 'the order the patterns play in, the song\'s settings and its instruments.',
         'Each tune is a study of one of the decade\'s styles. There\'s house, trance, acid, jungle, trip-hop, big '
         + 'beat, ambient house and a ballad. There are also tunes in the style of a 16-bit shooter, a role-playing '
-        + 'game, a fighting game, a platformer, a racing game\'s Eurobeat, a PC sound card and an Amiga module. '
-        + 'None of the sounds is recorded. As the demo loads, the chip makes its samples by playing short tunes on '
+        + 'game, a fighting game, a platformer, a racing game\'s Eurobeat, a PC sound card and an Amiga module.',
+    ].join('\n\n'),
+    implementation: [
+        'None of the sounds is recorded. As the demo loads, the chip makes its samples by playing short tunes on '
         + 'its own engines and keeping what they sound like.',
         'What you see is exactly what the chip plays. Each tune is read once into numbers, and the chip plays '
         + 'those numbers. The view writes each one back out as tracker text, and that text reads back as the same '

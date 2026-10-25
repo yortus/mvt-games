@@ -108,6 +108,8 @@ describe('ArcadeModel', () => {
             expect(shownIds(model)).toEqual(['old-shooter']);
             model.searchText = 'flock';
             expect(shownIds(model)).toEqual(['sim-demo']);
+            model.searchText = 'renderers';
+            expect(shownIds(model)).toEqual(['sim-demo']);
         });
 
         it('shows the entries a search finds as their long text arrives, with no change of query', async () => {
@@ -683,7 +685,7 @@ const ENTRIES: readonly ArcadeEntry[] = [
         hasHighscores: true,
     },
     entry('shooter-game', 'Shooter Game', { kind: 'game', era: '1980s', genres: ['shooter'] }, { description: '', techniques: ['Object pooling'] }),
-    entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }, { description: 'Birds flocking, in 3D.', howToPlay: { intro: 'Watch.' } }),
+    entry('sim-demo', 'Sim Demo', { kind: 'demo', genres: ['simulation', '3d'] }, { description: 'Birds flocking, in 3D.', implementation: 'One model, two renderers.', howToPlay: { intro: 'Watch.' } }),
     { ...entry('old-shooter', 'Old Shooter', { kind: 'game', era: '1970s', genres: ['shooter'] }), summary: 'Rocks and asteroids.' },
 ];
 

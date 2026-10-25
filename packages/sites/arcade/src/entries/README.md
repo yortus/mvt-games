@@ -512,7 +512,12 @@ export const details: EntryDetails = {
   them would bring the views, and their renderer, into the Arcade's first
   load. In development, the Arcade checks they match the starter's.
 - In `details.ts`, the **`description`** is a paragraph or two, separated
-  by a blank line. If your entry is a game, give it **`howToPlay`**, which
+  by a blank line, about what the entry is, written for someone who wants
+  to play it or watch it. How it's built goes in **`implementation`**, also
+  a paragraph or two, written for a developer reading the code: its models,
+  its views, and the techniques worth noticing. The info panel shows it
+  under its own heading, How It's Made, after the description, so a player
+  can stop reading before it. If your entry is a game, give it **`howToPlay`**, which
   the info panel shows on its How to Play tab, and which the runner's (i)
   opens over the game as it plays. It has an `intro` (what to aim for), the
   `controls`, and any `notes`. Each control is an action and the inputs

@@ -6,11 +6,9 @@ import type { EntryDetails } from '../../../entry-types';
 
 /** Astrovoid's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
-    description: [
-        'A vector-style space shooter. Your ship turns, thrusts and fires; each rock you hit splits into '
+    description: 'A vector-style space shooter. Your ship turns, thrusts and fires; each rock you hit splits into '
         + 'smaller, faster ones, and anything that leaves one edge of the arena comes back at the other.',
-        'Every ship, rock and bullet is a model in world units, and the views turn those into pixels.',
-    ].join('\n\n'),
+    implementation: 'Every ship, rock and bullet is a model in world units, and the views turn those into pixels.',
     howToPlay: {
         intro: 'Shoot every rock to clear the wave. A hit rock splits in two, smaller and faster; the smallest are worth the most.',
         controls: [

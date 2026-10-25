@@ -24,7 +24,7 @@ export interface ArcadeModel {
     readonly factsFor: (id: string) => EntryFacts | undefined;
 
     // --- The entries' long text ---------------------------------------------
-    // Each entry's description, instructions and techniques load after the
+    // Each entry's description, instructions, how it's made and techniques load after the
     // cards, so that the home page's first load holds only what the cards show.
 
     /** The long text of the entry with `id`, once it has loaded. */
@@ -63,8 +63,8 @@ export interface ArcadeModel {
     /**
      * What has been typed beside the tags. An entry shows only if each of its
      * words is in the entry's name, begins a word of its summary, description,
-     * techniques or the title it is inspired by, or begins one of its tags.
-     * An entry's description and techniques count once they have loaded.
+     * how it's made, techniques or the title it is inspired by, or begins one
+     * of its tags. An entry's long text counts once it has loaded.
      */
     searchText: string;
     /** Clears the tags and the words. */

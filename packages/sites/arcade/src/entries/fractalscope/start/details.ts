@@ -6,18 +6,16 @@ import type { EntryDetails } from '../../../entry-types';
 
 /** Fractalscope's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
-    description: [
-        'An explorer of eight fractals: the Mandelbrot set, the Burning Ship, the Tricorn, a cubic Multibrot, the '
+    description: 'An explorer of eight fractals: the Mandelbrot set, the Burning Ship, the Tricorn, a cubic Multibrot, the '
         + 'Celtic Mandelbrot, two Julia sets and the Phoenix. Drag to travel, and pinch, scroll or double tap to '
         + 'close in. The panel has a map of the whole fractal with a mark where you are, your coordinates and '
         + 'zoom, a choice of palettes, and a button that saves what you see.',
-        'The model is the scope itself, like a microscope: the fractal under it, the point it is centred on, and '
+    implementation: 'The model is the scope itself, like a microscope: the fractal under it, the point it is centred on, and '
         + 'how strongly it magnifies. Your gestures work its controls, and its setting changes at once. The '
         + 'picture is the view\'s own presentation state, like a photograph taken at the scope\'s last setting. '
         + 'It follows a step behind, computed a little each frame, coarse blocks first and sharpening in place. '
         + 'While you move, the view stretches the old picture to fit, blocky as you go. Once you stop, the '
         + 'picture is taken again, starting from the stretched one so it never jumps.',
-    ].join('\n\n'),
     howToPlay: {
         intro: 'Choose a fractal from the panel.',
         controls: [

@@ -67,6 +67,16 @@ describe('EntryInfoView', () => {
         expect(isPageShown(panel, 'description')).toBe(true);
     });
 
+    it('shows how it\'s made under its own heading, after the description, only where the entry has it', () => {
+        const { panel, state } = setUp();
+        expect(sectionHeadings(panel)).toEqual([]);
+        state.details = { description: 'A maze game.', implementation: 'One model.\n\nOne view.', techniques: ['Tile grids'] };
+        refreshView(panel);
+        expect(sectionHeadings(panel)).toEqual(['How It\'s Made', 'Techniques']);
+        const paragraphs = [...panel.querySelectorAll('#info-page-description .info-description')].map((p) => p.textContent);
+        expect(paragraphs).toEqual(['A maze game.', 'One model.', 'One view.']);
+    });
+
     it('shows one page at a time', () => {
         const { panel } = setUp();
         const pages = [...panel.querySelectorAll('.info-page')];
@@ -129,6 +139,12 @@ function isShown(root: Element, selector: string): boolean {
 function isPageShown(root: Element, kind: string): boolean {
     const page = root.querySelector(`#info-page-${kind}`);
     return page !== null && !page.hasAttribute('hidden') && page.classList.contains('is-shown');
+}
+
+/** The headings of the Description page's sections that show, in order. */
+function sectionHeadings(root: Element): readonly string[] {
+    const sections = [...root.querySelectorAll('#info-page-description .info-section')];
+    return sections.filter((section) => !section.hasAttribute('hidden')).map((section) => section.querySelector('h3')?.textContent ?? '');
 }
 
 function tabIndexOf(root: Element, selector: string): number | undefined {
