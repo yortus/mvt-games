@@ -9,13 +9,16 @@
 > its `row` and `beat` become what the listener hears. Tests stay exact,
 > because a headless chip runs the same sequencer on its own clock.
 
-**Status:** implemented, 2026-10-21, in the worktree
+**Status:** done. Built on 2026-10-21 in the worktree
 `.claude/worktrees/068-music-on-the-sound-card` (branch
-`068-music-on-the-sound-card`), awaiting review and the move to main. Both
-chips have a sequencer, every entry's music plays on it, and the docs say
-so. Section 15 says what was built, where it differs from the plan, and
-what was measured. The spike before it was confirmed on the user's phone
-over Bluetooth (section 14.4). The full build has not been on a phone yet.
+`068-music-on-the-sound-card`), and committed on 2026-10-27 as `0ebacfec`,
+on the branch `audio90`. Both chips have a sequencer, every entry's music
+plays on it, and the docs say so. Section 15 says what was built, where it
+differs from the plan, and what was measured. The spike before it was
+confirmed on the user's phone over Bluetooth (section 14.4). The one thing
+left, trying the full build on a phone, moved to
+[074](../proposals/074-audio90-standalone-package.md), before `audio90` is
+published.
 
 **Written:** 2026-10-20, against main at `4b0eabb5` plus the unstaged
 chip-clock work. Measured on this desktop in Node and in Playwright's
@@ -321,7 +324,8 @@ All five were decided as recommended, on 2026-10-21, as the work was done.
 7. ~~A changeset, and a decision on open question 4.~~ Done:
    `.changeset/music-on-the-sequencer.md`, a minor bump. Question 4 is
    decided in section 12.
-8. Still to do: try the full build on a phone, and move the branch to main.
+8. ~~Move the branch to main.~~ Done: committed as `0ebacfec` on
+   2026-10-27. Trying the full build on a phone moved to 074.
 
 ## 14. The Spike
 

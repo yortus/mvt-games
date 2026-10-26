@@ -10,7 +10,9 @@
 > later stage adds Audio90 Studio, an editor for sounds and songs, built
 > with MVT.
 
-**Status:** proposed. Nothing built.
+**Status:** in progress, on the branch `audio90`. 068, which this builds
+on, was committed there as `0ebacfec` on 2026-10-27, and its last open item
+moved here (step 10). Section 12 records the progress.
 
 **Written:** 2026-10-25, against main at `5cd89d4c`, with proposal 068
 built in its worktree but not yet merged. Name availability checked on npm
@@ -20,8 +22,8 @@ and the web that day.
 [packages/libraries/chiptune/](../../packages/libraries/chiptune/README.md),
 [v-snap](../../packages/tools/v-snap/README.md) (the precedent for a
 standalone package in this repo),
-[068](./068-music-on-the-sound-cards-clock.md) (music on the sound card's
-clock, which changes the music player first),
+[068](../archive/068-music-on-the-sound-cards-clock.md) (music on the sound card's
+clock, which changed the music player and the chip clock first),
 [065](../tasks/backlog/065-audio90-follow-ons.md) and
 [048](../tasks/backlog/048-sound-follow-ons.md) (sound loose ends),
 [Sound and Music](../../packages/sites/docs/building-with-mvt/presenting-the-world/sound.md),
@@ -39,9 +41,9 @@ clock, which changes the music player first),
 | Song files | A text format that `parseAudio90Song` reads and `formatAudio90Song` writes, round trip exact | 5.5 |
 | The first thing people see | `createPlayer()`, a simple player in the style of chiptune3's: play, pause, stop, repeat, seek, volume, tempo, pitch. The chip API stays beneath it, for games | 5.7 |
 | MVT material | Moves out of the package docs into the docs site's Sound and Music page | 6 |
-| The old package | `@mvtjs/chiptune` deprecated on npm, pointing at `audio90`. The playground keeps the old import name working | 7 |
+| The old package | `@mvtjs/chiptune` deprecated on npm, pointing at `audio90`. The playground drops the old name, with no alias | 7 |
 | Editor | Audio90 Studio, a private site in the repo, built with MVT, in four stages | 8 |
-| Order | After 068 is merged, since 068 reshapes the music player | 9 |
+| Order | After 068, which reshaped the music player. 068 is now committed | 9 |
 
 ---
 
@@ -78,7 +80,7 @@ What ties it to MVT:
 | --- | --- | --- |
 | Wording: audio views, the game loop, ticks, refresh, presentation state | Doc comments in `src/`, the README and `docs/` | About 59 places in `src/` comments, and 106 in the README and docs |
 | A clock that moves only when a game loop calls `controls.update(deltaMs)` and `flush()` | `shared/audio-controls.ts`, `web/chip-clock.ts`, `web/web-chip.ts` | The design, not just the wording (section 5.3) |
-| The music player as an audio view's presentation state, with `update` and `refresh` | `music-player/` | 068 already removes `update` |
+| The music player as an audio view's presentation state, with `refresh` | `music-player/` | 068 removed `update`, and kept `refresh` |
 | The `@mvtjs/source` export condition | `package.json` | Every entry point |
 | The worklet names `mvt-audio80` and `mvt-audio90` | `web/audio80-runner.ts`, `web/audio90-runner.ts` | Two strings |
 | The lockstep version | `.changeset/config.json`'s `fixed` group | One pattern |
@@ -172,21 +174,39 @@ So the chip gets a `clock` option:
 | `'free'` (default) | The sound card | At the end of the current task, by a microtask | `controls.pause()` and `resume()`, which suspend the context | Pages, tools, the Studio |
 | `'ticked'` | `controls.update(deltaMs)` | By `controls.flush()` | Stop calling `update` | Games, and every entry in the Arcade |
 
-After 068, songs play on each chip's own sequencer on the audio thread,
-gated by the ticks. In `'free'` mode the gate is simply always open, so the
-music player works in both modes with no change to its interface.
+Since 068, songs play on each chip's own sequencer on the audio thread,
+gated by the ticks. The gate is the chip clock's plan for each block
+(`web/chip-runner.ts`, `render`): the sequencer moves on in every block
+the clock does not plan as silence, and the ticked clock plans silence
+while the game is paused or the chip is waiting for its first ticks. So a
+free clock is a second clock behind the same `plan`, which plays every
+block at the sound card's rate and is silent only while paused. The
+sequencer and the music player need no change for it.
+
+One thing on the page changes with it. Each music player call carries the
+chip time it was made at, so a song started while audio cannot play skips
+ahead to where it would have got to (068, section 12). In ticked mode that
+time comes from the ticks. In free mode it must come from the audio
+context's own time, or every call would skip by the time since the page
+loaded.
 
 The Arcade's entry host passes `clock: 'ticked'`, and so do the docs' MVT
 examples. Nothing about MVT's guarantees changes for games.
 
 ### 5.4 The music player
 
-After 068, `createMusicPlayer({ chip })` has `play`, `queue`, `stop`,
-`tempoScale` and the heard `row`, `beat` and `song`, and no `update`. Its
-docs stop calling it presentation state, and say instead that a game that
-needs exact, pausable timing uses the ticked clock. Whether `refresh` still
-exists after 068 decides whether a free-clock user must call anything each
-frame. The aim is that they never have to.
+Since 068, `createMusicPlayer({ audio90 })` (or `{ audio80 }`) has `play`,
+`queue`, `stop`, `tempoScale` and the heard `song`, `orderIndex`, `row` and
+`beat`, and no `update`. Its docs stop calling it presentation state, and
+say instead that a game that needs exact, pausable timing uses the ticked
+clock.
+
+068 kept `refresh`: the player holds its calls until then, and sends them
+together, so a song that starts at a new tempo gets its tempo first (068,
+section 15.2). With the free clock, nobody calls `refresh`. So in
+free mode the player sends its calls on a microtask, as the chip sends its
+other writes (5.3), and `refresh` does nothing. A free-clock user never
+calls anything each frame, and the ticked clock keeps exactly what it has.
 
 ### 5.5 Song files
 
@@ -317,11 +337,11 @@ playground, the benchmarks and the docs. A script rewrites
 and `'@mvtjs/chiptune/headless'` to `'audio90/headless'`, then the factory
 renames. Files are moved with plain `mv`, never `git mv`.
 
-The **playground** needs care. Visitors' saved projects and share links may
-import `@mvtjs/chiptune`. Its import map should resolve the old name to the
-new package, so those projects keep running. Its library list, descriptions
-and export dependencies (`playground/libraries/libraries.ts`) change to
-`audio90`, and an exported project names `audio90` in its `package.json`.
+The **playground** drops the old name. Visitors' saved projects and share
+links that import `@mvtjs/chiptune` stop working. The site is still in
+stealth, so that is fine (the user, 2026-10-27). Its library list, descriptions and export dependencies
+(`playground/libraries/libraries.ts`) change to `audio90`, and an exported
+project names `audio90` in its `package.json`.
 
 On npm, publish `audio90` first, then deprecate every version of
 `@mvtjs/chiptune` with a message that names `audio90`.
@@ -362,7 +382,8 @@ history and a selection, which no game in the Arcade has.
 
 ## 9. Order
 
-1. Merge 068. It reshapes the music player and the chip clock, which
+1. ~~Merge 068.~~ Done: committed as `0ebacfec`, on the branch `audio90`,
+   on 2026-10-27. It reshaped the music player and the chip clock, which
    sections 5.3 and 5.4 build on.
 2. Rename, move and re-version (sections 3, 4 and 7), with no API change
    but the factory names. The Arcade keeps working throughout.
@@ -371,7 +392,8 @@ history and a selection, which no game in the Arcade has.
 5. The song file format (section 5.5).
 6. The player (section 5.7): first what exists and the small additions,
    then seeking and fractional pitch.
-7. Publish `audio90`, and deprecate `@mvtjs/chiptune`.
+7. Try the full build on a phone, as 068 left to do. Then publish
+   `audio90`, and deprecate `@mvtjs/chiptune`.
 8. The Studio, a stage at a time (section 8).
 
 Steps 2 and 3 alone make it a standalone package. Steps 4 to 6 make it
@@ -380,16 +402,33 @@ pleasant to use outside a game.
 ## 10. Open Questions
 
 1. **The first version.** `0.8.0`, carrying on from `@mvtjs/chiptune`
-   0.7.0, or `0.1.0` for a new name? Carrying on keeps one changelog.
+   0.7.0, or `0.1.0` for a new name? Carrying on keeps one changelog. It is
+   also what happens by itself: 068's changeset, not yet released, is a
+   minor bump, and once it names `audio90` it takes the package from 0.7.0
+   to 0.8.0. Step 2 keeps 0.7.0 in the manifest for that reason.
 2. **Merging `./web` into `.`** (section 5.1). Is anything in the root
    today unsafe to import where there's no `AudioContext`, such as a Web
-   Worker?
+   Worker? Partly answered, 2026-10-27: nothing in the source touches an
+   `AudioContext`, a window or a document as it loads. But the published
+   build makes each worklet's Blob URL as its module loads
+   (`tsdown.config.ts`, `inlineWorklets`). Node 18 and later, and Web
+   Workers, have `Blob` and `URL.createObjectURL`, so that works there, but
+   every page or Node script that imports the package then holds both
+   worklets' code, about 67 KB, whether it makes a chip or not. A bundler
+   drops them when no chip is made, since the package has no side effects,
+   but Node does not. Making the URL when a chip is first made would fix
+   that. Still to decide: whether that is worth doing before publishing.
 3. **The free clock's default.** `'free'` suits most people, but a game
    author who forgets the option gets sound that doesn't pause with the
    game. Would the docs' first example for games make that clear enough?
-4. **A free-clock sequencer.** After 068, is the audio thread's sequencer
-   gated in a way that "always open" is a small change, or does free mode
-   need its own path?
+4. **A free-clock sequencer.** ~~After 068, is the audio thread's
+   sequencer gated in a way that "always open" is a small change, or does
+   free mode need its own path?~~ Answered by 068 as built: a small change.
+   The sequencer moves on in every block the chip clock doesn't plan as
+   silence, so a free clock behind the same `plan` is enough. The page's
+   chip time for music calls must then come from the audio context (section
+   5.3). And `refresh` stays for the ticked clock, while a free-clock
+   player sends its calls on a microtask (section 5.4).
 5. **Pausing the player.** Suspending the audio context is simple, and
    holds everything. Should a paused player still play effects, such as a
    menu's clicks? Then it must hold only the sequencer, and silence the
@@ -401,13 +440,13 @@ pleasant to use outside a game.
 
 ## 11. Implementation Steps
 
-1. Merge 068 into main.
+1. ~~Merge 068.~~ Done: `0ebacfec`, on the branch `audio90`.
 2. Move the folder, rename the package, and swap the export condition for a
    publish manifest as v-snap's. Rewrite the imports across the repo.
    `npm test`, `npm run build` and `npm run build:packages` pass.
 3. Rename the browser factories and the worklet names.
-4. The playground's import map alias for `@mvtjs/chiptune`, and its library
-   list.
+4. The playground's library list, descriptions and export dependencies
+   name `audio90`. No alias for the old name (section 7).
 5. Rewrite the README and the three guides. Move the MVT material to the
    docs site's Sound and Music page. Update the glossary, project structure
    and AGENTS.md.
@@ -420,5 +459,15 @@ pleasant to use outside a game.
    the README's first example.
 9. Add `seek` and `seekTo`, with a test that a song played from a row
    sounds the same as one seeked to it. Then fractional pitch.
-10. A changeset, then publish `audio90` and deprecate `@mvtjs/chiptune`.
+10. Try the full build on a phone, over Bluetooth too, as 068 left to do:
+    every entry's music on the sequencer, and pausing and resuming a game.
+    Then a changeset, publish `audio90`, and deprecate `@mvtjs/chiptune`.
 11. The Studio, stage 1, as its own proposal.
+
+## 12. Progress
+
+- **2026-10-27:** 068 committed as `0ebacfec` and archived. Its one open
+  item, a phone check of the full build, moved to step 10. Its as-built
+  design answered open question 4 and the `refresh` question in section
+  5.4. The playground keeps no alias for `@mvtjs/chiptune` (the user).
+  Started step 2.
