@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import type { Audio80SoundEffect } from '@mvtjs/chiptune';
-import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import type { Audio80SoundEffect } from 'audio90';
+import { createHeadlessAudio80 } from 'audio90/headless';
 import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
 import { GameAudioView } from './game-audio-view';

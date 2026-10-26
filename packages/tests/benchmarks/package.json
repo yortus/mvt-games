@@ -4,12 +4,12 @@
     "version": "0.0.0",
     "type": "module",
     "dependencies": {
-        "@mvtjs/chiptune": "^0.7.0",
         "@mvtjs/html": "^0.7.0",
         "@mvtjs/pixi": "^0.7.0",
         "@mvtjs/three": "^0.7.0",
         "@mvtjs/utils": "^0.7.0",
         "@mvtjs/arcade": "*",
+        "audio90": "^0.7.0",
         "esbuild": "^0.27.3",
         "pixi.js": "^8.16.0",
         "solid-js": "^1.9.11",

@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
+import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 
 // The fruit machine's instruments and sound effects for the Audio80, all
 // written for this machine. They are the bright beeps and jingles of an

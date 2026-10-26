@@ -92,7 +92,7 @@ on one, and drive it from your loop. The chip computes its sound in an
 `AudioWorklet`, which is browser code that runs on its own thread:
 
 ```ts
-import { createWebAudio80 } from '@mvtjs/chiptune/web';
+import { createWebAudio80 } from 'audio90';
 
 const context = new AudioContext({ latencyHint: 'interactive' });
 const { audio80, controls } = createWebAudio80({ context });
@@ -162,10 +162,12 @@ its code is an example you can borrow from:
 [`page-sound.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/runner/page-sound.ts).
 It does seven things that a page of your own may want too:
 
-- **It loads the chips' code only when it's wanted.** It imports
-  `@mvtjs/chiptune/web` with a dynamic `import()`, the first time the
-  visitor clicks or presses a key. So a visitor who never plays downloads
-  none of it.
+- **It loads the chips' code only when it's wanted.** A module of its own
+  re-exports `createWebAudio80` and `createWebAudio90` from `audio90`, and
+  the page imports that module with a dynamic `import()`, the first time
+  the visitor clicks or presses a key. So a visitor who never plays
+  downloads none of it, though the page's songs and sound effects, also
+  from `audio90`, load at once.
 - **It makes the `AudioContext` inside that gesture's handler,** before it
   awaits anything. Safari starts a context only if the page made it, or
   resumed it, while handling a gesture.
@@ -190,7 +192,7 @@ It does seven things that a page of your own may want too:
 
 ### Without a Speaker
 
-`createHeadlessAudio80`, from `@mvtjs/chiptune/headless`, makes a chip with no
+`createHeadlessAudio80`, from `audio90/headless`, makes a chip with no
 speaker. It is for running a game headless, testing audio views and
 rendering sound in memory. Rendered sound is a list of samples. Each sample
 is the level of the sound wave at one instant. The sample rate is how many
@@ -275,7 +277,7 @@ it once, when the module loads. Here the effect defines its own instrument,
 with the `stepMs`, `envelope` and `steps` options:
 
 ```ts
-import { createAudio80SoundEffect } from '@mvtjs/chiptune';
+import { createAudio80SoundEffect } from 'audio90';
 
 /** A coin: a bright blip up a fifth. */
 export const COIN = createAudio80SoundEffect({
@@ -297,7 +299,7 @@ Several effects can share one instrument instead. Make the instrument with
 `createAudio80Instrument`, and pass it as the `instrument` option:
 
 ```ts
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
+import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 
 const BLIP = createAudio80Instrument({
     wave: 'pulse',
@@ -413,7 +415,7 @@ notes on instruments, and so does a sound effect. You make an instrument
 once, when the module loads, with `createAudio80Instrument`:
 
 ```ts
-import { createAudio80Instrument } from '@mvtjs/chiptune';
+import { createAudio80Instrument } from 'audio90';
 
 /** A soft lead: a pulse wave that wavers a little once the note has started. */
 export const LEAD = createAudio80Instrument({
@@ -482,7 +484,7 @@ plays a sound when it sees a change that calls for one:
 ```ts
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/chiptune';
+import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
 
 export interface ShipAudioViewBindings {
@@ -671,7 +673,7 @@ Write each sound at the level it should be heard at:
 - **Songs** should be at the shared loudness, about -20 LUFS. LUFS is the
   standard unit for how loud sound seems to a listener. The values are
   negative, and nearer 0 is louder. The shared loudness is
-  `REFERENCE_LOUDNESS_LUFS`, from `@mvtjs/chiptune/headless`.
+  `REFERENCE_LOUDNESS_LUFS`, from `audio90/headless`.
   `npm run audio:render` prints each song's loudness. Set a song's `volume`
   to bring it to that level.
 - **Effects** should be loud enough to be heard over the music, and quiet
@@ -734,7 +736,7 @@ listened to it and updated the snapshot with `vitest -u`:
 ```ts
 import {
     findSounds, hashSamples, measurePeak, renderSoundEffect,
-} from '@mvtjs/chiptune/headless';
+} from 'audio90/headless';
 
 const { songs, effects } = findSounds({ ...sounds, ...music });
 

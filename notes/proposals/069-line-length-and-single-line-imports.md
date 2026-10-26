@@ -181,7 +181,7 @@ For each module, gather every name imported from it in the file. Then:
 Re-exports follow the same steps with `export` and `export type`.
 
 Here is what it does to the long import in
-[audio90-driver.ts](../../packages/libraries/chiptune/src/music-player/audio90-driver.ts),
+[audio90-driver.ts](../../packages/libraries/audio90/src/music-player/audio90-driver.ts),
 which is 531 characters merged:
 
 ```ts

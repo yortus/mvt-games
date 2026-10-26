@@ -138,7 +138,7 @@ a shifted sprite, a missing particle, a wrong tint.
 simple and repeatable, for single views and for whole games.
 
 Sounds have the same kind of test. An
-[audio test](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#audio-tests)
+[audio test](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/src/headless/README.md#audio-tests)
 renders a sound and compares a hash of its samples with a saved one.
 
 ### What snapshots verify
@@ -230,9 +230,9 @@ Audio tests check the sounds themselves, much as
 [visual tests](visual-tests.md) check what a view looks like. They catch a
 sound that changes by accident. How you write one depends on your sound
 library. For this repo's sound chips, the package's
-[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#audio-tests)
+[Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/src/headless/README.md#audio-tests)
 shows how. Its
-[Testing an Audio View](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/src/headless/README.md#testing-an-audio-view)
+[Testing an Audio View](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/src/headless/README.md#testing-an-audio-view)
 tests a view against a chip that records every note, which suits a view
 that plays music.
 

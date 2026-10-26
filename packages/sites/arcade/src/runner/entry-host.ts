@@ -1,4 +1,4 @@
-import type { AudioControls } from '@mvtjs/chiptune';
+import type { AudioControls } from 'audio90';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/html';
 import {
     type ElementEntrySession, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder,

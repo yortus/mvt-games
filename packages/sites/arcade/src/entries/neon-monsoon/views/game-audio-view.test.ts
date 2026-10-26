@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type Audio90Song, createMusicPlayer } from '@mvtjs/chiptune';
-import { type Audio90Write, createHeadlessAudio90 } from '@mvtjs/chiptune/headless';
+import { type Audio90Song, createMusicPlayer } from 'audio90';
+import { type Audio90Write, createHeadlessAudio90 } from 'audio90/headless';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
     EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, GRAZE, type ItemKind, POWER_UP, RESPAWN, SHIP_EXPLODE, SHOT, STAGE_CLEAR,

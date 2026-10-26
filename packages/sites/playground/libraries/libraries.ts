@@ -15,7 +15,7 @@ export const LIBRARIES = [
     '@mvtjs/html/jsx-runtime',
     '@mvtjs/three',
     '@mvtjs/three/jsx-runtime',
-    '@mvtjs/chiptune',
+    'audio90',
     'pixi.js',
     'three',
     'gsap',
@@ -33,7 +33,7 @@ export const LIBRARY_SUMMARIES: Readonly<Record<LibrarySpecifier, string>> = {
     '@mvtjs/html/jsx-runtime': "What your HTML JSX turns into. You won't need to import it yourself.",
     '@mvtjs/three': 'Lets you write three.js views in JSX, and give them update and refresh methods.',
     '@mvtjs/three/jsx-runtime': "What your three.js JSX turns into. You won't need to import it yourself.",
-    '@mvtjs/chiptune': 'A little sound chip, for music and sound effects.',
+    'audio90': 'A little sound chip, for music and sound effects.',
     'pixi.js': 'Fast 2D drawing, with sprites, shapes and text.',
     'three': '3D scenes, with cameras, lights and meshes.',
     'gsap': 'Smooth animation, with tweens and timelines.',
@@ -67,7 +67,7 @@ export const TYPE_BUNDLES_OF: Readonly<Record<LibrarySpecifier, readonly TypeBun
     '@mvtjs/html/jsx-runtime': [],
     '@mvtjs/three': ['three'],
     '@mvtjs/three/jsx-runtime': ['three'],
-    '@mvtjs/chiptune': [],
+    'audio90': [],
     'pixi.js': ['pixi'],
     'three': ['three'],
     'gsap': ['gsap'],
@@ -78,7 +78,7 @@ export const TYPE_BUNDLES_OF: Readonly<Record<LibrarySpecifier, readonly TypeBun
  * libraries a project may import, at the versions the playground runs. A
  * package not yet on npm is left out.
  */
-export const EXPORT_DEPENDENCIES = ['@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/html', '@mvtjs/three', '@mvtjs/chiptune', 'pixi.js', 'three', 'gsap'] as const;
+export const EXPORT_DEPENDENCIES = ['@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/html', '@mvtjs/three', 'audio90', 'pixi.js', 'three', 'gsap'] as const;
 
 /** What an exported project is built with, and three.js's types, which three.js does not include. */
 export const EXPORT_DEV_DEPENDENCIES = ['typescript', 'vite', '@types/three'] as const;

@@ -1,4 +1,4 @@
-import type { Audio80 } from '@mvtjs/chiptune';
+import type { Audio80 } from 'audio90';
 import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import {

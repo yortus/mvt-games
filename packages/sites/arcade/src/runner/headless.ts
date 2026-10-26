@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
-import type { AudioControls } from '@mvtjs/chiptune';
-import { createHeadlessAudio80, createHeadlessAudio90 } from '@mvtjs/chiptune/headless';
+import type { AudioControls } from 'audio90';
+import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
 import { refreshView, updateView, type View } from '@mvtjs/html';
 import {
     type ArcadeEntry, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder,

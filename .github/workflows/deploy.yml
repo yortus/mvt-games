@@ -15,7 +15,7 @@ on:
             - notes/**
             - .changeset/**
             - .claude/**
-            - packages/libraries/chiptune/docs/**
+            - packages/libraries/audio90/docs/**
             - packages/tools/v-snap/docs/**
     workflow_dispatch:
 

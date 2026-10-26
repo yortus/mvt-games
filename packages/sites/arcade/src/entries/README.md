@@ -386,7 +386,7 @@ lays itself out for the area it is given, as Boids does), and
 ### Sound
 
 If your entry makes sound, its starter names the sound chip it plays on.
-There are two virtual sound chips, from `@mvtjs/chiptune`. The **Audio80** is
+There are two virtual sound chips, from `audio90`. The **Audio80** is
 in the spirit of the 1980s home computers. The **Audio90** has sixteen
 stereo voices of FM, analog and samples, in the spirit of the 1990s. The
 [Tune Tracker](./tune-tracker/start/load.ts) plays on the Audio90.
@@ -416,7 +416,7 @@ export const load = definePixiLoader(async () => {
 ```
 
 Choose the chip that matches your entry's decade.
-[Using the Audio90](../../../../libraries/chiptune/docs/using-the-audio90.md#which-chip)
+[Using the Audio90](../../../../libraries/audio90/docs/using-the-audio90.md#which-chip)
 compares the two. If your entry plays samples on the Audio90, bounce them
 in its `load`, beside its textures. Then none of them has to bounce while
 the entry plays:

@@ -1,5 +1,5 @@
 import { setRefresh, setUpdate } from '@mvtjs/html';
-import { createMusicPlayer, type Audio80, type Audio80SoundEffect } from '@mvtjs/chiptune';
+import { createMusicPlayer, type Audio80, type Audio80SoundEffect } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BIG_WIN, COIN, GAME_OVER, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5, WIN,

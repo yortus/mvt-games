@@ -186,7 +186,7 @@ export default tseslint.config(
         // `Math.pow` and `**` with the system's C library, whose last digit
         // differs between Linux and Windows. `Math.exp` and `Math.log` are V8's own.
         // A test may use `Math.pow` for a value it checks within a tolerance.
-        files: ['packages/libraries/chiptune/src/**/*.ts'],
+        files: ['packages/libraries/audio90/src/**/*.ts'],
         ignores: ['**/*.test.ts'],
         rules: {
             'no-restricted-properties': ['error', { object: 'Math', property: 'pow', message: POW_MESSAGE }],
@@ -244,7 +244,7 @@ export default tseslint.config(
             'packages/sites/arcade/scripts/vite-plugin-entry-pages.ts',
             'packages/sites/arcade/scripts/vite-plugin-spritesheet.ts',
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',
-            'packages/libraries/chiptune/src/web/register-chip-processor.ts',
+            'packages/libraries/audio90/src/web/register-chip-processor.ts',
             // v-snap replaces canvas text drawing and patches a Pixi pool.
             'packages/tools/v-snap/src/browser/canvas-text.ts',
             'packages/tools/v-snap/src/pixi/pixi-views.ts',

@@ -62,7 +62,7 @@ progress.
 Start with one instrument and one channel:
 
 ```ts
-import { createAudio80Instrument, createAudio80Song } from '@mvtjs/chiptune';
+import { createAudio80Instrument, createAudio80Song } from 'audio90';
 
 /** A plucked square, ringing a little. */
 const LEAD = createAudio80Instrument({

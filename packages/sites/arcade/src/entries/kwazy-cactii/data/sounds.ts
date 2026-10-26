@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect, type Audio80SoundEffect } from '@mvtjs/chiptune';
+import { createAudio80Instrument, createAudio80SoundEffect, type Audio80SoundEffect } from 'audio90';
 import { MIN_CASCADE_FOR_FIREWORKS } from './constants';
 
 // Kwazy Cactii's sound effects, for the Audio80. They were all written for

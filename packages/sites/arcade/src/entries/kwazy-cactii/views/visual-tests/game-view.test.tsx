@@ -1,4 +1,4 @@
-import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { createHeadlessAudio80 } from 'audio90/headless';
 import { advanceTime } from '@mvtjs/pixi';
 import { canvasTest } from 'v-snap';
 import { textures } from '../../data';

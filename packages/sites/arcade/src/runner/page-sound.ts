@@ -1,5 +1,4 @@
-import { type Audio80, type Audio90, AUDIO90_SCOPE_LENGTH, type AudioControls, type SongSlot } from '@mvtjs/chiptune';
-import type { createWebAudio80, createWebAudio90 } from '@mvtjs/chiptune/web';
+import { type Audio80, type Audio90, AUDIO90_SCOPE_LENGTH, type AudioControls, type createWebAudio80, type createWebAudio90, type SongSlot } from 'audio90';
 import type { SoundChipKind, SoundChipsByKind } from '../entry-types';
 import { toSliderGain } from './slider-gain';
 
@@ -205,7 +204,7 @@ export function createPageSound(options: PageSoundOptions): PageSound {
     /** Loads the chips' code, and makes the page's chip. */
     async function load(made: AudioContext): Promise<void> {
         try {
-            const { createWebAudio80, createWebAudio90 } = await import('@mvtjs/chiptune/web');
+            const { createWebAudio80, createWebAudio90 } = await import('./web-chips');
             // The sound was destroyed while the code loaded, so there is nothing to make
             if (isOff) return;
             makers = { createWebAudio80, createWebAudio90 };

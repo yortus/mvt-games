@@ -2,7 +2,7 @@
 import { Container } from 'pixi.js';
 import { PerspectiveCamera, Scene } from 'three';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { createHeadlessAudio80 } from 'audio90/headless';
 import { describe, expect, it } from 'vitest';
 import type { Project, StartResult } from '../project-api';
 import { STARTERS } from './examples';

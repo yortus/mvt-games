@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
-import type { Audio80Write } from '@mvtjs/chiptune/headless';
+import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
+import type { Audio80Write } from 'audio90/headless';
 import { type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
 import { createPageSound } from './page-sound';
 import { toSliderGain } from './slider-gain';
 
-vi.mock('@mvtjs/chiptune/web', async () => (await import('./fake-web-audio')).importFakeWebAudio());
+vi.mock('./web-chips', async () => (await import('./fake-web-audio')).importFakeWebAudio());
 
 let fake: FakeWebAudio;
 
@@ -182,7 +182,7 @@ describe('createPageSound', () => {
 
     it('tries the import again on the next `prepare` after a download fails', async () => {
         // The chip's code is loaded afresh, as by a page that has not loaded it yet
-        vi.doMock('@mvtjs/chiptune/web', async () => (await import('./fake-web-audio')).importFakeWebAudio());
+        vi.doMock('./web-chips', async () => (await import('./fake-web-audio')).importFakeWebAudio());
         fake.failsNextImport = true;
         const sound = createPageSound({ isEnabled: true });
         await expect(sound.prepare('audio80')).resolves.toBeUndefined();

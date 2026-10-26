@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import { refreshView, updateView } from '@mvtjs/html';
 import { EFFECTS_PREVIEW, MUSIC_PREVIEW } from '../data';
 import { VolumePreviewAudioView } from './volume-preview-audio-view';

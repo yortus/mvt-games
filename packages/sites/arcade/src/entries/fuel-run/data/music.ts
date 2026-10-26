@@ -1,4 +1,4 @@
-import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/chiptune';
+import { createAudio80Song, type Audio80SongOptions } from 'audio90';
 import { SNARE, SQUARE, TRIANGLE_BASS } from './sounds';
 
 // Fuel Run's music. There are three short pieces, all written for this game.
@@ -6,7 +6,7 @@ import { SNARE, SQUARE, TRIANGLE_BASS } from './sounds';
 // lament as the game ends. Each uses three channels, for a square lead, a
 // triangle bass and a snare. Each pattern is a list of rows, read from top to
 // bottom, with one cell per channel in each row. Each row is a sixteenth
-// note. See Writing Tracker Music, in @mvtjs/chiptune's docs, for the notation.
+// note. See Writing Tracker Music, in audio90's docs, for the notation.
 
 // ---------------------------------------------------------------------------
 // The band

@@ -1,4 +1,4 @@
-import { createWebAudio80 } from '@mvtjs/chiptune/web';
+import { createWebAudio80 } from 'audio90';
 import { createPerformanceMeter, type PerformanceMeter, type PerformanceSample } from '@mvtjs/utils';
 import type { Project, StartOptions, StartResult } from '../project-api';
 import type { ErrorPhase, HostMessage, SandboxMessage } from './messages';

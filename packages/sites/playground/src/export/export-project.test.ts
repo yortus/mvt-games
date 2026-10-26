@@ -53,10 +53,10 @@ describe('exporting a project', () => {
         expect(fileOf(files, 'src/index.ts')).toContain('createHost: createPixiHost');
     });
 
-    it('gives the project a sound chip from @mvtjs/chiptune, as the playground does', () => {
+    it('gives the project a sound chip from audio90, as the playground does', () => {
         const { files } = exportProject({ ...PROJECT, packages: PACKAGES });
-        expect(fileOf(files, 'src/playground.ts')).toContain(`from '@mvtjs/chiptune'`);
-        expect(fileOf(files, 'src/index.ts')).toContain(`from '@mvtjs/chiptune/web'`);
+        expect(fileOf(files, 'src/playground.ts')).toContain(`from 'audio90'`);
+        expect(fileOf(files, 'src/index.ts')).toContain(`from 'audio90'`);
         expect(fileOf(files, 'src/index.ts')).toContain('createSound');
     });
 

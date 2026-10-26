@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import type { Audio80SoundEffect } from '@mvtjs/chiptune';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import type { Audio80SoundEffect } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import { refreshView } from '@mvtjs/html';
 import {
     BURN, CARD_TICK, DEVELOP, KEY_TICK_HIGH, KEY_TICK_LOW, LAUNCH, LOAD_FAILED, NO_RESULTS, PANEL_CLOSE, PANEL_OPEN, PAUSE, POWER_OFF,

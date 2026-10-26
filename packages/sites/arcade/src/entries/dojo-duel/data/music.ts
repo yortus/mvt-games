@@ -1,4 +1,4 @@
-import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/chiptune';
+import { createAudio80Song, type Audio80SongOptions } from 'audio90';
 import { BASS, CHORD, FLUTE, KOTO, RIM, SHAKER, TAIKO } from './sounds';
 
 // Dojo Duel's music. Every piece is written for this game. The pieces are in
@@ -8,7 +8,7 @@ import { BASS, CHORD, FLUTE, KOTO, RIM, SHAKER, TAIKO } from './sounds';
 // That leaves the chip's other four voices for the fight's sounds. Each
 // pattern is a list of rows, read from top to bottom, with one cell per
 // channel in each row. A row is a sixteenth note, unless a song sets
-// `rowsPerBeat`. See Writing Tracker Music, in @mvtjs/chiptune's docs, for the
+// `rowsPerBeat`. See Writing Tracker Music, in audio90's docs, for the
 // notation.
 
 // ---------------------------------------------------------------------------

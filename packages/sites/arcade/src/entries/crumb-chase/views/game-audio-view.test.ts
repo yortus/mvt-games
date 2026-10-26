@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Audio80Song } from '@mvtjs/chiptune';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { computeSongDurationMs, createMusicPlayer, type Audio80Song } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';
 import { GameAudioView, SNEAK_SPEED_UP } from './game-audio-view';

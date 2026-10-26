@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from '@mvtjs/chiptune/headless';
+import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from 'audio90/headless';
 import * as music from './music';
 import * as sounds from './sounds';
 

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
+import { createMusicPlayer, type Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import {
     FIGHT_THEME, type GamePhase, GONG, MATCH_LOST, MATCH_WON, POINT_LOST, POINT_WON, ROUND_LOST, ROUND_WON, TICK,

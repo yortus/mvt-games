@@ -15,9 +15,9 @@
 [Change Detection](../reacting-to-changes/change-detection.md) ·
 [Presentation State](../adding-visual-polish/presentation-state.md) ·
 [Testing Views](../iterating-with-confidence/testing-views.md) ·
-[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md) ·
-[Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio90.md) ·
-[Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/writing-tracker-music.md)
+[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio80.md) ·
+[Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio90.md) ·
+[Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/writing-tracker-music.md)
 
 ---
 
@@ -65,7 +65,7 @@ the ship is lost:
 ```ts
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/chiptune';
+import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import { SHIP_EXPLODE, SHOT } from './sounds';
 
@@ -97,7 +97,7 @@ export function ShipAudioView(bindings: ShipAudioViewBindings): Container {
 ```
 
 `SHOT` and `SHIP_EXPLODE` are sound effects. Each is made once, as its
-module loads, with `createAudio80SoundEffect` from `@mvtjs/chiptune`.
+module loads, with `createAudio80SoundEffect` from `audio90`.
 
 The game's view adds the audio view as a child, beside the views that draw
 the ship. It is ticked with them, and nothing about it is special to the
@@ -127,7 +127,7 @@ properties follow from that:
   sound's time. [Time](#time) explains.
 
 ::: info Project convention
-This repo's audio views play on a virtual sound chip from `@mvtjs/chiptune`. A
+This repo's audio views play on a virtual sound chip from `audio90`. A
 virtual sound chip is a sound chip simulated in code. There are two. The
 **Audio80** is modelled on the chips in 1980s home computers. The
 **Audio90**, with sixteen stereo voices of FM, analog and samples, is in
@@ -135,8 +135,8 @@ the spirit of the 1990s. Each game names the chip it wants. The Arcade,
 this repo's home page, gives it that chip as `sound`, in the game's start
 options. Any sound library would do. MVT asks only that views play the
 sound, not models, and that they play it from state they poll.
-[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md)
-and [Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio90.md) cover the chips.
+[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio80.md)
+and [Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio90.md) cover the chips.
 :::
 
 ## Finding the Moment
@@ -308,7 +308,7 @@ everything else in MVT:
 
 This repo's sound chips work this way for the notes a game writes itself.
 It's a choice, though, not how sound works in general. The
-[Audio80 guide's "Time" section](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md#time-the-chip-runs-on-game-time)
+[Audio80 guide's "Time" section](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio80.md#time-the-chip-runs-on-game-time)
 shows how its clock does it.
 
 ### When the Library Keeps the Time, and the Ticks Pause It
@@ -375,7 +375,7 @@ The sounds themselves can have audio tests, which catch a sound that
 changes by accident. They do for sound what
 [visual tests](../iterating-with-confidence/visual-tests.md) do for what a
 view looks like. How you write one depends on your sound library.
-[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md#testing-and-listening)
+[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio80.md#testing-and-listening)
 shows them for this repo's chips.
 
 ## Common Mistakes
@@ -398,13 +398,13 @@ shows them for this repo's chips.
 
 The audio package has three guides. They cover what this page leaves out.
 
-- **[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md)**
+- **[Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio80.md)**
   covers getting a chip, designing sound effects and instruments, music,
   repeating sounds, the balance of music and effects, and testing.
-- **[Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio90.md)**
+- **[Using the Audio90](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio90.md)**
   helps you choose a chip. It shows you the Audio90's engines, samples,
   stereo sound effects and mix, with recipes for the sounds of the 1990s.
-- **[Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/writing-tracker-music.md)**
+- **[Writing Tracker Music](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/writing-tracker-music.md)**
   shows how to write songs in tracker notation. A tracker writes music as a
   grid of text, with a row for each moment in time and a column for each
   voice of the chip.

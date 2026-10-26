@@ -1,4 +1,4 @@
-import { AUDIO90_CELL_TEXT_WIDTH, type Audio90Song, formatAudio90Cell } from '@mvtjs/chiptune';
+import { AUDIO90_CELL_TEXT_WIDTH, type Audio90Song, formatAudio90Cell } from 'audio90';
 import { DOT_GLYPH, RULE_GLYPH } from './pixel-font';
 
 // ---------------------------------------------------------------------------

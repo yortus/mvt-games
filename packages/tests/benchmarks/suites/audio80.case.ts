@@ -1,5 +1,5 @@
-import { createAudio80Instrument, type Audio80Wave } from '@mvtjs/chiptune';
-import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { createAudio80Instrument, type Audio80Wave } from 'audio90';
+import { createHeadlessAudio80 } from 'audio90/headless';
 import { allocationPerFrame, readParams, report, timeFrames } from '../harness/measure';
 
 // Measured file for the `audio80` suite. It times the headless chip rendering

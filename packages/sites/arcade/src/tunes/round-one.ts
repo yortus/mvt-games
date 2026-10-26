@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/chiptune';
+import { createAudio90Song } from 'audio90';
 import { BRASS, FM_GUITAR, HAT, KICK, OPEN_HAT, SLAP_BASS, SNARE, TOM } from './instruments';
 import { HIT } from './sample-instruments';
 import type { Tune } from './tune';

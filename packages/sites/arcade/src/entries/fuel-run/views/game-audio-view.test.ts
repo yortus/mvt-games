@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from '@mvtjs/chiptune';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
     SHIP_CRASH, SHOT,

@@ -3,7 +3,7 @@
 import type { Container } from 'pixi.js';
 import { isTouchDevice, OverlayView } from '#shared';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/chiptune';
+import type { Audio80 } from 'audio90';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
 import type { GameModel } from '../models';

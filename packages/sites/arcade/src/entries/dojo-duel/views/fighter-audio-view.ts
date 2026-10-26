@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, Audio80SoundEffect } from '@mvtjs/chiptune';
+import type { Audio80, Audio80SoundEffect } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import { BLOCK, type FighterPhase, HIT, KICK_SWISH, LEAP_SWISH, type MoveKind, PUNCH_SWISH } from '../data';
 

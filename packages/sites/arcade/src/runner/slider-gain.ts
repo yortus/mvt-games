@@ -10,7 +10,7 @@
  * down is 12 dB quieter, which sounds a little under half as loud, and a
  * quarter of the way up is 24 dB quieter. At 1 the gain is 1, so a song
  * plays at the loudness it was written to (`REFERENCE_LOUDNESS_LUFS`, from
- * `@mvtjs/chiptune/headless`).
+ * `audio90/headless`).
  */
 export function toSliderGain(position: number): number {
     const clamped = Math.max(0, Math.min(1, position));

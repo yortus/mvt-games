@@ -3,7 +3,7 @@
 import type { Container } from 'pixi.js';
 import { isTouchDevice, OverlayView, SwipeInputView } from '#shared';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from '@mvtjs/chiptune';
+import type { Audio80 } from 'audio90';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
 import { TILE_SIZE, CAT_COLORS, SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';

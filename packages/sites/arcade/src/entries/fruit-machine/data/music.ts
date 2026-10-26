@@ -1,11 +1,11 @@
-import { createAudio80Song, type Audio80SongOptions } from '@mvtjs/chiptune';
+import { createAudio80Song, type Audio80SongOptions } from 'audio90';
 import { BASS, CHIME, SPARKLE } from './sounds';
 
 // The fruit machine's jingles, all written for this machine. They are short,
 // and all in C. Each uses three channels, for a chime, chords played as
 // arpeggios, and a bass. That leaves the chip's other five voices for the
 // sound effects. Each row is a sixteenth note, with one cell per channel.
-// See Writing Tracker Music, in @mvtjs/chiptune's docs, for the notation.
+// See Writing Tracker Music, in audio90's docs, for the notation.
 
 // ---------------------------------------------------------------------------
 // The band

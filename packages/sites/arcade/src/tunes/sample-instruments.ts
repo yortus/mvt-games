@@ -1,4 +1,4 @@
-import { createAudio90Instrument } from '@mvtjs/chiptune';
+import { createAudio90Instrument } from 'audio90';
 import {
     BREAK, CHOIR, MOD_BASS_SAMPLE, MOD_HAT_SAMPLE, MOD_KICK_SAMPLE, MOD_LEAD_SAMPLE, MOD_SNARE_SAMPLE, ORCHESTRA_HIT, STRINGS_SAMPLE,
 } from './samples';

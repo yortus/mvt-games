@@ -1,4 +1,4 @@
-import type { Audio90Instrument } from '@mvtjs/chiptune';
+import type { Audio90Instrument } from 'audio90';
 import {
     ACID, BELL, BOOM, BRASS, CARD_BASS, CARD_CHORD, CARD_LEAD, CLAP, CRASH, ELECTRIC_PIANO, FLUTE, FM_BASS, FM_GUITAR, GATED_PAD, HAT,
     HOUSE_PIANO, KICK, OPEN_HAT, ORGAN, PAD, PLUCK, REESE, SHAKER, SLAP_BASS, SNARE, STAB, STRINGS, SUB_BASS, SUPERSAW, TIMPANI,

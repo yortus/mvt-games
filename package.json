@@ -19,7 +19,7 @@
         "build:arcade": "tsc -b && npm run build -w @mvtjs/arcade && npm run check:home-page-budget",
         "build:docs": "npm run build -w @mvtjs/docs",
         "build:playground": "npm run build -w @mvtjs/playground",
-        "build:packages": "npm run build -w @mvtjs/utils -w @mvtjs/pixi -w @mvtjs/three -w @mvtjs/html -w @mvtjs/chiptune && npm run check:view-type-registration",
+        "build:packages": "npm run build -w @mvtjs/utils -w @mvtjs/pixi -w @mvtjs/three -w @mvtjs/html -w audio90 && npm run check:view-type-registration",
         "check:home-page-budget": "npm run check:home-page-budget -w @mvtjs/checks",
         "check:link-previews": "npm run check:link-previews -w @mvtjs/checks",
         "check:one-copy-of-utils": "npm run check:one-copy-of-utils -w @mvtjs/checks",
@@ -37,7 +37,7 @@
         "test:visual:update": "vitest run visual-tests/ -u",
         "test:vsnap": "npm test -w v-snap",
         "generate-textures": "npm run generate-textures -w @mvtjs/arcade",
-        "audio:render": "npm run render-wav -w @mvtjs/chiptune --",
+        "audio:render": "npm run render-wav -w audio90 --",
         "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/arcade --",
         "measure-load": "npm run measure-load -w @mvtjs/arcade --"
     },

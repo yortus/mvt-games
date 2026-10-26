@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/chiptune';
+import { createAudio90Song } from 'audio90';
 import { MOD_BASS, MOD_CHORD, MOD_HAT, MOD_KICK, MOD_LEAD, MOD_SNARE } from './sample-instruments';
 import type { Tune } from './tune';
 

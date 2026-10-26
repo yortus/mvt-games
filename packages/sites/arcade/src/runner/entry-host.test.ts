@@ -1,15 +1,14 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setRefresh } from '@mvtjs/html';
-import { type Audio80, createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
-import type { Audio80Write } from '@mvtjs/chiptune/headless';
-import type { Audio90 } from '@mvtjs/chiptune';
+import { type Audio80, type Audio90, createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
+import type { Audio80Write } from 'audio90/headless';
 import type { ElementEntryStarter } from '../entry-types';
 import { createEntryHost, type EntryHost } from './entry-host';
 import { type FakeChip, type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
 import { createPageSound, type PageSound } from './page-sound';
 
-vi.mock('@mvtjs/chiptune/web', async () => (await import('./fake-web-audio')).importFakeWebAudio());
+vi.mock('./web-chips', async () => (await import('./fake-web-audio')).importFakeWebAudio());
 
 let fake: FakeWebAudio;
 

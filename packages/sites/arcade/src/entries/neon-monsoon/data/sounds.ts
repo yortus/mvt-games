@@ -1,4 +1,4 @@
-import { createAudio90SoundEffect } from '@mvtjs/chiptune';
+import { createAudio90SoundEffect } from 'audio90';
 import { STORM_HIT } from './instruments';
 
 // These are Neon Monsoon's sound effects, for the Audio90. All were written

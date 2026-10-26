@@ -76,12 +76,12 @@ Learn the architecture, conventions, and patterns:
 ## Project Structure
 
 An npm workspace: the libraries, published under the `@mvtjs` npm scope,
-the visual testing package `v-snap`, and private packages for everything
-else.
+the sound chips `audio90`, the visual testing package `v-snap`, and private
+packages for everything else.
 
 ```
 packages/     Every package: the libraries (@mvtjs/utils, @mvtjs/pixi,
-              @mvtjs/three, @mvtjs/html, @mvtjs/chiptune), and the private
+              @mvtjs/three, @mvtjs/html, audio90), and the private
               ones: the Arcade, the playground, the docs, the benchmarks,
               the checks and the lint rules
 notes/        Proposals, tasks, and the archive of finished work
@@ -94,7 +94,7 @@ packages/
 │   ├── pixi/            The view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           The view tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            The view tick API for DOM elements, and its JSX runtime
-│   └── chiptune/        The Audio80 and Audio90 sound chips, their tracker notation and music player
+│   └── audio90/         The Audio80 and Audio90 sound chips, their tracker notation and music player
 ├── tools/
 │   ├── v-snap/          Visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   This repo's lint rules (private for now)

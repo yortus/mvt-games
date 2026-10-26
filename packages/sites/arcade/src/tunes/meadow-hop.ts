@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/chiptune';
+import { createAudio90Song } from 'audio90';
 import { BOUNCE_BASS, HAT, KICK, MARIMBA, SNARE, WHISTLE } from './instruments';
 import type { Tune } from './tune';
 

@@ -1,0 +1,41 @@
+{
+    "name": "audio90",
+    "version": "0.7.0",
+    "description": "Two virtual sound chips for the web, the Audio80 and the Audio90, in the spirit of the 1980s and 1990s: sound effects and tracker music, for pages and games",
+    "license": "MIT",
+    "author": "Troy Gerwien",
+    "keywords": ["chiptune", "sound chip", "synthesizer", "tracker", "music", "sound effects", "web audio", "audio worklet", "game"],
+    "homepage": "https://github.com/yortus/mvt-games/tree/main/packages/libraries/audio90#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/yortus/mvt-games.git",
+        "directory": "packages/libraries/audio90"
+    },
+    "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
+    "type": "module",
+    "sideEffects": false,
+    "exports": {
+        ".": {
+            "default": "./src/index.ts"
+        },
+        "./headless": {
+            "default": "./src/headless/index.ts"
+        }
+    },
+    "files": ["dist", "src", "docs", "!src/**/*.test.ts"],
+    "scripts": {
+        "build": "tsdown",
+        "prepack": "tsdown && node scripts/publish-manifest.ts apply",
+        "postpack": "node scripts/publish-manifest.ts restore",
+        "render-wav": "tsx --conditions=@mvtjs/source scripts/render-wav.ts"
+    },
+    "devDependencies": {
+        "@arethetypeswrong/core": "^0.18.5",
+        "publint": "^0.3.25",
+        "rolldown": "^1.2.12",
+        "tsdown": "^0.23.0",
+        "tsx": "^4.21.0",
+        "vite": "^8.3.2",
+        "vitest": "^5.0.1"
+    }
+}

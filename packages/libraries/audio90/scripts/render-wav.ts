@@ -15,7 +15,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, type RenderedSamples, findSounds } from '@mvtjs/chiptune/headless';
+import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, type RenderedSamples, findSounds } from 'audio90/headless';
 
 const SAMPLE_RATE = 48000;
 const ROOT = process.env.INIT_CWD ?? process.cwd();

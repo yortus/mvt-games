@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type AudioControls, createMusicPlayer, type Audio80Song } from '@mvtjs/chiptune';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { type AudioControls, createMusicPlayer, type Audio80Song } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BLOCK,
     FIGHT_THEME,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import type { Audio80SoundEffect } from '@mvtjs/chiptune';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import type { Audio80SoundEffect } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
     WAVE_CLEAR,

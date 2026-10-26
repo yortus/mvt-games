@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
+import { createMusicPlayer, type Audio80 } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,

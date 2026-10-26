@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80Song, createAudio80SoundEffect } from '@mvtjs/chiptune';
+import { createAudio80Instrument, createAudio80Song, createAudio80SoundEffect } from 'audio90';
 
 // The Arcade's own sounds, which play on the page's Audio80 rather than any
 // entry's. They were all written for the Arcade. They are small and soft, at

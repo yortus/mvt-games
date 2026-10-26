@@ -1,4 +1,4 @@
-// `@mvtjs/chiptune/headless`: everything that runs without a speaker. It holds
+// `audio90/headless`: everything that runs without a speaker. It holds
 // each chip's headless version, which a game run headless plays on, and the
 // tools that render sound in memory for tests: audio test hashes, peaks and
 // loudness, WAV files, and finding the sounds a module exports.

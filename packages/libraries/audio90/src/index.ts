@@ -80,3 +80,4 @@ export {
 } from './audio90';
 export { type AudioControls, computeSongDurationMs, type SongSlot } from './shared';
 export { createMusicPlayer, type MusicPlayer, type MusicPlayerOptions, type PlayableSong } from './music-player';
+export { createWebAudio80, createWebAudio90, type WebAudio80Options, type WebAudio90Options } from './web';

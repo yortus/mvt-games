@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { MetricKind, View } from '@mvtjs/pixi';
-import type { Audio80, Audio90 } from '@mvtjs/chiptune';
+import type { Audio80, Audio90 } from 'audio90';
 
 // ---------------------------------------------------------------------------
 // Interface

@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/chiptune';
+import { createAudio90Song } from 'audio90';
 import { ELECTRIC_PIANO, STRINGS, SUB_BASS } from './instruments';
 import { BREAKBEAT } from './sample-instruments';
 import type { Tune } from './tune';

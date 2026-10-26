@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { computeSongDurationMs } from '@mvtjs/chiptune';
+import { computeSongDurationMs } from 'audio90';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Tune } from '#tunes';
 import { cacheAsPixels, PANEL_LINE_X, PANEL_LINE_Y, PanelView } from './panel-view';

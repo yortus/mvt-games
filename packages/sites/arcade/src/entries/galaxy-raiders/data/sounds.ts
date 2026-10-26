@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
+import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 
 // Galaxy Raiders' instruments and sound effects for the Audio80, all written
 // for this game. An effect whose shape matters is written as a step table.

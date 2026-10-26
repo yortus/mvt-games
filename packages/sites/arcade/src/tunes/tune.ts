@@ -1,4 +1,4 @@
-import type { Audio90Song } from '@mvtjs/chiptune';
+import type { Audio90Song } from 'audio90';
 
 // ---------------------------------------------------------------------------
 // Interface

@@ -1,12 +1,13 @@
 # Releasing the libraries
 
-The five libraries, `@mvtjs/utils`, `@mvtjs/pixi`, `@mvtjs/three`,
-`@mvtjs/html` and `@mvtjs/chiptune`, are released together from this repo
-with [Changesets](https://github.com/changesets/changesets). They share one
-version: a change to any of them releases all five.
+The four `@mvtjs` libraries, `@mvtjs/utils`, `@mvtjs/pixi`, `@mvtjs/three`
+and `@mvtjs/html`, are released together from this repo with
+[Changesets](https://github.com/changesets/changesets). They share one
+version: a change to any of them releases all four.
 
-v-snap, the visual testing package, is released from here too, on a
-version of its own. A change file for it names `v-snap` alone.
+`audio90`, the sound chips, and `v-snap`, the visual testing package, are
+released from here too, each on a version of its own. A change file for
+one of them names it alone.
 
 Each `.md` file here, other than this one, is a change waiting to be released:
 how big a bump it needs, and a line for the changelogs.

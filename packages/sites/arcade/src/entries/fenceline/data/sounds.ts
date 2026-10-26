@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from '@mvtjs/chiptune';
+import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 
 // Fenceline's instruments and sound effects, for the Audio80. They were all
 // written for this game. The tunes are played by a country band: a fiddle,

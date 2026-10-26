@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type AudioControls, computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from '@mvtjs/chiptune';
-import { type Audio80Write, createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { type AudioControls, computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     DEATH, FIRE, FIRE_WARNING, GAME_OVER, GHOST, HARPOON, LEVEL_CLEAR, LEVEL_START, POP, PUMP_1, PUMP_2, PUMP_3,
     PUMP_4, ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE, SQUASH, WALK_TUNE,

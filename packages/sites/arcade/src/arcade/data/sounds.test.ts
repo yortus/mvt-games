@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeSongDurationMs } from '@mvtjs/chiptune';
-import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from '@mvtjs/chiptune/headless';
+import { computeSongDurationMs } from 'audio90';
+import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
 // Importing the data parses its notation, so a mistake in a pattern or a step

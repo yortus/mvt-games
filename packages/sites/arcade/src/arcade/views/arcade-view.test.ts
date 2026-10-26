@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { createHeadlessAudio80 } from '@mvtjs/chiptune/headless';
+import { createHeadlessAudio80 } from 'audio90/headless';
 import { createMemoryHighscoreStore } from '../../highscores';
 import { advanceTime, destroyElement, refreshView } from '@mvtjs/html';
 import type { ArcadeEntry, EntryStarter } from '../../entry-types';

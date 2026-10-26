@@ -1,4 +1,4 @@
-import { type Audio90Instrument, createAudio90Instrument, createAudio90Sample, createAudio90Song } from '@mvtjs/chiptune';
+import { type Audio90Instrument, createAudio90Instrument, createAudio90Sample, createAudio90Song } from 'audio90';
 
 // Neon Monsoon's instruments, for the Audio90. All were written for this
 // game, in the sound of the 1990s' arcade shooters and 16-bit consoles: an

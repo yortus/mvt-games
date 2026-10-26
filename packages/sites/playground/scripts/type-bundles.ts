@@ -17,7 +17,7 @@ export type TypeBundle = Readonly<Record<string, string>>;
 
 /**
  * Makes the type bundles the playground's language service loads, one for
- * each kind: TypeScript's own libs, the `@mvtjs` libraries and the
+ * each kind: TypeScript's own libs, the libraries in this repo and the
  * `playground` module (their declarations emitted from their sources), and
  * Pixi, three.js and GSAP with the packages their types import (from
  * `node_modules`). Paths are laid out as a project's would be, so the
@@ -98,27 +98,37 @@ function readPackages(names: readonly string[], folders: Readonly<Record<string,
  */
 const SUPPORTING_ENTRIES: readonly string[] = ['@mvtjs/utils/jsx'];
 
+/** The libraries whose declarations are emitted from their sources: each one's folder in `packages/libraries/`, and its name on npm. */
+const PACKAGES: readonly { readonly dir: string; readonly name: string }[] = [
+    { dir: 'utils', name: '@mvtjs/utils' },
+    { dir: 'pixi', name: '@mvtjs/pixi' },
+    { dir: 'html', name: '@mvtjs/html' },
+    { dir: 'three', name: '@mvtjs/three' },
+    { dir: 'audio90', name: 'audio90' },
+];
+
 /**
- * Emits the declarations of the `@mvtjs` libraries and of the `playground`
- * module from their sources, in one program, so their imports of each other
- * resolve. Each library gets a `package.json` whose `exports` name the
- * declarations of the entries a project may import, and of the supporting
- * entries their declarations import.
+ * Emits the declarations of the libraries in `packages/libraries/` and of the
+ * `playground` module from their sources, in one program, so their imports of
+ * each other resolve. Each library gets a `package.json` whose `exports` name
+ * the declarations of the entries a project may import, and of the supporting
+ * entries their declarations import. They all go in the `mvtjs` bundle,
+ * `audio90` too, since it is small and has no types of its own to load.
  */
 function emitDeclarations(): { mvtjs: TypeBundle; playground: TypeBundle } {
-    const packages = ['utils', 'pixi', 'html', 'three', 'chiptune'];
     const entries: string[] = [];
     const exportsOf: Record<string, Record<string, { types: string }>> = {};
-    for (const name of packages) {
-        const manifest = JSON.parse(readFileSync(join(LIBRARY_ROOT, name, 'package.json'), 'utf8')) as {
+    for (const { dir, name } of PACKAGES) {
+        const manifest = JSON.parse(readFileSync(join(LIBRARY_ROOT, dir, 'package.json'), 'utf8')) as {
             exports: Record<string, Record<string, string>>;
         };
         exportsOf[name] = {};
         for (const [subpath, conditions] of Object.entries(manifest.exports)) {
-            const specifier = subpath === '.' ? `@mvtjs/${name}` : `@mvtjs/${name}/${subpath.slice(2)}`;
+            const specifier = subpath === '.' ? name : `${name}/${subpath.slice(2)}`;
             if (!(LIBRARIES as readonly string[]).includes(specifier) && !SUPPORTING_ENTRIES.includes(specifier)) continue;
-            const source = conditions['@mvtjs/source'];
-            entries.push(join(LIBRARY_ROOT, name, source));
+            // The `@mvtjs` libraries name their source by a condition. audio90 names it as its default
+            const source = conditions['@mvtjs/source'] ?? conditions.default;
+            entries.push(join(LIBRARY_ROOT, dir, source));
             exportsOf[name][subpath] = { types: source.replace(/\.tsx?$/, '.d.ts') };
         }
     }
@@ -146,18 +156,18 @@ function emitDeclarations(): { mvtjs: TypeBundle; playground: TypeBundle } {
     const playground: Record<string, string> = {};
     program.emit(undefined, (fileName, text) => {
         const path = resolve(fileName);
-        for (const name of packages) {
-            const packageDir = join(LIBRARY_ROOT, name);
+        for (const { dir, name } of PACKAGES) {
+            const packageDir = join(LIBRARY_ROOT, dir);
             if (path.startsWith(packageDir + '\\') || path.startsWith(packageDir + '/')) {
-                mvtjs[`/node_modules/@mvtjs/${name}/${relative(packageDir, path).replaceAll('\\', '/')}`] = text;
+                mvtjs[`/node_modules/${name}/${relative(packageDir, path).replaceAll('\\', '/')}`] = text;
                 return;
             }
         }
         const apiDir = dirname(playgroundEntry);
         if (path.startsWith(apiDir)) playground[`/node_modules/playground/${relative(apiDir, path).replaceAll('\\', '/')}`] = text;
     });
-    for (const name of packages) {
-        mvtjs[`/node_modules/@mvtjs/${name}/package.json`] = JSON.stringify({ name: `@mvtjs/${name}`, type: 'module', exports: exportsOf[name] });
+    for (const { name } of PACKAGES) {
+        mvtjs[`/node_modules/${name}/package.json`] = JSON.stringify({ name, type: 'module', exports: exportsOf[name] });
     }
     playground['/node_modules/playground/package.json'] = JSON.stringify({ name: 'playground', type: 'module', types: './index.d.ts' });
     return { mvtjs, playground };

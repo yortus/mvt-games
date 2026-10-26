@@ -3,18 +3,17 @@ import { build, type Plugin } from 'rolldown';
 import { defineConfig } from 'tsdown';
 
 // The published build: one entry per path in package.json's `exports`, and
-// one output file per source module (`unbundle`).
+// one output file per source module (`unbundle`). publint and attw check the
+// package after its published package.json is in place
+// (scripts/publish-manifest.ts), since the repository's names the source.
 export default defineConfig({
     entry: {
         'index': 'src/index.ts',
-        'web/index': 'src/web/index.ts',
         'headless/index': 'src/headless/index.ts',
     },
     unbundle: true,
     platform: 'neutral',
     dts: true,
-    publint: true,
-    attw: true,
     plugins: [inlineWorklets()],
 });
 

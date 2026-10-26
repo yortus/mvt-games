@@ -1,4 +1,4 @@
-import { createAudio90Song } from '@mvtjs/chiptune';
+import { createAudio90Song } from 'audio90';
 import { ACID, BOOM, CRASH, DIRTY_BASS, SIREN } from './instruments';
 import { BREAKBEAT, HIT } from './sample-instruments';
 import type { Tune } from './tune';

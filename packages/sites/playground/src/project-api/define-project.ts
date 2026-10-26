@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { PerspectiveCamera, Scene } from 'three';
-import type { Audio80 } from '@mvtjs/chiptune';
+import type { Audio80 } from 'audio90';
 
 // ---------------------------------------------------------------------------
 // Interface

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashSamples, measurePeak, renderSoundEffect, findSounds } from '@mvtjs/chiptune/headless';
+import { hashSamples, measurePeak, renderSoundEffect, findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
 // Astrovoid has no music. It has only effects.
