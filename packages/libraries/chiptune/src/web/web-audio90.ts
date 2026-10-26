@@ -1,4 +1,4 @@
-import { type Audio90, type Audio90Character, AUDIO90_SCOPE_LENGTH, type Audio90WithControls, createCommandAudio90 } from '../audio90';
+import { type Audio90, type Audio90Character, AUDIO90_SCOPE_LENGTH, type Audio90Song, type Audio90WithControls, createCommandAudio90 } from '../audio90';
 import { AUDIO90_HELD_SLOTS } from './audio90-held-slots';
 import { type Audio90PassedMessage, AUDIO90_PROCESSOR_NAME, type Audio90RunnerSettings, type Audio90ScopeReply } from './audio90-runner';
 import { createWebChip } from './web-chip';
@@ -44,6 +44,10 @@ export interface WebAudio90Options {
  * While scopes are on, the worklet sends one about 94 times a second, in one
  * of three buffers that go back and forth, so none is allocated as they do.
  * Each is copied into `scope` as it arrives.
+ *
+ * Its songs play on the worklet's own sequencer, on the sound card's clock.
+ * Each song is sent once, after its instruments and without their samples,
+ * which the worklet already has by then.
  */
 export function createWebAudio90(options: WebAudio90Options): Audio90WithControls {
     const writer = createCommandAudio90({
@@ -54,7 +58,7 @@ export function createWebAudio90(options: WebAudio90Options): Audio90WithControl
     const settings: Audio90RunnerSettings = { leadMs: options.leadMs, character: options.character };
     const scope = new Float32Array(AUDIO90_SCOPE_LENGTH);
     let isScoping = false;
-    const web = createWebChip<Audio90PassedMessage>({
+    const web = createWebChip<Audio90PassedMessage, Audio90Song>({
         context: options.context,
         writer,
         heldSlots: AUDIO90_HELD_SLOTS,
@@ -72,6 +76,13 @@ export function createWebAudio90(options: WebAudio90Options): Audio90WithControl
         },
         // The worklet turns its scopes off as it resets
         onReset: () => turnScopesOff(),
+        // Its instruments are defined first, under the writer's ids. The song travels without their samples,
+        // which the worklet already has by then
+        prepareSong(song) {
+            const instrumentIds = song.instruments.map(writer.defineInstrument);
+            const instruments = song.instruments.map((instrument) => (instrument.sample === undefined ? instrument : { ...instrument, sample: undefined }));
+            return { song: { ...song, instruments }, instrumentIds };
+        },
     });
 
     const audio90: Audio90 = {
@@ -92,6 +103,7 @@ export function createWebAudio90(options: WebAudio90Options): Audio90WithControl
         reserveVoices: writer.reserveVoices,
         releaseAll: writer.releaseAll,
         scope,
+        openSongSlot: web.openSongSlot,
         setScopes(isOn) {
             if (isOn === isScoping) return;
             if (!isOn) {

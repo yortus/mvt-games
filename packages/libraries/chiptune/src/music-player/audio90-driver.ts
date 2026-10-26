@@ -1,5 +1,4 @@
 import {
-    type Audio90,
     type Audio90Writer,
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
@@ -31,9 +30,9 @@ import type { SongDriver } from './song-driver';
 // Options
 // ---------------------------------------------------------------------------
 
-/** What the Audio90's song driver plays on. */
+/** What the Audio90's song driver plays on: a chip, or anything else that writes to one. */
 export interface Audio90SongDriverOptions {
-    readonly audio90: Audio90;
+    readonly audio90: Audio90Writer;
 }
 
 // ---------------------------------------------------------------------------

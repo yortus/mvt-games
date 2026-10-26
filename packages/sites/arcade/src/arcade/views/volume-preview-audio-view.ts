@@ -1,5 +1,5 @@
 import { type Audio80, createMusicPlayer } from '@mvtjs/chiptune';
-import { setRefresh, setUpdate } from '@mvtjs/html';
+import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import { EFFECTS_PREVIEW, MUSIC_PREVIEW } from '../data';
 
@@ -32,7 +32,7 @@ export interface VolumePreviewAudioViewBindings {
  * menu closes.
  *
  * The view has no visuals. It is an empty element that is never hidden, so
- * it is always ticked. Where the phrase has got to is its presentation state.
+ * it is always refreshed. The chip's own sequencer keeps the phrase's place.
  */
 export function VolumePreviewAudioView(bindings: VolumePreviewAudioViewBindings): HTMLElement {
     const { sound } = bindings;
@@ -43,7 +43,6 @@ export function VolumePreviewAudioView(bindings: VolumePreviewAudioViewBindings)
     // The first refresh hears only what changes after the view is made.
     watcher.poll();
 
-    setUpdate(view, (deltaMs) => music.update(deltaMs));
     setRefresh(view, refresh);
     return view;
 

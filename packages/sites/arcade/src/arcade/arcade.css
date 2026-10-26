@@ -1270,7 +1270,7 @@ html.is-runner-turned .runner-sound-hint {
 .perfmon-float.is-dragging .mvt-perfmon { cursor: grabbing; }
 .perfmon-float .mvt-perfmon-info-body { cursor: auto; touch-action: pan-y; }
 .perfmon-float .mvt-perfmon-titlebar { color: var(--site-nav-text); }
-/* The music's stalls, under the metrics, in the metrics' own type */
+/* The chips' stalls, under the metrics, in the metrics' own type */
 .perfmon-float-stalls {
     display: flex;
     justify-content: space-between;

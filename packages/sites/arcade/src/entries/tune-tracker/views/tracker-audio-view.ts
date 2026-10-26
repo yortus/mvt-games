@@ -25,11 +25,11 @@ export interface TrackerAudioViewBindings {
 
 /**
  * Plays what the tracker says. It starts the tune chosen from its beginning
- * each time a tune starts, and stops it when the tracker stops. The music
- * player's place in the tune is presentation state, so the view starts,
- * stops and advances it in its update step, and the music pauses with the
- * entry. The pattern view reads it to show the row playing. The refresh
- * step writes the notes to the chip. The view draws nothing.
+ * each time a tune starts, and stops it when the tracker stops. Which tune
+ * plays is presentation state, so the view starts and stops it in its update
+ * step, and its refresh step sends that to the chip. The chip's own sequencer
+ * keeps the tune's place, and the pattern view reads the music player to show
+ * the row being heard. The view draws nothing.
  */
 export function TrackerAudioView(bindings: TrackerAudioViewBindings): Container {
     const { music } = bindings;
@@ -40,13 +40,12 @@ export function TrackerAudioView(bindings: TrackerAudioViewBindings): Container 
     setRefresh(view, () => music.refresh());
     return view;
 
-    function update(deltaMs: number): void {
+    function update(): void {
         const w = watcher.poll();
         if (!w.isPlaying.value) {
             if (w.isPlaying.changed) music.stop();
         }
         // A start before the view's first poll counts too, so `changed`, not `increased`: the count only rises
         else if (w.starts.changed) music.play(bindings.songAt(bindings.tuneIndex()));
-        music.update(deltaMs);
     }
 }

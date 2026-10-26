@@ -254,17 +254,19 @@ would take 1 as the starting count, and the first beat would be silent. So
 poll at construction whenever the view's own first update can cause a
 change.
 
-A tune works the same way. Its place in the song is presentation state.
-The view moves it on in the update step, and plays the notes that are due
-in the refresh step. A view usually plays one song at a time, so a new
-song cuts the old one off. A jingle that plays as a phase begins stops
-when the next phase starts its own song. Keep each such jingle no longer than its phase.
+A tune can work the same way. Its place in the song is then presentation
+state. The view moves it on in the update step, and plays the notes that
+are due in the refresh step. A view usually plays one song at a time, so a
+new song cuts the old one off. A jingle that plays as a phase begins stops
+when the next phase starts its own song. Keep each such jingle no longer
+than its phase.
 
-Only the update step moves the tune and the heartbeat on. A paused game's
-views sit out the update step, so both stop while the game is paused. They
-carry on from the same place when it resumes. That holds when the view
-keeps the tune's place. Many sound libraries keep it themselves, as the
-next section explains.
+Only the update step moves the heartbeat on. A paused game's views sit out
+the update step, so it stops while the game is paused, and carries on from
+the same place when the game resumes. A tune's place works like that when
+the view keeps it. Many sound libraries keep it themselves, as the next
+section explains, and so do this repo's sound chips. Then the view's
+presentation state is only which song plays, and how fast.
 
 ## Time
 
@@ -304,10 +306,36 @@ everything else in MVT:
 - A tune keeps its tempo, however uneven the frames.
 - The same ticks always make the same sound, so the sound can be tested.
 
-This repo's sound chips work this way. It's a choice, though,
-not how sound works in general. The
+This repo's sound chips work this way for the notes a game writes itself.
+It's a choice, though, not how sound works in general. The
 [Audio80 guide's "Time" section](https://github.com/yortus/mvt-games/blob/main/packages/libraries/chiptune/docs/using-the-audio80.md#time-the-chip-runs-on-game-time)
 shows how its clock does it.
+
+### When the Library Keeps the Time, and the Ticks Pause It
+
+The sound has one need that the picture doesn't. A display can show a late
+frame's picture a moment late, and almost nobody notices. A sound card
+can't wait for a late frame. A block of sound it doesn't get in time is a
+gap, and everybody hears it. So the music shouldn't wait for the game's
+frames.
+
+This repo's chips play their music a third way, as game audio engines do.
+The chip's own sequencer keeps each song's place, where the sound is made,
+on the sound card's clock. A frame that comes late, even by most of a
+second, never holds the music up. The ticks still decide when it plays:
+
+- **Pausing pauses the music.** When the ticks stop bringing time, the
+  sequencer stops, and carries on when the game resumes.
+- **The view decides what plays.** Which song, when it starts and stops,
+  and how fast it goes are the view's presentation state. It sends them as
+  it refreshes, as it writes any other output.
+- **The same ticks still make the same notes.** A headless chip, which has
+  no sound card, runs the same sequencer on the ticks. So a test can check
+  each note a song played, and when.
+
+What the chip reports of the music, such as the row playing, is what the
+listener hears now, which trails what the view asked for by a moment. A
+view that shows the music, as a tracker does, shows what is heard.
 
 ## Testing
 

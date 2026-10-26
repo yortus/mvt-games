@@ -12,4 +12,8 @@ registerChipProcessor<Audio90RunnerSettings, Audio90PassedMessage>(AUDIO90_PROCE
         currentFrame,
         sendBack: (reply) => post(reply, [reply.commands.buffer]),
         sendScope: (reply) => post(reply, [reply.data.buffer]),
+        sendPlace: (reply) => post(reply, NOTHING_MOVED),
     }));
+
+/** What a song's place moves with it: nothing, since it is only numbers. */
+const NOTHING_MOVED: Transferable[] = [];

@@ -1,24 +1,35 @@
-import { type Audio90Character, type Audio90ChipMessage, AUDIO90_SCOPE_LENGTH, createAudio90Synthesiser } from '../audio90';
+import {
+    type Audio90Character,
+    type Audio90ChipMessage,
+    AUDIO90_SCOPE_LENGTH,
+    type Audio90Song,
+    createAudio90Synthesiser,
+    createCommandAudio90,
+    OP90_NOTE_ON,
+} from '../audio90';
+import { createSongPlayer } from '../music-player';
 import { type ChipReply, MIX_BUS_INDEX } from '../shared';
 import { type ChipRunner, createChipRunner } from './chip-runner';
+import type { SongPlaceReply } from './song-messages';
+import { createWorkletSequencer } from './song-sequencer';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * The messages the Audio90's runner takes beside the batches: those that
- * define what its commands use (its instruments, effects and samples), and
- * those about its scopes. `scopes` turns them on or off. `scope-buffer`
- * hands the worklet an array of `AUDIO90_SCOPE_LENGTH` numbers to send a
- * scope back in, so that sending one allocates nothing.
+ * The messages the Audio90's runner takes beside the batches and the songs:
+ * those that define what its commands use (its instruments, effects and
+ * samples), and those about its scopes. `scopes` turns them on or off.
+ * `scope-buffer` hands the worklet an array of `AUDIO90_SCOPE_LENGTH`
+ * numbers to send a scope back in, so that sending one allocates nothing.
  */
 export type Audio90PassedMessage =
     | Extract<Audio90ChipMessage, { readonly kind: 'instrument' | 'effect' | 'sample' }>
     | { readonly kind: 'scopes'; readonly isOn: boolean }
     | { readonly kind: 'scope-buffer'; readonly data: Float32Array };
 
-/** What the Audio90's worklet sends back beside a batch's buffer: a scope, in a buffer the page handed it. */
+/** What the Audio90's worklet sends back beside a batch's buffer and its songs' places: a scope, in a buffer the page handed it. */
 export interface Audio90ScopeReply {
     readonly kind: 'scope';
     readonly data: Float32Array;
@@ -56,6 +67,8 @@ export interface Audio90RunnerOptions extends Audio90RunnerSettings {
     readonly currentFrame?: () => number;
     /** Sends a scope to the main thread, in a buffer it handed over, which moves with the message. */
     readonly sendScope: (reply: Audio90ScopeReply) => void;
+    /** Sends where a slot of the sequencer is, each time it reaches a new row, or takes a call. It must copy the reply, as `postMessage` does. */
+    readonly sendPlace: (reply: SongPlaceReply) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,9 +77,9 @@ export interface Audio90RunnerOptions extends Audio90RunnerSettings {
 
 /**
  * Creates the runner of an Audio90's worklet, which renders its two
- * channels, left and right. While scopes are on, it sends one every
- * `BLOCKS_PER_SCOPE` blocks, when the page has handed it a buffer to send it
- * in. A reset turns them off.
+ * channels, left and right, and plays its songs on its own sequencer. While
+ * scopes are on, it sends one every `BLOCKS_PER_SCOPE` blocks, when the page
+ * has handed it a buffer to send it in. A reset turns them off.
  */
 export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<Audio90PassedMessage> {
     const { sampleRate, sendScope } = options;
@@ -76,6 +89,15 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
     // The buffers the page has handed over to send scopes in, and the blocks since one was sent
     const spares: Float32Array[] = [];
     const counters = new Int32Array(1);
+    const sequencer = createWorkletSequencer<Audio90Song, ReturnType<typeof createCommandAudio90>>({
+        sampleRate,
+        // Every instrument a song plays was defined by the page, and a song plays no effect, so the writer
+        // defines nothing of its own
+        createWriter: (idOf) => createCommandAudio90({ idOf, onInstrument: ignore, onEffect: ignore, onSample: ignore }),
+        createPlayer: (writer) => createSongPlayer({ audio90: writer }),
+        noteOnOp: OP90_NOTE_ON,
+        sendPlace: options.sendPlace,
+    });
 
     return createChipRunner<Audio90PassedMessage>({
         sampleRate,
@@ -83,6 +105,7 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
         leadMs: options.leadMs,
         sendBack: options.sendBack,
         currentFrame: options.currentFrame,
+        sequencer,
         synthesiser: {
             enqueue: synthesiser.enqueue,
             reset() {
@@ -136,3 +159,7 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
 
 /** The most buffers kept to send scopes in. The page hands over three. */
 const MAX_SPARES = 3;
+
+function ignore(): void {
+    // The page defines every instrument a song plays
+}

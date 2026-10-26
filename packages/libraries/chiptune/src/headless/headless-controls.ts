@@ -11,6 +11,10 @@ export interface RenderedControlsOptions {
         readonly reset: () => void;
         readonly setMix: (bus: number, gain: number) => void;
     };
+    /** Called once the writer's clock has advanced, to move the chip's songs on. */
+    readonly onUpdate: (deltaMs: number) => void;
+    /** Called as the chip resets, before its writes are cleared, to stop the chip's songs. */
+    readonly onReset: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -19,11 +23,12 @@ export interface RenderedControlsOptions {
 
 /**
  * Creates the controls of a chip that does not render. `update` moves its
- * clock on. Its volumes are kept as set, and clamped as every chip clamps
- * them. The rest of the controls do nothing.
+ * clock on, and its songs, and `reset` stops its songs. Its volumes are kept
+ * as set, and clamped as every chip clamps them. The rest of the controls do
+ * nothing.
  */
-export function createSilentControls(options: { readonly update: (deltaMs: number) => void }): AudioControls {
-    const { update } = options;
+export function createSilentControls(options: { readonly update: (deltaMs: number) => void; readonly reset: () => void }): AudioControls {
+    const { update, reset } = options;
     let volume = 1;
     let isMuted = false;
     let musicVolume = 1;
@@ -34,7 +39,7 @@ export function createSilentControls(options: { readonly update: (deltaMs: numbe
         stallCount: 0,
         update,
         flush: ignore,
-        reset: ignore,
+        reset,
         get volume() {
             return volume;
         },
@@ -71,7 +76,7 @@ export function createSilentControls(options: { readonly update: (deltaMs: numbe
  * `render` takes the writes itself.
  */
 export function createRenderedControls(options: RenderedControlsOptions): AudioControls {
-    const { writer, synthesiser } = options;
+    const { writer, synthesiser, onUpdate, onReset } = options;
     let volume = 1;
     let isMuted = false;
     let musicVolume = 1;
@@ -80,9 +85,13 @@ export function createRenderedControls(options: RenderedControlsOptions): AudioC
         ready: Promise.resolve(),
         // It has no sound card, so it never stalls
         stallCount: 0,
-        update: writer.update,
+        update(deltaMs) {
+            writer.update(deltaMs);
+            onUpdate(deltaMs);
+        },
         flush: ignore,
         reset() {
+            onReset();
             writer.clear(writer.commands);
             writer.forget();
             synthesiser.reset();

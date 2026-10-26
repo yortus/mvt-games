@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { setRefresh, setUpdate } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import {
@@ -46,9 +46,9 @@ export const TICKING_SECONDS = 5;
  * plays. The tune carries on through each point, and starts from the top in
  * each round. Three short notes mark each point. They rise for the player's
  * points and fall for the opponent's. A tick sounds in each of the round's
- * last seconds. A jingle plays as a round or the match is won or lost. The
- * music player's place in the song is the view's presentation state. It
- * advances in the view's update step, so the music pauses with the game.
+ * last seconds. A jingle plays as a round or the match is won or lost. Which
+ * tune plays is the view's presentation state. The chip's own sequencer keeps
+ * the tune's place, and it pauses with the game.
  */
 export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
     const { sound } = bindings;
@@ -63,7 +63,6 @@ export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
         secondsLeft: bindings.secondsLeft,
     });
 
-    setUpdate(view, (deltaMs) => music.update(deltaMs));
     setRefresh(view, refresh);
     return view;
 

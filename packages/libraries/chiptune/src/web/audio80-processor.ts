@@ -5,4 +5,13 @@ import { registerChipProcessor } from './register-chip-processor';
 // thread. It bundles only the Audio80's synthesiser.
 
 registerChipProcessor<Audio80RunnerSettings, Audio80PassedMessage>(AUDIO80_PROCESSOR_NAME, ({ settings, sampleRate, currentFrame, post }) =>
-    createAudio80Runner({ ...settings, sampleRate, currentFrame, sendBack: (reply) => post(reply, [reply.commands.buffer]) }));
+    createAudio80Runner({
+        ...settings,
+        sampleRate,
+        currentFrame,
+        sendBack: (reply) => post(reply, [reply.commands.buffer]),
+        sendPlace: (reply) => post(reply, NOTHING_MOVED),
+    }));
+
+/** What a song's place moves with it: nothing, since it is only numbers. */
+const NOTHING_MOVED: Transferable[] = [];

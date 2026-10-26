@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { setRefresh, setUpdate } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import { DEATH, GAME_OVER, HARPOON, LEVEL_CLEAR, LEVEL_START, WALK_TUNE } from '../data';
@@ -50,10 +50,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const music = createMusicPlayer({ audio80: sound });
     const watcher = watch({ phase: bindings.phase, harpoonShots: bindings.harpoonShots });
 
-    setUpdate(view, (deltaMs) => {
-        music.tempoScale = computeTempo();
-        music.update(deltaMs);
-    });
     setRefresh(view, refresh);
     return view;
 
@@ -63,6 +59,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
         // Each rise in the count is a shot. The count's first value is not a rise
         if (w.harpoonShots.increased) sound.play(HARPOON);
+        // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
+        music.tempoScale = computeTempo();
         music.refresh();
     }
 

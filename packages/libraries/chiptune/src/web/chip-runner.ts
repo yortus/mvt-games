@@ -1,5 +1,7 @@
 import type { ChipBatch, ChipReply } from '../shared';
 import { createChipClock } from './chip-clock';
+import type { SongMessage } from './song-messages';
+import type { WorkletSequencer } from './song-sequencer';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -23,10 +25,11 @@ export interface ChipRunner<D extends PassedMessage = PassedMessage> {
 
 /**
  * What the main thread sends a chip's worklet: a batch of commands, `reset`,
- * `stop` when the chip is destroyed, or a message the runner passes to the
- * chip's own part, such as one that defines an instrument.
+ * `stop` when the chip is destroyed, a message for the chip's sequencer, or
+ * a message the runner passes to the chip's own part, such as one that
+ * defines an instrument.
  */
-export type RunnerMessage<D extends PassedMessage = PassedMessage> = D | ChipBatch | { readonly kind: 'reset' } | { readonly kind: 'stop' };
+export type RunnerMessage<D extends PassedMessage = PassedMessage> = D | ChipBatch | SongMessage | { readonly kind: 'reset' } | { readonly kind: 'stop' };
 
 /**
  * A message the runner passes to the chip's own part: one that defines
@@ -71,6 +74,12 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
      * counting the frames this runner has rendered.
      */
     readonly currentFrame?: () => number;
+    /**
+     * The chip's sequencer, which plays songs on the sound card's clock. It
+     * moves on before each block the runner renders, and resets with the
+     * chip. Without one, a song sent to the worklet is dropped.
+     */
+    readonly sequencer?: WorkletSequencer;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +88,7 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
 
 /** Creates a runner with nothing queued. It is silent until its clock has a full lead. */
 export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOptions<D>): ChipRunner<D> {
-    const { sampleRate, channelCount, synthesiser, sendBack } = options;
+    const { sampleRate, channelCount, synthesiser, sendBack, sequencer } = options;
     const clock = createChipClock({ sampleRate, leadMs: options.leadMs });
     let isStopped = false;
     let renderedFrames = 0;
@@ -108,10 +117,15 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
                         stallCount: clock.stallCount,
                     });
                     break;
+                case 'song':
+                case 'song-call':
+                    sequencer?.receive(message);
+                    break;
                 case 'reset':
                     // Cutting the output from where it is to 0 would click
                     tails.set(lasts);
                     synthesiser.reset();
+                    sequencer?.reset();
                     clock.reset();
                     break;
                 case 'stop':
@@ -125,12 +139,13 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
 
         process(channels) {
             const frames = channels[0].length;
-            renderedFrames += frames;
             if (isStopped) {
                 for (let c = 0; c < channelCount; c++) channels[c].fill(0);
+                renderedFrames += frames;
                 return;
             }
             render(channels, frames);
+            renderedFrames += frames;
             for (let c = 0; c < channelCount; c++) {
                 const output = channels[c];
                 const tail = tails[c];
@@ -149,6 +164,8 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
             for (let c = 0; c < channelCount; c++) channels[c].fill(0);
             return;
         }
+        // The songs move on by this block before it renders, so their writes fall within it
+        sequencer?.advance(frames, clock.fromMs, clock.msPerSample, currentFrame(), synthesiser.enqueue);
         synthesiser.render(channels, frames, clock.fromMs, clock.msPerSample);
         const from = clock.gainFrom;
         const to = clock.gainTo;

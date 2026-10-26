@@ -80,7 +80,9 @@ describe('GameAudioView', () => {
         runTicks(tick, HOLD_TICKS + 1);
         state.isDiggerMoving = true;
         runTicks(tick, SONG_TICKS);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: WALK_TUNE, heldTicks: HOLD_TICKS }));
+        // The view hears the digger move as it refreshes, after the chip has played that tick, so the tune moves
+        // on from the tick after: one more tick held than the digger stood still for
+        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: WALK_TUNE, heldTicks: HOLD_TICKS + 1 }));
     });
 
     it.each([
@@ -261,22 +263,27 @@ function describeNoteOns(log: readonly Audio80Write[]): string[] {
 /**
  * Plays `song` on a music player of its own, and describes the notes it
  * plays. It plays `then` after `song`, if given. It holds the song at a tempo
- * scale of 0 for `heldTicks` ticks, then plays it at `tempoScale` for `ticks`
- * ticks. This is what a view that plays these songs should play over the same
- * ticks.
+ * scale of 0 for its first `heldTicks` ticks, then plays it at `tempoScale`
+ * for `ticks` ticks. This is what a view that plays these songs should play
+ * over the same ticks.
+ *
+ * As the view does, it sets the tempo as it refreshes: before the song
+ * starts, and then each tick for the tick after, since the chip has already
+ * played the tick it refreshes in.
  */
 function recordSong(options: { song: Audio80Song; then?: Audio80Song; tempoScale?: number; heldTicks?: number; ticks?: number }): string[] {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const player = createMusicPlayer({ audio80: chip });
+    const heldTicks = options.heldTicks ?? 0;
+    const tempoAt = (tick: number) => (tick < heldTicks ? 0 : options.tempoScale ?? 1);
+    player.tempoScale = tempoAt(0);
     player.play(options.song);
     if (options.then !== undefined) player.queue(options.then);
     player.refresh();
-    const heldTicks = options.heldTicks ?? 0;
     const ticks = heldTicks + (options.ticks ?? SONG_TICKS);
     for (let i = 0; i < ticks; i++) {
-        player.tempoScale = i < heldTicks ? 0 : options.tempoScale ?? 1;
         controls.update(TICK_MS);
-        player.update(TICK_MS);
+        player.tempoScale = tempoAt(i + 1);
         player.refresh();
     }
     return describeNoteOns(chip.log);

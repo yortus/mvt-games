@@ -223,7 +223,6 @@ function recordSong(options: { song: Audio80Song; tempoScale?: number }): string
     player.refresh();
     for (let i = 0; i < SONG_TICKS; i++) {
         controls.update(TICK_MS);
-        player.update(TICK_MS);
         player.refresh();
     }
     return describeNoteOns(chip.log);

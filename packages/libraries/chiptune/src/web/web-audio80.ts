@@ -1,4 +1,4 @@
-import { type Audio80, type Audio80Character, type Audio80WithControls, createCommandAudio80 } from '../audio80';
+import { type Audio80, type Audio80Character, type Audio80Song, type Audio80WithControls, createCommandAudio80 } from '../audio80';
 import { AUDIO80_HELD_SLOTS } from './audio80-held-slots';
 import { type Audio80PassedMessage, AUDIO80_PROCESSOR_NAME, type Audio80RunnerSettings } from './audio80-runner';
 import { createWebChip } from './web-chip';
@@ -34,6 +34,8 @@ export interface WebAudio80Options {
  * Creates an Audio80 for a browser, and its controls. Once a tick,
  * `AudioControls.flush` sends the chip's writes to an `AudioWorklet`, which
  * plays them. The controls' `ready` resolves once the worklet is running.
+ * Its songs play on the worklet's own sequencer, on the sound card's clock.
+ * Each song is sent once, after its instruments.
  */
 export function createWebAudio80(options: WebAudio80Options): Audio80WithControls {
     const writer = createCommandAudio80({
@@ -41,7 +43,7 @@ export function createWebAudio80(options: WebAudio80Options): Audio80WithControl
         onEffect: (id, data) => web.send({ kind: 'effect', id, data }),
     });
     const settings: Audio80RunnerSettings = { leadMs: options.leadMs, character: options.character };
-    const web = createWebChip<Audio80PassedMessage>({
+    const web = createWebChip<Audio80PassedMessage, Audio80Song>({
         context: options.context,
         writer,
         heldSlots: AUDIO80_HELD_SLOTS,
@@ -50,6 +52,8 @@ export function createWebAudio80(options: WebAudio80Options): Audio80WithControl
         // The chip is mono. The browser plays its one channel on both speakers
         channelCount: 1,
         settings,
+        // Its instruments are defined first, under the writer's ids
+        prepareSong: (song) => ({ song, instrumentIds: song.instruments.map(writer.defineInstrument) }),
     });
 
     const audio80: Audio80 = {
@@ -65,6 +69,7 @@ export function createWebAudio80(options: WebAudio80Options): Audio80WithControl
         setEcho: writer.setEcho,
         reserveVoices: writer.reserveVoices,
         releaseAll: writer.releaseAll,
+        openSongSlot: web.openSongSlot,
     };
 
     return { audio80, controls: web.controls };

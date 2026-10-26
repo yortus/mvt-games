@@ -4,6 +4,7 @@ import {
     type Audio90EffectId,
     type Audio90EffectSetting,
     type Audio90Instrument,
+    type Audio90Song,
     type Audio90SoundEffect,
     AUDIO90_SCOPE_LENGTH,
     AUDIO90_VOICE_COUNT,
@@ -12,7 +13,9 @@ import {
     createAudio90Synthesiser,
     createCommandAudio90,
 } from '../audio90';
+import { createSongPlayer } from '../music-player';
 import { createRenderedControls, createSilentControls, ignore } from './headless-controls';
+import { createHeadlessSongSlots } from './headless-song-slots';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -161,11 +164,16 @@ function createSilentChip(): Audio90WithControls {
         // It plays nothing, so its scope stays silent
         scope: new Float32Array(AUDIO90_SCOPE_LENGTH),
         setScopes: ignore,
+        openSongSlot: () => songs.open(),
     };
+    // Its songs play on the chip itself, so they write nothing either
+    const songs = createHeadlessSongSlots<Audio90Song>({ createPlayer: () => createSongPlayer({ audio90 }) });
     const controls = createSilentControls({
         update(deltaMs) {
             clock[0] += deltaMs;
+            songs.update(deltaMs);
         },
+        reset: songs.reset,
     });
     return { audio90, controls };
 }
@@ -173,11 +181,15 @@ function createSilentChip(): Audio90WithControls {
 /** Creates a chip that logs every write and plays nothing. */
 function createRecordingChip(): Audio90WithControls<Audio90 & Audio90Log> {
     const clock = { time: 0 };
-    const audio90 = createRecorder(clock);
+    const audio90 = createRecorder(clock, () => songs.open());
+    // Its songs play on the chip itself, so their notes are logged as any write is
+    const songs = createHeadlessSongSlots<Audio90Song>({ createPlayer: () => createSongPlayer({ audio90 }) });
     const controls = createSilentControls({
         update(deltaMs) {
             clock.time += deltaMs;
+            songs.update(deltaMs);
         },
+        reset: songs.reset,
     });
     return { audio90, controls };
 }
@@ -198,6 +210,8 @@ function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly 
     // The synthesiser writes the scope as it renders, while scopes are on
     const scope = new Float32Array(AUDIO90_SCOPE_LENGTH);
     const audio90 = options.record ? createRecordingWriter() : createWriter();
+    // Its songs play on the chip itself, so their notes are rendered, and logged if it records
+    const songs = createHeadlessSongSlots<Audio90Song>({ createPlayer: () => createSongPlayer({ audio90 }) });
     const controls = createRenderedControls({
         writer,
         synthesiser: {
@@ -208,6 +222,8 @@ function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly 
             },
             setMix: synthesiser.setMix,
         },
+        onUpdate: songs.update,
+        onReset: songs.reset,
     });
 
     return {
@@ -252,12 +268,13 @@ function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly 
             releaseAll: writer.releaseAll,
             scope,
             setScopes,
+            openSongSlot: () => songs.open(),
         };
     }
 
     /** Creates the chip for when both `record` and `render` are given. Each write is logged, then passed to the writer. */
     function createRecordingWriter(): Audio90 & Audio90Log {
-        const recorder = createRecorder(writer);
+        const recorder = createRecorder(writer, () => songs.open());
         return {
             get time() {
                 return writer.time;
@@ -306,6 +323,7 @@ function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly 
             },
             scope,
             setScopes,
+            openSongSlot: () => songs.open(),
         };
     }
 
@@ -315,8 +333,12 @@ function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly 
     }
 }
 
-/** Creates an Audio90 that logs every write and plays nothing. A write with no stamp is stamped with `clock`'s time. */
-function createRecorder(clock: { readonly time: number }): Audio90 & Audio90Log {
+/**
+ * Creates an Audio90 that logs every write and plays nothing. A write with no
+ * stamp is stamped with `clock`'s time. Its song slots open with
+ * `openSongSlot`.
+ */
+function createRecorder(clock: { readonly time: number }, openSongSlot: Audio90['openSongSlot']): Audio90 & Audio90Log {
     const log: Audio90Write[] = [];
     return {
         get time() {
@@ -362,5 +384,6 @@ function createRecorder(clock: { readonly time: number }): Audio90 & Audio90Log 
         // It plays nothing, so its scope stays silent
         scope: new Float32Array(AUDIO90_SCOPE_LENGTH),
         setScopes: ignore,
+        openSongSlot,
     };
 }

@@ -1,6 +1,6 @@
-import type { AudioControls } from '../../shared';
+import type { AudioControls, SongSlot } from '../../shared';
 import type { Audio90Character, Audio90EffectId, Audio90EffectSetting, Audio90VoiceSetting } from '../synthesiser';
-import type { Audio90Instrument, Audio90SoundEffect } from '../notation';
+import type { Audio90Instrument, Audio90Song, Audio90SoundEffect } from '../notation';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -37,6 +37,13 @@ export interface Audio90 extends Audio90Writer {
      * write as it is made, so for it this is `time`.
      */
     readonly heardTime: number;
+    /**
+     * Opens a slot on the chip's own sequencer, which plays one song at a
+     * time. In a browser, the sequencer runs on the audio thread, on the
+     * sound card's clock, so a late frame never holds the music up. Most code
+     * calls `createMusicPlayer`, which opens one.
+     */
+    readonly openSongSlot: () => SongSlot<Audio90Song>;
     /**
      * What each voice played last, while scopes are on, for a view to draw:
      * `AUDIO90_SCOPE_POINTS` points a voice, round and round, then each

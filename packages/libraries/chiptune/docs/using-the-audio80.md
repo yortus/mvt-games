@@ -234,29 +234,37 @@ exactly that time, to the sample. That has three results:
 - **Music keeps its tempo** at any frame rate, however uneven the frames.
 - **The same ticks make the same sound.** That makes the sound testable.
 
-In a browser, the chip plays a steady 100 ms behind the newest tick. This
-delay is called the lead, and you can set it with `leadMs`. The game loop
-runs on the page, and the sound plays on its own thread, so the lead is
-what keeps the music playing through a late frame. A busy phone may draw
-at 30 frames a second, and its sound card may ask for 20 ms of sound or
-more at a time, so the lead has to cover both, with room to spare. **Sound
-effects** are the exception. They play as soon as they arrive, because a
-shot should be heard when it is seen. So the lead only delays the music,
-and a game feels just as quick.
+**Music** keeps its place in its own way, on the chip's own sequencer. A
+music player opens a slot on it, which plays one song at a time. In a
+browser, the sequencer runs on the audio thread, beside the chip, and moves
+each song on at the sound card's rate. The game loop runs on the page, and a
+frame can come late, but a sound card can't wait for one. A block of sound
+it doesn't get in time is a gap. So the music never waits for the page. A
+frame that comes late, even by most of a second, doesn't hold it up. The
+ticks still decide when it plays. The sequencer stops when the ticks stop
+bringing time, as when the game pauses, or when no tick comes for a second,
+as in a hidden tab. A headless chip runs the same sequencer on its own
+clock, so the same ticks still make the same notes.
 
-A frame later than even the lead is a stall. The chip then holds its time
+**Sound effects** play as soon as they arrive, because a shot should be
+heard when it is seen.
+
+**The notes a game writes itself**, with `noteOn` and the other calls,
+play 100 ms behind the newest tick. This delay is called the lead, and you
+can set it with `leadMs`. It smooths out uneven frames. A busy phone may
+draw at 30 frames a second, and its sound card may ask for 20 ms of sound
+or more at a time, so the lead has to cover both, with room to spare. A
+frame later than even the lead is a stall. The chip then holds its time
 still until the ticks have brought half a lead again, while every voice
 keeps sounding. A held note rings on, and the next note starts a little
-late, so the music never drops out. The controls count each one in
-`stallCount`, so you can check that the music plays smoothly on a slow
-device.
+late. The controls count each stall in `stallCount`. Music and effects
+play on through a stall.
 
-Because of the lead, `time` runs ahead of what the listener hears. Most
-views never need to know. A view that shows the music as it plays, as a
-tracker does, reads the chip's `heardTime` instead. It is the chip time of
-the sound reaching the speaker now. The
-[Audio90 guide](using-the-audio90.md#showing-the-music-as-it-is-heard)
-shows how.
+Because of the lead, `time` runs ahead of what the listener hears.
+`heardTime` is the chip time of the sound reaching the speaker now, for a
+view that shows the notes it wrote itself as they sound. A music player
+already reports what is heard, so a view that shows a song, as a tracker
+does, reads the player's `row` instead.
 
 ---
 
@@ -553,16 +561,18 @@ A song is made of patterns, which are short blocks of music. Its order is
 the list of patterns it plays, one after another. A looping song then goes
 back to the place in the order that its `loop` option names, and repeats.
 
-A song is played by a **music player**, which an audio view owns. The
-player's position in the song is presentation state of that view. It
-advances in the view's update step. So the music pauses when the view's
-updates stop, and it keeps time with the ticks:
+A song is played by a **music player**, which an audio view owns. The view
+chooses what plays: which song, when it starts and stops, and how fast. That
+choice is the view's presentation state. The song's place is kept by the
+chip's own sequencer, as [Time](#time-the-chip-runs-on-game-time) explains,
+so the view has nothing to advance. It tells the player what to play, and
+calls `refresh` at the end of its refresh step, which sends that to the
+chip:
 
 ```ts
 const music = createMusicPlayer({ audio80: sound });
 const watcher = watch({ phase: bindings.phase });
 
-setUpdate(view, (deltaMs) => music.update(deltaMs));
 setRefresh(view, () => {
     const w = watcher.poll();
     if (w.phase.changed) {
@@ -578,19 +588,30 @@ setRefresh(view, () => {
 
 | Member | Use |
 | --- | --- |
-| `play(song)` | Starts `song` now, from the beginning, releasing any song playing |
+| `play(song)` | Starts `song` from the beginning, releasing any song playing |
 | `queue(song)` | Plays `song` when the current song reaches the end of its order, with no gap, as with a fanfare into a loop. A looping song hands over at the end of its order too, instead of going back to its `loop`. If nothing is playing, `song` starts at once |
 | `stop()` | Releases the notes and gives the voices back to effects |
-| `tempoScale` | 1 for the song's own tempo. Above 1 speeds it up, and below 1 slows it down. Slides, which move a note's pitch smoothly, keep pace. 0 pauses the song where it is, while its notes ring out and its slides stop. Use it for music that plays only while something moves. A negative value, or one that is not finite, acts as 0. Set it in the update step, before calling `update` |
-| `beat` | The song's position, in beats, for views that pulse in time |
-| `orderIndex`, `row` | The row playing, and the entry in the song's order whose pattern it is in, for views that show the song as a tracker does |
-| `song`, `isPlaying` | What is playing |
+| `tempoScale` | 1 for the song's own tempo. Above 1 speeds it up, and below 1 slows it down. Slides, which move a note's pitch smoothly, keep pace. 0 pauses the song where it is, while its notes ring out and its slides stop. Use it for music that plays only while something moves. A negative value, or one that is not finite, acts as 0 |
+| `refresh()` | Sends what was played, queued, stopped or changed since the last refresh to the chip |
+| `beat` | Where the song heard has got to, in beats, for views that pulse in time |
+| `orderIndex`, `row` | The row heard now, and the entry in the song's order whose pattern it is in, for views that show the song as a tracker does |
+| `song`, `isPlaying` | What is playing. A song played or stopped shows here at once |
 
-Call `update` from the view's update step. Call `refresh` at the end of its
-refresh step, after any `play` or `queue`. One player plays one song at a
-time. A game's jingles and its loop usually share one player, so they never
-compete for voices. [Writing Tracker Music](writing-tracker-music.md)
-explains how to write songs.
+Call `refresh` at the end of the refresh step, after any `play`, `queue`
+or `stop`. Set `tempoScale` just before it, after any new song, so the
+tempo is the one for the song that plays. The player sends the tempo ahead
+of the song, so a song started at a new tempo starts at it. The sequencer
+has already played the tick the view refreshes in, so a change takes effect
+from the next tick.
+
+What the player reports is what the listener hears now. In a browser, that
+trails what the view asked for by a moment, while the sound reaches the
+speaker. A song just started reports its first row until it is heard.
+
+One player plays one song at a time. A game's jingles and its loop usually
+share one player, so they never compete for voices.
+[Writing Tracker Music](writing-tracker-music.md) explains how to write
+songs.
 
 ---
 
@@ -681,6 +702,7 @@ For anything effects and songs do not cover, call the chip directly:
 | `releaseAll()` | Releases every voice |
 | `time` | The chip's current time in ms. Calls without `atMs` are stamped with it |
 | `voiceCount` | The number of voices: 8 |
+| `openSongSlot()` | Returns a new slot on the chip's own sequencer, which plays one song at a time. A music player is made on one, so most code calls `createMusicPlayer` instead |
 
 A write stamped earlier than the chip has already played applies at once.
 A write with a value that is NaN or infinite is dropped. The calls take

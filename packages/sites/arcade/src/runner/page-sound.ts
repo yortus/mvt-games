@@ -1,4 +1,4 @@
-import { type Audio80, type Audio90, AUDIO90_SCOPE_LENGTH, type AudioControls } from '@mvtjs/chiptune';
+import { type Audio80, type Audio90, AUDIO90_SCOPE_LENGTH, type AudioControls, type SongSlot } from '@mvtjs/chiptune';
 import type { createWebAudio80, createWebAudio90 } from '@mvtjs/chiptune/web';
 import type { SoundChipKind, SoundChipsByKind } from '../entry-types';
 import { toSliderGain } from './slider-gain';
@@ -50,10 +50,10 @@ export interface PageSound {
     isMuted: boolean;
     /**
      * How many times the entry chips have stalled, all told, since the page
-     * loaded. Each stall is a moment the music stood still, because a frame
-     * came later than the chip's lead allows for. The page's own chip is left
-     * out. It plays only the menus' short sounds, so its stalls are almost
-     * never heard, and it stalls on the same late frames as the entry chips.
+     * loaded. Each stall is a frame that came later than the chip's lead
+     * allows for. The music and the effects play on through it, and only the
+     * notes a game writes itself wait. The page's own chip is left out, since
+     * it stalls on the same late frames as the entry chips.
      */
     readonly stallCount: number;
     /**
@@ -333,6 +333,7 @@ function createAudio80Slot(): ChipSlot<Audio80> {
         setEcho: (setting, value, atMs) => filled?.setEcho(setting, value, atMs),
         reserveVoices: (count, atMs) => filled?.reserveVoices(count, atMs),
         releaseAll: () => filled?.releaseAll(),
+        openSongSlot: () => createDeferredSongSlot(() => filled),
     };
     return {
         chip,
@@ -370,6 +371,7 @@ function createAudio90Slot(): ChipSlot<Audio90> {
         get scope() {
             return filled === undefined ? silentScope : filled.scope;
         },
+        openSongSlot: () => createDeferredSongSlot(() => filled),
         setScopes(isOn) {
             // Kept, so a chip still to load turns them on as it is filled
             isScoping = isOn;
@@ -385,6 +387,38 @@ function createAudio90Slot(): ChipSlot<Audio90> {
             if (isScoping) next.setScopes(true);
         },
     };
+}
+
+/**
+ * A slot on the sequencer of a chip still to come. It opens the chip's own
+ * slot the first time it is used once the chip has loaded. Until then, as
+ * the chip slots drop writes, it drops each call, and reports no song.
+ */
+function createDeferredSongSlot<S>(chip: () => { readonly openSongSlot: () => SongSlot<S> } | undefined): SongSlot<S> {
+    let inner: SongSlot<S> | undefined;
+    return {
+        get song() {
+            return open()?.song;
+        },
+        get orderIndex() {
+            return open()?.orderIndex ?? 0;
+        },
+        get row() {
+            return open()?.row ?? 0;
+        },
+        get beat() {
+            return open()?.beat ?? 0;
+        },
+        play: (song) => open()?.play(song),
+        queue: (song) => open()?.queue(song),
+        stop: () => open()?.stop(),
+        setTempoScale: (scale) => open()?.setTempoScale(scale),
+    };
+
+    function open(): SongSlot<S> | undefined {
+        inner ??= chip()?.openSongSlot();
+        return inner;
+    }
 }
 
 /** Controls that stand in for a chip's controls still to come, as a `ChipSlot`'s do. */

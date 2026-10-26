@@ -99,7 +99,7 @@ describe('chip clock', () => {
     it('fades out once a stall lasts, as in a hidden tab, and then waits for a full lead', () => {
         const clock = createChipClock({ sampleRate: SAMPLE_RATE, leadMs: LEAD_MS });
         let horizon = startPlaying(clock);
-        planFor(clock, LEAD_MS + 1000);
+        planFor(clock, LEAD_MS + 1500);
         expect(clock.phase).toBe('waiting');
         expect(clock.isSilent).toBe(true);
         horizon += LEAD_MS / 2;

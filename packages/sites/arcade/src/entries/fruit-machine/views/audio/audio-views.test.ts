@@ -208,7 +208,6 @@ function recordSong(song: Audio80Song): string[] {
     music.refresh();
     for (let elapsed = 0; elapsed < computeSongDurationMs(song) + 1000; elapsed += TICK_MS) {
         controls.update(TICK_MS);
-        music.update(TICK_MS);
         music.refresh();
     }
     return describeNoteOns(chip.log);

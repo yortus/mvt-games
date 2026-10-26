@@ -61,9 +61,11 @@ export interface AudioControls {
     /**
      * How many times the chip has stalled since it was made. A stall is a
      * tick so late that the chip played all the time it had been given while
-     * the game was still running. Its music then stood still for a moment,
-     * with its notes ringing on. A chip with no sound card never stalls. A
-     * page can show it, to check that the music plays smoothly.
+     * the game was still running. The notes a game writes itself then wait,
+     * ringing on, until the ticks catch up. The music, which plays on the
+     * chip's own sequencer, and the effects play on through it. A chip with
+     * no sound card never stalls. A page can show it, as a sign of frames
+     * that reach the chip late.
      */
     readonly stallCount: number;
     /** Stops the chip for good and releases what it holds, such as its worklet in a browser. Writes after this do nothing. */

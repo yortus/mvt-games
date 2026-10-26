@@ -9,12 +9,15 @@ import {
     type Audio80FilterMode,
     type Audio80FilterSetting,
     type Audio80Instrument,
+    type Audio80Song,
     type Audio80SoundEffect,
     VOICE_COUNT,
     type Audio80VoiceSetting,
     type Audio80Wave,
 } from '../audio80';
+import { createSongPlayer } from '../music-player';
 import { createRenderedControls, createSilentControls, ignore } from './headless-controls';
+import { createHeadlessSongSlots } from './headless-song-slots';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -154,11 +157,16 @@ function createSilentChip(): Audio80WithControls {
         setEcho: ignore,
         reserveVoices: ignore,
         releaseAll: ignore,
+        openSongSlot: () => songs.open(),
     };
+    // Its songs play on the chip itself, so they write nothing either
+    const songs = createHeadlessSongSlots<Audio80Song>({ createPlayer: () => createSongPlayer({ audio80 }) });
     const controls = createSilentControls({
         update(deltaMs) {
             clock[0] += deltaMs;
+            songs.update(deltaMs);
         },
+        reset: songs.reset,
     });
     return { audio80, controls };
 }
@@ -166,11 +174,15 @@ function createSilentChip(): Audio80WithControls {
 /** Creates a chip that logs every write and plays nothing. */
 function createRecordingChip(): Audio80WithControls<Audio80 & Audio80Log> {
     const clock = { time: 0 };
-    const audio80 = createRecorder(clock);
+    const audio80 = createRecorder(clock, () => songs.open());
+    // Its songs play on the chip itself, so their notes are logged as any write is
+    const songs = createHeadlessSongSlots<Audio80Song>({ createPlayer: () => createSongPlayer({ audio80 }) });
     const controls = createSilentControls({
         update(deltaMs) {
             clock.time += deltaMs;
+            songs.update(deltaMs);
         },
+        reset: songs.reset,
     });
     return { audio80, controls };
 }
@@ -187,7 +199,9 @@ function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly 
     let renderedFrames = 0;
 
     const audio80 = options.record ? createRecordingWriter() : createWriter();
-    const controls = createRenderedControls({ writer, synthesiser });
+    // Its songs play on the chip itself, so their notes are rendered, and logged if it records
+    const songs = createHeadlessSongSlots<Audio80Song>({ createPlayer: () => createSongPlayer({ audio80 }) });
+    const controls = createRenderedControls({ writer, synthesiser, onUpdate: songs.update, onReset: songs.reset });
 
     return {
         audio80,
@@ -226,12 +240,13 @@ function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly 
             setEcho: writer.setEcho,
             reserveVoices: writer.reserveVoices,
             releaseAll: writer.releaseAll,
+            openSongSlot: () => songs.open(),
         };
     }
 
     /** Creates the chip for when both `record` and `render` are given. Each write is logged, then passed to the writer. */
     function createRecordingWriter(): Audio80 & Audio80Log {
-        const recorder = createRecorder(writer);
+        const recorder = createRecorder(writer, () => songs.open());
         return {
             get time() {
                 return writer.time;
@@ -271,12 +286,17 @@ function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly 
                 recorder.releaseAll();
                 writer.releaseAll();
             },
+            openSongSlot: () => songs.open(),
         };
     }
 }
 
-/** Creates an Audio80 that logs every write and plays nothing. A write with no stamp is stamped with `clock`'s time. */
-function createRecorder(clock: { readonly time: number }): Audio80 & Audio80Log {
+/**
+ * Creates an Audio80 that logs every write and plays nothing. A write with no
+ * stamp is stamped with `clock`'s time. Its song slots open with
+ * `openSongSlot`.
+ */
+function createRecorder(clock: { readonly time: number }, openSongSlot: Audio80['openSongSlot']): Audio80 & Audio80Log {
     const log: Audio80Write[] = [];
     return {
         get time() {
@@ -313,5 +333,6 @@ function createRecorder(clock: { readonly time: number }): Audio80 & Audio80Log 
         releaseAll() {
             log.push({ kind: 'release-all', time: clock.time });
         },
+        openSongSlot,
     };
 }

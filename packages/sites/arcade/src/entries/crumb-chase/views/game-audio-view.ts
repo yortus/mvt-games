@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { setRefresh, setUpdate } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
@@ -41,8 +41,8 @@ export const SNEAK_SPEED_UP = 0.6;
  * plays a nibble for each crumb eaten. The nibbles go low and high by turns,
  * by whether the crumbs left are odd or even, so the view keeps no count of
  * its own. It plays a falling tune when the mouse is caught, and a bright one
- * when the maze is cleared. The music player's place in the song is the view's
- * presentation state. It advances in the view's update step, so the music
+ * when the maze is cleared. Which tune plays, and how fast, is the view's
+ * presentation state. The chip's own sequencer keeps the tune's place, and it
  * pauses with the game.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
@@ -52,10 +52,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const music = createMusicPlayer({ audio80: sound });
     const watcher = watch({ phase: bindings.phase, remainingCrumbs: bindings.remainingCrumbs });
 
-    setUpdate(view, (deltaMs) => {
-        music.tempoScale = computeTempoScale();
-        music.update(deltaMs);
-    });
     setRefresh(view, refresh);
     return view;
 
@@ -66,6 +62,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         // A fall is a crumb eaten. The first poll and the rise as a new game starts are not falls
         const crumbs = w.remainingCrumbs;
         if (crumbs.decreased) sound.play(crumbs.value % 2 === 0 ? NIBBLE_LOW : NIBBLE_HIGH);
+        // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
+        music.tempoScale = computeTempoScale();
         music.refresh();
     }
 

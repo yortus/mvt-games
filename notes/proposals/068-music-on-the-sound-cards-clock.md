@@ -9,8 +9,13 @@
 > its `row` and `beat` become what the listener hears. Tests stay exact,
 > because a headless chip runs the same sequencer on its own clock.
 
-**Status:** proposed. Nothing built. The fixes that led here are in main,
-unstaged, as of 2026-10-20 (section 2).
+**Status:** implemented, 2026-10-21, in the worktree
+`.claude/worktrees/068-music-on-the-sound-card` (branch
+`068-music-on-the-sound-card`), awaiting review and the move to main. Both
+chips have a sequencer, every entry's music plays on it, and the docs say
+so. Section 15 says what was built, where it differs from the plan, and
+what was measured. The spike before it was confirmed on the user's phone
+over Bluetooth (section 14.4). The full build has not been on a phone yet.
 
 **Written:** 2026-10-20, against main at `4b0eabb5` plus the unstaged
 chip-clock work. Measured on this desktop in Node and in Playwright's
@@ -24,7 +29,9 @@ phone has been measured yet.
 [Sound and Music](../../packages/sites/docs/building-with-mvt/presenting-the-world/sound.md)
 (its "Time" section),
 [the Audio80 guide's Music and Time sections](../../packages/libraries/chiptune/docs/using-the-audio80.md),
-[heard-row.ts](../../packages/sites/arcade/src/entries/tune-tracker/views/heard-row.ts),
+[song-sequencer.ts](../../packages/libraries/chiptune/src/web/song-sequencer.ts),
+[web-song-slots.ts](../../packages/libraries/chiptune/src/web/web-song-slots.ts),
+[headless-song-slots.ts](../../packages/libraries/chiptune/src/headless/headless-song-slots.ts),
 [045](../archive/045-sound-chip.md) and [051](../archive/051-audio90-chip.md),
 which built the chips.
 
@@ -35,8 +42,8 @@ which built the chips.
 | How a pause stops it | As the chip clock already tells: ticks that bring no time | 5.2 |
 | What views see | The same `MusicPlayer`, without `update`. `row`, `beat` and `song` report what is heard | 6 |
 | How tests stay exact | A headless chip runs the same sequencer on its own clock, so note logs are unchanged | 7 |
-| What becomes of the lead | Kept, for writes a game stamps itself. Music no longer needs it | 8 |
-| Where MVT's rules change | One exception: a sound renderer schedules within a song, as a display schedules within a frame | 9 |
+| What becomes of the lead | Kept at 100 ms, for writes a game stamps itself. Music no longer needs it | 8, 12 |
+| Where MVT's rules change | Nowhere in the rules. The sequencer is the sound renderer's, not a view's: it schedules within a song, as a display schedules within a frame | 9, 15.3 |
 
 ---
 
@@ -153,7 +160,8 @@ The chip clock already tells three cases apart:
 
 - **A pause:** ticks keep coming, but bring no time.
 - **A stall:** no ticks come.
-- **A stall that lasts:** no ticks for 300 ms, as in a hidden tab.
+- **A stall that lasts:** no ticks for a second, as in a hidden tab (300 ms
+  before the spike, section 14.1).
 
 The sequencer stops on a pause, so pausing still pauses the music, notes
 held where they are, and resumes on the next tick that brings time. It
@@ -264,51 +272,233 @@ third: the library keeps the song's time, and the ticks gate it.
 - **A larger fixed lead alone is not enough.** It does not survive a frame
   longer than itself, nor the drain of the 50 ms longest step (section 2).
 
-## 12. Open Questions
+## 12. Open Questions, Decided
 
-1. **A hidden tab.** Should the music stop after 300 ms with no ticks, as
-   today, or play on, as most engines do? Recommend: stop, since the game
-   behind it has stopped.
-2. **A song started while audio cannot play.** Should it start from the
-   beginning when audio starts, or from where it would have got to, as
-   today? Recommend: from where it would have got to, so that a jingle that
-   has passed does not play late. The page can send how much game time has
-   passed since `play`.
-3. **`update` on `MusicPlayer`.** Remove it at once (0.x allows it), or
-   keep it as a no-op for one release? Recommend: remove it, with a
-   changeset that says so.
-4. **The lead.** Once music no longer needs it, should it drop back towards
-   35 ms for stamped writes, or stay at 100? Decide after measuring a phone.
-5. **The Perfmon's stall count.** Should it go on counting stalls of
-   stamped writes, which the Arcade no longer makes, or count something
-   music-specific, such as blocks the worklet rendered late?
+All five were decided as recommended, on 2026-10-21, as the work was done.
+
+1. **A hidden tab:** the music stops after a second with no ticks. The
+   clock already fades out then, and the sequencer moves only in blocks the
+   worklet renders.
+2. **A song started while audio cannot play:** it skips ahead to where it
+   would have got to. Each call carries the chip time it was made at, and
+   the sequencer skips by however far its clock is past it. The settings the
+   song writes on the way apply at once, and the notes it passed are left
+   out.
+3. **`update` on `MusicPlayer`:** removed, with a changeset that says so.
+4. **The lead:** stays at 100 ms. Nothing in the Arcade stamps its own
+   notes any more, so it costs nothing, and a shorter one would only matter
+   to a game that does. Do not reopen without a game that needs it.
+5. **The Perfmon's stall count:** kept, as "Chip stalls". A stall no longer
+   touches the music, but the count still shows frames that reach the
+   chips late.
 
 ## 13. Implementation Steps
 
-1. Spike on a branch: run `createSongPlayer` and an Audio90 driver in the
-   worklet, with songs sent by id, and only play and stop. Measure:
-   - the worklet's added size,
-   - Long Exposure at 6x throttle (stalls, and silent gaps),
-   - Long Exposure with a forced 250 ms busy loop on the page every 2 s,
-     which should be inaudible,
-   - and, if possible, the user's phone, with the Perfmon open.
-2. The full protocol: song definitions, play, queue, stop and tempo scale
-   by slot, held writes while suspended, and slot reports with the buffer
-   replies. Both chips.
-3. The page's `MusicPlayer` on the new protocol, answering `song` and
+1. ~~Spike: run `createSongPlayer` and an Audio90 driver in the worklet,
+   with songs sent by id, and only play and stop. Measure the worklet's
+   added size, Long Exposure at 6x throttle, and Long Exposure with the
+   page frozen on a timer.~~ Done, 2026-10-20 (section 14). Still to do:
+   the user's phone.
+2. ~~The full protocol: song definitions, play, queue, stop and tempo
+   scale by slot, held writes while suspended, and slot reports. Both
+   chips.~~ Done (section 15.1). The places come back as their own
+   messages, not with the buffer replies.
+3. ~~The page's `MusicPlayer` on the new protocol, answering `song` and
    `isPlaying` at once and `row`, `orderIndex` and `beat` from reports.
-   Remove `update`.
-4. The headless chips running the same sequencer, recording and rendering.
-   The audio views' tests should pass unchanged, apart from dropping their
-   `update` calls.
-5. The ten audio views: drop their update steps. The Tune Tracker: drop
-   `heard-row.ts`.
-6. Docs:
-   - AGENTS.md's "Sound is a view's job".
-   - The view skill's "Music and repeating sounds".
-   - Sound and Music's "Time" section, with the third kind of library.
-   - The Audio80 guide's Music and Time sections.
-   - The Audio90 guide's "Showing the Music as It Is Heard".
-   - Architecture rule 2, if the exception belongs there.
-7. A changeset (breaking, for `MusicPlayer.update`), and a decision on
-   open question 4.
+   Remove `update`.~~ Done.
+4. ~~The headless chips running the same sequencer, recording and
+   rendering.~~ Done. The audio views' tests pass, apart from a change to
+   when a tempo takes effect (section 15.2).
+5. ~~The ten audio views: drop their update steps. The Tune Tracker: drop
+   `heard-row.ts`.~~ Done. Views that set a tempo now set it in their
+   refresh step (section 15.2).
+6. ~~Docs.~~ Done: AGENTS.md's "Sound is a view's job", the view skill,
+   Sound and Music's "Time" section with a third kind of library, the
+   Audio80 guide's Time and Music sections, the Audio90 guide's "Showing
+   the Music as It Is Heard", the headless README, the package README and
+   the glossary, which gains "Sequencer". Architecture rule 2 is unchanged
+   (section 15.3).
+7. ~~A changeset, and a decision on open question 4.~~ Done:
+   `.changeset/music-on-the-sequencer.md`, a minor bump. Question 4 is
+   decided in section 12.
+8. Still to do: try the full build on a phone, and move the branch to main.
+
+## 14. The Spike
+
+Built on 2026-10-20, in main, unstaged.
+
+### 14.1 What it is
+
+- **In the worklet:** `audio90-sequencer.ts` runs a stock music player
+  through a second command writer. The writer's new `idOf` option names
+  each instrument by the id the page gave it, so the two writers' ids never
+  clash. Before each block the worklet renders, the sequencer moves the
+  song on by the block's length at the sound card's rate. It then restamps
+  each write with the chip time of the sample it falls on, and queues it
+  with the page's writes. So it plays only in blocks the worklet renders,
+  and it stops when the clock pauses or waits, as the game does.
+- **Messages:** `song` sends a song once, after its instruments, under the
+  page's ids and without their samples. `song-play` and `song-stop` start
+  and stop it. The worklet sends `song-row`, with the frame it starts at,
+  each time the sequencer reaches a new row.
+- **On the page:** the Audio90 gains optional `playSong`, `stopSong` and
+  `songPlace`. Only the browser's chip has them. `songPlace` finds the
+  newest reported row that has reached the speaker, from the speaker's
+  frame that `heardTime` already works out.
+- **In the Tune Tracker:** `tracker-playback.ts` plays on the chip's
+  sequencer where the chip has one. Elsewhere, as on the headless chip that
+  draws the thumbnail, it falls back to a music player and `heard-row.ts`.
+- **One change to the clock:** a stall now lasts up to 1 second, rather
+  than 300 ms, before the clock fades out. A song on the sequencer plays on
+  through a stall, so the limit only has to catch a hidden tab.
+
+### 14.2 Measured
+
+In headless Chromium against the dev server, playing Long Exposure for 30
+seconds. "Row timing error" is how far each row started from a row's length
+after the one before it. A block is 2.7 ms.
+
+| Conditions | Clock stalls | Worst row timing error | Silent gaps |
+| --- | --- | --- | --- |
+| No throttle | 0 | 2.1 ms | 0 |
+| 6x CPU throttle (frames up to 233 ms) | 15 | 2.1 ms | 0 |
+| Page frozen 250 ms every 2 s | 14 | 2.1 ms | 0 |
+| 4x throttle, page frozen 400 ms every 3 s, 300 ms stall limit | 9 | 125 ms | 9, about 100 ms each |
+| The same, with the 1 s stall limit | 9 | 2.1 ms | 0 |
+| Page frozen 700 ms every 4 s | 7 | 2.1 ms | 0 |
+
+The clock's stalls still happen, but the Tune Tracker's music no longer
+waits for them. The 300 ms limit was the only thing left that a stalled
+page could hear, which is why it went to 1 second.
+
+The Audio90 worklet grew from 27.8 KB (10.6 KB gzipped) to 38.3 KB
+(14.1 KB gzipped), bundled with rolldown and minified. It loads on the
+visitor's first press, so the home page's budget is untouched.
+
+### 14.3 What the spike leaves out
+
+- **Only play and stop:** no `queue` and no `tempoScale`. The Tune Tracker
+  uses neither.
+- **The Audio90 only.** The Audio80 and the other entries are untouched.
+- **The Perfmon's "Music stalls"** still counts the clock's stalls. On the
+  Tune Tracker, the music now plays through them, so the count no longer
+  says whether the music was heard to stall.
+- **Allocations:** a `song-row` reply allocates a small object on the audio
+  thread, about eight times a second for Long Exposure.
+- **Held writes:** a song played before the worklet runs waits with the
+  other messages, and starts from its beginning once the worklet runs.
+
+### 14.4 Found on the phone, 2026-10-21
+
+- **The music played without gaps**, over Bluetooth, with a few very brief
+  glitches. The frames were steady and the CPU low.
+- **The clock still stalled**, about 8 times in under a minute, with no
+  dropped frames. Ticks reach the worklet late without the page being late,
+  which fits the sound card asking for sound in large requests over
+  Bluetooth. The Tune Tracker's music plays through these stalls now.
+- **Pressing down quickly hung the tab.** Each press starts the next tune,
+  and `songPlace` went on reporting the old tune's rows until the new
+  tune's sound reached the speaker, which over Bluetooth takes a while. The
+  pattern view read the new tune with the old tune's place, past the end of
+  its order, and the exception stopped the page's loop. Fixed: each
+  `song-row` carries its song's id, the page keeps only the rows of the song
+  it last asked for, and the Tune Tracker's playback checks every place
+  against the tune it played. Step 3 must keep both: a reported place
+  always lags a change of song.
+- **After that fix**, on the same phone over Bluetooth, the Tune Tracker
+  sounds and works well, the rapid presses included (the user, 2026-10-21).
+
+## 15. As Built
+
+Built on 2026-10-21, in the worktree, on top of the spike.
+
+### 15.1 What was built
+
+- **Both chips have a sequencer.** `web/song-sequencer.ts` is one sequencer
+  for either chip, which the chip runner moves on before each block it
+  renders. Each slot plays through a song player (`SongPlayer`, the old
+  music player's engine, now internal) on a writer and a clock of its own.
+  So one slot can skip ahead without moving the others. The Audio80's
+  command writer gained `idOf` and `defineInstrument`, as the Audio90's did
+  in the spike, and the Audio80 gained an `Audio80Writer`, as the Audio90
+  has.
+- **The chips' interface.** Each chip has `openSongSlot()`, which returns a
+  `SongSlot`: `play`, `queue`, `stop`, `setTempoScale`, and the `song`,
+  `orderIndex`, `row` and `beat` heard. The spike's `playSong`, `stopSong`
+  and `songPlace` are gone. `createMusicPlayer` opens a slot, keeps its
+  calls until `refresh`, and answers with the song asked for until then.
+- **The protocol.** `song` sends a song once, under an id. `song-call` asks
+  a slot to play, queue, stop or change its tempo, stamped with the chip
+  time it was made at and the slot's generation. The worklet sends
+  `song-place` as a slot reaches a new row, or takes a call, with the
+  generation of its last call. A call that changes the song raises the
+  generation, and the page keeps only the places of the latest one. That
+  replaces the spike's song ids on rows, and it covers a place of the same
+  song played again, which song ids did not.
+- **The page's side.** `web/web-song-slots.ts` keeps the places, and
+  reports the newest that has reached the speaker. The beat heard is the
+  place's beat, moved on by the time since, at its tempo. Song messages
+  wait with the others until the worklet runs.
+- **Headless chips.** `headless/headless-song-slots.ts` runs a song player
+  for each slot on the chip itself, moved on by `AudioControls.update`. A
+  call takes effect at once, so a recording chip logs the same notes, at
+  the same times, as the old music player did. `renderSong` drives the song
+  player directly, so the sound tests' hashes are unchanged.
+- **The Arcade.** The page's chip slots open song slots lazily, once their
+  chip has loaded. The Tune Tracker reads its music player again, and shows
+  a place only when the player's song is the tune shown. The Perfmon's line
+  is "Chip stalls".
+
+### 15.2 Where it differs from the plan
+
+- **A tempo takes effect a tick later.** The sequencer has already played
+  the tick a view refreshes in, so a tempo the view sets then applies from
+  the next tick. In Burrow Bust, the walking tune moves on one tick (16 ms)
+  after the digger does, and its test says so. To start a song at a new
+  tempo, a view sets `tempoScale` in its refresh step, after `play`, and
+  the player sends the tempo ahead of the song. Burrow Bust, Crumb Chase,
+  Fenceline and Galaxy Raiders moved their tempos from the update step to
+  the refresh step for this.
+- **The headless advance refreshes every step.** `advanceHeadless`, which
+  draws the thumbnails, used to refresh once at the end. A music player
+  sends what it plays as it refreshes, so the Tune Tracker's tune never
+  started. Each step now refreshes, as each frame does. Fenceline's
+  thumbnail changed: its list makes each sheep's view as it refreshes, so
+  the sheep now arrive earlier and are part way through their steps. The
+  reference image was updated after a look. Every other image is
+  unchanged.
+- **Places travel on their own**, not with the buffer replies, so a slot
+  that reaches a new row between ticks sends it then.
+
+### 15.3 Architecture rule 2
+
+The rule says views hold no autonomous animations. The sequencer is not a
+view's: it belongs to the sound chip, as the compositor belongs to the
+display. The view still decides what plays, and writes it in its refresh
+step. So the rule stands as it is, and the exception lives in Sound and
+Music's new "When the Library Keeps the Time, and the Ticks Pause It".
+
+### 15.4 Measured
+
+In Playwright's headless Chromium shell, against a build of the worktree.
+"Row timing error" is the most a row started from the median row length
+after the one before. Rows are reported at the start of the block they fall
+in, so a block, 2.7 ms, is the finest this can see.
+
+| Entry, chip | Conditions | Clock stalls | Worst row timing error | Silent gaps |
+| --- | --- | --- | --- | --- |
+| Tune Tracker, Long Exposure, Audio90 | None | 0 | 2.7 ms | 0 |
+| | 6x CPU throttle | 8 | 2.7 ms | 0 |
+| | Page frozen 250 ms every 2 s | 9 | 2.7 ms | 0 |
+| | 4x throttle, page frozen 700 ms every 4 s | 4 | 2.7 ms | 0 |
+| Galaxy Raiders, Audio80 | None | 0 | 2.7 ms | 0 |
+| | Page frozen 250 ms every 2 s | 7 | 2.7 ms | 0 |
+
+Pausing Galaxy Raiders with Escape for 3 seconds: no rows while paused,
+and 30 rows in the 3 seconds after it resumed. Pressing down 15 times, 50
+ms apart, in the Tune Tracker: no page errors.
+
+The built worklets grew from 14.2 KB (5.7 KB gzipped) to 27.4 KB (10.3 KB
+gzipped) for the Audio80, and from 26.3 KB (10.1 KB gzipped) to 39.6 KB
+(14.7 KB gzipped) for the Audio90. They load on the visitor's first press,
+so the home page's first load is unchanged.

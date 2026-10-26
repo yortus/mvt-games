@@ -289,8 +289,12 @@ const JUMP_MARGIN_MS = 200;
 const RESUME_LEAD_FRACTION = 0.5;
 /** How many ticks in a row with no new chip time mean the game has paused. One alone can be a frame with no time. */
 const PAUSE_AFTER_TICKS = 2;
-/** The longest it stays stalled, in ms, before it fades out. A hidden tab, or a long hang, stops the ticks for longer. */
-const MAX_STALL_MS = 300;
+/**
+ * The longest it stays stalled, in ms, before it fades out. A hidden tab
+ * stops the ticks for longer. A song on the sequencer plays on while it is
+ * stalled, so this rides out the longest pause a busy page makes.
+ */
+const MAX_STALL_MS = 1000;
 /** How much faster than real time it may play chip time, to let go of a lead that is too long. */
 const MAX_SPEED_UP = 0.005;
 /**

@@ -358,7 +358,6 @@ function recordSong(song: Audio90Song): string[] {
     player.refresh();
     for (let i = 0; i < SONG_TICKS; i++) {
         controls.update(TICK_MS);
-        player.update(TICK_MS);
         player.refresh();
     }
     return describeSongNotes(chip.log);

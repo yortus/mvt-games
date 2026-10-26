@@ -3,8 +3,10 @@ import {
     AUDIO90_EFFECT_INDEX,
     AUDIO90_SCOPE_LENGTH,
     type Audio90Instrument,
+    createAudio90Song,
     type Audio90InstrumentData,
     type Audio90Sample,
+    type Audio90Song,
     DEFAULT_AUDIO90_INSTRUMENT,
     ENGINE_SAMPLE,
     OP90_NOTE_ON,
@@ -15,6 +17,7 @@ import {
 import { type ChipBatch, COMMAND_STRIDE } from '../shared';
 import { AUDIO90_PROCESSOR_NAME } from './audio90-runner';
 import { createFakeAudioContext, FAKE_BASE_LATENCY_S, FAKE_OUTPUT_LATENCY_S, FAKE_SAMPLE_RATE, type FakeAudioContext } from './fake-audio-context';
+import type { SongMessage, SongPlaceReply } from './song-messages';
 import { createWebAudio90 } from './web-audio90';
 
 const TICK_MS = 16;
@@ -119,6 +122,101 @@ describe('createWebAudio90, with a stand-in audio context', () => {
         expect(audio90.heardTime).toBe(audio90.time);
     });
 
+    it('sends a song once, after its instruments and without their samples, then each call to its slot', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        const slot = audio90.openSongSlot();
+        const song = createSequencedSong(createInstrument({ engine: ENGINE_SAMPLE }, createSample()));
+        tick(controls);
+        slot.play(song);
+        slot.play(song);
+        expect(fake.messages.map((message) => message.kind)).toEqual(['batch', 'sample', 'instrument', 'song', 'song-call', 'song-call']);
+        const sent = fake.messages[3] as SongMessage;
+        expect(sent.kind === 'song' && (sent.song as Audio90Song).instruments[0].sample).toBeUndefined();
+        expect(fake.messages[4]).toMatchObject({ kind: 'song-call', slot: 1, call: 'play', songId: 1, generation: 1, stampMs: TICK_MS });
+        expect(fake.messages[5]).toMatchObject({ generation: 2 });
+        slot.setTempoScale(0.5);
+        expect(fake.messages.at(-1)).toMatchObject({ call: 'tempo', value: 0.5, generation: 2 });
+        slot.stop();
+        expect(fake.messages.at(-1)).toMatchObject({ call: 'stop', generation: 3 });
+    });
+
+    it('says the song asked for is at its start until a place of it reaches the speaker, then which row is heard', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        const slot = audio90.openSongSlot();
+        expect(slot.song).toBeUndefined();
+        const song = createSequencedSong(createInstrument());
+        slot.play(song);
+        expect([slot.song, slot.orderIndex, slot.row]).toEqual([song, 0, 0]);
+        // The speaker trails the context's count by its latency
+        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE, stallCount: 0 });
+        const lagFrames = (FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S) * FAKE_SAMPLE_RATE;
+        for (let row = 0; row < 3; row++) fake.reply(createPlace({ frame: 4800 + row * 4800, row }));
+        fake.setCurrentTime((4000 + lagFrames) / FAKE_SAMPLE_RATE);
+        expect([slot.song, slot.row]).toEqual([song, 0]);
+        fake.setCurrentTime((10000 + lagFrames) / FAKE_SAMPLE_RATE);
+        expect([slot.song, slot.row]).toEqual([song, 1]);
+        fake.setCurrentTime((14400 + lagFrames) / FAKE_SAMPLE_RATE);
+        expect(slot.row).toBe(2);
+    });
+
+    it('works out the beat heard from the place heard, moved on by the time since, at its tempo', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        const slot = audio90.openSongSlot();
+        slot.play(createSequencedSong(createInstrument()));
+        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE, stallCount: 0 });
+        fake.reply(createPlace({ frame: 0, beat: 2, tempoScale: 0.5 }));
+        const lagFrames = (FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S) * FAKE_SAMPLE_RATE;
+        // Half a second after the place, at half the song's 120 BPM, is half a beat on
+        fake.setCurrentTime((FAKE_SAMPLE_RATE / 2 + lagFrames) / FAKE_SAMPLE_RATE);
+        expect(slot.beat).toBeCloseTo(2.5, 6);
+    });
+
+    it('drops a place of the song before, still on its way, once another song plays', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        const slot = audio90.openSongSlot();
+        const first = createSequencedSong(createInstrument());
+        const second = createSequencedSong(createInstrument());
+        slot.play(first);
+        fake.reply(createPlace({ generation: 1, row: 0 }));
+        slot.play(second);
+        // Sent by the worklet before it heard of the second song
+        fake.reply(createPlace({ generation: 1, orderIndex: 0, row: 1 }));
+        expect([slot.song, slot.row]).toEqual([second, 0]);
+        fake.reply(createPlace({ generation: 2, songId: 2, row: 0 }));
+        expect(slot.song).toBe(second);
+    });
+
+    it('reports the song gone once a place says it ended', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        const slot = audio90.openSongSlot();
+        slot.play(createSequencedSong(createInstrument()));
+        fake.reply(createPlace({ songId: 0 }));
+        expect(slot.song).toBeUndefined();
+    });
+
+    it('forgets its songs as it resets, and sends a song again after', async () => {
+        const fake = createFakeContext('running');
+        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        await controls.ready;
+        const slot = audio90.openSongSlot();
+        const song = createSequencedSong(createInstrument());
+        slot.play(song);
+        controls.reset();
+        expect(slot.song).toBeUndefined();
+        slot.play(song);
+        expect(fake.messages.filter((message) => message.kind === 'song')).toHaveLength(2);
+    });
+
     it('clears its scope when they are turned off or the chip resets, and drops a scope that comes after', async () => {
         const fake = createFakeContext('running');
         const { audio90, controls } = createWebAudio90({ context: fake.context });
@@ -155,6 +253,16 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 // ---------------------------------------------------------------------------
 
 const SAMPLE_LENGTH = 256;
+
+/** A one-row song on `instrument`, for the sequencer. */
+function createSequencedSong(instrument: Audio90Instrument) {
+    return createAudio90Song({ bpm: 120, instruments: { s: instrument }, patterns: { p: '| C-4 s' }, order: ['p'] });
+}
+
+/** A place of slot 1's first song, as the worklet sends it: playing, at the start, unless `place` says otherwise. */
+function createPlace(place: Partial<SongPlaceReply>): SongPlaceReply {
+    return { kind: 'song-place', slot: 1, generation: 1, frame: 0, songId: 1, orderIndex: 0, row: 0, beat: 0, tempoScale: 1, ...place };
+}
 
 interface Controls {
     readonly update: (deltaMs: number) => void;

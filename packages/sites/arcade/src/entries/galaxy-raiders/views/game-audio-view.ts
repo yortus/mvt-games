@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { setRefresh, setUpdate } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 import { createMusicPlayer, type Audio80 } from '@mvtjs/chiptune';
 import { watch } from '@mvtjs/utils';
 import { GAME_OVER, RESPAWN, SHIP_HIT, SHOT, STAGE_CLEAR, STAGE_FANFARE, STAGE_TUNE } from '../data';
@@ -41,8 +41,8 @@ export const HURRY_TEMPO = 1.15;
  * a jingle when a stage is cleared, and a slow tune when the game is over. It
  * also plays the ship's shots, its loss and its return. It plays a sound only
  * when a poll of its bindings sees a change, so a second refresh in the same
- * tick plays nothing. The music player's place in the song is the view's
- * presentation state. It advances in the view's update step, so the music
+ * tick plays nothing. Which tune plays, and how fast, is the view's
+ * presentation state. The chip's own sequencer keeps the tune's place, and it
  * pauses with the game.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
@@ -52,10 +52,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const music = createMusicPlayer({ audio80: sound });
     const watcher = watch({ phase: bindings.phase, shots: bindings.shotsFired });
 
-    setUpdate(view, (deltaMs) => {
-        music.tempoScale = music.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
-        music.update(deltaMs);
-    });
     setRefresh(view, refresh);
     return view;
 
@@ -65,6 +61,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
         // A rise in the count is a shot. The first poll and a reset to 0 on a restart are not rises
         if (w.shots.increased) sound.play(SHOT);
+        // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
+        music.tempoScale = music.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
         music.refresh();
     }
 

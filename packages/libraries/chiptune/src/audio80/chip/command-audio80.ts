@@ -21,7 +21,7 @@ import {
     type Audio80Wave,
 } from '../synthesiser';
 import type { Audio80Instrument, Audio80SoundEffect } from '../notation';
-import type { Audio80 } from './audio80';
+import type { Audio80Writer } from './audio80';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -36,7 +36,14 @@ import type { Audio80 } from './audio80';
  * id. It passes the instrument or effect to `onInstrument` or `onEffect`, so
  * the caller can send it to the synthesiser before the commands that use it.
  */
-export interface CommandAudio80 extends Audio80, CommandWriter {}
+export interface CommandAudio80 extends Audio80Writer, CommandWriter {
+    /**
+     * Returns the id of `instrument`'s commands, defining it if it has not
+     * been played since the last `forget`. A song sent to the worklet names
+     * its instruments by these ids.
+     */
+    defineInstrument: (instrument: Audio80Instrument) => number;
+}
 
 // ---------------------------------------------------------------------------
 // Options
@@ -56,6 +63,13 @@ export interface CommandAudio80Options {
     readonly onEffect: (id: number, data: EffectData) => void;
     /** How many commands a batch holds before it grows. Defaults to 256. */
     readonly capacity?: number;
+    /**
+     * Gives the id of an instrument defined elsewhere, or undefined for one
+     * this writer must define. A writer in the worklet uses it for the
+     * instruments the page has already defined, so that the two writers'
+     * ids never clash.
+     */
+    readonly idOf?: (instrument: Audio80Instrument) => number | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,7 +81,7 @@ export interface CommandAudio80Options {
  * Its clock starts at 0, and nothing has been written yet.
  */
 export function createCommandAudio80(options: CommandAudio80Options): CommandAudio80 {
-    const { onInstrument, onEffect } = options;
+    const { onInstrument, onEffect, idOf } = options;
     const buffer = createCommandBuffer({ capacity: options.capacity });
     const write = buffer.write;
     // The clock, in a typed array: V8 boxes a double kept in a closure variable each time it is written, and this is written every tick
@@ -121,6 +135,8 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
 
         clear: buffer.clear,
 
+        defineInstrument: (instrument) => ensureInstrumentId(instrument),
+
         forget() {
             instrumentIds.clear();
             effectIds.clear();
@@ -134,6 +150,8 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
     return writer;
 
     function ensureInstrumentId(instrument: Audio80Instrument): number {
+        const known = idOf?.(instrument);
+        if (known !== undefined) return known;
         let id = instrumentIds.get(instrument);
         if (id === undefined) {
             id = nextId++;

@@ -1,5 +1,5 @@
 import { type Audio80Character, isAudio80Song, isAudio80SoundEffect, type Audio80Song, type Audio80SoundEffect } from '../audio80';
-import { createMusicPlayer } from '../music-player';
+import { createSongPlayer } from '../music-player';
 import { type Audio90Character, type Audio90Song, type Audio90SoundEffect, isAudio90Song, isAudio90SoundEffect } from '../audio90';
 import { type AudioControls, computeSongDurationMs } from '../shared';
 import { createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
@@ -59,7 +59,8 @@ export function renderSong(song: Audio80Song | Audio90Song, options: Audio80Rend
     const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
     if (song.chip === 'audio90') {
         const chip = createHeadlessAudio90({ render: options as Audio90RenderOptions });
-        const player = createMusicPlayer({ audio90: chip.audio90 });
+        // The song player itself, rather than a music player on a slot, so the song stops in a tick before that tick's notes are written
+        const player = createSongPlayer({ audio90: chip.audio90 });
         player.play(song);
         return renderStereoTicks(chip, durationMs, tickMs, (deltaMs) => {
             // Render one pass. A looping song is stopped where it would start again
@@ -69,7 +70,7 @@ export function renderSong(song: Audio80Song | Audio90Song, options: Audio80Rend
         });
     }
     const chip = createHeadlessAudio80({ render: options as Audio80RenderOptions });
-    const player = createMusicPlayer({ audio80: chip.audio80 });
+    const player = createSongPlayer({ audio80: chip.audio80 });
     player.play(song);
     return renderTicks(chip, durationMs, tickMs, (deltaMs) => {
         if (song.loop >= 0 && chip.audio80.time >= passMs) player.stop();

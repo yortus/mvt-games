@@ -447,32 +447,42 @@ pays for another's.
 
 ## Showing the Music as It Is Heard
 
-The chip plays a little behind the game, by its lead and the sound card's
-latency, as [Time](using-the-audio80.md#time-the-chip-runs-on-game-time)
-explains. A music player writes each row of a song at `sound.time`, so its
-`row` runs ahead of what the listener hears, by 100 ms or more. For most
-games that never matters. But a view that shows the song as it plays, as a
-tracker does, would light each row before you hear it.
+The sound the listener hears trails the game a little, by the sound card's
+latency and, for the notes a game writes itself, the chip's lead. For most
+games that never matters. But a view that shows a song as it plays, as a
+tracker does, must show the row being heard, not the row the game is on.
 
-`sound.heardTime` tells you how far the listener has got. It is a chip
-time, like `sound.time`, but it trails behind: it is the moment in the
-music that is coming out of the speaker right now.
+A music player does this for you. Its `orderIndex` and `row` are the row
+coming out of the speaker now, so a view can show them as they are:
 
-To show the row the listener hears, keep a short history of rows. Each
-time the music player moves on to a new row, note the row, and note
-`sound.time` as the time that row starts. Then show the newest row whose
-start time `heardTime` has reached. The rows after it have been sent to
-the chip, but you haven't heard them yet.
+```ts
+const music = createMusicPlayer({ audio90: sound });
+// In the view that draws the song
+const row = () => music.row;
+```
 
-For example, say one row starts at 4,000 ms and the next at 4,125 ms. If
-`heardTime` is 4,060, the listener is hearing the first row, even if the
-music player has moved on to the second.
+There is one catch, just after a change of song. The player then reports
+the new song from its start, until the new song is heard. If your view
+chooses what to draw by its own state, such as the tune the visitor
+picked, check that `music.song` is that tune before you read the row.
+Otherwise a row of one song could be read against another's patterns:
 
-Keep the history in arrays you make once, and add to it in the view's
-update step, so nothing is allocated as the song plays. The Arcade's Tune
-Tracker does this in its `heard-row.ts`. A chip with no speaker, such as
-the headless chip, has nothing to wait for, so its `heardTime` is always
-the same as its `time`.
+```ts
+const row = () => (music.song === chosen() ? music.row : 0);
+```
+
+For notes a view writes itself, with `noteOn`, `sound.heardTime` tells you
+how far the listener has got. It is a chip time, like `sound.time`, but it
+trails behind. Keep a short history of what you wrote, with the chip time
+each part starts at, and show the newest part whose start `heardTime` has
+reached. For example, say one note starts at 4,000 ms and the next at
+4,125 ms. If `heardTime` is 4,060, the listener is hearing the first. Keep
+the history in arrays you make once, so that nothing is allocated as the
+music plays.
+
+A chip with no speaker, such as the headless chip, has nothing to wait
+for. Its music player reports the row it is on, and its `heardTime` is
+always the same as its `time`.
 
 ---
 

@@ -1,6 +1,9 @@
-import { type AudioControls, type ChipBatch, type ChipReply, clampVolume, type CommandWriter, MAX_MIX_VOLUME } from '../shared';
+import type { PlayableSong } from '../music-player';
+import { type AudioControls, type ChipBatch, type ChipReply, clampVolume, type CommandWriter, MAX_MIX_VOLUME, type SongSlot } from '../shared';
 import type { PassedMessage, RunnerMessage } from './chip-runner';
 import { createHeldWrites, type HeldWriteSlots } from './held-writes';
+import type { SongMessage, SongPlaceReply } from './song-messages';
+import { createWebSongSlots } from './web-song-slots';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -8,10 +11,11 @@ import { createHeldWrites, type HeldWriteSlots } from './held-writes';
 
 /**
  * What every chip in a browser has: an `AudioWorklet` node that plays the
- * chip's writes, and the controls that send them to it. Each chip's factory
- * makes its writer, then this, and joins the two.
+ * chip's writes, the controls that send them to it, and the slots of the
+ * chip's sequencer in the worklet. Each chip's factory makes its writer,
+ * then this, and joins the two. `S` is the chip's song type.
  */
-export interface WebChip<D extends PassedMessage> {
+export interface WebChip<D extends PassedMessage, S extends PlayableSong> {
     /** The chip's controls. */
     readonly controls: AudioControls;
     /**
@@ -21,6 +25,11 @@ export interface WebChip<D extends PassedMessage> {
      */
     readonly heardTime: number;
     /**
+     * The audio context's frame reaching the speaker now, or undefined until
+     * the worklet has replied and while the context is not running.
+     */
+    readonly speakerFrame: number | undefined;
+    /**
      * Sends a message for the chip's own part of the worklet, such as one
      * that defines an instrument. It is sent even while the audio context is
      * suspended, and kept until the worklet runs if it does not yet. The port
@@ -28,6 +37,8 @@ export interface WebChip<D extends PassedMessage> {
      * it. The buffers in `transfer` move with it, once the worklet runs.
      */
     send: (message: D, transfer?: Transferable[]) => void;
+    /** Opens a slot on the chip's sequencer in the worklet, which plays one song at a time on the sound card's clock. */
+    openSongSlot: () => SongSlot<S>;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,7 +46,7 @@ export interface WebChip<D extends PassedMessage> {
 // ---------------------------------------------------------------------------
 
 /** How to make a chip's worklet node and controls. */
-export interface WebChipOptions {
+export interface WebChipOptions<S extends PlayableSong> {
     /** The audio context to play in. */
     readonly context: AudioContext;
     /** The chip's writer, whose commands the controls send each tick. */
@@ -54,6 +65,12 @@ export interface WebChipOptions {
     readonly onReply?: (reply: { readonly kind: string }) => void;
     /** Called as the controls reset the chip, for what the chip's own part must reset too. */
     readonly onReset?: () => void;
+    /**
+     * Readies a song to send to the worklet, the first time it is played:
+     * defines its instruments with the writer, and returns the ids they were
+     * given, with the song as it travels.
+     */
+    readonly prepareSong: (song: S) => { readonly song: object; readonly instrumentIds: readonly number[] };
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +82,7 @@ export interface WebChipOptions {
  * `ready` resolves once the worklet is running. Until then, and while the
  * context is suspended, the controls keep the writes whose effect lasts.
  */
-export function createWebChip<D extends PassedMessage>(options: WebChipOptions): WebChip<D> {
+export function createWebChip<D extends PassedMessage, S extends PlayableSong>(options: WebChipOptions<S>): WebChip<D, S> {
     const { context, writer } = options;
 
     const output = context.createGain();
@@ -78,7 +95,7 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
     let isDestroyed = false;
 
     // Messages sent before the worklet runs, sent once it does
-    const waiting: D[] = [];
+    const waiting: (D | SongMessage)[] = [];
     // Batch buffers the worklet has sent back, to reuse
     const spares: Float64Array[] = [];
     // The writes kept while the chip cannot play, sent once it can
@@ -93,6 +110,13 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
     const heard = new Float64Array(HEARD_FIELDS);
     let hasHeard = false;
     let stallCount = 0;
+    const songSlots = createWebSongSlots<S>({
+        send: (message) => send(message),
+        prepare: options.prepareSong,
+        time: () => writer.time,
+        speakerFrame: () => (!hasHeard || context.state !== 'running' ? undefined : findSpeakerFrame()),
+        sampleRate: () => context.sampleRate,
+    });
 
     const ready = Promise.resolve().then(async () => {
         await context.audioWorklet.addModule(options.processorUrl);
@@ -109,7 +133,10 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
         // cannot run part way through it
         node.port.onmessage = (event: MessageEvent<ChipReply | { readonly kind: string }>) => {
             const reply = event.data;
-            if (isBufferReply(reply)) {
+            if (reply.kind === 'song-place') {
+                songSlots.receive(reply as SongPlaceReply);
+            }
+            else if (isBufferReply(reply)) {
                 if (spares.length < MAX_SPARES) spares.push(reply.commands);
                 heard[PLAYHEAD_MS] = reply.playheadMs;
                 heard[FRAME] = reply.frame;
@@ -201,6 +228,8 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
             held.clear();
             waiting.length = 0;
             hasHeard = false;
+            // The worklet's sequencer forgets its songs as it resets, so the slots do too
+            songSlots.reset();
             options.onReset?.();
             if (node === undefined) return;
             node.port.postMessage({ kind: 'reset' } satisfies RunnerMessage);
@@ -231,19 +260,30 @@ export function createWebChip<D extends PassedMessage>(options: WebChipOptions):
         controls,
         get heardTime() {
             if (!hasHeard || context.state !== 'running') return writer.time;
-            // The frame at the speaker now, and the chip time the worklet's clock had reached there
-            const speakerFrame = context.currentTime * context.sampleRate - heard[SPEAKER_LAG_FRAMES];
-            const time = heard[PLAYHEAD_MS] + (speakerFrame - heard[FRAME]) * heard[MS_PER_SAMPLE];
+            // The chip time the worklet's clock had reached at the frame now at the speaker
+            const time = heard[PLAYHEAD_MS] + (findSpeakerFrame() - heard[FRAME]) * heard[MS_PER_SAMPLE];
             return time < writer.time ? time : writer.time;
         },
-        send(message, transfer) {
-            if (isDestroyed) return;
-            // A message kept until the worklet runs is copied as it is sent then, rather than moved
-            if (node === undefined) waiting.push(message);
-            else if (transfer === undefined) node.port.postMessage(message);
-            else node.port.postMessage(message, transfer);
+        get speakerFrame() {
+            return !hasHeard || context.state !== 'running' ? undefined : findSpeakerFrame();
         },
+        send,
+        openSongSlot: () => songSlots.open(),
     };
+
+    /** Sends a message to the worklet, or keeps it until the worklet runs. */
+    function send(message: D | SongMessage, transfer?: Transferable[]): void {
+        if (isDestroyed) return;
+        // A message kept until the worklet runs is copied as it is sent then, rather than moved
+        if (node === undefined) waiting.push(message);
+        else if (transfer === undefined) node.port.postMessage(message);
+        else node.port.postMessage(message, transfer);
+    }
+
+    /** The audio context's frame at the speaker now, as the last reply measured the speaker's lag. */
+    function findSpeakerFrame(): number {
+        return context.currentTime * context.sampleRate - heard[SPEAKER_LAG_FRAMES];
+    }
 
     /** How many frames the speaker trails the context's count, as the audio context reports it. */
     function measureSpeakerLag(): number {

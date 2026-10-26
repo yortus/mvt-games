@@ -38,7 +38,14 @@ import type { Audio90Writer } from './audio90';
  * sample goes first, then the instrument or effect that plays it, with the
  * sample's id in its data.
  */
-export interface CommandAudio90 extends Audio90Writer, CommandWriter {}
+export interface CommandAudio90 extends Audio90Writer, CommandWriter {
+    /**
+     * Returns the id of `instrument`'s commands, defining it, and its sample,
+     * if it has not been played since the last `forget`. A song sent to the
+     * worklet names its instruments by these ids.
+     */
+    defineInstrument: (instrument: Audio90Instrument) => number;
+}
 
 // ---------------------------------------------------------------------------
 // Options
@@ -54,6 +61,13 @@ export interface CommandAudio90Options {
     readonly onSample: (id: number, data: Audio90SampleData) => void;
     /** How many commands a batch holds before it grows. Defaults to 256. */
     readonly capacity?: number;
+    /**
+     * Gives the id of an instrument defined elsewhere, or undefined for one
+     * this writer must define. A writer in the worklet uses it for the
+     * instruments the page has already defined, so that the two writers'
+     * ids never clash.
+     */
+    readonly idOf?: (instrument: Audio90Instrument) => number | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +79,7 @@ export interface CommandAudio90Options {
  * Its clock starts at 0, and nothing has been written yet.
  */
 export function createCommandAudio90(options: CommandAudio90Options): CommandAudio90 {
-    const { onInstrument, onEffect, onSample } = options;
+    const { onInstrument, onEffect, onSample, idOf } = options;
     const buffer = createCommandBuffer({ capacity: options.capacity });
     const write = buffer.write;
     // The clock, in a typed array: V8 boxes a double kept in a closure variable each time it is written, and this is written every tick
@@ -123,6 +137,8 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
 
         clear: buffer.clear,
 
+        defineInstrument: (instrument) => ensureInstrumentId(instrument),
+
         forget() {
             instrumentIds.clear();
             effectIds.clear();
@@ -137,6 +153,8 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
     return writer;
 
     function ensureInstrumentId(instrument: Audio90Instrument): number {
+        const known = idOf?.(instrument);
+        if (known !== undefined) return known;
         let id = instrumentIds.get(instrument);
         if (id === undefined) {
             const data = withSample(instrument.data, instrument.sample);

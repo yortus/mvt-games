@@ -52,9 +52,9 @@ export interface GameAudioViewBindings {
  *
  * The repeats are the view's presentation state. Each is timed by a
  * metronome, which counts beats in the view's update step, so the repeats
- * stop while the game is paused. The music player's place in the song
- * advances in the update step too. The refresh step plays a sound each time a
- * count rises, the metronomes' and the model's alike.
+ * stop while the game is paused. The chip's own sequencer keeps the song's
+ * place, and it pauses with the game too. The refresh step plays a sound each
+ * time a count rises, the metronomes' and the model's alike.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound } = bindings;
@@ -93,7 +93,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         saucers.update(deltaMs);
         siren.periodMs = isPlaying && bindings.isWaitingAtBase() ? SIREN_MS : 0;
         siren.update(deltaMs);
-        music.update(deltaMs);
     }
 
     function refresh(): void {

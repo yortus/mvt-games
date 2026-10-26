@@ -18,7 +18,12 @@ export interface PerfmonFloatViewBindings {
     readonly metrics: () => PerformanceMetrics | undefined;
     /** The metrics that can't be measured as things stand, shown as n/a. */
     readonly unmeasured: () => readonly MetricKind[];
-    /** How many times the music has stalled since the page loaded, because a frame came later than the sound chips allow for. */
+    /**
+     * How many times the sound chips have stalled since the page loaded,
+     * because a frame came later than their lead allows for. The music and
+     * the effects play on through a stall. Only the notes a game writes
+     * itself wait for it.
+     */
     readonly stallCount: () => number;
 }
 
@@ -35,7 +40,7 @@ export interface PerfmonFloatViewBindings {
  * drop in front of it.
  * The explanation's text is left to scroll, rather than drag. The gauge in the
  * nav, or in the runner's bar, opens and closes it. Under the metrics, it
- * counts the music's stalls, which should stay at 0.
+ * counts the sound chips' stalls, a sign of frames that reach them late.
  */
 export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
     // Presentation state: where the visitor has dragged the panel, its left
@@ -56,7 +61,7 @@ export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
     const panel = PerfmonView({ metrics: bindings.metrics, unmeasured: bindings.unmeasured, title: 'Performance', infoNote: NOTE });
     panel.append(
         <div class="perfmon-float-stalls">
-            <span text="Music stalls" />
+            <span text="Chip stalls" />
             <span text={stallsShown} />
         </div>,
     );

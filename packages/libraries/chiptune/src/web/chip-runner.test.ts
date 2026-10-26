@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio80Instrument, createCommandAudio80 } from '../audio80';
+import { createAudio80Instrument, createAudio80Song, createCommandAudio80 } from '../audio80';
 import {
-    type Audio90Instrument, type Audio90InstrumentData, AUDIO90_SCOPE_LENGTH, AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS, createCommandAudio90, DEFAULT_AUDIO90_INSTRUMENT,
-    ENGINE_SAMPLE, WAVE90_SAW,
+    type Audio90Instrument, type Audio90InstrumentData, AUDIO90_SCOPE_LENGTH, AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS, createAudio90Song, createCommandAudio90,
+    DEFAULT_AUDIO90_INSTRUMENT, ENGINE_SAMPLE, WAVE90_SAW,
 } from '../audio90';
 import { measurePeak } from '../headless';
 import type { ChipReply } from '../shared';
 import { type Audio80PassedMessage, createAudio80Runner } from './audio80-runner';
 import { type Audio90PassedMessage, type Audio90ScopeReply, BLOCKS_PER_SCOPE, createAudio90Runner } from './audio90-runner';
 import type { RunnerMessage } from './chip-runner';
+import type { SongCall, SongCallMessage, SongPlaceReply } from './song-messages';
 
 const SAMPLE_RATE = 48000;
 const BLOCK = 128;
@@ -134,6 +135,129 @@ describe('chip runner, running an Audio80', () => {
     });
 });
 
+describe('chip runner, running a chip\'s sequencer', () => {
+    it('plays a song it was sent, row by row, at the song\'s tempo', () => {
+        const { runner, flush, receive, places, sendSong, call } = setUpAudio90();
+        sendSong(1, SEQUENCED_SONG);
+        receive(call({ call: 'play', songId: 1, generation: 1 }));
+        const left = new Float32Array(BLOCK);
+        const right = new Float32Array(BLOCK);
+        let loudest = 0;
+        for (let tick = 0; tick < 60; tick++) {
+            flush(TICK_MS);
+            for (let b = 0; b < BLOCKS_PER_TICK; b++) {
+                runner.process([left, right]);
+                loudest = Math.max(loudest, measurePeak(left));
+            }
+        }
+        expect(loudest).toBeGreaterThan(0.05);
+        const rows = places.filter((place) => place.songId === 1);
+        expect(rows.length).toBeGreaterThan(4);
+        // Each row starts a row's length after the one before, to within a block
+        for (let i = 2; i < rows.length; i++) expect(Math.abs(rows[i].frame - rows[i - 1].frame - SEQUENCED_ROW_FRAMES)).toBeLessThanOrEqual(BLOCK);
+    });
+
+    it('plays on at the song\'s tempo while the ticks stop coming, as they do in a late frame', () => {
+        const { runner, flush, receive, places, sendSong, call } = setUpAudio90();
+        sendSong(1, SEQUENCED_SONG);
+        receive(call({ call: 'play', songId: 1, generation: 1 }));
+        const left = new Float32Array(BLOCK);
+        const right = new Float32Array(BLOCK);
+        playTicks(runner, flush, left, right, 20);
+        const placesBefore = places.length;
+        // A quarter of a second with no tick: far longer than the lead
+        const blocks = Math.round(0.25 * SAMPLE_RATE / BLOCK);
+        for (let b = 0; b < blocks; b++) runner.process([left, right]);
+        const during = places.slice(placesBefore);
+        expect(during.length).toBeGreaterThanOrEqual(Math.floor(0.25 * SAMPLE_RATE / SEQUENCED_ROW_FRAMES) - 1);
+        for (let i = 1; i < during.length; i++) expect(Math.abs(during[i].frame - during[i - 1].frame - SEQUENCED_ROW_FRAMES)).toBeLessThanOrEqual(BLOCK);
+    });
+
+    it('holds the song while the ticks bring no time, as they do while the game is paused', () => {
+        const { runner, flush, receive, places, sendSong, call } = setUpAudio90();
+        sendSong(1, SEQUENCED_SONG);
+        receive(call({ call: 'play', songId: 1, generation: 1 }));
+        const left = new Float32Array(BLOCK);
+        const right = new Float32Array(BLOCK);
+        playTicks(runner, flush, left, right, 20);
+        const placesBefore = places.length;
+        for (let tick = 0; tick < 60; tick++) {
+            flush(0);
+            for (let b = 0; b < BLOCKS_PER_TICK; b++) runner.process([left, right]);
+        }
+        // At most the row it was part way into as the pause began
+        expect(places.length - placesBefore).toBeLessThanOrEqual(1);
+        expect(measurePeak(left)).toBe(0);
+    });
+
+    it('sends each place with the generation of the last call its slot took', () => {
+        const { runner, flush, receive, places, sendSong, call } = setUpAudio90();
+        sendSong(1, SEQUENCED_SONG);
+        receive(call({ call: 'play', songId: 1, generation: 1 }));
+        const left = new Float32Array(BLOCK);
+        const right = new Float32Array(BLOCK);
+        playTicks(runner, flush, left, right, 10);
+        expect(places.at(-1)?.generation).toBe(1);
+        receive(call({ call: 'play', songId: 1, generation: 2 }));
+        playTicks(runner, flush, left, right, 10);
+        expect(places.at(-1)?.generation).toBe(2);
+        expect(places.filter((place) => place.generation === 2)[0]).toMatchObject({ songId: 1, orderIndex: 0, row: 0 });
+    });
+
+    it('skips a song started at a chip time it has played past ahead to where it would have got to, leaving out the notes it passed', () => {
+        const { runner, flush, receive, places, sendSong, call } = setUpAudio90();
+        const left = new Float32Array(BLOCK);
+        const right = new Float32Array(BLOCK);
+        // The page asked for the song at chip time 0, but the worklet only hears of it a second later, as when
+        // the sound card could not play
+        playTicks(runner, flush, left, right, 60);
+        sendSong(1, SEQUENCED_SONG);
+        receive(call({ call: 'play', songId: 1, generation: 1, stampMs: 0 }));
+        playTicks(runner, flush, left, right, 1);
+        const first = places.find((place) => place.songId === 1);
+        // About 60 ticks of 16 ms, less the lead, is well into the song. Where the clock plays exactly moves
+        // it by a row at most
+        const skippedMs = 60 * TICK_MS - LEAD_MS;
+        const rowMs = SEQUENCED_ROW_FRAMES * 1000 / SAMPLE_RATE;
+        expect(Math.abs((first?.row ?? 0) - Math.floor(skippedMs / rowMs) % 8)).toBeLessThanOrEqual(1);
+        expect(first?.row).toBeGreaterThan(0);
+    });
+
+    it('stops the song, and forgets every song as it resets', () => {
+        const { runner, flush, receive, places, sendSong, call } = setUpAudio90();
+        sendSong(1, SEQUENCED_SONG);
+        receive(call({ call: 'play', songId: 1, generation: 1 }));
+        const left = new Float32Array(BLOCK);
+        const right = new Float32Array(BLOCK);
+        playTicks(runner, flush, left, right, 20);
+        receive(call({ call: 'stop', generation: 2 }));
+        playTicks(runner, flush, left, right, 2);
+        expect(places.at(-1)?.songId).toBe(0);
+        receive({ kind: 'reset' });
+        receive(call({ call: 'play', songId: 1, generation: 3 }));
+        playTicks(runner, flush, left, right, 20);
+        expect(places.at(-1)?.songId).toBe(0);
+    });
+
+    it('runs on the Audio80 too', () => {
+        const { runner, flush, receive, places, writer } = setUp();
+        const song = createAudio80Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio80Instrument({ wave: 'saw' }) }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'], loop: 0 });
+        receive({ kind: 'song', id: 1, song: structuredClone(song), instrumentIds: song.instruments.map(writer.defineInstrument) });
+        receive({ kind: 'song-call', slot: 1, generation: 1, call: 'play', songId: 1, value: 0, stampMs: writer.time });
+        const output = new Float32Array(BLOCK);
+        let loudest = 0;
+        for (let tick = 0; tick < 30; tick++) {
+            flush(TICK_MS);
+            for (let b = 0; b < BLOCKS_PER_TICK; b++) {
+                runner.process([output]);
+                loudest = Math.max(loudest, measurePeak(output));
+            }
+        }
+        expect(loudest).toBeGreaterThan(0.05);
+        expect(places.filter((place) => place.songId === 1).length).toBeGreaterThan(2);
+    });
+});
+
 describe('chip runner, running an Audio90', () => {
     it('renders two channels, so a note panned hard left is silent on the right', () => {
         const { runner, writer, flush } = setUpAudio90();
@@ -240,6 +364,7 @@ function setUp() {
     const replies: ChipReply[] = [];
     let returned = 0;
     let last: ChipReply | undefined;
+    const places: SongPlaceReply[] = [];
     const runner = createAudio80Runner({
         sampleRate: SAMPLE_RATE,
         leadMs: LEAD_MS,
@@ -248,6 +373,8 @@ function setUp() {
             last = reply;
             returned++;
         },
+        // The record is reused, so each is copied, as `postMessage` copies it
+        sendPlace: (reply) => places.push({ ...reply }),
     });
     const receive = (message: RunnerMessage<Audio80PassedMessage>) => runner.receive(message);
     const writer = createCommandAudio80({
@@ -268,18 +395,21 @@ function setUp() {
         receive({ kind: 'batch', commands, count: writer.count, horizonMs: writer.time });
         writer.clear(spare);
     };
-    return { runner, writer, flush, receive, countHandedBack: () => returned, lastReply: () => last! };
+    return { runner, writer, flush, receive, places, countHandedBack: () => returned, lastReply: () => last! };
 }
 
 /** Sets up an Audio90's runner and writer, as `setUp` does an Audio80's. */
 function setUpAudio90() {
     const replies: ChipReply[] = [];
     const scopes: Audio90ScopeReply[] = [];
+    const places: SongPlaceReply[] = [];
     const runner = createAudio90Runner({
         sampleRate: SAMPLE_RATE,
         leadMs: LEAD_MS,
         sendBack: (reply) => replies.push(reply),
         sendScope: (reply) => scopes.push(reply),
+        // The record is reused, so each is copied, as `postMessage` copies it
+        sendPlace: (reply) => places.push({ ...reply }),
     });
     const receive = (message: RunnerMessage<Audio90PassedMessage>) => runner.receive(message);
     const writer = createCommandAudio90({
@@ -295,8 +425,35 @@ function setUpAudio90() {
         receive({ kind: 'batch', commands, count: writer.count, horizonMs: writer.time });
         writer.clear(spare);
     };
-    return { runner, writer, flush, receive, scopes };
+    /** Sends `song` as the page's chip does: its instruments first, then the song, with their ids and none of their samples. */
+    const sendSong = (id: number, song: ReturnType<typeof createAudio90Song>) => {
+        const instrumentIds = song.instruments.map(writer.defineInstrument);
+        const instruments = song.instruments.map((instrument) => ({ ...instrument, sample: undefined }));
+        receive({ kind: 'song', id, song: structuredClone({ ...song, instruments }), instrumentIds });
+    };
+    /** A call to slot 1, stamped with the chip's time unless `stampMs` says otherwise. */
+    const call = (options: { call: SongCall; generation: number; songId?: number; stampMs?: number }): SongCallMessage => ({
+        kind: 'song-call',
+        slot: 1,
+        generation: options.generation,
+        call: options.call,
+        songId: options.songId ?? 0,
+        value: 0,
+        stampMs: options.stampMs ?? writer.time,
+    });
+    return { runner, writer, flush, receive, scopes, places, sendSong, call };
 }
+
+/** A song of held saws, a row every eighth of a beat at 120 BPM, so a row every 62.5 ms, that loops. */
+const SEQUENCED_SONG = createAudio90Song({
+    bpm: 120,
+    rowsPerBeat: 8,
+    instruments: { s: createAudio90Instrument() },
+    patterns: { p: ['| C-4 s', '| D-4 s', '| E-4 s', '| F-4 s', '| G-4 s', '| A-4 s', '| B-4 s', '| C-5 s'].join('\n') },
+    order: ['p'],
+    loop: 0,
+});
+const SEQUENCED_ROW_FRAMES = 60 / (120 * 8) * SAMPLE_RATE;
 
 /** Runs `ticks` ticks, each a flush and then a tick's blocks into `left` and `right`. */
 function playTicks(runner: { process: (channels: readonly Float32Array[]) => void }, flush: (deltaMs: number) => void, left: Float32Array, right: Float32Array, ticks: number): void {

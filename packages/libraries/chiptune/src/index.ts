@@ -78,5 +78,5 @@ export {
     type Audio90Vibrato,
     type Audio90Wave,
 } from './audio90';
-export { type AudioControls, computeSongDurationMs } from './shared';
+export { type AudioControls, computeSongDurationMs, type SongSlot } from './shared';
 export { createMusicPlayer, type MusicPlayer, type MusicPlayerOptions, type PlayableSong } from './music-player';

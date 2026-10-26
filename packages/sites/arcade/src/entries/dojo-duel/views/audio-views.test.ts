@@ -180,15 +180,12 @@ describe('MatchAudioView', () => {
         expect(listPlays(chip.log, TICK)).toHaveLength(TICKING_SECONDS);
     });
 
-    it('advances no music while it is refreshed but not updated, as when paused', () => {
-        const { chip, controls, state, tick, view } = setUpMatchAudio();
+    it('advances no music while it is refreshed but not updated, with the clock of its chip standing still, as when paused', () => {
+        const { chip, state, tick, view } = setUpMatchAudio();
         state.phase = 'fighting';
         tick();
         chip.clear();
-        for (let i = 0; i < SONG_TICKS; i++) {
-            controls.update(TICK_MS);
-            refreshView(view);
-        }
+        for (let i = 0; i < SONG_TICKS; i++) refreshView(view);
         expect(listNoteOns(chip.log)).toHaveLength(0);
     });
 
@@ -247,7 +244,6 @@ function recordSong(options: { song: Audio80Song }): string[] {
     player.refresh();
     for (let i = 0; i < SONG_TICKS; i++) {
         controls.update(TICK_MS);
-        player.update(TICK_MS);
         player.refresh();
     }
     return describeNoteOns(chip.log);

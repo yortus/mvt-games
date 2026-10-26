@@ -1,6 +1,6 @@
-import type { AudioControls } from '../../shared';
+import type { AudioControls, SongSlot } from '../../shared';
 import type { Audio80EchoSetting, Audio80FilterId, Audio80FilterSetting, Audio80FilterSettingValue, Audio80VoiceSetting, Audio80VoiceSettingValue } from '../synthesiser';
-import type { Audio80Instrument, Audio80SoundEffect } from '../notation';
+import type { Audio80Instrument, Audio80Song, Audio80SoundEffect } from '../notation';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -24,8 +24,25 @@ import type { Audio80Instrument, Audio80SoundEffect } from '../notation';
  *
  * Its methods take their arguments in order rather than as an options
  * object, because views call them every refresh and they must not allocate.
+ *
+ * It also has a sequencer of its own, which plays songs where the sound is
+ * made. A music player plays through it.
  */
-export interface Audio80 {
+export interface Audio80 extends Audio80Writer {
+    /**
+     * Opens a slot on the chip's own sequencer, which plays one song at a
+     * time. In a browser, the sequencer runs on the audio thread, on the
+     * sound card's clock, so a late frame never holds the music up. Most code
+     * calls `createMusicPlayer`, which opens one.
+     */
+    readonly openSongSlot: () => SongSlot<Audio80Song>;
+}
+
+/**
+ * What writes to an Audio80: every call that plays or sets something, and
+ * its clock. A song's writes need no more of a chip than this.
+ */
+export interface Audio80Writer {
     /** The chip's clock, in ms. It is the sum of the deltas the game loop has advanced it by. */
     readonly time: number;
     /** How many voices the chip has, which is 8. */

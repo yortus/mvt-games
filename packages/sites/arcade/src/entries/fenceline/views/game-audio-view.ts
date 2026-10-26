@@ -93,8 +93,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     setUpdate(view, (deltaMs) => {
         creaks.periodMs = bindings.phase() === 'playing' && bindings.isSlackRunning() ? CREAK_PERIOD_MS : 0;
         creaks.update(deltaMs);
-        music.tempoScale = computeTempo();
-        music.update(deltaMs);
     });
     setRefresh(view, refresh);
     return view;
@@ -110,6 +108,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.beetlesHatched.increased) sound.play(HATCH);
         if (w.extraLives.increased) sound.play(EXTRA_LIFE);
         if (w.creaks.increased) sound.play(CREAK);
+        // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
+        music.tempoScale = computeTempo();
         music.refresh();
     }
 

@@ -97,10 +97,12 @@ export async function waitForLayout(): Promise<void> {
 /**
  * Advances a session by `totalMs`, in the order that the host uses. Each
  * frame-sized step plays the input, if any, then updates the session's
- * models, its chip's clock and its views. At the end, the views are
- * refreshed once and the chip's writes are sent. The steps are small
- * because a model with phases or timelines would skip what happens between
- * them in one giant step.
+ * models, its chip's clock and its views, refreshes the views, and sends the
+ * chip's writes. The steps are small because a model with phases or
+ * timelines would skip what happens between them in one giant step. Each
+ * step refreshes, as each frame does, because a refresh is where a view
+ * writes to its chip: a music player sends the song it starts there, and the
+ * chip's sequencer moves the song on from then.
  */
 export function advanceHeadless(options: AdvanceHeadlessOptions): void {
     const { session, views, controls, totalMs, input } = options;
@@ -111,8 +113,12 @@ export function advanceHeadless(options: AdvanceHeadlessOptions): void {
         session.update(step);
         controls?.update(step);
         for (let i = 0; i < views.length; i++) updateView(views[i], step);
+        for (let i = 0; i < views.length; i++) refreshView(views[i]);
+        controls?.flush();
         remaining -= step;
     }
+    // With no time to advance, the views still show where they start
+    if (totalMs > 0) return;
     for (let i = 0; i < views.length; i++) refreshView(views[i]);
     controls?.flush();
 }

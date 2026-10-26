@@ -31,16 +31,16 @@ export interface MachineAudioViewBindings {
  *
  * The view has no visuals, and is never added to the page. It is a fifth view
  * of the one model, beside the four that draw it, and the host updates and
- * refreshes it with the rest. Its presentation state is the jingle's place in
- * its song and the beats of the clicks and the coins. Its update step
- * advances them.
+ * refreshes it with the rest. Its presentation state is the beats of the
+ * clicks and the coins, which its update step advances. The chip's own
+ * sequencer keeps the jingle's place in its song.
  */
 export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElement {
     const { model, sound } = bindings;
     const view = document.createElement('div');
     view.className = 'machine-audio';
 
-    // Presentation state: the jingle's place in its song, and the clicks and coins
+    // Presentation state: the clicks and coins. The chip keeps the jingle's place
     const music = createMusicPlayer({ audio80: sound });
     const clicks = createMetronome();
     const coins = createMetronome();
@@ -65,7 +65,6 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
         clicks.update(deltaMs);
         coins.periodMs = model.celebration.stepIndex === 0 ? COIN_MS : 0;
         coins.update(deltaMs);
-        music.update(deltaMs);
     }
 
     function refresh(): void {

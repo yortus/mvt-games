@@ -1,5 +1,5 @@
 import {
-    type Audio80,
+    type Audio80Writer,
     type Audio80FilterSetting,
     type Audio80Instrument,
     type Audio80Song,
@@ -40,7 +40,7 @@ import type { SongDriver } from './song-driver';
 
 /** What the Audio80's song driver plays on. */
 export interface Audio80SongDriverOptions {
-    readonly audio80: Audio80;
+    readonly audio80: Audio80Writer;
 }
 
 // ---------------------------------------------------------------------------

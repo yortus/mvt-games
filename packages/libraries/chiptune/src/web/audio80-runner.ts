@@ -1,6 +1,9 @@
-import { type Audio80Character, type Audio80ChipMessage, createAudio80Synthesiser } from '../audio80';
+import { type Audio80Character, type Audio80ChipMessage, type Audio80Song, createAudio80Synthesiser, createCommandAudio80, OP_NOTE_ON } from '../audio80';
+import { createSongPlayer } from '../music-player';
 import { type ChipReply, MIX_BUS_INDEX } from '../shared';
 import { type ChipRunner, createChipRunner } from './chip-runner';
+import type { SongPlaceReply } from './song-messages';
+import { createWorkletSequencer } from './song-sequencer';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -36,6 +39,8 @@ export interface Audio80RunnerOptions extends Audio80RunnerSettings {
     readonly sendBack: (reply: ChipReply) => void;
     /** The audio context's count of frames, at the start of the next block. Defaults to counting the frames rendered. */
     readonly currentFrame?: () => number;
+    /** Sends where a slot of the sequencer is, each time it reaches a new row, or takes a call. It must copy the reply, as `postMessage` does. */
+    readonly sendPlace: (reply: SongPlaceReply) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -54,6 +59,15 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
         leadMs: options.leadMs,
         sendBack: options.sendBack,
         currentFrame: options.currentFrame,
+        sequencer: createWorkletSequencer<Audio80Song, ReturnType<typeof createCommandAudio80>>({
+            sampleRate,
+            // Every instrument a song plays was defined by the page, and a song plays no effect, so the writer
+            // defines nothing of its own
+            createWriter: (idOf) => createCommandAudio80({ idOf, onInstrument: ignore, onEffect: ignore }),
+            createPlayer: (writer) => createSongPlayer({ audio80: writer }),
+            noteOnOp: OP_NOTE_ON,
+            sendPlace: options.sendPlace,
+        }),
         synthesiser: {
             enqueue: synthesiser.enqueue,
             reset: synthesiser.reset,
@@ -66,4 +80,12 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
             },
         },
     });
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+function ignore(): void {
+    // The page defines every instrument a song plays
 }

@@ -150,7 +150,7 @@ The package has three import paths:
 | | `createAudio90Song` | Returns a new `Audio90Song`, with its mixer, effects, pump and character |
 | | `formatAudio90Cell` | Returns the text of one cell of an `Audio90Song`'s pattern, in columns as a tracker shows it, which parses back into the same cell |
 | | `computeSongDurationMs` | Returns how long one pass through either chip's song's order (its list of patterns) lasts, in ms |
-| | `createMusicPlayer` | Returns a new `MusicPlayer`, which plays one song at a time on the chip it is given, `{ audio80 }` or `{ audio90 }` |
+| | `createMusicPlayer` | Returns a new `MusicPlayer`, which plays one song at a time on the sequencer of the chip it is given, `{ audio80 }` or `{ audio90 }`, and reports where the song heard has got to |
 | `@mvtjs/chiptune/web` | `createWebAudio80` | Returns a new Audio80 that plays on an `AudioContext` you give it, and its controls. An `AudioContext` is the browser's object for playing sound |
 | | `createWebAudio90` | Returns a new Audio90 that plays in stereo on an `AudioContext`, and its controls. It can share the context with an Audio80 |
 | `@mvtjs/chiptune/headless` | `createHeadlessAudio80` | Returns a new Audio80 with no speaker, and its controls. It can be silent, log every write, or render sound in memory |

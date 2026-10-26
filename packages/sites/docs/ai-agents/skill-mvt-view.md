@@ -456,13 +456,17 @@ from a state alone, which would play the sound every frame.
   the same tick (a ship comes back and its fuel fills), play one sound. Best
   is a model count of the moment itself. Otherwise, read the values
   together.
-- **Music and repeating sounds are presentation state.** A music player
-  (`createMusicPlayer`, from `@mvtjs/chiptune`) or a metronome
-  (`createMetronome`, from `@mvtjs/utils`) advances in the update step. The
-  refresh step plays what is due. It calls `MusicPlayer.refresh` last, and
-  plays a sound each time the metronome's `count` rises. A metronome only
-  counts beats, at a tempo the view sets with `periodMs`. A period of 0
-  stops it.
+- **Repeating sounds are presentation state; music is the chip's.** A
+  metronome (`createMetronome`, from `@mvtjs/utils`) advances in the update
+  step, and the refresh step plays a sound each time its `count` rises. A
+  metronome only counts beats, at a tempo the view sets with `periodMs`. A
+  period of 0 stops it. A music player (`createMusicPlayer`, from
+  `@mvtjs/chiptune`) plays on the chip's own sequencer, which keeps the
+  song's place on the sound card's clock and pauses with the game. The
+  view's presentation state is only which song plays, and how fast. It
+  calls `play`, `queue` or `stop`, sets `tempoScale` after them, and calls
+  `MusicPlayer.refresh` last in its refresh step. A tempo change applies
+  from the next tick. The player's `row` and `beat` are what is heard.
 - **A new song cuts the old one short.** `MusicPlayer.play` releases the
   song playing and cancels any song queued. A jingle that starts a phase
   must be no longer than the phase. Check it with `computeSongDurationMs`.

@@ -36,6 +36,16 @@ only the game loop uses. So code written against one chip runs on the
 other. The chip's clock still runs when it plays nothing, and
 `AudioControls.update` advances it.
 
+It also runs the chip's own sequencer, which plays the songs of the music
+players made on it. A browser's chip runs its sequencer on the sound card's
+clock. A headless chip has no sound card, so it runs the sequencer on its
+own clock: `AudioControls.update` moves each song on, and writes its notes
+as any other writes. So a music player on a recording chip logs the same
+notes, at the same times, every time the same ticks run. A call such as
+`play` takes effect as the music player refreshes, at the chip's time, and
+the player reports where its song is now, since there is no speaker to wait
+for.
+
 The types follow the options. The chip has `log` and `clear` only if it was
 made with `record: true`. The object returned has `render` and `sampleRate`
 only if it was made with `render`. So reading the log of a chip that does
@@ -100,7 +110,7 @@ Two functions make a rendering chip, play the sound on it, and return its
 samples as a new `Float32Array`:
 
 - `renderSong(song, options?)` renders one pass through the song. It ticks
-  the chip and a music player every 60th of a second, as a game loop would.
+  the chip and the song every 60th of a second, as a game loop would.
   A looping song is stopped where it would go back to its loop. An Audio90
   song is rendered in stereo, as a `StereoSamples`.
 - `renderSoundEffect(effect, options?)` renders the effect, played once.

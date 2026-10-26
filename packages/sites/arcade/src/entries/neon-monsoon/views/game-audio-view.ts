@@ -76,19 +76,20 @@ export interface GameAudioViewBindings {
  * grazes' where the ship is, the boss's where the boss is, and each
  * explosion where it went off.
  *
- * The music player's place in the song, and the metronomes that time the
- * guns' blips and the boss's ticks, are the view's presentation state. They
- * advance in the view's update step, so they stop while the game is paused.
- * The warning's repeats follow the model's warning timer instead, so they
- * stop when the game stops. The refresh step plays a sound each time a count
- * rises, the metronomes' and the model's alike.
+ * The metronomes that time the guns' blips and the boss's ticks are the
+ * view's presentation state. They advance in the view's update step, so they
+ * stop while the game is paused. The chip's own sequencer keeps the song's
+ * place, and it pauses with the game too. The warning's repeats follow the
+ * model's warning timer instead, so they stop when the game stops. The
+ * refresh step plays a sound each time a count rises, the metronomes' and the
+ * model's alike.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound, arenaWidth } = bindings;
     const view = new Container();
     view.label = 'game-audio';
 
-    // Presentation state: the song's place, and the repeating sounds
+    // Presentation state: the repeating sounds. The chip keeps the song's place
     const music = createMusicPlayer({ audio90: sound });
     const guns = createMetronome();
     const hullTicks = createMetronome();
@@ -125,7 +126,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         guns.update(deltaMs);
         hullTicks.periodMs = bindings.bossMsSinceHit() < HULL_TICK_WINDOW_MS ? HULL_TICK_MS : 0;
         hullTicks.update(deltaMs);
-        music.update(deltaMs);
     }
 
     function refresh(): void {
