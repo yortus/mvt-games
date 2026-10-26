@@ -1,7 +1,7 @@
 {
     "name": "audio90",
     "version": "0.7.0",
-    "description": "Two virtual sound chips for the web, the Audio80 and the Audio90, in the spirit of the 1980s and 1990s: sound effects and tracker music, for pages and games",
+    "description": "Two virtual sound chips, the Audio80 and the Audio90, in the spirit of the 1980s and 1990s: sound effects and tracker music for pages and games, played through Web Audio, or rendered to WAV in Node",
     "license": "MIT",
     "author": "Troy Gerwien",
     "keywords": ["chiptune", "sound chip", "synthesizer", "tracker", "music", "sound effects", "web audio", "audio worklet", "game"],

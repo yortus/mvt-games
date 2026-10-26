@@ -117,7 +117,7 @@ export function importFakeWebAudio(): FakeWebAudioModule {
         fake.failsNextImport = false;
         throw new Error('The fake download failed.');
     }
-    return { createWebAudio80: () => createFakeChip({ fake }), createWebAudio90: () => createFakeAudio90Chip({ fake }) };
+    return { createAudio80: () => createFakeChip({ fake }), createAudio90: () => createFakeAudio90Chip({ fake }) };
 }
 
 // ---------------------------------------------------------------------------
@@ -126,8 +126,8 @@ export function importFakeWebAudio(): FakeWebAudioModule {
 
 /** What the fake puts in place of `audio90`. */
 interface FakeWebAudioModule {
-    readonly createWebAudio80: (options: { readonly context: unknown }) => Audio80WithControls;
-    readonly createWebAudio90: (options: { readonly context: unknown }) => Audio90WithControls;
+    readonly createAudio80: (options: { readonly context: unknown }) => Audio80WithControls;
+    readonly createAudio90: (options: { readonly context: unknown }) => Audio90WithControls;
 }
 
 /** The fake's state, with lists that the fake adds to. */

@@ -25,7 +25,7 @@ export interface Audio80RunnerSettings {
 }
 
 /** The name the Audio80's processor is registered under. */
-export const AUDIO80_PROCESSOR_NAME = 'mvt-audio80';
+export const AUDIO80_PROCESSOR_NAME = 'audio80-chip';
 
 // ---------------------------------------------------------------------------
 // Options

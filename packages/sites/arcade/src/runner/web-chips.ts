@@ -5,4 +5,4 @@
 // at. Not exported: only `page-sound.ts` imports it, and the runner's tests
 // mock it with `fake-web-audio.ts`.
 
-export { createWebAudio80, createWebAudio90 } from 'audio90';
+export { createAudio80, createAudio90 } from 'audio90';

@@ -1,4 +1,4 @@
-import { createWebAudio80 } from 'audio90';
+import { createAudio80 } from 'audio90';
 import { createPerformanceMeter, type PerformanceMeter, type PerformanceSample } from '@mvtjs/utils';
 import type { Project, StartOptions, StartResult } from '../project-api';
 import type { ErrorPhase, HostMessage, SandboxMessage } from './messages';
@@ -58,7 +58,7 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
     }
     report.post({ kind: 'started' });
 
-    const sound = createLazySound(() => createWebAudio80({ context: new AudioContext() }));
+    const sound = createLazySound(() => createAudio80({ context: new AudioContext() }));
     let host: RendererHost<object>;
     let ticked: StartResult;
     try {

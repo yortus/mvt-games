@@ -178,12 +178,12 @@ function indexTs(renderer: RendererKind): string {
     const host = HOST_FACTORIES[renderer];
     return [
         '// Runs the project: makes its renderer, calls its `start`, and ticks it each frame.',
-        `import { createWebAudio80 } from 'audio90';`,
+        `import { createAudio80 } from 'audio90';`,
         `import { project } from './main';`,
         `import { ${host} } from './runner/${HOST_FILES[renderer]}';`,
         `import { runProject } from './runner/run-project';`,
         '',
-        `void runProject({ project, createHost: ${host}, createSound: () => createWebAudio80({ context: new AudioContext() }) });`,
+        `void runProject({ project, createHost: ${host}, createSound: () => createAudio80({ context: new AudioContext() }) });`,
         '',
     ].join('\n');
 }

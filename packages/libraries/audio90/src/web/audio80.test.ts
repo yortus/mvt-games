@@ -2,20 +2,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createAudio80Instrument, OP_NOTE_OFF, OP_NOTE_ON, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX } from '../audio80';
 import { type ChipBatch, COMMAND_STRIDE, MAX_MIX_VOLUME } from '../shared';
 import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
-import { createWebAudio80 } from './web-audio80';
+import { createAudio80 } from './audio80';
 
 const TICK_MS = 16;
 /** The synthesiser's number for the music bus, in a mix command. */
 const MUSIC_BUS = 0;
 
-describe('createWebAudio80, with a stand-in audio context', () => {
+describe('createAudio80, with a stand-in audio context', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
     });
 
     it('sends each tick\'s writes while the audio context runs', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createWebAudio80({ context: fake.context });
+        const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
         audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
         tick(controls);
@@ -25,7 +25,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
 
     it('sends no batch while the audio context is suspended', async () => {
         const fake = createFakeContext('suspended');
-        const { audio80, controls } = createWebAudio80({ context: fake.context });
+        const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
         for (let i = 0; i < 10; i++) {
             audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
@@ -36,7 +36,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
 
     it('sends the settings made while suspended once the context runs, but not the notes', async () => {
         const fake = createFakeContext('suspended');
-        const { audio80, controls } = createWebAudio80({ context: fake.context });
+        const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
         // As when a song starts, write the voices it keeps, its filter and its first note
         audio80.reserveVoices(4);
@@ -55,7 +55,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
 
     it('sends the instruments first played while suspended, once each', async () => {
         const fake = createFakeContext('suspended');
-        const { audio80, controls } = createWebAudio80({ context: fake.context });
+        const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
         const instrument = createAudio80Instrument({ wave: 'saw' });
         audio80.noteOn(0, instrument, 57, 1);
@@ -68,7 +68,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
 
     it('sends a noteOff made while suspended, so a note started before still stops', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createWebAudio80({ context: fake.context });
+        const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
         audio80.noteOn(2, createAudio80Instrument({ wave: 'saw' }), 57, 1);
         tick(controls);
@@ -83,7 +83,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
 
     it('sends a mix change made while suspended once the context runs', async () => {
         const fake = createFakeContext('suspended');
-        const { controls } = createWebAudio80({ context: fake.context });
+        const { controls } = createAudio80({ context: fake.context });
         await controls.ready;
         controls.musicVolume = 0.25;
         tick(controls);
@@ -94,7 +94,7 @@ describe('createWebAudio80, with a stand-in audio context', () => {
 
     it('stops the worklet when destroyed, and sends nothing after', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createWebAudio80({ context: fake.context });
+        const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
         controls.destroy();
         expect(fake.messages.at(-1)).toEqual({ kind: 'stop' });
@@ -106,19 +106,19 @@ describe('createWebAudio80, with a stand-in audio context', () => {
 
     it('leaves no unhandled rejection when the worklet cannot load and nobody awaits `ready`', async () => {
         const fake = createFakeContext('running', new Error('no AudioWorklet here'));
-        createWebAudio80({ context: fake.context });
+        createAudio80({ context: fake.context });
         // Long enough for an unhandled rejection to be reported, which fails the run
         await new Promise((resolve) => setTimeout(resolve, 10));
     });
 
     it('still rejects `ready` for whoever awaits it', async () => {
         const fake = createFakeContext('running', new Error('no AudioWorklet here'));
-        const { controls } = createWebAudio80({ context: fake.context });
+        const { controls } = createAudio80({ context: fake.context });
         await expect(controls.ready).rejects.toThrow('no AudioWorklet here');
     });
 
     it('clamps its volumes as every chip does', () => {
-        const { controls } = createWebAudio80({ context: createFakeContext('running').context });
+        const { controls } = createAudio80({ context: createFakeContext('running').context });
         controls.volume = 3;
         controls.musicVolume = -1;
         controls.effectsVolume = MAX_MIX_VOLUME + 1;

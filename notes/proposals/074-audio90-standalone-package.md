@@ -13,7 +13,8 @@
 
 **Status:** in progress, on the branch `audio90`. 068, which this builds
 on, was committed there as `0ebacfec` on 2026-10-27, and its last open item
-moved here (step 10). Step 2, the move and rename, is done, unstaged.
+moved here (step 10). Steps 2 and 3, the move and the renames, are done,
+unstaged.
 Section 12 records the progress.
 
 **Written:** 2026-10-25, against main at `5cd89d4c`, with proposal 068
@@ -37,7 +38,7 @@ clock, which changed the music player and the chip clock first),
 | Code names | Unchanged: `Audio90`, `Audio80`, `createAudio90Song`... The package is named for its newest chip | 3 |
 | Where it lives | `packages/libraries/audio90/`, still in the workspace | 4 |
 | Versioning | Its own changesets version, out of the `@mvtjs/*` fixed group, as v-snap is | 4 |
-| Entry points | `audio90` for everything that runs in a browser, `audio90/headless` for Node and tests | 5.1 |
+| Entry points | `audio90` to write sounds and play them through Web Audio; `audio90/headless` to play them with no speaker, anywhere: tests, rendering, WAV and loudness | 5.1 |
 | Factories | `createAudio90` and `createAudio80` for the browser chips. The headless ones keep their names | 5.2 |
 | Clock | One clock, the sound card's. The browser chip's `update`, `flush`, lead and stalls go. A host pauses a chip with `pause()` and `resume()`. Headless chips still move by `update(deltaMs)`, so tests stay exact. Decided by the user, 2026-10-27 | 5.3 |
 | Song files | A text format that `parseAudio90Song` reads and `formatAudio90Song` writes, round trip exact | 5.5 |
@@ -138,10 +139,13 @@ Today there are three: `.` (the notation, the music player and the types),
 tools for tests).
 
 A general user expects `import { createAudio90 } from 'audio90'` to work in
-a browser. So merge `./web` into `.`, which then holds everything that runs
-in a browser. Importing it in Node stays harmless, because nothing runs at
-import time. `audio90/headless` keeps the headless chips, rendering, WAV and
-loudness.
+a browser. So merge `./web` into `.`, which then holds what you write
+sounds with and the chips that play them through Web Audio. Only those
+chips need a browser. The rest of it runs anywhere, and importing it in
+Node stays harmless (open question 2). `audio90/headless` keeps the
+headless chips, rendering, WAV and loudness. "Headless" means with no
+speaker, not Node: the headless chips run in Node and in a browser alike,
+as every entry's visual test shows.
 
 Each chip's worklet code is a string in its own module. A page that uses
 only the Audio90 must not carry the Audio80's worklet. Check that the
@@ -476,6 +480,24 @@ pleasant to use outside a game.
    says what it plays but not that it plays Audio80 songs too?
 7. **The Studio's address.** Beside the others under the site, as
    `/studio/`, or its own domain once it is good enough to stand alone?
+8. **The `src/web/` folder.** Since step 2 it names no entry point. It
+   holds the chips as they play through Web Audio, beside `headless/`,
+   where they play without a speaker, and that still holds. But it mixes
+   two threads: the page's side (`audio80.ts`, `audio90.ts`, `web-chip.ts`,
+   `web-song-slots.ts`, `held-writes.ts` and the two held-slots files) and
+   the audio thread's (the processors and runners, `chip-runner.ts`,
+   `chip-clock.ts`, `song-sequencer.ts` and `register-chip-processor.ts`),
+   with `song-messages.ts` between them. Should the audio thread's side move
+   to a `web/worklet/` folder of its own, so the line is visible and lint
+   can keep worklet code from importing the page's? Each chip loads its
+   worklet with `'./audio80-processor?worker&url'`, which would then reach
+   past the new barrel, so the lint rule would need an exception. Renaming
+   the folder `browser/` was considered and set aside: "web" names the API,
+   Web Audio, not the platform, and the rename would carry into
+   `web-chip.ts`, `createWebChip` and `WebSongSlots`. Decide in step 6,
+   which rewrites `chip-clock.ts` and much of the page's side anyway.
+   While there, `song-sequencer.ts` exports `createWorkletSequencer`, so
+   its file is misnamed (`worklet-sequencer.ts`).
 
 ## 11. Implementation Steps
 
@@ -484,9 +506,12 @@ pleasant to use outside a game.
    for a publish manifest as v-snap's. Rewrite the imports across the repo.
    `npm test`, `npm run build` and `npm run build:packages` pass.~~ Done,
    2026-10-27 (section 12).
-3. Rename the browser factories and the worklet names.
-4. The playground's library list, descriptions and export dependencies
-   name `audio90`. No alias for the old name (section 7).
+3. ~~Rename the browser factories and the worklet names.~~ Done,
+   2026-10-27 (section 12).
+4. ~~The playground's library list, descriptions and export dependencies
+   name `audio90`. No alias for the old name (section 7).~~ Done with step
+   2. The one-line description still says "A little sound chip", which
+   step 5 can make "Two little sound chips".
 5. Rewrite the README and the three guides. Move the MVT material to the
    docs site's Sound and Music page. Update the glossary, project structure
    and AGENTS.md.
@@ -497,7 +522,8 @@ pleasant to use outside a game.
    the headless chips' controls. The Arcade's entry host and page pause
    their chips, the page while it is hidden too, and the Perfmon loses
    "Chip stalls". Then the optional `context`. Unit tests in the fake audio
-   context, and a page test in a real browser.
+   context, and a page test in a real browser. Before moving files, decide
+   open question 8, on the `src/web/` folder.
 7. Add `formatAudio90Song` and `parseAudio90Song`, with a round-trip test
    over every tune in the Arcade.
 8. Add `createPlayer` with what exists, plus `pause`, `resume`, `repeat`,
@@ -548,3 +574,14 @@ pleasant to use outside a game.
     `npm pack -w audio90`. The packed manifest names `dist/`, the repo's
     came back after, and plain Node imports both entry points from the
     tarball.
+- **2026-10-27, step 3 done**, unstaged: `createWebAudio80` and
+  `createWebAudio90` are `createAudio80` and `createAudio90`, and their
+  options types `Audio80Options` and `Audio90Options`, everywhere but the
+  notes and the changelog. The worklets register as `audio80-chip` and
+  `audio90-chip`, through the same two constants the chips create their
+  nodes with. Their files are named for what they export, as the user
+  asked: `web/web-audio80.ts` and `web/web-audio90.ts` became
+  `web/audio80.ts` and `web/audio90.ts`, with their tests.
+  Checked: `tsc -b`, lint, `npm run test:unit`, `npm run build` (first
+  load 54.7 KB) and `npm run build:packages`. Not yet heard in a real
+  browser since the rename.

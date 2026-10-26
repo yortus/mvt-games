@@ -105,7 +105,7 @@ await textures.load();
 prepareAudio90Samples(SAMPLES);
 ```
 
-**On your own page**, call `createWebAudio90` from `audio90`. You
+**On your own page**, call `createAudio90` from `audio90`. You
 give it an `AudioContext`, and it returns `{ audio90, controls }`. It can
 share the context with an Audio80. It also takes `leadMs`, as the Audio80
 does, and a `character`, which [The Character](#the-character) describes.

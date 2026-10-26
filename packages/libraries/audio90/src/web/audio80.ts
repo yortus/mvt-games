@@ -9,7 +9,7 @@ import processorUrl from './audio80-processor?worker&url';
 // ---------------------------------------------------------------------------
 
 /** How to make a browser's Audio80. */
-export interface WebAudio80Options {
+export interface Audio80Options {
     /**
      * The audio context to play in. The caller must resume it after a user
      * gesture, such as a click. Until it runs, the chip plays nothing, as
@@ -37,7 +37,7 @@ export interface WebAudio80Options {
  * Its songs play on the worklet's own sequencer, on the sound card's clock.
  * Each song is sent once, after its instruments.
  */
-export function createWebAudio80(options: WebAudio80Options): Audio80WithControls {
+export function createAudio80(options: Audio80Options): Audio80WithControls {
     const writer = createCommandAudio80({
         onInstrument: (id, data) => web.send({ kind: 'instrument', id, data }),
         onEffect: (id, data) => web.send({ kind: 'effect', id, data }),

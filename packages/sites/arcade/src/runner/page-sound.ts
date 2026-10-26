@@ -1,4 +1,4 @@
-import { type Audio80, type Audio90, AUDIO90_SCOPE_LENGTH, type AudioControls, type createWebAudio80, type createWebAudio90, type SongSlot } from 'audio90';
+import { type Audio80, type Audio90, AUDIO90_SCOPE_LENGTH, type AudioControls, type createAudio80, type createAudio90, type SongSlot } from 'audio90';
 import type { SoundChipKind, SoundChipsByKind } from '../entry-types';
 import { toSliderGain } from './slider-gain';
 
@@ -204,11 +204,11 @@ export function createPageSound(options: PageSoundOptions): PageSound {
     /** Loads the chips' code, and makes the page's chip. */
     async function load(made: AudioContext): Promise<void> {
         try {
-            const { createWebAudio80, createWebAudio90 } = await import('./web-chips');
+            const { createAudio80, createAudio90 } = await import('./web-chips');
             // The sound was destroyed while the code loaded, so there is nothing to make
             if (isOff) return;
-            makers = { createWebAudio80, createWebAudio90 };
-            const page = createWebAudio80({ context: made });
+            makers = { createAudio80, createAudio90 };
+            const page = createAudio80({ context: made });
             page.controls.ready.catch(warnSoundOff);
             pageSlot.fill(page.audio80, page.controls);
         }
@@ -228,13 +228,13 @@ export function createPageSound(options: PageSoundOptions): PageSound {
         }
         switch (kind) {
             case 'audio80': {
-                const chip = makers.createWebAudio80({ context: made });
+                const chip = makers.createAudio80({ context: made });
                 entrySlots.audio80.fill(chip.audio80, chip.controls);
                 break;
             }
             case 'audio90': {
                 // Its worklet's code is a module of its own, which loads now, the first time an entry asks for it
-                const chip = makers.createWebAudio90({ context: made });
+                const chip = makers.createAudio90({ context: made });
                 entrySlots.audio90.fill(chip.audio90, chip.controls);
                 break;
             }
@@ -291,8 +291,8 @@ const DEFAULT_SETTINGS: SoundSettings = {
 
 /** The chips' factories, once their code has loaded. */
 interface ChipMakers {
-    readonly createWebAudio80: typeof createWebAudio80;
-    readonly createWebAudio90: typeof createWebAudio90;
+    readonly createAudio80: typeof createAudio80;
+    readonly createAudio90: typeof createAudio90;
 }
 
 /** Every Audio80 has eight voices. */

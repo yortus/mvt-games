@@ -48,7 +48,7 @@ export interface Audio90RunnerSettings {
 }
 
 /** The name the Audio90's processor is registered under. */
-export const AUDIO90_PROCESSOR_NAME = 'mvt-audio90';
+export const AUDIO90_PROCESSOR_NAME = 'audio90-chip';
 
 /** How many blocks pass between scopes sent: one every fourth block, about 94 a second at 48 kHz. */
 export const BLOCKS_PER_SCOPE = 4;

@@ -92,10 +92,10 @@ on one, and drive it from your loop. The chip computes its sound in an
 `AudioWorklet`, which is browser code that runs on its own thread:
 
 ```ts
-import { createWebAudio80 } from 'audio90';
+import { createAudio80 } from 'audio90';
 
 const context = new AudioContext({ latencyHint: 'interactive' });
-const { audio80, controls } = createWebAudio80({ context });
+const { audio80, controls } = createAudio80({ context });
 controls.ready.catch(() => {
     console.warn('No sound here: AudioWorklet needs a secure page');
 });
@@ -117,7 +117,7 @@ function tick(deltaMs: number): void {
 }
 ```
 
-`createWebAudio80` returns two separate objects. The first is the chip, which
+`createAudio80` returns two separate objects. The first is the chip, which
 views play sounds on. The second is its **controls**, which only your game
 loop uses. The controls are `update`, `flush`, `reset`, the volumes and
 `destroy`. Because the two are separate, a view cannot pause, reset or mute
@@ -141,7 +141,7 @@ writing to the chip. The chip handles those writes in three ways:
   still stops. Without this, the note would keep sounding until the voice
   played something else.
 
-`createWebAudio80` also takes two optional settings. `leadMs` is how far
+`createAudio80` also takes two optional settings. `leadMs` is how far
 playback stays behind the newest tick. It is 100 by default, and
 [Time](#time-the-chip-runs-on-game-time) says more about it. `character`
 sets how gritty the chip sounds. A sharp jump in a wave adds a harsh,
@@ -163,7 +163,7 @@ its code is an example you can borrow from:
 It does seven things that a page of your own may want too:
 
 - **It loads the chips' code only when it's wanted.** A module of its own
-  re-exports `createWebAudio80` and `createWebAudio90` from `audio90`, and
+  re-exports `createAudio80` and `createAudio90` from `audio90`, and
   the page imports that module with a dynamic `import()`, the first time
   the visitor clicks or presses a key. So a visitor who never plays
   downloads none of it, though the page's songs and sound effects, also

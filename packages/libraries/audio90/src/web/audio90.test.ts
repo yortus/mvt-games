@@ -18,18 +18,18 @@ import { type ChipBatch, COMMAND_STRIDE } from '../shared';
 import { AUDIO90_PROCESSOR_NAME } from './audio90-runner';
 import { createFakeAudioContext, FAKE_BASE_LATENCY_S, FAKE_OUTPUT_LATENCY_S, FAKE_SAMPLE_RATE, type FakeAudioContext } from './fake-audio-context';
 import type { SongMessage, SongPlaceReply } from './song-messages';
-import { createWebAudio90 } from './web-audio90';
+import { createAudio90 } from './audio90';
 
 const TICK_MS = 16;
 
-describe('createWebAudio90, with a stand-in audio context', () => {
+describe('createAudio90, with a stand-in audio context', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
     });
 
     it('makes a node of its own processor, with two output channels', async () => {
         const fake = createFakeContext('running');
-        const { controls } = createWebAudio90({ context: fake.context, character: 'console' });
+        const { controls } = createAudio90({ context: fake.context, character: 'console' });
         await controls.ready;
         expect(fake.processorNames).toEqual([AUDIO90_PROCESSOR_NAME]);
         expect(fake.nodeOptions[0].outputChannelCount).toEqual([2]);
@@ -38,7 +38,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('sends a sample once, before the first instrument that plays it, and keeps its own copy', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const sample = createSample();
         audio90.noteOn(0, createInstrument({ engine: ENGINE_SAMPLE }, sample), 60, 1);
@@ -50,7 +50,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('sends what was first played before the worklet ran, once it runs, in order', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         audio90.noteOn(0, createInstrument({ engine: ENGINE_SAMPLE }, createSample()), 60, 1);
         await controls.ready;
         expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'instrument']);
@@ -58,7 +58,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('sends the settings made while suspended once the context runs, but not the notes', async () => {
         const fake = createFakeContext('suspended');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         // As when a song starts: its effects, its character, its tempo and its first note
         audio90.setEffect('reverb', 'level', 0.3);
@@ -77,7 +77,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('turns scopes on with three buffers to send them in, and copies each scope in, sending its buffer back', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         audio90.setScopes(true);
         audio90.setScopes(true);
@@ -90,7 +90,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('hears each write as it is made, until the worklet has said where its clock is', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         tick(controls);
         expect(audio90.heardTime).toBe(audio90.time);
@@ -98,7 +98,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('hears the chip time the worklet\'s clock had reached at the frame now at the speaker, and counts its stalls', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         for (let i = 0; i < 80; i++) tick(controls);
         const msPerSample = 1000 / FAKE_SAMPLE_RATE;
@@ -114,7 +114,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('never hears past its own time', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         tick(controls);
         fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE, stallCount: 0 });
@@ -124,7 +124,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('sends a song once, after its instruments and without their samples, then each call to its slot', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
         const song = createSequencedSong(createInstrument({ engine: ENGINE_SAMPLE }, createSample()));
@@ -144,7 +144,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('says the song asked for is at its start until a place of it reaches the speaker, then which row is heard', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
         expect(slot.song).toBeUndefined();
@@ -165,7 +165,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('works out the beat heard from the place heard, moved on by the time since, at its tempo', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
         slot.play(createSequencedSong(createInstrument()));
@@ -179,7 +179,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('drops a place of the song before, still on its way, once another song plays', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
         const first = createSequencedSong(createInstrument());
@@ -196,7 +196,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('reports the song gone once a place says it ended', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
         slot.play(createSequencedSong(createInstrument()));
@@ -206,7 +206,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('forgets its songs as it resets, and sends a song again after', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
         const song = createSequencedSong(createInstrument());
@@ -219,7 +219,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('clears its scope when they are turned off or the chip resets, and drops a scope that comes after', async () => {
         const fake = createFakeContext('running');
-        const { audio90, controls } = createWebAudio90({ context: fake.context });
+        const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         audio90.setScopes(true);
         fake.reply({ kind: 'scope', data: new Float32Array(AUDIO90_SCOPE_LENGTH).fill(0.5) });
@@ -236,7 +236,7 @@ describe('createWebAudio90, with a stand-in audio context', () => {
 
     it('sends a reset, then the mix again, and a stop when destroyed', async () => {
         const fake = createFakeContext('running');
-        const { controls } = createWebAudio90({ context: fake.context });
+        const { controls } = createAudio90({ context: fake.context });
         await controls.ready;
         controls.musicVolume = 0.5;
         controls.reset();

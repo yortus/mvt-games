@@ -9,7 +9,7 @@ import processorUrl from './audio90-processor?worker&url';
 // ---------------------------------------------------------------------------
 
 /** How to make a browser's Audio90. */
-export interface WebAudio90Options {
+export interface Audio90Options {
     /**
      * The audio context to play in. The caller must resume it after a user
      * gesture, such as a click. Until it runs, the chip plays nothing, as
@@ -49,7 +49,7 @@ export interface WebAudio90Options {
  * Each song is sent once, after its instruments and without their samples,
  * which the worklet already has by then.
  */
-export function createWebAudio90(options: WebAudio90Options): Audio90WithControls {
+export function createAudio90(options: Audio90Options): Audio90WithControls {
     const writer = createCommandAudio90({
         onInstrument: (id, data) => web.send({ kind: 'instrument', id, data }),
         onEffect: (id, data) => web.send({ kind: 'effect', id, data }),
