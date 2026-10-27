@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSound, renderSong, findSounds } from 'audio90/headless';
+import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, findSounds } from 'audio90/headless';
 import * as music from './music';
 import * as sounds from './sounds';
 
@@ -23,7 +23,7 @@ describe('burrow bust sounds', () => {
 
     for (const [name, effect] of effects) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSound(effect);
+            const samples = render(effect);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();
@@ -32,7 +32,7 @@ describe('burrow bust sounds', () => {
 
     for (const [name, song] of songs) {
         it(`${name} sounds as it did, audible and unclipped, as loud as every other song`, () => {
-            const samples = renderSong(song);
+            const samples = render(song);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(Math.abs(measureLoudness(samples) - REFERENCE_LOUDNESS_LUFS)).toBeLessThanOrEqual(LOUDNESS_TOLERANCE_LU);
@@ -41,7 +41,7 @@ describe('burrow bust sounds', () => {
     }
 
     it('leaves the effects five voices', () => {
-        const { voiceCount } = createHeadlessAudio80().audio80;
+        const { voiceCount } = createHeadlessAudio80();
         for (const [, song] of songs) expect(voiceCount - song.channelCount).toBeGreaterThanOrEqual(EFFECT_VOICES);
     });
 });

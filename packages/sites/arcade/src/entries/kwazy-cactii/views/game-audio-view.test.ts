@@ -120,7 +120,7 @@ interface State {
  */
 function setUp() {
     const state: State = { gamePhase: 'playing', boardPhase: 'idle', isSwapMatching: false, cascadeStep: 0, matchedCellCount: 0 };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
         sound: chip,
         gamePhase: () => state.gamePhase,
@@ -131,7 +131,7 @@ function setUp() {
     });
     const tick = (): Audio80Sound[] => {
         chip.clear();
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
         const played: Audio80Sound[] = [];

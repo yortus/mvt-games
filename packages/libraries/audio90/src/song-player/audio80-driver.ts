@@ -48,7 +48,7 @@ export interface Audio80SongDriverOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates what the music player needs to play Audio80 songs on `audio80`. It
+ * Creates what the song player needs to play Audio80 songs on `audio80`. It
  * keeps each write as numbers laid out as the chip's commands are, and makes
  * the calls on the chip as the player refreshes.
  */

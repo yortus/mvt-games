@@ -12,11 +12,11 @@ const STEP_MS = 1000 / 60;
 describe('GameView', () => {
     it('shows a whole game, from the first round to game over, and the next game', () => {
         const game = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS, seed: 5 });
-        const { audio80, controls } = createHeadlessAudio80();
-        const view = GameView({ model: game, sound: audio80 });
+        const chip = createHeadlessAudio80();
+        const view = GameView({ model: game, sound: chip });
         const tick = (): void => {
             game.update(STEP_MS);
-            controls.update(STEP_MS);
+            chip.update(STEP_MS);
             updateView(view, STEP_MS);
             refreshView(view);
         };
@@ -47,7 +47,7 @@ describe('GameView', () => {
 
     it('shows lives past the three hats that fit as a count', () => {
         const game = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS, startLives: 5 });
-        const view = GameView({ model: game, sound: createHeadlessAudio80().audio80 });
+        const view = GameView({ model: game, sound: createHeadlessAudio80() });
         updateView(view, STEP_MS);
         refreshView(view);
         expect(listTexts(view)).toContain('x5');
@@ -66,11 +66,11 @@ describe('GameView', () => {
             sheepStarts: [{ row: 38.5, col: 3.5 }],
         };
         const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
-        const { audio80, controls } = createHeadlessAudio80();
-        const view = GameView({ model: game, sound: audio80 });
+        const chip = createHeadlessAudio80();
+        const view = GameView({ model: game, sound: chip });
         const tick = (): void => {
             game.update(STEP_MS);
-            controls.update(STEP_MS);
+            chip.update(STEP_MS);
             updateView(view, STEP_MS);
             refreshView(view);
         };
@@ -99,11 +99,11 @@ describe('GameView', () => {
             devilStarts: [{ row: 10, col: 45 }],
         };
         const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
-        const { audio80, controls } = createHeadlessAudio80();
-        const view = GameView({ model: game, sound: audio80 });
+        const chip = createHeadlessAudio80();
+        const view = GameView({ model: game, sound: chip });
         const tick = (): void => {
             game.update(STEP_MS);
-            controls.update(STEP_MS);
+            chip.update(STEP_MS);
             updateView(view, STEP_MS);
             refreshView(view);
         };
@@ -136,11 +136,11 @@ describe('GameView', () => {
         try {
             const round: RoundConfig = { ...ROUNDS[0], devilSpeed: 0, startBeetles: 0, maxBeetles: 0 };
             const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
-            const { audio80, controls } = createHeadlessAudio80();
-            const view = GameView({ model: game, sound: audio80 });
+            const chip = createHeadlessAudio80();
+            const view = GameView({ model: game, sound: chip });
             const tick = (): void => {
                 game.update(STEP_MS);
-                controls.update(STEP_MS);
+                chip.update(STEP_MS);
                 updateView(view, STEP_MS);
                 refreshView(view);
             };

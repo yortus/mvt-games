@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from 'audio90';
+import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import { DEATH, GAME_OVER, HARPOON, LEVEL_CLEAR, LEVEL_START, WALK_TUNE } from '../data';
 import type { GamePhase } from '../models';
@@ -47,7 +47,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const music = createMusicPlayer({ audio80: sound });
     const watcher = watch({ phase: bindings.phase, harpoonShots: bindings.harpoonShots });
 
     setRefresh(view, refresh);
@@ -60,7 +59,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         // Each rise in the count is a shot. The count's first value is not a rise
         if (w.harpoonShots.increased) sound.play(HARPOON);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        music.tempoScale = computeTempo();
+        sound.tempoScale = computeTempo();
     }
 
     /**
@@ -69,7 +68,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
      * hurries while the last creature runs.
      */
     function computeTempo(): number {
-        if (music.song !== WALK_TUNE) return 1;
+        if (sound.song !== WALK_TUNE) return 1;
         if (!bindings.isDiggerMoving()) return 0;
         return bindings.isEnemyFleeing() ? HURRY_TEMPO : 1;
     }
@@ -79,21 +78,21 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
             case 'playing':
                 // Back from being caught, the walking tune starts at once. A new level or game plays its jingle first
                 if (previous === 'dying') {
-                    music.play(WALK_TUNE);
+                    sound.play(WALK_TUNE);
                 }
                 else {
-                    music.play(LEVEL_START);
-                    music.queue(WALK_TUNE);
+                    sound.play(LEVEL_START);
+                    sound.queue(WALK_TUNE);
                 }
                 break;
             case 'dying':
-                music.play(DEATH);
+                sound.play(DEATH);
                 break;
             case 'level-clear':
-                music.play(LEVEL_CLEAR);
+                sound.play(LEVEL_CLEAR);
                 break;
             case 'game-over':
-                music.play(GAME_OVER);
+                sound.play(GAME_OVER);
                 break;
         }
     }

@@ -1,8 +1,17 @@
-import { type Audio90, type Audio90Character, AUDIO90_SCOPE_LENGTH, type Audio90Song, type Audio90WithControls, createCommandAudio90 } from '../audio90';
+import {
+    type Audio90,
+    type Audio90Character,
+    type Audio90PlayOptions,
+    AUDIO90_SCOPE_LENGTH,
+    type Audio90Song,
+    type Audio90Sound,
+    createCommandAudio90,
+} from '../audio90';
+import { joinMembers } from '../shared';
 import { AUDIO90_HELD_SLOTS } from './audio90-held-slots';
-import { type Audio90PassedMessage, AUDIO90_PROCESSOR_NAME, type Audio90RunnerSettings, type Audio90ScopeReply } from './audio90-runner';
 import { createWebChip } from './web-chip';
-import processorUrl from './audio90-processor?worker&url';
+import { type Audio90PassedMessage, AUDIO90_PROCESSOR_NAME, type Audio90RunnerSettings, type Audio90ScopeReply } from './worklet';
+import processorUrl from './worklet/audio90-processor?worker&url';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -15,7 +24,7 @@ export interface Audio90Options {
      * and starts it at the page's first click, tap or key press, since a
      * browser lets sound start only after the visitor does something. With
      * one, starting it is the caller's job. Until it runs, the chip plays
-     * nothing, as `AudioControls.ready` explains. The context may hold
+     * nothing, as `ready` explains. The context may hold
      * other chips too, such as an Audio80.
      */
     readonly context?: AudioContext;
@@ -28,11 +37,11 @@ export interface Audio90Options {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an Audio90 for a browser, and its controls. At the end of each
- * task that writes to the chip, the writes go to an `AudioWorklet`, which
- * plays them in stereo on the sound card's clock. The controls' `ready`
- * resolves once the worklet is running. The worklet's code is its own
- * module, loaded only when this is called.
+ * Creates an Audio90 for a browser. At the end of each task that writes to
+ * the chip, the writes go to an `AudioWorklet`, which plays them in stereo
+ * on the sound card's clock. Its `ready` resolves once the worklet is
+ * running. The worklet's code is its own module, loaded only when this is
+ * called.
  *
  * A sample is sent the first time a sound that plays it is played. It
  * is copied, not moved, so the page keeps it for the next session.
@@ -45,7 +54,7 @@ export interface Audio90Options {
  * Each song is sent once, after its instruments and without their samples,
  * which the worklet already has by then.
  */
-export function createAudio90(options: Audio90Options = {}): Audio90WithControls {
+export function createAudio90(options: Audio90Options = {}): Audio90 {
     const writer = createCommandAudio90({
         onSound: (id, data) => web.send({ kind: 'sound', id, data }),
         onSample: (id, data) => web.send({ kind: 'sample', id, data }),
@@ -56,7 +65,7 @@ export function createAudio90(options: Audio90Options = {}): Audio90WithControls
     const settings: Audio90RunnerSettings = { character: options.character };
     const scope = new Float32Array(AUDIO90_SCOPE_LENGTH);
     let isScoping = false;
-    const web = createWebChip<Audio90PassedMessage, Audio90Song>({
+    const web = createWebChip<Audio90PassedMessage, Audio90Song, Audio90Sound, Audio90PlayOptions>({
         context: options.context,
         writer,
         heldSlots: AUDIO90_HELD_SLOTS,
@@ -72,8 +81,10 @@ export function createAudio90(options: Audio90Options = {}): Audio90WithControls
             scope.set(data);
             web.send({ kind: 'scope-buffer', data }, [data.buffer]);
         },
-        // The worklet turns its scopes off as it resets
-        onReset: () => turnScopesOff(),
+        // The worklet turns its scopes off as it resets, so they are turned on again if they were on
+        onReset() {
+            if (isScoping) sendScopesOn();
+        },
         // Its instruments are defined first, under the writer's ids. The song travels without their samples,
         // which the worklet already has by then
         prepareSong(song) {
@@ -83,7 +94,7 @@ export function createAudio90(options: Audio90Options = {}): Audio90WithControls
         },
     });
 
-    const audio90: Audio90 = {
+    return joinMembers(web.chip, {
         get time() {
             return web.time;
         },
@@ -91,37 +102,32 @@ export function createAudio90(options: Audio90Options = {}): Audio90WithControls
             return web.heardTime;
         },
         voiceCount: writer.voiceCount,
-        play: writer.play,
-        stop: writer.stop,
         setVoice: writer.setVoice,
         setEffect: writer.setEffect,
         setCharacter: writer.setCharacter,
         setTempo: writer.setTempo,
         reserveVoices: writer.reserveVoices,
-        releaseAll: writer.releaseAll,
         scope,
-        openSongSlot: web.openSongSlot,
-        setScopes(isOn) {
+        setScopes(isOn: boolean) {
             if (isOn === isScoping) return;
             if (!isOn) {
-                turnScopesOff();
+                isScoping = false;
+                scope.fill(0);
                 web.send({ kind: 'scopes', isOn: false });
                 return;
             }
             isScoping = true;
-            web.send({ kind: 'scopes', isOn: true });
-            for (let i = 0; i < SCOPE_BUFFERS; i++) {
-                const data = new Float32Array(AUDIO90_SCOPE_LENGTH);
-                web.send({ kind: 'scope-buffer', data }, [data.buffer]);
-            }
+            sendScopesOn();
         },
-    };
+    });
 
-    return { audio90, controls: web.controls };
-
-    function turnScopesOff(): void {
-        isScoping = false;
-        scope.fill(0);
+    /** Turns the worklet's scopes on, and hands it the buffers to send them in. */
+    function sendScopesOn(): void {
+        web.send({ kind: 'scopes', isOn: true });
+        for (let i = 0; i < SCOPE_BUFFERS; i++) {
+            const data = new Float32Array(AUDIO90_SCOPE_LENGTH);
+            web.send({ kind: 'scope-buffer', data }, [data.buffer]);
+        }
     }
 }
 

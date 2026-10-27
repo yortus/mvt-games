@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from 'audio90';
+import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';
@@ -49,7 +49,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound, totalCrumbs } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const music = createMusicPlayer({ audio80: sound });
     const watcher = watch({ phase: bindings.phase, remainingCrumbs: bindings.remainingCrumbs });
 
     setRefresh(view, refresh);
@@ -63,28 +62,28 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         const crumbs = w.remainingCrumbs;
         if (crumbs.decreased) sound.play(crumbs.value % 2 === 0 ? NIBBLE_LOW : NIBBLE_HIGH);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        music.tempoScale = computeTempoScale();
+        sound.tempoScale = computeTempoScale();
     }
 
     function playPhase(phase: GamePhase): void {
         // A game can end during the start's tune. Playing the end's tune cancels the sneaking tune queued
         switch (phase) {
             case 'playing':
-                music.play(GAME_START);
-                music.queue(SNEAK);
+                sound.play(GAME_START);
+                sound.queue(SNEAK);
                 break;
             case 'game-over':
-                music.play(CAUGHT);
+                sound.play(CAUGHT);
                 break;
             case 'won':
-                music.play(CLEARED);
+                sound.play(CLEARED);
                 break;
         }
     }
 
     /** Returns the sneaking tune's tempo for the crumbs left, or 1 for every other song. */
     function computeTempoScale(): number {
-        if (music.song !== SNEAK) return 1;
+        if (sound.song !== SNEAK) return 1;
         return 1 + (1 - bindings.remainingCrumbs() / totalCrumbs) * SNEAK_SPEED_UP;
     }
 }

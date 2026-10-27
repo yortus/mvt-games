@@ -1,7 +1,7 @@
-import type { ChipBatch, ChipClockReply, ChipReply } from '../shared';
+import type { ChipBatch, ChipClockReply, ChipReply } from '../../shared';
 import { createChipClock } from './chip-clock';
 import type { SongMessage } from './song-messages';
-import type { WorkletSequencer } from './song-sequencer';
+import type { WorkletSequencer } from './worklet-sequencer';
 
 // ---------------------------------------------------------------------------
 // Interface

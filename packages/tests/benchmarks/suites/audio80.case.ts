@@ -1,4 +1,4 @@
-import { type Audio80Wave, createAudio80Song, createAudio80Sound, createMusicPlayer } from 'audio90';
+import { type Audio80Wave, createAudio80Song, createAudio80Sound } from 'audio90';
 import { createHeadlessAudio80 } from 'audio90/headless';
 import { allocationPerFrame, readParams, report, timeFrames } from '../harness/measure';
 
@@ -32,16 +32,16 @@ const instruments = [0, 1].map((half) => createAudio80Sound({
 const cells: string[] = [];
 for (let v = 0; v < voices; v++) cells.push(`| ${toNoteName(48 + v * 3)} ${v % 2 === 0 ? 'a' : 'b'} vC`);
 const held = createAudio80Song({ bpm: 120, instruments: { a: instruments[0], b: instruments[1] }, patterns: { p: cells.join(' ') }, order: ['p'] });
-createMusicPlayer({ audio80: chip.audio80 }).play(held);
+chip.play(held);
 // One tick starts the song's first row. The song moves no further, since nothing else moves the chip's clock
-chip.controls.update(1000 / 60);
+chip.update(1000 / 60);
 
 const output = new Float32Array(BLOCK);
 // The first render takes the notes in, so each block measured has nothing new to play
-chip.render(output);
+chip.renderInto(output);
 
 const renderBlock = (): void => {
-    chip.render(output);
+    chip.renderInto(output);
 };
 
 if (String(params.measure) === 'allocation') {

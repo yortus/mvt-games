@@ -244,7 +244,7 @@ export default tseslint.config(
             'packages/sites/arcade/scripts/vite-plugin-entry-pages.ts',
             'packages/sites/arcade/scripts/vite-plugin-spritesheet.ts',
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',
-            'packages/libraries/audio90/src/web/register-chip-processor.ts',
+            'packages/libraries/audio90/src/web/worklet/register-chip-processor.ts',
             // v-snap replaces canvas text drawing and patches a Pixi pool.
             'packages/tools/v-snap/src/browser/canvas-text.ts',
             'packages/tools/v-snap/src/pixi/pixi-views.ts',

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from 'audio90';
+import type { Audio80 } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
@@ -60,7 +60,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const music = createMusicPlayer({ audio80: sound });
+    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
+    let musicId = 0;
     const fuelAlarm = createMetronome();
     const saucers = createMetronome();
     const siren = createMetronome();
@@ -115,17 +116,17 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         switch (phase) {
             case 'playing':
                 // A new game or a new run starts with the march. The ship coming back does not
-                if (previous !== 'respawning') music.play(LAUNCH);
+                if (previous !== 'respawning') musicId = sound.play(LAUNCH);
                 break;
             case 'dying':
-                music.stop();
+                sound.stop(musicId);
                 sound.play(SHIP_CRASH);
                 break;
             case 'section-clear':
-                music.play(RUN_CLEAR);
+                musicId = sound.play(RUN_CLEAR);
                 break;
             case 'game-over':
-                music.play(GAME_OVER);
+                musicId = sound.play(GAME_OVER);
                 break;
             case 'respawning':
                 break;

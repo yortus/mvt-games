@@ -1,5 +1,5 @@
 import type { ChipBatch } from '../shared';
-import type { RunnerMessage } from './chip-runner';
+import type { RunnerMessage } from './worklet';
 
 // A stand-in for a browser's audio context, for the browser chips' tests in
 // Node. It has just what a chip uses.

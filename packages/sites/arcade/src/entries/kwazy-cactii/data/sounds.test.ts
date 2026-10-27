@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashSamples, measurePeak, renderSound, findSounds } from 'audio90/headless';
+import { hashSamples, measurePeak, render, findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
 // Importing the data parses its notation, so a mistake in a step table fails
@@ -22,13 +22,13 @@ describe('kwazy cactii sounds', () => {
     // The view's tests tell the effects apart by which one is played. This
     // test checks that the player can tell them apart too.
     it('has no two effects that sound the same', () => {
-        const hashes = new Set(effects.map(([, effect]) => hashSamples(renderSound(effect))));
+        const hashes = new Set(effects.map(([, effect]) => hashSamples(render(effect))));
         expect(hashes.size).toBe(effects.length);
     });
 
     for (const [name, effect] of effects) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSound(effect);
+            const samples = render(effect);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();

@@ -13,7 +13,7 @@ import { createPixelFont, SCREEN_HEIGHT, SCREEN_WIDTH, TrackerView } from '../vi
  * Loads the Tune Tracker's font and bounces the tunes' samples, and returns
  * how to start it. It plays on the Audio90, and is drawn with Pixi, as pixel
  * art. The model advances only the time the tune has played. Then the views
- * play the tune through the music player they own, and show where it is.
+ * play the tune on the chip, and show where it is.
  */
 export const load = definePixiLoader(async () => {
     await textures.load();

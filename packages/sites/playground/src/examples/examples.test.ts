@@ -31,7 +31,7 @@ describe('the examples', () => {
             expect(project.renderer).toBe('pixi');
             if (project.renderer !== 'pixi') return;
             const stage = new Container();
-            const { audio80 } = createHeadlessAudio80();
+            const audio80 = createHeadlessAudio80();
             const options: StartOptions & { stage: Container } = { stage, sound: audio80, width: project.width, height: project.height };
             const ticked = await project.start(options);
             for (let elapsed = 0; elapsed < 1000; elapsed += FRAME_MS) {

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/html';
-import { createMusicPlayer, type Audio80Song, computeSongDurationMs } from 'audio90';
+import { type Audio80Song, computeSongDurationMs } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BET, BIG_WIN, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, GAME_OVER, LEVER, NO_WIN, REEL_CLICK,
@@ -162,12 +162,12 @@ type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
 function setUp(options: FruitMachineModelOptions) {
     const model = createFruitMachineModel({ seed: 5, ...options });
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = MachineAudioView({ model, sound: chip });
     /** Runs ticks as the host does. It advances the chip's clock and the model, then updates and refreshes the view. */
     const advance = (totalMs: number): void => {
         for (let elapsed = 0; elapsed < totalMs; elapsed += TICK_MS) {
-            controls.update(TICK_MS);
+            chip.update(TICK_MS);
             model.update(TICK_MS);
             updateView(view, TICK_MS);
             refreshView(view);
@@ -197,16 +197,15 @@ function describeNoteOns(log: readonly Audio80Write[]): string[] {
 }
 
 /**
- * Plays `song` to its end on a music player of its own, and describes the
+ * Plays `song` to its end on a chip of its own, and describes the
  * notes it plays. This is what the view should play when it plays `song`.
  * Each test that compares with it listens to the whole song.
  */
 function recordSong(song: Audio80Song): string[] {
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
-    const music = createMusicPlayer({ audio80: chip });
-    music.play(song);
+    const chip = createHeadlessAudio80({ record: true });
+    chip.play(song);
     for (let elapsed = 0; elapsed < computeSongDurationMs(song) + 1000; elapsed += TICK_MS) {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
     }
     return describeNoteOns(chip.log);
 }

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from 'audio90';
+import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import {
     FIGHT_THEME, type GamePhase, GONG, MATCH_LOST, MATCH_WON, POINT_LOST, POINT_WON, ROUND_LOST, ROUND_WON, TICK,
@@ -54,7 +54,8 @@ export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
     const { sound } = bindings;
     const view = new Container();
     view.label = 'match-audio';
-    const music = createMusicPlayer({ audio80: sound });
+    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
+    let musicId = 0;
     // The first poll sees the starting phase as a change, so the game opens with the gong
     const watcher = watch({
         phase: bindings.phase,
@@ -87,18 +88,18 @@ export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
         switch (phase) {
             case 'round-intro':
-                music.stop();
+                sound.stop(musicId);
                 sound.play(GONG);
                 break;
             case 'fighting':
                 // After a point, the tune carries on. A new round starts it from the top
-                if (previous !== 'point-scored') music.play(FIGHT_THEME);
+                if (previous !== 'point-scored') musicId = sound.play(FIGHT_THEME);
                 break;
             case 'round-over':
-                music.play(bindings.hasPlayerWon() ? ROUND_WON : ROUND_LOST);
+                musicId = sound.play(bindings.hasPlayerWon() ? ROUND_WON : ROUND_LOST);
                 break;
             case 'match-over':
-                music.play(bindings.hasPlayerWon() ? MATCH_WON : MATCH_LOST);
+                musicId = sound.play(bindings.hasPlayerWon() ? MATCH_WON : MATCH_LOST);
                 break;
             case 'point-scored':
                 break;

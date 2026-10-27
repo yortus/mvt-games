@@ -14,7 +14,7 @@ import {
 
 describe('a starter\'s sound chip', () => {
     it('gives a starter that names a chip that chip, typed as its kind', async () => {
-        const { audio80 } = createHeadlessAudio80();
+        const audio80 = createHeadlessAudio80();
         let given: Audio80 | undefined;
         const load = definePixiLoader(async () => ({
             ...PIXI_FIELDS,
@@ -31,7 +31,7 @@ describe('a starter\'s sound chip', () => {
     });
 
     it('gives a starter that names the Audio90 an Audio90, not the Audio80', async () => {
-        const { audio90 } = createHeadlessAudio90();
+        const audio90 = createHeadlessAudio90();
         let given: Audio90 | undefined;
         const load = definePixiLoader(async () => ({
             ...PIXI_FIELDS,
@@ -106,7 +106,7 @@ const ELEMENT_SESSION: ElementEntrySession = { ...SESSION, views: [], render: ()
 
 /** A chip of each kind: those given, and a headless chip for the rest. */
 function createChips(given: Partial<SoundChipsByKind>): SoundChipsByKind {
-    return { audio80: given.audio80 ?? createHeadlessAudio80().audio80, audio90: given.audio90 ?? createHeadlessAudio90().audio90 };
+    return { audio80: given.audio80 ?? createHeadlessAudio80(), audio90: given.audio90 ?? createHeadlessAudio90() };
 }
 
 /** A chip finder that finds each kind's chip in `chips`. */

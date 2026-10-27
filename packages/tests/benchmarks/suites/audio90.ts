@@ -3,10 +3,10 @@ import { combinations, type Suite } from '../harness/suite';
 const ALLOCATION_FLAGS = ['--expose-gc', '--max-semi-space-size=128'];
 const ENGINES = ['fm', 'fm-console', 'analog-1', 'analog-7', 'sample'];
 
-/** The Audio90 rendering 128-sample stereo blocks through the headless chip, a busy song through the music player, and bouncing samples. */
+/** The Audio90 rendering 128-sample stereo blocks through the headless chip, a busy song played on the chip, and bouncing samples. */
 export const audio90Suite: Suite = {
     name: 'audio90',
-    description: 'the Audio90 rendering 128-sample stereo blocks at 48 kHz through the headless chip, by engine and voices playing; a busy song through the music player, a tick at a time; and bouncing samples',
+    description: 'the Audio90 rendering 128-sample stereo blocks at 48 kHz through the headless chip, by engine and voices playing; a busy song played on the chip, a tick at a time; and bouncing samples',
     entry: 'audio90.case.ts',
     cases: [
         { params: { measure: 'time', engine: 'none', voices: 0 } },
@@ -41,7 +41,7 @@ export const audio90Suite: Suite = {
         },
         {
             id: 'song',
-            title: 'A busy song of ten channels played through the music player, per tick of 1/60 s: the clock, the player\'s update and refresh, the writes, and 800 samples rendered',
+            title: 'A busy song of ten channels played on the chip, per tick of 1/60 s: the clock, the song player\'s update and refresh, the writes, and 800 samples rendered',
             where: { engine: 'song' },
             rows: ['engine'],
             metrics: [
@@ -70,7 +70,7 @@ export const audio90Suite: Suite = {
             'analog-7': 'analog, seven saws in stereo (a supersaw), within the budget of 48 oscillators',
             'sample': 'sample, looping',
             'mix': 'a busy mix of every engine',
-            'song': 'a busy song, through the music player',
+            'song': 'a busy song, played on the chip',
         },
         sample: {
             'hit': 'an orchestra hit, 0.75 s at 32 kHz',

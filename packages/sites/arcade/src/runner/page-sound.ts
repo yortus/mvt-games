@@ -1,4 +1,17 @@
-import { type Audio80, type Audio90, AUDIO90_SCOPE_LENGTH, type AudioControls, type createAudio80, type createAudio90, type SongSlot } from 'audio90';
+import {
+    type Audio80,
+    type Audio80PlayOptions,
+    type Audio80Song,
+    type Audio80Sound,
+    type Audio90,
+    type Audio90PlayOptions,
+    type Audio90Song,
+    type Audio90Sound,
+    AUDIO90_SCOPE_LENGTH,
+    type createAudio80,
+    type createAudio90,
+    type SoundChip,
+} from 'audio90';
 import type { SoundChipKind, SoundChipsByKind } from '../entry-types';
 import { toSliderGain } from './slider-gain';
 
@@ -8,11 +21,11 @@ import { toSliderGain } from './slider-gain';
 
 /**
  * The page's sound. It holds one audio context, with the page's own Audio80
- * on it, and a chip of each kind for the entries the page runs. Each chip has
- * its controls, and keeps its time by the sound card. The entry host pauses
- * an entry chip as it pauses the session that plays on it. The page's own
- * chip plays on, for sounds such as its menus', so it can play over a paused
- * game. While the page is hidden, every chip is paused.
+ * on it, and a chip of each kind for the entries the page runs. Each chip
+ * keeps its time by the sound card. The entry host pauses an entry chip as it
+ * pauses the session that plays on it. The page's own chip plays on, for
+ * sounds such as its menus', so it can play over a paused game. While the
+ * page is hidden, every chip is paused.
  *
  * `prepare` makes the audio context and loads the page's chip, the first
  * time it is called, and an entry chip the first time its kind is asked for.
@@ -27,22 +40,23 @@ import { toSliderGain } from './slider-gain';
  * on the next key press, click or touch. A context that stops later, as when
  * a phone takes a call, starts again in the same way.
  *
- * Each chip and its controls stay the same objects for the page's life.
- * Until the chips load, nothing stands behind these objects. Writes are
- * dropped, the time stays at 0, and the controls only keep the volumes and
- * the pause they are given. Once the chips load, each takes what was kept,
- * and every call passes on to it.
+ * Each chip stays the same object for the page's life. Until the chips load,
+ * nothing stands behind these objects. Writes and songs are dropped, the
+ * time stays at 0, and each chip only keeps the volumes, the tempo scale and
+ * the pause it is given. Once the chips load, each takes what was kept, and
+ * every call passes on to it.
  */
 export interface PageSound {
     /**
      * The chips that entries play on, one of each kind. Each is silent until
-     * it loads, and always silent when sound is not enabled.
+     * it loads, and always silent when sound is not enabled. Its `ready` is
+     * resolved until it loads, and then follows the loaded chip's. Its
+     * `isPaused` is the pause it was given, which holds whether or not the
+     * page is hidden.
      */
-    readonly entryChips: EntryChips;
+    readonly entryChips: SoundChipsByKind;
     /** The page's own chip, for sounds that belong to no session, such as a menu's. It is silent until it loads. */
     readonly pageAudio80: Audio80;
-    /** The controls of `pageAudio80`. */
-    readonly pageControls: AudioControls;
     /** The listener's settings. Every chip takes them, at once or when it loads. */
     settings: SoundSettings;
     /** Whether every chip is muted, the page's own and every entry chip, at once or when it loads. */
@@ -50,8 +64,8 @@ export interface PageSound {
     /**
      * Whether the page is hidden. While it is, every chip is paused, so no
      * music plays on behind a game that has stopped with the page's frames.
-     * As the page shows again, each chip plays on, except one whose own
-     * controls were paused, such as a paused game's.
+     * As the page shows again, each chip plays on, except one paused itself,
+     * such as a paused game's.
      */
     isHidden: boolean;
     /**
@@ -65,22 +79,6 @@ export interface PageSound {
     prepare: (kind?: SoundChipKind) => Promise<void>;
     /** Destroys every chip and closes the audio context. */
     destroy: () => void;
-}
-
-/** The chip of each kind that entries play on. */
-export type EntryChips = { readonly [K in SoundChipKind]: EntryChip<K> };
-
-/** A chip that entries play on, and its controls. */
-export interface EntryChip<K extends SoundChipKind> {
-    /** The chip, given to each session that plays on it. */
-    readonly chip: SoundChipsByKind[K];
-    /**
-     * Its controls. They pause it, reset it and set the listener's volumes.
-     * Their `ready` is resolved until the chip loads, and then follows the
-     * loaded chip's. Their `isPaused` is the pause they were given, which
-     * holds whether or not the page is hidden.
-     */
-    readonly controls: AudioControls;
 }
 
 /** The listener's sound settings. The music and the sound effects each have their own volume, and 0 turns one off. */
@@ -115,14 +113,11 @@ export interface PageSoundOptions {
 /** Creates the page's sound, with every chip silent until `prepare` loads it. */
 export function createPageSound(options: PageSoundOptions): PageSound {
     const entrySlots: { readonly [K in SoundChipKind]: ChipSlot<SoundChipsByKind[K]> } = { audio80: createAudio80Slot(), audio90: createAudio90Slot() };
-    const entryChips: EntryChips = {
-        audio80: { chip: entrySlots.audio80.chip, controls: entrySlots.audio80.controls },
-        audio90: { chip: entrySlots.audio90.chip, controls: entrySlots.audio90.controls },
-    };
+    const entryChips: SoundChipsByKind = { audio80: entrySlots.audio80.chip, audio90: entrySlots.audio90.chip };
     const pageSlot = createAudio80Slot();
-    // Every chip's slot and controls, for what is done to them all
-    const allSlots: readonly Pick<ChipSlot<unknown>, 'controls' | 'setHidden'>[] = [pageSlot, ...Object.values(entrySlots)];
-    const allControls: readonly AudioControls[] = allSlots.map((slot) => slot.controls);
+    // Every chip's slot, and every chip, for what is done to them all
+    const allSlots: readonly Pick<ChipSlot<AnyChip>, 'chip' | 'setHidden'>[] = [pageSlot, entrySlots.audio80, entrySlots.audio90];
+    const allChips: readonly AnyChip[] = allSlots.map((slot) => slot.chip);
     let isHidden = false;
     let context: AudioContext | undefined;
     // The chips' code, once it has loaded
@@ -138,7 +133,6 @@ export function createPageSound(options: PageSoundOptions): PageSound {
     return {
         entryChips,
         pageAudio80: pageSlot.chip,
-        pageControls: pageSlot.controls,
         get settings() {
             return settings;
         },
@@ -147,10 +141,10 @@ export function createPageSound(options: PageSoundOptions): PageSound {
             applySettings();
         },
         get isMuted() {
-            return pageSlot.controls.isMuted;
+            return pageSlot.chip.isMuted;
         },
         set isMuted(value) {
-            for (const controls of allControls) controls.isMuted = value;
+            for (const chip of allChips) chip.isMuted = value;
         },
         get isHidden() {
             return isHidden;
@@ -175,7 +169,7 @@ export function createPageSound(options: PageSoundOptions): PageSound {
         destroy() {
             isOff = true;
             listenForGestures(false);
-            for (const controls of allControls) controls.destroy();
+            for (const chip of allChips) chip.destroy();
             void context?.close();
         },
     };
@@ -212,8 +206,8 @@ export function createPageSound(options: PageSoundOptions): PageSound {
             if (isOff) return;
             makers = { createAudio80, createAudio90 };
             const page = createAudio80({ context: made });
-            page.controls.ready.catch(warnSoundOff);
-            pageSlot.fill(page.audio80, page.controls);
+            page.ready.catch(warnSoundOff);
+            pageSlot.fill(page);
         }
         catch (error) {
             // The code may have failed to download for a moment, so the next `prepare` tries again
@@ -230,17 +224,13 @@ export function createPageSound(options: PageSoundOptions): PageSound {
             return;
         }
         switch (kind) {
-            case 'audio80': {
-                const chip = makers.createAudio80({ context: made });
-                entrySlots.audio80.fill(chip.audio80, chip.controls);
+            case 'audio80':
+                entrySlots.audio80.fill(makers.createAudio80({ context: made }));
                 break;
-            }
-            case 'audio90': {
+            case 'audio90':
                 // Its worklet's code is a module of its own, which loads now, the first time an entry asks for it
-                const chip = makers.createAudio90({ context: made });
-                entrySlots.audio90.fill(chip.audio90, chip.controls);
+                entrySlots.audio90.fill(makers.createAudio90({ context: made }));
                 break;
-            }
         }
     }
 
@@ -248,9 +238,9 @@ export function createPageSound(options: PageSoundOptions): PageSound {
     function applySettings(): void {
         const musicGain = toSliderGain(settings.musicVolume);
         const effectsGain = toSliderGain(settings.effectsVolume);
-        for (const controls of allControls) {
-            controls.musicVolume = musicGain;
-            controls.effectsVolume = effectsGain;
+        for (const chip of allChips) {
+            chip.musicVolume = musicGain;
+            chip.effectsVolume = effectsGain;
         }
     }
 
@@ -309,59 +299,55 @@ const AUDIO90_VOICE_COUNT = 16;
  */
 const NO_PLAY = 0;
 
+/** Either kind of chip, as the page's sound treats them all. */
+type AnyChip = Audio80 | Audio90;
+
 /**
- * A chip and controls that stand in for a chip still to come. Until `fill`
- * gives it one, writes and plays are dropped and the controls only keep the
- * volumes and the pause set. After that, every call passes on to that chip, which
- * takes what was kept. The calls are bound once, so passing one on makes no
- * garbage.
+ * A chip that stands in for a chip still to come. Until `fill` gives it one,
+ * writes, plays and songs are dropped, and it only keeps the volumes, the
+ * tempo scale and the pause set. After that, every call passes on to that
+ * chip, which takes what was kept. The calls are bound once, so passing one
+ * on makes no garbage.
  */
-interface ChipSlot<C> {
+interface ChipSlot<C extends AnyChip> {
     /** The chip that stands in. */
     readonly chip: C;
-    /** The controls that stand in. */
-    readonly controls: AudioControls;
-    /** Puts `chip` and its `controls` behind the slot, with the volumes and the pause set so far. */
-    fill: (chip: C, controls: AudioControls) => void;
-    /** Pauses the chip while the page is hidden, whatever its controls' own pause, and lets it play on as it shows. */
+    /** Puts `chip` behind the slot, with the volumes, the tempo scale and the pause set so far. */
+    fill: (chip: C) => void;
+    /** Pauses the chip while the page is hidden, whatever its own pause, and lets it play on as it shows. */
     setHidden: (isHidden: boolean) => void;
 }
 
 function createAudio80Slot(): ChipSlot<Audio80> {
     let filled: Audio80 | undefined;
-    const slot = createControlsSlot();
-    const chip: Audio80 = {
+    const shared = createSharedStandIn<Audio80Song, Audio80Sound, Audio80PlayOptions>(() => filled);
+    const own: Omit<Audio80, keyof SoundChip<Audio80Song, Audio80Sound, Audio80PlayOptions>> = {
         get time() {
             return filled === undefined ? 0 : filled.time;
         },
         voiceCount: AUDIO80_VOICE_COUNT,
-        play: (sound, options) => filled?.play(sound, options) ?? NO_PLAY,
-        stop: (id) => filled?.stop(id),
         setVoice: (voice, setting, value, atMs) => filled?.setVoice(voice, setting, value, atMs),
         setFilter: (filter, setting, value, atMs) => filled?.setFilter(filter, setting, value, atMs),
         setEcho: (setting, value, atMs) => filled?.setEcho(setting, value, atMs),
         reserveVoices: (count, atMs) => filled?.reserveVoices(count, atMs),
-        releaseAll: () => filled?.releaseAll(),
-        openSongSlot: () => createDeferredSongSlot(() => filled),
     };
     return {
-        chip,
-        controls: slot.controls,
-        fill(next, controls) {
+        chip: addMembers(shared.chip, own),
+        fill(next) {
             filled = next;
-            slot.fill(controls);
+            shared.fill(next);
         },
-        setHidden: slot.setHidden,
+        setHidden: shared.setHidden,
     };
 }
 
 function createAudio90Slot(): ChipSlot<Audio90> {
     let filled: Audio90 | undefined;
-    const slot = createControlsSlot();
+    const shared = createSharedStandIn<Audio90Song, Audio90Sound, Audio90PlayOptions>(() => filled);
     // What the scopes read until the chip loads: silence
     const silentScope = new Float32Array(AUDIO90_SCOPE_LENGTH);
     let isScoping = false;
-    const chip: Audio90 = {
+    const own: Omit<Audio90, keyof SoundChip<Audio90Song, Audio90Sound, Audio90PlayOptions>> = {
         get time() {
             return filled === undefined ? 0 : filled.time;
         },
@@ -369,18 +355,14 @@ function createAudio90Slot(): ChipSlot<Audio90> {
             return filled === undefined ? 0 : filled.heardTime;
         },
         voiceCount: AUDIO90_VOICE_COUNT,
-        play: (sound, options) => filled?.play(sound, options) ?? NO_PLAY,
-        stop: (id) => filled?.stop(id),
         setVoice: (voice, setting, value, atMs) => filled?.setVoice(voice, setting, value, atMs),
         setEffect: (effect, setting, value, atMs) => filled?.setEffect(effect, setting, value, atMs),
         setCharacter: (character, atMs) => filled?.setCharacter(character, atMs),
         setTempo: (bpm, atMs) => filled?.setTempo(bpm, atMs),
         reserveVoices: (count, atMs) => filled?.reserveVoices(count, atMs),
-        releaseAll: () => filled?.releaseAll(),
         get scope() {
             return filled === undefined ? silentScope : filled.scope;
         },
-        openSongSlot: () => createDeferredSongSlot(() => filled),
         setScopes(isOn) {
             // Kept, so a chip still to load turns them on as it is filled
             isScoping = isOn;
@@ -388,67 +370,66 @@ function createAudio90Slot(): ChipSlot<Audio90> {
         },
     };
     return {
-        chip,
-        controls: slot.controls,
-        fill(next, controls) {
+        chip: addMembers(shared.chip, own),
+        fill(next) {
             filled = next;
-            slot.fill(controls);
+            shared.fill(next);
             if (isScoping) next.setScopes(true);
         },
-        setHidden: slot.setHidden,
+        setHidden: shared.setHidden,
     };
 }
 
 /**
- * A slot on the sequencer of a chip still to come. It opens the chip's own
- * slot the first time it is used once the chip has loaded. Until then, as
- * the chip slots drop writes, it drops each call, and reports no song.
+ * The members every chip has, standing in for the chip that `read` returns
+ * once it has loaded, as a `ChipSlot`'s chip does. The chip is paused while
+ * its own pause says so, or while the page is hidden.
  */
-function createDeferredSongSlot<S>(chip: () => { readonly openSongSlot: () => SongSlot<S> } | undefined): SongSlot<S> {
-    let inner: SongSlot<S> | undefined;
-    return {
-        get song() {
-            return open()?.song;
-        },
-        get orderIndex() {
-            return open()?.orderIndex ?? 0;
-        },
-        get row() {
-            return open()?.row ?? 0;
-        },
-        get beat() {
-            return open()?.beat ?? 0;
-        },
-        play: (song) => open()?.play(song),
-        queue: (song) => open()?.queue(song),
-        stop: () => open()?.stop(),
-        setTempoScale: (scale) => open()?.setTempoScale(scale),
-    };
-
-    function open(): SongSlot<S> | undefined {
-        inner ??= chip()?.openSongSlot();
-        return inner;
-    }
-}
-
-/**
- * Controls that stand in for a chip's controls still to come, as a
- * `ChipSlot`'s do. The chip is paused while its controls are, or while the
- * page is hidden.
- */
-function createControlsSlot(): { readonly controls: AudioControls; readonly fill: (controls: AudioControls) => void; readonly setHidden: (isHidden: boolean) => void } {
-    let filled: AudioControls | undefined;
-    // The volumes and the pause as set, kept for the chip to come
+function createSharedStandIn<Song, Sound, PlayOptions>(read: () => SoundChip<Song, Sound, PlayOptions> | undefined): {
+    readonly chip: SoundChip<Song, Sound, PlayOptions>;
+    readonly fill: (chip: SoundChip<Song, Sound, PlayOptions>) => void;
+    readonly setHidden: (isHidden: boolean) => void;
+} {
+    // The volumes, the tempo scale and the pause as set, kept for the chip to come
     let volume = 1;
     let isMuted = false;
     let musicVolume = 1;
     let effectsVolume = 1;
+    let tempoScale = 1;
     let isPaused = false;
     let isHidden = false;
 
-    const controls: AudioControls = {
+    const chip: SoundChip<Song, Sound, PlayOptions> = {
         get ready() {
-            return filled === undefined ? NOTHING_TO_LOAD : filled.ready;
+            return read()?.ready ?? NOTHING_TO_LOAD;
+        },
+        play(target: Song | Sound, options?: PlayOptions) {
+            // The chip's `play` takes a song or a sound. TypeScript can't pass the two on through its two
+            // signatures, so it is called as the one function it is
+            const play = read()?.play as ((target: Song | Sound, options?: PlayOptions) => number) | undefined;
+            return play === undefined ? NO_PLAY : play(target, options);
+        },
+        queue: (song) => read()?.queue(song) ?? NO_PLAY,
+        stop: (id) => read()?.stop(id),
+        get song() {
+            return read()?.song;
+        },
+        get orderIndex() {
+            return read()?.orderIndex ?? 0;
+        },
+        get row() {
+            return read()?.row ?? 0;
+        },
+        get beat() {
+            return read()?.beat ?? 0;
+        },
+        get tempoScale() {
+            return read()?.tempoScale ?? tempoScale;
+        },
+        set tempoScale(value) {
+            tempoScale = value;
+            const filled = read();
+            if (filled !== undefined) filled.tempoScale = value;
         },
         get isPaused() {
             return isPaused;
@@ -461,45 +442,48 @@ function createControlsSlot(): { readonly controls: AudioControls; readonly fill
             isPaused = false;
             applyPause();
         },
-        reset: () => filled?.reset(),
         get volume() {
-            return filled === undefined ? volume : filled.volume;
+            return read()?.volume ?? volume;
         },
         set volume(value) {
             volume = value;
+            const filled = read();
             if (filled !== undefined) filled.volume = value;
         },
         get isMuted() {
-            return filled === undefined ? isMuted : filled.isMuted;
+            return read()?.isMuted ?? isMuted;
         },
         set isMuted(value) {
             isMuted = value;
+            const filled = read();
             if (filled !== undefined) filled.isMuted = value;
         },
         get musicVolume() {
-            return filled === undefined ? musicVolume : filled.musicVolume;
+            return read()?.musicVolume ?? musicVolume;
         },
         set musicVolume(value) {
             musicVolume = value;
+            const filled = read();
             if (filled !== undefined) filled.musicVolume = value;
         },
         get effectsVolume() {
-            return filled === undefined ? effectsVolume : filled.effectsVolume;
+            return read()?.effectsVolume ?? effectsVolume;
         },
         set effectsVolume(value) {
             effectsVolume = value;
+            const filled = read();
             if (filled !== undefined) filled.effectsVolume = value;
         },
-        destroy: () => filled?.destroy(),
+        destroy: () => read()?.destroy(),
     };
     return {
-        controls,
+        chip,
         fill(next) {
-            filled = next;
             next.volume = volume;
             next.isMuted = isMuted;
             next.musicVolume = musicVolume;
             next.effectsVolume = effectsVolume;
+            next.tempoScale = tempoScale;
             applyPause();
         },
         setHidden(value) {
@@ -508,11 +492,20 @@ function createControlsSlot(): { readonly controls: AudioControls; readonly fill
         },
     };
 
-    /** Pauses the chip while its controls are paused or the page is hidden, and lets it play on otherwise. */
+    /** Pauses the chip while it is paused itself or the page is hidden, and lets it play on otherwise. */
     function applyPause(): void {
-        if (isPaused || isHidden) filled?.pause();
-        else filled?.resume();
+        if (isPaused || isHidden) read()?.pause();
+        else read()?.resume();
     }
+}
+
+/**
+ * Copies the members of `extra` onto `base`, getters and setters as they
+ * are, and returns `base`. A stand-in joins the members every chip has with
+ * its own chip's this way, without reading a getter as it copies it.
+ */
+function addMembers<B extends object, E extends object>(base: B, extra: E): B & E {
+    return Object.defineProperties(base, Object.getOwnPropertyDescriptors(extra)) as B & E;
 }
 
 /** Warns that sound is off, because audio could not start. */

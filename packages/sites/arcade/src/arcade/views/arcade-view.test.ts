@@ -245,7 +245,7 @@ function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: A
         highscoreStore: createMemoryHighscoreStore(),
     });
     const navTools = document.createElement('div');
-    const { audio80 } = createHeadlessAudio80();
+    const audio80 = createHeadlessAudio80();
     const view = ArcadeView({
         model,
         stage: document.createElement('div'),

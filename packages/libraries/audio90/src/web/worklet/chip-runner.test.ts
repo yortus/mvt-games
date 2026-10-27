@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio80Sound, createAudio80Song, createCommandAudio80 } from '../audio80';
+import { createAudio80Sound, createAudio80Song, createCommandAudio80 } from '../../audio80';
 import {
     type Audio90Sound, type Audio90SoundData, AUDIO90_SCOPE_LENGTH, AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS, createAudio90Song, createCommandAudio90,
     DEFAULT_AUDIO90_SOUND, ENGINE_SAMPLE, WAVE90_SAW,
-} from '../audio90';
-import { measurePeak } from '../headless';
-import type { ChipBatch, ChipBufferReply, ChipClockReply, CommandWriter } from '../shared';
+} from '../../audio90';
+import { measurePeak } from '../../headless';
+import type { ChipBatch, ChipBufferReply, ChipClockReply, CommandWriter } from '../../shared';
 import { type Audio80PassedMessage, createAudio80Runner } from './audio80-runner';
 import { type Audio90PassedMessage, type Audio90ScopeReply, BLOCKS_PER_SCOPE, createAudio90Runner } from './audio90-runner';
 import type { RunnerMessage } from './chip-runner';
@@ -195,7 +195,7 @@ describe('chip runner, running a chip\'s sequencer', () => {
         expect(places[placesBefore]?.row).toBe(((lastBefore?.row ?? 0) + 1) % 8);
     });
 
-    it('sends each place with the generation of the last call its slot took', () => {
+    it('sends each place with the generation of the last call the sequencer took', () => {
         const { runner, send, receive, places, sendSong, call } = setUpAudio90();
         sendSong(1, SEQUENCED_SONG);
         receive(call({ call: 'play', songId: 1, generation: 1 }));
@@ -240,7 +240,7 @@ describe('chip runner, running a chip\'s sequencer', () => {
         const { runner, receive, places, writer } = setUp();
         const song = createAudio80Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio80Sound({ wave: 'saw' }) }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'], loop: 0 });
         receive({ kind: 'song', id: 1, song: structuredClone(song), soundIds: song.instruments.map(writer.defineSound) });
-        receive({ kind: 'song-call', slot: 1, generation: 1, call: 'play', songId: 1, value: 0 });
+        receive({ kind: 'song-call', generation: 1, call: 'play', songId: 1, value: 0 });
         const output = new Float32Array(BLOCK);
         let loudest = 0;
         for (let b = 0; b < 30 * BLOCKS_PER_TICK; b++) {
@@ -400,10 +400,9 @@ function setUpAudio90() {
         const instruments = song.instruments.map((instrument) => ({ ...instrument, sample: undefined }));
         receive({ kind: 'song', id, song: structuredClone({ ...song, instruments }), soundIds });
     };
-    /** A call to slot 1. */
+    /** A call to the sequencer. */
     const call = (options: { call: SongCall; generation: number; songId?: number }): SongCallMessage => ({
         kind: 'song-call',
-        slot: 1,
         generation: options.generation,
         call: options.call,
         songId: options.songId ?? 0,

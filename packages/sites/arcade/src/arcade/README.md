@@ -185,10 +185,8 @@ entry's last frame powering off by its own clock.
 model.update(deltaMs);                // the Arcade's model
 followModel();                        // start or stop the entry's session as the model starts or leaves it
 host.tick(timeMs, deltaMs);           // the entry: its models, its views, its renderers
-sound.pageControls.update(deltaMs);   // the page's own chip: advance its clock
 updateView(document.body, deltaMs);   // the Arcade's views, its tools in the site's nav among them
 refreshView(document.body);
-sound.pageControls.flush();           // the page's own chip: send what the views wrote
 ```
 
 The entry host ([`../runner/entry-host.ts`](../runner/entry-host.ts)) runs

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeSongDurationMs } from 'audio90';
-import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSound, renderSong, findSounds } from 'audio90/headless';
+import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
 // Importing the data parses its notation, so a mistake in a pattern or a step
@@ -22,7 +22,7 @@ describe('arcade sounds', () => {
 
     for (const [name, effect] of effects) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSound(effect);
+            const samples = render(effect);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();
@@ -33,7 +33,7 @@ describe('arcade sounds', () => {
         // Loudness is averaged over blocks of 400 ms. A song much shorter than that would measure mostly the silence after it.
         const isMeasurable = computeSongDurationMs(song) >= MEASURABLE_MS;
         it(`${name} sounds as it did, audible and unclipped${isMeasurable ? ', as loud as every other song' : ''}`, () => {
-            const samples = renderSong(song);
+            const samples = render(song);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             if (isMeasurable) {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createAudio80Sound, OP_PLAY, OP_PLAY_OPTIONS, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX, OP_STOP } from '../audio80';
+import { createAudio80Sound, OP_PLAY, OP_PLAY_OPTIONS, OP_RELEASE_ALL, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX, OP_STOP } from '../audio80';
 import { type ChipBatch, COMMAND_STRIDE, MAX_MIX_VOLUME } from '../shared';
 import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
 import { createAudio80 } from './audio80';
@@ -14,8 +14,8 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('sends the writes of one task together, in one batch, at the end of the task', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
         audio80.stop(audio80.play(createAudio80Sound({ wave: 'saw' })));
         expect(fake.listBatches()).toHaveLength(0);
         await settle();
@@ -25,8 +25,8 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('stamps a write made with no time to play as soon as it arrives', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
         audio80.play(createAudio80Sound({ wave: 'saw' }));
         audio80.setFilter('a', 'cutoffHz', 800, 250);
         await settle();
@@ -36,8 +36,8 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('sends no batch while the audio context is suspended', async () => {
         const fake = createFakeContext('suspended');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
         for (let i = 0; i < 10; i++) {
             audio80.play(createAudio80Sound({ wave: 'saw' }));
             await settle();
@@ -47,8 +47,8 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('sends the settings made while suspended once the context runs, but not the plays', async () => {
         const fake = createFakeContext('suspended');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
         // As when a song starts, write the voices it keeps, its filter and its first note
         audio80.reserveVoices(4);
         audio80.setFilter('a', 'cutoffHz', 500);
@@ -65,8 +65,8 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('sends the sounds first played while suspended, once each', async () => {
         const fake = createFakeContext('suspended');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
         const sound = createAudio80Sound({ wave: 'saw' });
         audio80.play(sound);
         await settle();
@@ -78,8 +78,8 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('sends a stop made while suspended, so a sound played before still stops', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
         const id = audio80.play(createAudio80Sound({ wave: 'saw' }), { lengthMs: Infinity });
         await settle();
         fake.setState('suspended');
@@ -94,9 +94,9 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('sends a mix change made while suspended once the context runs', async () => {
         const fake = createFakeContext('suspended');
-        const { controls } = createAudio80({ context: fake.context });
-        await controls.ready;
-        controls.musicVolume = 0.25;
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
+        audio80.musicVolume = 0.25;
         await settle();
         fake.setState('running');
         await settle();
@@ -105,42 +105,64 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('tells the worklet as it pauses and resumes, and keeps only the lasting writes made while paused', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
-        controls.pause();
-        controls.pause();
-        expect(controls.isPaused).toBe(true);
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
+        audio80.pause();
+        audio80.pause();
+        expect(audio80.isPaused).toBe(true);
         expect(fake.messages).toEqual([{ kind: 'pause' }]);
         audio80.setFilter('a', 'cutoffHz', 800);
         audio80.play(createAudio80Sound({ wave: 'saw' }));
         await settle();
         expect(fake.listBatches()).toHaveLength(0);
-        controls.resume();
-        expect(controls.isPaused).toBe(false);
+        audio80.resume();
+        expect(audio80.isPaused).toBe(false);
         await settle();
         // The sound is defined as it is first played, paused or not
         expect(fake.messages.map((message) => message.kind)).toEqual(['pause', 'sound', 'resume', 'batch']);
         expect(listOps(fake.listBatches()[0])).toEqual([OP_SET_FILTER]);
     });
 
-    it('sends a pause made before the worklet runs once it does, even after a reset', async () => {
+    it('sends a pause made before the worklet runs once it does, even after everything is stopped', async () => {
         const fake = createFakeContext('running');
-        const { controls } = createAudio80({ context: fake.context });
-        controls.pause();
-        controls.reset();
-        await controls.ready;
+        const audio80 = createAudio80({ context: fake.context });
+        audio80.pause();
+        audio80.stop();
+        await audio80.ready;
         expect(fake.messages).toEqual([{ kind: 'pause' }]);
+    });
+
+    it('releases every voice when everything is stopped while it plays', async () => {
+        const fake = createFakeContext('running');
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
+        audio80.play(createAudio80Sound({ wave: 'saw' }), { lengthMs: Infinity });
+        audio80.stop();
+        await settle();
+        expect(listOps(fake.listBatches()[0])).toEqual([OP_PLAY_OPTIONS, OP_PLAY, OP_RELEASE_ALL]);
+        expect(fake.messages.some((message) => message.kind === 'reset')).toBe(false);
+    });
+
+    it('resets the worklet, cutting every voice, when everything is stopped while it is paused', async () => {
+        const fake = createFakeContext('running');
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
+        audio80.play(createAudio80Sound({ wave: 'saw' }), { lengthMs: Infinity });
+        await settle();
+        audio80.pause();
+        audio80.stop();
+        expect(fake.messages.at(-1)).toEqual({ kind: 'reset' });
     });
 
     it('stops the worklet when destroyed, and sends nothing after', async () => {
         const fake = createFakeContext('running');
-        const { audio80, controls } = createAudio80({ context: fake.context });
-        await controls.ready;
-        controls.destroy();
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
+        audio80.destroy();
         expect(fake.messages.at(-1)).toEqual({ kind: 'stop' });
         const sent = fake.messages.length;
         audio80.play(createAudio80Sound({ wave: 'saw' }));
-        controls.pause();
+        audio80.pause();
         await settle();
         expect(fake.messages).toHaveLength(sent);
     });
@@ -153,13 +175,13 @@ describe('createAudio80, with a stand-in audio context', () => {
         const listeners = new Map<string, () => void>();
         vi.stubGlobal('addEventListener', (name: string, listener: () => void) => listeners.set(name, listener));
         vi.stubGlobal('removeEventListener', (name: string) => listeners.delete(name));
-        const { controls } = createAudio80();
+        const audio80 = createAudio80();
         expect([...listeners.keys()].sort()).toEqual(['keydown', 'pointerdown', 'touchend']);
         listeners.get('pointerdown')?.();
         expect(fake.context.state).toBe('running');
         // Once it runs, it no longer listens
         expect(listeners.size).toBe(0);
-        controls.destroy();
+        audio80.destroy();
         expect(fake.context.state).toBe('closed');
     });
 
@@ -176,16 +198,16 @@ describe('createAudio80, with a stand-in audio context', () => {
 
     it('still rejects `ready` for whoever awaits it', async () => {
         const fake = createFakeContext('running', new Error('no AudioWorklet here'));
-        const { controls } = createAudio80({ context: fake.context });
-        await expect(controls.ready).rejects.toThrow('no AudioWorklet here');
+        const audio80 = createAudio80({ context: fake.context });
+        await expect(audio80.ready).rejects.toThrow('no AudioWorklet here');
     });
 
     it('clamps its volumes as every chip does', () => {
-        const { controls } = createAudio80({ context: createFakeContext('running').context });
-        controls.volume = 3;
-        controls.musicVolume = -1;
-        controls.effectsVolume = MAX_MIX_VOLUME + 1;
-        expect([controls.volume, controls.musicVolume, controls.effectsVolume]).toEqual([1, 0, MAX_MIX_VOLUME]);
+        const audio80 = createAudio80({ context: createFakeContext('running').context });
+        audio80.volume = 3;
+        audio80.musicVolume = -1;
+        audio80.effectsVolume = MAX_MIX_VOLUME + 1;
+        expect([audio80.volume, audio80.musicVolume, audio80.effectsVolume]).toEqual([1, 0, MAX_MIX_VOLUME]);
     });
 });
 

@@ -1,5 +1,5 @@
 import { setRefresh, setUpdate } from '@mvtjs/html';
-import { createMusicPlayer, type Audio80, type Audio80Sound } from 'audio90';
+import type { Audio80, Audio80Sound } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BIG_WIN, COIN, GAME_OVER, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5, WIN,
@@ -41,7 +41,8 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
     view.className = 'machine-audio';
 
     // Presentation state: the clicks and coins. The chip keeps the jingle's place
-    const music = createMusicPlayer({ audio80: sound });
+    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
+    let musicId = 0;
     const clicks = createMetronome();
     const coins = createMetronome();
 
@@ -71,7 +72,7 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
         const w = watcher.poll();
         if (w.spins.increased) {
             // A jingle still ringing gives way to the new spin
-            music.stop();
+            sound.stop(musicId);
             sound.play(LEVER);
         }
         // One thunk however many reels land in the tick, as when a stop lands them all at once
@@ -88,13 +89,13 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
     function playPhase(phase: MachinePhase, previous: MachinePhase): void {
         switch (phase) {
             case 'celebrating':
-                music.play(model.lastWin >= BIG_WIN_BETS * model.bet ? BIG_WIN : WIN);
+                musicId = sound.play(model.lastWin >= BIG_WIN_BETS * model.bet ? BIG_WIN : WIN);
                 break;
             case 'idle':
                 if (previous === 'spinning') sound.play(NO_WIN);
                 break;
             case 'gameOver':
-                music.play(GAME_OVER);
+                musicId = sound.play(GAME_OVER);
                 break;
             case 'spinning':
                 break;

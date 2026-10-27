@@ -132,7 +132,7 @@ function setUp(initial: Partial<State> = {}) {
         phase: 'browsing', isPaused: false, isPanelOpen: false, searchText: '', chosenTagCount: 0, shownCount: 12,
         loadFailure: undefined, transitionPhase: 'idle', wallEffect: 'none', isBeamOn: false, cardKeyMoves: 0, ...initial,
     };
-    const { audio80: chip } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = ArcadeAudioView({
         sound: chip,
         phase: () => state.phase,

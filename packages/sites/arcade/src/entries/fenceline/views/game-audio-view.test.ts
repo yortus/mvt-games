@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createHeadlessAudio80 } from 'audio90/headless';
+import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, SNAP, STRING_TICK, TIE_OFF } from '../data';
 import type { GamePhase } from '../models';
 import { CREAK_PERIOD_MS, GameAudioView } from './game-audio-view';
@@ -19,7 +19,7 @@ describe('GameAudioView', () => {
         extraLivesEarned: number;
         isSlackRunning: boolean;
     };
-    let chip: ReturnType<typeof createHeadlessAudio80<{ record: true }>>;
+    let chip: HeadlessAudio80;
     let view: Container;
 
     beforeEach(() => {
@@ -35,7 +35,7 @@ describe('GameAudioView', () => {
         };
         chip = createHeadlessAudio80({ record: true });
         view = GameAudioView({
-            sound: chip.audio80,
+            sound: chip,
             phase: () => state.phase,
             wireSteps: () => state.wireSteps,
             closures: () => state.closures,
@@ -48,17 +48,17 @@ describe('GameAudioView', () => {
             targetShare: () => 0.7,
         });
         tick();
-        chip.audio80.clear();
+        chip.clear();
     });
 
     function tick(): void {
-        chip.controls.update(STEP_MS);
+        chip.update(STEP_MS);
         updateView(view, STEP_MS);
         refreshView(view);
     }
 
     function played(): unknown[] {
-        return chip.audio80.log.filter((entry) => entry.kind === 'play').map((entry) => (entry as { sound: unknown }).sound);
+        return chip.log.filter((entry) => entry.kind === 'play').map((entry) => (entry as { sound: unknown }).sound);
     }
 
     it('plays nothing while nothing changes', () => {
@@ -89,7 +89,7 @@ describe('GameAudioView', () => {
         for (let elapsed = 0; elapsed < CREAK_PERIOD_MS * 3; elapsed += STEP_MS) tick();
         expect(played().filter((effect) => effect === CREAK).length).toBe(3);
         state.isSlackRunning = false;
-        chip.audio80.clear();
+        chip.clear();
         for (let elapsed = 0; elapsed < CREAK_PERIOD_MS * 3; elapsed += STEP_MS) tick();
         expect(played()).toEqual([]);
     });
@@ -98,7 +98,7 @@ describe('GameAudioView', () => {
         state.wireSteps = 30;
         state.closures = 4;
         tick();
-        chip.audio80.clear();
+        chip.clear();
         state.wireSteps = 0;
         state.closures = 0;
         tick();

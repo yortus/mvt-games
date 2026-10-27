@@ -15,7 +15,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSong, renderSound, type RenderedSamples, findSounds } from 'audio90/headless';
+import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, type RenderedSamples, findSounds } from 'audio90/headless';
 
 const SAMPLE_RATE = 48000;
 const ROOT = process.env.INIT_CWD ?? process.cwd();
@@ -35,8 +35,8 @@ for (const path of modules) {
     mkdirSync(folder, { recursive: true });
     const { songs, sounds } = findSounds(exports);
     if (songs.length + sounds.length === 0) console.warn(`${path}: exports no songs or sounds`);
-    for (const [name, song] of songs) write(folder, name, renderSong(song, { sampleRate: SAMPLE_RATE }), true);
-    for (const [name, sound] of sounds) write(folder, name, renderSound(sound, { sampleRate: SAMPLE_RATE }), false);
+    for (const [name, song] of songs) write(folder, name, render(song, { sampleRate: SAMPLE_RATE }), true);
+    for (const [name, sound] of sounds) write(folder, name, render(sound, { sampleRate: SAMPLE_RATE }), false);
 }
 
 /**

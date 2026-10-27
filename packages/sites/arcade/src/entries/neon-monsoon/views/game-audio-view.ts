@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { type Audio90, type Audio90Sound, createMusicPlayer } from 'audio90';
+import type { Audio90, Audio90Sound } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
@@ -90,7 +90,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     view.label = 'game-audio';
 
     // Presentation state: the repeating sounds. The chip keeps the song's place
-    const music = createMusicPlayer({ audio90: sound });
+    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
+    let musicId = 0;
     const guns = createMetronome();
     const hullTicks = createMetronome();
 
@@ -113,9 +114,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     // makes the first refresh hear the guns' first blip, which the first
     // update makes, and anything the model does before it.
     watcher.poll();
-    // A game starts in play, so the stage's theme starts with the view. The
-    // player sends its first notes to the chip in the first refresh.
-    music.play(STAGE_THEME);
+    // A game starts in play, so the stage's theme starts with the view
+    musicId = sound.play(STAGE_THEME);
 
     setUpdate(view, update);
     setRefresh(view, refresh);
@@ -133,7 +133,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
         if (w.bossPhase.changed) playBossPhase(w.bossPhase.value);
         // The warning silences the stage's theme. The boss brings its own
-        if (w.isWarning.changed && w.isWarning.value) music.stop();
+        if (w.isWarning.changed && w.isWarning.value) sound.stop(musicId);
         if (w.sirens.increased) sound.play(WARNING);
 
         // The ship's own explosion starts as it is lost. Its loss has a sound of its own
@@ -157,19 +157,19 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
             case 'playing':
                 // After a lost ship, the music plays on
                 if (previous === 'dying') sound.play(RESPAWN, { pan: toPan(bindings.shipX()) });
-                else music.play(STAGE_THEME);
+                else musicId = sound.play(STAGE_THEME);
                 break;
             case 'dying':
                 sound.play(SHIP_EXPLODE, { pan: toPan(bindings.shipX()) });
                 break;
             case 'tally':
-                music.play(STAGE_CLEAR);
+                musicId = sound.play(STAGE_CLEAR);
                 break;
             case 'game-over':
-                music.play(GAME_OVER);
+                musicId = sound.play(GAME_OVER);
                 break;
             case 'all-clear':
-                music.play(ALL_CLEAR);
+                musicId = sound.play(ALL_CLEAR);
                 break;
         }
     }
@@ -177,7 +177,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     function playBossPhase(phase: BossPhase): void {
         switch (phase) {
             case 'entering':
-                music.play(BOSS_THEME);
+                musicId = sound.play(BOSS_THEME);
                 break;
             case 'breaking':
                 sound.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
@@ -185,7 +185,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
             case 'exploding':
                 // The last attack has ended. The music stops for the boss's explosions
                 sound.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
-                music.stop();
+                sound.stop(musicId);
                 break;
             case 'absent':
             case 'attacking':

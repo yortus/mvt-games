@@ -4,7 +4,6 @@ import {
     createAudio90Sound,
     createAudio90Sample,
     createAudio90Song,
-    createMusicPlayer,
 } from 'audio90';
 import { createHeadlessAudio90 } from 'audio90/headless';
 import { allocationPerFrame, readParams, report, timeFrames } from '../harness/measure';
@@ -242,15 +241,14 @@ if (measure === 'bounce') {
 }
 else if (engine === 'song') {
     const chip = createHeadlessAudio90({ render: { sampleRate: SAMPLE_RATE } });
-    const player = createMusicPlayer({ audio90: chip.audio90 });
-    player.play(createSong());
+    chip.play(createSong());
     const frames = SAMPLE_RATE / 60;
     const left = new Float32Array(frames);
     const right = new Float32Array(frames);
     // One tick of a game loop: the chip's clock, which moves the song on, then the sound up to the new time
     const tick = (): void => {
-        chip.controls.update(TICK_MS);
-        chip.render(left, right);
+        chip.update(TICK_MS);
+        chip.renderInto(left, right);
     };
     // Two bars first, so every instrument has played and every sample is sent
     for (let i = 0; i < 240; i++) tick();
@@ -267,15 +265,15 @@ else {
     const cells: string[] = [];
     for (let v = 0; v < voices; v++) cells.push(`| ${toNoteName(48 + (v * 5) % 24)} ${letters[v % sounds.length]} vC`);
     const held = createAudio90Song({ bpm: 120, instruments, patterns: { p: cells.join(' ') }, order: ['p'] });
-    createMusicPlayer({ audio90: chip.audio90 }).play(held);
+    chip.play(held);
     // One tick starts the song's first row. The song moves no further, since nothing else moves the chip's clock
-    chip.controls.update(TICK_MS);
+    chip.update(TICK_MS);
     const left = new Float32Array(BLOCK);
     const right = new Float32Array(BLOCK);
     // A second first, so that the measured blocks play sustained notes, not their attacks
-    for (let i = 0; i < SAMPLE_RATE / BLOCK; i++) chip.render(left, right);
+    for (let i = 0; i < SAMPLE_RATE / BLOCK; i++) chip.renderInto(left, right);
     const renderBlock = (): void => {
-        chip.render(left, right);
+        chip.renderInto(left, right);
     };
     if (measure === 'allocation') report({ bytesPerBlock: await allocationPerFrame(renderBlock) });
     else report({ usPerBlock: timeFrames(renderBlock) });

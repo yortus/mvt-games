@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Audio90Write, createHeadlessAudio90, renderSound } from '../../headless';
+import { type Audio90Write, createHeadlessAudio90, render } from '../../headless';
 import { computeSongDurationMs, toFrequency } from '../../shared';
 import {
     AUDIO90_EFFECT_DEFAULTS,
@@ -144,7 +144,7 @@ describe('the Audio90\'s notation', () => {
         it('play in a sample sound at the pitch of the note played against their root', () => {
             const sample = createAudio90Sample({ bounce: createToneSong('A-4', 16), rootNote: 'A-4', loop: { fromMs: 100, toMs: 900 } });
             const sampler = createAudio90Sound({ engine: 'sample', sample, note: 'A-5', lengthMs: 400 });
-            const { left } = renderSound(sampler, { durationMs: 400 });
+            const { left } = render(sampler, { durationMs: 400 });
             expect(measureHz(left.subarray(4800), 48000)).toBeCloseTo(toFrequency(81), -1);
         });
 
@@ -327,7 +327,7 @@ describe('the Audio90\'s notation', () => {
  * cast only names what it already is.
  */
 function createRecordingWriter() {
-    const { audio90 } = createHeadlessAudio90({ record: true });
+    const audio90 = createHeadlessAudio90({ record: true });
     return audio90 as typeof audio90 & Audio90Writer;
 }
 

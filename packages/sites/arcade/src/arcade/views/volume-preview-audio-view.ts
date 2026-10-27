@@ -1,4 +1,4 @@
-import { type Audio80, createMusicPlayer } from 'audio90';
+import type { Audio80 } from 'audio90';
 import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import { EFFECTS_PREVIEW, MUSIC_PREVIEW } from '../data';
@@ -38,7 +38,8 @@ export function VolumePreviewAudioView(bindings: VolumePreviewAudioViewBindings)
     const { sound } = bindings;
     const view = document.createElement('div');
     view.className = 'volume-preview-audio';
-    const music = createMusicPlayer({ audio80: sound });
+    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
+    let musicId = 0;
     const watcher = watch({ isOpen: bindings.isOpen, music: bindings.musicVolume, effects: bindings.effectsVolume });
     // The first refresh hears only what changes after the view is made.
     watcher.poll();
@@ -48,10 +49,10 @@ export function VolumePreviewAudioView(bindings: VolumePreviewAudioViewBindings)
 
     function refresh(): void {
         const w = watcher.poll();
-        if (w.isOpen.changed && !w.isOpen.value) music.stop();
+        if (w.isOpen.changed && !w.isOpen.value) sound.stop(musicId);
         // A volume that changes in the frame the menu opens was not chosen in the menu. Only a change while the menu is already open plays.
         if (w.isOpen.value && !w.isOpen.changed) {
-            if (w.music.changed && w.music.value > 0) music.play(MUSIC_PREVIEW);
+            if (w.music.changed && w.music.value > 0) musicId = sound.play(MUSIC_PREVIEW);
             if (w.effects.changed && w.effects.value > 0) sound.play(EFFECTS_PREVIEW);
         }
     }

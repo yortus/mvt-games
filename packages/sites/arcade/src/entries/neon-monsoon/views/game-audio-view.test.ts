@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type Audio90Song, createMusicPlayer } from 'audio90';
+import { type Audio90Song } from 'audio90';
 import { type Audio90Write, createHeadlessAudio90 } from 'audio90/headless';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
@@ -270,7 +270,7 @@ function setUp(initial: Partial<State> = {}) {
         lastExplosionSize: undefined, itemsCollected: 0, lastItemKind: undefined, gemsCollected: 0,
         shipX: ARENA / 2, bossX: ARENA / 2, lastExplosionX: ARENA / 2, ...initial,
     };
-    const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
+    const chip = createHeadlessAudio90({ record: true });
     const view = GameAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -294,7 +294,7 @@ function setUp(initial: Partial<State> = {}) {
     });
     // One tick as the Arcade runs it: the chip's clock, then the view's update and refresh
     const tick = (): void => {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
@@ -347,16 +347,15 @@ function describeSongNotes(log: readonly Audio90Write[]): string[] {
 }
 
 /**
- * Plays `song` on a music player of its own for `SONG_TICKS` ticks after the
+ * Plays `song` on a chip of its own for `SONG_TICKS` ticks after the
  * one it starts in, and describes the notes it plays. This is what the view
  * should play over the same ticks.
  */
 function recordSong(song: Audio90Song): string[] {
-    const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
-    const player = createMusicPlayer({ audio90: chip });
-    player.play(song);
+    const chip = createHeadlessAudio90({ record: true });
+    chip.play(song);
     for (let i = 0; i < SONG_TICKS; i++) {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
     }
     return describeSongNotes(chip.log);
 }

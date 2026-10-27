@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createAudio90Sound, HELD_ENVELOPE } from '../audio90';
 import { encodeWav, toInt16 } from './encode-wav';
 import { createHeadlessAudio80 } from './headless-audio80';
-import { findSounds, hashSamples, measurePeak, renderSound, renderTicks } from './render';
+import { findSounds, hashSamples, measurePeak, render, renderTicks } from './render';
 
 describe('renderTicks', () => {
     for (const tickMs of [0, -1, NaN]) {
@@ -15,7 +15,7 @@ describe('renderTicks', () => {
 describe('the render tools, with stereo sound', () => {
     it('render an Audio90 sound in two channels, at its own pan', () => {
         const zap = createAudio90Sound({ oscillator: { wave: 'saw' }, envelope: HELD_ENVELOPE, note: 'C-5', lengthMs: 100, pan: -1 });
-        const { left, right } = renderSound(zap, { durationMs: 200 });
+        const { left, right } = render(zap, { durationMs: 200 });
         expect(left.length).toBe(9600);
         expect(measurePeak(left)).toBeGreaterThan(0.05);
         expect(measurePeak(right)).toBeLessThan(1e-6);

@@ -23,7 +23,7 @@ export {
     type Audio80SoundOptions,
     type Audio80Vibrato,
 } from './audio80';
-export type { Audio80, Audio80PlayOptions, Audio80WithControls } from './audio80';
+export type { Audio80, Audio80PlayOptions } from './audio80';
 export type {
     Audio90,
     Audio90Character,
@@ -32,7 +32,6 @@ export type {
     Audio90EffectSettings,
     Audio90PlayOptions,
     Audio90VoiceSetting,
-    Audio90WithControls,
 } from './audio90';
 export {
     AUDIO90_CELL_TEXT_WIDTH,
@@ -73,6 +72,5 @@ export {
     type Audio90Vibrato,
     type Audio90Wave,
 } from './audio90';
-export { type AudioControls, computeSongDurationMs, type SongSlot } from './shared';
-export { createMusicPlayer, type MusicPlayer, type MusicPlayerOptions, type PlayableSong } from './music-player';
+export { computeSongDurationMs, type SoundChip } from './shared';
 export { createAudio80, createAudio90, type Audio80Options, type Audio90Options } from './web';

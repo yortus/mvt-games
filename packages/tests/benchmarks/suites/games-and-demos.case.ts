@@ -43,17 +43,17 @@ const stage = new Container();
 // the host gives it none.
 const audio80Chip = createHeadlessAudio80();
 const audio90Chip = createHeadlessAudio90();
-const chips: SoundChipsByKind = { audio80: audio80Chip.audio80, audio90: audio90Chip.audio90 };
+const chips: SoundChipsByKind = { audio80: audio80Chip, audio90: audio90Chip };
 const session = startPixiEntry(starter, { stage }, (kind) => chips[kind]);
-const controls = starter.soundChip === 'audio90' ? audio90Chip.controls : audio80Chip.controls;
-const sessionControls = starter.soundChip === undefined ? undefined : controls;
+const chip = starter.soundChip === 'audio90' ? audio90Chip : audio80Chip;
+const sessionChip = starter.soundChip === undefined ? undefined : chip;
 const input = createInputScript(session.inputConfig);
 let frameIndex = 0;
 
 const frame = (): void => {
     input(frameIndex++);
     session.update(FRAME_MS);
-    sessionControls?.update(FRAME_MS);
+    sessionChip?.update(FRAME_MS);
     updateView(stage, FRAME_MS);
     refreshView(stage);
 };
@@ -67,7 +67,7 @@ if (measure === 'time') {
         input(frameIndex++);
         const start = performance.now();
         session.update(FRAME_MS);
-        controls.update(FRAME_MS);
+        chip.update(FRAME_MS);
         const modelsDone = performance.now();
         updateView(stage, FRAME_MS);
         const updateDone = performance.now();

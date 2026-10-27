@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80Sound } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80, type HeadlessControls } from 'audio90/headless';
+import { computeSongDurationMs, type Audio80Song, type Audio80Sound } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
     DEATH, FIRE, FIRE_WARNING, GAME_OVER, GHOST, HARPOON, LEVEL_CLEAR, LEVEL_START, POP, PUMP_1, PUMP_2, PUMP_3,
     PUMP_4, ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE, SQUASH, WALK_TUNE,
@@ -261,7 +261,7 @@ function describeNoteOns(log: readonly Audio80Write[]): string[] {
 }
 
 /**
- * Plays `song` on a music player of its own, and describes the notes it
+ * Plays `song` on a chip of its own, and describes the notes it
  * plays. It plays `then` after `song`, if given. It holds the song at a tempo
  * scale of 0 for its first `heldTicks` ticks, then plays it at `tempoScale`
  * for `ticks` ticks. This is what a view that plays these songs should play
@@ -272,25 +272,24 @@ function describeNoteOns(log: readonly Audio80Write[]): string[] {
  * played the tick it refreshes in.
  */
 function recordSong(options: { song: Audio80Song; then?: Audio80Song; tempoScale?: number; heldTicks?: number; ticks?: number }): string[] {
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
-    const player = createMusicPlayer({ audio80: chip });
+    const chip = createHeadlessAudio80({ record: true });
     const heldTicks = options.heldTicks ?? 0;
     const tempoAt = (tick: number) => (tick < heldTicks ? 0 : options.tempoScale ?? 1);
-    player.tempoScale = tempoAt(0);
-    player.play(options.song);
-    if (options.then !== undefined) player.queue(options.then);
+    chip.tempoScale = tempoAt(0);
+    chip.play(options.song);
+    if (options.then !== undefined) chip.queue(options.then);
     const ticks = heldTicks + (options.ticks ?? SONG_TICKS);
     for (let i = 0; i < ticks; i++) {
-        controls.update(TICK_MS);
-        player.tempoScale = tempoAt(i + 1);
+        chip.update(TICK_MS);
+        chip.tempoScale = tempoAt(i + 1);
     }
     return describeNoteOns(chip.log);
 }
 
 /** Returns a function that runs one tick as the host does: the chip's clock, then the view's update and refresh. */
-function createTicker(controls: HeadlessControls, view: Container): () => void {
+function createTicker(chip: HeadlessAudio80, view: Container): () => void {
     return () => {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
@@ -307,7 +306,7 @@ function setUpGameAudio(initial: Partial<{ phase: GamePhase; isDiggerMoving: boo
         harpoonShots: initial.harpoonShots ?? 0,
         isEnemyFleeing: initial.isEnemyFleeing ?? false,
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -315,7 +314,7 @@ function setUpGameAudio(initial: Partial<{ phase: GamePhase; isDiggerMoving: boo
         harpoonShots: () => state.harpoonShots,
         isEnemyFleeing: () => state.isEnemyFleeing,
     });
-    const tick = createTicker(controls, view);
+    const tick = createTicker(chip, view);
     tick();
     return { chip, state, view, tick };
 }
@@ -328,7 +327,7 @@ function setUpEnemyAudio(initial: Partial<{ phase: EnemyPhase; inflationStage: I
         isFireTelegraph: initial.isFireTelegraph ?? false,
         isFireActive: initial.isFireActive ?? false,
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = EnemyAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -337,16 +336,16 @@ function setUpEnemyAudio(initial: Partial<{ phase: EnemyPhase; inflationStage: I
         isFireTelegraph: () => state.isFireTelegraph,
         isFireActive: () => state.isFireActive,
     });
-    const tick = createTicker(controls, view);
+    const tick = createTicker(chip, view);
     tick();
     return { chip, state, tick };
 }
 
 function setUpRockAudio(initial: Partial<{ phase: RockPhase }> = {}) {
     const state = { phase: initial.phase ?? 'stable' };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = RockAudioView({ sound: chip, phase: () => state.phase });
-    const tick = createTicker(controls, view);
+    const tick = createTicker(chip, view);
     tick();
     return { chip, state, tick };
 }

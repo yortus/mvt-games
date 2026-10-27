@@ -5,20 +5,17 @@ import type { RendererHost } from './renderer-host';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A sound chip, and the controls that pause it and let it play on. */
+/** A sound chip, as the code that runs a project needs it: something that pauses and plays on. */
 export interface ProjectSound {
-    readonly audio80: object;
-    readonly controls: {
-        readonly pause: () => void;
-        readonly resume: () => void;
-    };
+    readonly pause: () => void;
+    readonly resume: () => void;
 }
 
 /** A project's sound chip, made the first time `chip` is called. */
 export interface LazySound {
-    readonly chip: () => object;
-    /** The chip's controls, once it is made. */
-    readonly controls: () => ProjectSound['controls'] | undefined;
+    readonly chip: () => ProjectSound;
+    /** The chip, once it is made, or undefined before. */
+    readonly made: () => ProjectSound | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,9 +69,9 @@ export function createLazySound(create: () => ProjectSound): LazySound {
     return {
         chip() {
             made ??= create();
-            return made.audio80;
+            return made;
         },
-        controls: () => made?.controls,
+        made: () => made,
     };
 }
 

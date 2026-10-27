@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, formatAudio90Cell, prepareAudio90Samples } from 'audio90';
-import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSong } from 'audio90/headless';
+import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render } from 'audio90/headless';
 import { INSTRUMENT_NAMES } from './instrument-names';
 import { SAMPLES } from './samples';
 import { TUNES } from './tunes';
@@ -20,7 +20,7 @@ describe('tunes', { timeout: 30_000 }, () => {
 
     for (const tune of TUNES) {
         it(`${tune.name} sounds as it did, audible and unclipped, as loud as every other song`, () => {
-            const samples = renderSong(tune.song);
+            const samples = render(tune.song);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(Math.abs(measureLoudness(samples) - REFERENCE_LOUDNESS_LUFS)).toBeLessThanOrEqual(LOUDNESS_TOLERANCE_LU);

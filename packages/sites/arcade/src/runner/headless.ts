@@ -1,6 +1,5 @@
 import type { Container } from 'pixi.js';
-import type { HeadlessControls } from 'audio90/headless';
-import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
+import { createHeadlessAudio80, createHeadlessAudio90, type HeadlessAudio80, type HeadlessAudio90 } from 'audio90/headless';
 import { refreshView, updateView, type View } from '@mvtjs/html';
 import {
     type ArcadeEntry, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder,
@@ -15,8 +14,8 @@ import {
 export interface HeadlessSound {
     /** Finds the chip, for the kind its starter names. */
     readonly findChip: SoundChipFinder;
-    /** The chip's controls, or undefined for an entry that makes no sound, which is given no chip. */
-    readonly controls: HeadlessControls | undefined;
+    /** The chip, or undefined for an entry that makes no sound, which is given no chip. */
+    readonly chip: HeadlessAudio80 | HeadlessAudio90 | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,8 +36,8 @@ export interface AdvanceHeadlessOptions {
     readonly session: EntrySession;
     /** The views that the host would tick. For a Pixi entry, that is its stage. */
     readonly views: readonly View[];
-    /** The controls of the chip that the session plays on, if it plays on one. */
-    readonly controls: HeadlessControls | undefined;
+    /** The chip that the session plays on, if it plays on one. */
+    readonly chip: HeadlessAudio80 | HeadlessAudio90 | undefined;
     readonly totalMs: number;
     /** Plays the entry's controls before each step, as `PixiEntryStarter.thumbnailInput` does. */
     readonly input?: (session: EntrySession, elapsedMs: number) => void;
@@ -49,20 +48,20 @@ export interface AdvanceHeadlessOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates the headless chip that `starter` plays on, which makes no sound,
- * and its controls. For an entry that makes no sound, it creates none.
+ * Creates the headless chip that `starter` plays on, which makes no sound.
+ * For an entry that makes no sound, it creates none.
  */
 export function createHeadlessSound(starter: EntryStarter): HeadlessSound {
     switch (starter.soundChip) {
         case undefined:
-            return { findChip: refuseChip, controls: undefined };
+            return { findChip: refuseChip, chip: undefined };
         case 'audio80': {
-            const { audio80, controls } = createHeadlessAudio80();
-            return { findChip: createChipFinder('audio80', audio80), controls };
+            const chip = createHeadlessAudio80();
+            return { findChip: createChipFinder('audio80', chip), chip };
         }
         case 'audio90': {
-            const { audio90, controls } = createHeadlessAudio90();
-            return { findChip: createChipFinder('audio90', audio90), controls };
+            const chip = createHeadlessAudio90();
+            return { findChip: createChipFinder('audio90', chip), chip };
         }
     }
 }
@@ -102,17 +101,17 @@ export async function waitForLayout(): Promise<void> {
  * the models. The steps are small because a model with phases or timelines
  * would skip what happens between them in one giant step. Each step
  * refreshes, as each frame does, because a refresh is where a view writes to
- * its chip: a music player sends the song it starts there, and the chip's
- * sequencer moves the song on from then.
+ * its chip: it plays a song there, and the chip's sequencer moves the song on
+ * from then.
  */
 export function advanceHeadless(options: AdvanceHeadlessOptions): void {
-    const { session, views, controls, totalMs, input } = options;
+    const { session, views, chip, totalMs, input } = options;
     let remaining = totalMs;
     while (remaining > 0) {
         const step = Math.min(FRAME_MS, remaining);
         input?.(session, totalMs - remaining);
         session.update(step);
-        controls?.update(step);
+        chip?.update(step);
         for (let i = 0; i < views.length; i++) updateView(views[i], step);
         for (let i = 0; i < views.length; i++) refreshView(views[i]);
         remaining -= step;

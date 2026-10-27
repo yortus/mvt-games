@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80Sound } from 'audio90';
+import { computeSongDurationMs, type Audio80Song, type Audio80Sound } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
@@ -217,16 +217,15 @@ function describeNoteOns(log: readonly Audio80Write[], fromMs = 0, listenMs = LI
 }
 
 /**
- * Plays `song` on a music player of its own, for `listenMs`, and describes
+ * Plays `song` on a chip of its own, for `listenMs`, and describes
  * the notes it plays. This is what the view should play over the same time.
  */
 function recordSong(options: { song: Audio80Song; listenMs?: number }): string[] {
     const { song, listenMs = LISTEN_MS } = options;
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
-    const player = createMusicPlayer({ audio80: chip });
-    player.play(song);
+    const chip = createHeadlessAudio80({ record: true });
+    chip.play(song);
     for (let elapsed = 0; elapsed < listenMs; elapsed += TICK_MS) {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
     }
     return describeNoteOns(chip.log, 0, listenMs);
 }
@@ -234,7 +233,7 @@ function recordSong(options: { song: Audio80Song; listenMs?: number }): string[]
 /** Creates a view as a game starts, before its first tick. */
 function createView() {
     const state = { phase: 'playing' as GamePhase, ...START };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -251,7 +250,7 @@ function createView() {
     // A tick as the game loop runs one: the chip's clock, then the view's update and refresh
     const tickFor = (ms: number) => {
         for (let elapsed = 0; elapsed < ms; elapsed += TICK_MS) {
-            controls.update(TICK_MS);
+            chip.update(TICK_MS);
             updateView(view, TICK_MS);
             refreshView(view);
         }

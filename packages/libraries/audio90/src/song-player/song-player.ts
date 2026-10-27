@@ -12,8 +12,8 @@ import type { PlayableSong, SongDriver } from './song-driver';
  * Plays one song at a time, playing channel n on voice n, on either chip. It
  * runs where the chip's sound is made: in a browser, on the audio thread,
  * where the sequencer moves it on by each block the sound card asks for; in
- * a headless chip, with the chip's clock. A view never makes one. It makes a
- * music player, which plays through one.
+ * a headless chip, with the chip's clock. A view never makes one. It plays
+ * songs on the chip, which plays them through one.
  *
  * `update` advances the song and queues the notes that fall in the time it
  * covers, each stamped with its exact time on the clock of the writer it

@@ -460,19 +460,20 @@ from a state alone, which would play the sound every frame.
   metronome (`createMetronome`, from `@mvtjs/utils`) advances in the update
   step, and the refresh step plays a sound each time its `count` rises. A
   metronome only counts beats, at a tempo the view sets with `periodMs`. A
-  period of 0 stops it. A music player (`createMusicPlayer`, from
-  `audio90`) plays on the chip's own sequencer, which keeps the
-  song's place on the sound card's clock and pauses with the game. The
-  view's presentation state is only which song plays, and how fast. It
-  calls `play`, `queue` or `stop`, sets `tempoScale` after them, and calls
-  `MusicPlayer.refresh` last in its refresh step. A tempo change applies
-  from the next tick. The player's `row` and `beat` are what is heard.
-- **A new song cuts the old one short.** `MusicPlayer.play` releases the
-  song playing and cancels any song queued. A jingle that starts a phase
-  must be no longer than the phase. Check it with `computeSongDurationMs`.
+  period of 0 stops it. A song plays on the chip's own sequencer, which
+  keeps the song's place on the sound card's clock and pauses with the
+  game. The view's presentation state is only which song plays, and how
+  fast. It calls the chip's `play` with a song, `queue` or `stop`, and sets
+  `tempoScale` after them, in its refresh step. The chip's `row` and `beat`
+  are what is heard. `play` returns the play's id: `stop` with no id stops
+  everything on the chip, sounds too, and `stop(id)` stops only that play.
+- **A new song cuts the old one short.** Playing a song releases the song
+  playing and cancels any song queued. A jingle that starts a phase must be
+  no longer than the phase. Check it with `computeSongDurationMs`.
 - **Test** against a chip from `createHeadlessAudio80({ record: true })` or
-  `createHeadlessAudio90({ record: true })`, in `audio90/headless`. Advance its clock with `AudioControls.update`,
-  tick the view, and check the chip's `log` property.
+  `createHeadlessAudio90({ record: true })`, in `audio90/headless`. Advance
+  its clock with its `update`, tick the view, and check the chip's `log`
+  property.
 
 Full guide: [Sound and Music](../building-with-mvt/presenting-the-world/sound.md) ·
 [Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio80.md) ·

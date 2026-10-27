@@ -192,7 +192,7 @@ function setUp(initial: Partial<{ shotsFired: number; rocksBroken: number }> = {
         breaksLeft: MANY_BREAKS,
         isThrusting: false,
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -204,7 +204,7 @@ function setUp(initial: Partial<{ shotsFired: number; rocksBroken: number }> = {
     });
     const tickFor = (ms: number): void => {
         for (let elapsed = 0; elapsed < ms; elapsed += TICK_MS) {
-            controls.update(TICK_MS);
+            chip.update(TICK_MS);
             updateView(view, TICK_MS);
             refreshView(view);
         }

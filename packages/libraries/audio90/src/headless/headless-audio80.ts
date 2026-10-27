@@ -1,73 +1,73 @@
 import {
     type Audio80,
-    type Audio80PlayOptions,
-    type Audio80WithControls,
-    type Audio80Writer,
     type Audio80Character,
-    createAudio80Synthesiser,
-    createCommandAudio80,
     type Audio80EchoSetting,
     type Audio80FilterId,
     type Audio80FilterMode,
     type Audio80FilterSetting,
+    type Audio80PlayOptions,
     type Audio80Song,
     type Audio80Sound,
-    VOICE_COUNT,
     type Audio80VoiceSetting,
     type Audio80Wave,
+    type Audio80Writer,
+    type CommandAudio80,
+    createAudio80Synthesiser,
+    createCommandAudio80,
+    VOICE_COUNT,
 } from '../audio80';
-import { createSongPlayer } from '../music-player';
-import type { HeadlessControls } from '../shared';
-import { createRenderedControls, createSilentControls, ignore } from './headless-controls';
-import { createHeadlessSongSlots } from './headless-song-slots';
+import { joinMembers, MIX_BUS_INDEX } from '../shared';
+import { createSongPlayer } from '../song-player';
+import { createHeadlessChip, type HeadlessChip, ignore } from './headless-chip';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * An Audio80 with no speaker, and its controls. A game run headless uses
- * one, for example to make thumbnails or run benchmarks. Tests and tools use
- * one too. What it does with each write depends on the options it was made
- * with:
+ * An Audio80 with no speaker. A game run headless plays on one, for example
+ * to make thumbnails or run benchmarks. Tests and tools use one too. The
+ * code that owns it moves its clock on with `update`. What it does with each
+ * write depends on the options it was made with:
  *
  * - With no options, it does nothing. Writes cost almost nothing. The clock
  *   still runs, so code that stamps writes behaves as usual.
- * - With `record: true`, it logs every write. Its `audio80` then has `log`
- *   and `clear`.
- * - With `render`, it plays every write in memory. The object returned then
- *   has `render` and `sampleRate`, beside `audio80` and `controls`.
+ * - With `record: true`, it logs every write, on `log`.
+ * - With `render`, it plays every write in memory, and `renderInto` renders
+ *   the samples.
  * - With both, it logs every write and plays it.
- *
- * The type includes `log` and `clear` only when `record: true` is given, and
- * `render` and `sampleRate` only when `render` is given. So a test can't read
- * a log that nothing writes to.
  */
-export type HeadlessAudio80<O extends HeadlessAudio80Options = HeadlessAudio80Options> =
-    & Audio80WithControls<O extends { readonly record: true } ? Audio80 & Audio80Log : Audio80, HeadlessControls>
-    & (O extends { readonly render: true | HeadlessAudio80RenderOptions } ? Audio80Renderer : unknown);
-
-/**
- * The log on a headless chip made with `record: true`. A test advances its
- * clock through the controls made alongside it, as a game loop would.
- */
-export interface Audio80Log {
-    /** Every write since the last `clear`, oldest first. */
+export interface HeadlessAudio80 extends Audio80, HeadlessChip<Audio80Song, Audio80Sound, Audio80PlayOptions> {
+    /** Every write since the last `clear`, oldest first, if the chip records. Otherwise it stays empty. */
     readonly log: readonly Audio80Write[];
     /** Empties the log. */
     clear: () => void;
+    /** The sample rate it renders at, in Hz. */
+    readonly sampleRate: number;
+    /**
+     * Renders the next `output.length` samples into `output`, from where the
+     * last render ended, and plays the writes made since, each exactly at its
+     * stamp. Move the chip's clock on with `update`, then render the samples
+     * up to it. The chip is mono, so there is one sample for each instant.
+     * Each is -1 to 1, or beyond for a mix turned up past 1. Its volume and
+     * mute apply. It allocates nothing, so a caller can render block after
+     * block into the same buffer. It throws if the chip was made without
+     * `render`.
+     */
+    renderInto: (output: Float32Array) => void;
 }
 
 /**
  * One write, with the stamp it was given and its value as written. A play,
  * and a stop, are stamped `-Infinity`, because they apply as soon as they
- * arrive. A play keeps the options it was given, if any. A song's notes are
- * logged as `note-on` and `note-off`. The value is a name for a voice's
- * `'wave'` and a filter's `'mode'`, and a number for every other setting.
+ * arrive. A play keeps the options it was given, if any. A stop with no id
+ * stops everything. A song's notes are logged as `note-on` and `note-off`.
+ * The value is a name for a voice's `'wave'` and a filter's `'mode'`, and a
+ * number for every other setting.
  */
 export type Audio80Write =
     | { readonly kind: 'play'; readonly sound: Audio80Sound; readonly id: number; readonly options: Audio80PlayOptions | undefined; readonly time: number }
-    | { readonly kind: 'stop'; readonly id: number; readonly time: number }
+    | { readonly kind: 'stop'; readonly id: number | undefined; readonly time: number }
     | { readonly kind: 'note-on'; readonly voice: number; readonly sound: Audio80Sound; readonly note: number; readonly volume: number; readonly time: number }
     | { readonly kind: 'note-off'; readonly voice: number; readonly time: number }
     | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: 'wave'; readonly value: Audio80Wave; readonly time: number }
@@ -75,27 +75,7 @@ export type Audio80Write =
     | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: 'mode'; readonly value: Audio80FilterMode; readonly time: number }
     | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: Exclude<Audio80FilterSetting, 'mode'>; readonly value: number; readonly time: number }
     | { readonly kind: 'set-echo'; readonly setting: Audio80EchoSetting; readonly value: number; readonly time: number }
-    | { readonly kind: 'reserve-voices'; readonly count: number; readonly time: number }
-    | { readonly kind: 'release-all'; readonly time: number };
-
-/**
- * What a headless chip made with `render` adds. It plays every write exactly
- * at its stamp. Advance its clock with `HeadlessControls.update`, then
- * `render` the samples up to it. Its volumes apply to the samples `render`
- * writes.
- */
-export interface Audio80Renderer {
-    /** The sample rate it renders at, in Hz. */
-    readonly sampleRate: number;
-    /**
-     * Renders the next `output.length` samples into `output`, from where the
-     * last render ended, and plays the writes made since. The chip is mono,
-     * so there is one sample for each instant. Each is -1 to 1, or beyond for
-     * a mix turned up past 1. It allocates nothing, so a caller can render
-     * block after block into the same buffer.
-     */
-    render: (output: Float32Array) => void;
-}
+    | { readonly kind: 'reserve-voices'; readonly count: number; readonly time: number };
 
 // ---------------------------------------------------------------------------
 // Options
@@ -122,18 +102,50 @@ export interface HeadlessAudio80RenderOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a headless Audio80 and its controls, with its clock at 0 and nothing
- * logged or rendered. Only what the options ask for is built. With neither
- * option, writes are empty functions and there is no synthesis.
+ * Creates a headless Audio80, with its clock at 0 and nothing logged or
+ * rendered. Only what the options ask for is built. With neither option,
+ * writes are empty functions and there is no synthesis.
+ *
+ * The chip is also its own writer, which its song writes its notes through,
+ * so the code that renders a song can play one on it.
  */
-export function createHeadlessAudio80<const O extends HeadlessAudio80Options = HeadlessAudio80Options>(options?: O): HeadlessAudio80<O> {
-    const record = options?.record === true;
-    const render = options?.render ?? false;
-    let chip: Audio80WithControls<Audio80, HeadlessControls>;
-    if (render !== false) chip = createRenderingChip({ ...(render === true ? {} : render), record });
-    else if (record) chip = createRecordingChip();
-    else chip = createSilentChip();
-    return chip as HeadlessAudio80<O>;
+export function createHeadlessAudio80(options: HeadlessAudio80Options = {}): HeadlessAudio80 {
+    const renderOptions = options.render === true ? {} : options.render === false ? undefined : options.render;
+    const sampleRate = renderOptions?.sampleRate ?? DEFAULT_SAMPLE_RATE;
+    const log: Audio80Write[] = [];
+    const rendering = renderOptions === undefined ? undefined : createRendering(sampleRate, renderOptions.character);
+    const inner = rendering?.writer ?? createSilentWriter();
+    const writer = options.record === true ? createLoggingWriter(log, inner) : inner;
+    const chip = createHeadlessChip<Audio80Song, Audio80Sound, Audio80PlayOptions>({
+        writer,
+        player: createSongPlayer({ audio80: writer }),
+        cut: rendering?.cut,
+        logStop: options.record === true ? (id) => log.push({ kind: 'stop', id, time: -Infinity }) : undefined,
+    });
+
+    return joinMembers(chip, {
+        get time() {
+            return writer.time;
+        },
+        voiceCount: VOICE_COUNT,
+        setVoice: writer.setVoice,
+        setFilter: writer.setFilter,
+        setEcho: writer.setEcho,
+        reserveVoices: writer.reserveVoices,
+        // The writer's own members, which the chip's type leaves out, for code that writes a song's notes
+        noteOn: writer.noteOn,
+        noteOff: writer.noteOff,
+        releaseAll: writer.releaseAll,
+        log,
+        clear() {
+            log.length = 0;
+        },
+        sampleRate,
+        renderInto(output: Float32Array) {
+            if (rendering === undefined) throw new Error('renderInto: this headless Audio80 was made without `render`, so it renders nothing');
+            rendering.render(output, chip.isMuted ? 0 : chip.volume);
+        },
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -142,18 +154,26 @@ export function createHeadlessAudio80<const O extends HeadlessAudio80Options = H
 
 const DEFAULT_SAMPLE_RATE = 48000;
 
-/** Creates a chip that plays nothing and logs nothing. Every write is an empty function. */
-function createSilentChip(): Audio80WithControls<Audio80, HeadlessControls> {
+/** What a headless Audio80 writes through: a writer, and what the chip needs of one to play and stop sounds. */
+type Audio80Side = Audio80Writer & Pick<CommandAudio80, 'update' | 'play' | 'stop' | 'takePlayId' | 'setMix'>;
+
+/** Creates a writer that plays nothing. Every write is an empty function, and only the clock and the play ids move. */
+function createSilentWriter(): Audio80Side {
     // In a typed array, so advancing it boxes no double
     const clock = new Float64Array(1);
     let nextPlayId = 1;
-    const audio80: Audio80 & Audio80Writer = {
+    return {
         get time() {
             return clock[0];
         },
         voiceCount: VOICE_COUNT,
+        update(deltaMs) {
+            clock[0] += deltaMs;
+        },
         play: () => nextPlayId++,
         stop: ignore,
+        takePlayId: () => nextPlayId++,
+        setMix: ignore,
         noteOn: ignore,
         noteOff: ignore,
         setVoice: ignore,
@@ -161,208 +181,96 @@ function createSilentChip(): Audio80WithControls<Audio80, HeadlessControls> {
         setEcho: ignore,
         reserveVoices: ignore,
         releaseAll: ignore,
-        openSongSlot: () => songs.open(),
     };
-    // Its songs play on the chip itself, so they write nothing either
-    const songs = createHeadlessSongSlots<Audio80Song>({ createPlayer: () => createSongPlayer({ audio80 }) });
-    const controls = createSilentControls({
-        update(deltaMs) {
-            clock[0] += deltaMs;
-            songs.update(deltaMs);
-        },
-        reset: songs.reset,
-    });
-    return { audio80, controls };
-}
-
-/** Creates a chip that logs every write and plays nothing. */
-function createRecordingChip(): Audio80WithControls<Audio80 & Audio80Log, HeadlessControls> {
-    const clock = { time: 0 };
-    const audio80 = createRecorder(clock, () => songs.open());
-    // Its songs play on the chip itself, so their notes are logged as any write is
-    const songs = createHeadlessSongSlots<Audio80Song>({ createPlayer: () => createSongPlayer({ audio80 }) });
-    const controls = createSilentControls({
-        update(deltaMs) {
-            clock.time += deltaMs;
-            songs.update(deltaMs);
-        },
-        reset: songs.reset,
-    });
-    return { audio80, controls };
 }
 
 /**
- * Creates a chip that plays every write in memory, and also logs it if
- * `record` is true. The chip is its own writer, which its songs write their
- * notes through, so the code that renders a song can play one on it.
+ * Creates a writer that logs each write in `log`, then passes it to `inner`.
+ * A write with no stamp is stamped with the time on `inner`'s clock.
  */
-export function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly record: boolean }): Audio80WithControls<Audio80 & Audio80Writer, HeadlessControls> & Audio80Renderer {
-    const sampleRate = options.sampleRate ?? DEFAULT_SAMPLE_RATE;
+function createLoggingWriter(log: Audio80Write[], inner: Audio80Side): Audio80Side {
+    return {
+        get time() {
+            return inner.time;
+        },
+        voiceCount: VOICE_COUNT,
+        update: inner.update,
+        play(sound, playOptions) {
+            // The inner writer checks the options and numbers the play, so the log takes its id
+            const id = inner.play(sound, playOptions);
+            log.push({ kind: 'play', sound, id, options: playOptions, time: -Infinity });
+            return id;
+        },
+        // The chip logs its stops itself, since a stop of a song or of everything never reaches the writer
+        stop: inner.stop,
+        takePlayId: inner.takePlayId,
+        setMix: inner.setMix,
+        noteOn(voice, sound, note, volume, atMs) {
+            log.push({ kind: 'note-on', voice, sound, note, volume, time: atMs ?? inner.time });
+            inner.noteOn(voice, sound, note, volume, atMs);
+        },
+        noteOff(voice, atMs) {
+            log.push({ kind: 'note-off', voice, time: atMs ?? inner.time });
+            inner.noteOff(voice, atMs);
+        },
+        setVoice(voice, setting, value, atMs) {
+            // The signature makes sure the setting and its value agree. TypeScript can't follow that
+            // into the union, so the write is cast
+            log.push({ kind: 'set-voice', voice, setting, value, time: atMs ?? inner.time } as Audio80Write);
+            inner.setVoice(voice, setting, value, atMs);
+        },
+        setFilter(filter, setting, value, atMs) {
+            log.push({ kind: 'set-filter', filter, setting, value, time: atMs ?? inner.time } as Audio80Write);
+            inner.setFilter(filter, setting, value, atMs);
+        },
+        setEcho(setting, value, atMs) {
+            log.push({ kind: 'set-echo', setting, value, time: atMs ?? inner.time });
+            inner.setEcho(setting, value, atMs);
+        },
+        reserveVoices(count, atMs) {
+            log.push({ kind: 'reserve-voices', count, time: atMs ?? inner.time });
+            inner.reserveVoices(count, atMs);
+        },
+        releaseAll: inner.releaseAll,
+    };
+}
+
+/** A synthesiser in memory, the writer that feeds it, and how to render and cut it. */
+interface Rendering {
+    readonly writer: CommandAudio80;
+    /** Renders the next `output.length` samples into `output`, scaled by `gain`. */
+    readonly render: (output: Float32Array, gain: number) => void;
+    /** Cuts every voice at once, forgets every sound, and sets the mix to these volumes at once. */
+    readonly cut: (musicVolume: number, effectsVolume: number) => void;
+}
+
+/** Creates a synthesiser that renders at `sampleRate`, and the writer that feeds it, with nothing rendered yet. */
+function createRendering(sampleRate: number, character: Audio80Character | undefined): Rendering {
     const msPerSample = 1000 / sampleRate;
-    const synthesiser = createAudio80Synthesiser({ sampleRate, character: options.character });
+    const synthesiser = createAudio80Synthesiser({ sampleRate, character });
     const writer = createCommandAudio80({
         onSound: (id, data) => synthesiser.defineSound(id, data),
     });
     let renderedFrames = 0;
-
-    const audio80 = options.record ? createRecordingWriter() : createWriter();
-    // Its songs play on the chip itself, so their notes are rendered, and logged if it records
-    const songs = createHeadlessSongSlots<Audio80Song>({ createPlayer: () => createSongPlayer({ audio80 }) });
-    const controls = createRenderedControls({ writer, synthesiser, onUpdate: songs.update, onReset: songs.reset });
-
     return {
-        audio80,
-        controls,
-        sampleRate,
-        render(output) {
+        writer,
+        render(output, gain) {
             synthesiser.enqueue(writer.commands, writer.count);
             // Pass the same buffer back, so the writer reuses it rather than making a new one
             writer.clear(writer.commands);
             const frames = output.length;
             synthesiser.render(output, 0, frames, renderedFrames * msPerSample, msPerSample);
             renderedFrames += frames;
-            const gain = controls.isMuted ? 0 : controls.volume;
             if (gain !== 1) {
                 for (let i = 0; i < frames; i++) output[i] *= gain;
             }
         },
+        cut(musicVolume, effectsVolume) {
+            writer.clear(writer.commands);
+            writer.forget();
+            synthesiser.reset();
+            synthesiser.setMix(MIX_BUS_INDEX.music, musicVolume);
+            synthesiser.setMix(MIX_BUS_INDEX.effects, effectsVolume);
+        },
     };
-
-    /**
-     * Creates the chip for when only `render` is given. It is the writer with
-     * only the Audio80's members, leaving out `commands` and the others that
-     * are not the chip's.
-     */
-    function createWriter(): Audio80 & Audio80Writer {
-        return {
-            get time() {
-                return writer.time;
-            },
-            voiceCount: writer.voiceCount,
-            play: writer.play,
-            stop: writer.stop,
-            noteOn: writer.noteOn,
-            noteOff: writer.noteOff,
-            setVoice: writer.setVoice,
-            setFilter: writer.setFilter,
-            setEcho: writer.setEcho,
-            reserveVoices: writer.reserveVoices,
-            releaseAll: writer.releaseAll,
-            openSongSlot: () => songs.open(),
-        };
-    }
-
-    /** Creates the chip for when both `record` and `render` are given. Each write is logged, then passed to the writer. */
-    function createRecordingWriter(): Audio80 & Audio80Writer & Audio80Log {
-        const recorder = createRecorder(writer, () => songs.open());
-        return {
-            get time() {
-                return writer.time;
-            },
-            voiceCount: writer.voiceCount,
-            log: recorder.log,
-            clear: recorder.clear,
-            play(sound, playOptions) {
-                // The writer checks the options and numbers the play, so the log takes its id
-                const id = writer.play(sound, playOptions);
-                recorder.logPlay(sound, id, playOptions);
-                return id;
-            },
-            stop(id) {
-                recorder.stop(id);
-                writer.stop(id);
-            },
-            noteOn(voice, sound, note, noteVolume, atMs) {
-                recorder.noteOn(voice, sound, note, noteVolume, atMs);
-                writer.noteOn(voice, sound, note, noteVolume, atMs);
-            },
-            noteOff(voice, atMs) {
-                recorder.noteOff(voice, atMs);
-                writer.noteOff(voice, atMs);
-            },
-            setVoice(voice, setting, value, atMs) {
-                recorder.setVoice(voice, setting, value, atMs);
-                writer.setVoice(voice, setting, value, atMs);
-            },
-            setFilter(filter, setting, value, atMs) {
-                recorder.setFilter(filter, setting, value, atMs);
-                writer.setFilter(filter, setting, value, atMs);
-            },
-            setEcho(setting, value, atMs) {
-                recorder.setEcho(setting, value, atMs);
-                writer.setEcho(setting, value, atMs);
-            },
-            reserveVoices(count, atMs) {
-                recorder.reserveVoices(count, atMs);
-                writer.reserveVoices(count, atMs);
-            },
-            releaseAll() {
-                recorder.releaseAll();
-                writer.releaseAll();
-            },
-            openSongSlot: () => songs.open(),
-        };
-    }
-}
-
-/**
- * Creates an Audio80 that logs every write and plays nothing. A write with no
- * stamp is stamped with `clock`'s time. Its song slots open with
- * `openSongSlot`.
- */
-function createRecorder(clock: { readonly time: number }, openSongSlot: Audio80['openSongSlot']): Audio80 & Audio80Writer & Audio80Log & PlayLogger {
-    const log: Audio80Write[] = [];
-    // Numbered as a writer numbers them, from 1
-    let nextPlayId = 1;
-    const recorder: Audio80 & Audio80Writer & Audio80Log & PlayLogger = {
-        get time() {
-            return clock.time;
-        },
-        voiceCount: VOICE_COUNT,
-        log,
-        clear() {
-            log.length = 0;
-        },
-        play(sound, playOptions) {
-            const id = nextPlayId++;
-            recorder.logPlay(sound, id, playOptions);
-            return id;
-        },
-        logPlay(sound, id, playOptions) {
-            log.push({ kind: 'play', sound, id, options: playOptions, time: -Infinity });
-        },
-        stop(id) {
-            log.push({ kind: 'stop', id, time: -Infinity });
-        },
-        noteOn(voice, sound, note, volume, atMs) {
-            log.push({ kind: 'note-on', voice, sound, note, volume, time: atMs ?? clock.time });
-        },
-        noteOff(voice, atMs) {
-            log.push({ kind: 'note-off', voice, time: atMs ?? clock.time });
-        },
-        setVoice(voice, setting, value, atMs) {
-            // The signature makes sure the setting and its value agree. TypeScript can't follow that
-            // into the union, so the write is cast
-            log.push({ kind: 'set-voice', voice, setting, value, time: atMs ?? clock.time } as Audio80Write);
-        },
-        setFilter(filter, setting, value, atMs) {
-            log.push({ kind: 'set-filter', filter, setting, value, time: atMs ?? clock.time } as Audio80Write);
-        },
-        setEcho(setting, value, atMs) {
-            log.push({ kind: 'set-echo', setting, value, time: atMs ?? clock.time });
-        },
-        reserveVoices(count, atMs) {
-            log.push({ kind: 'reserve-voices', count, time: atMs ?? clock.time });
-        },
-        releaseAll() {
-            log.push({ kind: 'release-all', time: clock.time });
-        },
-        openSongSlot,
-    };
-    return recorder;
-}
-
-/** How a recorder logs a play that a writer has already numbered. */
-interface PlayLogger {
-    logPlay: (sound: Audio80Sound, id: number, options: Audio80PlayOptions | undefined) => void;
 }

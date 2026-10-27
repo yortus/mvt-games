@@ -50,6 +50,22 @@ export interface CommandWriter extends Pick<CommandBuffer, 'commands' | 'count' 
     setMix: (bus: MixBus, gain: number) => void;
 }
 
+/**
+ * A chip's writer as the chip that owns it uses it: a `CommandWriter` that
+ * also plays and stops sounds, and numbers the chip's plays. `Sound` and
+ * `PlayOptions` are the chip's own types.
+ */
+export interface PlayingWriter<Sound, PlayOptions> extends CommandWriter {
+    /** Plays `sound`, and returns the play's id. */
+    play: (sound: Sound, options?: PlayOptions) => number;
+    /** Releases the note of the play with id `id`. */
+    stop: (id: number) => void;
+    /** Releases every voice's note. */
+    releaseAll: () => void;
+    /** Takes the next play's id, for a play the writer doesn't write itself, such as a song's. */
+    takePlayId: () => number;
+}
+
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------

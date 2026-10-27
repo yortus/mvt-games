@@ -27,7 +27,7 @@ export const details: EntryDetails = {
         + 'its own engines and keeping what they sound like.',
         'What you see is exactly what the chip plays. Each tune is read once into numbers, and the chip plays '
         + 'those numbers. The view writes each one back out as tracker text, and that text reads back as the same '
-        + 'numbers, so the two can\'t drift apart. The music player reports which row is playing, so the pattern '
+        + 'numbers, so the two can\'t drift apart. The chip reports which row is playing, so the pattern '
         + 'moves in time with the music, and stops when you pause.',
     ].join('\n\n'),
     howToPlay: {
@@ -40,7 +40,7 @@ export const details: EntryDetails = {
     },
     techniques: [
         'Each cell of a song written back as tracker text, which reads back as the same cell',
-        'The music player reporting which row is playing, so the pattern view can follow it',
+        'The chip reporting which row is playing, so the pattern view can follow it',
         'Every tune laid out once as character codes, so the pattern scrolls without creating objects each frame',
         'The site\'s shared pixel glyphs, drawn into a texture by a script',
         'Meters drawn from what the chip\'s audio thread reports about each voice',

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from 'audio90';
+import type { Audio80 } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BAA,
@@ -77,7 +77,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const music = createMusicPlayer({ audio80: sound });
     const creaks = createMetronome();
     const watcher = watch({
         phase: bindings.phase,
@@ -109,12 +108,12 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.extraLives.increased) sound.play(EXTRA_LIFE);
         if (w.creaks.increased) sound.play(CREAK);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        music.tempoScale = computeTempo();
+        sound.tempoScale = computeTempo();
     }
 
     /** The meadow tune quickens as the share fenced off nears the round's target. Every other song plays at its own tempo. */
     function computeTempo(): number {
-        if (music.song !== MEADOW_TUNE) return 1;
+        if (sound.song !== MEADOW_TUNE) return 1;
         const progress = Math.min(1, bindings.share() / bindings.targetShare());
         return 1 + (FULL_FIELD_TEMPO - 1) * progress;
     }
@@ -122,23 +121,23 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     function playPhase(phase: GamePhase): void {
         switch (phase) {
             case 'ready':
-                music.play(ROUND_START);
+                sound.play(ROUND_START);
                 break;
             case 'playing':
-                music.play(MEADOW_TUNE);
+                sound.play(MEADOW_TUNE);
                 break;
             case 'snapped':
                 sound.play(SNAP);
-                music.play(SNAPPED_TUNE);
+                sound.play(SNAPPED_TUNE);
                 break;
             case 'round-clear':
-                music.play(ROUND_CLEAR_TUNE);
+                sound.play(ROUND_CLEAR_TUNE);
                 break;
             case 'farm-fenced':
-                music.play(FARM_FENCED_TUNE);
+                sound.play(FARM_FENCED_TUNE);
                 break;
             case 'game-over':
-                music.play(GAME_OVER_TUNE);
+                sound.play(GAME_OVER_TUNE);
                 break;
         }
     }

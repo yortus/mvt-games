@@ -1,9 +1,9 @@
-import { type Audio80Character, isAudio80Song, isAudio80Sound, type Audio80Song, type Audio80Sound } from '../audio80';
-import { createSongPlayer } from '../music-player';
-import { type Audio90Character, type Audio90Song, type Audio90Sound, isAudio90Song, isAudio90Sound } from '../audio90';
-import { computeSongDurationMs, type HeadlessControls } from '../shared';
-import { createRenderingChip as createRenderingAudio80, type HeadlessAudio80 } from './headless-audio80';
-import { createRenderingChip as createRenderingAudio90, type HeadlessAudio90 } from './headless-audio90';
+import { type Audio80Character, isAudio80Song, isAudio80Sound, type Audio80Song, type Audio80Sound, type Audio80Writer } from '../audio80';
+import { type Audio90Character, type Audio90Song, type Audio90Sound, type Audio90Writer, isAudio90Song, isAudio90Sound } from '../audio90';
+import { computeSongDurationMs } from '../shared';
+import { createSongPlayer } from '../song-player';
+import { createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
+import { createHeadlessAudio90, type HeadlessAudio90 } from './headless-audio90';
 import { toInt16 } from './encode-wav';
 import { listChannels, type RenderedSamples, type StereoSamples } from './stereo-samples';
 
@@ -47,56 +47,54 @@ export interface Audio90RenderOptions extends RenderOptions {
 // Functions
 // ---------------------------------------------------------------------------
 
-/** Renders one pass through an Audio80 `song`, ticking the chip as a game loop would. Returns the chip's one channel of samples. */
-export function renderSong(song: Audio80Song, options?: Audio80RenderOptions): Float32Array;
-/** Renders one pass through an Audio90 `song`, ticking the chip as a game loop would. Returns the chip's two channels of samples. */
-export function renderSong(song: Audio90Song, options?: Audio90RenderOptions): StereoSamples;
-/** Renders one pass through either chip's `song`, as a test that goes through a module's songs does. */
-export function renderSong(song: Audio80Song | Audio90Song, options?: RenderOptions): RenderedSamples;
-export function renderSong(song: Audio80Song | Audio90Song, options: Audio80RenderOptions | Audio90RenderOptions = {}): RenderedSamples {
+/**
+ * Renders an Audio80's `song` or `sound`, and returns the chip's one channel
+ * of samples. A song plays one pass through its order, as a game loop would
+ * tick the chip. A sound plays once, as the sound says.
+ */
+export function render(songOrSound: Audio80Song | Audio80Sound, options?: Audio80RenderOptions): Float32Array;
+/** Renders an Audio90's `song` or `sound`, as for the Audio80, and returns the chip's two channels of samples. */
+export function render(songOrSound: Audio90Song | Audio90Sound, options?: Audio90RenderOptions): StereoSamples;
+/** Renders either chip's song or sound, as a test that goes through a module's songs and sounds does. */
+export function render(songOrSound: Audio80Song | Audio80Sound | Audio90Song | Audio90Sound, options?: RenderOptions): RenderedSamples;
+export function render(songOrSound: Audio80Song | Audio80Sound | Audio90Song | Audio90Sound, options: Audio80RenderOptions | Audio90RenderOptions = {}): RenderedSamples {
+    const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
+    if (isAudio80Sound(songOrSound) || isAudio90Sound(songOrSound)) {
+        if (songOrSound.chip === 'audio90') {
+            const chip = createHeadlessAudio90({ render: options as Audio90RenderOptions });
+            chip.play(songOrSound);
+            const durationMs = options.durationMs ?? songOrSound.data.lengthMs + songOrSound.data.envelope.releaseMs + TAIL_MS;
+            return renderStereoTicks(chip, durationMs, tickMs, ignore);
+        }
+        const chip = createHeadlessAudio80({ render: options as Audio80RenderOptions });
+        chip.play(songOrSound);
+        const durationMs = options.durationMs ?? songOrSound.data.lengthMs + songOrSound.data.releaseMs + TAIL_MS;
+        return renderTicks(chip, durationMs, tickMs, ignore);
+    }
+    const song = songOrSound;
     const passMs = computeSongDurationMs(song);
     const durationMs = options.durationMs ?? passMs + TAIL_MS;
-    const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
     if (song.chip === 'audio90') {
-        const chip = createRenderingAudio90({ ...(options as Audio90RenderOptions), record: false });
-        // The song player itself, rather than a music player on a slot, so the song stops in a tick before that tick's notes are written
-        const player = createSongPlayer({ audio90: chip.audio90 });
+        const chip = createHeadlessAudio90({ render: options as Audio90RenderOptions });
+        // A song player of its own, rather than the chip's, so the song stops in a tick before that tick's notes are
+        // written. The chip is its own writer, which its type leaves out
+        const player = createSongPlayer({ audio90: chip as HeadlessAudio90 & Audio90Writer });
         player.play(song);
         return renderStereoTicks(chip, durationMs, tickMs, (deltaMs) => {
             // Render one pass. A looping song is stopped where it would start again
-            if (song.loop >= 0 && chip.audio90.time >= passMs) player.stop();
+            if (song.loop >= 0 && chip.time >= passMs) player.stop();
             player.update(deltaMs);
             player.refresh();
         });
     }
-    const chip = createRenderingAudio80({ ...(options as Audio80RenderOptions), record: false });
-    const player = createSongPlayer({ audio80: chip.audio80 });
+    const chip = createHeadlessAudio80({ render: options as Audio80RenderOptions });
+    const player = createSongPlayer({ audio80: chip as HeadlessAudio80 & Audio80Writer });
     player.play(song);
     return renderTicks(chip, durationMs, tickMs, (deltaMs) => {
-        if (song.loop >= 0 && chip.audio80.time >= passMs) player.stop();
+        if (song.loop >= 0 && chip.time >= passMs) player.stop();
         player.update(deltaMs);
         player.refresh();
     });
-}
-
-/** Renders an Audio80's `sound`, played once as the sound says. Returns the chip's one channel of samples. */
-export function renderSound(sound: Audio80Sound, options?: Audio80RenderOptions): Float32Array;
-/** Renders an Audio90's `sound`, played once as the sound says. Returns the chip's two channels of samples. */
-export function renderSound(sound: Audio90Sound, options?: Audio90RenderOptions): StereoSamples;
-/** Renders either chip's `sound`, as a test that goes through a module's sounds does. */
-export function renderSound(sound: Audio80Sound | Audio90Sound, options?: RenderOptions): RenderedSamples;
-export function renderSound(sound: Audio80Sound | Audio90Sound, options: Audio80RenderOptions | Audio90RenderOptions = {}): RenderedSamples {
-    const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
-    if (sound.chip === 'audio90') {
-        const chip = createRenderingAudio90({ ...(options as Audio90RenderOptions), record: false });
-        chip.audio90.play(sound);
-        const durationMs = options.durationMs ?? sound.data.lengthMs + sound.data.envelope.releaseMs + TAIL_MS;
-        return renderStereoTicks(chip, durationMs, tickMs, ignore);
-    }
-    const chip = createRenderingAudio80({ ...(options as Audio80RenderOptions), record: false });
-    chip.audio80.play(sound);
-    const durationMs = options.durationMs ?? sound.data.lengthMs + sound.data.releaseMs + TAIL_MS;
-    return renderTicks(chip, durationMs, tickMs, ignore);
 }
 
 /**
@@ -104,33 +102,31 @@ export function renderSound(sound: Audio80Sound | Audio90Sound, options: Audio80
  * `tickMs` is in ms and must be more than 0. `onTick` is called after each
  * tick. Returns the samples.
  */
-export function renderTicks(chip: HeadlessAudio80<{ render: true }>, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): Float32Array {
+export function renderTicks(chip: HeadlessAudio80, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): Float32Array {
     const samples = new Float32Array(Math.round(durationMs * chip.sampleRate / 1000));
     runTicks({
-        controls: chip.controls,
+        chip,
         sampleRate: chip.sampleRate,
         total: samples.length,
         tickMs,
         onTick,
-        readTime: () => chip.audio80.time,
-        render: (from, to) => chip.render(samples.subarray(from, to)),
+        render: (from, to) => chip.renderInto(samples.subarray(from, to)),
     });
     return samples;
 }
 
 /** Ticks a headless Audio90 every `tickMs` for `durationMs`, as `renderTicks` ticks an Audio80, and renders both channels as it goes. */
-export function renderStereoTicks(chip: HeadlessAudio90<{ render: true }>, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): StereoSamples {
+export function renderStereoTicks(chip: HeadlessAudio90, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): StereoSamples {
     const total = Math.round(durationMs * chip.sampleRate / 1000);
     const left = new Float32Array(total);
     const right = new Float32Array(total);
     runTicks({
-        controls: chip.controls,
+        chip,
         sampleRate: chip.sampleRate,
         total,
         tickMs,
         onTick,
-        readTime: () => chip.audio90.time,
-        render: (from, to) => chip.render(left.subarray(from, to), right.subarray(from, to)),
+        render: (from, to) => chip.renderInto(left.subarray(from, to), right.subarray(from, to)),
     });
     return { left, right };
 }
@@ -206,14 +202,13 @@ const FNV_PRIME = 0x01000193;
 
 /** What `runTicks` drives: a headless chip that renders, apart from which chip it is. */
 interface TickedRender {
-    readonly controls: HeadlessControls;
+    /** The chip, which moves its clock on as it ticks. */
+    readonly chip: { readonly time: number; readonly update: (deltaMs: number) => void };
     readonly sampleRate: number;
     /** How many frames to render in all. */
     readonly total: number;
     readonly tickMs: number;
     readonly onTick: (deltaMs: number) => void;
-    /** Reads the chip's clock, in ms. */
-    readonly readTime: () => number;
     /** Renders frames `from` to `to` - 1. */
     readonly render: (from: number, to: number) => void;
 }
@@ -223,14 +218,14 @@ interface TickedRender {
  * the frames up to its clock as it goes, until `total` frames are rendered.
  */
 function runTicks(options: TickedRender): void {
-    const { controls, sampleRate, total, tickMs, onTick, readTime, render } = options;
+    const { chip, sampleRate, total, tickMs, onTick, render } = options;
     // Written so that NaN fails too. With no time passing, the loop below would never end
     if (!(tickMs > 0)) throw new Error('renderTicks: tickMs must be positive');
     let frames = 0;
     while (frames < total) {
-        controls.update(tickMs);
+        chip.update(tickMs);
         onTick(tickMs);
-        const target = Math.min(total, Math.round(readTime() * sampleRate / 1000));
+        const target = Math.min(total, Math.round(chip.time * sampleRate / 1000));
         if (target <= frames) continue;
         render(frames, target);
         frames = target;

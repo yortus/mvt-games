@@ -21,7 +21,7 @@ async function poseGame(options: { readonly isRestarted: boolean }): Promise<Ret
     await textures.load();
     const model = createGameModel();
     // A headless chip makes no sound, and an image does not depend on what plays.
-    const view = GameView({ model, sound: createHeadlessAudio80().audio80 });
+    const view = GameView({ model, sound: createHeadlessAudio80() });
     await advanceTime(16, model, view);
     if (options.isRestarted) {
         model.reset();

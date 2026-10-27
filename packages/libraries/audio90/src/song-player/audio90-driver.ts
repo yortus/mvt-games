@@ -40,7 +40,7 @@ export interface Audio90SongDriverOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates what the music player needs to play Audio90 songs on `audio90`.
+ * Creates what the song player needs to play Audio90 songs on `audio90`.
  * The Audio90's own song writer says what each row writes. It writes to a
  * stand-in chip here, which keeps each write as numbers laid out as the
  * chip's commands are, and makes the calls on the real chip as the player

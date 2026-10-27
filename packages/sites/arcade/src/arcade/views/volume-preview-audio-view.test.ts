@@ -47,7 +47,7 @@ function setUp(initial: { isOpen?: boolean } = {}) {
         musicVolume: 0.5,
         effectsVolume: 0.5,
     };
-    const { audio80: chip } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = VolumePreviewAudioView({
         sound: chip,
         isOpen: () => state.isOpen,

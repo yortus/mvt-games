@@ -4,8 +4,8 @@
 
 /**
  * The Tune Tracker: which tune is chosen, whether it plays, and for how
- * long. Where the tune is, row by row, is the music player's, which the
- * views own: the model only says what should be playing.
+ * long. Where the tune is, row by row, is the chip's, which plays it for
+ * the views: the model only says what should be playing.
  */
 export interface TrackerModel {
     readonly tuneCount: number;

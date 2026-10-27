@@ -5,12 +5,12 @@ import {
     type Audio90Song,
     createAudio90Synthesiser,
     createCommandAudio90,
-} from '../audio90';
-import { createSongPlayer } from '../music-player';
-import { type ChipReply, MIX_BUS_INDEX } from '../shared';
+} from '../../audio90';
+import { createSongPlayer } from '../../song-player';
+import { type ChipReply, MIX_BUS_INDEX } from '../../shared';
 import { type ChipRunner, createChipRunner } from './chip-runner';
 import type { SongPlaceReply } from './song-messages';
-import { createWorkletSequencer } from './song-sequencer';
+import { createWorkletSequencer } from './worklet-sequencer';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -64,7 +64,7 @@ export interface Audio90RunnerOptions extends Audio90RunnerSettings {
     readonly currentFrame?: () => number;
     /** Sends a scope to the main thread, in a buffer it handed over, which moves with the message. */
     readonly sendScope: (reply: Audio90ScopeReply) => void;
-    /** Sends where a slot of the sequencer is, each time it reaches a new row, or takes a call. It must copy the reply, as `postMessage` does. */
+    /** Sends where the song is, each time it reaches a new row, or takes a call. It must copy the reply, as `postMessage` does. */
     readonly sendPlace: (reply: SongPlaceReply) => void;
 }
 

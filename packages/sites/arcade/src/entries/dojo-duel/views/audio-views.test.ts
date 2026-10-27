@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80Song } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80, type HeadlessControls } from 'audio90/headless';
+import { type Audio80Song } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
     BLOCK,
     FIGHT_THEME,
@@ -233,16 +233,15 @@ function describeNoteOns(log: readonly Audio80Write[]): string[] {
 }
 
 /**
- * Plays `song` on a music player of its own for `SONG_TICKS` ticks after the
+ * Plays `song` on a chip of its own for `SONG_TICKS` ticks after the
  * one it starts in, and describes the notes it plays. This is what a view
  * that plays `song` should play over the same ticks.
  */
 function recordSong(options: { song: Audio80Song }): string[] {
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
-    const player = createMusicPlayer({ audio80: chip });
-    player.play(options.song);
+    const chip = createHeadlessAudio80({ record: true });
+    chip.play(options.song);
     for (let i = 0; i < SONG_TICKS; i++) {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
     }
     return describeNoteOns(chip.log);
 }
@@ -251,10 +250,10 @@ function recordSong(options: { song: Audio80Song }): string[] {
  * Returns a function that runs one tick as the Arcade does. It advances the
  * chip's clock, then updates and refreshes the view.
  */
-function createTicker(options: { controls: HeadlessControls; view: Container }): () => void {
-    const { controls, view } = options;
+function createTicker(options: { chip: HeadlessAudio80; view: Container }): () => void {
+    const { chip, view } = options;
     return () => {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
@@ -269,9 +268,9 @@ function setUpFighterAudio(initial: Partial<{ phase: FighterPhase; move: MoveKin
         phase: initial.phase ?? 'idle' as FighterPhase,
         move: initial.move as MoveKind | undefined,
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = FighterAudioView({ sound: chip, phase: () => state.phase, move: () => state.move });
-    const tick = createTicker({ controls, view });
+    const tick = createTicker({ chip, view });
     tick();
     return { chip, state, tick };
 }
@@ -284,7 +283,7 @@ function setUpMatchAudio() {
         secondsLeft: FULL_CLOCK_SECONDS,
         hasPlayerWon: false,
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = MatchAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -293,7 +292,7 @@ function setUpMatchAudio() {
         secondsLeft: () => state.secondsLeft,
         hasPlayerWon: () => state.hasPlayerWon,
     });
-    const tick = createTicker({ controls, view });
+    const tick = createTicker({ chip, view });
     tick();
-    return { chip, controls, state, tick, view };
+    return { chip, state, tick, view };
 }

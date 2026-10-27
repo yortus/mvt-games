@@ -16,6 +16,10 @@ import { type PathNode, visitImportSources } from './import-sources';
  *   (`../models/ship-model`) is reported. With `allowIndexFile`, a path to a
  *   folder's index file by its full name (`./scripts/index.ts`) is allowed,
  *   for files that Node loads itself, which imports files, not folders.
+ * - A relative path with a query, such as `./worklet/processor?worker&url`,
+ *   asks the bundler for something made from the file, here a worklet's URL,
+ *   rather than for what the file exports. It is allowed, since a barrel
+ *   could not stand in for it.
  * - A package's `exports` field says which of its paths are entry points, and
  *   TypeScript and the bundler already refuse the rest. A package without an
  *   `exports` field has no such list, so only its name is allowed: `lz-string`,
@@ -53,6 +57,7 @@ export const noDeepImports: Rule.RuleModule = {
             if (typeof path !== 'string') return;
             const node = source as unknown as Rule.Node;
             if (path.startsWith('./') || path.startsWith('../')) {
+                if (path.includes('?')) return;
                 if (reachesPastFolder(path, allowIndexFile)) {
                     context.report({ node, messageId: 'pastBarrel', data: { path } });
                 }

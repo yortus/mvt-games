@@ -1,8 +1,7 @@
-import type { AudioControls } from 'audio90';
 import { refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/html';
 import {
-    type ElementEntrySession, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder,
-    startElementEntry, type StartOptions,
+    type ElementEntrySession, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder, type SoundChipKind,
+    type SoundChipsByKind, startElementEntry, type StartOptions,
 } from '../entry-types';
 import { listenToKeyboard } from '../input';
 import { createPageSound, type PageSound } from './page-sound';
@@ -165,9 +164,9 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let pixiStage: PixiStage | undefined;
     const sound = options.sound ?? createPageSound({ isEnabled: false });
     const isSoundOwned = options.sound === undefined;
-    const findChip: SoundChipFinder = (kind) => sound.entryChips[kind].chip;
-    // The controls of the chip the session plays on, or undefined for a session that makes no sound
-    let sessionControls: AudioControls | undefined;
+    const findChip: SoundChipFinder = (kind) => sound.entryChips[kind];
+    // The chip the session plays on, or undefined for a session that makes no sound
+    let sessionChip: SoundChipsByKind[SoundChipKind] | undefined;
 
     // The Pixi stage listens to the keyboard for a Pixi entry. The host listens for an element entry, with no
     // renderer, and passes the keys to its session's controls while it runs and is not paused
@@ -211,8 +210,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         set isPaused(value) {
             isPaused = value;
             // The chip's sound pauses with the game, voices held where they are
-            if (value) sessionControls?.pause();
-            else sessionControls?.resume();
+            if (value) sessionChip?.pause();
+            else sessionChip?.resume();
         },
         get isTurned() {
             return isTurned;
@@ -241,10 +240,10 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             starter = next;
             startOptions = options;
             isPaused = false;
-            sessionControls = next.soundChip === undefined ? undefined : sound.entryChips[next.soundChip].controls;
+            sessionChip = next.soundChip === undefined ? undefined : sound.entryChips[next.soundChip];
             // No sound of the last session's carries into this one, and a chip left paused by it plays again
-            sessionControls?.reset();
-            sessionControls?.resume();
+            stopChip(sessionChip);
+            sessionChip?.resume();
             session = startSession(next, options);
         },
 
@@ -257,12 +256,12 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             if (session === undefined || starter === undefined) return undefined;
             const frame = starter.kind === 'pixi' ? pixiStage?.captureFrame() : undefined;
             session.destroy();
-            sessionControls?.reset();
+            stopChip(sessionChip);
             if (starter.kind === 'pixi') pixiStage?.hide();
             else entryElement.hidden = true;
             session = undefined;
             starter = undefined;
-            sessionControls = undefined;
+            sessionChip = undefined;
             return frame;
         },
 
@@ -374,6 +373,20 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/**
+ * Stops everything on `chip` at once, so nothing of one session's carries
+ * into the next. A paused chip cuts its voices as it stops, rather than
+ * letting them fade out as it resumes, so the chip is paused for its stop,
+ * then left paused or not, as it was.
+ */
+function stopChip(chip: SoundChipsByKind[SoundChipKind] | undefined): void {
+    if (chip === undefined) return;
+    const wasPaused = chip.isPaused;
+    chip.pause();
+    chip.stop();
+    if (!wasPaused) chip.resume();
+}
 
 /** What `toViewportRect` converts. */
 interface ViewportRectOptions {

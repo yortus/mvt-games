@@ -22,7 +22,7 @@ import {
     OP90_STOP,
 } from '../synthesiser';
 import type { Audio90Sample, Audio90Sound } from '../notation';
-import type { Audio90, Audio90Writer } from './audio90';
+import type { Audio90PlayOptions, Audio90Writer } from './audio90';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -39,7 +39,13 @@ import type { Audio90, Audio90Writer } from './audio90';
  * sound that plays it, with the sample's id in its data. Each play gets an id
  * of its own, counted up from 1, which `stop` takes.
  */
-export interface CommandAudio90 extends Audio90Writer, Pick<Audio90, 'play' | 'stop'>, CommandWriter {
+export interface CommandAudio90 extends Audio90Writer, CommandWriter {
+    /** Plays `sound` as the chip's `play` does, and returns the play's id. */
+    play: (sound: Audio90Sound, options?: Audio90PlayOptions) => number;
+    /** Releases the note of the play with id `id`, as the chip's `stop` does. */
+    stop: (id: number) => void;
+    /** Takes the next play's id, for a play the writer doesn't write itself, such as a song's. */
+    takePlayId: () => number;
     /**
      * Returns the id of `sound`'s commands, defining it, and its sample, if
      * it has not been played since the last `forget`. A song sent to the
@@ -160,6 +166,8 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
         clear: buffer.clear,
 
         defineSound: (sound) => ensureSoundId(sound),
+
+        takePlayId: () => nextPlayId++,
 
         forget() {
             soundIds.clear();

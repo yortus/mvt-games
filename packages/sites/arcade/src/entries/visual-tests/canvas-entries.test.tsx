@@ -68,7 +68,7 @@ function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefi
     // This runs after the stage is rendered to an image and destroyed.
     // Destroying a Pixi object twice is harmless.
     onTestFinished(() => session.destroy());
-    advanceHeadless({ session, views: [stage], controls: sound.controls, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
+    advanceHeadless({ session, views: [stage], chip: sound.chip, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
     if (crop === undefined) return stage;
     const cropped = new Container();
     stage.position.set(-crop.x, -crop.y);

@@ -26,7 +26,7 @@ describe('the starting projects', () => {
         it(`${starter.renderer} runs for a second, headless, with no error, and draws something`, async () => {
             const { project } = await MAINS[`../../starters/${starter.renderer}/main.ts`]();
             expect(project.renderer).toBe(starter.renderer);
-            const { audio80: sound } = createHeadlessAudio80();
+            const sound = createHeadlessAudio80();
             // The root the views go in, and what start returns, for each renderer
             let root: Container | Scene | HTMLElement;
             let ticked: StartResult;

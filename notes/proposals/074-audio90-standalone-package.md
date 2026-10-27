@@ -527,9 +527,12 @@ music.stop();                  // with no id: everything on the chip
 - `play(song)` starts a song in place of the one playing, and
   `play(sound)` plays a sound (5.8). Both return an id.
 - `stop(id?)` replaces `release`, `releaseAll`, the player's `stop` and
-  `reset`, as Howler's `stop` does: with an id, that one play; without,
-  everything on the chip, which also forgets the sounds it has been sent. A
-  sound still fades out on its envelope's release.
+  `reset`, as Howler's `stop` does: with an id, that one play, a sound or a
+  song; without, everything on the chip. A sound still fades out on its
+  envelope's release. As built (step 6b), a chip that is paused cuts its
+  voices instead, and forgets the sounds and songs it was sent, since
+  nothing is heard while it is paused, and a release would otherwise sound
+  as it resumed. The Arcade's entry host relies on that between sessions.
 - The chip keeps the player's `song`, `orderIndex`, `row`, `beat` and
   `tempoScale`, and sends the tempo only as it changes. `isPlaying` goes:
   `song` is undefined when none plays.
@@ -797,9 +800,10 @@ package is finished. The progress log uses these numbers.
    - ~~**6a, sounds:** one kind in place of instruments and sound effects;
      `play(sound, options)` returning an id; `stop(id)`; no `noteOn` or
      `noteOff` on the chips.~~ Done, 2026-10-28 (section 12).
-   - **6b, the chip as one object:** the controls fold in, songs play on
+   - ~~**6b, the chip as one object:** the controls fold in, songs play on
      the chip, and the music player and song slots go; one headless chip
-     type and one `render`; `src/web/` split by thread (open question 8).
+     type and one `render`; `src/web/` split by thread (open question 8).~~
+     Done, 2026-10-28 (section 12).
    - **6c, a chip each:** no voices kept for music, no volume groups, the
      Audio80 at 4 voices, `music` and `sfx` chips for each entry,
      `musicVolume` and `sfxVolume`, `pauseWhenHidden`.
@@ -1021,3 +1025,79 @@ package is finished. The progress log uses these numbers.
     sounds once each, and made sound while firing, with no page errors.
     `npm run test:visual` (50 files, no image changed) and
     `npm run build:packages` pass too. Not yet listened to by a person.
+- **2026-10-28, step 6b done**, unstaged, after the user committed 6a:
+  - **One object.** `createAudio80` and `createAudio90` return the chip.
+    What the controls did is on it, through `SoundChip`, in
+    `shared/sound-chip.ts`, which the root exports, and which `Audio80`
+    and `Audio90` extend with their own members. `AudioControls`,
+    `HeadlessControls` and the `WithControls` types are gone. Each factory
+    joins the members every chip has with its own by copying property
+    descriptors (`joinMembers`), so getters stay getters.
+  - **Songs on the chip.** `play(song)`, `queue(song)`, `stop(id?)`, `song`,
+    `orderIndex`, `row`, `beat` and `tempoScale` are made once for every
+    chip, by `createChipPlayback` (`shared/chip-playback.ts`), over a
+    `SongSequencer`: on the page, `web/web-songs.ts`, and on a headless
+    chip, a song player run on its clock. `play` tells a song from a sound
+    by its `order`, which a sound has none of, so a sound made by hand, as
+    some tests make one, still plays as a sound. Songs take play ids from
+    the writer's count (`takePlayId`), so no two plays share one. `queue`
+    returns the id of the play it follows, or a new one if it starts at
+    once. `stop(id)` with a song's id stops the song, unless another song
+    has been played since. Each chip has one sequencer slot now, so the
+    slots, their numbers and `openSongSlot` are gone from the messages, the
+    worklet sequencer and the page. The music player and its tests went;
+    `music-player/` is `song-player/`, which keeps the song player and the
+    drivers. Their tests became `shared/chip-playback.test.ts` and
+    `headless/headless-chip.test.ts`.
+  - **`stop()`** releases every voice and stops the song. While the chip is
+    paused, it resets the worklet instead (section 5.9, point 2): the page
+    forgets the sounds and songs it sent, as the worklet does, and the
+    Audio90 turns its scopes on again if they were on, since the worklet's
+    reset turns them off. A headless chip that renders cuts its synthesiser
+    in the same way, and sets the mix at once.
+  - **One headless type.** `HeadlessAudio80` is `Audio80` with `update`,
+    `log`, `clear`, `sampleRate` and `renderInto`, whatever the options:
+    `log` stays empty unless recording, and `renderInto` throws unless
+    rendering. Both chips share `headless/headless-chip.ts`. A recording
+    chip logs each `stop`, with an `id` of `undefined` for a stop of
+    everything, and no longer logs `release-all`. The chip is still its own
+    writer at run time, with `noteOn` and `noteOff`, which its type leaves
+    out, for code that writes a song's notes. `render(songOrSound)`
+    replaces `renderSong` and `renderSound`.
+  - **`src/web/` split** (open question 8): the audio thread's side is in
+    `web/worklet/`, with a barrel the page imports types and names
+    through. `song-sequencer.ts` is `worklet-sequencer.ts`. The lint rule
+    `no-deep-imports` now allows a relative import with a query, such as
+    `./worklet/audio80-processor?worker&url`, with a test. Nothing in lint
+    stops the worklet's files importing the page's by path, so the split
+    is kept by convention.
+  - **The Arcade.** `PageSound.entryChips` is the chip of each kind, and
+    `pageControls` is gone; each stand-in chip keeps the volumes, the
+    pause and now the tempo scale until its chip loads. The entry host
+    stops everything on the chip as a session starts and ends, pausing it
+    first so the voices are cut, as the reset did, then leaving it paused
+    or not as it was. The audio views play songs on the chip. Until 6c
+    gives music a chip of its own, a view that stops its music keeps the
+    song's play id and stops that (`musicId`), since `stop()` would release
+    its sound effects too: Neon Monsoon plays a sound just before it stops
+    its music. In 6c these become `music.stop()`. Views keep the full chip
+    type until then too, since 6c retypes every view. The fake web audio's
+    chips count `stop` with no id, in place of resets. The Tune Tracker
+    reads the song heard from the chip. Stale comments about the page's
+    chip being ticked, left from step 5, are fixed in `arcade/main.ts` and
+    the Arcade's README.
+  - **Elsewhere:** the playground's sandbox pauses the chip itself, and its
+    tests and starters take the chip whole. The benchmarks play their held
+    notes with `chip.play`, and `games-and-demos` ticks the chip. AGENTS.md's
+    sound rule, its package line and the view skill describe songs on the
+    chip. The package's README, guides and the headless README still
+    describe the music player: step 11 rewrites them. A changeset,
+    `.changeset/one-chip.md`.
+  - **Checked:** `npm run lint`, `npm run test:unit` (232 files, 3,029
+    tests, no snapshot changed), `npm run test:visual` (50 files, no image
+    changed), `npm run build` (first load 54.6 KB) and
+    `npm run build:packages`. In Playwright's headless shell, against the
+    build, Galaxy Raiders' chip played its music (46 song places back from
+    the worklet, a peak of 0.129) and its shots; a session's start sent
+    `pause`, a song `stop`, `reset` and `resume` in that order; Escape
+    paused the chip; no page errors. Not yet listened to by a person.

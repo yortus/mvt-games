@@ -103,8 +103,8 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         (globalThis as { __pgFrameStart?: number }).__pgFrameStart = performance.now();
         try {
             // The chip keeps the sound card's time, so it is paused while the project is
-            if (isAdvancing) sound.controls()?.resume();
-            else sound.controls()?.pause();
+            if (isAdvancing) sound.made()?.resume();
+            else sound.made()?.pause();
             if (isAdvancing) {
                 // Type errors don't stop a project running, so its model may have no `update`
                 if (typeof ticked?.update === 'function') ticked.update(deltaMs);

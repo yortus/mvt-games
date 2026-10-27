@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AUDIO90_VOICE_COUNT, prepareAudio90Samples } from 'audio90';
-import { findSounds, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSong, renderSound } from 'audio90/headless';
+import { findSounds, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render } from 'audio90/headless';
 import { SAMPLES } from './instruments';
 import * as music from './music';
 import * as sounds from './sounds';
@@ -27,7 +27,7 @@ describe('neon monsoon sounds', { timeout: 30_000 }, () => {
 
     for (const [name, effect] of effects) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSound(effect);
+            const samples = render(effect);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();
@@ -36,7 +36,7 @@ describe('neon monsoon sounds', { timeout: 30_000 }, () => {
 
     for (const [name, song] of songs) {
         it(`${name} sounds as it did, audible and unclipped, as loud as every other song`, () => {
-            const samples = renderSong(song);
+            const samples = render(song);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(Math.abs(measureLoudness(samples) - REFERENCE_LOUDNESS_LUFS)).toBeLessThanOrEqual(LOUDNESS_TOLERANCE_LU);

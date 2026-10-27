@@ -4,7 +4,7 @@ import type { SongTiming } from '../shared';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What the music player reads of any chip's song: its timing, its swing and its loop. */
+/** What the song player reads of any chip's song: its timing, its swing and its loop. */
 export interface PlayableSong extends SongTiming {
     /** How late each odd-numbered row of a pattern plays, as a share of a row, from 0 to 0.5. */
     readonly swing: number;
@@ -13,7 +13,7 @@ export interface PlayableSong extends SongTiming {
 }
 
 /**
- * What a chip's songs write, for the music player, which keeps their time.
+ * What a chip's songs write, for the song player, which keeps their time.
  * The player calls each method during its update, with the chip time the
  * write is stamped with. The driver keeps the writes, and sends them to the
  * chip when the player's refresh calls `refresh`, since a view writes to its

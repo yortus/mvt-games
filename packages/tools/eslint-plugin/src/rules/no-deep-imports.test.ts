@@ -44,6 +44,8 @@ ruleTester.run('no-deep-imports', noDeepImports, {
         { code: 'import a from \'fs/promises\';', filename },
         { code: 'import a from \'node:fs/promises\';', filename },
         { code: 'import a from \'not-installed/deep\';', filename },
+        // A file the bundler turns into something else, such as a worklet's URL.
+        { code: 'import url from \'./worklet/processor?worker&url\';', filename },
         // A folder's index file by its full name, where allowed.
         { code: 'import a from \'./scripts/index.ts\';', filename, options: [{ allowIndexFile: true }] },
     ],

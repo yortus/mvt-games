@@ -24,9 +24,8 @@ import './arcade.css';
 // The Arcade's page. One loop runs everything, in the MVT order. It updates
 // the Arcade's model first. Then the entry host ticks the entry running, if
 // any, with its models, its views and its renderers. Last come the Arcade's
-// views, which are in the page and in the site's nav. The page's own sound
-// chip, which plays the Arcade's sounds, advances its clock before those
-// views and sends what they wrote after them.
+// views, which are in the page and in the site's nav. The sound chips keep
+// the sound card's time, so the loop doesn't tick them.
 //
 // The page starts and ends the entry's sessions as the model starts and
 // leaves the entry. It keeps the URL in step with the model. The search is in the
@@ -62,8 +61,8 @@ const ARCADE_PATH = `${SITE_PATH}arcade/`;
 const isTouch = isTouchDevice();
 const stage = document.createElement('div');
 stage.className = 'runner-stage';
-// The page's sound has two chips. The host ticks the entries' chip with each
-// session. The page ticks its own chip, which plays the menus' sounds.
+// The page's sound has the entries' chips, and one of its own, which plays
+// the menus' sounds. The host pauses an entry's chip as it pauses the game.
 const sound = createPageSound({ isEnabled: true });
 const host = createEntryHost({ element: stage, isTouch, sound });
 // The Arcade has sounds of its own. Browsers play no sound before the

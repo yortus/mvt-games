@@ -4,6 +4,6 @@ export {
     advanceHeadless, type AdvanceHeadlessOptions, createHeadlessSound, findThumbnailAdvanceMs, FRAME_MS, type HeadlessSound,
     startPixiHeadless, type StartPixiHeadlessOptions, waitForLayout,
 } from './headless';
-export { createPageSound, type EntryChip, type EntryChips, type PageSound, type PageSoundOptions, type SoundSettings } from './page-sound';
+export { createPageSound, type PageSound, type PageSoundOptions, type SoundSettings } from './page-sound';
 export { isTouchDevice } from '../device';
 export { fitPlayArea, type PlayArea, type PlayAreaOptions } from './play-area';

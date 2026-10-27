@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80Song } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80, type HeadlessControls } from 'audio90/headless';
+import { type Audio80Song } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
     CARRIER_HIT,
     DIVE,
@@ -52,14 +52,14 @@ describe('GameAudioView', () => {
 
     it('plays a shot each time the ship fires', () => {
         const model = createGameModel({ waves: WAVES });
-        const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+        const chip = createHeadlessAudio80({ record: true });
         const view = GameAudioView({
             sound: chip,
             phase: () => model.phase,
             shotsFired: () => model.shotsFired,
             enemiesLeft: () => model.enemiesLeft,
         });
-        const tick = createTicker({ controls, view, model });
+        const tick = createTicker({ chip, view, model });
         tick();
         for (let shot = 0; shot < SHOTS; shot++) {
             model.fire();
@@ -183,7 +183,7 @@ describe('EnemyAudioView', () => {
 
 /** How many times the ship fires in the test of its shots. */
 const SHOTS = 2;
-/** The voice that plays the songs' lead. The music player plays channel n on voice n, and the lead is channel 0. */
+/** The voice that plays the songs' lead. A song plays channel n on voice n, and the lead is channel 0. */
 const LEAD_VOICE = 0;
 /** The stage-clear jingle's lead plays its first note on row 0, and its second on row 2. */
 const CLEAR_LEAD_ROWS_APART = 2;
@@ -211,17 +211,16 @@ function describeNoteOns(log: readonly Audio80Write[]): string[] {
 }
 
 /**
- * Plays `song` on a music player of its own for `SONG_TICKS` ticks after the
+ * Plays `song` on a chip of its own for `SONG_TICKS` ticks after the
  * one it starts in, and describes the notes it plays. This is what a view
  * that plays `song` at `tempoScale` should play over the same ticks.
  */
 function recordSong(options: { song: Audio80Song; tempoScale?: number }): string[] {
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
-    const player = createMusicPlayer({ audio80: chip });
-    player.tempoScale = options.tempoScale ?? 1;
-    player.play(options.song);
+    const chip = createHeadlessAudio80({ record: true });
+    chip.tempoScale = options.tempoScale ?? 1;
+    chip.play(options.song);
     for (let i = 0; i < SONG_TICKS; i++) {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
     }
     return describeNoteOns(chip.log);
 }
@@ -231,11 +230,11 @@ function recordSong(options: { song: Audio80Song; tempoScale?: number }): string
  * model, if there is one, and advances the chip's clock. Then it updates and
  * refreshes the view.
  */
-function createTicker(options: { controls: HeadlessControls; view: Container; model?: { update: (deltaMs: number) => void } }): () => void {
-    const { controls, view, model } = options;
+function createTicker(options: { chip: HeadlessAudio80; view: Container; model?: { update: (deltaMs: number) => void } }): () => void {
+    const { chip, view, model } = options;
     return () => {
         model?.update(TICK_MS);
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
@@ -251,14 +250,14 @@ function setUpGameAudio(initial: Partial<{ phase: GamePhase; shotsFired: number;
         shotsFired: initial.shotsFired ?? 0,
         enemiesLeft: initial.enemiesLeft ?? WAVES[0].slots.length,
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
         sound: chip,
         phase: () => state.phase,
         shotsFired: () => state.shotsFired,
         enemiesLeft: () => state.enemiesLeft,
     });
-    const tick = createTicker({ controls, view });
+    const tick = createTicker({ chip, view });
     tick();
     return { chip, state, view, tick };
 }
@@ -269,14 +268,14 @@ function setUpEnemyAudio(initial: Partial<{ isAlive: boolean; phase: EnemyPhase;
         phase: initial.phase ?? 'formation',
         kind: initial.kind ?? 'striker',
     };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = EnemyAudioView({
         sound: chip,
         isAlive: () => state.isAlive,
         phase: () => state.phase,
         kind: () => state.kind,
     });
-    const tick = createTicker({ controls, view });
+    const tick = createTicker({ chip, view });
     tick();
     return { chip, state, tick };
 }

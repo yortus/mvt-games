@@ -31,7 +31,7 @@ describe('createEntryHost', () => {
         host.tick(0, TICK_MS);
 
         const chip = entryChip();
-        expect(listPlays(chip.audio80.log)).toEqual([EFFECT]);
+        expect(listPlays(chip.log)).toEqual([EFFECT]);
         destroyAll(host, sound);
     });
 
@@ -43,9 +43,9 @@ describe('createEntryHost', () => {
         const chip = entryChip();
 
         host.isPaused = true;
-        expect(chip.controls.isPaused).toBe(true);
+        expect(chip.isPaused).toBe(true);
         host.isPaused = false;
-        expect(chip.controls.isPaused).toBe(false);
+        expect(chip.isPaused).toBe(false);
         destroyAll(host, sound);
     });
 
@@ -56,24 +56,24 @@ describe('createEntryHost', () => {
         host.start(game.starter);
         host.isPaused = true;
         host.start(game.starter);
-        expect([host.isPaused, entryChip().controls.isPaused]).toEqual([false, false]);
+        expect([host.isPaused, entryChip().isPaused]).toEqual([false, false]);
         destroyAll(host, sound);
     });
 
-    it('resets the chip when a session starts and when it stops', async () => {
+    it('stops everything on the chip when a session starts and when it stops', async () => {
         const { sound, host } = createHostWithSound();
         const game = createFakeGame();
         await host.prepare(game.starter);
         const chip = entryChip();
 
         host.start(game.starter);
-        expect(chip.resetCount).toBe(1);
+        expect(chip.stopAllCount).toBe(1);
         host.stop();
-        expect(chip.resetCount).toBe(2);
+        expect(chip.stopAllCount).toBe(2);
         host.start(game.starter);
         host.restart();
         // A restart stops the session and starts another
-        expect(chip.resetCount).toBe(5);
+        expect(chip.stopAllCount).toBe(5);
         destroyAll(host, sound);
     });
 
@@ -102,7 +102,7 @@ describe('createEntryHost', () => {
         expect(fake.chips).toHaveLength(2);
         host.start(game.starter);
         host.tick(0, TICK_MS);
-        expect(listPlays(entryChip().audio80.log)).toEqual([EFFECT]);
+        expect(listPlays(entryChip().log)).toEqual([EFFECT]);
         destroyAll(host, sound);
     });
 
@@ -126,9 +126,10 @@ describe('createEntryHost', () => {
         host.tick(0, TICK_MS);
         const [chip] = fake.audio90Chips;
         expect(given).toBeDefined();
-        expect(chip.audio90.log).toEqual([{ kind: 'set-tempo', bpm: 120, time: 0 }]);
+        // After the stop that starts every session
+        expect(chip.log.at(-1)).toEqual({ kind: 'set-tempo', bpm: 120, time: 0 });
         host.stop();
-        expect(chip.resetCount).toBeGreaterThan(0);
+        expect(chip.stopAllCount).toBeGreaterThan(0);
         destroyAll(host, sound);
     });
 });

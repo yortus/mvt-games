@@ -61,7 +61,7 @@ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element> 
     await session.ready;
     // An entry that sizes itself to its element learns its size here.
     await waitForLayout();
-    advanceHeadless({ session, views: session.views, controls: sound.controls, totalMs: findThumbnailAdvanceMs(starter) });
+    advanceHeadless({ session, views: session.views, chip: sound.chip, totalMs: findThumbnailAdvanceMs(starter) });
     session.render();
     return element;
 }

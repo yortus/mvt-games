@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Audio80Song } from 'audio90';
+import { computeSongDurationMs, type Audio80Song } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';
@@ -121,7 +121,7 @@ describe('GameAudioView', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** The voice that plays the songs' bass. The music player plays channel n on voice n, and the bass is channel 1. */
+/** The voice that plays the songs' bass. A song plays channel n on voice n, and the bass is channel 1. */
 const BASS_VOICE = 1;
 /** The sneaking tune's bass plays a note on every second row. */
 const SNEAK_BASS_ROWS_APART = 2;
@@ -154,18 +154,17 @@ function describeNoteOns(log: readonly Audio80Write[], fromMs = 0, listenMs = LI
 }
 
 /**
- * Plays `song` at `tempoScale` on a music player of its own, for `listenMs`,
+ * Plays `song` at `tempoScale` on a chip of its own, for `listenMs`,
  * and describes the notes it plays. This is what the view should play over
  * the same time.
  */
 function recordSong(options: { song: Audio80Song; tempoScale?: number; listenMs?: number }): string[] {
     const { song, tempoScale = 1, listenMs = LISTEN_MS } = options;
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
-    const player = createMusicPlayer({ audio80: chip });
-    player.tempoScale = tempoScale;
-    player.play(song);
+    const chip = createHeadlessAudio80({ record: true });
+    chip.tempoScale = tempoScale;
+    chip.play(song);
     for (let elapsed = 0; elapsed < listenMs; elapsed += TICK_MS) {
-        controls.update(TICK_MS);
+        chip.update(TICK_MS);
     }
     return describeNoteOns(chip.log, 0, listenMs);
 }
@@ -173,7 +172,7 @@ function recordSong(options: { song: Audio80Song; tempoScale?: number; listenMs?
 /** Sets up a view as a game starts, and runs its first tick. */
 function setUp() {
     const state = { phase: 'playing' as GamePhase, remainingCrumbs: TOTAL_CRUMBS };
-    const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
+    const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
         sound: chip,
         phase: () => state.phase,
@@ -182,7 +181,7 @@ function setUp() {
     });
     const tickFor = (ms: number) => {
         for (let elapsed = 0; elapsed < ms; elapsed += TICK_MS) {
-            controls.update(TICK_MS);
+            chip.update(TICK_MS);
             updateView(view, TICK_MS);
             refreshView(view);
         }

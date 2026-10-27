@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { createMusicPlayer, type Audio80 } from 'audio90';
+import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import { GAME_OVER, RESPAWN, SHIP_HIT, SHOT, STAGE_CLEAR, STAGE_FANFARE, STAGE_TUNE } from '../data';
 import type { GamePhase } from '../models';
@@ -49,7 +49,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sound } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const music = createMusicPlayer({ audio80: sound });
+    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
+    let musicId = 0;
     const watcher = watch({ phase: bindings.phase, shots: bindings.shotsFired });
 
     setRefresh(view, refresh);
@@ -62,7 +63,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         // A rise in the count is a shot. The first poll and a reset to 0 on a restart are not rises
         if (w.shots.increased) sound.play(SHOT);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        music.tempoScale = music.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
+        sound.tempoScale = sound.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
@@ -70,22 +71,22 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
             case 'playing':
                 if (previous === 'dying') {
                     sound.play(RESPAWN);
-                    music.play(STAGE_TUNE);
+                    musicId = sound.play(STAGE_TUNE);
                 }
                 else {
-                    music.play(STAGE_FANFARE);
-                    music.queue(STAGE_TUNE);
+                    musicId = sound.play(STAGE_FANFARE);
+                    sound.queue(STAGE_TUNE);
                 }
                 break;
             case 'dying':
-                music.stop();
+                sound.stop(musicId);
                 sound.play(SHIP_HIT);
                 break;
             case 'stage-clear':
-                music.play(STAGE_CLEAR);
+                musicId = sound.play(STAGE_CLEAR);
                 break;
             case 'game-over':
-                music.play(GAME_OVER);
+                musicId = sound.play(GAME_OVER);
                 break;
         }
     }

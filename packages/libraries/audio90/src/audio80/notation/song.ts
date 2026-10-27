@@ -26,8 +26,8 @@ export type { SongOrderEntry } from '../../shared';
 /**
  * A song, ready to play. `createAudio80Song` makes it from patterns written as text.
  * A pattern is a grid of cells, with one row per time step and one cell per
- * channel in each row. Each cell is stored as numbers, so the music player
- * can read them with plain index loops.
+ * channel in each row. Each cell is stored as numbers, so the chip's
+ * sequencer can read them with plain index loops.
  */
 export interface Audio80Song {
     /** The chip it plays on. */
@@ -38,7 +38,7 @@ export interface Audio80Song {
     readonly rowsPerBeat: number;
     /** How late each odd-numbered row of a pattern plays, as a share of a row, from 0 to 0.5. */
     readonly swing: number;
-    /** How many cells each row has, one per channel. The music player plays channel n on voice n. */
+    /** How many cells each row has, one per channel. The chip plays channel n on voice n. */
     readonly channelCount: number;
     /** The song's instruments, the sounds it plays, in the order that a cell's `CELL_INSTRUMENT` indexes them. */
     readonly instruments: readonly Audio80Sound[];

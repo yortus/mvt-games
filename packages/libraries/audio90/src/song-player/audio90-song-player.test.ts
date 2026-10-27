@@ -1,8 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createAudio80Sound, createAudio80Song } from '../audio80';
 import { type Audio90, type Audio90Song, type Audio90Writer, createAudio90Sound, createAudio90Song } from '../audio90';
-import { type Audio90Write, createHeadlessAudio90, measurePeak, renderSong } from '../headless';
-import { type HeadlessControls, computeSongDurationMs } from '../shared';
+import { type Audio90Write, createHeadlessAudio90, measurePeak, render } from '../headless';
+import { computeSongDurationMs } from '../shared';
 import { createSongPlayer, type SongPlayer } from './song-player';
 
 const BPM = 150;
@@ -28,10 +28,10 @@ const GROOVE = createAudio90Song({
 
 describe('song player, on an Audio90', () => {
     it('writes the song\'s settings, then each row at its chip time, and nothing until it refreshes', () => {
-        const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
+        const chip = createHeadlessAudio90({ record: true });
         const player = createSongPlayer({ audio90: asWriter(chip) });
         player.play(GROOVE);
-        controls.update(ROW_MS * 2.5);
+        chip.update(ROW_MS * 2.5);
         player.update(ROW_MS * 2.5);
         expect(chip.log).toEqual([]);
         player.refresh();
@@ -56,28 +56,28 @@ describe('song player, on an Audio90', () => {
     });
 
     it('tells the chip the tempo its scale makes, and 0 while it holds the song still', () => {
-        const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
+        const chip = createHeadlessAudio90({ record: true });
         const player = createSongPlayer({ audio90: asWriter(chip) });
         player.play(GROOVE);
-        tick(controls, player, ROW_MS, ROW_MS);
+        tick(chip, player, ROW_MS, ROW_MS);
         player.tempoScale = 0.5;
-        tick(controls, player, ROW_MS, ROW_MS);
+        tick(chip, player, ROW_MS, ROW_MS);
         player.tempoScale = 0;
         chip.clear();
-        tick(controls, player, ROW_MS, 10 * ROW_MS);
+        tick(chip, player, ROW_MS, 10 * ROW_MS);
         expect(chip.log).toEqual([{ kind: 'set-tempo', bpm: 0, time: 2 * ROW_MS }]);
         player.tempoScale = 1;
-        tick(controls, player, ROW_MS, ROW_MS);
+        tick(chip, player, ROW_MS, ROW_MS);
         expect(chip.log).toContainEqual({ kind: 'set-tempo', bpm: BPM, time: 12 * ROW_MS });
     });
 
     it('plays a queued song at the end of the first, and gives the voices back when it stops', () => {
-        const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
+        const chip = createHeadlessAudio90({ record: true });
         const player = createSongPlayer({ audio90: asWriter(chip) });
         const next = createAudio90Song({ bpm: 120, instruments: { S: SAW }, patterns: { p: '| C-5 S' }, order: ['p'] });
         player.play(GROOVE);
         player.queue(next);
-        tick(controls, player, 1000 / 60, computeSongDurationMs(GROOVE) + 50);
+        tick(chip, player, 1000 / 60, computeSongDurationMs(GROOVE) + 50);
         expect(player.song).toBe(next);
         expect(chip.log).toContainEqual({ kind: 'reserve-voices', count: 1, time: computeSongDurationMs(GROOVE) });
         player.stop();
@@ -88,13 +88,13 @@ describe('song player, on an Audio90', () => {
 
     it('renders a song in stereo, where the mixer puts each channel', () => {
         const left = createAudio90Song({ bpm: 120, instruments: { S: SAW }, patterns: { p: '| A-3 S\n| ...' }, order: ['p'], mixer: [{ pan: -1 }] });
-        const rendered = renderSong(left, { durationMs: 300 });
+        const rendered = render(left, { durationMs: 300 });
         expect(measurePeak(rendered.left)).toBeGreaterThan(0.05);
         expect(measurePeak(rendered.right)).toBeLessThan(1e-6);
     });
 
     it('takes, in its type, only songs of the chip it plays on', () => {
-        const player = createSongPlayer({ audio90: asWriter(createHeadlessAudio90().audio90) });
+        const player = createSongPlayer({ audio90: asWriter(createHeadlessAudio90()) });
         expectTypeOf(player).toEqualTypeOf<SongPlayer<Audio90Song>>();
         const audio80Song = createAudio80Song({ bpm: 120, instruments: { L: createAudio80Sound({}) }, patterns: { p: '| C-4 L' }, order: ['p'] });
         // Never called: it is here to be type checked
@@ -112,20 +112,20 @@ describe('song player, on an Audio90', () => {
 
 /** GROOVE's note stamps, played once through with ticks of `tickMs`. */
 function listNoteStamps(tickMs: () => number): number[] {
-    const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
+    const chip = createHeadlessAudio90({ record: true });
     const player = createSongPlayer({ audio90: asWriter(chip) });
     player.play(GROOVE);
-    tick(controls, player, tickMs, computeSongDurationMs(GROOVE) - 1);
+    tick(chip, player, tickMs, computeSongDurationMs(GROOVE) - 1);
     return listNoteOns(chip.log).map((write) => write.time);
 }
 
 /** Ticks as a game loop does, for `durationMs`: the chip's clock, then the view's update, then its refresh. */
-function tick(controls: HeadlessControls, player: SongPlayer<Audio90Song>, tickMs: number | (() => number), durationMs: number): void {
+function tick(chip: { readonly update: (deltaMs: number) => void }, player: SongPlayer<Audio90Song>, tickMs: number | (() => number), durationMs: number): void {
     let elapsed = 0;
     while (elapsed < durationMs - 1e-9) {
         const delta = typeof tickMs === 'number' ? tickMs : tickMs();
         elapsed += delta;
-        controls.update(delta);
+        chip.update(delta);
         player.update(delta);
         player.refresh();
     }

@@ -1,9 +1,19 @@
-import type { PlayableSong } from '../music-player';
-import { type AudioControls, type ChipBatch, type ChipBufferReply, type ChipClockReply, type ChipReply, clampVolume, type CommandWriter, MAX_MIX_VOLUME, type SongSlot } from '../shared';
-import type { PassedMessage, RunnerMessage } from './chip-runner';
+import {
+    type ChipBatch,
+    type ChipBufferReply,
+    type ChipClockReply,
+    type ChipReply,
+    clampVolume,
+    createChipPlayback,
+    joinMembers,
+    MAX_MIX_VOLUME,
+    type PlayingWriter,
+    type SoundChip,
+} from '../shared';
+import type { PlayableSong } from '../song-player';
 import { createHeldWrites, type HeldWriteSlots } from './held-writes';
-import type { SongMessage, SongPlaceReply } from './song-messages';
-import { createWebSongSlots } from './web-song-slots';
+import { createWebSongs } from './web-songs';
+import type { PassedMessage, RunnerMessage, SongMessage, SongPlaceReply } from './worklet';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -11,17 +21,18 @@ import { createWebSongSlots } from './web-song-slots';
 
 /**
  * What every chip in a browser has: an `AudioWorklet` node that plays the
- * chip's writes, the controls that pause it and set its volumes, and the
- * slots of the chip's sequencer in the worklet. Each chip's factory makes
- * its writer, then this, and joins the two. `S` is the chip's song type.
+ * chip's writes, the members that pause it and set its volumes, and its
+ * songs, which play on the chip's sequencer in the worklet. Each chip's
+ * factory makes its writer, then this, and adds its own members to `chip`.
+ * `S` is the chip's song type, `Snd` its sound type and `O` its play options.
  *
  * The writer's commands are sent at the end of the task they were written
  * in, by a microtask, so the writes of one frame travel together. The chip's
  * time is the worklet's clock, which runs on the sound card's.
  */
-export interface WebChip<D extends PassedMessage, S extends PlayableSong> {
-    /** The chip's controls. */
-    readonly controls: AudioControls;
+export interface WebChip<D extends PassedMessage, S extends PlayableSong, Snd extends object, O> {
+    /** The members every chip has, as `SoundChip` describes them. */
+    readonly chip: SoundChip<S, Snd, O>;
     /** The chip time now, in ms: where the worklet's clock is, as its last reply said. 0 until the worklet first plays. */
     readonly time: number;
     /**
@@ -44,16 +55,14 @@ export interface WebChip<D extends PassedMessage, S extends PlayableSong> {
     send: (message: D, transfer?: Transferable[]) => void;
     /** Sends the writer's commands at the end of the current task. The writer calls it as a write lands in an empty batch. */
     sendSoon: () => void;
-    /** Opens a slot on the chip's sequencer in the worklet, which plays one song at a time on the sound card's clock. */
-    openSongSlot: () => SongSlot<S>;
 }
 
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
 
-/** How to make a chip's worklet node and controls. */
-export interface WebChipOptions<S extends PlayableSong> {
+/** How to make a chip's worklet node, and the members every chip has. */
+export interface WebChipOptions<S extends PlayableSong, Snd extends object, O> {
     /**
      * The audio context to play in. Without one, the chip makes its own, and
      * starts it at the page's first click, tap or key press, since a browser
@@ -62,7 +71,7 @@ export interface WebChipOptions<S extends PlayableSong> {
      */
     readonly context?: AudioContext;
     /** The chip's writer, whose commands the chip sends. It has no clock of its own: the worklet's is the chip's. */
-    readonly writer: CommandWriter;
+    readonly writer: PlayingWriter<Snd, O>;
     /** The chip's held-write slots: which writes to keep while the chip cannot play. */
     readonly heldSlots: HeldWriteSlots;
     /** The worklet module's URL. */
@@ -71,11 +80,15 @@ export interface WebChipOptions<S extends PlayableSong> {
     readonly processorName: string;
     /** How many channels the node outputs: 1 for a mono chip, 2 for a stereo one. */
     readonly channelCount: number;
-    /** The chip's settings for its processor. The controls add the listener's volumes as they are when the node is made. */
+    /** The chip's settings for its processor. The listener's volumes, as they are when the node is made, are added to them. */
     readonly settings: object;
     /** Handles a reply from the worklet other than the chip's own, such as a scope. Defaults to dropping it. */
     readonly onReply?: (reply: { readonly kind: string }) => void;
-    /** Called as the controls reset the chip, for what the chip's own part must reset too. */
+    /**
+     * Called as the chip resets its worklet, which it does as everything is
+     * stopped while it is paused, for what the chip's own part must set up
+     * again.
+     */
     readonly onReset?: () => void;
     /**
      * Readies a song to send to the worklet, the first time it is played:
@@ -90,12 +103,12 @@ export interface WebChipOptions<S extends PlayableSong> {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a chip's controls, and starts loading its worklet. The controls'
- * `ready` resolves once the worklet is running. Until then, while the
- * context is suspended, and while the chip is paused, the chip keeps the
+ * Creates the members every browser chip has, and starts loading its
+ * worklet. `ready` resolves once the worklet is running. Until then, while
+ * the context is suspended, and while the chip is paused, the chip keeps the
  * writes whose effect lasts, and sends them once it can play.
  */
-export function createWebChip<D extends PassedMessage, S extends PlayableSong>(options: WebChipOptions<S>): WebChip<D, S> {
+export function createWebChip<D extends PassedMessage, S extends PlayableSong, Snd extends object, O>(options: WebChipOptions<S, Snd, O>): WebChip<D, S, Snd, O> {
     const { writer } = options;
     const isOwnContext = options.context === undefined;
     const context = options.context ?? createOwnContext();
@@ -127,7 +140,7 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
     // written, and the speaker's lag is written with every reply
     const heard = new Float64Array(HEARD_FIELDS);
     let hasHeard = false;
-    const songSlots = createWebSongSlots<S>({
+    const songs = createWebSongs<S>({
         send: (message) => send(message),
         prepare: options.prepareSong,
         speakerFrame: () => (!hasHeard || context.state !== 'running' ? undefined : findSpeakerFrame()),
@@ -150,7 +163,7 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
         node.port.onmessage = (event: MessageEvent<ChipReply | SongPlaceReply | { readonly kind: string }>) => {
             const reply = event.data;
             if (reply.kind === 'song-place') {
-                songSlots.receive(reply as SongPlaceReply);
+                songs.receive(reply as SongPlaceReply);
             }
             else if (reply.kind === 'buffer') {
                 if (spares.length < MAX_SPARES) spares.push((reply as ChipBufferReply).commands);
@@ -179,100 +192,91 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
     // Writes kept while the context was suspended can go once it runs
     context.addEventListener('statechange', onStateChange);
 
-    const controls: AudioControls = {
-        ready,
-        get isPaused() {
-            return isPaused;
-        },
-        get volume() {
-            return volume;
-        },
-        set volume(value) {
-            volume = clampVolume(value, 1);
-            applyGain();
-        },
-        get isMuted() {
-            return isMuted;
-        },
-        set isMuted(value) {
-            isMuted = value;
-            applyGain();
-        },
-        get musicVolume() {
-            return musicVolume;
-        },
-        set musicVolume(value) {
-            const clamped = clampVolume(value, MAX_MIX_VOLUME);
-            if (clamped === musicVolume) return;
-            musicVolume = clamped;
-            if (node !== undefined) writer.setMix('music', clamped);
-        },
-        get effectsVolume() {
-            return effectsVolume;
-        },
-        set effectsVolume(value) {
-            const clamped = clampVolume(value, MAX_MIX_VOLUME);
-            if (clamped === effectsVolume) return;
-            effectsVolume = clamped;
-            if (node !== undefined) writer.setMix('effects', clamped);
-        },
+    const chip = joinMembers(
+        createChipPlayback<S, Snd, O>({
+            songs,
+            playSound: writer.play,
+            stopSound: writer.stop,
+            takePlayId: writer.takePlayId,
+            stopVoices,
+        }),
+        {
+            ready,
+            get isPaused() {
+                return isPaused;
+            },
+            get volume() {
+                return volume;
+            },
+            set volume(value: number) {
+                volume = clampVolume(value, 1);
+                applyGain();
+            },
+            get isMuted() {
+                return isMuted;
+            },
+            set isMuted(value: boolean) {
+                isMuted = value;
+                applyGain();
+            },
+            get musicVolume() {
+                return musicVolume;
+            },
+            set musicVolume(value: number) {
+                const clamped = clampVolume(value, MAX_MIX_VOLUME);
+                if (clamped === musicVolume) return;
+                musicVolume = clamped;
+                if (node !== undefined) writer.setMix('music', clamped);
+            },
+            get effectsVolume() {
+                return effectsVolume;
+            },
+            set effectsVolume(value: number) {
+                const clamped = clampVolume(value, MAX_MIX_VOLUME);
+                if (clamped === effectsVolume) return;
+                effectsVolume = clamped;
+                if (node !== undefined) writer.setMix('effects', clamped);
+            },
 
-        pause() {
-            if (isPaused || isDestroyed) return;
-            isPaused = true;
-            send({ kind: 'pause' });
-        },
+            pause() {
+                if (isPaused || isDestroyed) return;
+                isPaused = true;
+                send({ kind: 'pause' });
+            },
 
-        resume() {
-            if (!isPaused || isDestroyed) return;
-            isPaused = false;
-            send({ kind: 'resume' });
-            // Writes kept while it was paused can go now
-            if (held.count > 0) sendSoon();
-        },
+            resume() {
+                if (!isPaused || isDestroyed) return;
+                isPaused = false;
+                send({ kind: 'resume' });
+                // Writes kept while it was paused can go now
+                if (held.count > 0) sendSoon();
+            },
 
-        reset() {
-            writer.clear(writer.commands);
-            writer.forget();
-            held.clear();
-            waiting.length = 0;
-            // A pause still waiting for the worklet was just cleared with the rest, so send it again
-            if (isPaused && node === undefined) waiting.push({ kind: 'pause' });
-            // The worklet's sequencer forgets its songs as it resets, so the slots do too
-            songSlots.reset();
-            options.onReset?.();
-            if (node === undefined) return;
-            node.port.postMessage({ kind: 'reset' } satisfies RunnerMessage);
-            // The worklet keeps its mix through a reset. But a mix change not yet sent was just
-            // cleared, so write the mix again
-            writer.setMix('music', musicVolume);
-            writer.setMix('effects', effectsVolume);
+            destroy() {
+                if (isDestroyed) return;
+                isDestroyed = true;
+                context.removeEventListener('statechange', onStateChange);
+                if (node !== undefined) {
+                    node.port.postMessage({ kind: 'stop' } satisfies RunnerMessage);
+                    node.disconnect();
+                    node.port.close();
+                    node = undefined;
+                }
+                output.disconnect();
+                writer.clear(writer.commands);
+                held.clear();
+                waiting.length = 0;
+                spares.length = 0;
+                if (isOwnContext) {
+                    stopListeningForGestures();
+                    void context.close();
+                }
+            },
         },
-
-        destroy() {
-            if (isDestroyed) return;
-            isDestroyed = true;
-            context.removeEventListener('statechange', onStateChange);
-            if (node !== undefined) {
-                node.port.postMessage({ kind: 'stop' } satisfies RunnerMessage);
-                node.disconnect();
-                node.port.close();
-                node = undefined;
-            }
-            output.disconnect();
-            writer.clear(writer.commands);
-            held.clear();
-            waiting.length = 0;
-            spares.length = 0;
-            if (isOwnContext) {
-                stopListeningForGestures();
-                void context.close();
-            }
-        },
-    };
+    );
 
     return {
-        controls,
+        chip,
         get time() {
             if (!hasHeard) return 0;
             return findChipTimeAt(context.currentTime * context.sampleRate);
@@ -286,8 +290,36 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
         },
         send,
         sendSoon,
-        openSongSlot: () => songSlots.open(),
     };
+
+    /**
+     * Stops every voice's note, once the song has stopped. While the chip
+     * plays, the notes are released, so each fades out as its envelope says.
+     * While it is paused, nothing is heard, so the worklet is reset instead,
+     * which cuts every voice, and forgets every sound and song sent. They are
+     * sent again as they are next played.
+     */
+    function stopVoices(): void {
+        if (!isPaused) {
+            writer.releaseAll();
+            return;
+        }
+        writer.clear(writer.commands);
+        writer.forget();
+        held.clear();
+        waiting.length = 0;
+        // A pause still waiting for the worklet was just cleared with the rest, so send it again
+        if (node === undefined) waiting.push({ kind: 'pause' });
+        // The worklet's sequencer forgets its songs as it resets, so the page does too
+        songs.reset();
+        if (node === undefined) return;
+        node.port.postMessage({ kind: 'reset' } satisfies RunnerMessage);
+        options.onReset?.();
+        // The worklet keeps its mix through a reset. But a mix change not yet sent was just
+        // cleared, so write the mix again
+        writer.setMix('music', musicVolume);
+        writer.setMix('effects', effectsVolume);
+    }
 
     /** Sends a message to the worklet, or keeps it until the worklet runs. */
     function send(message: D | SongMessage | RunnerMessage, transfer?: Transferable[]): void {

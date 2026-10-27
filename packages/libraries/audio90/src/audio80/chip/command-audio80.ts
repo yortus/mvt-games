@@ -22,7 +22,7 @@ import {
     type Audio80Wave,
 } from '../synthesiser';
 import type { Audio80Sound } from '../notation';
-import type { Audio80, Audio80Writer } from './audio80';
+import type { Audio80PlayOptions, Audio80Writer } from './audio80';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -38,7 +38,13 @@ import type { Audio80, Audio80Writer } from './audio80';
  * before the commands that use it. Each play gets an id of its own, counted
  * up from 1, which `stop` takes.
  */
-export interface CommandAudio80 extends Audio80Writer, Pick<Audio80, 'play' | 'stop'>, CommandWriter {
+export interface CommandAudio80 extends Audio80Writer, CommandWriter {
+    /** Plays `sound` as the chip's `play` does, and returns the play's id. */
+    play: (sound: Audio80Sound, options?: Audio80PlayOptions) => number;
+    /** Releases the note of the play with id `id`, as the chip's `stop` does. */
+    stop: (id: number) => void;
+    /** Takes the next play's id, for a play the writer doesn't write itself, such as a song's. */
+    takePlayId: () => number;
     /**
      * Returns the id of `sound`'s commands, defining it if it has not been
      * played since the last `forget`. A song sent to the worklet names its
@@ -155,6 +161,8 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
         clear: buffer.clear,
 
         defineSound: (sound) => ensureSoundId(sound),
+
+        takePlayId: () => nextPlayId++,
 
         forget() {
             soundIds.clear();
