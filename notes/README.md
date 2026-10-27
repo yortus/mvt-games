@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**075**.
+**076**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -94,6 +94,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 035 | [A demoscene demo](./proposals/035-demoscene-demo.md) | Proposed. A non-interactive, looping show in the style of a 1980s C64 demo (raster bars, tech-tech, border scroller, plasma, filled vectors, a 48-sprite multiplexer), drawn through a virtual video chip whose memory carries the hardware's limits. The model is closed-form in show time, so seek is free and the one view holds no state. Music deferred to a later audio view |
 | 069 | [A line length of 120, and single-line imports](./proposals/069-line-length-and-single-line-imports.md) | Proposed. Four stages: write down 120, enforce it with `@stylistic/max-len` (1,045 lines to fix by hand, a package at a time), add `@mvtjs/single-line-imports`, which writes each import and re-export on one line by a cascade of merge, split values from types, then split by length, and turn it on with `lint:fix` (about 180 files) |
 | 074 | [audio90, a standalone sound package](./proposals/074-audio90-standalone-package.md) | In progress, on the branch `audio90`: 068 is in, and steps 1 to 5 (the move, the renames and one clock) are done. Step 6, in four parts, is under way: 6a, sounds in place of instruments and sound effects, is done; next is 6b, the chip as one object, then a chip each for music and sound effects, then the removals. The docs come near the end, and the Studio last. Publishes `@mvtjs/chiptune` as `audio90`, versioned on its own like v-snap but still in the repo: neutral docs, `createAudio90` and `createAudio80` as simple as chiptune3's player, one clock, the sound card's, with the host pausing each chip, a song file format, and later Audio90 Studio, an editor built with MVT |
+| 075 | [The docs as a book](./proposals/075-docs-as-a-book.md) | Proposed. A review of every docs page found most core ideas taught three or four times (the frame sequence eight times), pages that depend on later chapters, and a voice that changes with a page's age. Recommends one book in six parts with five appendices: the language-neutral Architecture pages merged into the chapters and kept as a one-page specification, the principles placed after the core, each concept given one home, the Principles pages' voice throughout, contributor material and the agent files moved out of the book and pointed into it. Lists 30 errors to fix now |
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
