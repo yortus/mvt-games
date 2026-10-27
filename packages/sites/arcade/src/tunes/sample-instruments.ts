@@ -1,4 +1,4 @@
-import { createAudio90Instrument } from 'audio90';
+import { createAudio90Sound } from 'audio90';
 import {
     BREAK, CHOIR, MOD_BASS_SAMPLE, MOD_HAT_SAMPLE, MOD_KICK_SAMPLE, MOD_LEAD_SAMPLE, MOD_SNARE_SAMPLE, ORCHESTRA_HIT, STRINGS_SAMPLE,
 } from './samples';
@@ -11,7 +11,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /** The orchestra hit, played back from its sample, at any pitch. */
-export const HIT = createAudio90Instrument({
+export const HIT = createAudio90Sound({
     engine: 'sample',
     sample: ORCHESTRA_HIT,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 150 },
@@ -20,7 +20,7 @@ export const HIT = createAudio90Instrument({
 });
 
 /** The break, which a song plays slice by slice with `s`. */
-export const BREAKBEAT = createAudio90Instrument({
+export const BREAKBEAT = createAudio90Sound({
     engine: 'sample',
     sample: BREAK,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 },
@@ -29,7 +29,7 @@ export const BREAKBEAT = createAudio90Instrument({
 });
 
 /** The choir's "aah", looping back and forth while it is held. */
-export const AAH = createAudio90Instrument({
+export const AAH = createAudio90Sound({
     engine: 'sample',
     sample: CHOIR,
     envelope: { attackMs: 120, decayMs: 0, sustain: 1, releaseMs: 700 },
@@ -39,7 +39,7 @@ export const AAH = createAudio90Instrument({
 });
 
 /** Sampled strings, as a 16-bit console played them, in its soft echo. */
-export const SAMPLED_STRINGS = createAudio90Instrument({
+export const SAMPLED_STRINGS = createAudio90Sound({
     engine: 'sample',
     sample: STRINGS_SAMPLE,
     envelope: { attackMs: 60, decayMs: 0, sustain: 1, releaseMs: 500 },
@@ -53,7 +53,7 @@ export const SAMPLED_STRINGS = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** The module's bass, from its looped saw. */
-export const MOD_BASS = createAudio90Instrument({
+export const MOD_BASS = createAudio90Sound({
     engine: 'sample',
     sample: MOD_BASS_SAMPLE,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 40 },
@@ -61,7 +61,7 @@ export const MOD_BASS = createAudio90Instrument({
 });
 
 /** The module's lead, from its looped pulse, with the vibrato the trackers gave a held note. */
-export const MOD_LEAD = createAudio90Instrument({
+export const MOD_LEAD = createAudio90Sound({
     engine: 'sample',
     sample: MOD_LEAD_SAMPLE,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
@@ -70,7 +70,7 @@ export const MOD_LEAD = createAudio90Instrument({
 });
 
 /** The module's chords: the lead's sample, played as fast arpeggios, quieter. */
-export const MOD_CHORD = createAudio90Instrument({
+export const MOD_CHORD = createAudio90Sound({
     engine: 'sample',
     sample: MOD_LEAD_SAMPLE,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 40 },
@@ -79,6 +79,6 @@ export const MOD_CHORD = createAudio90Instrument({
 });
 
 /** The module's drums, played back at their own pitch. */
-export const MOD_KICK = createAudio90Instrument({ engine: 'sample', sample: MOD_KICK_SAMPLE, note: 'C-4', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 }, volume: 0.9 });
-export const MOD_SNARE = createAudio90Instrument({ engine: 'sample', sample: MOD_SNARE_SAMPLE, note: 'C-4', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 }, volume: 0.7 });
-export const MOD_HAT = createAudio90Instrument({ engine: 'sample', sample: MOD_HAT_SAMPLE, note: 'C-4', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 }, volume: 0.5 });
+export const MOD_KICK = createAudio90Sound({ engine: 'sample', sample: MOD_KICK_SAMPLE, note: 'C-4', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 }, volume: 0.9 });
+export const MOD_SNARE = createAudio90Sound({ engine: 'sample', sample: MOD_SNARE_SAMPLE, note: 'C-4', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 }, volume: 0.7 });
+export const MOD_HAT = createAudio90Sound({ engine: 'sample', sample: MOD_HAT_SAMPLE, note: 'C-4', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 }, volume: 0.5 });

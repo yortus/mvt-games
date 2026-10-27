@@ -15,7 +15,7 @@ import {
     toNoteNumber,
 } from '../../shared';
 import { type Audio90Character, AUDIO90_CHARACTERS, AUDIO90_EFFECT_DEFAULTS, AUDIO90_VOICE_COUNT, ENGINE_ANALOG, ENGINE_SAMPLE } from '../synthesiser';
-import { type Audio90Instrument, checkRange } from './instrument';
+import { type Audio90Sound, checkRange } from './sound';
 import { ENGINE_NAMES } from './tokens';
 
 // ---------------------------------------------------------------------------
@@ -41,7 +41,7 @@ export interface Audio90Song {
     /** How many cells each row has, one per channel, up to 16. */
     readonly channelCount: number;
     /** The song's instruments, in the order that a cell's `CELL90_INSTRUMENT` indexes them. */
-    readonly instruments: readonly Audio90Instrument[];
+    readonly instruments: readonly Audio90Sound[];
     /** Each instrument's letter, as the patterns name it, in the order of `instruments`. */
     readonly instrumentLetters: readonly string[];
     /** The song's patterns, in the order that `SongOrderEntry.pattern` indexes them. */
@@ -143,7 +143,7 @@ export interface Audio90SongOptions {
     /** How late each odd-numbered row of a pattern plays, as a share of a row, from 0 to 0.5. Defaults to 0. */
     readonly swing?: number;
     /** The song's instruments, each named by the one letter the patterns use for it. */
-    readonly instruments: Readonly<Record<string, Audio90Instrument>>;
+    readonly instruments: Readonly<Record<string, Audio90Sound>>;
     /**
      * The song's patterns, by name, written as the Audio80's are: one row a
      * line, each cell starting with `|`, and `#` starting a comment. A cell
@@ -323,7 +323,7 @@ const SONGS = new WeakSet<object>();
 /** What parsing a song's cells needs to know of it. */
 interface SongContext {
     readonly letters: readonly string[];
-    readonly instruments: readonly Audio90Instrument[];
+    readonly instruments: readonly Audio90Sound[];
 }
 
 /** The tokens that set a hex value: each one's prefix, its digits, and where it goes in a cell. */
@@ -415,7 +415,7 @@ function parseCell(text: string, where: string, context: SongContext, cells: num
  * analog, or a slice on one that is not a sample, or past its sample's last
  * slice.
  */
-function checkEngineTokens(cells: ArrayLike<number>, at: number, where: string, letter: string, instrument: Audio90Instrument): void {
+function checkEngineTokens(cells: ArrayLike<number>, at: number, where: string, letter: string, instrument: Audio90Sound): void {
     const engine = instrument.data.engine;
     const named = `'${letter}' is ${ENGINE_NAMES[engine]}`;
     const chord = cells[at + CELL90_CHORD];

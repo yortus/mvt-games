@@ -41,7 +41,7 @@ export interface CommandWriter extends Pick<CommandBuffer, 'commands' | 'count' 
     readonly time: number;
     /** Advances `time` by `deltaMs`, in ms. */
     update: (deltaMs: number) => void;
-    /** Forgets every id. Each instrument, effect and sample is then passed on again the next time it is played. */
+    /** Forgets every id. Each sound and sample is then passed on again the next time it is played. */
     forget: () => void;
     /**
      * Sets a bus's gain, from 0 to 2. It applies as soon as it arrives, not at

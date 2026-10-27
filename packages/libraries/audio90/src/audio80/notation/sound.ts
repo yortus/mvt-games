@@ -5,7 +5,7 @@ import {
     toCutoff,
     type Audio80FilterId,
     toFilterRoute,
-    type InstrumentData,
+    type SoundData,
     type StepData,
     type Audio80Wave,
     WAVETABLE_SIZE,
@@ -18,19 +18,24 @@ import { parseWaveToken } from './tokens';
 // ---------------------------------------------------------------------------
 
 /**
- * An instrument. It holds a voice's starting settings, and what changes while
- * a note plays: an arpeggio, vibrato, pulse and filter sweeps, and a step
- * table. A song's patterns, a sound effect or a direct `noteOn` call can play
- * it.
+ * A sound for the Audio80. It holds how a voice sounds as a note starts, and
+ * what changes while the note plays: an arpeggio, vibrato, pulse and filter
+ * sweeps, and a step table. It also holds how it plays on its own: its note,
+ * how long it lasts, and its priority.
+ *
+ * Play it on its own with `Audio80.play`, as a game plays a laser or a coin.
+ * A song plays it too, as one of its `instruments`. A song's patterns say
+ * which note it plays and for how long, so a song ignores the sound's
+ * `lengthMs`, `glideTo`, `priority` and `maxVoices`.
  */
-export interface Audio80Instrument {
+export interface Audio80Sound {
     /** The chip it plays on. */
     readonly chip: 'audio80';
     /** What the chip is sent. */
-    readonly data: InstrumentData;
+    readonly data: SoundData;
     /** The filter its notes go through, if any. */
     readonly filter: Audio80FilterId | undefined;
-    /** The note it plays when a song's cell names it without a note, as drum cells do. */
+    /** The note it plays when played with no note, or named in a song's cell with no note, as drum cells are. */
     readonly note: number;
 }
 
@@ -38,8 +43,8 @@ export interface Audio80Instrument {
 // Options
 // ---------------------------------------------------------------------------
 
-/** What `createAudio80Instrument` makes an instrument from. Every option has a default. */
-export interface Audio80InstrumentOptions {
+/** What `createAudio80Sound` makes a sound from. Every option has a default. */
+export interface Audio80SoundOptions {
     /** The waveform. Defaults to `'pulse'`. */
     readonly wave?: Audio80Wave;
     /** The pulse's width, 0 to 1. Defaults to 0.5, a square wave. */
@@ -48,14 +53,26 @@ export interface Audio80InstrumentOptions {
     readonly wavetable?: string;
     /** Defaults to a near-instant attack, full sustain and a short release. */
     readonly envelope?: Audio80Envelope;
-    /** The instrument's volume, 0 to 1. Defaults to 1. */
+    /** The sound's volume, 0 or more. Defaults to 1. */
     readonly volume?: number;
     /** The filter, `a` or `b`, its notes go through. Defaults to none. */
     readonly filter?: Audio80FilterId;
     /** How much goes to the echo, 0 to 1. Defaults to 0. */
     readonly echo?: number;
-    /** The note it plays when a song names it without a note, such as `C-4`. Defaults to `C-4`. */
+    /** The note it plays when played with no note, or named in a song with no note, such as `C-4`. Defaults to `C-4`. */
     readonly note?: string;
+    /** A note to glide to over `lengthMs` when played. Defaults to none. */
+    readonly glideTo?: string;
+    /**
+     * How long it holds its note when played, before releasing it, in ms. It
+     * must be above 0. Defaults to the length of the step table, or 250 ms if
+     * there is none.
+     */
+    readonly lengthMs?: number;
+    /** When played, it takes a voice from a sound already playing only if that sound's priority is no higher. Defaults to 0. */
+    readonly priority?: number;
+    /** How many voices it may play on at once. Played once more, it restarts its oldest voice. Defaults to 1. */
+    readonly maxVoices?: number;
     /** How long each step of `steps` and `arpeggio` lasts, in ms. Defaults to 1/60 s. */
     readonly stepMs?: number;
     /**
@@ -137,20 +154,27 @@ export interface Audio80FilterSweep {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates an instrument from `options`. Throws if an option is not valid, such as a step that does not parse or a sweep to 0 Hz. */
-export function createAudio80Instrument(options: Audio80InstrumentOptions): Audio80Instrument {
+/**
+ * Creates a sound from `options`. Throws if an option is not valid, such as
+ * a step that does not parse, a sweep to 0 Hz or a length of 0 or less.
+ */
+export function createAudio80Sound(options: Audio80SoundOptions): Audio80Sound {
     const envelope = options.envelope ?? DEFAULT_ENVELOPE;
-    const note = options.note === undefined ? DEFAULT_NOTE : parseNote(options.note, 'instrument note');
+    const note = options.note === undefined ? DEFAULT_NOTE : parseNote(options.note, 'sound: note');
     const pulseWidth = options.pulseWidth ?? 0.5;
     const arpeggio = options.arpeggio ?? [];
     if (arpeggio.length > MAX_ARPEGGIO) {
-        throw new Error(`instrument: an arpeggio has at most ${MAX_ARPEGGIO} notes; this one has ${arpeggio.length}`);
+        throw new Error(`sound: an arpeggio has at most ${MAX_ARPEGGIO} notes; this one has ${arpeggio.length}`);
     }
     const sweep = options.filterSweep;
     if (sweep !== undefined && !(sweep.fromHz > 0 && sweep.toHz > 0)) {
-        throw new Error(`instrument: a filter sweep's fromHz and toHz must be above 0; got ${sweep.fromHz} and ${sweep.toHz}`);
+        throw new Error(`sound: a filter sweep's fromHz and toHz must be above 0; got ${sweep.fromHz} and ${sweep.toHz}`);
     }
-    const data: InstrumentData = {
+    const stepMs = options.stepMs ?? DEFAULT_STEP_MS;
+    const steps = splitRows(options.steps ?? '').map((row, i) => parseStep(row, i));
+    const lengthMs = options.lengthMs ?? (steps.length > 0 ? steps.length * stepMs : DEFAULT_LENGTH_MS);
+    if (!(lengthMs > 0)) throw new Error(`sound: lengthMs must be above 0; got ${lengthMs}`);
+    const data: SoundData = {
         wave: toWaveFlags(options.wave ?? 'pulse'),
         pulseWidth,
         wavetable: options.wavetable === undefined ? [] : parseWavetable(options.wavetable),
@@ -162,8 +186,12 @@ export function createAudio80Instrument(options: Audio80InstrumentOptions): Audi
         filter: toFilterRoute(options.filter),
         echo: options.echo ?? 0,
         note,
-        stepMs: options.stepMs ?? DEFAULT_STEP_MS,
-        steps: splitRows(options.steps ?? '').map((row, i) => parseStep(row, i)),
+        lengthMs,
+        glideTo: options.glideTo === undefined ? Number.NaN : parseNote(options.glideTo, 'sound: glideTo'),
+        priority: options.priority ?? 0,
+        maxVoices: Math.max(1, options.maxVoices ?? 1),
+        stepMs,
+        steps,
         arpeggio,
         vibratoSemitones: options.vibrato?.semitones ?? 0,
         vibratoHz: options.vibrato?.hz ?? 0,
@@ -177,7 +205,14 @@ export function createAudio80Instrument(options: Audio80InstrumentOptions): Audi
         syncSource: options.syncSource ?? -1,
         ringSource: options.ringSource ?? -1,
     };
-    return Object.freeze({ chip: 'audio80', data, filter: options.filter, note });
+    const sound: Audio80Sound = Object.freeze({ chip: 'audio80', data, filter: options.filter, note });
+    SOUNDS.add(sound);
+    return sound;
+}
+
+/** Whether `value` is a sound that `createAudio80Sound` made, such as one found among a module's exports. */
+export function isAudio80Sound(value: unknown): value is Audio80Sound {
+    return typeof value === 'object' && value !== null && SOUNDS.has(value);
 }
 
 /** The note number of a name such as `C-4`. If the name is not a note in range, throws an error that starts with `where`. */
@@ -194,6 +229,10 @@ export function parseNote(name: string, where: string): number {
 
 const DEFAULT_ENVELOPE: Audio80Envelope = { attackMs: 2, decayMs: 0, sustain: 1, releaseMs: 60 };
 const DEFAULT_NOTE = 60;
+const DEFAULT_LENGTH_MS = 250;
+
+/** Every sound made, so `isAudio80Sound` knows one when it sees it. */
+const SOUNDS = new WeakSet<object>();
 
 /**
  * Parses one row of a step table. Each token is a wave, a pitch, a volume

@@ -176,8 +176,8 @@ function setUp(options: FruitMachineModelOptions) {
     return { model, chip, advance };
 }
 
-function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[] {
-    return log.filter((write): write is Play => write.kind === 'play' && write.effect === effect);
+function listPlays(log: readonly Audio80Write[], effect: Play['sound']): Play[] {
+    return log.filter((write): write is Play => write.kind === 'play' && write.sound === effect);
 }
 
 function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {

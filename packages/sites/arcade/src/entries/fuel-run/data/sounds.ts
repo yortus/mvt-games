@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
+import { createAudio80Sound } from 'audio90';
 
 // Fuel Run's instruments and sound effects, for the Audio80. They are all
 // written for this game. They play square waves, triangles and noise, as the
@@ -11,7 +11,7 @@ import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 // ---------------------------------------------------------------------------
 
 /** The tunes' lead. It is a square wave, plain and bright. */
-export const SQUARE = createAudio80Instrument({
+export const SQUARE = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.5,
     envelope: { attackMs: 2, decayMs: 150, sustain: 0.5, releaseMs: 80 },
@@ -19,14 +19,14 @@ export const SQUARE = createAudio80Instrument({
 });
 
 /** The tunes' bass. It is a triangle wave. */
-export const TRIANGLE_BASS = createAudio80Instrument({
+export const TRIANGLE_BASS = createAudio80Sound({
     wave: 'triangle',
     envelope: { attackMs: 2, decayMs: 200, sustain: 0.6, releaseMs: 60 },
     volume: 0.95,
 });
 
 /** A snare drum. It is a short burst of noise. */
-export const SNARE = createAudio80Instrument({
+export const SNARE = createAudio80Sound({
     wave: 'noise',
     note: 'C-6',
     envelope: { attackMs: 0, decayMs: 90, sustain: 0, releaseMs: 0 },
@@ -38,7 +38,7 @@ export const SNARE = createAudio80Instrument({
 // ---------------------------------------------------------------------------
 
 /** A shot. It is a square blip that drops an octave in three steps. */
-export const SHOT = createAudio80SoundEffect({
+export const SHOT = createAudio80Sound({
     note: 'C-6',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 },
     priority: 0,
@@ -53,11 +53,9 @@ export const SHOT = createAudio80SoundEffect({
 });
 
 /** A bomb dropped. It is a whistle that falls two octaves as the bomb falls. */
-export const BOMB_DROP = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'triangle',
-        envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 80 },
-    }),
+export const BOMB_DROP = createAudio80Sound({
+    wave: 'triangle',
+    envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 80 },
     note: 'A-6',
     glideTo: 'A-4',
     lengthMs: 550,
@@ -67,7 +65,7 @@ export const BOMB_DROP = createAudio80SoundEffect({
 });
 
 /** Fuel taken on, as a fuel tank is destroyed. It is four quick notes, rising up the C chord to the octave. */
-export const REFUEL = createAudio80SoundEffect({
+export const REFUEL = createAudio80Sound({
     note: 'C-5',
     stepMs: 45,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 80 },
@@ -82,7 +80,7 @@ export const REFUEL = createAudio80SoundEffect({
 });
 
 /** One beep of the low-fuel alarm. The game's audio view repeats it while fuel is low, and faster as it runs out. */
-export const FUEL_ALARM = createAudio80SoundEffect({
+export const FUEL_ALARM = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.25,
     note: 'A-5',
@@ -93,7 +91,7 @@ export const FUEL_ALARM = createAudio80SoundEffect({
 });
 
 /** The ship destroyed. It is a low thud, then a crash of noise that falls away. */
-export const SHIP_CRASH = createAudio80SoundEffect({
+export const SHIP_CRASH = createAudio80Sound({
     note: 'C-4',
     stepMs: 50,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 250 },
@@ -116,7 +114,7 @@ export const SHIP_CRASH = createAudio80SoundEffect({
 // ---------------------------------------------------------------------------
 
 /** An enemy blown up. It is a short burst of noise, falling. */
-export const EXPLOSION = createAudio80SoundEffect({
+export const EXPLOSION = createAudio80Sound({
     note: 'C-4',
     stepMs: 30,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 100 },
@@ -133,11 +131,9 @@ export const EXPLOSION = createAudio80SoundEffect({
 });
 
 /** A rocket leaving the ground. It is a rush of noise that rises two octaves. */
-export const ROCKET_LAUNCH = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'noise',
-        envelope: { attackMs: 40, decayMs: 0, sustain: 1, releaseMs: 150 },
-    }),
+export const ROCKET_LAUNCH = createAudio80Sound({
+    wave: 'noise',
+    envelope: { attackMs: 40, decayMs: 0, sustain: 1, releaseMs: 150 },
     note: 'C-3',
     glideTo: 'C-5',
     lengthMs: 500,
@@ -147,12 +143,10 @@ export const ROCKET_LAUNCH = createAudio80SoundEffect({
 });
 
 /** One warble of the saucers. It is a wavering note, which the game's audio view repeats while any saucer flies. */
-export const SAUCER = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'triangle',
-        envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 60 },
-        vibrato: { semitones: 2, hz: 11 },
-    }),
+export const SAUCER = createAudio80Sound({
+    wave: 'triangle',
+    envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 60 },
+    vibrato: { semitones: 2, hz: 11 },
     note: 'E-5',
     lengthMs: 180,
     priority: 0,
@@ -160,12 +154,10 @@ export const SAUCER = createAudio80SoundEffect({
 });
 
 /** One rise of the base's siren. The game's audio view repeats it while the scroll is held at the base, until the base is destroyed. */
-export const BASE_SIREN = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'pulse',
-        pulseWidth: 0.4,
-        envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 100 },
-    }),
+export const BASE_SIREN = createAudio80Sound({
+    wave: 'pulse',
+    pulseWidth: 0.4,
+    envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 100 },
     note: 'C-5',
     glideTo: 'C-6',
     lengthMs: 350,
@@ -174,7 +166,7 @@ export const BASE_SIREN = createAudio80SoundEffect({
 });
 
 /** The base destroyed. It is a deep thud, then a long blast of noise that falls away. */
-export const BASE_DESTROYED = createAudio80SoundEffect({
+export const BASE_DESTROYED = createAudio80Sound({
     note: 'C-3',
     stepMs: 70,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 400 },

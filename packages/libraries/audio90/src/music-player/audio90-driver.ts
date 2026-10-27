@@ -7,7 +7,7 @@ import {
     AUDIO90_VOICE_SETTING_INDEX,
     type Audio90EffectId,
     type Audio90EffectSetting,
-    type Audio90Instrument,
+    type Audio90Sound,
     type Audio90Song,
     type Audio90VoiceSetting,
     createAudio90ChannelState,
@@ -51,22 +51,21 @@ export function createAudio90SongDriver(options: Audio90SongDriverOptions): Song
     const { audio90 } = options;
     const state = createAudio90ChannelState();
     // Every instrument played, so a kept note can name its instrument by number
-    const instruments: Audio90Instrument[] = [];
-    const instrumentSlots = new Map<Audio90Instrument, number>();
+    const instruments: Audio90Sound[] = [];
+    const instrumentSlots = new Map<Audio90Sound, number>();
 
     // Writes waiting for `refresh`, stored as numbers laid out as the chip's commands are
     let pending = new Float64Array(64 * COMMAND_STRIDE);
     let pendingCount = 0;
 
-    // The song writer writes here. It always gives a stamp, and never plays an effect
+    // The song writer writes here. It always gives a stamp
     const kept: Audio90Writer = {
         get time() {
             return audio90.time;
         },
         voiceCount: AUDIO90_VOICE_COUNT,
-        play: ignore,
-        noteOn(voice, instrument, note, volume, atMs) {
-            push(OP90_NOTE_ON, atMs ?? audio90.time, voice, findSlot(instrument), note, volume);
+        noteOn(voice, sound, note, volume, atMs) {
+            push(OP90_NOTE_ON, atMs ?? audio90.time, voice, findSlot(sound), note, volume);
         },
         noteOff(voice, atMs) {
             push(OP90_NOTE_OFF, atMs ?? audio90.time, voice, 0, 0, 0);
@@ -140,7 +139,7 @@ export function createAudio90SongDriver(options: Audio90SongDriverOptions): Song
         },
     };
 
-    function findSlot(instrument: Audio90Instrument): number {
+    function findSlot(instrument: Audio90Sound): number {
         let slot = instrumentSlots.get(instrument);
         if (slot === undefined) {
             slot = instruments.push(instrument) - 1;
@@ -192,5 +191,5 @@ function listNamesByIndex<T extends string>(indices: Readonly<Record<T, number>>
 }
 
 function ignore(): void {
-    // The song writer never plays an effect or releases every voice
+    // The song writer never plays a sound on its own or releases every voice
 }

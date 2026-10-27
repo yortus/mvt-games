@@ -727,24 +727,20 @@ and the phone check, step 10, tries it where it is most likely to fail.
    player (section 5.9).
 7. **The Studio's address.** Beside the others under the site, as
    `/studio/`, or its own domain once it is good enough to stand alone?
-8. **The `src/web/` folder.** Since step 2 it names no entry point. It
-   holds the chips as they play through Web Audio, beside `headless/`,
-   where they play without a speaker, and that still holds. But it mixes
-   two threads: the page's side (`audio80.ts`, `audio90.ts`, `web-chip.ts`,
-   `web-song-slots.ts`, `held-writes.ts` and the two held-slots files) and
-   the audio thread's (the processors and runners, `chip-runner.ts`,
-   `chip-clock.ts`, `song-sequencer.ts` and `register-chip-processor.ts`),
-   with `song-messages.ts` between them. Should the audio thread's side move
-   to a `web/worklet/` folder of its own, so the line is visible and lint
-   can keep worklet code from importing the page's? Each chip loads its
-   worklet with `'./audio80-processor?worker&url'`, which would then reach
-   past the new barrel, so the lint rule would need an exception. Renaming
-   the folder `browser/` was considered and set aside: "web" names the API,
-   Web Audio, not the platform, and the rename would carry into
-   `web-chip.ts`, `createWebChip` and `WebSongSlots`. Decide before the
-   docs, step 11, describe the package's layout.
-   While there, `song-sequencer.ts` exports `createWorkletSequencer`, so
-   its file is misnamed (`worklet-sequencer.ts`).
+8. ~~**The `src/web/` folder.**~~ Decided by the user, 2026-10-28: split
+   it by thread. The page's side (`audio80.ts`, `audio90.ts`, `web-chip.ts`,
+   `web-song-slots.ts`, `held-writes.ts` and the two held-slots files) stays
+   in `web/`, and the audio thread's side (the processors and runners,
+   `chip-runner.ts`, `chip-clock.ts`, the sequencer and
+   `register-chip-processor.ts`) moves to `web/worklet/`, with
+   `song-messages.ts`, which both sides use, where lint lets both reach it.
+   Lint then keeps worklet code from importing the page's. Each chip loads
+   its worklet with `'./worklet/audio80-processor?worker&url'`, which reaches
+   past the new barrel, so the lint rule needs an exception for `?worker&url`
+   imports. `song-sequencer.ts`, which exports `createWorkletSequencer`,
+   becomes `worklet-sequencer.ts`. The folder keeps its name: "web" names the
+   API, Web Audio, not the platform. Done in step 6b, which rewrites most of
+   the page's side anyway.
 9. **A clock shared by the music and the sounds.** With a chip each
    (section 5.8), a sound can't be stamped on the music's clock, for
    example to land exactly on a beat. `beat` is what the listener hears
@@ -796,7 +792,21 @@ package is finished. The progress log uses these numbers.
    (section 12).
 6. Sounds, a chip each for music and sound effects, and the smaller API
    (sections 5.8 and 5.9). Both rewrite the chip's interface, so they go
-   together.
+   together, in four parts that each leave lint, the tests and the build
+   passing, and each change the package and the Arcade together:
+   - ~~**6a, sounds:** one kind in place of instruments and sound effects;
+     `play(sound, options)` returning an id; `stop(id)`; no `noteOn` or
+     `noteOff` on the chips.~~ Done, 2026-10-28 (section 12).
+   - **6b, the chip as one object:** the controls fold in, songs play on
+     the chip, and the music player and song slots go; one headless chip
+     type and one `render`; `src/web/` split by thread (open question 8).
+   - **6c, a chip each:** no voices kept for music, no volume groups, the
+     Audio80 at 4 voices, `music` and `sfx` chips for each entry,
+     `musicVolume` and `sfxVolume`, `pauseWhenHidden`.
+   - **6d, removals:** the setters, `time` and `atMs`; the tracker's
+     helpers to `audio90/tracker`; `song.durationMs`.
+
+   What the whole step covers:
    - **The package:** one kind, a sound, in place of instruments and sound
      effects. The chip is one object: `play` for songs and sounds, with
      options, returning an id; `queue`; `stop(id?)`; the song's place and
@@ -969,3 +979,45 @@ package is finished. The progress log uses these numbers.
 - **2026-10-27, open question 11 answered:** `time` and `atMs` go (the
   user). They come back with question 9's shared clock if a rhythm game
   needs exact spacing between sounds.
+- **2026-10-28, open question 8 decided** (the user): `src/web/` is split
+  by thread, the audio thread's side in `web/worklet/`, in step 6b. Step 6
+  is done in four parts, 6a to 6d.
+- **2026-10-28, step 6a done**, unstaged, after the user listened to one
+  clock and committed it:
+  - **Sounds.** `createAudio80Sound` and `createAudio90Sound`, in
+    `notation/sound.ts`, replace the instrument and sound effect factories,
+    whose files are gone. A sound's data, now `SoundData` and
+    `Audio90SoundData` in `synthesiser/sound-data.ts`, gains `lengthMs`,
+    `glideTo`, `priority` and `maxVoices`. A song's `instruments` hold
+    sounds. Error messages start `sound:`.
+  - **Playing.** `play(sound, options?)` writes two commands, a play's
+    options (its length, or -1 to hold, its glide and, on the Audio90, its
+    pan) and then the play (the sound, the play's id, the note and the
+    volume), because a command carries only four numbers. The page numbers
+    the plays from 1. The synthesisers keep each voice's play id, and
+    `stop(id)` releases that play's voice only. Their table of effects is
+    gone: a played sound is defined once, by id, as a song's sounds are.
+    The voice chooser is `chooseSoundVoice`, in `shared/choose-sound-voice.ts`.
+    A play's pan on the Audio90 replaces the sound's own pan.
+  - **Internals.** The public chips lose `noteOn` and `noteOff`, but the
+    internal `Audio80Writer` and `Audio90Writer` keep them for the song
+    drivers. The headless chips implement both, so their songs write
+    through them. Package tests that drive voices directly name the chip as
+    its writer with a small cast. The benchmarks hold their notes with a
+    one-row song. While the chip can't play, a stop is kept in one of 32
+    slots chosen by its play's id (`STOP_SLOT_COUNT`).
+  - **The Arcade.** About 30 effects built on another sound were flattened:
+    an inline sound's options merged in, and a named base turned into an
+    options object that its sounds spread in. Neon Monsoon's storm hit
+    exports `STORM_HIT_OPTIONS`, which its warning spreads, with the two
+    volumes multiplied. No two levels set a volume or a pan. Neon Monsoon's
+    pans are play options. The sounds tests test alone only the sounds
+    played on their own: a song's instruments, now found by `findSounds`,
+    are heard in their songs' tests.
+  - **Checked:** `npm run lint`, `npm run test:unit` (231 files, 3,014
+    tests, and no sound's hash changed), `npm run build` (first load
+    54.6 KB). In Playwright's headless shell, against the
+    build, Galaxy Raiders sent its plays as options then play, defined its
+    sounds once each, and made sound while firing, with no page errors.
+    `npm run test:visual` (50 files, no image changed) and
+    `npm run build:packages` pass too. Not yet listened to by a person.

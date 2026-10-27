@@ -12,7 +12,7 @@
  * can tell a place of the song it asked for from one of a song before.
  */
 export type SongMessage =
-    | { readonly kind: 'song'; readonly id: number; readonly song: object; readonly instrumentIds: readonly number[] }
+    | { readonly kind: 'song'; readonly id: number; readonly song: object; readonly soundIds: readonly number[] }
     | SongCallMessage;
 
 /** A call to a slot of a chip's sequencer. `songId` names the song for `play` and `queue`, and `value` is the scale for `tempo`. */

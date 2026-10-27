@@ -89,7 +89,7 @@ export function parseRelativePitch(token: string): number | undefined {
     return RELATIVE.test(token) ? Number(token) : undefined;
 }
 
-/** Whether a song or an instrument may play a note number. The range is `LOWEST_NOTE` to `HIGHEST_NOTE`. */
+/** Whether a song or a sound may play a note number. The range is `LOWEST_NOTE` to `HIGHEST_NOTE`. */
 export function isNoteInRange(note: number): boolean {
     return note >= LOWEST_NOTE && note <= HIGHEST_NOTE;
 }

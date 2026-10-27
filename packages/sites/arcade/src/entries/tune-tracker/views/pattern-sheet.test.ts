@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUDIO90_CELL_TEXT_WIDTH, createAudio90Instrument, createAudio90Song } from 'audio90';
+import { AUDIO90_CELL_TEXT_WIDTH, createAudio90Sound, createAudio90Song } from 'audio90';
 import { TUNES } from '#tunes';
 import { createPatternSheet, INK_BAR_ROW, INK_BEAT_ROW, INK_DOT, INK_EFFECT, INK_NOTE, INK_ROW, ROW_NUMBER_WIDTH } from './pattern-sheet';
 import { DOT_GLYPH, GLYPH_WIDTH, RULE_GLYPH } from './pixel-font';
@@ -39,7 +39,7 @@ describe('pattern sheet', () => {
 
 const SONG = createAudio90Song({
     bpm: 120,
-    instruments: { L: createAudio90Instrument({ oscillator: { wave: 'saw' } }), k: createAudio90Instrument({ engine: 'fm', operators: [{}], note: 'C-2' }) },
+    instruments: { L: createAudio90Sound({ oscillator: { wave: 'saw' } }), k: createAudio90Sound({ engine: 'fm', operators: [{}], note: 'C-2' }) },
     patterns: {
         p: ['| C-4 L v9 P40 | k', '| E-4 ~ >     | ===', ...new Array<string>(15).fill('| ... | ...')].join('\n'),
     },

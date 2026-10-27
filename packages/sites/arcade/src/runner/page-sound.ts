@@ -302,11 +302,17 @@ interface ChipMakers {
 const AUDIO80_VOICE_COUNT = 8;
 /** Every Audio90 has sixteen voices. */
 const AUDIO90_VOICE_COUNT = 16;
+/**
+ * The id a stand-in chip gives a play it drops, as it drops every play until
+ * its chip loads. A chip numbers its plays from 1, so `stop` with this id
+ * stops nothing.
+ */
+const NO_PLAY = 0;
 
 /**
  * A chip and controls that stand in for a chip still to come. Until `fill`
- * gives it one, writes are dropped and the controls only keep the volumes
- * and the pause set. After that, every call passes on to that chip, which
+ * gives it one, writes and plays are dropped and the controls only keep the
+ * volumes and the pause set. After that, every call passes on to that chip, which
  * takes what was kept. The calls are bound once, so passing one on makes no
  * garbage.
  */
@@ -329,9 +335,8 @@ function createAudio80Slot(): ChipSlot<Audio80> {
             return filled === undefined ? 0 : filled.time;
         },
         voiceCount: AUDIO80_VOICE_COUNT,
-        play: (effect) => filled?.play(effect),
-        noteOn: (voice, instrument, note, noteVolume, atMs) => filled?.noteOn(voice, instrument, note, noteVolume, atMs),
-        noteOff: (voice, atMs) => filled?.noteOff(voice, atMs),
+        play: (sound, options) => filled?.play(sound, options) ?? NO_PLAY,
+        stop: (id) => filled?.stop(id),
         setVoice: (voice, setting, value, atMs) => filled?.setVoice(voice, setting, value, atMs),
         setFilter: (filter, setting, value, atMs) => filled?.setFilter(filter, setting, value, atMs),
         setEcho: (setting, value, atMs) => filled?.setEcho(setting, value, atMs),
@@ -364,9 +369,8 @@ function createAudio90Slot(): ChipSlot<Audio90> {
             return filled === undefined ? 0 : filled.heardTime;
         },
         voiceCount: AUDIO90_VOICE_COUNT,
-        play: (effect, pan) => filled?.play(effect, pan),
-        noteOn: (voice, instrument, note, noteVolume, atMs) => filled?.noteOn(voice, instrument, note, noteVolume, atMs),
-        noteOff: (voice, atMs) => filled?.noteOff(voice, atMs),
+        play: (sound, options) => filled?.play(sound, options) ?? NO_PLAY,
+        stop: (id) => filled?.stop(id),
         setVoice: (voice, setting, value, atMs) => filled?.setVoice(voice, setting, value, atMs),
         setEffect: (effect, setting, value, atMs) => filled?.setEffect(effect, setting, value, atMs),
         setCharacter: (character, atMs) => filled?.setCharacter(character, atMs),

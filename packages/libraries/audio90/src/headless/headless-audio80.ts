@@ -1,6 +1,8 @@
 import {
     type Audio80,
+    type Audio80PlayOptions,
     type Audio80WithControls,
+    type Audio80Writer,
     type Audio80Character,
     createAudio80Synthesiser,
     createCommandAudio80,
@@ -8,9 +10,8 @@ import {
     type Audio80FilterId,
     type Audio80FilterMode,
     type Audio80FilterSetting,
-    type Audio80Instrument,
     type Audio80Song,
-    type Audio80SoundEffect,
+    type Audio80Sound,
     VOICE_COUNT,
     type Audio80VoiceSetting,
     type Audio80Wave,
@@ -58,14 +59,16 @@ export interface Audio80Log {
 }
 
 /**
- * One write, with the stamp it was given and its value as written. An effect
- * is stamped `-Infinity`, because it plays as soon as it arrives. The value
- * is a name for a voice's `'wave'` and a filter's `'mode'`, and a number for
- * every other setting.
+ * One write, with the stamp it was given and its value as written. A play,
+ * and a stop, are stamped `-Infinity`, because they apply as soon as they
+ * arrive. A play keeps the options it was given, if any. A song's notes are
+ * logged as `note-on` and `note-off`. The value is a name for a voice's
+ * `'wave'` and a filter's `'mode'`, and a number for every other setting.
  */
 export type Audio80Write =
-    | { readonly kind: 'play'; readonly effect: Audio80SoundEffect; readonly time: number }
-    | { readonly kind: 'note-on'; readonly voice: number; readonly instrument: Audio80Instrument; readonly note: number; readonly volume: number; readonly time: number }
+    | { readonly kind: 'play'; readonly sound: Audio80Sound; readonly id: number; readonly options: Audio80PlayOptions | undefined; readonly time: number }
+    | { readonly kind: 'stop'; readonly id: number; readonly time: number }
+    | { readonly kind: 'note-on'; readonly voice: number; readonly sound: Audio80Sound; readonly note: number; readonly volume: number; readonly time: number }
     | { readonly kind: 'note-off'; readonly voice: number; readonly time: number }
     | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: 'wave'; readonly value: Audio80Wave; readonly time: number }
     | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: Exclude<Audio80VoiceSetting, 'wave'>; readonly value: number; readonly time: number }
@@ -143,12 +146,14 @@ const DEFAULT_SAMPLE_RATE = 48000;
 function createSilentChip(): Audio80WithControls<Audio80, HeadlessControls> {
     // In a typed array, so advancing it boxes no double
     const clock = new Float64Array(1);
-    const audio80: Audio80 = {
+    let nextPlayId = 1;
+    const audio80: Audio80 & Audio80Writer = {
         get time() {
             return clock[0];
         },
         voiceCount: VOICE_COUNT,
-        play: ignore,
+        play: () => nextPlayId++,
+        stop: ignore,
         noteOn: ignore,
         noteOff: ignore,
         setVoice: ignore,
@@ -186,14 +191,17 @@ function createRecordingChip(): Audio80WithControls<Audio80 & Audio80Log, Headle
     return { audio80, controls };
 }
 
-/** Creates a chip that plays every write in memory, and also logs it if `record` is true. */
-function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly record: boolean }): Audio80WithControls<Audio80, HeadlessControls> & Audio80Renderer {
+/**
+ * Creates a chip that plays every write in memory, and also logs it if
+ * `record` is true. The chip is its own writer, which its songs write their
+ * notes through, so the code that renders a song can play one on it.
+ */
+export function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly record: boolean }): Audio80WithControls<Audio80 & Audio80Writer, HeadlessControls> & Audio80Renderer {
     const sampleRate = options.sampleRate ?? DEFAULT_SAMPLE_RATE;
     const msPerSample = 1000 / sampleRate;
     const synthesiser = createAudio80Synthesiser({ sampleRate, character: options.character });
     const writer = createCommandAudio80({
-        onInstrument: (id, data) => synthesiser.defineInstrument(id, data),
-        onEffect: (id, data) => synthesiser.defineEffect(id, data),
+        onSound: (id, data) => synthesiser.defineSound(id, data),
     });
     let renderedFrames = 0;
 
@@ -225,13 +233,14 @@ function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly 
      * only the Audio80's members, leaving out `commands` and the others that
      * are not the chip's.
      */
-    function createWriter(): Audio80 {
+    function createWriter(): Audio80 & Audio80Writer {
         return {
             get time() {
                 return writer.time;
             },
             voiceCount: writer.voiceCount,
             play: writer.play,
+            stop: writer.stop,
             noteOn: writer.noteOn,
             noteOff: writer.noteOff,
             setVoice: writer.setVoice,
@@ -244,7 +253,7 @@ function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly 
     }
 
     /** Creates the chip for when both `record` and `render` are given. Each write is logged, then passed to the writer. */
-    function createRecordingWriter(): Audio80 & Audio80Log {
+    function createRecordingWriter(): Audio80 & Audio80Writer & Audio80Log {
         const recorder = createRecorder(writer, () => songs.open());
         return {
             get time() {
@@ -253,13 +262,19 @@ function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly 
             voiceCount: writer.voiceCount,
             log: recorder.log,
             clear: recorder.clear,
-            play(effect) {
-                recorder.play(effect);
-                writer.play(effect);
+            play(sound, playOptions) {
+                // The writer checks the options and numbers the play, so the log takes its id
+                const id = writer.play(sound, playOptions);
+                recorder.logPlay(sound, id, playOptions);
+                return id;
             },
-            noteOn(voice, instrument, note, noteVolume, atMs) {
-                recorder.noteOn(voice, instrument, note, noteVolume, atMs);
-                writer.noteOn(voice, instrument, note, noteVolume, atMs);
+            stop(id) {
+                recorder.stop(id);
+                writer.stop(id);
+            },
+            noteOn(voice, sound, note, noteVolume, atMs) {
+                recorder.noteOn(voice, sound, note, noteVolume, atMs);
+                writer.noteOn(voice, sound, note, noteVolume, atMs);
             },
             noteOff(voice, atMs) {
                 recorder.noteOff(voice, atMs);
@@ -295,9 +310,11 @@ function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly 
  * stamp is stamped with `clock`'s time. Its song slots open with
  * `openSongSlot`.
  */
-function createRecorder(clock: { readonly time: number }, openSongSlot: Audio80['openSongSlot']): Audio80 & Audio80Log {
+function createRecorder(clock: { readonly time: number }, openSongSlot: Audio80['openSongSlot']): Audio80 & Audio80Writer & Audio80Log & PlayLogger {
     const log: Audio80Write[] = [];
-    return {
+    // Numbered as a writer numbers them, from 1
+    let nextPlayId = 1;
+    const recorder: Audio80 & Audio80Writer & Audio80Log & PlayLogger = {
         get time() {
             return clock.time;
         },
@@ -306,11 +323,19 @@ function createRecorder(clock: { readonly time: number }, openSongSlot: Audio80[
         clear() {
             log.length = 0;
         },
-        play(effect) {
-            log.push({ kind: 'play', effect, time: -Infinity });
+        play(sound, playOptions) {
+            const id = nextPlayId++;
+            recorder.logPlay(sound, id, playOptions);
+            return id;
         },
-        noteOn(voice, instrument, note, volume, atMs) {
-            log.push({ kind: 'note-on', voice, instrument, note, volume, time: atMs ?? clock.time });
+        logPlay(sound, id, playOptions) {
+            log.push({ kind: 'play', sound, id, options: playOptions, time: -Infinity });
+        },
+        stop(id) {
+            log.push({ kind: 'stop', id, time: -Infinity });
+        },
+        noteOn(voice, sound, note, volume, atMs) {
+            log.push({ kind: 'note-on', voice, sound, note, volume, time: atMs ?? clock.time });
         },
         noteOff(voice, atMs) {
             log.push({ kind: 'note-off', voice, time: atMs ?? clock.time });
@@ -334,4 +359,10 @@ function createRecorder(clock: { readonly time: number }, openSongSlot: Audio80[
         },
         openSongSlot,
     };
+    return recorder;
+}
+
+/** How a recorder logs a play that a writer has already numbered. */
+interface PlayLogger {
+    logPlay: (sound: Audio80Sound, id: number, options: Audio80PlayOptions | undefined) => void;
 }

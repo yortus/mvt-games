@@ -1,7 +1,7 @@
 import {
-    type Audio90Instrument,
+    type Audio90Sound,
     type Audio90Song,
-    createAudio90Instrument,
+    createAudio90Sound,
     createAudio90Sample,
     createAudio90Song,
     createMusicPlayer,
@@ -19,6 +19,8 @@ import { allocationPerFrame, readParams, report, timeFrames } from '../harness/m
 const SAMPLE_RATE = 48000;
 const BLOCK = 128;
 const TICK_MS = 1000 / 60;
+/** Each note's name within its octave, as a song's patterns write it. */
+const NOTE_NAMES = ['C-', 'C#', 'D-', 'D#', 'E-', 'F-', 'F#', 'G-', 'G#', 'A-', 'A#', 'B-'];
 
 const params = readParams();
 const measure = String(params.measure);
@@ -28,7 +30,7 @@ const voices = Number(params.voices);
 // ---- The instruments ------------------------------------------------------
 
 /** A soft electric piano: a bell-like tine over a warm body. */
-const KEYS = createAudio90Instrument({
+const KEYS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -45,7 +47,7 @@ const KEYS = createAudio90Instrument({
 });
 
 /** A hard FM bass, its one modulator feeding back on itself a little. */
-const FM_BASS = createAudio90Instrument({
+const FM_BASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -58,7 +60,7 @@ const FM_BASS = createAudio90Instrument({
 });
 
 /** Brass, whose modulators swell a little after its carriers. */
-const BRASS = createAudio90Instrument({
+const BRASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -73,7 +75,7 @@ const BRASS = createAudio90Instrument({
 });
 
 /** A trance lead: seven saws, spread wide and detuned, through a filter left open. */
-const ANTHEM = createAudio90Instrument({
+const ANTHEM = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 7, detune: 0.3, spread: 0.8 },
     filter: { cutoffHz: 5000, resonance: 0.1, envelope: { octaves: 0.6, decayMs: 250, releaseMs: 100 } },
     envelope: { attackMs: 5, decayMs: 300, sustain: 0.8, releaseMs: 450 },
@@ -84,7 +86,7 @@ const ANTHEM = createAudio90Instrument({
 });
 
 /** A wide pad: five slow saws, swelling in, with the chorus around them. */
-const PAD = createAudio90Instrument({
+const PAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 5, detune: 0.25, spread: 0.9 },
     filter: { cutoffHz: 1800, resonance: 0.15 },
     envelope: { attackMs: 500, decayMs: 600, sustain: 0.85, releaseMs: 1200 },
@@ -94,7 +96,7 @@ const PAD = createAudio90Instrument({
 });
 
 /** A squelching bass: one saw into a resonant filter that snaps shut, with accents and slides. */
-const SQUELCH = createAudio90Instrument({
+const SQUELCH = createAudio90Sound({
     oscillator: { wave: 'saw' },
     filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6, envelope: { octaves: 3.2, decayMs: 200, releaseMs: 40 } },
     envelope: { attackMs: 1, decayMs: 0, sustain: 1, releaseMs: 25 },
@@ -104,7 +106,7 @@ const SQUELCH = createAudio90Instrument({
 });
 
 /** A bass of two saws drifting against each other, under a filter that wanders. */
-const REESE = createAudio90Instrument({
+const REESE = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 2, detune: 0.12, spread: 0.3 },
     sub: 0.5,
     filter: { cutoffHz: 500, resonance: 0.2 },
@@ -114,19 +116,19 @@ const REESE = createAudio90Instrument({
 });
 
 /** Strings for the orchestra hit: one voice playing a whole chord, by chord memory. */
-const STRING_STAB = createAudio90Instrument({
+const STRING_STAB = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 4, detune: 0.1, chord: [0, 4, 7, 12] },
     filter: { mode: 'lowpass12', cutoffHz: 3500, resonance: 0.1 },
     envelope: { attackMs: 8, decayMs: 300, sustain: 0.6, releaseMs: 200 },
 });
 
-const BOOM = createAudio90Instrument({
+const BOOM = createAudio90Sound({
     oscillator: { wave: 'sine' },
     modEnvelope: { to: 'pitch', amount: 24, envelope: { attackMs: 0, decayMs: 45, sustain: 0, releaseMs: 0 } },
     envelope: { attackMs: 0, decayMs: 450, sustain: 0, releaseMs: 100 },
     note: 'C-2',
 });
-const HAT = createAudio90Instrument({
+const HAT = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 0.8,
     filter: { mode: 'highpass', cutoffHz: 7500, resonance: 0.2 },
@@ -135,7 +137,7 @@ const HAT = createAudio90Instrument({
     pan: 0.3,
     note: 'C-6',
 });
-const CLAP = createAudio90Instrument({
+const CLAP = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'bandpass', cutoffHz: 1300, resonance: 0.5 },
@@ -143,7 +145,7 @@ const CLAP = createAudio90Instrument({
     volume: 0.8,
     reverb: 0.3,
 });
-const CRACK = createAudio90Instrument({
+const CRACK = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'highpass', cutoffHz: 1500, resonance: 0.1 },
@@ -193,15 +195,15 @@ const BUSY_OPTIONS = { bpm: 120, instruments: { A: ANTHEM, K: KEYS }, patterns: 
 // ---- The voices each case plays -------------------------------------------
 
 /** The orchestra hit, looping, so a sample voice plays for as long as it is measured. */
-function createHitInstrument(): Audio90Instrument {
+function createHitInstrument(): Audio90Sound {
     const sample = createAudio90Sample({ bounce: HIT_SONG, rate: 32000, lengthMs: 750, loop: { fromMs: 125, toMs: 720 } });
-    return createAudio90Instrument({ engine: 'sample', sample, envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 150 }, reverb: 0.3 });
+    return createAudio90Sound({ engine: 'sample', sample, envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 150 }, reverb: 0.3 });
 }
 
 /** A busy song's voices, in the order they fill: FM keys, a supersaw, an FM bass, a pad, a sample, an acid bass, a reese and FM brass, then again. */
-const MIX: readonly Audio90Instrument[] = engine === 'mix' ? [KEYS, ANTHEM, FM_BASS, PAD, createHitInstrument(), SQUELCH, REESE, BRASS] : [];
+const MIX: readonly Audio90Sound[] = engine === 'mix' ? [KEYS, ANTHEM, FM_BASS, PAD, createHitInstrument(), SQUELCH, REESE, BRASS] : [];
 
-const ONE_ENGINE: Readonly<Record<string, Audio90Instrument>> = {
+const ONE_ENGINE: Readonly<Record<string, Audio90Sound>> = {
     'fm': KEYS,
     'fm-console': KEYS,
     'analog-1': SQUELCH,
@@ -257,10 +259,17 @@ else if (engine === 'song') {
 }
 else {
     const chip = createHeadlessAudio90({ render: { sampleRate: SAMPLE_RATE, character: engine === 'fm-console' ? 'console' : 'studio' } });
-    for (let v = 0; v < voices; v++) {
-        const instrument = engine === 'mix' ? MIX[v % MIX.length] : ONE_ENGINE[engine];
-        chip.audio90.noteOn(v, instrument, 48 + (v * 5) % 24, 0.8);
-    }
+    // Every voice holds a note, as a song's first row starts them: one channel a voice
+    const sounds = engine === 'mix' ? MIX : [ONE_ENGINE[engine]];
+    const letters = 'abcdefgh';
+    const instruments: Record<string, Audio90Sound> = {};
+    for (let i = 0; i < sounds.length; i++) instruments[letters[i]] = sounds[i];
+    const cells: string[] = [];
+    for (let v = 0; v < voices; v++) cells.push(`| ${toNoteName(48 + (v * 5) % 24)} ${letters[v % sounds.length]} vC`);
+    const held = createAudio90Song({ bpm: 120, instruments, patterns: { p: cells.join(' ') }, order: ['p'] });
+    createMusicPlayer({ audio90: chip.audio90 }).play(held);
+    // One tick starts the song's first row. The song moves no further, since nothing else moves the chip's clock
+    chip.controls.update(TICK_MS);
     const left = new Float32Array(BLOCK);
     const right = new Float32Array(BLOCK);
     // A second first, so that the measured blocks play sustained notes, not their attacks
@@ -314,4 +323,9 @@ function createSong(): Audio90Song {
         chorus: { depth: 0.5, rateHz: 0.6, level: 0.5 },
         pump: { channel: 7, depth: 0.5, releaseMs: 200 },
     });
+}
+
+/** The tracker name of note number `note`, such as `C-4` for 60. */
+function toNoteName(note: number): string {
+    return NOTE_NAMES[note % 12] + String(Math.floor(note / 12) - 1);
 }

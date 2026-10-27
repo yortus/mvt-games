@@ -40,8 +40,7 @@ export function bounceAudio90Song(options: BounceOptions): Int16Array {
     const hasEffects = song.reverb !== undefined || song.echo !== undefined || song.chorus !== undefined;
     const synthesiser = createAudio90Synthesiser({ sampleRate, character: song.character, queueCapacity: QUEUE_CAPACITY, hasEffects });
     const writer = createCommandAudio90({
-        onInstrument: (id, data) => synthesiser.defineInstrument(id, data),
-        onEffect: (id, data) => synthesiser.defineEffect(id, data),
+        onSound: (id, data) => synthesiser.defineSound(id, data),
         onSample: (id, data) => synthesiser.defineSample(id, data),
     });
     writer.setEffect('reverb', 'level', 0, 0);

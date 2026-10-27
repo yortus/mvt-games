@@ -1,5 +1,5 @@
 import { setRefresh, setUpdate } from '@mvtjs/html';
-import { createMusicPlayer, type Audio80, type Audio80SoundEffect } from 'audio90';
+import { createMusicPlayer, type Audio80, type Audio80Sound } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     BIG_WIN, COIN, GAME_OVER, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5, WIN,
@@ -126,6 +126,6 @@ const COIN_MS = 110;
 const BIG_WIN_BETS = 2;
 
 /** Chooses the chime for a winning way of `length` reels. Longer ways ring higher. */
-function chooseWay(length: number): Audio80SoundEffect {
+function chooseWay(length: number): Audio80Sound {
     return length >= 5 ? WAY_OF_5 : length === 4 ? WAY_OF_4 : WAY_OF_3;
 }

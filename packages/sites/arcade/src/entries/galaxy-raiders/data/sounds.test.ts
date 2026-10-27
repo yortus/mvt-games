@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from 'audio90/headless';
+import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSound, renderSong, findSounds } from 'audio90/headless';
 import * as music from './music';
 import * as sounds from './sounds';
 
@@ -10,7 +10,10 @@ import * as sounds from './sounds';
 // first, with `npm run audio:render`. Then update the snapshot with
 // `vitest -u`.
 
-const { songs, effects } = findSounds({ ...sounds, ...music });
+const { songs, sounds: found } = findSounds({ ...sounds, ...music });
+// A song's instruments are sounds too. Each is heard in its song's test, so only the sounds played on their own are tested alone
+const instruments = new Set(songs.flatMap(([, song]): readonly unknown[] => song.instruments));
+const effects = found.filter(([, sound]) => !instruments.has(sound));
 
 describe('galaxy raiders sounds', () => {
     it('has effects and songs to test', () => {
@@ -20,7 +23,7 @@ describe('galaxy raiders sounds', () => {
 
     for (const [name, effect] of effects) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSoundEffect(effect);
+            const samples = renderSound(effect);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();

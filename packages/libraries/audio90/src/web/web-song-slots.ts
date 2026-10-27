@@ -39,7 +39,7 @@ export interface WebSongSlotsOptions<S extends PlayableSong> {
      * instruments, and returns the ids they were given, with the song as it
      * travels to the worklet.
      */
-    readonly prepare: (song: S) => { readonly song: object; readonly instrumentIds: readonly number[] };
+    readonly prepare: (song: S) => { readonly song: object; readonly soundIds: readonly number[] };
     /** The audio context's frame reaching the speaker now, or undefined when it is not known. */
     readonly speakerFrame: () => number | undefined;
     /** The sound card's sample rate, in Hz. */
@@ -133,7 +133,7 @@ export function createWebSongSlots<S extends PlayableSong>(options: WebSongSlots
                 songIds.set(song, songId);
                 songs.set(songId, song);
                 const prepared = prepare(song);
-                send({ kind: 'song', id: songId, song: prepared.song, instrumentIds: prepared.instrumentIds });
+                send({ kind: 'song', id: songId, song: prepared.song, soundIds: prepared.soundIds });
             }
         }
         send({ kind: 'song-call', slot: state.slot, generation: state.generation, call: which, songId, value });

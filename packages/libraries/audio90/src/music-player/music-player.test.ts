@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Audio80, type Audio80Song, createAudio80Instrument, createAudio80Song } from '../audio80';
+import { type Audio80, type Audio80Song, type Audio80Writer, createAudio80Sound, createAudio80Song } from '../audio80';
 import { type Audio80Write, createHeadlessAudio80 } from '../headless';
 import type { SongSlot } from '../shared';
 import { createMusicPlayer } from './music-player';
@@ -13,7 +13,7 @@ describe('music player', () => {
         const music = createMusicPlayer({ audio80: viaMusic.audio80 });
         music.play(SONG);
         const viaSong = createHeadlessAudio80({ record: true });
-        const song = createSongPlayer({ audio80: viaSong.audio80 });
+        const song = createSongPlayer({ audio80: asWriter(viaSong.audio80) });
         song.play(SONG);
         song.refresh();
         for (let i = 0; i < 40; i++) {
@@ -68,7 +68,7 @@ describe('music player', () => {
         music.play(SONG);
         music.tempoScale = 2;
         const viaSong = createHeadlessAudio80({ record: true });
-        const song = createSongPlayer({ audio80: viaSong.audio80 });
+        const song = createSongPlayer({ audio80: asWriter(viaSong.audio80) });
         song.tempoScale = 2;
         song.play(SONG);
         song.refresh();
@@ -127,9 +127,18 @@ function createChipOn(slot: SongSlot<Audio80Song>): Audio80 {
 
 const SONG = createAudio80Song({
     bpm: 120,
-    instruments: { s: createAudio80Instrument({ wave: 'saw' }) },
+    instruments: { s: createAudio80Sound({ wave: 'saw' }) },
     patterns: { a: '| C-4 s\n| E-4 s\n| G-4 s\n| C-5 s', b: '| D-4 s\n| F-4 s' },
     order: ['a', 'b'],
     loop: 0,
 });
-const OTHER_SONG = createAudio80Song({ bpm: 90, instruments: { s: createAudio80Instrument({ wave: 'pulse' }) }, patterns: { a: '| A-3 s' }, order: ['a'] });
+const OTHER_SONG = createAudio80Song({ bpm: 90, instruments: { s: createAudio80Sound({ wave: 'pulse' }) }, patterns: { a: '| A-3 s' }, order: ['a'] });
+
+/**
+ * A headless chip as its songs write to it. A headless chip is its own
+ * writer, which its songs write their notes through, so the cast only names
+ * what it already is.
+ */
+function asWriter<C extends Audio80>(chip: C): C & Audio80Writer {
+    return chip as C & Audio80Writer;
+}

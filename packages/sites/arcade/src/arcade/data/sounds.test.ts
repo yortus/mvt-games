@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeSongDurationMs } from 'audio90';
-import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, findSounds } from 'audio90/headless';
+import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSound, renderSong, findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
 // Importing the data parses its notation, so a mistake in a pattern or a step
@@ -9,7 +9,10 @@ import * as sounds from './sounds';
 // that changes the sound fails the test. Once someone has listened to the new
 // sound (`npm run audio:render`), the snapshot can be updated (`vitest -u`).
 
-const { songs, effects } = findSounds(sounds);
+const { songs, sounds: found } = findSounds(sounds);
+// A song's instruments are sounds too. Each is heard in its song's test, so only the sounds played on their own are tested alone
+const instruments = new Set(songs.flatMap(([, song]): readonly unknown[] => song.instruments));
+const effects = found.filter(([, sound]) => !instruments.has(sound));
 
 describe('arcade sounds', () => {
     it('has effects and songs to test', () => {
@@ -19,7 +22,7 @@ describe('arcade sounds', () => {
 
     for (const [name, effect] of effects) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSoundEffect(effect);
+            const samples = renderSound(effect);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();

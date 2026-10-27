@@ -2,12 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     AUDIO90_EFFECT_INDEX,
     AUDIO90_SCOPE_LENGTH,
-    type Audio90Instrument,
+    type Audio90Sound,
     createAudio90Song,
-    type Audio90InstrumentData,
+    type Audio90SoundData,
     type Audio90Sample,
     type Audio90Song,
-    DEFAULT_AUDIO90_INSTRUMENT,
+    DEFAULT_AUDIO90_SOUND,
     ENGINE_SAMPLE,
     OP90_NOTE_ON,
     OP90_SET_CHARACTER,
@@ -34,36 +34,36 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect(fake.nodeOptions[0].processorOptions).toMatchObject({ character: 'console', musicVolume: 1, effectsVolume: 1 });
     });
 
-    it('sends a sample once, before the first instrument that plays it, and keeps its own copy', async () => {
+    it('sends a sample once, before the first sound that plays it, and keeps its own copy', async () => {
         const fake = createFakeContext('running');
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const sample = createSample();
-        audio90.noteOn(0, createInstrument({ engine: ENGINE_SAMPLE }, sample), 60, 1);
-        audio90.noteOn(1, createInstrument({ engine: ENGINE_SAMPLE, volume: 0.5 }, sample), 60, 1);
+        audio90.play(createSound({ engine: ENGINE_SAMPLE }, sample));
+        audio90.play(createSound({ engine: ENGINE_SAMPLE, volume: 0.5 }, sample));
         await settle();
-        expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'instrument', 'instrument', 'batch']);
+        expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'sound', 'sound', 'batch']);
         expect(sample.data.data.length).toBe(SAMPLE_LENGTH);
     });
 
     it('sends what was first played before the worklet ran, once it runs, in order', async () => {
         const fake = createFakeContext('running');
         const { audio90, controls } = createAudio90({ context: fake.context });
-        audio90.noteOn(0, createInstrument({ engine: ENGINE_SAMPLE }, createSample()), 60, 1);
+        audio90.play(createSound({ engine: ENGINE_SAMPLE }, createSample()));
         await controls.ready;
-        expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'instrument']);
+        expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'sound']);
     });
 
-    it('sends the settings made while suspended once the context runs, but not the notes', async () => {
+    it('sends the settings made while suspended once the context runs, but not the plays', async () => {
         const fake = createFakeContext('suspended');
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
-        // As when a song starts: its effects, its character, its tempo and its first note
+        // As when a song starts: its effects, its character and its tempo, and a sound played
         audio90.setEffect('reverb', 'level', 0.3);
         audio90.setEffect('reverb', 'level', 0.5);
         audio90.setCharacter('sampler');
         audio90.setTempo(136);
-        audio90.noteOn(0, createInstrument(), 60, 1);
+        audio90.play(createSound());
         await settle();
         fake.setState('running');
         await settle();
@@ -123,10 +123,10 @@ describe('createAudio90, with a stand-in audio context', () => {
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
-        const song = createSequencedSong(createInstrument({ engine: ENGINE_SAMPLE }, createSample()));
+        const song = createSequencedSong(createSound({ engine: ENGINE_SAMPLE }, createSample()));
         slot.play(song);
         slot.play(song);
-        expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'instrument', 'song', 'song-call', 'song-call']);
+        expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'sound', 'song', 'song-call', 'song-call']);
         const sent = fake.messages[2] as SongMessage;
         expect(sent.kind === 'song' && (sent.song as Audio90Song).instruments[0].sample).toBeUndefined();
         expect(fake.messages[3]).toEqual({ kind: 'song-call', slot: 1, call: 'play', songId: 1, generation: 1, value: 0 });
@@ -143,7 +143,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         await controls.ready;
         const slot = audio90.openSongSlot();
         expect(slot.song).toBeUndefined();
-        const song = createSequencedSong(createInstrument());
+        const song = createSequencedSong(createSound());
         slot.play(song);
         expect([slot.song, slot.orderIndex, slot.row]).toEqual([song, 0, 0]);
         // The speaker trails the context's count by its latency
@@ -163,7 +163,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
-        slot.play(createSequencedSong(createInstrument()));
+        slot.play(createSequencedSong(createSound()));
         fake.reply({ kind: 'clock', playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE });
         fake.reply(createPlace({ frame: 0, beat: 2, tempoScale: 0.5 }));
         const lagFrames = (FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S) * FAKE_SAMPLE_RATE;
@@ -177,8 +177,8 @@ describe('createAudio90, with a stand-in audio context', () => {
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
-        const first = createSequencedSong(createInstrument());
-        const second = createSequencedSong(createInstrument());
+        const first = createSequencedSong(createSound());
+        const second = createSequencedSong(createSound());
         slot.play(first);
         fake.reply(createPlace({ generation: 1, row: 0 }));
         slot.play(second);
@@ -194,7 +194,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
-        slot.play(createSequencedSong(createInstrument()));
+        slot.play(createSequencedSong(createSound()));
         fake.reply(createPlace({ songId: 0 }));
         expect(slot.song).toBeUndefined();
     });
@@ -204,7 +204,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
         const slot = audio90.openSongSlot();
-        const song = createSequencedSong(createInstrument());
+        const song = createSequencedSong(createSound());
         slot.play(song);
         controls.reset();
         expect(slot.song).toBeUndefined();
@@ -250,7 +250,7 @@ describe('createAudio90, with a stand-in audio context', () => {
 const SAMPLE_LENGTH = 256;
 
 /** A one-row song on `instrument`, for the sequencer. */
-function createSequencedSong(instrument: Audio90Instrument) {
+function createSequencedSong(instrument: Audio90Sound) {
     return createAudio90Song({ bpm: 120, instruments: { s: instrument }, patterns: { p: '| C-4 s' }, order: ['p'] });
 }
 
@@ -271,9 +271,9 @@ function createFakeContext(state: AudioContextState): FakeAudioContext {
     return fake;
 }
 
-/** An instrument made by hand: its data, with the sample it plays, if any. */
-function createInstrument(data: Partial<Audio90InstrumentData> = {}, sample?: Audio90Sample): Audio90Instrument {
-    return { chip: 'audio90', engine: sample === undefined ? 'analog' : 'sample', data: { ...DEFAULT_AUDIO90_INSTRUMENT, ...data }, sample };
+/** A sound made by hand: its data, with the sample it plays, if any. */
+function createSound(data: Partial<Audio90SoundData> = {}, sample?: Audio90Sample): Audio90Sound {
+    return { chip: 'audio90', engine: sample === undefined ? 'analog' : 'sample', data: { ...DEFAULT_AUDIO90_SOUND, ...data }, sample };
 }
 
 /** A sample made by hand, of silence, with nothing to bounce. */

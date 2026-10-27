@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, Audio80SoundEffect } from 'audio90';
+import type { Audio80, Audio80Sound } from 'audio90';
 import { watch } from '@mvtjs/utils';
 import { FIRE, FIRE_WARNING, GHOST, POP, PUMP_1, PUMP_2, PUMP_3, PUMP_4, SQUASH } from '../data';
 import type { EnemyPhase, InflationStage } from '../models';
@@ -69,7 +69,7 @@ export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
         if (w.isFireActive.changed && w.isFireActive.value) play(FIRE);
     }
 
-    function play(effect: Audio80SoundEffect | undefined): void {
+    function play(effect: Audio80Sound | undefined): void {
         if (effect !== undefined) sound.play(effect);
     }
 }
@@ -79,4 +79,4 @@ export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
 // ---------------------------------------------------------------------------
 
 /** The pump to play as the stage rises to each value. Stage 0 has none, since a stage never rises to 0. */
-const PUMPS: readonly (Audio80SoundEffect | undefined)[] = [undefined, PUMP_1, PUMP_2, PUMP_3, PUMP_4];
+const PUMPS: readonly (Audio80Sound | undefined)[] = [undefined, PUMP_1, PUMP_2, PUMP_3, PUMP_4];

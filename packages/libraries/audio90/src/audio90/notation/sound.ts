@@ -4,10 +4,10 @@ import {
 } from '../../shared';
 import {
     type Audio90EnvelopeData,
-    type Audio90InstrumentData,
+    type Audio90SoundData,
     type Audio90OperatorData,
     type Audio90StepData,
-    DEFAULT_AUDIO90_INSTRUMENT,
+    DEFAULT_AUDIO90_SOUND,
     ENGINE_ANALOG,
     ENGINE_FM,
     ENGINE_SAMPLE,
@@ -39,19 +39,24 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * An instrument for the Audio90. It holds a voice's engine and its settings,
- * and what changes while a note plays: its envelopes, its LFO, an arpeggio,
- * vibrato and a step table. A song's patterns, a sound effect or a direct
- * `noteOn` call can play it.
+ * A sound for the Audio90. It holds a voice's engine and its settings, and
+ * what changes while a note plays: its envelopes, its LFO, an arpeggio,
+ * vibrato and a step table. It also holds how it plays on its own: its note,
+ * how long it lasts, and its priority.
+ *
+ * Play it on its own with `Audio90.play`, as a game plays a laser or a coin.
+ * A song plays it too, as one of its `instruments`. A song's patterns say
+ * which note it plays and for how long, so a song ignores the sound's
+ * `lengthMs`, `glideTo`, `priority` and `maxVoices`.
  */
-export interface Audio90Instrument {
+export interface Audio90Sound {
     /** The chip it plays on. */
     readonly chip: 'audio90';
     /** How it makes its sound: FM operators, analog oscillators, or a sample. */
     readonly engine: Audio90Engine;
-    /** What the chip is sent. A sample instrument's `sample` id is filled in by the chip when it sends the sample. */
-    readonly data: Audio90InstrumentData;
-    /** The sample a sample instrument plays, or undefined for an FM or analog one. */
+    /** What the chip is sent. A sample sound's `sample` id is filled in by the chip when it sends the sample. */
+    readonly data: Audio90SoundData;
+    /** The sample a sample sound plays, or undefined for an FM or analog one. */
     readonly sample: Audio90Sample | undefined;
 }
 
@@ -60,15 +65,27 @@ export interface Audio90Instrument {
 // ---------------------------------------------------------------------------
 
 /**
- * What `createAudio90Instrument` makes an instrument from. Every option has a
- * default. The options under "FM", "Analog" and "Sample" are for that engine
- * only, and giving one to another engine is an error.
+ * What `createAudio90Sound` makes a sound from. Every option has a default.
+ * The options under "FM", "Analog" and "Sample" are for that engine only, and
+ * giving one to another engine is an error.
  */
-export interface Audio90InstrumentOptions {
+export interface Audio90SoundOptions {
     /** How it makes its sound. Defaults to `'analog'`. */
     readonly engine?: Audio90Engine;
-    /** The note it plays when a song names it without a note, such as `C-2` for a bass drum. Defaults to `C-4`. */
+    /** The note it plays when played with no note, or named in a song with no note, such as `C-2` for a bass drum. Defaults to `C-4`. */
     readonly note?: string;
+    /** A note to glide to over `lengthMs` when played. Defaults to none. */
+    readonly glideTo?: string;
+    /**
+     * How long it holds its note when played, before releasing it, in ms. It
+     * must be above 0. Defaults to the length of the step table, or 250 ms if
+     * there is none.
+     */
+    readonly lengthMs?: number;
+    /** When played, it takes a voice from a sound already playing only if that sound's priority is no higher. Defaults to 0. */
+    readonly priority?: number;
+    /** How many voices it may play on at once. Played once more, it restarts its oldest voice. Defaults to 1. */
+    readonly maxVoices?: number;
     /** Its volume, 0 or more. Defaults to 1. */
     readonly volume?: number;
     /** Where it sits, from -1 (left) to 1 (right). Defaults to 0, the centre. */
@@ -233,7 +250,7 @@ export interface Audio90Operator {
     readonly wave?: Audio90OperatorWave;
     /** How much a softer note lowers its level, 0 to 1. Defaults to 0. */
     readonly velocity?: number;
-    /** Its own envelope. Defaults to holding its level, with the instrument's release. */
+    /** Its own envelope. Defaults to holding its level, with the sound's release. */
     readonly envelope?: Audio90Envelope;
 }
 
@@ -268,28 +285,36 @@ export interface Audio90OscillatorB {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an Audio90 instrument from `options`. Throws if an option is not
- * valid, with the option's path, such as `operators[3].ratio: 0.3 is not a
- * multiple of 0.5`.
+ * Creates an Audio90 sound from `options`. Throws if an option is not valid,
+ * with the option's path, such as `operators[3].ratio: 0.3 is not a multiple
+ * of 0.5`.
  */
-export function createAudio90Instrument(options: Audio90InstrumentOptions): Audio90Instrument {
-    const engine = lookUpName(ENGINE_INDEX, options.engine ?? 'analog', 'instrument: engine');
+export function createAudio90Sound(options: Audio90SoundOptions): Audio90Sound {
+    const engine = lookUpName(ENGINE_INDEX, options.engine ?? 'analog', 'sound: engine');
     checkEngineOptions(options, engine);
     const envelope = checkEnvelope(options.envelope ?? DEFAULT_ENVELOPE, 'envelope');
     const arpeggio = options.arpeggio ?? [];
     if (arpeggio.length > MAX_ARPEGGIO) {
-        throw new Error(`instrument: an arpeggio has at most ${MAX_ARPEGGIO} notes; this one has ${arpeggio.length}`);
+        throw new Error(`sound: an arpeggio has at most ${MAX_ARPEGGIO} notes; this one has ${arpeggio.length}`);
     }
     if (options.glideMs !== undefined && options.legato?.glideMs !== undefined) {
-        throw new Error('instrument: give glideMs or legato.glideMs, not both');
+        throw new Error('sound: give glideMs or legato.glideMs, not both');
     }
     const sample = options.sample;
-    if (engine === ENGINE_SAMPLE && sample === undefined) throw new Error('instrument: a sample instrument needs a sample');
+    if (engine === ENGINE_SAMPLE && sample === undefined) throw new Error('sound: a sample sound needs a sample');
+    const stepMs = options.stepMs ?? DEFAULT_STEP_MS;
+    const steps = Object.freeze(splitRows(options.steps ?? '').map((row, i) => parseStep(row, i)));
+    const lengthMs = options.lengthMs ?? (steps.length > 0 ? steps.length * stepMs : DEFAULT_LENGTH_MS);
+    if (!(lengthMs > 0)) throw new Error(`sound: lengthMs must be above 0; got ${lengthMs}`);
 
-    const data: Audio90InstrumentData = {
-        ...DEFAULT_AUDIO90_INSTRUMENT,
+    const data: Audio90SoundData = {
+        ...DEFAULT_AUDIO90_SOUND,
         engine,
-        note: options.note === undefined ? DEFAULT_NOTE : parseNote(options.note, 'instrument: note'),
+        note: options.note === undefined ? DEFAULT_NOTE : parseNote(options.note, 'sound: note'),
+        lengthMs,
+        glideTo: options.glideTo === undefined ? Number.NaN : parseNote(options.glideTo, 'sound: glideTo'),
+        priority: options.priority ?? 0,
+        maxVoices: Math.max(1, options.maxVoices ?? 1),
         volume: checkRange(options.volume ?? 1, 0, Infinity, 'volume'),
         pan: checkRange(options.pan ?? 0, -1, 1, 'pan'),
         reverb: checkRange(options.reverb ?? 0, 0, 1, 'reverb'),
@@ -299,8 +324,8 @@ export function createAudio90Instrument(options: Audio90InstrumentOptions): Audi
         ...buildModEnvelope(options),
         ...buildLfo(options.lfo),
         ...buildFilter(options.filter),
-        stepMs: options.stepMs ?? DEFAULT_STEP_MS,
-        steps: Object.freeze(splitRows(options.steps ?? '').map((row, i) => parseStep(row, i))),
+        stepMs,
+        steps,
         arpeggio: Object.freeze([...arpeggio]),
         vibratoSemitones: options.vibrato?.semitones ?? 0,
         vibratoHz: options.vibrato?.hz ?? 0,
@@ -311,7 +336,14 @@ export function createAudio90Instrument(options: Audio90InstrumentOptions): Audi
         ...(engine === ENGINE_ANALOG ? buildAnalog(options) : {}),
         ...(engine === ENGINE_SAMPLE ? buildSample(options) : {}),
     };
-    return Object.freeze({ chip: 'audio90', engine: ENGINE_NAMES[engine], data: Object.freeze(data), sample: engine === ENGINE_SAMPLE ? sample : undefined });
+    const sound: Audio90Sound = Object.freeze({ chip: 'audio90', engine: ENGINE_NAMES[engine], data: Object.freeze(data), sample: engine === ENGINE_SAMPLE ? sample : undefined });
+    SOUNDS.add(sound);
+    return sound;
+}
+
+/** Whether `value` is a sound that `createAudio90Sound` made, such as one found among a module's exports. */
+export function isAudio90Sound(value: unknown): value is Audio90Sound {
+    return typeof value === 'object' && value !== null && SOUNDS.has(value);
 }
 
 /** The note number of a name such as `C-4`. If the name is not a note in range, throws an error that starts with `where`. */
@@ -323,7 +355,7 @@ export function parseNote(name: string, where: string): number {
 }
 
 /** Returns `value` if it is a number from `min` to `max`, or throws an error that names the option at `path`. */
-export function checkRange(value: number, min: number, max: number, path: string, prefix = 'instrument'): number {
+export function checkRange(value: number, min: number, max: number, path: string, prefix = 'sound'): number {
     if (!(value >= min && value <= max)) {
         const range = max === Infinity ? `${min} or more` : `${min} to ${max}`;
         throw new Error(`${prefix}: ${path}: ${value} is not ${range}`);
@@ -337,24 +369,29 @@ export function checkRange(value: number, min: number, max: number, path: string
 
 const DEFAULT_ENVELOPE: Audio90Envelope = { attackMs: 2, decayMs: 0, sustain: 1, releaseMs: 60 };
 const DEFAULT_NOTE = 60;
+const DEFAULT_LENGTH_MS = 250;
+
+/** Every sound made, so `isAudio90Sound` knows one when it sees it. */
+const SOUNDS = new WeakSet<object>();
+
 /** An operator's ratio is a multiple of this. */
 const RATIO_STEP = 0.5;
 const MAX_RATIO = 32;
 
-/** Each engine's own options, to check that an instrument gives only its engine's. */
-const ENGINE_OPTIONS: Readonly<Record<number, readonly (keyof Audio90InstrumentOptions)[]>> = {
+/** Each engine's own options, to check that a sound gives only its engine's. */
+const ENGINE_OPTIONS: Readonly<Record<number, readonly (keyof Audio90SoundOptions)[]>> = {
     [ENGINE_FM]: ['algorithm', 'operators', 'feedback', 'rateScaling'],
     [ENGINE_ANALOG]: ['oscillator', 'oscillatorB', 'sub', 'noise'],
     [ENGINE_SAMPLE]: ['sample', 'rootNote', 'isReversed'],
 };
 
 /** Throws if `options` gives an option that belongs to an engine other than `engine`. */
-function checkEngineOptions(options: Audio90InstrumentOptions, engine: number): void {
+function checkEngineOptions(options: Audio90SoundOptions, engine: number): void {
     for (const other of [ENGINE_FM, ENGINE_ANALOG, ENGINE_SAMPLE]) {
         if (other === engine) continue;
         for (const key of ENGINE_OPTIONS[other]) {
             if (options[key] !== undefined) {
-                throw new Error(`instrument: ${key} is only for ${ENGINE_NAMES[other]} instruments, and this one is ${ENGINE_NAMES[engine]}`);
+                throw new Error(`sound: ${key} is only for ${ENGINE_NAMES[other]} sounds, and this one is ${ENGINE_NAMES[engine]}`);
             }
         }
     }
@@ -370,10 +407,10 @@ function checkEnvelope(envelope: Audio90Envelope, path: string): Audio90Envelope
 }
 
 /** The mod envelope's fields, from `modEnvelope` or from the filter's envelope shorthand. */
-function buildModEnvelope(options: Audio90InstrumentOptions): Partial<Audio90InstrumentData> {
+function buildModEnvelope(options: Audio90SoundOptions): Partial<Audio90SoundData> {
     const mod = options.modEnvelope;
     const shorthand = options.filter?.envelope;
-    if (mod !== undefined && shorthand !== undefined) throw new Error('instrument: give filter.envelope or modEnvelope, not both');
+    if (mod !== undefined && shorthand !== undefined) throw new Error('sound: give filter.envelope or modEnvelope, not both');
     if (shorthand !== undefined) {
         const envelope = checkEnvelope({
             attackMs: shorthand.attackMs ?? 0,
@@ -394,16 +431,16 @@ function buildModEnvelope(options: Audio90InstrumentOptions): Partial<Audio90Ins
         case 'brightness':
             return { modEnvelope: envelope, modBrightness: amount };
         default:
-            throw new Error(`instrument: modEnvelope.to: '${String(mod.to)}' is not one of pitch, cutoff, brightness`);
+            throw new Error(`sound: modEnvelope.to: '${String(mod.to)}' is not one of pitch, cutoff, brightness`);
     }
 }
 
-function buildLfo(lfo: Audio90Lfo | undefined): Partial<Audio90InstrumentData> {
+function buildLfo(lfo: Audio90Lfo | undefined): Partial<Audio90SoundData> {
     if (lfo === undefined) return {};
-    if (lfo.rateHz !== undefined && lfo.rateBeats !== undefined) throw new Error('instrument: give lfo.rateHz or lfo.rateBeats, not both');
+    if (lfo.rateHz !== undefined && lfo.rateBeats !== undefined) throw new Error('sound: give lfo.rateHz or lfo.rateBeats, not both');
     return {
-        lfoShape: lfo.shape === undefined ? LFO_SINE : lookUpName(LFO_SHAPE_INDEX, lfo.shape, 'instrument: lfo.shape'),
-        lfoHz: checkRange(lfo.rateHz ?? DEFAULT_AUDIO90_INSTRUMENT.lfoHz, 0, Infinity, 'lfo.rateHz'),
+        lfoShape: lfo.shape === undefined ? LFO_SINE : lookUpName(LFO_SHAPE_INDEX, lfo.shape, 'sound: lfo.shape'),
+        lfoHz: checkRange(lfo.rateHz ?? DEFAULT_AUDIO90_SOUND.lfoHz, 0, Infinity, 'lfo.rateHz'),
         lfoBeats: lfo.rateBeats === undefined ? 0 : checkRange(lfo.rateBeats, Number.MIN_VALUE, Infinity, 'lfo.rateBeats'),
         lfoDelayMs: checkRange(lfo.delayMs ?? 0, 0, Infinity, 'lfo.delayMs'),
         isLfoRetriggered: lfo.isRetriggered ?? true,
@@ -415,10 +452,10 @@ function buildLfo(lfo: Audio90Lfo | undefined): Partial<Audio90InstrumentData> {
     };
 }
 
-function buildFilter(filter: Audio90Filter | undefined): Partial<Audio90InstrumentData> {
+function buildFilter(filter: Audio90Filter | undefined): Partial<Audio90SoundData> {
     if (filter === undefined) return { filterMode: FILTER90_NONE };
     return {
-        filterMode: filter.mode === undefined ? FILTER90_LOWPASS_24 : lookUpName(FILTER90_MODE_INDEX, filter.mode, 'instrument: filter.mode'),
+        filterMode: filter.mode === undefined ? FILTER90_LOWPASS_24 : lookUpName(FILTER90_MODE_INDEX, filter.mode, 'sound: filter.mode'),
         cutoffHz: checkRange(filter.cutoffHz, Number.MIN_VALUE, Infinity, 'filter.cutoffHz'),
         resonance: checkRange(filter.resonance ?? 0, 0, 1, 'filter.resonance'),
         drive: checkRange(filter.drive ?? 0, 0, 1, 'filter.drive'),
@@ -427,10 +464,10 @@ function buildFilter(filter: Audio90Filter | undefined): Partial<Audio90Instrume
     };
 }
 
-function buildFm(options: Audio90InstrumentOptions, envelope: Audio90EnvelopeData): Partial<Audio90InstrumentData> {
+function buildFm(options: Audio90SoundOptions, envelope: Audio90EnvelopeData): Partial<Audio90SoundData> {
     const given = options.operators ?? [];
     if (given.length === 0 || given.length > MAX_OPERATORS) {
-        throw new Error(`instrument: operators: an FM instrument has 1 to ${MAX_OPERATORS} operators; this one has ${given.length}`);
+        throw new Error(`sound: operators: an FM sound has 1 to ${MAX_OPERATORS} operators; this one has ${given.length}`);
     }
     // An operator's own envelope defaults to holding its level, and releasing as the note does
     const held: Audio90Envelope = { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: envelope.releaseMs };
@@ -438,14 +475,14 @@ function buildFm(options: Audio90InstrumentOptions, envelope: Audio90EnvelopeDat
         const path = `operators[${i}]`;
         const ratio = op.ratio ?? 1;
         if (!(ratio >= RATIO_STEP && ratio <= MAX_RATIO && ratio % RATIO_STEP === 0)) {
-            throw new Error(`instrument: ${path}.ratio: ${ratio} is not a multiple of ${RATIO_STEP} from ${RATIO_STEP} to ${MAX_RATIO}`);
+            throw new Error(`sound: ${path}.ratio: ${ratio} is not a multiple of ${RATIO_STEP} from ${RATIO_STEP} to ${MAX_RATIO}`);
         }
         return Object.freeze({
             ratio,
             fixedHz: op.fixedHz === undefined ? 0 : checkRange(op.fixedHz, Number.MIN_VALUE, Infinity, `${path}.fixedHz`),
             detuneCents: checkFinite(op.detuneCents ?? 0, `${path}.detuneCents`),
             level: checkRange(op.level ?? 1, 0, Infinity, `${path}.level`),
-            wave: op.wave === undefined ? OPERATOR_WAVE_INDEX.sine : lookUpName(OPERATOR_WAVE_INDEX, op.wave, `instrument: ${path}.wave`),
+            wave: op.wave === undefined ? OPERATOR_WAVE_INDEX.sine : lookUpName(OPERATOR_WAVE_INDEX, op.wave, `sound: ${path}.wave`),
             velocity: checkRange(op.velocity ?? 0, 0, 1, `${path}.velocity`),
             envelope: checkEnvelope(op.envelope ?? held, `${path}.envelope`),
         });
@@ -466,7 +503,7 @@ function buildFm(options: Audio90InstrumentOptions, envelope: Audio90EnvelopeDat
  */
 function parseAlgorithm(text: string, count: number): number[] {
     const masks = new Array<number>(MAX_OPERATORS).fill(0);
-    const where = `instrument: algorithm '${text}'`;
+    const where = `sound: algorithm '${text}'`;
     for (const chain of splitTokens(text)) {
         const groups = chain.split('>').map((group) => group.split('+').map((name) => {
             const number = Number(name);
@@ -490,17 +527,17 @@ function parseAlgorithm(text: string, count: number): number[] {
     return masks;
 }
 
-function buildAnalog(options: Audio90InstrumentOptions): Partial<Audio90InstrumentData> {
+function buildAnalog(options: Audio90SoundOptions): Partial<Audio90SoundData> {
     const osc = options.oscillator ?? {};
     const chord = osc.chord ?? [];
-    if (chord.length > MAX_UNISON) throw new Error(`instrument: oscillator.chord: a chord has at most ${MAX_UNISON} notes; this one has ${chord.length}`);
+    if (chord.length > MAX_UNISON) throw new Error(`sound: oscillator.chord: a chord has at most ${MAX_UNISON} notes; this one has ${chord.length}`);
     const unison = osc.unison ?? 1;
     if (!(Number.isInteger(unison) && unison >= 0 && unison <= MAX_UNISON)) {
-        throw new Error(`instrument: oscillator.unison: ${unison} is not a whole number from 0 to ${MAX_UNISON}`);
+        throw new Error(`sound: oscillator.unison: ${unison} is not a whole number from 0 to ${MAX_UNISON}`);
     }
     const b = options.oscillatorB;
     return {
-        wave: lookUpName(WAVE90_INDEX, osc.wave ?? 'saw', 'instrument: oscillator.wave'),
+        wave: lookUpName(WAVE90_INDEX, osc.wave ?? 'saw', 'sound: oscillator.wave'),
         unison,
         detune: checkRange(osc.detune ?? 0, 0, 1, 'oscillator.detune'),
         spread: checkRange(osc.spread ?? 0, 0, 1, 'oscillator.spread'),
@@ -514,17 +551,17 @@ function buildAnalog(options: Audio90InstrumentOptions): Partial<Audio90Instrume
     };
 }
 
-function buildSample(options: Audio90InstrumentOptions): Partial<Audio90InstrumentData> {
+function buildSample(options: Audio90SoundOptions): Partial<Audio90SoundData> {
     return {
         // The chip fills in the sample's id when it sends the sample
         sample: -1,
-        rootNote: options.rootNote === undefined ? Number.NaN : parseNote(options.rootNote, 'instrument: rootNote'),
+        rootNote: options.rootNote === undefined ? Number.NaN : parseNote(options.rootNote, 'sound: rootNote'),
         isReversed: options.isReversed ?? false,
     };
 }
 
 function checkFinite(value: number, path: string): number {
-    if (!Number.isFinite(value)) throw new Error(`instrument: ${path}: ${value} is not a number`);
+    if (!Number.isFinite(value)) throw new Error(`sound: ${path}: ${value} is not a number`);
     return value;
 }
 
@@ -534,7 +571,7 @@ function checkFinite(value: number, path: string): number {
  * appear at most once.
  */
 function parseStep(row: string, index: number): Audio90StepData {
-    const where = `instrument: step ${index}`;
+    const where = `sound: step ${index}`;
     let wave = -1;
     let pitchMode: StepPitchMode = 'none';
     let pitch = 0;

@@ -24,7 +24,8 @@ export {
     type Audio90VoiceSetting,
     OP90_NOTE_OFF,
     OP90_NOTE_ON,
-    OP90_PLAY_EFFECT,
+    OP90_PLAY,
+    OP90_PLAY_OPTIONS,
     OP90_RELEASE_ALL,
     OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
@@ -32,15 +33,15 @@ export {
     OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
+    OP90_STOP,
 } from './commands';
 export {
-    type Audio90EffectData,
     type Audio90EnvelopeData,
-    type Audio90InstrumentData,
+    type Audio90SoundData,
     type Audio90OperatorData,
     type Audio90SampleData,
     type Audio90StepData,
-    DEFAULT_AUDIO90_INSTRUMENT,
+    DEFAULT_AUDIO90_SOUND,
     ENGINE_ANALOG,
     ENGINE_FM,
     ENGINE_SAMPLE,
@@ -65,4 +66,4 @@ export {
     WAVE90_SAW,
     WAVE90_SINE,
     WAVE90_TRIANGLE,
-} from './instrument-data';
+} from './sound-data';

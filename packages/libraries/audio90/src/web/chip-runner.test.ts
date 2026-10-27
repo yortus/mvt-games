@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio80Instrument, createAudio80Song, createCommandAudio80 } from '../audio80';
+import { createAudio80Sound, createAudio80Song, createCommandAudio80 } from '../audio80';
 import {
-    type Audio90Instrument, type Audio90InstrumentData, AUDIO90_SCOPE_LENGTH, AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS, createAudio90Song, createCommandAudio90,
-    DEFAULT_AUDIO90_INSTRUMENT, ENGINE_SAMPLE, WAVE90_SAW,
+    type Audio90Sound, type Audio90SoundData, AUDIO90_SCOPE_LENGTH, AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS, createAudio90Song, createCommandAudio90,
+    DEFAULT_AUDIO90_SOUND, ENGINE_SAMPLE, WAVE90_SAW,
 } from '../audio90';
 import { measurePeak } from '../headless';
 import type { ChipBatch, ChipBufferReply, ChipClockReply, CommandWriter } from '../shared';
@@ -21,7 +21,7 @@ const BLOCKS_PER_TICK = Math.round(TICK_MS * SAMPLE_RATE / 1000 / BLOCK);
 describe('chip runner, running an Audio80', () => {
     it('plays a note from the next block, and sends each batch\'s buffer back', () => {
         const { runner, writer, send, countHandedBack } = setUp();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'saw' }), 57, 1);
         send();
         const output = new Float32Array(BLOCK);
         runner.process([output]);
@@ -33,7 +33,7 @@ describe('chip runner, running an Audio80', () => {
     it('plays every batch, not just the first, so a note released in the second batch falls silent', () => {
         const { runner, writer, send } = setUp();
         const output = new Float32Array(BLOCK);
-        writer.noteOn(0, createAudio80Instrument({ wave: 'saw', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 } }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'saw', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 } }), 57, 1);
         send();
         for (let b = 0; b < BLOCKS_PER_TICK; b++) runner.process([output]);
         expect(measurePeak(output)).toBeGreaterThan(0);
@@ -45,7 +45,7 @@ describe('chip runner, running an Audio80', () => {
 
     it('plays on with no batches coming, as through a late frame on the page', () => {
         const { runner, writer, send } = setUp();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'saw' }), 57, 1);
         send();
         const output = new Float32Array(BLOCK);
         runner.process([output]);
@@ -81,7 +81,7 @@ describe('chip runner, running an Audio80', () => {
 
     it('fades out over one block as it pauses, holds the note through the pause, and plays it on as it resumes', () => {
         const { runner, writer, send, receive } = setUp();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'saw' }), 57, 1);
         send();
         const output = new Float32Array(BLOCK);
         for (let b = 0; b < BLOCKS_PER_TICK; b++) runner.process([output]);
@@ -99,7 +99,7 @@ describe('chip runner, running an Audio80', () => {
 
     it('is silent again after a reset', () => {
         const { runner, writer, send, receive } = setUp();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'saw' }), 57, 1);
         send();
         const output = new Float32Array(BLOCK);
         runner.process([output]);
@@ -113,7 +113,7 @@ describe('chip runner, running an Audio80', () => {
 
     it('fades out over one block after a reset, rather than cutting to 0, which would click', () => {
         const { runner, writer, send, receive } = setUp();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'saw' }), 57, 1);
         send();
         const output = new Float32Array(BLOCK);
         for (let b = 0; b < 10 * BLOCKS_PER_TICK; b++) runner.process([output]);
@@ -130,7 +130,7 @@ describe('chip runner, running an Audio80', () => {
 
     it('renders silence once stopped, and says so, so the processor can end', () => {
         const { runner, writer, send, receive } = setUp();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'saw' }), 57, 1);
         send();
         const output = new Float32Array(BLOCK);
         expect(runner.isStopped).toBe(false);
@@ -238,8 +238,8 @@ describe('chip runner, running a chip\'s sequencer', () => {
 
     it('runs on the Audio80 too', () => {
         const { runner, receive, places, writer } = setUp();
-        const song = createAudio80Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio80Instrument({ wave: 'saw' }) }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'], loop: 0 });
-        receive({ kind: 'song', id: 1, song: structuredClone(song), instrumentIds: song.instruments.map(writer.defineInstrument) });
+        const song = createAudio80Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio80Sound({ wave: 'saw' }) }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'], loop: 0 });
+        receive({ kind: 'song', id: 1, song: structuredClone(song), soundIds: song.instruments.map(writer.defineSound) });
         receive({ kind: 'song-call', slot: 1, generation: 1, call: 'play', songId: 1, value: 0 });
         const output = new Float32Array(BLOCK);
         let loudest = 0;
@@ -256,7 +256,7 @@ describe('chip runner, running an Audio90', () => {
     it('renders two channels, so a note panned hard left is silent on the right', () => {
         const { runner, writer, send } = setUpAudio90();
         writer.setVoice(0, 'pan', -1);
-        writer.noteOn(0, createAudio90Instrument(), 57, 1);
+        writer.noteOn(0, createAudio90Sound(), 57, 1);
         const left = new Float32Array(BLOCK);
         const right = new Float32Array(BLOCK);
         playTicks(runner, send, left, right, 6);
@@ -270,7 +270,7 @@ describe('chip runner, running an Audio90', () => {
         for (let i = 0; i < data.length; i++) data[i] = Math.round(Math.sin(2 * Math.PI * 440 * i / SAMPLE_RATE) * 20000);
         // Made by hand, so it is an exact sine rather than a bounce
         const sample = { chip: 'audio90', slices: 1, length: data.length, data: { data, sampleRate: SAMPLE_RATE, rootNote: 69, loopStart: -1, loopEnd: -1, isPingPong: false, slices: 1 } } as const;
-        writer.noteOn(0, createAudio90Instrument({ engine: ENGINE_SAMPLE }, sample), 69, 1);
+        writer.noteOn(0, createAudio90Sound({ engine: ENGINE_SAMPLE }, sample), 69, 1);
         const left = new Float32Array(BLOCK);
         const right = new Float32Array(BLOCK);
         playTicks(runner, send, left, right, 6);
@@ -280,7 +280,7 @@ describe('chip runner, running an Audio90', () => {
 
     it('sends no scope until scopes are on and it has a buffer to send one in', () => {
         const { runner, writer, send, receive, scopes } = setUpAudio90();
-        writer.noteOn(0, createAudio90Instrument(), 57, 1);
+        writer.noteOn(0, createAudio90Sound(), 57, 1);
         const left = new Float32Array(BLOCK);
         const right = new Float32Array(BLOCK);
         playTicks(runner, send, left, right, 4);
@@ -296,7 +296,7 @@ describe('chip runner, running an Audio90', () => {
     it('sends each voice\'s points and pan, every few blocks, in the buffers it is handed', () => {
         const { runner, writer, send, receive, scopes } = setUpAudio90();
         writer.setVoice(3, 'pan', 0.5);
-        writer.noteOn(3, createAudio90Instrument(), 57, 1);
+        writer.noteOn(3, createAudio90Sound(), 57, 1);
         receive({ kind: 'scopes', isOn: true });
         const buffers = [0, 1, 2].map(() => new Float32Array(AUDIO90_SCOPE_LENGTH));
         for (const data of buffers) receive({ kind: 'scope-buffer', data });
@@ -315,7 +315,7 @@ describe('chip runner, running an Audio90', () => {
 
     it('turns its scopes off as it resets', () => {
         const { runner, writer, send, receive, scopes } = setUpAudio90();
-        writer.noteOn(0, createAudio90Instrument(), 57, 1);
+        writer.noteOn(0, createAudio90Sound(), 57, 1);
         receive({ kind: 'scopes', isOn: true });
         for (let i = 0; i < 3; i++) receive({ kind: 'scope-buffer', data: new Float32Array(AUDIO90_SCOPE_LENGTH) });
         receive({ kind: 'reset' });
@@ -327,7 +327,7 @@ describe('chip runner, running an Audio90', () => {
 
     it('fades both channels out over one block after a reset', () => {
         const { runner, writer, send, receive } = setUpAudio90();
-        writer.noteOn(0, createAudio90Instrument(), 57, 1);
+        writer.noteOn(0, createAudio90Sound(), 57, 1);
         const left = new Float32Array(BLOCK);
         const right = new Float32Array(BLOCK);
         playTicks(runner, send, left, right, 10);
@@ -365,8 +365,7 @@ function setUp() {
     const receive = (message: RunnerMessage<Audio80PassedMessage>) => runner.receive(message);
     // With no clock of its own, as the browser's chip has, so each write plays as soon as it arrives
     const writer = createCommandAudio80({
-        onInstrument: (id, data) => receive({ kind: 'instrument', id, data }),
-        onEffect: (id, data) => receive({ kind: 'effect', id, data }),
+        onSound: (id, data) => receive({ kind: 'sound', id, data }),
         hasClock: false,
     });
     const send = createSend(writer, buffers, receive);
@@ -389,8 +388,7 @@ function setUpAudio90() {
     });
     const receive = (message: RunnerMessage<Audio90PassedMessage>) => runner.receive(message);
     const writer = createCommandAudio90({
-        onInstrument: (id, data) => receive({ kind: 'instrument', id, data }),
-        onEffect: (id, data) => receive({ kind: 'effect', id, data }),
+        onSound: (id, data) => receive({ kind: 'sound', id, data }),
         // The browser's chip copies a sample rather than moving it
         onSample: (id, data) => receive({ kind: 'sample', id, data: structuredClone(data) }),
         hasClock: false,
@@ -398,9 +396,9 @@ function setUpAudio90() {
     const send = createSend(writer, buffers, receive);
     /** Sends `song` as the page's chip does: its instruments first, then the song, with their ids and none of their samples. */
     const sendSong = (id: number, song: ReturnType<typeof createAudio90Song>) => {
-        const instrumentIds = song.instruments.map(writer.defineInstrument);
+        const soundIds = song.instruments.map(writer.defineSound);
         const instruments = song.instruments.map((instrument) => ({ ...instrument, sample: undefined }));
-        receive({ kind: 'song', id, song: structuredClone({ ...song, instruments }), instrumentIds });
+        receive({ kind: 'song', id, song: structuredClone({ ...song, instruments }), soundIds });
     };
     /** A call to slot 1. */
     const call = (options: { call: SongCall; generation: number; songId?: number }): SongCallMessage => ({
@@ -432,7 +430,7 @@ function createSend(writer: CommandWriter, buffers: ChipBufferReply[], receive: 
 const SEQUENCED_SONG = createAudio90Song({
     bpm: 120,
     rowsPerBeat: 8,
-    instruments: { s: createAudio90Instrument() },
+    instruments: { s: createAudio90Sound() },
     patterns: { p: ['| C-4 s', '| D-4 s', '| E-4 s', '| F-4 s', '| G-4 s', '| A-4 s', '| B-4 s', '| C-5 s'].join('\n') },
     order: ['p'],
     loop: 0,
@@ -448,6 +446,6 @@ function playTicks(runner: { process: (channels: readonly Float32Array[]) => voi
 }
 
 /** A saw, held, made by hand, with the sample it plays, if any. */
-function createAudio90Instrument(data: Partial<Audio90InstrumentData> = {}, sample?: Audio90Instrument['sample']): Audio90Instrument {
-    return { chip: 'audio90', engine: sample === undefined ? 'analog' : 'sample', data: { ...DEFAULT_AUDIO90_INSTRUMENT, wave: WAVE90_SAW, ...data }, sample };
+function createAudio90Sound(data: Partial<Audio90SoundData> = {}, sample?: Audio90Sound['sample']): Audio90Sound {
+    return { chip: 'audio90', engine: sample === undefined ? 'analog' : 'sample', data: { ...DEFAULT_AUDIO90_SOUND, wave: WAVE90_SAW, ...data }, sample };
 }

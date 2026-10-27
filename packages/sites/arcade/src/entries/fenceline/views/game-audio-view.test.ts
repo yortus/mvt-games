@@ -58,7 +58,7 @@ describe('GameAudioView', () => {
     }
 
     function played(): unknown[] {
-        return chip.audio80.log.filter((entry) => entry.kind === 'play').map((entry) => (entry as { effect: unknown }).effect);
+        return chip.audio80.log.filter((entry) => entry.kind === 'play').map((entry) => (entry as { sound: unknown }).sound);
     }
 
     it('plays nothing while nothing changes', () => {

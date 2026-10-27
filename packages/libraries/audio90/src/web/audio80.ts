@@ -35,8 +35,7 @@ export interface Audio80Options {
  */
 export function createAudio80(options: Audio80Options = {}): Audio80WithControls {
     const writer = createCommandAudio80({
-        onInstrument: (id, data) => web.send({ kind: 'instrument', id, data }),
-        onEffect: (id, data) => web.send({ kind: 'effect', id, data }),
+        onSound: (id, data) => web.send({ kind: 'sound', id, data }),
         // The chip's time is the worklet's, so a write with no stamp plays as soon as it arrives
         hasClock: false,
         onFirstWrite: () => web.sendSoon(),
@@ -51,8 +50,8 @@ export function createAudio80(options: Audio80Options = {}): Audio80WithControls
         // The chip is mono. The browser plays its one channel on both speakers
         channelCount: 1,
         settings,
-        // Its instruments are defined first, under the writer's ids
-        prepareSong: (song) => ({ song, instrumentIds: song.instruments.map(writer.defineInstrument) }),
+        // Its sounds are defined first, under the writer's ids
+        prepareSong: (song) => ({ song, soundIds: song.instruments.map(writer.defineSound) }),
     });
 
     const audio80: Audio80 = {
@@ -61,8 +60,7 @@ export function createAudio80(options: Audio80Options = {}): Audio80WithControls
         },
         voiceCount: writer.voiceCount,
         play: writer.play,
-        noteOn: writer.noteOn,
-        noteOff: writer.noteOff,
+        stop: writer.stop,
         setVoice: writer.setVoice,
         setFilter: writer.setFilter,
         setEcho: writer.setEcho,

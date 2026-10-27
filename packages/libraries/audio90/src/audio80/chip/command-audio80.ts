@@ -1,27 +1,28 @@
-import { ASAP_STAMP, type CommandWriter, createCommandBuffer, MIX_BUS_INDEX } from '../../shared';
+import { ASAP_STAMP, type CommandWriter, createCommandBuffer, MIX_BUS_INDEX, NO_GLIDE, toPlayLength, toPlayNote, toPlayVolume } from '../../shared';
 import {
     ECHO_SETTING_INDEX,
-    type EffectData,
     FILTER_SETTING_INDEX,
     type Audio80FilterMode,
-    type InstrumentData,
+    type SoundData,
     OP_NOTE_OFF,
     OP_NOTE_ON,
-    OP_PLAY_EFFECT,
+    OP_PLAY,
+    OP_PLAY_OPTIONS,
     OP_RELEASE_ALL,
     OP_RESERVE_VOICES,
     OP_SET_ECHO,
     OP_SET_FILTER,
     OP_SET_MIX,
     OP_SET_VOICE,
+    OP_STOP,
     toFilterModeFlags,
     toWaveFlags,
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
     type Audio80Wave,
 } from '../synthesiser';
-import type { Audio80Instrument, Audio80SoundEffect } from '../notation';
-import type { Audio80Writer } from './audio80';
+import type { Audio80Sound } from '../notation';
+import type { Audio80, Audio80Writer } from './audio80';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -32,17 +33,18 @@ import type { Audio80Writer } from './audio80';
  * A command is a few numbers, stamped with the time it applies at. The writer
  * appends each command to a `Float64Array`, so writing allocates nothing.
  *
- * The first time an instrument or effect is played, the writer gives it an
- * id. It passes the instrument or effect to `onInstrument` or `onEffect`, so
- * the caller can send it to the synthesiser before the commands that use it.
+ * The first time a sound is played, the writer gives it an id. It passes the
+ * sound to `onSound`, so the caller can send it to the synthesiser
+ * before the commands that use it. Each play gets an id of its own, counted
+ * up from 1, which `stop` takes.
  */
-export interface CommandAudio80 extends Audio80Writer, CommandWriter {
+export interface CommandAudio80 extends Audio80Writer, Pick<Audio80, 'play' | 'stop'>, CommandWriter {
     /**
-     * Returns the id of `instrument`'s commands, defining it if it has not
-     * been played since the last `forget`. A song sent to the worklet names
-     * its instruments by these ids.
+     * Returns the id of `sound`'s commands, defining it if it has not been
+     * played since the last `forget`. A song sent to the worklet names its
+     * instruments by these ids.
      */
-    defineInstrument: (instrument: Audio80Instrument) => number;
+    defineSound: (sound: Audio80Sound) => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,15 +54,10 @@ export interface CommandAudio80 extends Audio80Writer, CommandWriter {
 /** How to make an Audio80 that writes commands. */
 export interface CommandAudio80Options {
     /**
-     * Called the first time an instrument is played since the last `forget`.
-     * It receives the id that the instrument's commands use.
+     * Called the first time a sound is played since the last `forget`. It
+     * receives the id that the sound's commands use.
      */
-    readonly onInstrument: (id: number, data: InstrumentData) => void;
-    /**
-     * Called the first time an effect is played since the last `forget`. It
-     * receives the id that the effect's commands use.
-     */
-    readonly onEffect: (id: number, data: EffectData) => void;
+    readonly onSound: (id: number, data: SoundData) => void;
     /** How many commands a batch holds before it grows. Defaults to 256. */
     readonly capacity?: number;
     /**
@@ -73,12 +70,11 @@ export interface CommandAudio80Options {
     /** Called as a command is written into an empty batch, so the code that sends the batches knows there is one to send. */
     readonly onFirstWrite?: () => void;
     /**
-     * Gives the id of an instrument defined elsewhere, or undefined for one
-     * this writer must define. A writer in the worklet uses it for the
-     * instruments the page has already defined, so that the two writers'
-     * ids never clash.
+     * Gives the id of a sound defined elsewhere, or undefined for one this
+     * writer must define. A writer in the worklet uses it for the sounds the
+     * page has already defined, so that the two writers' ids never clash.
      */
-    readonly idOf?: (instrument: Audio80Instrument) => number | undefined;
+    readonly idOf?: (sound: Audio80Sound) => number | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,7 +87,7 @@ export interface CommandAudio80Options {
  * has been written yet.
  */
 export function createCommandAudio80(options: CommandAudio80Options): CommandAudio80 {
-    const { onInstrument, onEffect, idOf } = options;
+    const { onSound, idOf } = options;
     const buffer = createCommandBuffer({ capacity: options.capacity, onFirstWrite: options.onFirstWrite });
     const write = buffer.write;
     // The clock, in a typed array: V8 boxes a double kept in a closure variable each time it is written, and this is written every tick
@@ -99,8 +95,8 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
     // With no clock, each write with no `atMs` is stamped as soon as possible, and `update` leaves it so
     if (options.hasClock === false) clock[0] = ASAP_STAMP;
     let nextId = 1;
-    const instrumentIds = new Map<Audio80Instrument, number>();
-    const effectIds = new Map<Audio80SoundEffect, number>();
+    let nextPlayId = 1;
+    const soundIds = new Map<Audio80Sound, number>();
 
     const writer: CommandAudio80 = {
         get time() {
@@ -118,11 +114,22 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
             clock[0] += deltaMs;
         },
 
-        play(effect) {
-            write(OP_PLAY_EFFECT, ASAP_STAMP, ensureEffectId(effect), 0, 0, 0);
+        play(sound, playOptions) {
+            const { data } = sound;
+            const note = playOptions?.note === undefined ? data.note : toPlayNote(playOptions.note, 'play: note');
+            const glideTo = playOptions?.glideTo === undefined ? data.glideTo : toPlayNote(playOptions.glideTo, 'play: glideTo');
+            const lengthMs = toPlayLength(playOptions?.lengthMs ?? data.lengthMs);
+            const volume = toPlayVolume(playOptions?.volume ?? 1);
+            const id = nextPlayId++;
+            write(OP_PLAY_OPTIONS, ASAP_STAMP, lengthMs, Number.isNaN(glideTo) ? NO_GLIDE : glideTo, 0, 0);
+            write(OP_PLAY, ASAP_STAMP, ensureSoundId(sound), id, note, volume);
+            return id;
         },
-        noteOn(voice, instrument, note, volume, atMs) {
-            write(OP_NOTE_ON, atMs ?? clock[0], voice, ensureInstrumentId(instrument), note, volume);
+        stop(id) {
+            write(OP_STOP, ASAP_STAMP, id, 0, 0, 0);
+        },
+        noteOn(voice, sound, note, volume, atMs) {
+            write(OP_NOTE_ON, atMs ?? clock[0], voice, ensureSoundId(sound), note, volume);
         },
         noteOff(voice, atMs) {
             write(OP_NOTE_OFF, atMs ?? clock[0], voice, 0, 0, 0);
@@ -147,11 +154,10 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
 
         clear: buffer.clear,
 
-        defineInstrument: (instrument) => ensureInstrumentId(instrument),
+        defineSound: (sound) => ensureSoundId(sound),
 
         forget() {
-            instrumentIds.clear();
-            effectIds.clear();
+            soundIds.clear();
         },
 
         setMix(bus, gain) {
@@ -161,24 +167,14 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
 
     return writer;
 
-    function ensureInstrumentId(instrument: Audio80Instrument): number {
-        const known = idOf?.(instrument);
+    function ensureSoundId(sound: Audio80Sound): number {
+        const known = idOf?.(sound);
         if (known !== undefined) return known;
-        let id = instrumentIds.get(instrument);
+        let id = soundIds.get(sound);
         if (id === undefined) {
             id = nextId++;
-            instrumentIds.set(instrument, id);
-            onInstrument(id, instrument.data);
-        }
-        return id;
-    }
-
-    function ensureEffectId(effect: Audio80SoundEffect): number {
-        let id = effectIds.get(effect);
-        if (id === undefined) {
-            id = nextId++;
-            effectIds.set(effect, id);
-            onEffect(id, effect.data);
+            soundIds.set(sound, id);
+            onSound(id, sound.data);
         }
         return id;
     }

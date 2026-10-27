@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
+import { type Audio80SoundOptions, createAudio80Sound } from 'audio90';
 
 // Astrovoid's sound effects, for the Audio80. All of them were written for
 // this game. It has no music. Instead, a heartbeat of two thumps plays by
@@ -10,25 +10,25 @@ import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 // ---------------------------------------------------------------------------
 
 /** One thump of the heartbeat, a low pulse wave that fades fast. */
-const THUMP = createAudio80Instrument({
+const THUMP: Audio80SoundOptions = {
     wave: 'pulse',
     pulseWidth: 0.5,
     envelope: { attackMs: 2, decayMs: 160, sustain: 0, releaseMs: 40 },
     volume: 0.9,
-});
+};
 
 /** The heartbeat's lower thump, dropping a tone as it fades. The beats take turns, low then high. */
-export const BEAT_LOW = createAudio80SoundEffect({ instrument: THUMP, note: 'A-1', glideTo: 'G-1', lengthMs: 140, priority: 1 });
+export const BEAT_LOW = createAudio80Sound({ ...THUMP, note: 'A-1', glideTo: 'G-1', lengthMs: 140, priority: 1 });
 
 /** The heartbeat's higher thump, a fifth above the lower one. It drops a tone too. */
-export const BEAT_HIGH = createAudio80SoundEffect({ instrument: THUMP, note: 'E-2', glideTo: 'D-2', lengthMs: 140, priority: 1 });
+export const BEAT_HIGH = createAudio80Sound({ ...THUMP, note: 'E-2', glideTo: 'D-2', lengthMs: 140, priority: 1 });
 
 // ---------------------------------------------------------------------------
 // The ship
 // ---------------------------------------------------------------------------
 
 /** A shot: a short pulse, dropping fast. */
-export const FIRE = createAudio80SoundEffect({
+export const FIRE = createAudio80Sound({
     note: 'C-6',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 30 },
     priority: 0,
@@ -45,11 +45,9 @@ export const FIRE = createAudio80SoundEffect({
 });
 
 /** The engine: a burst of low noise, played again and again while the ship thrusts. */
-export const THRUST = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'noise',
-        envelope: { attackMs: 15, decayMs: 0, sustain: 1, releaseMs: 70 },
-    }),
+export const THRUST = createAudio80Sound({
+    wave: 'noise',
+    envelope: { attackMs: 15, decayMs: 0, sustain: 1, releaseMs: 70 },
     note: 'D-3',
     lengthMs: 90,
     priority: 0,
@@ -58,7 +56,7 @@ export const THRUST = createAudio80SoundEffect({
 });
 
 /** The ship destroyed: a long crash of noise, sinking. */
-export const SHIP_EXPLODE = createAudio80SoundEffect({
+export const SHIP_EXPLODE = createAudio80Sound({
     note: 'C-4',
     stepMs: 55,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 300 },
@@ -80,12 +78,10 @@ export const SHIP_EXPLODE = createAudio80SoundEffect({
 });
 
 /** The ship coming back, its pieces drawing together: a rising sweep. */
-export const RESPAWN = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'triangle',
-        envelope: { attackMs: 30, decayMs: 0, sustain: 1, releaseMs: 120 },
-        vibrato: { semitones: 0.3, hz: 12 },
-    }),
+export const RESPAWN = createAudio80Sound({
+    wave: 'triangle',
+    envelope: { attackMs: 30, decayMs: 0, sustain: 1, releaseMs: 120 },
+    vibrato: { semitones: 0.3, hz: 12 },
     note: 'C-4',
     glideTo: 'C-6',
     lengthMs: 450,
@@ -98,7 +94,7 @@ export const RESPAWN = createAudio80SoundEffect({
 // ---------------------------------------------------------------------------
 
 /** A rock breaking: a burst of noise, falling. */
-const CRUNCH = createAudio80Instrument({
+const CRUNCH: Audio80SoundOptions = {
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
     stepMs: 30,
     steps: `
@@ -110,10 +106,10 @@ const CRUNCH = createAudio80Instrument({
         noise   +2    v7
         noise   +0    v4
     `,
-});
+};
 
 /** A big rock breaking, slower and deeper. */
-const BIG_CRUNCH = createAudio80Instrument({
+const BIG_CRUNCH: Audio80SoundOptions = {
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 140 },
     stepMs: 45,
     steps: `
@@ -126,23 +122,23 @@ const BIG_CRUNCH = createAudio80Instrument({
         noise   +0    v5
         noise   -2    v3
     `,
-});
+};
 
 /** A large rock breaking, the deepest crunch. */
-export const BREAK_LARGE = createAudio80SoundEffect({ instrument: BIG_CRUNCH, note: 'C-3', priority: 2, maxVoices: 2 });
+export const BREAK_LARGE = createAudio80Sound({ ...BIG_CRUNCH, note: 'C-3', priority: 2, maxVoices: 2 });
 
 /** A medium rock breaking. */
-export const BREAK_MEDIUM = createAudio80SoundEffect({ instrument: CRUNCH, note: 'G-3', priority: 2, maxVoices: 2 });
+export const BREAK_MEDIUM = createAudio80Sound({ ...CRUNCH, note: 'G-3', priority: 2, maxVoices: 2 });
 
 /** A small rock breaking, the highest crunch and a little quieter. */
-export const BREAK_SMALL = createAudio80SoundEffect({ instrument: CRUNCH, note: 'D-4', priority: 2, maxVoices: 2, volume: 0.85 });
+export const BREAK_SMALL = createAudio80Sound({ ...CRUNCH, note: 'D-4', priority: 2, maxVoices: 2, volume: 0.85 });
 
 // ---------------------------------------------------------------------------
 // The game
 // ---------------------------------------------------------------------------
 
 /** A wave cleared: three rising chimes. */
-export const WAVE_CLEAR = createAudio80SoundEffect({
+export const WAVE_CLEAR = createAudio80Sound({
     note: 'C-6',
     stepMs: 90,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 250 },
@@ -158,13 +154,11 @@ export const WAVE_CLEAR = createAudio80SoundEffect({
 });
 
 /** The last ship lost: a low, metallic knell, ringing out. */
-export const GAME_OVER = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'saw+pulse',
-        pulseWidth: 0.35,
-        envelope: { attackMs: 2, decayMs: 2500, sustain: 0, releaseMs: 300 },
-        echo: 0.6,
-    }),
+export const GAME_OVER = createAudio80Sound({
+    wave: 'saw+pulse',
+    pulseWidth: 0.35,
+    envelope: { attackMs: 2, decayMs: 2500, sustain: 0, releaseMs: 300 },
+    echo: 0.6,
     note: 'D-2',
     lengthMs: 2500,
     priority: 3,

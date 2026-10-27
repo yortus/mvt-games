@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashSamples, measurePeak, renderSoundEffect, findSounds } from 'audio90/headless';
+import { hashSamples, measurePeak, renderSound, findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
 // Astrovoid has no music. It has only effects.
@@ -10,7 +10,7 @@ import * as sounds from './sounds';
 // sound makes that sound's test fail. Listen to the new sound first, with
 // `npm run audio:render`. Then update the snapshot with `vitest -u`.
 
-const { effects } = findSounds(sounds);
+const { sounds: effects } = findSounds(sounds);
 
 describe('astrovoid sounds', () => {
     it('has effects to test', () => {
@@ -19,7 +19,7 @@ describe('astrovoid sounds', () => {
 
     for (const [name, effect] of effects) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSoundEffect(effect);
+            const samples = renderSound(effect);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();

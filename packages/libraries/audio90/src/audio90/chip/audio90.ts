@@ -1,6 +1,6 @@
 import type { AudioControls, SongSlot } from '../../shared';
 import type { Audio90Character, Audio90EffectId, Audio90EffectSetting, Audio90VoiceSetting } from '../synthesiser';
-import type { Audio90Instrument, Audio90Song, Audio90SoundEffect } from '../notation';
+import type { Audio90Song, Audio90Sound } from '../notation';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -21,12 +21,30 @@ import type { Audio90Instrument, Audio90Song, Audio90SoundEffect } from '../nota
  * says. The chip's pausing, volumes and resets belong to the code that owns
  * it, through the `AudioControls` made alongside the chip.
  *
- * Its methods take their arguments in order rather than as an options
- * object, because views call them every refresh and they must not allocate.
+ * `play` takes its options as an object. The code that plays a sound calls
+ * it only as something happens, such as a shot being fired, so making the
+ * object costs nothing that matters. The setters take their arguments in
+ * order.
  *
  * It can also report what each voice is playing, for a scope to draw.
  */
-export interface Audio90 extends Audio90Writer {
+export interface Audio90 extends Omit<Audio90Writer, 'noteOn' | 'noteOff'> {
+    /**
+     * Plays `sound` now, on a voice the chip chooses from those the music
+     * does not keep. It picks a free voice if there is one. If not, it takes
+     * the voice of the oldest sound whose priority is no higher than this
+     * one's. If there is none, the sound doesn't play.
+     *
+     * It returns the play's id, which `stop` takes. A play with a
+     * `lengthMs` of `Infinity` holds its note until it is stopped.
+     */
+    play: (sound: Audio90Sound, options?: Audio90PlayOptions) => number;
+    /**
+     * Releases the note of the play with id `id`, so it fades out as its
+     * envelope's release says. It does nothing if the play has already ended,
+     * or another sound has taken its voice.
+     */
+    stop: (id: number) => void;
     /**
      * The chip time, in ms, of the sound reaching the speaker now. In a
      * browser, it trails `time` by the sound card's latency. A view that shows the music as it is heard, as a tracker
@@ -58,10 +76,23 @@ export interface Audio90 extends Audio90Writer {
     setScopes: (isOn: boolean) => void;
 }
 
+/** How one play of a sound differs from the sound's own settings. Each option defaults to the sound's. */
+export interface Audio90PlayOptions {
+    /** The note to play, as a name such as `'E-5'`, or a note number, where 60 is middle C. */
+    readonly note?: string | number;
+    /** A note to glide to over the play's length, as a name or a number. */
+    readonly glideTo?: string | number;
+    /** How long it holds its note before releasing it, in ms, above 0. `Infinity` holds it until `stop`. */
+    readonly lengthMs?: number;
+    /** A volume for this play, 0 or more, which scales the sound's own. Defaults to 1. */
+    readonly volume?: number;
+    /** Where it plays, from -1 (left) to 1 (right). */
+    readonly pan?: number;
+}
+
 /**
- * What writes to an Audio90: every call that plays or sets something, and
- * its clock. A song's writes, and a sample's bounce, need no more of a chip
- * than this.
+ * What writes notes and settings to an Audio90, and its clock. A song's
+ * writes, and a sample's bounce, need no more of a chip than this.
  */
 export interface Audio90Writer {
     /** The chip's time now, in ms, as the Audio80's `time` describes. */
@@ -69,19 +100,11 @@ export interface Audio90Writer {
     /** How many voices the chip has, which is 16. */
     readonly voiceCount: number;
     /**
-     * Plays `effect` now, on a voice the chip chooses from those the music
-     * does not keep. It picks a free voice if there is one. If not, it takes
-     * the voice of the oldest effect whose priority is no higher than this
-     * one's. `pan` is from -1 (left) to 1 (right), and defaults to the
-     * effect's own.
+     * Starts `note` on `voice` with `sound`. `note` is a note number, where
+     * 60 is middle C, and `voice` is from 0 to 15. At a `volume` of 1, the
+     * note plays at the sound's own volume.
      */
-    play: (effect: Audio90SoundEffect, pan?: number) => void;
-    /**
-     * Starts `note` on `voice` with `instrument`. `note` is a note number,
-     * where 60 is middle C, and `voice` is from 0 to 15. At a `volume` of 1,
-     * the note plays at the instrument's own volume.
-     */
-    noteOn: (voice: number, instrument: Audio90Instrument, note: number, volume: number, atMs?: number) => void;
+    noteOn: (voice: number, sound: Audio90Sound, note: number, volume: number, atMs?: number) => void;
     /** Releases `voice`'s note at `atMs`. Its envelopes start their release, which fades the note out. */
     noteOff: (voice: number, atMs?: number) => void;
     /** Sets one of `voice`'s settings to `value` at `atMs`. `Audio90VoiceSetting` gives each setting's range. */
@@ -100,9 +123,9 @@ export interface Audio90Writer {
      * still, and the echo keeps the last tempo above 0.
      */
     setTempo: (bpm: number, atMs?: number) => void;
-    /** Keeps voices 0 to `count` - 1 for music from `atMs`. Effects play only on the rest. */
+    /** Keeps voices 0 to `count` - 1 for music from `atMs`. Sounds played on their own play only on the rest. */
     reserveVoices: (count: number, atMs?: number) => void;
-    /** Releases every voice, music and effects, as soon as it can. */
+    /** Releases every voice, music and sounds alike, as soon as it can. */
     releaseAll: () => void;
 }
 

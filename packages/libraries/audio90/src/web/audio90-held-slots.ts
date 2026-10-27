@@ -11,8 +11,9 @@ import {
     OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
+    OP90_STOP,
 } from '../audio90';
-import { type HeldWriteSlots, isIndex } from './held-writes';
+import { type HeldWriteSlots, isIndex, STOP_SLOT_COUNT } from './held-writes';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -20,9 +21,9 @@ import { type HeldWriteSlots, isIndex } from './held-writes';
 
 /**
  * The Audio90's writes worth keeping while it cannot play: each voice's
- * latest `noteOff`, the latest value of each voice and effect setting, the
- * character, the tempo, the voices kept for music, the mix, and the latest
- * `releaseAll`.
+ * latest `noteOff`, the latest `stop` of each recent play, the latest value
+ * of each voice and effect setting, the character, the tempo, the voices
+ * kept for music, the mix, and the latest `releaseAll`.
  */
 export const AUDIO90_HELD_SLOTS: HeldWriteSlots = createSlots();
 
@@ -47,8 +48,9 @@ function createSlots(): HeldWriteSlots {
     const reserveSlot = tempoSlot + 1;
     const mixBase = reserveSlot + 1;
     const releaseAllSlot = mixBase + mixBusCount;
+    const stopBase = releaseAllSlot + 1;
     return {
-        slotCount: releaseAllSlot + 1,
+        slotCount: stopBase + STOP_SLOT_COUNT,
         findSlot(op, a, b) {
             switch (op) {
                 case OP90_NOTE_OFF:
@@ -67,6 +69,8 @@ function createSlots(): HeldWriteSlots {
                     return isIndex(a, mixBusCount) ? mixBase + a : -1;
                 case OP90_RELEASE_ALL:
                     return releaseAllSlot;
+                case OP90_STOP:
+                    return Number.isInteger(a) && a > 0 ? stopBase + a % STOP_SLOT_COUNT : -1;
                 default:
                     return -1;
             }

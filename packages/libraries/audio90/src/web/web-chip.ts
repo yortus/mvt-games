@@ -36,7 +36,7 @@ export interface WebChip<D extends PassedMessage, S extends PlayableSong> {
     readonly speakerFrame: number | undefined;
     /**
      * Sends a message for the chip's own part of the worklet, such as one
-     * that defines an instrument. It is sent even while the audio context is
+     * that defines a sound. It is sent even while the audio context is
      * suspended, and kept until the worklet runs if it does not yet. The port
      * delivers messages in order, so it arrives before any command that uses
      * it. The buffers in `transfer` move with it, once the worklet runs.
@@ -82,7 +82,7 @@ export interface WebChipOptions<S extends PlayableSong> {
      * defines its instruments with the writer, and returns the ids they were
      * given, with the song as it travels.
      */
-    readonly prepareSong: (song: S) => { readonly song: object; readonly instrumentIds: readonly number[] };
+    readonly prepareSong: (song: S) => { readonly song: object; readonly soundIds: readonly number[] };
 }
 
 // ---------------------------------------------------------------------------

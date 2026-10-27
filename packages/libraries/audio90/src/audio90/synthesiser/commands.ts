@@ -1,5 +1,5 @@
 import type { ChipBatch } from '../../shared';
-import type { Audio90EffectData, Audio90InstrumentData, Audio90SampleData } from './instrument-data';
+import type { Audio90SoundData, Audio90SampleData } from './sound-data';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -27,7 +27,7 @@ export const AUDIO90_SCOPE_PANS = AUDIO90_VOICE_COUNT * AUDIO90_SCOPE_POINTS;
 /** How many numbers a scope holds: each voice's points, then each voice's pan. */
 export const AUDIO90_SCOPE_LENGTH = AUDIO90_SCOPE_PANS + AUDIO90_VOICE_COUNT;
 
-/** Starts a note. `a` is the voice, `b` the instrument id, `c` the note and `d` the volume. */
+/** Starts a note. `a` is the voice, `b` the sound's id, `c` the note and `d` the volume. */
 export const OP90_NOTE_ON = 1;
 /** Releases a voice's note. `a` is the voice. */
 export const OP90_NOTE_OFF = 2;
@@ -40,16 +40,16 @@ export const OP90_SET_VOICE = 3;
  */
 export const OP90_SET_EFFECT = 4;
 /**
- * Plays a sound effect. `a` is the effect id. `b` is a pan from -1 to 1,
- * which is used when `c` is 1. When `c` is 0, the effect plays at its own
- * pan.
+ * Plays a sound on a voice the chip chooses. `a` is the sound's id, `b` the
+ * play's id, `c` the note and `d` the volume. The `OP90_PLAY_OPTIONS` written
+ * just before it says how long it lasts, where it glides and where it sits.
  */
-export const OP90_PLAY_EFFECT = 5;
+export const OP90_PLAY = 5;
 /** Releases every voice's note. No operands. */
 export const OP90_RELEASE_ALL = 6;
-/** Keeps voices for music. `a` is how many, counting up from voice 0. Effects play only on the voices above them. */
+/** Keeps voices for music. `a` is how many, counting up from voice 0. Sounds played on their own play only on the voices above them. */
 export const OP90_RESERVE_VOICES = 7;
-/** Sets a bus's gain. `a` is the bus (0 for music, 1 for effects), and `b` the gain, from 0 to 2. It ramps over about 10 ms. */
+/** Sets a bus's gain. `a` is the bus (0 for music, 1 for sounds played on their own), and `b` the gain, from 0 to 2. It ramps over about 10 ms. */
 export const OP90_SET_MIX = 8;
 /** Sets how the chip sounds. `a` is the character's index in `AUDIO90_CHARACTERS`. */
 export const OP90_SET_CHARACTER = 9;
@@ -59,6 +59,17 @@ export const OP90_SET_CHARACTER = 9;
  * echo keeps the last tempo above 0.
  */
 export const OP90_SET_TEMPO = 10;
+/**
+ * Says how the next `OP90_PLAY` plays. `a` is how long it holds its note
+ * before releasing it, in ms, or -1 to hold it until it is stopped. `b` is
+ * the note it glides to over that time, or -1 for none. `c` is where it
+ * sits, from -1 (left) to 1 (right), which is used when `d` is 1. When `d`
+ * is 0, it sits at the sound's own pan. A play always writes one just before
+ * its `OP90_PLAY`, with the same stamp.
+ */
+export const OP90_PLAY_OPTIONS = 11;
+/** Releases the note of a play, if it is still sounding. `a` is the play's id. */
+export const OP90_STOP = 12;
 
 /** A setting of one voice that can be written directly. */
 export type Audio90VoiceSetting =
@@ -69,7 +80,7 @@ export type Audio90VoiceSetting =
     /** -1 (left) to 1 (right). */
     | 'pan'
     /**
-     * 0 to 1, where 1 is the instrument as written. Lower values close an
+     * 0 to 1, where 1 is the sound as written. Lower values close an
      * analog or sample voice's filter, and soften an FM voice's modulators.
      */
     | 'brightness'
@@ -171,14 +182,12 @@ export const AUDIO90_CHARACTERS: readonly Audio90Character[] = ['studio', 'conso
 
 /**
  * A message the main thread sends the Audio90's worklet. A `batch` carries
- * one tick's commands and the newest chip time. An `instrument`, `effect` or
- * `sample` message carries one the first time it is played, before the
- * commands that use it. A `reset` clears the chip so the next game starts
- * fresh.
+ * commands. A `sound` message carries a sound, and a `sample` message a
+ * sample, the first time it is played, before the commands that use it. A
+ * `reset` clears the chip so the next game starts fresh.
  */
 export type Audio90ChipMessage =
     | ChipBatch
-    | { readonly kind: 'instrument'; readonly id: number; readonly data: Audio90InstrumentData }
-    | { readonly kind: 'effect'; readonly id: number; readonly data: Audio90EffectData }
+    | { readonly kind: 'sound'; readonly id: number; readonly data: Audio90SoundData }
     | { readonly kind: 'sample'; readonly id: number; readonly data: Audio90SampleData }
     | { readonly kind: 'reset' };

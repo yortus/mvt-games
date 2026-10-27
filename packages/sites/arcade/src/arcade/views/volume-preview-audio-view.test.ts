@@ -63,5 +63,5 @@ const PHRASE_STARTED_MS = 100;
 
 /** The sound effects played, in order. */
 function listPlays(log: readonly Audio80Write[]): unknown[] {
-    return log.filter((write) => write.kind === 'play').map((write) => (write as { effect: unknown }).effect);
+    return log.filter((write) => write.kind === 'play').map((write) => (write as { sound: unknown }).sound);
 }

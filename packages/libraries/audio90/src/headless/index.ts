@@ -31,7 +31,7 @@ export {
     measurePeak,
     type ModuleSounds,
     renderSong,
-    renderSoundEffect,
+    renderSound,
     type RenderOptions,
 } from './render';
 export type { RenderedSamples, StereoSamples } from './stereo-samples';

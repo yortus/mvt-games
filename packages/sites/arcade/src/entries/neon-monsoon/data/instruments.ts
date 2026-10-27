@@ -1,4 +1,4 @@
-import { type Audio90Instrument, createAudio90Instrument, createAudio90Sample, createAudio90Song } from 'audio90';
+import { type Audio90Sound, type Audio90SoundOptions, createAudio90Sample, createAudio90Song, createAudio90Sound } from 'audio90';
 
 // Neon Monsoon's instruments, for the Audio90. All were written for this
 // game, in the sound of the 1990s' arcade shooters and 16-bit consoles: an
@@ -11,7 +11,7 @@ import { type Audio90Instrument, createAudio90Instrument, createAudio90Sample, c
 // ---------------------------------------------------------------------------
 
 /** The lead: two FM pairs, one a little detuned, its modulators swelling after the note, with a delayed vibrato. */
-export const LEAD = createAudio90Instrument({
+export const LEAD = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -27,7 +27,7 @@ export const LEAD = createAudio90Instrument({
 });
 
 /** The bells, which play the chords as arpeggios: a modulator at three and a half times the note, struck and dying away. */
-export const BELLS = createAudio90Instrument({
+export const BELLS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -40,7 +40,7 @@ export const BELLS = createAudio90Instrument({
 });
 
 /** The pad, which holds each chord under the bells: five saws, swelling in, darkened. */
-export const PAD = createAudio90Instrument({
+export const PAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 5, detune: 0.2, spread: 0.8 },
     filter: { cutoffHz: 1400, resonance: 0.1 },
     envelope: { attackMs: 300, decayMs: 600, sustain: 0.8, releaseMs: 600 },
@@ -48,7 +48,7 @@ export const PAD = createAudio90Instrument({
 });
 
 /** Long notes on an electric piano, for the slow tune: a tine over a warm body. */
-export const EPIANO = createAudio90Instrument({
+export const EPIANO = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -63,7 +63,7 @@ export const EPIANO = createAudio90Instrument({
 });
 
 /** The bass: an FM pair whose modulator bites and fades on each note, feeding back a little. */
-export const BASS = createAudio90Instrument({
+export const BASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -76,7 +76,7 @@ export const BASS = createAudio90Instrument({
 });
 
 /** A kick: a sine that falls two octaves as it starts. */
-export const KICK = createAudio90Instrument({
+export const KICK = createAudio90Sound({
     oscillator: { wave: 'sine' },
     modEnvelope: { to: 'pitch', amount: 24, envelope: { attackMs: 0, decayMs: 40, sustain: 0, releaseMs: 0 } },
     envelope: { attackMs: 0, decayMs: 260, sustain: 0, releaseMs: 40 },
@@ -85,7 +85,7 @@ export const KICK = createAudio90Instrument({
 });
 
 /** A snare: a crack of noise over a short, falling body. */
-export const SNARE = createAudio90Instrument({
+export const SNARE = createAudio90Sound({
     oscillator: { wave: 'triangle' },
     noise: 0.9,
     modEnvelope: { to: 'pitch', amount: 7, envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 0 } },
@@ -96,7 +96,7 @@ export const SNARE = createAudio90Instrument({
 });
 
 /** A closed hat: a tick of high noise. */
-export const HAT = createAudio90Instrument({
+export const HAT = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 0.8,
     filter: { mode: 'highpass', cutoffHz: 8000, resonance: 0.2 },
@@ -105,7 +105,7 @@ export const HAT = createAudio90Instrument({
 });
 
 /** A crash, at the start of each part of a tune. */
-export const CRASH = createAudio90Instrument({
+export const CRASH = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 0.9,
     filter: { mode: 'highpass', cutoffHz: 4500, resonance: 0.1 },
@@ -118,7 +118,7 @@ export const CRASH = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** A brass stab for the hit: an FM pair, swelling bright and gone. */
-const HIT_BRASS = createAudio90Instrument({
+const HIT_BRASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -131,7 +131,7 @@ const HIT_BRASS = createAudio90Instrument({
 });
 
 /** The crack on top of the hit: a burst of bright noise. */
-const HIT_CRACK = createAudio90Instrument({
+const HIT_CRACK = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'highpass', cutoffHz: 2500, resonance: 0.1 },
@@ -140,7 +140,7 @@ const HIT_CRACK = createAudio90Instrument({
 });
 
 /** The drum under the hit: a deep sine, falling. */
-const HIT_DRUM = createAudio90Instrument({
+const HIT_DRUM = createAudio90Sound({
     oscillator: { wave: 'sine' },
     modEnvelope: { to: 'pitch', amount: 24, envelope: { attackMs: 0, decayMs: 60, sustain: 0, releaseMs: 0 } },
     envelope: { attackMs: 0, decayMs: 500, sustain: 0, releaseMs: 80 },
@@ -172,13 +172,16 @@ export const STORM_HIT_SAMPLE = createAudio90Sample({
     }),
 });
 
-/** The orchestra hit, played back from its sample. */
-export const STORM_HIT: Audio90Instrument = createAudio90Instrument({
+/** How the orchestra hit sounds, played back from its sample. The boss's warning plays it too, louder. */
+export const STORM_HIT_OPTIONS: Audio90SoundOptions = {
     engine: 'sample',
     sample: STORM_HIT_SAMPLE,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 150 },
     volume: 0.7,
-});
+};
+
+/** The orchestra hit, played back from its sample. */
+export const STORM_HIT: Audio90Sound = createAudio90Sound(STORM_HIT_OPTIONS);
 
 /** Every sample the game plays, to bounce as it loads. */
 export const SAMPLES = [STORM_HIT_SAMPLE];

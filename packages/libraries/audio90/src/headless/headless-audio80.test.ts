@@ -1,8 +1,9 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
+    type Audio80SoundOptions,
+    type Audio80Writer,
     createCommandAudio80,
-    createAudio80Instrument,
-    createAudio80SoundEffect,
+    createAudio80Sound,
     FILTER_HIGHPASS,
     FILTER_LOWPASS,
     FILTER_SETTING_INDEX,
@@ -21,8 +22,9 @@ const MUSIC_VOLUME = 0.5;
 const FRAMES = 4800;
 const DEFAULT_SAMPLE_RATE = 48000;
 const TICK_MS = 1000 / 60;
-const INSTRUMENT = createAudio80Instrument({ wave: 'saw', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 } });
-const EFFECT = createAudio80SoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
+const SAW: Audio80SoundOptions = { wave: 'saw', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 } };
+const INSTRUMENT = createAudio80Sound(SAW);
+const EFFECT = createAudio80Sound({ ...SAW, note: 'C-5', lengthMs: 50 });
 
 describe('headless Audio80', () => {
     describe('with no options', () => {
@@ -46,7 +48,7 @@ describe('headless Audio80', () => {
     });
 
     describe('with record', () => {
-        it('logs every write with its stamp, an effect at -Infinity and the rest at atMs or the clock time', () => {
+        it('logs every write with its stamp, a play and a stop at -Infinity and the rest at atMs or the clock time', () => {
             const { audio80, controls } = createHeadlessAudio80({ record: true });
             controls.update(TICK_MS);
             writeOneOfEach(audio80);
@@ -55,7 +57,7 @@ describe('headless Audio80', () => {
 
         it('empties its log on clear', () => {
             const { audio80 } = createHeadlessAudio80({ record: true });
-            audio80.noteOff(0);
+            audio80.releaseAll();
             audio80.clear();
             expect(audio80.log).toEqual([]);
         });
@@ -64,10 +66,10 @@ describe('headless Audio80', () => {
             const { audio80, controls } = createHeadlessAudio80({ record: true });
             await controls.ready;
             controls.update(TICK_MS);
-            audio80.noteOff(0);
+            audio80.releaseAll();
             controls.reset();
             controls.destroy();
-            expect(audio80.log).toEqual([{ kind: 'note-off', voice: 0, time: TICK_MS }]);
+            expect(audio80.log).toEqual([{ kind: 'release-all', time: TICK_MS }]);
             expect(audio80.time).toBe(TICK_MS);
         });
 
@@ -145,7 +147,7 @@ describe('headless Audio80', () => {
             const waves: readonly Audio80Wave[] = ['saw+pulse', 'noise', 'wavetable'];
             for (let i = 0; i < waves.length; i++) writer.setVoice(2, 'wave', waves[i], 10);
             for (let i = 0; i < waves.length; i++) {
-                expect(readCommand(writer, i)).toEqual([OP_SET_VOICE, 10, 2, VOICE_SETTING_INDEX.wave, createAudio80Instrument({ wave: waves[i] }).data.wave, 0]);
+                expect(readCommand(writer, i)).toEqual([OP_SET_VOICE, 10, 2, VOICE_SETTING_INDEX.wave, createAudio80Sound({ wave: waves[i] }).data.wave, 0]);
             }
         });
 
@@ -157,15 +159,15 @@ describe('headless Audio80', () => {
             expect(readCommand(writer, 1)).toEqual([OP_SET_FILTER, 20, 0, FILTER_SETTING_INDEX.mode, FILTER_LOWPASS, 0]);
         });
 
-        it('plays a voice whose wave is set by name as an instrument with that wave plays', () => {
+        it('plays a voice whose wave is set by name as a sound with that wave plays', () => {
             const asSet = createHeadlessAudio80({ render: { character: 'clean' } });
-            asSet.audio80.noteOn(0, createAudio80Instrument({ wave: 'triangle' }), 57, 1);
+            asWriter(asSet.audio80).noteOn(0, createAudio80Sound({ wave: 'triangle' }), 57, 1);
             asSet.audio80.setVoice(0, 'wave', 'saw+pulse');
-            const asInstrument = createHeadlessAudio80({ render: { character: 'clean' } });
-            asInstrument.audio80.noteOn(0, createAudio80Instrument({ wave: 'saw+pulse' }), 57, 1);
+            const asSound = createHeadlessAudio80({ render: { character: 'clean' } });
+            asWriter(asSound.audio80).noteOn(0, createAudio80Sound({ wave: 'saw+pulse' }), 57, 1);
             const samples = renderFrames(asSet);
             expect(measurePeak(samples)).toBeGreaterThan(0);
-            expect(hashSamples(samples)).toBe(hashSamples(renderFrames(asInstrument)));
+            expect(hashSamples(samples)).toBe(hashSamples(renderFrames(asSound)));
         });
 
         it('filters with the mode named, so a low pass cuts a high note above a low cutoff and a high pass keeps it', () => {
@@ -229,11 +231,12 @@ describe('headless Audio80', () => {
     });
 });
 
-/** Makes one write of each kind: an effect, then the rest, some stamped and some not. */
+/** Makes one write of each kind: a play and its stop, then a song's notes and the rest, some stamped and some not. */
 function writeOneOfEach(audio80: HeadlessAudio80['audio80']): void {
-    audio80.play(EFFECT);
-    audio80.noteOn(0, INSTRUMENT, 60, 1);
-    audio80.noteOff(0, 100);
+    const id = audio80.play(EFFECT, { note: 'C-4' });
+    audio80.stop(id);
+    asWriter(audio80).noteOn(0, INSTRUMENT, 60, 1);
+    asWriter(audio80).noteOff(0, 100);
     audio80.setVoice(1, 'volume', 0.5);
     audio80.setFilter('b', 'cutoffHz', 2000, 200);
     audio80.setEcho('level', 0.25);
@@ -244,8 +247,9 @@ function writeOneOfEach(audio80: HeadlessAudio80['audio80']): void {
 /** What `writeOneOfEach` logs, made at chip time `time`. */
 function buildOneOfEachLog(time: number): Audio80Write[] {
     return [
-        { kind: 'play', effect: EFFECT, time: -Infinity },
-        { kind: 'note-on', voice: 0, instrument: INSTRUMENT, note: 60, volume: 1, time },
+        { kind: 'play', sound: EFFECT, id: 1, options: { note: 'C-4' }, time: -Infinity },
+        { kind: 'stop', id: 1, time: -Infinity },
+        { kind: 'note-on', voice: 0, sound: INSTRUMENT, note: 60, volume: 1, time },
         { kind: 'note-off', voice: 0, time: 100 },
         { kind: 'set-voice', voice: 1, setting: 'volume', value: 0.5, time },
         { kind: 'set-filter', filter: 'b', setting: 'cutoffHz', value: 2000, time: 200 },
@@ -265,7 +269,7 @@ function readClampedVolumes({ controls }: HeadlessAudio80): number[] {
 
 /** Starts a sustained note on a music voice and renders `FRAMES` samples of it. */
 function playNote(chip: HeadlessAudio80<{ render: true }>): Float32Array {
-    chip.audio80.noteOn(0, INSTRUMENT, 57, 1);
+    asWriter(chip.audio80).noteOn(0, INSTRUMENT, 57, 1);
     return renderFrames(chip);
 }
 
@@ -276,9 +280,18 @@ function renderFrames(chip: HeadlessAudio80<{ render: true }>): Float32Array {
     return samples;
 }
 
-/** Creates a command Audio80 that sends its instruments and effects nowhere. */
+/** Creates a command Audio80 that sends its sounds nowhere. */
 function createWriter(): ReturnType<typeof createCommandAudio80> {
-    return createCommandAudio80({ onInstrument: () => undefined, onEffect: () => undefined });
+    return createCommandAudio80({ onSound: () => undefined });
+}
+
+/**
+ * The chip as its songs write to it, so a test can play a note on a voice it
+ * chooses, as a song's note plays. A headless chip is its own writer, which its
+ * songs write their notes through, so the cast only names what it already is.
+ */
+function asWriter(audio80: HeadlessAudio80['audio80']): Audio80Writer {
+    return audio80 as typeof audio80 & Audio80Writer;
 }
 
 /** The writer's command at `index`, as its numbers. */
@@ -294,15 +307,15 @@ function renderFilteredNote(mode: Audio80FilterMode): Float32Array {
     const chip = createHeadlessAudio80({ render: { character: 'clean' } });
     chip.audio80.setFilter('a', 'mode', mode);
     chip.audio80.setFilter('a', 'cutoffHz', 20);
-    chip.audio80.noteOn(0, createAudio80Instrument({ wave: 'saw', filter: 'a' }), 96, 1);
+    asWriter(chip.audio80).noteOn(0, createAudio80Sound({ wave: 'saw', filter: 'a' }), 96, 1);
     return renderFrames(chip);
 }
 
-/** Plays an effect and a note, ticking and rendering as a game loop would. */
+/** Plays a sound and a song's note, ticking and rendering as a game loop would. */
 function playAndRender(chip: HeadlessAudio80<{ render: true }>): Float32Array {
     chip.audio80.play(EFFECT);
-    chip.audio80.noteOn(0, INSTRUMENT, 57, 1);
+    asWriter(chip.audio80).noteOn(0, INSTRUMENT, 57, 1);
     chip.controls.update(TICK_MS);
-    chip.audio80.noteOff(0);
+    asWriter(chip.audio80).noteOff(0);
     return renderFrames(chip);
 }

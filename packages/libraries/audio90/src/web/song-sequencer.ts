@@ -67,8 +67,8 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
     const songs = new Map<number, S>();
     const songIds = new Map<S, number>();
     // The id each song's instruments have on the page, which defined them
-    const instrumentIds = new Map<object, number>();
-    const idOf = (instrument: object) => instrumentIds.get(instrument);
+    const soundIds = new Map<object, number>();
+    const idOf = (instrument: object) => soundIds.get(instrument);
     // The slots, in the order they were first called, and each by its number
     const slots: Slot<S, W>[] = [];
     const slotsByNumber = new Map<number, Slot<S, W>>();
@@ -86,7 +86,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
             const song = message.song as S;
             songs.set(message.id, song);
             songIds.set(song, message.id);
-            for (let i = 0; i < song.instruments.length; i++) instrumentIds.set(song.instruments[i], message.instrumentIds[i]);
+            for (let i = 0; i < song.instruments.length; i++) soundIds.set(song.instruments[i], message.soundIds[i]);
         },
 
         advance(frames, fromMs, chipMsPerSample, frame, enqueue) {
@@ -128,7 +128,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
             calls.length = 0;
             songs.clear();
             songIds.clear();
-            instrumentIds.clear();
+            soundIds.clear();
         },
     };
 

@@ -15,7 +15,7 @@ import {
     toNoteNumber,
 } from '../../shared';
 import { type Audio80FilterId, type Audio80FilterMode, VOICE_COUNT } from '../synthesiser';
-import type { Audio80Instrument } from './instrument';
+import type { Audio80Sound } from './sound';
 
 export type { SongOrderEntry } from '../../shared';
 
@@ -40,8 +40,8 @@ export interface Audio80Song {
     readonly swing: number;
     /** How many cells each row has, one per channel. The music player plays channel n on voice n. */
     readonly channelCount: number;
-    /** The song's instruments, in the order that a cell's `CELL_INSTRUMENT` indexes them. */
-    readonly instruments: readonly Audio80Instrument[];
+    /** The song's instruments, the sounds it plays, in the order that a cell's `CELL_INSTRUMENT` indexes them. */
+    readonly instruments: readonly Audio80Sound[];
     /** The song's patterns, in the order that `SongOrderEntry.pattern` indexes them. */
     readonly patterns: readonly SongPattern[];
     /** The patterns in playing order. */
@@ -131,8 +131,8 @@ export interface Audio80SongOptions {
     readonly rowsPerBeat?: number;
     /** How late each odd-numbered row of a pattern plays, as a share of a row, from 0 to 0.5. Defaults to 0. */
     readonly swing?: number;
-    /** The song's instruments, each named by the one letter the patterns use for it. */
-    readonly instruments: Readonly<Record<string, Audio80Instrument>>;
+    /** The song's instruments: the sounds it plays, each named by the one letter the patterns use for it. */
+    readonly instruments: Readonly<Record<string, Audio80Sound>>;
     /**
      * The song's patterns, by name. Each pattern is a multiline string, with
      * one row on each line. A `#` at the start of a line or after a space
@@ -247,7 +247,7 @@ function parseCell(
     text: string,
     where: string,
     letters: readonly string[],
-    instruments: readonly Audio80Instrument[],
+    instruments: readonly Audio80Sound[],
     cells: number[],
 ): void {
     let note = NO_NOTE;

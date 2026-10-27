@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from 'audio90';
+import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80Sound } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80, type HeadlessControls } from 'audio90/headless';
 import {
     DEATH, FIRE, FIRE_WARNING, GAME_OVER, GHOST, HARPOON, LEVEL_CLEAR, LEVEL_START, POP, PUMP_1, PUMP_2, PUMP_3,
@@ -240,13 +240,13 @@ describe('RockAudioView', () => {
 type Play = Extract<Audio80Write, { kind: 'play' }>;
 type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
-function listPlays(log: readonly Audio80Write[], effect: Audio80SoundEffect): Play[] {
-    return log.filter((write): write is Play => write.kind === 'play' && write.effect === effect);
+function listPlays(log: readonly Audio80Write[], effect: Audio80Sound): Play[] {
+    return log.filter((write): write is Play => write.kind === 'play' && write.sound === effect);
 }
 
 /** Lists the effects played in `log`, in order. */
-function listPlayedEffects(log: readonly Audio80Write[]): Audio80SoundEffect[] {
-    return log.filter((write): write is Play => write.kind === 'play').map((write) => write.effect);
+function listPlayedEffects(log: readonly Audio80Write[]): Audio80Sound[] {
+    return log.filter((write): write is Play => write.kind === 'play').map((write) => write.sound);
 }
 
 /**

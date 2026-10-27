@@ -214,7 +214,7 @@ describe('GameAudioView', () => {
         state.bossPhase = 'breaking';
         state.isBombing = true;
         tick();
-        const panOf = (effect: Play['effect']) => listPlays(chip.log, effect)[0]?.pan;
+        const panOf = (effect: Play['sound']) => listPlays(chip.log, effect)[0]?.options?.pan;
         expect(panOf(GRAZE)).toBeLessThan(-0.5);
         expect(panOf(EXPLODE_SMALL)).toBeGreaterThan(0.5);
         expect(panOf(ATTACK_BROKEN)).toBeCloseTo(0, 9);
@@ -324,8 +324,8 @@ function listWrites<K extends Audio90Write['kind']>(log: readonly Audio90Write[]
     return log.filter((write): write is Extract<Audio90Write, { kind: K }> => write.kind === kind);
 }
 
-function listPlays(log: readonly Audio90Write[], effect: Play['effect']): Play[] {
-    return listWrites(log, 'play').filter((write) => write.effect === effect);
+function listPlays(log: readonly Audio90Write[], effect: Play['sound']): Play[] {
+    return listWrites(log, 'play').filter((write) => write.sound === effect);
 }
 
 /**

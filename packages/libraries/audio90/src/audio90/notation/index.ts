@@ -3,18 +3,18 @@ export { AUDIO90_CELL_TEXT_WIDTH, formatAudio90Cell } from './format-cell';
 export {
     type Audio90Envelope,
     type Audio90Filter,
-    type Audio90Instrument,
-    type Audio90InstrumentOptions,
     type Audio90Lfo,
     type Audio90ModEnvelope,
     type Audio90Operator,
     type Audio90Oscillator,
     type Audio90OscillatorB,
+    type Audio90Sound,
+    type Audio90SoundOptions,
     type Audio90Vibrato,
-    createAudio90Instrument,
-} from './instrument';
+    createAudio90Sound,
+    isAudio90Sound,
+} from './sound';
 export { type Audio90Sample, type Audio90SampleLoop, type Audio90SampleOptions, createAudio90Sample, prepareAudio90Samples } from './sample';
-export { type Audio90SoundEffect, type Audio90SoundEffectOptions, createAudio90SoundEffect, isAudio90SoundEffect } from './sound-effect';
 export {
     type Audio90ChannelMix,
     type Audio90ChorusSettings,

@@ -1,7 +1,7 @@
 import {
     type Audio80Writer,
     type Audio80FilterSetting,
-    type Audio80Instrument,
+    type Audio80Sound,
     type Audio80Song,
     type Audio80VoiceSetting,
     CELL_ARPEGGIO,
@@ -58,7 +58,7 @@ export function createAudio80SongDriver(options: Audio80SongDriverOptions): Song
     // Each channel's slide, in semitones a second at a tempo scale of 1, or 0 if it is not sliding
     const channelSlideRate = new Float64Array(VOICE_COUNT);
     // Every instrument of every song played, so a queued note can name its instrument by number
-    const instruments: Audio80Instrument[] = [];
+    const instruments: Audio80Sound[] = [];
     let slots: number[] = [];
 
     // Writes waiting for `refresh`, stored as numbers laid out as the chip's commands are

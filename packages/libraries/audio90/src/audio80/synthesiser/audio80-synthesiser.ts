@@ -1,26 +1,27 @@
-import { chooseEffectVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, type EffectVoices, LN_SEMITONE } from '../../shared';
+import { chooseSoundVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, LN_SEMITONE, type SoundVoices } from '../../shared';
 import {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
     OP_NOTE_OFF,
     OP_NOTE_ON,
-    OP_PLAY_EFFECT,
+    OP_PLAY,
+    OP_PLAY_OPTIONS,
     OP_RELEASE_ALL,
     OP_RESERVE_VOICES,
     OP_SET_ECHO,
     OP_SET_FILTER,
     OP_SET_MIX,
     OP_SET_VOICE,
+    OP_STOP,
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
 } from './commands';
 import {
     type Audio80Character,
-    type EffectData,
     FILTER_BANDPASS,
     FILTER_HIGHPASS,
     FILTER_LOWPASS,
-    type InstrumentData,
+    type SoundData,
     type StepData,
     WAVE_NOISE,
     WAVE_PULSE,
@@ -28,7 +29,7 @@ import {
     WAVE_TABLE,
     WAVE_TRIANGLE,
     WAVETABLE_SIZE,
-} from './instrument-data';
+} from './sound-data';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -38,7 +39,7 @@ import {
  * The Audio80's synthesiser, which computes its sound. It has eight voices,
  * two filters, an echo and an output stage, mixed to one channel because the
  * chip is mono. A voice is a channel that plays one note at a time. It also
- * has a driver, which plays instruments and effects on the voices.
+ * has a driver, which plays sounds on the voices.
  *
  * It is plain TypeScript with no Web Audio in it, so it runs the same in an
  * audio worklet (code on the browser's audio thread) and in Node. It never
@@ -49,10 +50,8 @@ import {
 export interface Audio80Synthesiser {
     /** The rate it renders at, in samples a second. */
     readonly sampleRate: number;
-    /** Makes an instrument playable by id. It runs once per instrument until the next `reset`, so it is not on a hot path. */
-    defineInstrument: (id: number, data: InstrumentData) => void;
-    /** Makes an effect playable by id. It runs once per effect until the next `reset`, so it is not on a hot path. */
-    defineEffect: (id: number, data: EffectData) => void;
+    /** Makes a sound playable by id. It runs once per sound until the next `reset`, so it is not on a hot path. */
+    defineSound: (id: number, data: SoundData) => void;
     /**
      * Queues `count` commands to apply at their stamps. Each command takes
      * `COMMAND_STRIDE` numbers. A command's stamp is the chip time it applies
@@ -74,8 +73,7 @@ export interface Audio80Synthesiser {
      */
     render: (output: Float32Array, offset: number, frames: number, fromMs: number, msPerSample: number) => void;
     /**
-     * Cuts every voice, empties the queue, and forgets every instrument and
-     * effect. It leaves the mix set by `setMix` as it is, because the mix is
+     * Cuts every voice, empties the queue, and forgets every sound. It leaves the mix set by `setMix` as it is, because the mix is
      * the listener's volume setting, not part of what was playing.
      */
     reset: () => void;
@@ -85,14 +83,14 @@ export interface Audio80Synthesiser {
      * starting mix. Changes during play go through `OP_SET_MIX` commands.
      * Those ramp, moving the gain to its new value gradually.
      *
-     * @param bus 0 for music, 1 for effects. Any other value is ignored.
+     * @param bus 0 for music, 1 for sounds played on their own. Any other value is ignored.
      * @param gain 0 to 2, where 1 is as written. It is held to that range. A non-finite gain is ignored.
      */
     setMix: (bus: number, gain: number) => void;
     /** Whether voice `voice` is making a sound. */
     isSounding: (voice: number) => boolean;
-    /** Finds the effect that voice `voice` is playing. Returns its id, or `undefined` if the voice is not playing one. */
-    findEffectOn: (voice: number) => number | undefined;
+    /** Finds the sound that voice `voice` was played with, as `OP_PLAY` plays one. Returns its id, or `undefined` if the voice is not playing one. */
+    findSoundOn: (voice: number) => number | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -123,8 +121,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const echoDamping = adaptCoefficient(ECHO_DAMPING_AT_48K, sampleRate);
     const mixRamp = adaptCoefficient(MIX_RAMP_AT_48K, sampleRate);
 
-    const instruments = new Map<number, InstrumentData>();
-    const effects = new Map<number, EffectData>();
+    const sounds = new Map<number, SoundData>();
 
     // ---- Voices: one slot per voice in each array ---------------------------
     const phase = new Float64Array(VOICE_COUNT);
@@ -149,7 +146,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     const noteVolume = new Float64Array(VOICE_COUNT);
     const stepVolume = new Float64Array(VOICE_COUNT);
-    const instrumentVolume = new Float64Array(VOICE_COUNT);
+    const soundVolume = new Float64Array(VOICE_COUNT);
     const route = new Int32Array(VOICE_COUNT);
     const echoSend = new Float64Array(VOICE_COUNT);
 
@@ -167,12 +164,16 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const filterSweepFrom = new Float64Array(VOICE_COUNT);
     const filterSweepTo = new Float64Array(VOICE_COUNT);
 
-    // Which effect each voice plays. The voice allocator reads these
-    const effectId = new Int32Array(VOICE_COUNT);
-    const effectPriority = new Float64Array(VOICE_COUNT);
+    // Which sound each voice was played with, and which play it is. The voice chooser reads these
+    const soundId = new Int32Array(VOICE_COUNT);
+    const soundPriority = new Float64Array(VOICE_COUNT);
     const startedAt = new Float64Array(VOICE_COUNT);
-    const effectVoices: EffectVoices = { effectId, effectPriority, startedAt, isSounding: isVoiceSounding };
+    const soundVoices: SoundVoices = { soundId, soundPriority, startedAt, isSounding: isVoiceSounding };
+    const playId = new Float64Array(VOICE_COUNT);
     let musicVoices = 0;
+    // How the next play plays, as its `OP_PLAY_OPTIONS` said: its length in ms, or -1 to hold, and its glide's note, or -1
+    let nextPlayLengthMs = -1;
+    let nextPlayGlideTo = -1;
 
     // ---- Filters: two -------------------------------------------------------
     const filterMode = new Int32Array(FILTER_COUNT);
@@ -196,7 +197,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     let echoFeedback = 0;
     let echoLevel = 0;
 
-    // ---- The mix: music's voices and effects' voices, each with a gain -------
+    // ---- The mix: music's voices and played sounds' voices, each with a gain --
     // Each bus's target gain and current gain. The current gain moves a little
     // towards the target each sample, so a dragged slider does not click
     const mixTarget = new Float64Array([1, 1]);
@@ -222,12 +223,8 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const synthesiser: Audio80Synthesiser = {
         sampleRate,
 
-        defineInstrument(id, data) {
-            instruments.set(id, data);
-        },
-
-        defineEffect(id, data) {
-            effects.set(id, data);
+        defineSound(id, data) {
+            sounds.set(id, data);
         },
 
         enqueue(commands, count) {
@@ -255,8 +252,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         },
 
         reset() {
-            instruments.clear();
-            effects.clear();
+            sounds.clear();
             resetAll();
         },
 
@@ -269,9 +265,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             return isVoiceSounding(voice);
         },
 
-        findEffectOn(voice) {
-            if (!isVoiceSounding(voice) || effectId[voice] < 0) return undefined;
-            return effectId[voice];
+        findSoundOn(voice) {
+            if (!isVoiceSounding(voice) || soundId[voice] < 0) return undefined;
+            return soundId[voice];
         },
     };
 
@@ -287,7 +283,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         const d = queued[at + 5];
         switch (op) {
             case OP_NOTE_ON: {
-                const data = instruments.get(b);
+                const data = sounds.get(b);
                 if (data !== undefined && isVoice(a)) startNote(a, data, c, d);
                 break;
             }
@@ -303,8 +299,15 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             case OP_SET_ECHO:
                 setEcho(a, b);
                 break;
-            case OP_PLAY_EFFECT:
-                playEffect(a);
+            case OP_PLAY_OPTIONS:
+                nextPlayLengthMs = a;
+                nextPlayGlideTo = b;
+                break;
+            case OP_PLAY:
+                playSound(a, b, c, d);
+                break;
+            case OP_STOP:
+                stop(a);
                 break;
             case OP_RELEASE_ALL:
                 for (let v = 0; v < VOICE_COUNT; v++) release(v);
@@ -318,7 +321,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         }
     }
 
-    function startNote(v: number, data: InstrumentData, note: number, volume: number): void {
+    function startNote(v: number, data: SoundData, note: number, volume: number): void {
         wave[v] = data.wave;
         pulseWidth[v] = data.pulseWidth;
         for (let i = 0; i < WAVETABLE_SIZE; i++) {
@@ -328,7 +331,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         decayCoef[v] = computeFallCoefficient(data.decayMs);
         sustainLevel[v] = data.sustain;
         releaseCoef[v] = computeFallCoefficient(data.releaseMs);
-        instrumentVolume[v] = data.volume;
+        soundVolume[v] = data.volume;
         route[v] = data.filter;
         echoSend[v] = data.echo;
         pulseSweepMs[v] = data.pulseSweepMs;
@@ -349,8 +352,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         // The attack starts from the envelope's current level, so a note played
         // over another does not drop to silence first
         envStage[v] = ENV_ATTACK;
-        effectId[v] = -1;
-        effectPriority[v] = 0;
+        soundId[v] = -1;
+        soundPriority[v] = 0;
+        playId[v] = -1;
         startedAt[v] = sampleClock;
         controlVoice(v, 0);
     }
@@ -369,7 +373,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 pulseSweepMs[v] = 0;
                 break;
             case VOICE_SETTING_INDEX.volume:
-                // Not capped at 1, so a song can lift a quiet instrument
+                // Not capped at 1, so a song can lift a quiet sound
                 noteVolume[v] = Math.max(0, value);
                 break;
             case VOICE_SETTING_INDEX.echoSend:
@@ -437,19 +441,37 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         }
     }
 
-    function playEffect(id: number): void {
-        const fx = effects.get(id);
-        if (fx === undefined) return;
-        const v = chooseEffectVoice(effectVoices, musicVoices, id, fx.priority, fx.maxVoices);
+    /** Plays sound `id` on a voice it chooses, as play `play`, with the options the `OP_PLAY_OPTIONS` before it gave. */
+    function playSound(id: number, play: number, note: number, volume: number): void {
+        const lengthMs = nextPlayLengthMs;
+        const glideTo = nextPlayGlideTo;
+        nextPlayLengthMs = -1;
+        nextPlayGlideTo = -1;
+        const data = sounds.get(id);
+        if (data === undefined) return;
+        const v = chooseSoundVoice(soundVoices, musicVoices, id, data.priority, data.maxVoices);
         if (v < 0) return;
-        startNote(v, fx.instrument, fx.note, fx.volume);
-        effectId[v] = id;
-        effectPriority[v] = fx.priority;
+        startNote(v, data, note, volume);
+        soundId[v] = id;
+        soundPriority[v] = data.priority;
+        playId[v] = play;
+        // A held note has no set length, so it plays until it is stopped
+        if (lengthMs < 0) return;
         // At least one sample. A length of 0 means the note has no set length, so it would never be released
-        driver.setLength(v, Math.max(1, fx.lengthMs / msPerAudioSample));
-        if (!Number.isNaN(fx.glideTo)) {
-            driver.glideBetween(v, fx.note, fx.glideTo, fx.lengthMs);
+        driver.setLength(v, Math.max(1, lengthMs / msPerAudioSample));
+        if (glideTo >= 0) {
+            driver.glideBetween(v, note, glideTo, lengthMs);
             controlVoice(v, 0);
+        }
+    }
+
+    /** Releases the note of play `play`, if a voice still plays it. */
+    function stop(play: number): void {
+        for (let v = 0; v < VOICE_COUNT; v++) {
+            if (playId[v] === play) {
+                release(v);
+                playId[v] = -1;
+            }
         }
     }
 
@@ -555,11 +577,11 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 if (envStage[v] === ENV_IDLE) continue;
                 stepEnvelope(v);
                 oscillate(v);
-                let x = voiceOut[v] * envLevel[v] * noteVolume[v] * stepVolume[v] * instrumentVolume[v] * VOICE_GAIN;
+                let x = voiceOut[v] * envLevel[v] * noteVolume[v] * stepVolume[v] * soundVolume[v] * VOICE_GAIN;
                 // Rounded to 8-bit steps before the bus gain, so a low volume slider does not make raw voices coarser
                 if (isRaw) x = Math.round(x * 127) / 127;
-                // A voice is on the effects bus while it plays an effect, and on the music bus otherwise
-                x *= mixGain[effectId[v] >= 0 ? 1 : 0];
+                // A voice is on the effects bus while it plays a sound played on its own, and on the music bus otherwise
+                x *= mixGain[soundId[v] >= 0 ? 1 : 0];
                 x *= MIX_LEVEL;
                 bus[route[v]] += x;
                 const send = echoSend[v];
@@ -802,18 +824,21 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             releaseCoef[v] = 0;
             noteVolume[v] = 1;
             stepVolume[v] = 1;
-            instrumentVolume[v] = 1;
+            soundVolume[v] = 1;
             route[v] = 0;
             echoSend[v] = 0;
             driver.reset(v);
             pulseSweepMs[v] = 0;
             filterSweepMs[v] = 0;
-            effectId[v] = -1;
-            effectPriority[v] = 0;
+            soundId[v] = -1;
+            soundPriority[v] = 0;
+            playId[v] = -1;
             startedAt[v] = 0;
         }
         wavetable.fill(0);
         musicVoices = 0;
+        nextPlayLengthMs = -1;
+        nextPlayGlideTo = -1;
         for (let f = 0; f < FILTER_COUNT; f++) {
             filterMode[f] = FILTER_LOWPASS;
             filterCutoff[f] = DEFAULT_CUTOFF_HZ;
@@ -859,7 +884,7 @@ const ENV_SUSTAIN = 3;
 const ENV_RELEASE = 4;
 /** The envelope ends its decay this close to the sustain level, and its release this close to 0 (80 dB down). */
 const ENV_FLOOR = 1e-4;
-/** Below this envelope level, a voice counts as silent and is free for an effect. */
+/** Below this envelope level, a voice counts as silent and is free for a sound to play on. */
 const SILENT_LEVEL = 1e-3;
 /** Decay and release fall 60 dB over their time. */
 const LN_FALL = Math.log(1e-3);

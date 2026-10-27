@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
+import { createAudio80Sound } from 'audio90';
 
 // Dojo Duel's instruments and sound effects, for the Audio80. They are all
 // written for this game. Each swish is noise through filter `b`. The `f`
@@ -10,7 +10,7 @@ import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 // ---------------------------------------------------------------------------
 
 /** A plucked string, something like a koto. It is a narrow pulse wave that dies away and rings in the echo. */
-export const KOTO = createAudio80Instrument({
+export const KOTO = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.18,
     pulseSweep: { to: 0.35, ms: 400 },
@@ -21,7 +21,7 @@ export const KOTO = createAudio80Instrument({
 });
 
 /** A breathy flute for long notes. It is a triangle wave that is slow to start, with a wide vibrato. */
-export const FLUTE = createAudio80Instrument({
+export const FLUTE = createAudio80Sound({
     wave: 'triangle',
     envelope: { attackMs: 70, decayMs: 300, sustain: 0.8, releaseMs: 260 },
     vibrato: { semitones: 0.3, hz: 5, delayMs: 160 },
@@ -30,7 +30,7 @@ export const FLUTE = createAudio80Instrument({
 });
 
 /** The chords, played as arpeggios. It is a soft square wave, kept quiet behind the lead. */
-export const CHORD = createAudio80Instrument({
+export const CHORD = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.5,
     envelope: { attackMs: 2, decayMs: 260, sustain: 0.3, releaseMs: 120 },
@@ -39,7 +39,7 @@ export const CHORD = createAudio80Instrument({
 });
 
 /** A plucked bass. Its filter closes quickly on each note. */
-export const BASS = createAudio80Instrument({
+export const BASS = createAudio80Sound({
     wave: 'saw',
     envelope: { attackMs: 1, decayMs: 200, sustain: 0.35, releaseMs: 70 },
     filter: 'a',
@@ -48,7 +48,7 @@ export const BASS = createAudio80Instrument({
 });
 
 /** A taiko drum. It is a slap of noise, then a low triangle wave that sinks in pitch. */
-export const TAIKO = createAudio80Instrument({
+export const TAIKO = createAudio80Sound({
     note: 'C-2',
     envelope: { attackMs: 0, decayMs: 320, sustain: 0, releaseMs: 0 },
     steps: `
@@ -63,7 +63,7 @@ export const TAIKO = createAudio80Instrument({
 });
 
 /** A rim knock, which is a short, high crack of noise. */
-export const RIM = createAudio80Instrument({
+export const RIM = createAudio80Sound({
     wave: 'noise',
     note: 'G-6',
     envelope: { attackMs: 0, decayMs: 70, sustain: 0, releaseMs: 0 },
@@ -71,7 +71,7 @@ export const RIM = createAudio80Instrument({
 });
 
 /** A shaker, which is a very short hiss of noise. */
-export const SHAKER = createAudio80Instrument({
+export const SHAKER = createAudio80Sound({
     wave: 'noise',
     note: 'C-7',
     envelope: { attackMs: 0, decayMs: 35, sustain: 0, releaseMs: 0 },
@@ -83,7 +83,7 @@ export const SHAKER = createAudio80Instrument({
 // ---------------------------------------------------------------------------
 
 /** The swish of a punch. It is short and high. */
-export const PUNCH_SWISH = createAudio80SoundEffect({
+export const PUNCH_SWISH = createAudio80Sound({
     note: 'C-7',
     filter: 'b',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 40 },
@@ -101,7 +101,7 @@ export const PUNCH_SWISH = createAudio80SoundEffect({
 });
 
 /** The swish of a kick. It is fuller than a punch's, and lower and longer. */
-export const KICK_SWISH = createAudio80SoundEffect({
+export const KICK_SWISH = createAudio80Sound({
     note: 'G-6',
     filter: 'b',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
@@ -121,7 +121,7 @@ export const KICK_SWISH = createAudio80SoundEffect({
 });
 
 /** The swish of a jump, a somersault or a flying kick. It is a long rush of air that rises and falls. */
-export const LEAP_SWISH = createAudio80SoundEffect({
+export const LEAP_SWISH = createAudio80Sound({
     note: 'E-6',
     filter: 'b',
     stepMs: 35,
@@ -144,7 +144,7 @@ export const LEAP_SWISH = createAudio80SoundEffect({
 });
 
 /** The sound of a block, which is a dry, wooden clack. */
-export const BLOCK = createAudio80SoundEffect({
+export const BLOCK = createAudio80Sound({
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 40 },
     priority: 1,
     maxVoices: 2,
@@ -158,7 +158,7 @@ export const BLOCK = createAudio80SoundEffect({
 });
 
 /** The sound of a blow that lands. It is a crack, then the thud of a fighter going down. */
-export const HIT = createAudio80SoundEffect({
+export const HIT = createAudio80Sound({
     note: 'C-3',
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 120 },
     priority: 2,
@@ -179,14 +179,12 @@ export const HIT = createAudio80SoundEffect({
 });
 
 /** The gong that starts a round. It is a metallic tone made of two waves combined, and it sinks a little as it rings. */
-export const GONG = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'saw+pulse',
-        pulseWidth: 0.3,
-        envelope: { attackMs: 2, decayMs: 2200, sustain: 0, releaseMs: 400 },
-        vibrato: { semitones: 0.12, hz: 4 },
-        echo: 0.5,
-    }),
+export const GONG = createAudio80Sound({
+    wave: 'saw+pulse',
+    pulseWidth: 0.3,
+    envelope: { attackMs: 2, decayMs: 2200, sustain: 0, releaseMs: 400 },
+    vibrato: { semitones: 0.12, hz: 4 },
+    echo: 0.5,
     note: 'D-3',
     glideTo: 'C#3',
     lengthMs: 2200,
@@ -194,7 +192,7 @@ export const GONG = createAudio80SoundEffect({
 });
 
 /** The short phrase played when the player scores a point. It is three rising notes. */
-export const POINT_WON = createAudio80SoundEffect({
+export const POINT_WON = createAudio80Sound({
     note: 'A-5',
     stepMs: 90,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 150 },
@@ -209,7 +207,7 @@ export const POINT_WON = createAudio80SoundEffect({
 });
 
 /** The short phrase played when the opponent scores a point. It is three falling notes. */
-export const POINT_LOST = createAudio80SoundEffect({
+export const POINT_LOST = createAudio80Sound({
     note: 'E-5',
     stepMs: 110,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 150 },
@@ -224,7 +222,7 @@ export const POINT_LOST = createAudio80SoundEffect({
 });
 
 /** A short, high tick, played in each of a round's last seconds. */
-export const TICK = createAudio80SoundEffect({
+export const TICK = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.25,
     note: 'E-6',

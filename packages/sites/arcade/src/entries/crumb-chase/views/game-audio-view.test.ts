@@ -105,7 +105,7 @@ describe('GameAudioView', () => {
             state.remainingCrumbs = remaining;
             tickFor(TICK_MS);
         }
-        const nibbles = listPlays(chip.log).map((write) => write.effect);
+        const nibbles = listPlays(chip.log).map((write) => write.sound);
         expect(nibbles).toEqual([NIBBLE_HIGH, NIBBLE_LOW, NIBBLE_HIGH]);
     });
 

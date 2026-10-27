@@ -8,10 +8,11 @@ import {
     OP_SET_FILTER,
     OP_SET_MIX,
     OP_SET_VOICE,
+    OP_STOP,
     VOICE_COUNT,
     VOICE_SETTINGS,
 } from '../audio80';
-import { type HeldWriteSlots, isIndex } from './held-writes';
+import { type HeldWriteSlots, isIndex, STOP_SLOT_COUNT } from './held-writes';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -19,8 +20,9 @@ import { type HeldWriteSlots, isIndex } from './held-writes';
 
 /**
  * The Audio80's writes worth keeping while it cannot play: each voice's
- * latest `noteOff`, the latest value of each voice, filter and echo
- * setting, the voices kept for music, the mix, and the latest `releaseAll`.
+ * latest `noteOff`, the latest `stop` of each recent play, the latest value
+ * of each voice, filter and echo setting, the voices kept for music, the
+ * mix, and the latest `releaseAll`.
  */
 export const AUDIO80_HELD_SLOTS: HeldWriteSlots = createSlots();
 
@@ -41,8 +43,9 @@ function createSlots(): HeldWriteSlots {
     const reserveSlot = echoBase + ECHO_SETTINGS.length;
     const mixBase = reserveSlot + 1;
     const releaseAllSlot = mixBase + mixBusCount;
+    const stopBase = releaseAllSlot + 1;
     return {
-        slotCount: releaseAllSlot + 1,
+        slotCount: stopBase + STOP_SLOT_COUNT,
         findSlot(op, a, b) {
             switch (op) {
                 case OP_NOTE_OFF:
@@ -59,6 +62,8 @@ function createSlots(): HeldWriteSlots {
                     return isIndex(a, mixBusCount) ? mixBase + a : -1;
                 case OP_RELEASE_ALL:
                     return releaseAllSlot;
+                case OP_STOP:
+                    return Number.isInteger(a) && a > 0 ? stopBase + a % STOP_SLOT_COUNT : -1;
                 default:
                     return -1;
             }

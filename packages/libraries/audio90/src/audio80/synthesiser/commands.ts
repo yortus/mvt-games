@@ -1,5 +1,5 @@
 import type { ChipBatch } from '../../shared';
-import type { EffectData, Audio80FilterMode, InstrumentData, Audio80Wave } from './instrument-data';
+import type { Audio80FilterMode, SoundData, Audio80Wave } from './sound-data';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -11,7 +11,7 @@ import type { EffectData, Audio80FilterMode, InstrumentData, Audio80Wave } from 
 /** Voices on the chip, numbered from 0. */
 export const VOICE_COUNT = 8;
 
-/** Starts a note. `a` is the voice, `b` the instrument id, `c` the note and `d` the volume. */
+/** Starts a note. `a` is the voice, `b` the sound's id, `c` the note and `d` the volume. */
 export const OP_NOTE_ON = 1;
 /** Releases a voice's note. `a` is the voice. */
 export const OP_NOTE_OFF = 2;
@@ -29,8 +29,12 @@ export const OP_SET_VOICE = 3;
 export const OP_SET_FILTER = 4;
 /** Sets one of the echo's settings. `a` is the setting's index in `ECHO_SETTING_INDEX`, and `b` the value. */
 export const OP_SET_ECHO = 5;
-/** Plays an effect. `a` is the effect id. */
-export const OP_PLAY_EFFECT = 6;
+/**
+ * Plays a sound on a voice the chip chooses. `a` is the sound's id, `b` the
+ * play's id, `c` the note and `d` the volume. The `OP_PLAY_OPTIONS` written
+ * just before it says how long it lasts and where it glides.
+ */
+export const OP_PLAY = 6;
 /** Releases every voice's note. No operands. */
 export const OP_RELEASE_ALL = 7;
 /**
@@ -43,19 +47,28 @@ export const OP_RESERVE_VOICES = 8;
  * gain, from 0 to 2. The gain ramps to its new value over about 10 ms.
  */
 export const OP_SET_MIX = 9;
+/**
+ * Says how the next `OP_PLAY` plays. `a` is how long it holds its note
+ * before releasing it, in ms, or -1 to hold it until it is stopped. `b` is
+ * the note it glides to over that time, or -1 for none. A play always
+ * writes one just before its `OP_PLAY`, with the same stamp.
+ */
+export const OP_PLAY_OPTIONS = 10;
+/** Releases the note of a play, if it is still sounding. `a` is the play's id. */
+export const OP_STOP = 11;
 
 /** A setting of one voice that can be written directly. */
 export type Audio80VoiceSetting =
     /** A note number, which may be fractional for a bend. It changes the pitch without starting a note. */
     | 'note'
     /**
-     * 0 to 1, as in `InstrumentData.pulseWidth`. For a lone pulse, it is the
+     * 0 to 1, as in `SoundData.pulseWidth`. For a lone pulse, it is the
      * share of each cycle spent on one level. In a combined wave, it is where
      * in each cycle the pulse starts letting the other waves through. Setting
-     * it stops the instrument's pulse sweep for the note.
+     * it stops the sound's pulse sweep for the note.
      */
     | 'pulseWidth'
-    /** The note's volume, 0 or more. 1 plays it as written, and above 1 lifts a quiet instrument. */
+    /** The note's volume, 0 or more. 1 plays it as written, and above 1 lifts a quiet sound. */
     | 'volume'
     /** How much of the voice goes to the echo, from 0 to 1. */
     | 'echoSend'
@@ -156,15 +169,13 @@ export const FILTER_SETTINGS: readonly Audio80FilterSetting[] = listNamesByIndex
 export const ECHO_SETTINGS: readonly Audio80EchoSetting[] = listNamesByIndex(ECHO_SETTING_INDEX);
 
 /**
- * A message the main thread sends the worklet. A `batch` carries one frame's
- * commands and the newest chip time. An `instrument` or `effect` message
- * carries one the first time it is played. A `reset` clears the chip so the
- * next game starts fresh.
+ * A message the main thread sends the worklet. A `batch` carries commands. A
+ * `sound` message carries a sound the first time it is played. A `reset`
+ * clears the chip so the next game starts fresh.
  */
 export type Audio80ChipMessage =
     | ChipBatch
-    | { readonly kind: 'instrument'; readonly id: number; readonly data: InstrumentData }
-    | { readonly kind: 'effect'; readonly id: number; readonly data: EffectData }
+    | { readonly kind: 'sound'; readonly id: number; readonly data: SoundData }
     | { readonly kind: 'reset' };
 
 // ---------------------------------------------------------------------------

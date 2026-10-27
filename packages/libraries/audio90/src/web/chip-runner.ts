@@ -27,7 +27,7 @@ export interface ChipRunner<D extends PassedMessage = PassedMessage> {
  * What the main thread sends a chip's worklet: a batch of commands, `pause`
  * or `resume`, `reset`, `stop` when the chip is destroyed, a message for the
  * chip's sequencer, or a message the runner passes to the chip's own part,
- * such as one that defines an instrument.
+ * such as one that defines a sound.
  */
 export type RunnerMessage<D extends PassedMessage = PassedMessage> =
     | D
@@ -40,18 +40,18 @@ export type RunnerMessage<D extends PassedMessage = PassedMessage> =
 
 /**
  * A message the runner passes to the chip's own part: one that defines
- * something the commands use, such as an instrument, an effect or a sample,
- * or one about the scopes.
+ * something the commands use, such as a sound or a sample, or one about the
+ * scopes.
  */
 export interface PassedMessage {
-    readonly kind: 'instrument' | 'effect' | 'sample' | 'scopes' | 'scope-buffer';
+    readonly kind: 'sound' | 'sample' | 'scopes' | 'scope-buffer';
 }
 
 /** What the runner needs of a chip's synthesiser. Each chip's runner adapts its synthesiser to it. */
 export interface RunnerSynthesiser<D extends PassedMessage> {
     /** Queues `count` commands from `commands`, which it copies. */
     enqueue: (commands: Float64Array, count: number) => void;
-    /** Handles a message passed to the chip's own part, such as one that defines an instrument. */
+    /** Handles a message passed to the chip's own part, such as one that defines a sound. */
     receive: (message: D) => void;
     /** Renders `frames` samples into each of `channels`, the first at chip time `fromMs`, each `msPerSample` after the one before. */
     render: (channels: readonly Float32Array[], frames: number, fromMs: number, msPerSample: number) => void;

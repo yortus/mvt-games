@@ -1,4 +1,4 @@
-import { chooseEffectVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, type EffectVoices, LN_SEMITONE } from '../../shared';
+import { chooseSoundVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, LN_SEMITONE, type SoundVoices } from '../../shared';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
@@ -13,7 +13,8 @@ import {
     type Audio90EffectSetting,
     OP90_NOTE_OFF,
     OP90_NOTE_ON,
-    OP90_PLAY_EFFECT,
+    OP90_PLAY,
+    OP90_PLAY_OPTIONS,
     OP90_RELEASE_ALL,
     OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
@@ -21,11 +22,11 @@ import {
     OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
+    OP90_STOP,
 } from './commands';
 import {
-    type Audio90EffectData,
     type Audio90EnvelopeData,
-    type Audio90InstrumentData,
+    type Audio90SoundData,
     type Audio90SampleData,
     type Audio90StepData,
     ENGINE_ANALOG,
@@ -44,7 +45,7 @@ import {
     WAVE90_PULSE,
     WAVE90_SAW,
     WAVE90_TRIANGLE,
-} from './instrument-data';
+} from './sound-data';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -66,10 +67,8 @@ import {
 export interface Audio90Synthesiser {
     /** The rate it renders at, in samples a second. */
     readonly sampleRate: number;
-    /** Makes an instrument playable by id. It runs once per instrument until the next `reset`, so it is not on a hot path. */
-    defineInstrument: (id: number, data: Audio90InstrumentData) => void;
-    /** Makes an effect playable by id. Not on a hot path. */
-    defineEffect: (id: number, data: Audio90EffectData) => void;
+    /** Makes a sound playable by id. It runs once per sound until the next `reset`, so it is not on a hot path. */
+    defineSound: (id: number, data: Audio90SoundData) => void;
     /**
      * Copies a sample into sample memory, playable by id. Returns false, and
      * keeps none of it, if it does not fit in what is left of the memory.
@@ -92,19 +91,19 @@ export interface Audio90Synthesiser {
      */
     render: (left: Float32Array, right: Float32Array, offset: number, frames: number, fromMs: number, msPerSample: number) => void;
     /**
-     * Cuts every voice, empties the queue, and forgets every instrument,
-     * effect and sample. The effects, the character and the tempo go back to
+     * Cuts every voice, empties the queue, and forgets every sound and
+     * sample. The effects, the character and the tempo go back to
      * their defaults. The mix stays as it is, because it is the listener's.
      */
     reset: () => void;
-    /** Sets a bus's gain at once, without a ramp: 0 for music, 1 for effects, from 0 to 2. */
+    /** Sets a bus's gain at once, without a ramp: 0 for music, 1 for sounds played on their own, from 0 to 2. */
     setMix: (bus: number, gain: number) => void;
     /** Whether voice `voice` is making a sound. */
     isSounding: (voice: number) => boolean;
     /** How many analog oscillators the sounding voices run, which `AUDIO90_OSCILLATOR_BUDGET` caps. */
     readonly oscillatorCount: number;
-    /** The id of the effect voice `voice` is playing, or undefined. */
-    findEffectOn: (voice: number) => number | undefined;
+    /** The id of the sound voice `voice` was played with, as `OP90_PLAY` plays one, or undefined. */
+    findSoundOn: (voice: number) => number | undefined;
     /**
      * Where to write each voice's output for a scope, or undefined for none.
      * It holds `AUDIO90_SCOPE_LENGTH` numbers: `AUDIO90_SCOPE_POINTS` points a
@@ -168,8 +167,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const mixRamp = adapt(MIX_RAMP_AT_48K, sampleRate);
     const consoleSmoothing = 1 - Math.exp(-2 * Math.PI * CONSOLE_SAMPLE_HZ / sampleRate);
 
-    const instruments = new Map<number, Audio90InstrumentData>();
-    const effects = new Map<number, Audio90EffectData>();
+    const sounds = new Map<number, Audio90SoundData>();
     const samples = new Map<number, SampleSlot>();
     const sampleMemory = new Float32Array(AUDIO90_SAMPLE_MEMORY);
     let sampleMemoryUsed = 0;
@@ -184,23 +182,23 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const envReleaseCoef = new Float64Array(envCount);
 
     // ---- Voices ------------------------------------------------------------------
-    const voiceData: (Audio90InstrumentData | undefined)[] = [];
+    const voiceData: (Audio90SoundData | undefined)[] = [];
     const engine = new Int32Array(V);
     const noteVolume = new Float64Array(V);
-    const instrumentVolume = new Float64Array(V);
+    const soundVolume = new Float64Array(V);
     const stepVolume = new Float64Array(V);
     const velocity = new Float64Array(V);
     const isAccented = new Uint8Array(V);
     const accentAmount = new Float64Array(V);
-    // The instrument's pan for this note, which a step row can change, and the channel's, which lasts across notes
+    // The sound's pan for this note, which a step row can change, and the channel's, which lasts across notes
     const notePan = new Float64Array(V);
     const channelPan = new Float64Array(V);
     const panL = new Float64Array(V);
     const panR = new Float64Array(V);
     // Each voice's pan as its controls last set it, for a scope
     const voicePan = new Float64Array(V);
-    // The instrument's sends, the channel's, and their sum, which the samples read
-    const instrumentSends = new Float64Array(V * SEND_COUNT);
+    // The sound's sends, the channel's, and their sum, which the samples read
+    const soundSends = new Float64Array(V * SEND_COUNT);
     const channelSends = new Float64Array(V * SEND_COUNT);
     const sends = new Float64Array(V * SEND_COUNT);
     // Brightness: the note's (a step row's), the channel's, and what the voice plays now
@@ -293,12 +291,19 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const sliceCount = new Int32Array(V);
     const sampleSmooth = new Float64Array(V);
 
-    // Which effect each voice plays. The voice allocator reads these
-    const effectId = new Int32Array(V);
-    const effectPriority = new Float64Array(V);
+    // Which sound each voice was played with, and which play it is. The voice chooser reads these
+    const soundId = new Int32Array(V);
+    const soundPriority = new Float64Array(V);
     const startedAt = new Float64Array(V);
-    const effectVoices: EffectVoices = { effectId, effectPriority, startedAt, isSounding: isVoiceSounding };
+    const soundVoices: SoundVoices = { soundId, soundPriority, startedAt, isSounding: isVoiceSounding };
+    const playId = new Float64Array(V);
     let musicVoices = 0;
+    // How the next play plays, as its `OP90_PLAY_OPTIONS` said: its length in ms, or -1 to hold, its glide's note, or
+    // -1, and its pan, if it has one of its own
+    let nextPlayLengthMs = -1;
+    let nextPlayGlideTo = -1;
+    let nextPlayPan = 0;
+    let hasNextPlayPan = false;
 
     // The driver moves each voice's note on: its steps' pitch, arpeggio, vibrato, glides, slides and length
     const driver = createNoteDriver<Audio90StepData>({ voiceCount: V, sampleRate, onStep: applyStep, onEnd: release });
@@ -360,12 +365,8 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         sampleRate,
         scope: undefined,
 
-        defineInstrument(id, data) {
-            instruments.set(id, data);
-        },
-
-        defineEffect(id, data) {
-            effects.set(id, data);
+        defineSound(id, data) {
+            sounds.set(id, data);
         },
 
         defineSample(id, data) {
@@ -402,8 +403,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         },
 
         reset() {
-            instruments.clear();
-            effects.clear();
+            sounds.clear();
             samples.clear();
             sampleMemoryUsed = 0;
             resetAll();
@@ -426,9 +426,9 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             return count;
         },
 
-        findEffectOn(voice) {
-            if (!isVoiceSounding(voice) || effectId[voice] < 0) return undefined;
-            return effectId[voice];
+        findSoundOn(voice) {
+            if (!isVoiceSounding(voice) || soundId[voice] < 0) return undefined;
+            return soundId[voice];
         },
     };
 
@@ -444,7 +444,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         const d = queued[at + 5];
         switch (op) {
             case OP90_NOTE_ON: {
-                const data = instruments.get(b);
+                const data = sounds.get(b);
                 if (data !== undefined && isVoice(a)) startNote(a, data, c, d);
                 break;
             }
@@ -457,8 +457,17 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             case OP90_SET_EFFECT:
                 setEffect(a, b, c);
                 break;
-            case OP90_PLAY_EFFECT:
-                playEffect(a, b, c === 1);
+            case OP90_PLAY_OPTIONS:
+                nextPlayLengthMs = a;
+                nextPlayGlideTo = b;
+                nextPlayPan = c;
+                hasNextPlayPan = d === 1;
+                break;
+            case OP90_PLAY:
+                playSound(a, b, c, d);
+                break;
+            case OP90_STOP:
+                stop(a);
                 break;
             case OP90_RELEASE_ALL:
                 for (let v = 0; v < V; v++) release(v);
@@ -483,11 +492,11 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     }
 
     /**
-     * Starts a note on voice `v`. A legato instrument's note that overlaps
-     * the one before, on the same instrument, ties into it: it glides, and
-     * its envelopes run on rather than starting again.
+     * Starts a note on voice `v`. A legato sound's note that overlaps the
+     * one before, on the same sound, ties into it: it glides, and its
+     * envelopes run on rather than starting again.
      */
-    function startNote(v: number, data: Audio90InstrumentData, note: number, volume: number): void {
+    function startNote(v: number, data: Audio90SoundData, note: number, volume: number): void {
         const amp = v * ENVS_PER_VOICE;
         const stage = envStage[amp];
         const isHeld = stage !== ENV_IDLE && stage !== ENV_RELEASE;
@@ -502,15 +511,15 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
 
         noteVolume[v] = Math.max(0, volume);
         velocity[v] = clamp(volume, 0, 1);
-        instrumentVolume[v] = data.volume;
+        soundVolume[v] = data.volume;
         stepVolume[v] = 1;
         isAccented[v] = 0;
         accentAmount[v] = data.accent;
         notePan[v] = data.pan;
         noteBrightness[v] = 1;
-        instrumentSends[v * SEND_COUNT + SEND_REVERB] = data.reverb;
-        instrumentSends[v * SEND_COUNT + SEND_ECHO] = data.echo;
-        instrumentSends[v * SEND_COUNT + SEND_CHORUS] = data.chorus;
+        soundSends[v * SEND_COUNT + SEND_REVERB] = data.reverb;
+        soundSends[v * SEND_COUNT + SEND_ECHO] = data.echo;
+        soundSends[v * SEND_COUNT + SEND_CHORUS] = data.chorus;
         modPitch[v] = data.modPitch;
         modCutoff[v] = data.modCutoff;
         modBrightness[v] = data.modBrightness;
@@ -541,15 +550,16 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         else if (data.engine === ENGINE_ANALOG) startAnalog(v, data, isNew);
         else startSample(v, data);
 
-        effectId[v] = -1;
-        effectPriority[v] = 0;
+        soundId[v] = -1;
+        soundPriority[v] = 0;
+        playId[v] = -1;
         startedAt[v] = counters[COUNTER_SAMPLES];
         // The pump ducks the music on each note of its voice
         if (v === pumpVoice) fx[FX_PUMP] = 1 - pumpDepth;
         controlVoice(v, 0);
     }
 
-    function startFm(v: number, data: Audio90InstrumentData, note: number, isTied: boolean): void {
+    function startFm(v: number, data: Audio90SoundData, note: number, isTied: boolean): void {
         const operators = data.operators;
         const count = Math.min(MAX_OPERATORS, operators.length);
         opCount[v] = count;
@@ -592,7 +602,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         carrierScale[v] = carriers > 0 ? 1 / Math.sqrt(carriers) : 0;
     }
 
-    function startAnalog(v: number, data: Audio90InstrumentData, isNew: boolean): void {
+    function startAnalog(v: number, data: Audio90SoundData, isNew: boolean): void {
         analogWave[v] = data.wave;
         unisonWanted[v] = clamp(Math.round(data.unison), 0, MAX_UNISON);
         detune[v] = clamp(data.detune, 0, 1);
@@ -643,7 +653,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         }
     }
 
-    function startSample(v: number, data: Audio90InstrumentData): void {
+    function startSample(v: number, data: Audio90SoundData): void {
         const slot = samples.get(data.sample);
         if (slot === undefined) {
             envStage[v * ENVS_PER_VOICE] = ENV_IDLE;
@@ -818,23 +828,46 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         }
     }
 
-    function playEffect(id: number, pan: number, hasPan: boolean): void {
-        const data = effects.get(id);
+    /** Plays sound `id` on a voice it chooses, as play `play`, with the options the `OP90_PLAY_OPTIONS` before it gave. */
+    function playSound(id: number, play: number, note: number, volume: number): void {
+        const lengthMs = nextPlayLengthMs;
+        const glideTo = nextPlayGlideTo;
+        const pan = nextPlayPan;
+        const hasPan = hasNextPlayPan;
+        nextPlayLengthMs = -1;
+        nextPlayGlideTo = -1;
+        nextPlayPan = 0;
+        hasNextPlayPan = false;
+        const data = sounds.get(id);
         if (data === undefined) return;
-        const v = chooseEffectVoice(effectVoices, musicVoices, id, data.priority, data.maxVoices);
+        const v = chooseSoundVoice(soundVoices, musicVoices, id, data.priority, data.maxVoices);
         if (v < 0) return;
-        // An effect's voice takes none of the channel settings a song left on it
-        channelPan[v] = clamp(hasPan ? pan : data.pan, -1, 1);
+        // The voice takes none of the channel settings a song left on it. A pan of the play's own moves the
+        // sound from its own pan to there
+        channelPan[v] = hasPan ? clamp(pan, -1, 1) - data.pan : 0;
         channelBrightness[v] = 1;
         for (let i = 0; i < SEND_COUNT; i++) channelSends[v * SEND_COUNT + i] = 0;
-        startNote(v, data.instrument, data.note, data.volume);
-        effectId[v] = id;
-        effectPriority[v] = data.priority;
+        startNote(v, data, note, volume);
+        soundId[v] = id;
+        soundPriority[v] = data.priority;
+        playId[v] = play;
+        // A held note has no set length, so it plays until it is stopped
+        if (lengthMs < 0) return;
         // At least one sample. A length of 0 means the note has no set length, so it would never be released
-        driver.setLength(v, Math.max(1, data.lengthMs / msPerAudioSample));
-        if (!Number.isNaN(data.glideTo)) {
-            driver.glideBetween(v, data.note, data.glideTo, data.lengthMs);
+        driver.setLength(v, Math.max(1, lengthMs / msPerAudioSample));
+        if (glideTo >= 0) {
+            driver.glideBetween(v, note, glideTo, lengthMs);
             controlVoice(v, 0);
+        }
+    }
+
+    /** Releases the note of play `play`, if a voice still plays it. */
+    function stop(play: number): void {
+        for (let v = 0; v < V; v++) {
+            if (playId[v] === play) {
+                release(v);
+                playId[v] = -1;
+            }
         }
     }
 
@@ -957,7 +990,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         panR[v] = Math.sin((pan + 1) * Math.PI / 4);
         for (let i = 0; i < SEND_COUNT; i++) {
             const at = v * SEND_COUNT + i;
-            sends[at] = Math.min(1, instrumentSends[at] + channelSends[at]);
+            sends[at] = Math.min(1, soundSends[at] + channelSends[at]);
         }
     }
 
@@ -1002,9 +1035,9 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 if (filterMode[v] !== FILTER90_NONE) filterVoice(v);
                 stepEnvelope(amp);
                 stepEnvelope(amp + ENV_MOD);
-                const isEffect = effectId[v] >= 0;
+                const isEffect = soundId[v] >= 0;
                 const accent = isAccented[v] === 1 ? 1 + ACCENT_GAIN * accentAmount[v] : 1;
-                let g = envLevel[amp] * noteVolume[v] * instrumentVolume[v] * stepVolume[v] * accent * lfoGain[v] * VOICE_GAIN;
+                let g = envLevel[amp] * noteVolume[v] * soundVolume[v] * stepVolume[v] * accent * lfoGain[v] * VOICE_GAIN;
                 g *= mixGain[isEffect ? 1 : 0];
                 if (!isEffect && v !== pumpVoice) g *= fx[FX_PUMP];
                 let l: number;
@@ -1432,7 +1465,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             engine[v] = ENGINE_ANALOG;
             driver.reset(v);
             noteVolume[v] = 1;
-            instrumentVolume[v] = 1;
+            soundVolume[v] = 1;
             stepVolume[v] = 1;
             channelPan[v] = 0;
             notePan[v] = 0;
@@ -1444,14 +1477,15 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             lfoGain[v] = 1;
             lfoSeed[v] = LFO_SEED + v * 104729;
             noiseState[v] = NOISE_SEED + v * 7919;
-            effectId[v] = -1;
-            effectPriority[v] = 0;
+            soundId[v] = -1;
+            soundPriority[v] = 0;
+            playId[v] = -1;
             startedAt[v] = 0;
             panL[v] = Math.SQRT1_2;
             panR[v] = Math.SQRT1_2;
         }
         channelSends.fill(0);
-        instrumentSends.fill(0);
+        soundSends.fill(0);
         sends.fill(0);
         filterState.fill(0);
         chorusLine.fill(0);
@@ -1463,6 +1497,10 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         fx[FX_PUMP] = 1;
         counters.fill(0);
         musicVoices = 0;
+        nextPlayLengthMs = -1;
+        nextPlayGlideTo = -1;
+        nextPlayPan = 0;
+        hasNextPlayPan = false;
         queue.clear();
         reverbSize = DEFAULT_REVERB_SIZE;
         reverbDecayMs = DEFAULT_REVERB_DECAY_MS;
@@ -1601,7 +1639,7 @@ const ENV_SUSTAIN = 3;
 const ENV_RELEASE = 4;
 /** The envelope ends its decay this close to the sustain level, and its release this close to 0 (80 dB down). */
 const ENV_FLOOR = 1e-4;
-/** Below this envelope level, a voice counts as silent and is free for an effect. */
+/** Below this envelope level, a voice counts as silent and is free for a sound to play on. */
 const SILENT_LEVEL = 1e-3;
 /** Decay and release fall 60 dB over their time. */
 const LN_FALL = Math.log(1e-3);

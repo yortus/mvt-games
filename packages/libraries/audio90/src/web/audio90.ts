@@ -34,7 +34,7 @@ export interface Audio90Options {
  * resolves once the worklet is running. The worklet's code is its own
  * module, loaded only when this is called.
  *
- * A sample is sent the first time an instrument that plays it is played. It
+ * A sample is sent the first time a sound that plays it is played. It
  * is copied, not moved, so the page keeps it for the next session.
  *
  * While scopes are on, the worklet sends one about 94 times a second, in one
@@ -47,8 +47,7 @@ export interface Audio90Options {
  */
 export function createAudio90(options: Audio90Options = {}): Audio90WithControls {
     const writer = createCommandAudio90({
-        onInstrument: (id, data) => web.send({ kind: 'instrument', id, data }),
-        onEffect: (id, data) => web.send({ kind: 'effect', id, data }),
+        onSound: (id, data) => web.send({ kind: 'sound', id, data }),
         onSample: (id, data) => web.send({ kind: 'sample', id, data }),
         // The chip's time is the worklet's, so a write with no stamp plays as soon as it arrives
         hasClock: false,
@@ -78,9 +77,9 @@ export function createAudio90(options: Audio90Options = {}): Audio90WithControls
         // Its instruments are defined first, under the writer's ids. The song travels without their samples,
         // which the worklet already has by then
         prepareSong(song) {
-            const instrumentIds = song.instruments.map(writer.defineInstrument);
+            const soundIds = song.instruments.map(writer.defineSound);
             const instruments = song.instruments.map((instrument) => (instrument.sample === undefined ? instrument : { ...instrument, sample: undefined }));
-            return { song: { ...song, instruments }, instrumentIds };
+            return { song: { ...song, instruments }, soundIds };
         },
     });
 
@@ -93,8 +92,7 @@ export function createAudio90(options: Audio90Options = {}): Audio90WithControls
         },
         voiceCount: writer.voiceCount,
         play: writer.play,
-        noteOn: writer.noteOn,
-        noteOff: writer.noteOff,
+        stop: writer.stop,
         setVoice: writer.setVoice,
         setEffect: writer.setEffect,
         setCharacter: writer.setCharacter,

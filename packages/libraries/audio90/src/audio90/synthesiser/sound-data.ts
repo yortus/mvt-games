@@ -5,16 +5,24 @@ import { DEFAULT_STEP_MS, type DriverStep } from '../../shared';
 // ---------------------------------------------------------------------------
 
 /**
- * An Audio90 instrument as plain numbers. It holds everything the chip
- * needs to play the instrument, and it is all the chip is sent. The
- * notation makes it from an instrument's options. Each engine reads only its
- * own fields, and the rest keep their defaults.
+ * An Audio90 sound as plain numbers. It holds everything the chip needs to
+ * play the sound, and it is all the chip is sent. The notation makes it from
+ * a sound's options. Each engine reads only its own fields, and the rest keep
+ * their defaults.
  */
-export interface Audio90InstrumentData {
+export interface Audio90SoundData {
     /** `ENGINE_FM`, `ENGINE_ANALOG` or `ENGINE_SAMPLE`. */
     readonly engine: number;
-    /** The note it plays when a song names it with no note, as drums are. */
+    /** The note it plays when played with no note, or named in a pattern with no note, as drums are. */
     readonly note: number;
+    /** How long it holds its note when played, before releasing it, in ms. A song's patterns say how long their notes last instead. */
+    readonly lengthMs: number;
+    /** The note it glides to over `lengthMs` when played, or NaN for none. */
+    readonly glideTo: number;
+    /** Higher wins. When played, it takes a voice from a sound already playing only if that sound's priority is equal or lower. */
+    readonly priority: number;
+    /** How many voices it may play on at once. Played again while on that many, it restarts the oldest of them. */
+    readonly maxVoices: number;
     /** A gain on every note, 0 or more. */
     readonly volume: number;
     /** -1 (left) to 1 (right). */
@@ -65,7 +73,7 @@ export interface Audio90InstrumentData {
     /** How much more an accented note opens the filter and lifts the volume, 0 to 1. */
     readonly accent: number;
 
-    /** The driver's settings, as the Audio80's instruments have them. */
+    /** The driver's settings, as the Audio80's sounds have them. */
     readonly stepMs: number;
     readonly steps: readonly Audio90StepData[];
     readonly arpeggio: readonly number[];
@@ -147,20 +155,6 @@ export interface Audio90StepData extends DriverStep {
     readonly wave: number;
 }
 
-/** A sound effect: an instrument, how to play it, and how it shares voices. */
-export interface Audio90EffectData {
-    readonly instrument: Audio90InstrumentData;
-    readonly note: number;
-    /** The note it glides to over its length, or NaN for none. */
-    readonly glideTo: number;
-    readonly lengthMs: number;
-    readonly volume: number;
-    /** Its pan, unless it is played with one. */
-    readonly pan: number;
-    readonly priority: number;
-    readonly maxVoices: number;
-}
-
 /** A sample, and how it plays. */
 export interface Audio90SampleData {
     /** Its samples, at its own rate. */
@@ -215,12 +209,16 @@ export const MAX_OPERATORS = 4;
 export const HELD_ENVELOPE: Audio90EnvelopeData = Object.freeze({ attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 });
 
 /**
- * An instrument with every field at its default: a held sine, centred, with
- * no filter, sends, LFO or mod envelope. The notation starts from it.
+ * A sound with every field at its default: a held sine, centred, with no
+ * filter, sends, LFO or mod envelope. The notation starts from it.
  */
-export const DEFAULT_AUDIO90_INSTRUMENT: Audio90InstrumentData = Object.freeze({
+export const DEFAULT_AUDIO90_SOUND: Audio90SoundData = Object.freeze({
     engine: ENGINE_ANALOG,
     note: 60,
+    lengthMs: 250,
+    glideTo: Number.NaN,
+    priority: 0,
+    maxVoices: 1,
     volume: 1,
     pan: 0,
     reverb: 0,

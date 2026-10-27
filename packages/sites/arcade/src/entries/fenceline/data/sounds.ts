@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
+import { createAudio80Sound } from 'audio90';
 
 // Fenceline's instruments and sound effects, for the Audio80. They were all
 // written for this game. The tunes are played by a country band: a fiddle,
@@ -13,7 +13,7 @@ import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
  * `a`, that swells in with each stroke of the bow and wavers once held. It
  * leads every tune.
  */
-export const FIDDLE = createAudio80Instrument({
+export const FIDDLE = createAudio80Sound({
     wave: 'saw',
     filter: 'a',
     envelope: { attackMs: 22, decayMs: 500, sustain: 0.65, releaseMs: 110 },
@@ -27,7 +27,7 @@ export const FIDDLE = createAudio80Instrument({
  * through the songs' filter `b`, which snaps shut on each note for the
  * banjo's twang.
  */
-export const BANJO = createAudio80Instrument({
+export const BANJO = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.22,
     filter: 'b',
@@ -38,14 +38,14 @@ export const BANJO = createAudio80Instrument({
 });
 
 /** A round, plucked bass. */
-export const THUMP = createAudio80Instrument({
+export const THUMP = createAudio80Sound({
     wave: 'triangle',
     envelope: { attackMs: 1, decayMs: 260, sustain: 0, releaseMs: 60 },
     volume: 1,
 });
 
 /** A soft kick: a click of noise, then a low triangle, falling. */
-export const KICK = createAudio80Instrument({
+export const KICK = createAudio80Sound({
     note: 'C-3',
     envelope: { attackMs: 0, decayMs: 140, sustain: 0, releaseMs: 0 },
     steps: `
@@ -59,7 +59,7 @@ export const KICK = createAudio80Instrument({
 });
 
 /** A snare played with brushes: a soft swish of noise, over a little body. */
-export const BRUSH = createAudio80Instrument({
+export const BRUSH = createAudio80Sound({
     note: 'A-5',
     stepMs: 20,
     envelope: { attackMs: 3, decayMs: 150, sustain: 0, releaseMs: 0 },
@@ -73,7 +73,7 @@ export const BRUSH = createAudio80Instrument({
 });
 
 /** A light tock of noise, off the beat. */
-export const TOCK = createAudio80Instrument({
+export const TOCK = createAudio80Sound({
     wave: 'noise',
     note: 'C-6',
     envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 0 },
@@ -81,7 +81,7 @@ export const TOCK = createAudio80Instrument({
 });
 
 /** The ute's horn: a buzzy pulse, flicking between two notes a minor third apart, the way a car horn's two notes clash. */
-export const HORN = createAudio80Instrument({
+export const HORN = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.4,
     arpeggio: [0, 3],
@@ -94,7 +94,7 @@ export const HORN = createAudio80Instrument({
 // ---------------------------------------------------------------------------
 
 /** One step of wire off the reel: a soft, high tick. */
-export const STRING_TICK = createAudio80SoundEffect({
+export const STRING_TICK = createAudio80Sound({
     note: 'G-6',
     stepMs: 16,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 },
@@ -108,7 +108,7 @@ export const STRING_TICK = createAudio80SoundEffect({
 });
 
 /** A wire tied off as fence: a hammer on a post, then a bright run up the chord. */
-export const TIE_OFF = createAudio80SoundEffect({
+export const TIE_OFF = createAudio80Sound({
     note: 'G-5',
     stepMs: 40,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 120 },
@@ -131,7 +131,7 @@ export const TIE_OFF = createAudio80SoundEffect({
  * An extra life: a bright banjo-like run up the G chord and on to the
  * octave, ringing out with a flick of arpeggio at the top.
  */
-export const EXTRA_LIFE = createAudio80SoundEffect({
+export const EXTRA_LIFE = createAudio80Sound({
     note: 'G-5',
     stepMs: 55,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 260 },
@@ -158,13 +158,11 @@ export const EXTRA_LIFE = createAudio80SoundEffect({
 });
 
 /** A sheep penned: a bleat, wavering and falling. */
-export const BAA = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'saw+pulse',
-        pulseWidth: 0.35,
-        envelope: { attackMs: 25, decayMs: 0, sustain: 1, releaseMs: 120 },
-        vibrato: { semitones: 0.7, hz: 17 },
-    }),
+export const BAA = createAudio80Sound({
+    wave: 'saw+pulse',
+    pulseWidth: 0.35,
+    envelope: { attackMs: 25, decayMs: 0, sustain: 1, releaseMs: 120 },
+    vibrato: { semitones: 0.7, hz: 17 },
     note: 'E-5',
     glideTo: 'C-5',
     lengthMs: 380,
@@ -174,12 +172,10 @@ export const BAA = createAudio80SoundEffect({
 });
 
 /** A dust devil blowing itself out: a rush of wind, falling away. */
-export const BLOW_OUT = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'noise',
-        envelope: { attackMs: 40, decayMs: 0, sustain: 1, releaseMs: 380 },
-        vibrato: { semitones: 1.5, hz: 6 },
-    }),
+export const BLOW_OUT = createAudio80Sound({
+    wave: 'noise',
+    envelope: { attackMs: 40, decayMs: 0, sustain: 1, releaseMs: 380 },
+    vibrato: { semitones: 1.5, hz: 6 },
     note: 'C-7',
     glideTo: 'C-4',
     lengthMs: 760,
@@ -188,7 +184,7 @@ export const BLOW_OUT = createAudio80SoundEffect({
 });
 
 /** A beetle hatching: a crack of shell, and a chirp. */
-export const HATCH = createAudio80SoundEffect({
+export const HATCH = createAudio80Sound({
     stepMs: 30,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
     priority: 1,
@@ -204,13 +200,11 @@ export const HATCH = createAudio80SoundEffect({
 });
 
 /** Slack running along the wire: a low creak, repeated while it runs. */
-export const CREAK = createAudio80SoundEffect({
-    instrument: createAudio80Instrument({
-        wave: 'saw+pulse',
-        pulseWidth: 0.4,
-        envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 50 },
-        vibrato: { semitones: 0.8, hz: 15 },
-    }),
+export const CREAK = createAudio80Sound({
+    wave: 'saw+pulse',
+    pulseWidth: 0.4,
+    envelope: { attackMs: 10, decayMs: 0, sustain: 1, releaseMs: 50 },
+    vibrato: { semitones: 0.8, hz: 15 },
     note: 'D-3',
     glideTo: 'A-2',
     lengthMs: 120,
@@ -219,7 +213,7 @@ export const CREAK = createAudio80SoundEffect({
 });
 
 /** The wire snapping, or a beetle's bite: a twang, dropping. */
-export const SNAP = createAudio80SoundEffect({
+export const SNAP = createAudio80Sound({
     note: 'C-6',
     stepMs: 30,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 140 },

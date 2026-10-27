@@ -1,4 +1,4 @@
-import { createAudio90Instrument } from 'audio90';
+import { createAudio90Sound } from 'audio90';
 
 // The instruments, which the tunes share. Every patch is written for this
 // site, from the techniques of the 1990s' synthesisers and
@@ -9,7 +9,7 @@ import { createAudio90Instrument } from 'audio90';
 // ---------------------------------------------------------------------------
 
 /** A bright piano for house: a hammer's click over two bodies, struck hard. */
-export const HOUSE_PIANO = createAudio90Instrument({
+export const HOUSE_PIANO = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -25,7 +25,7 @@ export const HOUSE_PIANO = createAudio90Instrument({
 });
 
 /** A soft electric piano: a bell-like tine over a warm body, brighter the harder it is struck. */
-export const ELECTRIC_PIANO = createAudio90Instrument({
+export const ELECTRIC_PIANO = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -42,7 +42,7 @@ export const ELECTRIC_PIANO = createAudio90Instrument({
 });
 
 /** An organ: four operators side by side, as drawbars at the octaves and the twelfth, with a quick click. */
-export const ORGAN = createAudio90Instrument({
+export const ORGAN = createAudio90Sound({
     engine: 'fm',
     operators: [
         { ratio: 1 },
@@ -55,7 +55,7 @@ export const ORGAN = createAudio90Instrument({
 });
 
 /** A hard, metallic bass: one modulator that bites and fades, feeding back on itself a little. */
-export const FM_BASS = createAudio90Instrument({
+export const FM_BASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -68,7 +68,7 @@ export const FM_BASS = createAudio90Instrument({
 });
 
 /** A slapped bass for a fighting game's stage: a pluck that snaps, then a round body. */
-export const SLAP_BASS = createAudio90Instrument({
+export const SLAP_BASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -81,7 +81,7 @@ export const SLAP_BASS = createAudio90Instrument({
 });
 
 /** Brass, whose modulators swell a little after its carriers, so each note brightens as it speaks. */
-export const BRASS = createAudio90Instrument({
+export const BRASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -98,7 +98,7 @@ export const BRASS = createAudio90Instrument({
 });
 
 /** A console's FM lead guitar: one operator feeding back hard, through a driven filter, singing once it is held. */
-export const FM_GUITAR = createAudio90Instrument({
+export const FM_GUITAR = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -114,7 +114,7 @@ export const FM_GUITAR = createAudio90Instrument({
 });
 
 /** A bell for the ballad: a modulator at three and a half times the note, so its overtones do not fit the note's. */
-export const BELL = createAudio90Instrument({
+export const BELL = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -128,7 +128,7 @@ export const BELL = createAudio90Instrument({
 });
 
 /** A PC sound card's lead: two operators, the modulator a doubled half sine, a little vibrato. */
-export const CARD_LEAD = createAudio90Instrument({
+export const CARD_LEAD = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -142,7 +142,7 @@ export const CARD_LEAD = createAudio90Instrument({
 });
 
 /** The sound card's bass: two operators, the modulator at the note, dying back to a hollow tone. */
-export const CARD_BASS = createAudio90Instrument({
+export const CARD_BASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -155,7 +155,7 @@ export const CARD_BASS = createAudio90Instrument({
 });
 
 /** The sound card's chords: two operators, soft, a quarter-sine modulator for a reedy tone. */
-export const CARD_CHORD = createAudio90Instrument({
+export const CARD_CHORD = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -171,7 +171,7 @@ export const CARD_CHORD = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** A trance lead: seven saws, spread wide and detuned, through a filter left open. */
-export const SUPERSAW = createAudio90Instrument({
+export const SUPERSAW = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 7, detune: 0.3, spread: 0.8 },
     filter: { cutoffHz: 5000, resonance: 0.1, envelope: { octaves: 0.6, decayMs: 250, releaseMs: 100 } },
     envelope: { attackMs: 5, decayMs: 300, sustain: 0.8, releaseMs: 450 },
@@ -182,7 +182,7 @@ export const SUPERSAW = createAudio90Instrument({
 });
 
 /** A wide pad: five slow saws, swelling in, with the chorus around them. */
-export const PAD = createAudio90Instrument({
+export const PAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 5, detune: 0.25, spread: 0.9 },
     filter: { cutoffHz: 1800, resonance: 0.15 },
     envelope: { attackMs: 500, decayMs: 600, sustain: 0.85, releaseMs: 1200 },
@@ -192,7 +192,7 @@ export const PAD = createAudio90Instrument({
 });
 
 /** A gated pad for the trance build: the pad's saws, cut into sixteenths by a square LFO on the beat. */
-export const GATED_PAD = createAudio90Instrument({
+export const GATED_PAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 5, detune: 0.25, spread: 0.9 },
     filter: { cutoffHz: 2400, resonance: 0.15 },
     envelope: { attackMs: 20, decayMs: 0, sustain: 1, releaseMs: 300 },
@@ -202,7 +202,7 @@ export const GATED_PAD = createAudio90Instrument({
 });
 
 /** A squelching bass: one saw into a resonant filter that snaps shut, with accents and slides. */
-export const ACID = createAudio90Instrument({
+export const ACID = createAudio90Sound({
     oscillator: { wave: 'saw' },
     filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6, envelope: { octaves: 3.2, decayMs: 200, releaseMs: 40 } },
     envelope: { attackMs: 1, decayMs: 0, sustain: 1, releaseMs: 25 },
@@ -212,7 +212,7 @@ export const ACID = createAudio90Instrument({
 });
 
 /** A bass of two saws drifting against each other, under a filter that wanders, with a sub an octave down. */
-export const REESE = createAudio90Instrument({
+export const REESE = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 2, detune: 0.12, spread: 0.3 },
     sub: 0.6,
     filter: { cutoffHz: 500, resonance: 0.2 },
@@ -222,14 +222,14 @@ export const REESE = createAudio90Instrument({
 });
 
 /** A sine sub bass, for jungle and trip-hop. */
-export const SUB_BASS = createAudio90Instrument({
+export const SUB_BASS = createAudio90Sound({
     oscillator: { wave: 'sine' },
     envelope: { attackMs: 3, decayMs: 0, sustain: 1, releaseMs: 80 },
     volume: 0.7,
 });
 
 /** A rave stab: three saws through a filter that snaps shut, played as chords with `c`. */
-export const STAB = createAudio90Instrument({
+export const STAB = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 3, detune: 0.2, spread: 0.5 },
     filter: { cutoffHz: 1200, resonance: 0.3, envelope: { octaves: 2.2, decayMs: 160, releaseMs: 60 } },
     envelope: { attackMs: 1, decayMs: 260, sustain: 0.25, releaseMs: 120 },
@@ -239,7 +239,7 @@ export const STAB = createAudio90Instrument({
 });
 
 /** A plucked arpeggio for the trance breakdown: a pulse whose filter closes fast. */
-export const PLUCK = createAudio90Instrument({
+export const PLUCK = createAudio90Sound({
     oscillator: { wave: 'pulse', pulseWidth: 0.3, unison: 2, detune: 0.1, spread: 0.6 },
     filter: { cutoffHz: 600, resonance: 0.4, envelope: { octaves: 3, decayMs: 120, releaseMs: 60 } },
     envelope: { attackMs: 0, decayMs: 300, sustain: 0, releaseMs: 80 },
@@ -249,7 +249,7 @@ export const PLUCK = createAudio90Instrument({
 });
 
 /** Strings, played live: five saws, slow to swell, through a gentle filter. Bounced, they are the role-playing tune's sample. */
-export const STRINGS = createAudio90Instrument({
+export const STRINGS = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 5, detune: 0.2, spread: 0.7 },
     filter: { mode: 'lowpass12', cutoffHz: 2200, resonance: 0.1 },
     envelope: { attackMs: 300, decayMs: 0, sustain: 1, releaseMs: 600 },
@@ -264,7 +264,7 @@ export const STRINGS = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** A bass drum: a sine that falls two octaves as it starts. */
-export const KICK = createAudio90Instrument({
+export const KICK = createAudio90Sound({
     oscillator: { wave: 'sine' },
     modEnvelope: { to: 'pitch', amount: 24, envelope: { attackMs: 0, decayMs: 45, sustain: 0, releaseMs: 0 } },
     envelope: { attackMs: 0, decayMs: 380, sustain: 0, releaseMs: 60 },
@@ -273,7 +273,7 @@ export const KICK = createAudio90Instrument({
 });
 
 /** A long, deep bass drum, for jungle and hip hop. */
-export const BOOM = createAudio90Instrument({
+export const BOOM = createAudio90Sound({
     oscillator: { wave: 'sine' },
     modEnvelope: { to: 'pitch', amount: 24, envelope: { attackMs: 0, decayMs: 60, sustain: 0, releaseMs: 0 } },
     envelope: { attackMs: 0, decayMs: 900, sustain: 0, releaseMs: 200 },
@@ -281,7 +281,7 @@ export const BOOM = createAudio90Instrument({
     volume: 1.2,
 });
 
-export const SNARE = createAudio90Instrument({
+export const SNARE = createAudio90Sound({
     oscillator: { wave: 'triangle' },
     noise: 0.9,
     modEnvelope: { to: 'pitch', amount: 7, envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 0 } },
@@ -292,7 +292,7 @@ export const SNARE = createAudio90Instrument({
     reverb: 0.25,
 });
 
-export const CLAP = createAudio90Instrument({
+export const CLAP = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'bandpass', cutoffHz: 1300, resonance: 0.5 },
@@ -301,7 +301,7 @@ export const CLAP = createAudio90Instrument({
     reverb: 0.3,
 });
 
-export const HAT = createAudio90Instrument({
+export const HAT = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 0.8,
     filter: { mode: 'highpass', cutoffHz: 7500, resonance: 0.2 },
@@ -310,7 +310,7 @@ export const HAT = createAudio90Instrument({
     pan: 0.3,
 });
 
-export const OPEN_HAT = createAudio90Instrument({
+export const OPEN_HAT = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 0.8,
     filter: { mode: 'highpass', cutoffHz: 7000, resonance: 0.2 },
@@ -319,7 +319,7 @@ export const OPEN_HAT = createAudio90Instrument({
     pan: 0.3,
 });
 
-export const SHAKER = createAudio90Instrument({
+export const SHAKER = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 0.6,
     filter: { mode: 'highpass', cutoffHz: 9000 },
@@ -328,7 +328,7 @@ export const SHAKER = createAudio90Instrument({
     pan: -0.4,
 });
 
-export const CRASH = createAudio90Instrument({
+export const CRASH = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 0.9,
     filter: { mode: 'highpass', cutoffHz: 4500, resonance: 0.1 },
@@ -337,7 +337,7 @@ export const CRASH = createAudio90Instrument({
     reverb: 0.3,
 });
 
-export const TOM = createAudio90Instrument({
+export const TOM = createAudio90Sound({
     oscillator: { wave: 'sine' },
     modEnvelope: { to: 'pitch', amount: 9, envelope: { attackMs: 0, decayMs: 70, sustain: 0, releaseMs: 0 } },
     envelope: { attackMs: 0, decayMs: 300, sustain: 0, releaseMs: 80 },
@@ -347,7 +347,7 @@ export const TOM = createAudio90Instrument({
 });
 
 /** A timpani, for the role-playing tune: a low tom that rings and is struck with a little noise. */
-export const TIMPANI = createAudio90Instrument({
+export const TIMPANI = createAudio90Sound({
     oscillator: { wave: 'sine' },
     noise: 0.15,
     modEnvelope: { to: 'pitch', amount: 3, envelope: { attackMs: 0, decayMs: 50, sustain: 0, releaseMs: 0 } },
@@ -358,7 +358,7 @@ export const TIMPANI = createAudio90Instrument({
 });
 
 /** A flute, for the role-playing tune: a near-pure tone that breathes in, with a light modulator and a slow vibrato. */
-export const FLUTE = createAudio90Instrument({
+export const FLUTE = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -377,7 +377,7 @@ export const FLUTE = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** A marimba: a modulator four times the note, struck and gone, for the broken chords. */
-export const MARIMBA = createAudio90Instrument({
+export const MARIMBA = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -390,7 +390,7 @@ export const MARIMBA = createAudio90Instrument({
 });
 
 /** A whistling lead: two operators, the modulator feeding back a little, a quick vibrato once held. */
-export const WHISTLE = createAudio90Instrument({
+export const WHISTLE = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -405,7 +405,7 @@ export const WHISTLE = createAudio90Instrument({
 });
 
 /** A bouncing bass: an FM pluck, round and short. */
-export const BOUNCE_BASS = createAudio90Instrument({
+export const BOUNCE_BASS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -421,7 +421,7 @@ export const BOUNCE_BASS = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** Eurobeat's lead: three bright saws, their filter flaring on each note, with a quick vibrato. */
-export const EURO_LEAD = createAudio90Instrument({
+export const EURO_LEAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 3, detune: 0.15, spread: 0.5 },
     filter: { cutoffHz: 3500, resonance: 0.2, envelope: { octaves: 1.2, decayMs: 200, releaseMs: 120 } },
     envelope: { attackMs: 2, decayMs: 300, sustain: 0.75, releaseMs: 120 },
@@ -432,7 +432,7 @@ export const EURO_LEAD = createAudio90Instrument({
 });
 
 /** Eurobeat's octave bass: a saw whose filter snaps shut on every note. */
-export const EURO_BASS = createAudio90Instrument({
+export const EURO_BASS = createAudio90Sound({
     oscillator: { wave: 'saw' },
     sub: 0.4,
     filter: { cutoffHz: 350, resonance: 0.35, envelope: { octaves: 2.5, decayMs: 110, releaseMs: 60 } },
@@ -445,7 +445,7 @@ export const EURO_BASS = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** A dirty bass riff: two saws driven hard into a resonant filter. */
-export const DIRTY_BASS = createAudio90Instrument({
+export const DIRTY_BASS = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 2, detune: 0.12 },
     filter: { cutoffHz: 700, resonance: 0.5, drive: 0.9, envelope: { octaves: 2, decayMs: 160, releaseMs: 80 } },
     envelope: { attackMs: 0, decayMs: 300, sustain: 0.6, releaseMs: 80 },
@@ -453,7 +453,7 @@ export const DIRTY_BASS = createAudio90Instrument({
 });
 
 /** A siren: a pulse whose pitch rises and falls slowly, for the breakdown. */
-export const SIREN = createAudio90Instrument({
+export const SIREN = createAudio90Sound({
     oscillator: { wave: 'pulse', pulseWidth: 0.3 },
     filter: { cutoffHz: 2500, resonance: 0.2 },
     envelope: { attackMs: 200, decayMs: 0, sustain: 1, releaseMs: 600 },
@@ -468,7 +468,7 @@ export const SIREN = createAudio90Instrument({
 // ---------------------------------------------------------------------------
 
 /** A dreamy electric piano: a soft tine over a warm body, swaying slowly between the speakers. */
-export const DREAM_KEYS = createAudio90Instrument({
+export const DREAM_KEYS = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1 4>3',
     operators: [
@@ -486,7 +486,7 @@ export const DREAM_KEYS = createAudio90Instrument({
 });
 
 /** A hazy pad: six saws spread wide, swelling in slowly, under a filter that drifts open and shut. */
-export const HAZE_PAD = createAudio90Instrument({
+export const HAZE_PAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 6, detune: 0.12, spread: 1 },
     filter: { cutoffHz: 1100, resonance: 0.1, keyTrack: 0.3 },
     lfo: { rateHz: 0.08, cutoff: 0.8, isRetriggered: false },
@@ -497,7 +497,7 @@ export const HAZE_PAD = createAudio90Instrument({
 });
 
 /** A soft arpeggio: an FM modulator at the note, struck and fading, under a gentle filter, its brightness drifting. */
-export const SOFT_ARP = createAudio90Instrument({
+export const SOFT_ARP = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -513,7 +513,7 @@ export const SOFT_ARP = createAudio90Instrument({
 });
 
 /** A deep, round bass: a triangle over a soft sub, gliding between notes that touch. */
-export const DEEP_BASS = createAudio90Instrument({
+export const DEEP_BASS = createAudio90Sound({
     oscillator: { wave: 'triangle' },
     sub: 0.35,
     filter: { cutoffHz: 420, keyTrack: 0.3 },
@@ -523,7 +523,7 @@ export const DEEP_BASS = createAudio90Instrument({
 });
 
 /** A dreamy lead: two warm saws under a gentle filter, slow to speak, gliding, a slow vibrato once held. */
-export const DREAM_LEAD = createAudio90Instrument({
+export const DREAM_LEAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 2, detune: 0.05, spread: 0.5 },
     filter: { cutoffHz: 1400, resonance: 0.2, keyTrack: 0.5 },
     envelope: { attackMs: 90, decayMs: 800, sustain: 0.8, releaseMs: 900 },
@@ -536,7 +536,7 @@ export const DREAM_LEAD = createAudio90Instrument({
 });
 
 /** Wind: white noise through a ringing band, swept slowly up and down. */
-export const AIR = createAudio90Instrument({
+export const AIR = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'bandpass', cutoffHz: 900, resonance: 0.5 },
@@ -547,7 +547,7 @@ export const AIR = createAudio90Instrument({
 });
 
 /** A soft, deep kick: a sine falling two octaves, and a long body. */
-export const SOFT_KICK = createAudio90Instrument({
+export const SOFT_KICK = createAudio90Sound({
     oscillator: { wave: 'sine' },
     modEnvelope: { to: 'pitch', amount: 24, envelope: { attackMs: 0, decayMs: 50, sustain: 0, releaseMs: 0 } },
     envelope: { attackMs: 1, decayMs: 520, sustain: 0, releaseMs: 60 },

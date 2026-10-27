@@ -13,10 +13,11 @@ import { COMMAND_STRIDE } from '../shared';
  * settings once, when it starts, such as its filters and echo. If those were
  * lost, the song would sound wrong until it started again.
  *
- * It keeps the latest call to stop a note (`noteOff`) on each voice. Then a
- * note that started before the chip stopped playing still stops.
+ * It keeps the latest call to stop a note (`noteOff`) on each voice, and
+ * each `stop` of a play, up to `STOP_SLOT_COUNT` of them. Then a note that
+ * started before the chip stopped playing still stops.
  *
- * It drops notes and sound effects. Sent late, they would all play at once.
+ * It drops notes and plays. Sent late, they would all play at once.
  *
  * It holds at most one command per setting and voice, so it never grows.
  * Which writes those are is each chip's: a chip's `HeldWriteSlots` gives
@@ -97,6 +98,18 @@ export function createHeldWrites(options: HeldWriteSlots): HeldWrites {
         },
     };
 }
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * How many plays' stops are kept while a chip cannot play. Each play has a
+ * slot from its id, so the stops of the last this many plays never share
+ * one. A stop of an older play may take the slot of a newer one, but a
+ * pause rarely stops more than a few.
+ */
+export const STOP_SLOT_COUNT = 32;
 
 // ---------------------------------------------------------------------------
 // Functions

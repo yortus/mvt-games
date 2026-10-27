@@ -5,9 +5,9 @@
 /**
  * Moves each voice's note on through time, as the sound drivers of the
  * 1980s and 1990s did once a frame. It works out each voice's note number
- * from the note played, a glide towards it, the instrument's step table, its
+ * from the note played, a glide towards it, the sound's step table, its
  * arpeggio and vibrato, and a slide. It also ends a note with a set length,
- * such as a sound effect's.
+ * such as a play's.
  *
  * What else a step row sets, such as a waveform or a volume, is each chip's
  * own. The driver hands each new row to the chip's `onStep`, and the chip
@@ -27,7 +27,7 @@ export interface NoteDriver<S extends DriverStep> {
      * note's glide, slide, steps and length, and remembers its pitch for a
      * glide from it.
      */
-    start: (v: number, instrument: DriverInstrument<S>, note: number) => void;
+    start: (v: number, instrument: DriverSound<S>, note: number) => void;
     /**
      * Moves voice `v`'s note on by `elapsed` samples, then works out its note
      * number. With an `elapsed` of 0, it only works out the note number, as
@@ -46,7 +46,7 @@ export interface NoteDriver<S extends DriverStep> {
     setSlide: (v: number, semitonesPerSecond: number) => void;
     /** Glides voice `v` from its last note to the one it plays, over this many ms. */
     setGlide: (v: number, ms: number) => void;
-    /** Glides voice `v` from note `from` to note `to` over `ms`, as a sound effect with a glide does. */
+    /** Glides voice `v` from note `from` to note `to` over `ms`, as a play with a glide does. */
     glideBetween: (v: number, from: number, to: number, ms: number) => void;
     /** Ends voice `v`'s note after `samples` samples, calling `onEnd`. 0 means it has no set length. */
     setLength: (v: number, samples: number) => void;
@@ -54,8 +54,8 @@ export interface NoteDriver<S extends DriverStep> {
     reset: (v: number) => void;
 }
 
-/** What the driver reads from an instrument as a note starts. */
-export interface DriverInstrument<S extends DriverStep> {
+/** What the driver reads from a sound as a note starts. */
+export interface DriverSound<S extends DriverStep> {
     /** How long each step of the step table lasts, in ms. 0 or less uses `DEFAULT_STEP_MS`. */
     readonly stepMs: number;
     /** The step table, one row a step. The last row holds once it is reached. */
@@ -93,10 +93,10 @@ export interface NoteDriverOptions<S extends DriverStep> {
     readonly onEnd: (v: number) => void;
 }
 
-/** How long a step lasts, in ms, when an instrument does not say. This gives 60 steps a second. */
+/** How long a step lasts, in ms, when a sound does not say. This gives 60 steps a second. */
 export const DEFAULT_STEP_MS = 1000 / 60;
 
-/** The most semitone offsets an instrument's arpeggio may have, which is as many as the driver holds. It ignores any more. */
+/** The most semitone offsets a sound's arpeggio may have, which is as many as the driver holds. It ignores any more. */
 export const MAX_ARPEGGIO = 16;
 
 // ---------------------------------------------------------------------------

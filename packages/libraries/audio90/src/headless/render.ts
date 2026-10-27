@@ -1,9 +1,9 @@
-import { type Audio80Character, isAudio80Song, isAudio80SoundEffect, type Audio80Song, type Audio80SoundEffect } from '../audio80';
+import { type Audio80Character, isAudio80Song, isAudio80Sound, type Audio80Song, type Audio80Sound } from '../audio80';
 import { createSongPlayer } from '../music-player';
-import { type Audio90Character, type Audio90Song, type Audio90SoundEffect, isAudio90Song, isAudio90SoundEffect } from '../audio90';
+import { type Audio90Character, type Audio90Song, type Audio90Sound, isAudio90Song, isAudio90Sound } from '../audio90';
 import { computeSongDurationMs, type HeadlessControls } from '../shared';
-import { createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
-import { createHeadlessAudio90, type HeadlessAudio90 } from './headless-audio90';
+import { createRenderingChip as createRenderingAudio80, type HeadlessAudio80 } from './headless-audio80';
+import { createRenderingChip as createRenderingAudio90, type HeadlessAudio90 } from './headless-audio90';
 import { toInt16 } from './encode-wav';
 import { listChannels, type RenderedSamples, type StereoSamples } from './stereo-samples';
 
@@ -11,17 +11,17 @@ import { listChannels, type RenderedSamples, type StereoSamples } from './stereo
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A module's songs and sound effects, for either chip, each with the name the module exports it under. */
+/** A module's songs and sounds, for either chip, each with the name the module exports it under. */
 export interface ModuleSounds {
     readonly songs: readonly (readonly [string, Audio80Song | Audio90Song])[];
-    readonly effects: readonly (readonly [string, Audio80SoundEffect | Audio90SoundEffect])[];
+    readonly sounds: readonly (readonly [string, Audio80Sound | Audio90Sound])[];
 }
 
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
 
-/** How to render a song or an effect, on either chip. */
+/** How to render a song or a sound, on either chip. */
 export interface RenderOptions {
     /** The sample rate to render at, in Hz. Defaults to 48,000. */
     readonly sampleRate?: number;
@@ -31,13 +31,13 @@ export interface RenderOptions {
     readonly durationMs?: number;
 }
 
-/** How to render an Audio80's song or effect. */
+/** How to render an Audio80's song or sound. */
 export interface Audio80RenderOptions extends RenderOptions {
     /** How the chip sounds. Defaults to `'classic'`. */
     readonly character?: Audio80Character;
 }
 
-/** How to render an Audio90's song or effect. */
+/** How to render an Audio90's song or sound. */
 export interface Audio90RenderOptions extends RenderOptions {
     /** How the chip sounds. Defaults to `'studio'`. */
     readonly character?: Audio90Character;
@@ -58,7 +58,7 @@ export function renderSong(song: Audio80Song | Audio90Song, options: Audio80Rend
     const durationMs = options.durationMs ?? passMs + TAIL_MS;
     const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
     if (song.chip === 'audio90') {
-        const chip = createHeadlessAudio90({ render: options as Audio90RenderOptions });
+        const chip = createRenderingAudio90({ ...(options as Audio90RenderOptions), record: false });
         // The song player itself, rather than a music player on a slot, so the song stops in a tick before that tick's notes are written
         const player = createSongPlayer({ audio90: chip.audio90 });
         player.play(song);
@@ -69,7 +69,7 @@ export function renderSong(song: Audio80Song | Audio90Song, options: Audio80Rend
             player.refresh();
         });
     }
-    const chip = createHeadlessAudio80({ render: options as Audio80RenderOptions });
+    const chip = createRenderingAudio80({ ...(options as Audio80RenderOptions), record: false });
     const player = createSongPlayer({ audio80: chip.audio80 });
     player.play(song);
     return renderTicks(chip, durationMs, tickMs, (deltaMs) => {
@@ -79,23 +79,23 @@ export function renderSong(song: Audio80Song | Audio90Song, options: Audio80Rend
     });
 }
 
-/** Renders an Audio80's `effect`, played once. Returns the chip's one channel of samples. */
-export function renderSoundEffect(effect: Audio80SoundEffect, options?: Audio80RenderOptions): Float32Array;
-/** Renders an Audio90's `effect`, played once at its own pan. Returns the chip's two channels of samples. */
-export function renderSoundEffect(effect: Audio90SoundEffect, options?: Audio90RenderOptions): StereoSamples;
-/** Renders either chip's `effect`, as a test that goes through a module's effects does. */
-export function renderSoundEffect(effect: Audio80SoundEffect | Audio90SoundEffect, options?: RenderOptions): RenderedSamples;
-export function renderSoundEffect(effect: Audio80SoundEffect | Audio90SoundEffect, options: Audio80RenderOptions | Audio90RenderOptions = {}): RenderedSamples {
+/** Renders an Audio80's `sound`, played once as the sound says. Returns the chip's one channel of samples. */
+export function renderSound(sound: Audio80Sound, options?: Audio80RenderOptions): Float32Array;
+/** Renders an Audio90's `sound`, played once as the sound says. Returns the chip's two channels of samples. */
+export function renderSound(sound: Audio90Sound, options?: Audio90RenderOptions): StereoSamples;
+/** Renders either chip's `sound`, as a test that goes through a module's sounds does. */
+export function renderSound(sound: Audio80Sound | Audio90Sound, options?: RenderOptions): RenderedSamples;
+export function renderSound(sound: Audio80Sound | Audio90Sound, options: Audio80RenderOptions | Audio90RenderOptions = {}): RenderedSamples {
     const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
-    if (effect.chip === 'audio90') {
-        const chip = createHeadlessAudio90({ render: options as Audio90RenderOptions });
-        chip.audio90.play(effect);
-        const durationMs = options.durationMs ?? effect.data.lengthMs + effect.data.instrument.envelope.releaseMs + TAIL_MS;
+    if (sound.chip === 'audio90') {
+        const chip = createRenderingAudio90({ ...(options as Audio90RenderOptions), record: false });
+        chip.audio90.play(sound);
+        const durationMs = options.durationMs ?? sound.data.lengthMs + sound.data.envelope.releaseMs + TAIL_MS;
         return renderStereoTicks(chip, durationMs, tickMs, ignore);
     }
-    const chip = createHeadlessAudio80({ render: options as Audio80RenderOptions });
-    chip.audio80.play(effect);
-    const durationMs = options.durationMs ?? effect.data.lengthMs + effect.data.instrument.releaseMs + TAIL_MS;
+    const chip = createRenderingAudio80({ ...(options as Audio80RenderOptions), record: false });
+    chip.audio80.play(sound);
+    const durationMs = options.durationMs ?? sound.data.lengthMs + sound.data.releaseMs + TAIL_MS;
     return renderTicks(chip, durationMs, tickMs, ignore);
 }
 
@@ -155,8 +155,9 @@ export function hashSamples(samples: RenderedSamples): string {
 }
 
 /**
- * Finds a module's songs and sound effects, for either chip, with the names it
- * exports them under. Tests and scripts use it to go through every sound.
+ * Finds a module's songs and sounds, for either chip, with the names it
+ * exports them under. Tests and scripts use it to go through every sound. A
+ * song's instruments are sounds too, so they are found if they are exported.
  *
  * It looks inside exported arrays too, so a set of sounds made in a loop is
  * found. Each sound in an array is named for its place, such as
@@ -165,7 +166,7 @@ export function hashSamples(samples: RenderedSamples): string {
  */
 export function findSounds(exports: Readonly<Record<string, unknown>>): ModuleSounds {
     const songs: [string, Audio80Song | Audio90Song][] = [];
-    const effects: [string, Audio80SoundEffect | Audio90SoundEffect][] = [];
+    const sounds: [string, Audio80Sound | Audio90Sound][] = [];
     for (const name of Object.keys(exports)) {
         const value = exports[name];
         if (Array.isArray(value)) {
@@ -175,11 +176,11 @@ export function findSounds(exports: Readonly<Record<string, unknown>>): ModuleSo
             addSound(name, value);
         }
     }
-    return { songs, effects };
+    return { songs, sounds };
 
     function addSound(name: string, value: unknown): void {
         if (isAudio80Song(value) || isAudio90Song(value)) songs.push([name, value]);
-        else if (isAudio80SoundEffect(value) || isAudio90SoundEffect(value)) effects.push([name, value]);
+        else if (isAudio80Sound(value) || isAudio90Sound(value)) sounds.push([name, value]);
     }
 }
 

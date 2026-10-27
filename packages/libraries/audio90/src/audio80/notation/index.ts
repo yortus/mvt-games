@@ -1,5 +1,6 @@
-export { createAudio80Instrument, type Audio80Envelope, type Audio80FilterSweep, type Audio80Instrument, type Audio80InstrumentOptions, type Audio80PulseSweep, type Audio80Vibrato } from './instrument';
-export { createAudio80SoundEffect, isAudio80SoundEffect, type Audio80SoundEffect, type Audio80SoundEffectOptions } from './sound-effect';
+export {
+    createAudio80Sound, isAudio80Sound, type Audio80Envelope, type Audio80FilterSweep, type Audio80PulseSweep, type Audio80Sound, type Audio80SoundOptions, type Audio80Vibrato,
+} from './sound';
 export {
     CELL_ARPEGGIO,
     CELL_FILTER,

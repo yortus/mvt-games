@@ -49,7 +49,7 @@ describe('FighterAudioView', () => {
         tick();
         state.move = undefined;
         tick();
-        expect(chip.log).toEqual([expect.objectContaining({ kind: 'play', effect: swish })]);
+        expect(chip.log).toEqual([expect.objectContaining({ kind: 'play', sound: swish })]);
     });
 
     it('swishes again when the same move starts a second time', () => {
@@ -72,8 +72,8 @@ describe('FighterAudioView', () => {
         state.phase = 'defeated';
         tick();
         expect(chip.log).toEqual([
-            expect.objectContaining({ kind: 'play', effect: BLOCK }),
-            expect.objectContaining({ kind: 'play', effect: HIT }),
+            expect.objectContaining({ kind: 'play', sound: BLOCK }),
+            expect.objectContaining({ kind: 'play', sound: HIT }),
         ]);
     });
 
@@ -146,8 +146,8 @@ describe('MatchAudioView', () => {
         state.opponentPoints = 0;
         tick();
         expect(chip.log).toEqual([
-            expect.objectContaining({ kind: 'play', effect: POINT_WON }),
-            expect.objectContaining({ kind: 'play', effect: POINT_LOST }),
+            expect.objectContaining({ kind: 'play', sound: POINT_WON }),
+            expect.objectContaining({ kind: 'play', sound: POINT_LOST }),
         ]);
     });
 
@@ -213,8 +213,8 @@ describe('MatchAudioView', () => {
 type Play = Extract<Audio80Write, { kind: 'play' }>;
 type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
-function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[] {
-    return log.filter((write): write is Play => write.kind === 'play' && write.effect === effect);
+function listPlays(log: readonly Audio80Write[], effect: Play['sound']): Play[] {
+    return log.filter((write): write is Play => write.kind === 'play' && write.sound === effect);
 }
 
 function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {

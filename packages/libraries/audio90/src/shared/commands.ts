@@ -14,7 +14,7 @@
  */
 export const COMMAND_STRIDE = 6;
 
-/** The stamp of a write played as soon as it arrives, such as a sound effect. */
+/** The stamp of a write played as soon as it arrives, such as a sound played on its own. */
 export const ASAP_STAMP = -Infinity;
 
 /** A chip's mix buses: one for the voices playing music, one for those playing sound effects. */

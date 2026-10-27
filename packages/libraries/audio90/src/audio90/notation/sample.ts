@@ -1,7 +1,7 @@
 import { computeSongDurationMs } from '../../shared';
 import { AUDIO90_SAMPLE_MEMORY, type Audio90SampleData } from '../synthesiser';
 import { bounceAudio90Song } from './bounce';
-import { checkRange, parseNote } from './instrument';
+import { checkRange, parseNote } from './sound';
 import type { Audio90Song } from './song';
 
 // ---------------------------------------------------------------------------

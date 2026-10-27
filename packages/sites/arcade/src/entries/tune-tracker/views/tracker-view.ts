@@ -1,5 +1,5 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import { type Audio90, type Audio90Instrument, createMusicPlayer } from 'audio90';
+import { type Audio90, type Audio90Sound, createMusicPlayer } from 'audio90';
 import type { Tune } from '#tunes';
 import type { TrackerModel } from '../models';
 import { ChannelMetersView } from './channel-meters-view';
@@ -28,7 +28,7 @@ export interface TrackerViewBindings {
     /** The tunes, in the order the model numbers them. */
     readonly tunes: readonly Tune[];
     /** Each instrument's name, as the instruments panel lists it. */
-    readonly instrumentNames: ReadonlyMap<Audio90Instrument, string>;
+    readonly instrumentNames: ReadonlyMap<Audio90Sound, string>;
     readonly font: PixelFont;
 }
 

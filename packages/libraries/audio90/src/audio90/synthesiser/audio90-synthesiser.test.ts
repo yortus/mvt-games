@@ -19,19 +19,20 @@ import {
     type Audio90VoiceSetting,
     OP90_NOTE_OFF,
     OP90_NOTE_ON,
-    OP90_PLAY_EFFECT,
+    OP90_PLAY,
+    OP90_PLAY_OPTIONS,
     OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
+    OP90_STOP,
 } from './commands';
 import {
-    type Audio90EffectData,
-    type Audio90InstrumentData,
+    type Audio90SoundData,
     type Audio90SampleData,
-    DEFAULT_AUDIO90_INSTRUMENT,
+    DEFAULT_AUDIO90_SOUND,
     ENGINE_ANALOG,
     ENGINE_FM,
     ENGINE_SAMPLE,
@@ -41,7 +42,7 @@ import {
     MAX_UNISON,
     OP_WAVE_SINE,
     WAVE90_SAW,
-} from './instrument-data';
+} from './sound-data';
 
 describe('the Audio90 synthesiser', () => {
     describe('its engines', () => {
@@ -290,30 +291,47 @@ describe('the Audio90 synthesiser', () => {
             expect(measureRms(after.subarray(toFrames(300), toFrames(400))) / before).toBeGreaterThan(0.9);
         });
 
-        it('plays an effect on a voice the music does not keep, at the pan it is given', () => {
+        it('plays a sound on a voice the music does not keep, at the pan the play gives', () => {
             const rig = createRig();
             rig.reserve(4);
-            const effect = rig.effect({ instrument: { ...DEFAULT_AUDIO90_INSTRUMENT, ...FM_SINE }, note: 69, glideTo: Number.NaN, lengthMs: 200, volume: 1, pan: 0, priority: 0, maxVoices: 1 });
-            rig.play(effect, 1);
+            const sound = rig.instrument({ ...FM_SINE, pan: -1 });
+            rig.play(sound, { note: 69, lengthMs: 200, pan: 1 });
             const { left, right } = rig.render(100);
             const voice = findSounding(rig.synth);
             expect(voice).toBeGreaterThanOrEqual(4);
-            expect(rig.synth.findEffectOn(voice)).toBe(effect);
+            expect(rig.synth.findSoundOn(voice)).toBe(sound);
             expect(measureRms(left)).toBeLessThan(measureRms(right) / 100);
         });
 
-        it('turns the effects down on their bus, and leaves the music as it is', () => {
+        it('plays a sound at its own pan when the play gives none', () => {
+            const rig = createRig();
+            rig.play(rig.instrument({ ...FM_SINE, pan: 1 }), { note: 69, lengthMs: 200 });
+            const { left, right } = rig.render(100);
+            expect(measureRms(left)).toBeLessThan(measureRms(right) / 100);
+        });
+
+        it('holds a play with no length until it is stopped', () => {
+            const rig = createRig();
+            const sound = rig.instrument(FM_SINE);
+            rig.play(sound, { note: 69, lengthMs: -1, id: 7 });
+            rig.render(1000);
+            expect(findSounding(rig.synth)).toBeGreaterThanOrEqual(0);
+            rig.stop(7);
+            rig.render(500);
+            expect(findSounding(rig.synth)).toBe(-1);
+        });
+
+        it('turns the sounds played on their own down on their bus, and leaves the music as it is', () => {
             const rig = createRig();
             rig.reserve(1);
             rig.mix(1, 0);
-            const effect = rig.effect({ instrument: { ...DEFAULT_AUDIO90_INSTRUMENT, ...FM_SINE }, note: 69, glideTo: Number.NaN, lengthMs: 500, volume: 1, pan: 0, priority: 0, maxVoices: 1 });
-            rig.play(effect);
-            // The effect's bus ramps down over about 10 ms. All that is left after it is the output's slow settling
-            const effectOnly = measureRms(rig.render(100).left.subarray(toFrames(50)));
+            rig.play(rig.instrument(FM_SINE), { note: 69, lengthMs: 500 });
+            // The bus ramps down over about 10 ms. All that is left after it is the output's slow settling
+            const soundOnly = measureRms(rig.render(100).left.subarray(toFrames(50)));
             rig.noteOn(0, rig.instrument(FM_SINE), 69);
             const music = measureRms(rig.render(100).left.subarray(toFrames(50)));
             expect(music).toBeGreaterThan(0.05);
-            expect(effectOnly).toBeLessThan(music / 100);
+            expect(soundOnly).toBeLessThan(music / 100);
         });
 
         it('rounds FM to nine bits in the console character', () => {
@@ -393,13 +411,13 @@ describe('the Audio90 synthesiser', () => {
 const RATE = 48000;
 const BLOCK = 128;
 
-const FM_SINE: Partial<Audio90InstrumentData> = {
+const FM_SINE: Partial<Audio90SoundData> = {
     engine: ENGINE_FM,
     operators: [{ ratio: 1, fixedHz: 0, detuneCents: 0, level: 1, wave: OP_WAVE_SINE, velocity: 0, envelope: HELD_ENVELOPE }],
 };
 
 /** Operator 2 modulating operator 1, at the same ratio. */
-const FM_TWO_OP: Partial<Audio90InstrumentData> = {
+const FM_TWO_OP: Partial<Audio90SoundData> = {
     engine: ENGINE_FM,
     algorithm: [0b10, 0, 0, 0],
     operators: [
@@ -425,14 +443,9 @@ function createRig(options: Partial<Audio90SynthesiserOptions> = {}) {
 
     return {
         synth,
-        instrument(overrides: Partial<Audio90InstrumentData>): number {
+        instrument(overrides: Partial<Audio90SoundData>): number {
             const id = nextId++;
-            synth.defineInstrument(id, { ...DEFAULT_AUDIO90_INSTRUMENT, ...overrides });
-            return id;
-        },
-        effect(data: Audio90EffectData): number {
-            const id = nextId++;
-            synth.defineEffect(id, data);
+            synth.defineSound(id, { ...DEFAULT_AUDIO90_SOUND, ...overrides });
             return id;
         },
         sample(id: number, data: Audio90SampleData): void {
@@ -451,8 +464,13 @@ function createRig(options: Partial<Audio90SynthesiserOptions> = {}) {
             const settings: Readonly<Record<string, number>> = AUDIO90_EFFECT_SETTING_INDEX[effect];
             write(OP90_SET_EFFECT, nowMs, AUDIO90_EFFECT_INDEX[effect], settings[setting], value);
         },
-        play(effect: number, pan?: number): void {
-            write(OP90_PLAY_EFFECT, -Infinity, effect, pan ?? 0, pan === undefined ? 0 : 1);
+        /** Plays sound `sound`, as a play's two commands do. A length of -1 holds it until it is stopped. */
+        play(sound: number, play: { readonly note: number; readonly lengthMs: number; readonly pan?: number; readonly id?: number }): void {
+            write(OP90_PLAY_OPTIONS, -Infinity, play.lengthMs, -1, play.pan ?? 0, play.pan === undefined ? 0 : 1);
+            write(OP90_PLAY, -Infinity, sound, play.id ?? 1, play.note, 1);
+        },
+        stop(id: number): void {
+            write(OP90_STOP, -Infinity, id);
         },
         tempo(bpm: number): void {
             write(OP90_SET_TEMPO, nowMs, bpm);

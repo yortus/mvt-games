@@ -1,4 +1,4 @@
-import { type Audio90Instrument, createAudio90Instrument, createAudio90Sample, createAudio90Song } from 'audio90';
+import { type Audio90Sound, createAudio90Sound, createAudio90Sample, createAudio90Song } from 'audio90';
 import { BOOM, BRASS, HAT, KICK, SNARE, STRINGS } from './instruments';
 
 // The samples. None is recorded: each is a short song that the chip plays
@@ -161,13 +161,13 @@ export const SAMPLES = [
  * sample bounced from it, so the note is never released early, which would
  * cut its tail short.
  */
-function createToneSong(instrument: Audio90Instrument, note: string) {
+function createToneSong(instrument: Audio90Sound, note: string) {
     return createAudio90Song({ bpm: 15, instruments: { t: instrument }, patterns: { held: `| ${note} t` }, order: ['held'] });
 }
 
 /** A tone for an Amiga module's sample: one plain oscillator through a gentle low-pass, held. */
-function createModTone(wave: 'saw' | 'pulse', cutoffHz: number): Audio90Instrument {
-    return createAudio90Instrument({
+function createModTone(wave: 'saw' | 'pulse', cutoffHz: number): Audio90Sound {
+    return createAudio90Sound({
         oscillator: { wave, pulseWidth: 0.3 },
         filter: { mode: 'lowpass12', cutoffHz },
         envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 20 },
@@ -175,8 +175,8 @@ function createModTone(wave: 'saw' | 'pulse', cutoffHz: number): Audio90Instrume
 }
 
 /** Strings for the orchestra hit: one voice playing a whole chord, by chord memory. */
-function createStringStab(): Audio90Instrument {
-    return createAudio90Instrument({
+function createStringStab(): Audio90Sound {
+    return createAudio90Sound({
         oscillator: { wave: 'saw', unison: 4, detune: 0.1, chord: [0, 4, 7, 12] },
         filter: { mode: 'lowpass12', cutoffHz: 3500, resonance: 0.1 },
         envelope: { attackMs: 8, decayMs: 300, sustain: 0.6, releaseMs: 200 },
@@ -184,8 +184,8 @@ function createStringStab(): Audio90Instrument {
 }
 
 /** The orchestra hit's crack: a burst of high noise. */
-function createCrack(): Audio90Instrument {
-    return createAudio90Instrument({
+function createCrack(): Audio90Sound {
+    return createAudio90Sound({
         oscillator: { unison: 0 },
         noise: 1,
         filter: { mode: 'highpass', cutoffHz: 1500, resonance: 0.1 },
@@ -195,8 +195,8 @@ function createCrack(): Audio90Instrument {
 }
 
 /** One of the choir's resonances: a pulse through a band-pass filter at `hz`, at `level`. */
-function createFormant(hz: number, level: number): Audio90Instrument {
-    return createAudio90Instrument({
+function createFormant(hz: number, level: number): Audio90Sound {
+    return createAudio90Sound({
         oscillator: { wave: 'pulse', pulseWidth: 0.2 },
         filter: { mode: 'bandpass', cutoffHz: hz, resonance: 0.6 },
         envelope: { attackMs: 150, decayMs: 0, sustain: 1, releaseMs: 200 },

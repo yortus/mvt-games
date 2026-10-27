@@ -1,17 +1,17 @@
-import { ASAP_STAMP, type CommandWriter, createCommandBuffer, MIX_BUS_INDEX } from '../../shared';
+import { ASAP_STAMP, type CommandWriter, createCommandBuffer, MIX_BUS_INDEX, NO_GLIDE, toPlayLength, toPlayNote, toPlayVolume } from '../../shared';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
     AUDIO90_EFFECT_SETTING_INDEX,
     AUDIO90_VOICE_COUNT,
     AUDIO90_VOICE_SETTING_INDEX,
-    type Audio90EffectData,
     type Audio90EffectId,
-    type Audio90InstrumentData,
+    type Audio90SoundData,
     type Audio90SampleData,
     OP90_NOTE_OFF,
     OP90_NOTE_ON,
-    OP90_PLAY_EFFECT,
+    OP90_PLAY,
+    OP90_PLAY_OPTIONS,
     OP90_RELEASE_ALL,
     OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
@@ -19,9 +19,10 @@ import {
     OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
+    OP90_STOP,
 } from '../synthesiser';
-import type { Audio90Instrument, Audio90Sample, Audio90SoundEffect } from '../notation';
-import type { Audio90Writer } from './audio90';
+import type { Audio90Sample, Audio90Sound } from '../notation';
+import type { Audio90, Audio90Writer } from './audio90';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -32,19 +33,19 @@ import type { Audio90Writer } from './audio90';
  * A command is a few numbers, stamped with the time it applies at. The writer
  * appends each command to a `Float64Array`, so writing allocates nothing.
  *
- * The first time an instrument, effect or sample is played, the writer gives
- * it an id. It passes it to `onInstrument`, `onEffect` or `onSample`, so the
- * caller can send it to the synthesiser before the commands that use it. A
- * sample goes first, then the instrument or effect that plays it, with the
- * sample's id in its data.
+ * The first time a sound or sample is played, the writer gives it an id. It
+ * passes it to `onSound` or `onSample`, so the caller can send it to the
+ * synthesiser before the commands that use it. A sample goes first, then the
+ * sound that plays it, with the sample's id in its data. Each play gets an id
+ * of its own, counted up from 1, which `stop` takes.
  */
-export interface CommandAudio90 extends Audio90Writer, CommandWriter {
+export interface CommandAudio90 extends Audio90Writer, Pick<Audio90, 'play' | 'stop'>, CommandWriter {
     /**
-     * Returns the id of `instrument`'s commands, defining it, and its sample,
-     * if it has not been played since the last `forget`. A song sent to the
+     * Returns the id of `sound`'s commands, defining it, and its sample, if
+     * it has not been played since the last `forget`. A song sent to the
      * worklet names its instruments by these ids.
      */
-    defineInstrument: (instrument: Audio90Instrument) => number;
+    defineSound: (sound: Audio90Sound) => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -53,11 +54,9 @@ export interface CommandAudio90 extends Audio90Writer, CommandWriter {
 
 /** How to make an Audio90 that writes commands. */
 export interface CommandAudio90Options {
-    /** Called the first time an instrument is played since the last `forget`, with the id its commands use. */
-    readonly onInstrument: (id: number, data: Audio90InstrumentData) => void;
-    /** Called the first time an effect is played since the last `forget`, with the id its commands use. */
-    readonly onEffect: (id: number, data: Audio90EffectData) => void;
-    /** Called the first time a sample is played since the last `forget`, with the id its instruments use. */
+    /** Called the first time a sound is played since the last `forget`, with the id its commands use. */
+    readonly onSound: (id: number, data: Audio90SoundData) => void;
+    /** Called the first time a sample is played since the last `forget`, with the id its sounds use. */
     readonly onSample: (id: number, data: Audio90SampleData) => void;
     /** How many commands a batch holds before it grows. Defaults to 256. */
     readonly capacity?: number;
@@ -71,12 +70,11 @@ export interface CommandAudio90Options {
     /** Called as a command is written into an empty batch, so the code that sends the batches knows there is one to send. */
     readonly onFirstWrite?: () => void;
     /**
-     * Gives the id of an instrument defined elsewhere, or undefined for one
-     * this writer must define. A writer in the worklet uses it for the
-     * instruments the page has already defined, so that the two writers'
-     * ids never clash.
+     * Gives the id of a sound defined elsewhere, or undefined for one this
+     * writer must define. A writer in the worklet uses it for the sounds the
+     * page has already defined, so that the two writers' ids never clash.
      */
-    readonly idOf?: (instrument: Audio90Instrument) => number | undefined;
+    readonly idOf?: (sound: Audio90Sound) => number | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,7 +87,7 @@ export interface CommandAudio90Options {
  * has been written yet.
  */
 export function createCommandAudio90(options: CommandAudio90Options): CommandAudio90 {
-    const { onInstrument, onEffect, onSample, idOf } = options;
+    const { onSound, onSample, idOf } = options;
     const buffer = createCommandBuffer({ capacity: options.capacity, onFirstWrite: options.onFirstWrite });
     const write = buffer.write;
     // The clock, in a typed array: V8 boxes a double kept in a closure variable each time it is written, and this is written every tick
@@ -97,8 +95,8 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
     // With no clock, each write with no `atMs` is stamped as soon as possible, and `update` leaves it so
     if (options.hasClock === false) clock[0] = ASAP_STAMP;
     let nextId = 1;
-    const instrumentIds = new Map<Audio90Instrument, number>();
-    const effectIds = new Map<Audio90SoundEffect, number>();
+    let nextPlayId = 1;
+    const soundIds = new Map<Audio90Sound, number>();
     const sampleIds = new Map<Audio90Sample, number>();
 
     const writer: CommandAudio90 = {
@@ -117,11 +115,23 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
             clock[0] += deltaMs;
         },
 
-        play(effect, pan) {
-            write(OP90_PLAY_EFFECT, ASAP_STAMP, ensureEffectId(effect), pan ?? 0, pan === undefined ? 0 : 1, 0);
+        play(sound, playOptions) {
+            const { data } = sound;
+            const note = playOptions?.note === undefined ? data.note : toPlayNote(playOptions.note, 'play: note');
+            const glideTo = playOptions?.glideTo === undefined ? data.glideTo : toPlayNote(playOptions.glideTo, 'play: glideTo');
+            const lengthMs = toPlayLength(playOptions?.lengthMs ?? data.lengthMs);
+            const volume = toPlayVolume(playOptions?.volume ?? 1);
+            const pan = playOptions?.pan;
+            const id = nextPlayId++;
+            write(OP90_PLAY_OPTIONS, ASAP_STAMP, lengthMs, Number.isNaN(glideTo) ? NO_GLIDE : glideTo, pan ?? 0, pan === undefined ? 0 : 1);
+            write(OP90_PLAY, ASAP_STAMP, ensureSoundId(sound), id, note, volume);
+            return id;
         },
-        noteOn(voice, instrument, note, volume, atMs) {
-            write(OP90_NOTE_ON, atMs ?? clock[0], voice, ensureInstrumentId(instrument), note, volume);
+        stop(id) {
+            write(OP90_STOP, ASAP_STAMP, id, 0, 0, 0);
+        },
+        noteOn(voice, sound, note, volume, atMs) {
+            write(OP90_NOTE_ON, atMs ?? clock[0], voice, ensureSoundId(sound), note, volume);
         },
         noteOff(voice, atMs) {
             write(OP90_NOTE_OFF, atMs ?? clock[0], voice, 0, 0, 0);
@@ -149,11 +159,10 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
 
         clear: buffer.clear,
 
-        defineInstrument: (instrument) => ensureInstrumentId(instrument),
+        defineSound: (sound) => ensureSoundId(sound),
 
         forget() {
-            instrumentIds.clear();
-            effectIds.clear();
+            soundIds.clear();
             sampleIds.clear();
         },
 
@@ -164,33 +173,21 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
 
     return writer;
 
-    function ensureInstrumentId(instrument: Audio90Instrument): number {
-        const known = idOf?.(instrument);
+    function ensureSoundId(sound: Audio90Sound): number {
+        const known = idOf?.(sound);
         if (known !== undefined) return known;
-        let id = instrumentIds.get(instrument);
+        let id = soundIds.get(sound);
         if (id === undefined) {
-            const data = withSample(instrument.data, instrument.sample);
+            const data = withSample(sound.data, sound.sample);
             id = nextId++;
-            instrumentIds.set(instrument, id);
-            onInstrument(id, data);
-        }
-        return id;
-    }
-
-    function ensureEffectId(effect: Audio90SoundEffect): number {
-        let id = effectIds.get(effect);
-        if (id === undefined) {
-            const instrument = withSample(effect.data.instrument, effect.instrument.sample);
-            const data = instrument === effect.data.instrument ? effect.data : { ...effect.data, instrument };
-            id = nextId++;
-            effectIds.set(effect, id);
-            onEffect(id, data);
+            soundIds.set(sound, id);
+            onSound(id, data);
         }
         return id;
     }
 
     /** Returns `data` with the id of `sample`, which it sends first if it is new. With no sample, returns `data` itself. */
-    function withSample(data: Audio90InstrumentData, sample: Audio90Sample | undefined): Audio90InstrumentData {
+    function withSample(data: Audio90SoundData, sample: Audio90Sample | undefined): Audio90SoundData {
         if (sample === undefined) return data;
         let id = sampleIds.get(sample);
         if (id === undefined) {

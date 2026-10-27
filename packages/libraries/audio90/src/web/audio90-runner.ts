@@ -18,13 +18,13 @@ import { createWorkletSequencer } from './song-sequencer';
 
 /**
  * The messages the Audio90's runner takes beside the batches and the songs:
- * those that define what its commands use (its instruments, effects and
- * samples), and those about its scopes. `scopes` turns them on or off.
+ * those that define what its commands use (its sounds and samples), and
+ * those about its scopes. `scopes` turns them on or off.
  * `scope-buffer` hands the worklet an array of `AUDIO90_SCOPE_LENGTH`
  * numbers to send a scope back in, so that sending one allocates nothing.
  */
 export type Audio90PassedMessage =
-    | Extract<Audio90ChipMessage, { readonly kind: 'instrument' | 'effect' | 'sample' }>
+    | Extract<Audio90ChipMessage, { readonly kind: 'sound' | 'sample' }>
     | { readonly kind: 'scopes'; readonly isOn: boolean }
     | { readonly kind: 'scope-buffer'; readonly data: Float32Array };
 
@@ -88,9 +88,8 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
     const counters = new Int32Array(1);
     const sequencer = createWorkletSequencer<Audio90Song, ReturnType<typeof createCommandAudio90>>({
         sampleRate,
-        // Every instrument a song plays was defined by the page, and a song plays no effect, so the writer
-        // defines nothing of its own
-        createWriter: (idOf) => createCommandAudio90({ idOf, onInstrument: ignore, onEffect: ignore, onSample: ignore }),
+        // Every sound a song plays was defined by the page, so the writer defines nothing of its own
+        createWriter: (idOf) => createCommandAudio90({ idOf, onSound: ignore, onSample: ignore }),
         createPlayer: (writer) => createSongPlayer({ audio90: writer }),
         sendPlace: options.sendPlace,
     });
@@ -109,11 +108,8 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
             },
             receive(message) {
                 switch (message.kind) {
-                    case 'instrument':
-                        synthesiser.defineInstrument(message.id, message.data);
-                        break;
-                    case 'effect':
-                        synthesiser.defineEffect(message.id, message.data);
+                    case 'sound':
+                        synthesiser.defineSound(message.id, message.data);
                         break;
                     case 'sample':
                         // A sample too big for what is left of sample memory is dropped, and the notes that use it are silent
@@ -156,5 +152,5 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
 const MAX_SPARES = 3;
 
 function ignore(): void {
-    // The page defines every instrument a song plays
+    // The page defines every sound a song plays
 }

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import type { Audio90Instrument, Audio90Song } from 'audio90';
+import type { Audio90Sound, Audio90Song } from 'audio90';
 import { setRefresh } from '@mvtjs/pixi';
 import { cacheAsPixels, PANEL_LINE_X, PANEL_LINE_Y, PanelView } from './panel-view';
 import { createGlyphRow, GLYPH_HEIGHT, GLYPH_WIDTH, type GlyphRow, type PixelFont } from './pixel-font';
@@ -16,7 +16,7 @@ export interface InstrumentsViewBindings {
     readonly height: number;
     readonly song: () => Audio90Song;
     /** Each instrument's name, as the panel lists it. */
-    readonly nameOf: (instrument: Audio90Instrument) => string;
+    readonly nameOf: (instrument: Audio90Sound) => string;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ export function InstrumentsView(bindings: InstrumentsViewBindings): Container {
 const ENGINE_COLUMN = 19;
 
 /** How an instrument makes its sound, such as `FM, 4 operators`. */
-function describeEngine(instrument: Audio90Instrument): string {
+function describeEngine(instrument: Audio90Sound): string {
     const { data } = instrument;
     if (instrument.engine === 'fm') return `FM, ${data.operators.length} operators`;
     if (instrument.engine === 'sample') {

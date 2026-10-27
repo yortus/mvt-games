@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from 'audio90';
+import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80Sound } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
@@ -37,7 +37,7 @@ describe('GameAudioView', () => {
         chip.clear();
         state.phase = 'dying';
         tickFor(LISTEN_MS);
-        expect(listPlays(chip.log).map((write) => write.effect)).toEqual([SHIP_CRASH]);
+        expect(listPlays(chip.log).map((write) => write.sound)).toEqual([SHIP_CRASH]);
         expect(listNoteOns(chip.log)).toHaveLength(0);
     });
 
@@ -111,7 +111,7 @@ describe('GameAudioView', () => {
             state[count] = i;
             tickFor(TICK_MS * 3);
         }
-        expect(listPlays(chip.log).map((write) => write.effect)).toEqual([effect, effect]);
+        expect(listPlays(chip.log).map((write) => write.sound)).toEqual([effect, effect]);
     });
 
     it('hears a rise made by the model in the tick before the view\'s first refresh', () => {
@@ -119,7 +119,7 @@ describe('GameAudioView', () => {
         state.shotsFired = 1;
         state.rocketsLaunched = 1;
         tickFor(TICK_MS);
-        expect(listPlays(chip.log).map((write) => write.effect)).toEqual([SHOT, ROCKET_LAUNCH]);
+        expect(listPlays(chip.log).map((write) => write.sound)).toEqual([SHOT, ROCKET_LAUNCH]);
     });
 
     it('sounds the alarm with fuel low, faster as it runs out, and not with enough', () => {
@@ -192,8 +192,8 @@ function listPlays(log: readonly Audio80Write[]): Play[] {
     return log.filter((write): write is Play => write.kind === 'play');
 }
 
-function listPlaysOf(log: readonly Audio80Write[], effect: Audio80SoundEffect): Play[] {
-    return listPlays(log).filter((write) => write.effect === effect);
+function listPlaysOf(log: readonly Audio80Write[], effect: Audio80Sound): Play[] {
+    return listPlays(log).filter((write) => write.sound === effect);
 }
 
 function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {

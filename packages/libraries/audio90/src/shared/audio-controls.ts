@@ -23,13 +23,12 @@ export interface AudioControls {
      *
      * The chip cannot play before `ready` resolves. In a browser, it also
      * cannot play while the audio context is not running. It doesn't play
-     * while it is paused either. Until it can, it drops notes and sound
-     * effects, so none play late. It keeps the latest value of each setting,
-     * such as a filter's cutoff, and applies it once it can play. A song sets
-     * most of its settings once, when it starts, so this keeps a song started
-     * meanwhile sounding right. It also keeps the latest call to stop a note
-     * (`noteOff`, or `releaseAll`) on each voice. So a note that started
-     * before the wait still stops.
+     * while it is paused either. Until it can, it drops the sounds played, so
+     * none play late. It keeps the latest value of each setting, such as a
+     * filter's cutoff, and applies it once it can play. A song sets most of
+     * its settings once, when it starts, so this keeps a song started
+     * meanwhile sounding right. It also keeps each `stop`, and the latest
+     * `releaseAll`, so a sound that started before the wait still stops.
      */
     readonly ready: Promise<void>;
     /** Whether the chip is paused. A chip starts unpaused. */
@@ -45,10 +44,9 @@ export interface AudioControls {
     /** Plays the chip on from where `pause` held it, fading its voices back in at once. Resuming a chip that isn't paused does nothing. */
     resume: () => void;
     /**
-     * Silences every voice at once, and forgets every instrument and effect
-     * played so far. Use it between games. The browser's chip fades its
-     * output to silence over about 3 ms rather than cutting it, so that it
-     * does not click.
+     * Silences every voice at once, and forgets every sound played so far.
+     * Use it between games. The browser's chip fades its output to silence
+     * over about 3 ms rather than cutting it, so that it does not click.
      */
     reset: () => void;
     /** The whole chip's volume, 0 to 1. A value outside that range is clamped to it. */

@@ -1,4 +1,4 @@
-import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
+import { type Audio80SoundOptions, createAudio80Sound } from 'audio90';
 
 // The fruit machine's instruments and sound effects for the Audio80, all
 // written for this machine. They are the bright beeps and jingles of an
@@ -9,7 +9,7 @@ import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
 // ---------------------------------------------------------------------------
 
 /** The jingles' lead. It is a bright, narrow pulse that rings in the echo. */
-export const CHIME = createAudio80Instrument({
+export const CHIME = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.2,
     envelope: { attackMs: 1, decayMs: 220, sustain: 0.35, releaseMs: 150 },
@@ -18,7 +18,7 @@ export const CHIME = createAudio80Instrument({
 });
 
 /** The jingles' chords, played as arpeggios. It is a square wave that dies quickly. */
-export const SPARKLE = createAudio80Instrument({
+export const SPARKLE = createAudio80Sound({
     wave: 'pulse',
     pulseWidth: 0.5,
     envelope: { attackMs: 1, decayMs: 160, sustain: 0.2, releaseMs: 80 },
@@ -27,7 +27,7 @@ export const SPARKLE = createAudio80Instrument({
 });
 
 /** The jingles' bass. It is a triangle wave. */
-export const BASS = createAudio80Instrument({
+export const BASS = createAudio80Sound({
     wave: 'triangle',
     envelope: { attackMs: 2, decayMs: 200, sustain: 0.5, releaseMs: 80 },
     volume: 0.95,
@@ -38,7 +38,7 @@ export const BASS = createAudio80Instrument({
 // ---------------------------------------------------------------------------
 
 /** The lever's pull, or a press of Spin. A clunk is followed by a chirp that rises an octave. */
-export const LEVER = createAudio80SoundEffect({
+export const LEVER = createAudio80Sound({
     note: 'C-5',
     stepMs: 30,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
@@ -56,7 +56,7 @@ export const LEVER = createAudio80SoundEffect({
 });
 
 /** One click of the reels' mechanism. It repeats fast while the reels turn. */
-export const REEL_CLICK = createAudio80SoundEffect({
+export const REEL_CLICK = createAudio80Sound({
     wave: 'noise',
     note: 'C-7',
     envelope: { attackMs: 0, decayMs: 25, sustain: 0, releaseMs: 0 },
@@ -66,7 +66,7 @@ export const REEL_CLICK = createAudio80SoundEffect({
 });
 
 /** A reel landing. It is a thunk of noise, then a triangle wave that falls in pitch as it fades. */
-export const REEL_STOP = createAudio80SoundEffect({
+export const REEL_STOP = createAudio80Sound({
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 80 },
     priority: 1,
     maxVoices: 2,
@@ -85,7 +85,7 @@ export const REEL_STOP = createAudio80SoundEffect({
 // ---------------------------------------------------------------------------
 
 /** A coin. It is a high, bright clink, which repeats while a win is shown off. */
-export const COIN = createAudio80SoundEffect({
+export const COIN = createAudio80Sound({
     note: 'E-6',
     stepMs: 25,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
@@ -100,26 +100,26 @@ export const COIN = createAudio80SoundEffect({
 });
 
 /** The chime for a winning way. It ripples up a major chord and rings in the echo. */
-const WAY = createAudio80Instrument({
+const WAY: Audio80SoundOptions = {
     wave: 'pulse',
     pulseWidth: 0.25,
     envelope: { attackMs: 1, decayMs: 400, sustain: 0, releaseMs: 100 },
     arpeggio: [0, 4, 7, 12],
     stepMs: 45,
     echo: 0.4,
-});
+};
 
 /** A winning way of three. Longer ways ring higher. */
-export const WAY_OF_3 = createAudio80SoundEffect({ instrument: WAY, note: 'C-5', lengthMs: 400, priority: 2, volume: 0.8 });
+export const WAY_OF_3 = createAudio80Sound({ ...WAY, note: 'C-5', lengthMs: 400, priority: 2, volume: 0.8 });
 
 /** A winning way of four. */
-export const WAY_OF_4 = createAudio80SoundEffect({ instrument: WAY, note: 'E-5', lengthMs: 400, priority: 2, volume: 0.8 });
+export const WAY_OF_4 = createAudio80Sound({ ...WAY, note: 'E-5', lengthMs: 400, priority: 2, volume: 0.8 });
 
 /** A winning way of five. */
-export const WAY_OF_5 = createAudio80SoundEffect({ instrument: WAY, note: 'G-5', lengthMs: 400, priority: 2, volume: 0.8 });
+export const WAY_OF_5 = createAudio80Sound({ ...WAY, note: 'G-5', lengthMs: 400, priority: 2, volume: 0.8 });
 
 /** A spin that won nothing. Two notes fall, like a sigh. */
-export const NO_WIN = createAudio80SoundEffect({
+export const NO_WIN = createAudio80Sound({
     note: 'G-4',
     stepMs: 140,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 120 },

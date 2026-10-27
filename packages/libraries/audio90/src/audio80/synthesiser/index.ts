@@ -6,13 +6,15 @@ export {
     FILTER_SETTINGS,
     OP_NOTE_OFF,
     OP_NOTE_ON,
-    OP_PLAY_EFFECT,
+    OP_PLAY,
+    OP_PLAY_OPTIONS,
     OP_RELEASE_ALL,
     OP_RESERVE_VOICES,
     OP_SET_ECHO,
     OP_SET_FILTER,
     OP_SET_MIX,
     OP_SET_VOICE,
+    OP_STOP,
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
     VOICE_SETTINGS,
@@ -33,5 +35,5 @@ export {
     WAVE_TRIANGLE,
     WAVETABLE_SIZE,
     toWaveFlags,
-} from './instrument-data';
-export type { Audio80Character, EffectData, Audio80FilterId, Audio80FilterMode, InstrumentData, StepData, Audio80Wave } from './instrument-data';
+} from './sound-data';
+export type { Audio80Character, Audio80FilterId, Audio80FilterMode, SoundData, StepData, Audio80Wave } from './sound-data';

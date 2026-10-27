@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { createCommandAudio80 } from '../chip';
-import { createAudio80Instrument, createAudio80SoundEffect, type Audio80InstrumentOptions } from '../notation';
-import { createHeadlessAudio80, type HeadlessAudio80, hashSamples, measurePeak } from '../../headless';
+import { type Audio80PlayOptions, type CommandAudio80, createCommandAudio80 } from '../chip';
+import { createAudio80Sound, type Audio80Sound, type Audio80SoundOptions } from '../notation';
+import { hashSamples, measurePeak } from '../../headless';
 import { type Audio80Synthesiser, createAudio80Synthesiser } from './audio80-synthesiser';
 import {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
     OP_NOTE_ON,
-    OP_PLAY_EFFECT,
+    OP_PLAY,
+    OP_PLAY_OPTIONS,
     OP_SET_ECHO,
     OP_SET_FILTER,
     OP_SET_MIX,
@@ -15,7 +16,7 @@ import {
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
 } from './commands';
-import type { Audio80Character } from './instrument-data';
+import type { Audio80Character } from './sound-data';
 import { toFrequency } from '../../shared';
 
 const SAMPLE_RATE = 48000;
@@ -106,9 +107,9 @@ describe('Audio80 synthesiser: envelopes', () => {
 
 describe('Audio80 synthesiser: sync and ring', () => {
     it('restarts a synced voice each time its source wraps, so it repeats at the source\'s period', () => {
-        const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: 'clean' } });
-        const source = createAudio80Instrument({ wave: 'triangle' });
-        const synced = createAudio80Instrument({ wave: 'saw', syncSource: 0 });
+        const chip = createVoiceRig('clean');
+        const source = createAudio80Sound({ wave: 'triangle' });
+        const synced = createAudio80Sound({ wave: 'saw', syncSource: 0 });
         // At 100 Hz, the period is exactly 480 samples
         const sourceNote = A4 + 12 * Math.log2(100 / 440);
         chip.audio80.noteOn(0, source, sourceNote, 0);
@@ -117,17 +118,17 @@ describe('Audio80 synthesiser: sync and ring', () => {
         const period = SAMPLE_RATE / 100;
         expect(measureCorrelation(samples, toFrames(200), toFrames(450), period)).toBeGreaterThan(0.95);
         // Without sync, the same notes do not repeat at that period
-        const free = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: 'clean' } });
+        const free = createVoiceRig('clean');
         free.audio80.noteOn(0, source, sourceNote, 0);
-        free.audio80.noteOn(1, createAudio80Instrument({ wave: 'saw' }), sourceNote + 17.3, 1);
+        free.audio80.noteOn(1, createAudio80Sound({ wave: 'saw' }), sourceNote + 17.3, 1);
         expect(measureCorrelation(render(free, 500), toFrames(200), toFrames(450), period)).toBeLessThan(0.9);
     });
 
     it('changes a triangle by ring modulation with its source, and stays in range', () => {
         const plain = renderNote({ wave: 'triangle' }, A4, 300);
-        const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: 'clean' } });
-        chip.audio80.noteOn(0, createAudio80Instrument({ wave: 'triangle' }), A4 - 7, 0);
-        chip.audio80.noteOn(1, createAudio80Instrument({ wave: 'triangle', ringSource: 0 }), A4, 1);
+        const chip = createVoiceRig('clean');
+        chip.audio80.noteOn(0, createAudio80Sound({ wave: 'triangle' }), A4 - 7, 0);
+        chip.audio80.noteOn(1, createAudio80Sound({ wave: 'triangle', ringSource: 0 }), A4, 1);
         const ringed = render(chip, 300);
         expect(hashSamples(ringed)).not.toBe(hashSamples(plain));
         expect(measurePeak(ringed)).toBeLessThanOrEqual(1);
@@ -165,15 +166,15 @@ describe('Audio80 synthesiser: filters', () => {
     });
 
     it('does not let a silent voice\'s step table move a filter another voice is playing through', () => {
-        const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: 'clean' } });
+        const chip = createVoiceRig('clean');
         // Opens filter a, holds it open for a second, then closes it, long after the note has died away
         const stepMs = 10;
         const openSteps = 100;
         const steps = 'fF\n'.repeat(openSteps) + 'f0';
-        const closesLate = createAudio80Instrument({ wave: 'triangle', filter: 'a', stepMs, steps });
+        const closesLate = createAudio80Sound({ wave: 'triangle', filter: 'a', stepMs, steps });
         chip.audio80.noteOn(0, closesLate, 60, 1, 0);
         chip.audio80.noteOff(0, 50);
-        chip.audio80.noteOn(1, createAudio80Instrument({ wave: 'saw', filter: 'a' }), 60, 1, 0);
+        chip.audio80.noteOn(1, createAudio80Sound({ wave: 'saw', filter: 'a' }), 60, 1, 0);
         const closedAtMs = openSteps * stepMs;
         const samples = render(chip, closedAtMs + 500);
         const before = measureRmsBetween(samples, closedAtMs - 400, closedAtMs);
@@ -182,10 +183,10 @@ describe('Audio80 synthesiser: filters', () => {
     });
 
     it('treats a filter sweep from 0 Hz as no sweep', () => {
-        // Built by hand, to get past `createAudio80Instrument`'s checks
-        const saw = createAudio80Instrument({ wave: 'saw', filter: 'a' }).data;
+        // Built by hand, to get past `createAudio80Sound`'s checks
+        const saw = createAudio80Sound({ wave: 'saw', filter: 'a' }).data;
         const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
-        synthesiser.defineInstrument(1, { ...saw, filterSweepMs: 200, filterSweepFromHz: 0, filterSweepToHz: 2000 });
+        synthesiser.defineSound(1, { ...saw, filterSweepMs: 200, filterSweepFromHz: 0, filterSweepToHz: 2000 });
         synthesiser.enqueue(new Float64Array([OP_NOTE_ON, 0, 0, 1, 60, 1]), 1);
         const samples = renderSynthesiser(synthesiser, 300);
         expect(samples.every(Number.isFinite)).toBe(true);
@@ -195,8 +196,8 @@ describe('Audio80 synthesiser: filters', () => {
 
 describe('Audio80 synthesiser: safety', () => {
     it('stays in range, with no NaN, with every voice at full volume', () => {
-        const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: 'raw' } });
-        const loud = createAudio80Instrument({ wave: 'saw', echo: 1 });
+        const chip = createVoiceRig('raw');
+        const loud = createAudio80Sound({ wave: 'saw', echo: 1 });
         for (let v = 0; v < VOICE_COUNT; v++) chip.audio80.noteOn(v, loud, 40 + v, 1);
         const samples = render(chip, 500);
         for (let i = 0; i < samples.length; i++) {
@@ -206,13 +207,13 @@ describe('Audio80 synthesiser: safety', () => {
     });
 
     it('is exactly silent with nothing playing', () => {
-        expect(measurePeak(render(createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE } }), 100))).toBe(0);
+        expect(measurePeak(render(createVoiceRig(), 100))).toBe(0);
     });
 
     it('renders the same samples for the same commands, however they are split into blocks', () => {
-        const whole = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE } });
-        const split = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE } });
-        const lead = createAudio80Instrument({ wave: 'pulse', pulseSweep: { to: 0.9, ms: 200, isPingPong: true }, vibrato: { semitones: 0.3, hz: 6 } });
+        const whole = createVoiceRig();
+        const split = createVoiceRig();
+        const lead = createAudio80Sound({ wave: 'pulse', pulseSweep: { to: 0.9, ms: 200, isPingPong: true }, vibrato: { semitones: 0.3, hz: 6 } });
         for (const chip of [whole, split]) {
             chip.audio80.noteOn(0, lead, 60, 1);
             chip.audio80.noteOn(1, lead, 64, 1, 50);
@@ -242,7 +243,7 @@ describe('Audio80 synthesiser: bad numbers', () => {
     for (const [name, [op, ...operands]] of writes) {
         it(`ignores a NaN ${name}, and plays the next note`, () => {
             const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
-            synthesiser.defineInstrument(1, createAudio80Instrument({ wave: 'saw', filter: 'a', echo: 1 }).data);
+            synthesiser.defineSound(1, createAudio80Sound({ wave: 'saw', filter: 'a', echo: 1 }).data);
             synthesiser.enqueue(new Float64Array([
                 OP_NOTE_ON, 0, 0, 1, 60, 1,
                 op, 50, ...operands,
@@ -256,7 +257,7 @@ describe('Audio80 synthesiser: bad numbers', () => {
 
     it('ignores a command stamped NaN or +Infinity, and applies the ones after it', () => {
         const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
-        synthesiser.defineInstrument(1, createAudio80Instrument({ wave: 'saw' }).data);
+        synthesiser.defineSound(1, createAudio80Sound({ wave: 'saw' }).data);
         synthesiser.enqueue(new Float64Array([
             OP_NOTE_ON, Number.NaN, 0, 1, 60, 1,
             OP_NOTE_ON, Infinity, 1, 1, 60, 1,
@@ -271,7 +272,7 @@ describe('Audio80 synthesiser: bad numbers', () => {
     it('ignores a NaN gain set directly', () => {
         const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
         synthesiser.setMix(0, Number.NaN);
-        synthesiser.defineInstrument(1, createAudio80Instrument({ wave: 'saw' }).data);
+        synthesiser.defineSound(1, createAudio80Sound({ wave: 'saw' }).data);
         synthesiser.enqueue(new Float64Array([OP_NOTE_ON, 0, 0, 1, 60, 1]), 1);
         const samples = renderSynthesiser(synthesiser, 100);
         expect(samples.every(Number.isFinite)).toBe(true);
@@ -282,8 +283,8 @@ describe('Audio80 synthesiser: bad numbers', () => {
 describe('Audio80 synthesiser: stamps', () => {
     for (const stampMs of [10, 10.01]) {
         it(`starts a note stamped ${stampMs} ms on the first sample at or after that time`, () => {
-            const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: 'clean' } });
-            chip.audio80.noteOn(0, createAudio80Instrument({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } }), A4, 1, stampMs);
+            const chip = createVoiceRig('clean');
+            chip.audio80.noteOn(0, createAudio80Sound({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } }), A4, 1, stampMs);
             const samples = render(chip, 20);
             const start = Math.ceil(stampMs * SAMPLE_RATE / 1000);
             expect(measurePeak(samples.subarray(0, start))).toBe(0);
@@ -305,7 +306,7 @@ describe('Audio80 synthesiser: the mix', () => {
 
     it('ramps to a new gain rather than jumping, so a moving slider does not click', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'triangle' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'triangle' }), 57, 1);
         step();
         writer.setMix('music', 0);
         const samples = new Float32Array(16);
@@ -322,7 +323,7 @@ describe('Audio80 synthesiser: the mix', () => {
         step();
         synthesiser.reset();
         writer.forget();
-        writer.noteOn(0, createAudio80Instrument({ wave: 'triangle' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'triangle' }), 57, 1);
         for (let i = 0; i < 5; i++) step();
         expect(synthesiser.isSounding(0)).toBe(true);
         expect(measurePeak(samples)).toBeLessThan(1e-4);
@@ -332,7 +333,7 @@ describe('Audio80 synthesiser: the mix', () => {
         const { synthesiser, writer, step, samples } = createSynthesiserWithWriter();
         synthesiser.setMix(0, gains.music);
         synthesiser.setMix(1, gains.effects);
-        writer.noteOn(0, createAudio80Instrument({ wave: 'triangle' }), 57, 1);
+        writer.noteOn(0, createAudio80Sound({ wave: 'triangle' }), 57, 1);
         writer.play(BEEP);
         step();
         step();
@@ -340,39 +341,39 @@ describe('Audio80 synthesiser: the mix', () => {
     }
 });
 
-describe('Audio80 synthesiser: effect voices', () => {
-    it('gives an effect the highest free voice, so music starting in the same tick does not cut it', () => {
+describe('Audio80 synthesiser: played sounds', () => {
+    it('gives a played sound the highest free voice, so music starting in the same tick does not cut it', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        const tune = createAudio80Instrument({ wave: 'pulse' });
-        // As when a ship returns: its effect plays, and the music starts again on voices 0 to 3
+        const tune = createAudio80Sound({ wave: 'pulse' });
+        // As when a ship returns: its sound plays, and the music starts again on voices 0 to 3
         writer.play(BOOM);
         writer.reserveVoices(4);
         for (let v = 0; v < 4; v++) writer.noteOn(v, tune, 60 + v, 1);
         step();
-        const playing = listEffectsOn(synthesiser);
+        const playing = listSoundsOn(synthesiser);
         expect(playing[VOICE_COUNT - 1]).toBeDefined();
         expect(playing.slice(0, 4).every((id) => id === undefined)).toBe(true);
     });
 
-    it('never plays an effect on a voice kept for music', () => {
+    it('never plays a sound on a voice kept for music', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
         const musicVoices = VOICE_COUNT - 2;
-        // Reserve the voices a tick early. Effects skip ahead of stamped writes in the same tick
+        // Reserve the voices a tick early. Plays skip ahead of stamped writes in the same tick
         writer.reserveVoices(musicVoices);
         step();
         writer.play(ZAP);
         step();
-        const zap = listEffectsOn(synthesiser).find((id) => id !== undefined);
+        const zap = listSoundsOn(synthesiser).find((id) => id !== undefined);
         writer.play(BOOM);
         step();
-        const boom = listEffectsOn(synthesiser).find((id) => id !== undefined && id !== zap);
+        const boom = listSoundsOn(synthesiser).find((id) => id !== undefined && id !== zap);
         expect(boom).toBeDefined();
-        const boomVoice = listEffectsOn(synthesiser).indexOf(boom);
-        // Both free voices are taken. So BEEP takes the oldest voice whose effect has no higher
+        const boomVoice = listSoundsOn(synthesiser).indexOf(boom);
+        // Both free voices are taken. So BEEP takes the oldest voice whose sound has no higher
         // priority, which is ZAP's, not BOOM's
         writer.play(BEEP);
         step();
-        const playing = listEffectsOn(synthesiser);
+        const playing = listSoundsOn(synthesiser);
         expect(playing.slice(0, musicVoices).every((id) => id === undefined)).toBe(true);
         expect(boomVoice).toBeGreaterThanOrEqual(musicVoices);
         expect(playing[boomVoice]).toBe(boom);
@@ -380,44 +381,98 @@ describe('Audio80 synthesiser: effect voices', () => {
         expect(playing.filter((id) => id !== undefined)).toHaveLength(2);
     });
 
-    it('restarts an effect\'s oldest voice when it already plays on its maximum, rather than taking another', () => {
+    it('restarts a sound\'s oldest voice when it already plays on its maximum, rather than taking another', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
         for (let i = 0; i <= ZAP.data.maxVoices; i++) {
             writer.play(ZAP);
             step();
         }
-        expect(listEffectsOn(synthesiser).filter((id) => id !== undefined)).toHaveLength(ZAP.data.maxVoices);
+        expect(listSoundsOn(synthesiser).filter((id) => id !== undefined)).toHaveLength(ZAP.data.maxVoices);
     });
 
-    it('never takes a voice from an effect of higher priority', () => {
+    it('never takes a voice from a sound of higher priority', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
         writer.reserveVoices(VOICE_COUNT - 1);
         step();
         writer.play(BOOM);
         step();
-        const boom = listEffectsOn(synthesiser)[VOICE_COUNT - 1];
+        const boom = listSoundsOn(synthesiser)[VOICE_COUNT - 1];
         writer.play(ZAP);
         step();
-        expect(listEffectsOn(synthesiser)[VOICE_COUNT - 1]).toBe(boom);
+        expect(listSoundsOn(synthesiser)[VOICE_COUNT - 1]).toBe(boom);
     });
 
-    it('frees a voice once its effect has died away', () => {
+    it('frees a voice once its sound has died away', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
         writer.play(ZAP);
         step();
-        expect(listEffectsOn(synthesiser).some((id) => id !== undefined)).toBe(true);
+        expect(listSoundsOn(synthesiser).some((id) => id !== undefined)).toBe(true);
         // Wait out its length, then its release, and a tick to spare
-        const ticks = Math.ceil((ZAP.data.lengthMs + ZAP.data.instrument.releaseMs) / TICK_MS) + 1;
+        const ticks = Math.ceil((ZAP.data.lengthMs + ZAP.data.releaseMs) / TICK_MS) + 1;
         for (let i = 0; i < ticks; i++) step();
-        expect(listEffectsOn(synthesiser).every((id) => id === undefined)).toBe(true);
+        expect(listSoundsOn(synthesiser).every((id) => id === undefined)).toBe(true);
     });
 
-    it('releases an effect with a length of 0', () => {
+    it('releases a play with a length of 0', () => {
         const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
-        synthesiser.defineEffect(1, { ...ZAP.data, lengthMs: 0 });
-        synthesiser.enqueue(new Float64Array([OP_PLAY_EFFECT, -Infinity, 1, 0, 0, 0]), 1);
-        renderSynthesiser(synthesiser, ZAP.data.instrument.releaseMs + TICK_MS);
-        expect(listEffectsOn(synthesiser).every((id) => id === undefined)).toBe(true);
+        synthesiser.defineSound(1, ZAP.data);
+        synthesiser.enqueue(new Float64Array([OP_PLAY_OPTIONS, -Infinity, 0, -1, 0, 0, OP_PLAY, -Infinity, 1, 1, ZAP.data.note, 1]), 2);
+        renderSynthesiser(synthesiser, ZAP.data.releaseMs + TICK_MS);
+        expect(listSoundsOn(synthesiser).every((id) => id === undefined)).toBe(true);
+    });
+
+    it('holds a play with a length of Infinity until it is stopped, then releases it', () => {
+        const { synthesiser, writer, step } = createSynthesiserWithWriter();
+        const id = writer.play(ZAP, { lengthMs: Infinity });
+        const ticks = Math.ceil((ZAP.data.lengthMs + ZAP.data.releaseMs) / TICK_MS) + 1;
+        for (let i = 0; i < ticks; i++) step();
+        expect(listSoundsOn(synthesiser).filter((sound) => sound !== undefined)).toHaveLength(1);
+        writer.stop(id);
+        for (let i = 0; i < Math.ceil(ZAP.data.releaseMs / TICK_MS) + 1; i++) step();
+        expect(listSoundsOn(synthesiser).every((sound) => sound === undefined)).toBe(true);
+    });
+
+    it('stops only the play it is given, and not a later play on the same voice', () => {
+        const { synthesiser, writer, step } = createSynthesiserWithWriter();
+        writer.reserveVoices(VOICE_COUNT - 1);
+        step();
+        const first = writer.play(ZAP, { lengthMs: Infinity });
+        step();
+        // ZAP plays on one voice at most, so playing it again restarts that voice as a new play
+        writer.play(ZAP, { lengthMs: Infinity });
+        step();
+        writer.stop(first);
+        for (let i = 0; i < Math.ceil(ZAP.data.releaseMs / TICK_MS) + 1; i++) step();
+        expect(listSoundsOn(synthesiser)[VOICE_COUNT - 1]).toBeDefined();
+    });
+
+    it('plays at the note and glide a play gives in place of the sound\'s own', () => {
+        const options: Audio80SoundOptions = { wave: 'pulse', note: 'C-6', lengthMs: 200 };
+        const plain = createAudio80Sound(options);
+        expect(renderPlay(plain, { note: 'C-4' })).toBe(renderPlay(createAudio80Sound({ ...options, note: 'C-4' })));
+        expect(renderPlay(plain, { glideTo: 'C-4' })).toBe(renderPlay(createAudio80Sound({ ...options, glideTo: 'C-4' })));
+        expect(renderPlay(plain, { note: 'C-4' })).not.toBe(renderPlay(plain));
+
+        /** The hash of one tick of `sound`, played on its own with `playOptions`. */
+        function renderPlay(sound: Audio80Sound, playOptions?: Audio80PlayOptions): string {
+            const { writer, step, samples } = createSynthesiserWithWriter();
+            writer.play(sound, playOptions);
+            step();
+            return hashSamples(samples);
+        }
+    });
+
+    it('rejects a play\'s length of 0 or less, a bad note and a negative volume', () => {
+        const { writer } = createSynthesiserWithWriter();
+        expect(() => writer.play(ZAP, { lengthMs: 0 })).toThrow('play: lengthMs must be above 0, or Infinity to hold the note; got 0');
+        expect(() => writer.play(ZAP, { note: 'H-4' })).toThrow("play: note: 'H-4' is not a note");
+        expect(() => writer.play(ZAP, { note: 200 })).toThrow('play: note: 200 is not a note from 0 to 127');
+        expect(() => writer.play(ZAP, { volume: -1 })).toThrow('play: volume must be 0 or more; got -1');
+    });
+
+    it('numbers its plays from 1', () => {
+        const { writer } = createSynthesiserWithWriter();
+        expect([writer.play(ZAP), writer.play(BEEP), writer.play(ZAP)]).toEqual([1, 2, 3]);
     });
 });
 
@@ -425,9 +480,9 @@ describe('Audio80 synthesiser: effect voices', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const ZAP = createAudio80SoundEffect({ wave: 'pulse', note: 'C-6', lengthMs: 100, priority: 0 });
-const BEEP = createAudio80SoundEffect({ wave: 'triangle', note: 'C-5', lengthMs: 100, priority: 0 });
-const BOOM = createAudio80SoundEffect({ wave: 'noise', note: 'C-4', lengthMs: 300, priority: 2 });
+const ZAP = createAudio80Sound({ wave: 'pulse', note: 'C-6', lengthMs: 100, priority: 0 });
+const BEEP = createAudio80Sound({ wave: 'triangle', note: 'C-5', lengthMs: 100, priority: 0 });
+const BOOM = createAudio80Sound({ wave: 'noise', note: 'C-4', lengthMs: 300, priority: 2 });
 
 /** How long each step of `createSynthesiserWithWriter` renders, like one tick of a game loop. */
 const TICK_MS = 16;
@@ -439,8 +494,7 @@ const TICK_MS = 16;
 function createSynthesiserWithWriter() {
     const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
     const writer = createCommandAudio80({
-        onInstrument: (id, data) => synthesiser.defineInstrument(id, data),
-        onEffect: (id, data) => synthesiser.defineEffect(id, data),
+        onSound: (id, data) => synthesiser.defineSound(id, data),
     });
     const samples = new Float32Array(toFrames(TICK_MS));
     let fromMs = 0;
@@ -467,34 +521,61 @@ function measureRms(samples: Float32Array): number {
     return Math.sqrt(sum / samples.length);
 }
 
-/** Lists the effect each voice is playing, by voice: its id, or `undefined` for a voice playing none. */
-function listEffectsOn(synthesiser: Audio80Synthesiser): (number | undefined)[] {
+/** Lists the sound each voice was played with, by voice: its id, or `undefined` for a voice playing none. */
+function listSoundsOn(synthesiser: Audio80Synthesiser): (number | undefined)[] {
     const ids: (number | undefined)[] = [];
-    for (let v = 0; v < VOICE_COUNT; v++) ids.push(synthesiser.findEffectOn(v));
+    for (let v = 0; v < VOICE_COUNT; v++) ids.push(synthesiser.findSoundOn(v));
     return ids;
 }
 
 /**
- * Renders one note of an instrument, alone. The note is released at `offMs`
+ * Renders one note of a sound, alone, on voice 0. The note is released at `offMs`
  * if it is given. The character is clean unless another is given.
  */
-function renderNote(options: Audio80InstrumentOptions, note: number, ms: number, extra: { offMs?: number; character?: Audio80Character } = {}): Float32Array {
-    const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: extra.character ?? 'clean' } });
-    chip.audio80.noteOn(0, createAudio80Instrument(options), note, 1);
+function renderNote(options: Audio80SoundOptions, note: number, ms: number, extra: { offMs?: number; character?: Audio80Character } = {}): Float32Array {
+    const chip = createVoiceRig(extra.character ?? 'clean');
+    chip.audio80.noteOn(0, createAudio80Sound(options), note, 1);
     if (extra.offMs !== undefined) chip.audio80.noteOff(0, extra.offMs);
     return render(chip, ms);
 }
 
 function renderFiltered(note: number, cutoffHz: number, resonance: number): Float32Array {
-    const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE, character: 'clean' } });
+    const chip = createVoiceRig('clean');
     chip.audio80.setFilter('a', 'mode', 'lowpass');
     chip.audio80.setFilter('a', 'cutoffHz', cutoffHz);
     chip.audio80.setFilter('a', 'resonance', resonance);
-    chip.audio80.noteOn(0, createAudio80Instrument({ wave: 'triangle', filter: 'a' }), note, 1);
+    chip.audio80.noteOn(0, createAudio80Sound({ wave: 'triangle', filter: 'a' }), note, 1);
     return render(chip, 400);
 }
 
-function render(chip: HeadlessAudio80<{ render: true }>, ms: number): Float32Array {
+/**
+ * A synthesiser fed by a command writer, which plays each note on the voice it
+ * is told to, as a song's notes are played. It renders as a headless chip does,
+ * up to where `controls.update` has moved its clock.
+ */
+interface VoiceRig {
+    readonly audio80: CommandAudio80;
+    readonly controls: { readonly update: (deltaMs: number) => void };
+    readonly render: (output: Float32Array) => void;
+}
+
+function createVoiceRig(character?: Audio80Character): VoiceRig {
+    const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE, character });
+    const writer = createCommandAudio80({ onSound: (id, data) => synthesiser.defineSound(id, data) });
+    let renderedFrames = 0;
+    return {
+        audio80: writer,
+        controls: { update: writer.update },
+        render(output) {
+            synthesiser.enqueue(writer.commands, writer.count);
+            writer.clear(writer.commands);
+            synthesiser.render(output, 0, output.length, renderedFrames * 1000 / SAMPLE_RATE, 1000 / SAMPLE_RATE);
+            renderedFrames += output.length;
+        },
+    };
+}
+
+function render(chip: VoiceRig, ms: number): Float32Array {
     chip.controls.update(ms);
     const samples = new Float32Array(toFrames(ms));
     chip.render(samples);

@@ -154,7 +154,7 @@ describe('EnemyAudioView', () => {
         const { chip, state, tick } = setUpEnemyAudio({ kind });
         state.isAlive = false;
         tick();
-        expect(chip.log).toEqual([expect.objectContaining({ kind: 'play', effect })]);
+        expect(chip.log).toEqual([expect.objectContaining({ kind: 'play', sound: effect })]);
     });
 
     it('whistles as the raider dives', () => {
@@ -191,8 +191,8 @@ const CLEAR_LEAD_ROWS_APART = 2;
 type Play = Extract<Audio80Write, { kind: 'play' }>;
 type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
-function listPlays(log: readonly Audio80Write[], effect: Play['effect']): Play[] {
-    return log.filter((write): write is Play => write.kind === 'play' && write.effect === effect);
+function listPlays(log: readonly Audio80Write[], effect: Play['sound']): Play[] {
+    return log.filter((write): write is Play => write.kind === 'play' && write.sound === effect);
 }
 
 function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {

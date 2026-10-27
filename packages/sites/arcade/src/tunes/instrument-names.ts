@@ -1,4 +1,4 @@
-import type { Audio90Instrument } from 'audio90';
+import type { Audio90Sound } from 'audio90';
 import {
     ACID, BELL, BOOM, BRASS, CARD_BASS, CARD_CHORD, CARD_LEAD, CLAP, CRASH, ELECTRIC_PIANO, FLUTE, FM_BASS, FM_GUITAR, GATED_PAD, HAT,
     HOUSE_PIANO, KICK, OPEN_HAT, ORGAN, PAD, PLUCK, REESE, SHAKER, SLAP_BASS, SNARE, STAB, STRINGS, SUB_BASS, SUPERSAW, TIMPANI,
@@ -12,7 +12,7 @@ import { AAH, BREAKBEAT, HIT, MOD_BASS, MOD_CHORD, MOD_HAT, MOD_KICK, MOD_LEAD, 
 // ---------------------------------------------------------------------------
 
 /** Each instrument's name, as a tracker lists it beside its letter. Each is 15 characters or fewer. */
-export const INSTRUMENT_NAMES: ReadonlyMap<Audio90Instrument, string> = new Map([
+export const INSTRUMENT_NAMES: ReadonlyMap<Audio90Sound, string> = new Map([
     [HOUSE_PIANO, 'House piano'],
     [ELECTRIC_PIANO, 'Electric piano'],
     [ORGAN, 'Organ'],

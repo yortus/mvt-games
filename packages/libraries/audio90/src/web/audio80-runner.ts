@@ -9,8 +9,8 @@ import { createWorkletSequencer } from './song-sequencer';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** The messages that define what an Audio80's commands use: its instruments and effects. */
-export type Audio80PassedMessage = Extract<Audio80ChipMessage, { readonly kind: 'instrument' | 'effect' }>;
+/** The messages that define what an Audio80's commands use: its sounds. */
+export type Audio80PassedMessage = Extract<Audio80ChipMessage, { readonly kind: 'sound' }>;
 
 /** The settings the main thread gives the Audio80's processor when it is made. */
 export interface Audio80RunnerSettings {
@@ -18,7 +18,7 @@ export interface Audio80RunnerSettings {
     readonly character?: Audio80Character;
     /** The starting gain on the voices playing music, 0 to 2. Defaults to 1. */
     readonly musicVolume?: number;
-    /** The starting gain on the voices playing effects, 0 to 2. Defaults to 1. */
+    /** The starting gain on the voices playing sounds on their own, 0 to 2. Defaults to 1. */
     readonly effectsVolume?: number;
 }
 
@@ -58,9 +58,8 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
         currentFrame: options.currentFrame,
         sequencer: createWorkletSequencer<Audio80Song, ReturnType<typeof createCommandAudio80>>({
             sampleRate,
-            // Every instrument a song plays was defined by the page, and a song plays no effect, so the writer
-            // defines nothing of its own
-            createWriter: (idOf) => createCommandAudio80({ idOf, onInstrument: ignore, onEffect: ignore }),
+            // Every sound a song plays was defined by the page, so the writer defines nothing of its own
+            createWriter: (idOf) => createCommandAudio80({ idOf, onSound: ignore }),
             createPlayer: (writer) => createSongPlayer({ audio80: writer }),
             sendPlace: options.sendPlace,
         }),
@@ -68,8 +67,7 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
             enqueue: synthesiser.enqueue,
             reset: synthesiser.reset,
             receive(message) {
-                if (message.kind === 'instrument') synthesiser.defineInstrument(message.id, message.data);
-                else synthesiser.defineEffect(message.id, message.data);
+                synthesiser.defineSound(message.id, message.data);
             },
             render(channels, frames, fromMs, msPerSample) {
                 synthesiser.render(channels[0], 0, frames, fromMs, msPerSample);
@@ -83,5 +81,5 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
 // ---------------------------------------------------------------------------
 
 function ignore(): void {
-    // The page defines every instrument a song plays
+    // The page defines every sound a song plays
 }

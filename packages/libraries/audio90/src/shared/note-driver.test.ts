@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createNoteDriver, DEFAULT_STEP_MS, type DriverInstrument, type DriverStep, type NoteDriver } from './note-driver';
+import { createNoteDriver, DEFAULT_STEP_MS, type DriverSound, type DriverStep, type NoteDriver } from './note-driver';
 
 describe('the note driver', () => {
     it('plays the note it is given, from the start', () => {
@@ -94,7 +94,7 @@ describe('the note driver', () => {
 });
 
 const RATE = 48000;
-const PLAIN: DriverInstrument<DriverStep> = { stepMs: 0, steps: [], arpeggio: [], vibratoSemitones: 0, vibratoHz: 0, vibratoDelayMs: 0 };
+const PLAIN: DriverSound<DriverStep> = { stepMs: 0, steps: [], arpeggio: [], vibratoSemitones: 0, vibratoHz: 0, vibratoDelayMs: 0 };
 
 function makeDriver(): { driver: NoteDriver<DriverStep>; stepsSeen: DriverStep[]; ended: number[] } {
     const stepsSeen: DriverStep[] = [];

@@ -46,11 +46,11 @@ export type Audio80FilterMode = 'lowpass' | 'bandpass' | 'highpass' | 'notch' | 
 export type Audio80Character = 'clean' | 'classic' | 'raw';
 
 /**
- * An instrument as plain numbers. It holds everything the chip's driver needs
- * to play the instrument, and it is all the chip is sent. Make one with
- * `createAudio80Instrument()`, never by hand.
+ * A sound as plain numbers. It holds everything the chip's driver needs to
+ * play the sound, and it is all the chip is sent. Make one with
+ * `createAudio80Sound()`, never by hand.
  */
-export interface InstrumentData {
+export interface SoundData {
     /** Waveform flags (`WAVE_TRIANGLE` and the rest). */
     readonly wave: number;
     /**
@@ -79,14 +79,22 @@ export interface InstrumentData {
     readonly sustain: number;
     /** How long the envelope takes to fall 60 dB once the note is released, in ms. */
     readonly releaseMs: number;
-    /** The instrument's volume, 0 or more. Each note's volume is multiplied by it. */
+    /** The sound's volume, 0 or more. Each note's volume is multiplied by it. */
     readonly volume: number;
     /** 0 for no filter, 1 for filter `a`, 2 for `b`. */
     readonly filter: number;
-    /** How much of the instrument goes to the echo, from 0 to 1. */
+    /** How much of the sound goes to the echo, from 0 to 1. */
     readonly echo: number;
-    /** The note it plays when a pattern names the instrument but no note. */
+    /** The note it plays when played with no note, or named in a pattern with no note. */
     readonly note: number;
+    /** How long it holds its note when played, before releasing it, in ms. A song's patterns say how long their notes last instead. */
+    readonly lengthMs: number;
+    /** The note it glides to over `lengthMs` when played, or NaN for none. */
+    readonly glideTo: number;
+    /** Higher wins. When played, it takes a voice from a sound already playing only if that sound's priority is equal or lower. */
+    readonly priority: number;
+    /** How many voices it may play on at once. Played again while on that many, it restarts the oldest of them. */
+    readonly maxVoices: number;
     /** How long each step of `steps` and `arpeggio` lasts, in ms. 0 or less uses `DEFAULT_STEP_MS`. */
     readonly stepMs: number;
     /** The step table. One row applies per step from the start of the note, and the last row holds. */
@@ -129,7 +137,7 @@ export interface InstrumentData {
     readonly ringSource: number;
 }
 
-/** One row of an instrument's step table. -1 leaves a setting as it is. */
+/** One row of a sound's step table. -1 leaves a setting as it is. */
 export interface StepData {
     /** Waveform flags (`WAVE_TRIANGLE` and the rest), or -1. */
     readonly wave: number;
@@ -139,27 +147,10 @@ export interface StepData {
     readonly pitch: number;
     /** 0 to 1, multiplied by the note's volume, or -1. */
     readonly volume: number;
-    /** 0 to 1, as in `InstrumentData.pulseWidth`, or -1. Setting it stops the pulse sweep. */
+    /** 0 to 1, as in `SoundData.pulseWidth`, or -1. Setting it stops the pulse sweep. */
     readonly pulseWidth: number;
-    /** The cutoff of the instrument's filter, in Hz, or -1. */
+    /** The cutoff of the sound's filter, in Hz, or -1. */
     readonly cutoffHz: number;
-}
-
-/** A sound effect as plain data: its instrument and how to play it. `createAudio80SoundEffect()` makes it. */
-export interface EffectData {
-    readonly instrument: InstrumentData;
-    /** The note it starts on. */
-    readonly note: number;
-    /** A note to glide to over the effect's length, or NaN for none. */
-    readonly glideTo: number;
-    /** How long it plays before it is released, in ms. */
-    readonly lengthMs: number;
-    /** The volume of its note, 0 or more. */
-    readonly volume: number;
-    /** Higher wins. A new effect takes a playing effect's voice only if that effect's priority is equal or lower. */
-    readonly priority: number;
-    /** How many voices it may play on at once. If it is played again while on that many, it restarts the oldest of them. */
-    readonly maxVoices: number;
 }
 
 /** The waveform flag for the triangle wave. */

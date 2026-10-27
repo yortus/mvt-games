@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import type { Audio80SoundEffect } from 'audio90';
+import type { Audio80Sound } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import { refreshView } from '@mvtjs/html';
 import {
@@ -152,6 +152,6 @@ function setUp(initial: Partial<State> = {}) {
     return { chip, state, tick };
 }
 
-function listPlays(log: readonly Audio80Write[]): Audio80SoundEffect[] {
-    return log.filter((write): write is Extract<Audio80Write, { kind: 'play' }> => write.kind === 'play').map((write) => write.effect);
+function listPlays(log: readonly Audio80Write[]): Audio80Sound[] {
+    return log.filter((write): write is Extract<Audio80Write, { kind: 'play' }> => write.kind === 'play').map((write) => write.sound);
 }

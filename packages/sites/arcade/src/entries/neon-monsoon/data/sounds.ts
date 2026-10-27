@@ -1,5 +1,5 @@
-import { createAudio90SoundEffect } from 'audio90';
-import { STORM_HIT } from './instruments';
+import { createAudio90Sound } from 'audio90';
+import { STORM_HIT_OPTIONS } from './instruments';
 
 // These are Neon Monsoon's sound effects, for the Audio90. All were written
 // for this game. Each plays where it happens: the game's audio view pans it
@@ -15,7 +15,7 @@ import { STORM_HIT } from './instruments';
 // ---------------------------------------------------------------------------
 
 /** The guns' soft tick, dark and quiet under everything else. It plays at half the rate of the volleys while the ship flies. */
-export const SHOT = createAudio90SoundEffect({
+export const SHOT = createAudio90Sound({
     oscillator: { wave: 'triangle' },
     filter: { mode: 'lowpass12', cutoffHz: 1400 },
     envelope: { attackMs: 0, decayMs: 45, sustain: 0, releaseMs: 15 },
@@ -27,7 +27,7 @@ export const SHOT = createAudio90SoundEffect({
 });
 
 /** The guns, focused: lower and shorter, a tick more than a blip. */
-export const FOCUSED_SHOT = createAudio90SoundEffect({
+export const FOCUSED_SHOT = createAudio90Sound({
     oscillator: { wave: 'triangle' },
     filter: { mode: 'lowpass12', cutoffHz: 1100 },
     envelope: { attackMs: 0, decayMs: 35, sustain: 0, releaseMs: 15 },
@@ -39,7 +39,7 @@ export const FOCUSED_SHOT = createAudio90SoundEffect({
 });
 
 /** Slowing to focus: a soft sine, falling an octave. */
-export const FOCUS = createAudio90SoundEffect({
+export const FOCUS = createAudio90Sound({
     oscillator: { wave: 'sine' },
     envelope: { attackMs: 5, decayMs: 0, sustain: 1, releaseMs: 60 },
     note: 'E-5',
@@ -50,7 +50,7 @@ export const FOCUS = createAudio90SoundEffect({
 });
 
 /** A bullet grazed: a tiny, high bell. */
-export const GRAZE = createAudio90SoundEffect({
+export const GRAZE = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -66,7 +66,7 @@ export const GRAZE = createAudio90SoundEffect({
 });
 
 /** The ship hit: a long roar of white noise, falling darker, rumbling roughly down, ringing in the echo. */
-export const SHIP_EXPLODE = createAudio90SoundEffect({
+export const SHIP_EXPLODE = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'lowpass12', cutoffHz: 900, envelope: { octaves: 3, decayMs: 1100, releaseMs: 500 } },
@@ -99,7 +99,7 @@ export const SHIP_EXPLODE = createAudio90SoundEffect({
 });
 
 /** The ship coming back: a sine rising two octaves, with a shimmer. */
-export const RESPAWN = createAudio90SoundEffect({
+export const RESPAWN = createAudio90Sound({
     oscillator: { wave: 'sine' },
     envelope: { attackMs: 60, decayMs: 0, sustain: 1, releaseMs: 300 },
     vibrato: { semitones: 0.25, hz: 9 },
@@ -112,7 +112,7 @@ export const RESPAWN = createAudio90SoundEffect({
 });
 
 /** A bomb: a rush of white noise swelling as its filter opens, then rumbling away as it closes. */
-export const BOMB = createAudio90SoundEffect({
+export const BOMB = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'lowpass12', cutoffHz: 700, envelope: { octaves: 3.5, attackMs: 250, decayMs: 1100, releaseMs: 500 } },
@@ -128,7 +128,7 @@ export const BOMB = createAudio90SoundEffect({
 // ---------------------------------------------------------------------------
 
 /** A power-up: an electric piano, up a major chord and on. */
-export const POWER_UP = createAudio90SoundEffect({
+export const POWER_UP = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -151,7 +151,7 @@ export const POWER_UP = createAudio90SoundEffect({
 });
 
 /** A bomb picked up: the same, lower, on a fourth. */
-export const BOMB_PICKUP = createAudio90SoundEffect({
+export const BOMB_PICKUP = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -173,7 +173,7 @@ export const BOMB_PICKUP = createAudio90SoundEffect({
 });
 
 /** A gem collected: a quick sparkle on a sine, a fifth up. */
-export const GEM = createAudio90SoundEffect({
+export const GEM = createAudio90Sound({
     oscillator: { wave: 'sine' },
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 70 },
     note: 'B-6',
@@ -188,7 +188,7 @@ export const GEM = createAudio90SoundEffect({
 });
 
 /** An extra life: bells, up two octaves, ringing on. */
-export const EXTEND = createAudio90SoundEffect({
+export const EXTEND = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -215,7 +215,7 @@ export const EXTEND = createAudio90SoundEffect({
  * white noise, its lowest frequencies cut so it does not thud, fading in
  * over a few milliseconds rather than struck, and kept quiet under the rest.
  */
-export const EXPLODE_SMALL = createAudio90SoundEffect({
+export const EXPLODE_SMALL = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'highpass', cutoffHz: 700 },
@@ -228,7 +228,7 @@ export const EXPLODE_SMALL = createAudio90SoundEffect({
 });
 
 /** A barge destroyed: a longer burst of white noise, rumbling roughly down as it darkens. */
-export const EXPLODE_LARGE = createAudio90SoundEffect({
+export const EXPLODE_LARGE = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'lowpass12', cutoffHz: 1200, envelope: { octaves: 2.5, decayMs: 600, releaseMs: 250 } },
@@ -258,7 +258,7 @@ export const EXPLODE_LARGE = createAudio90SoundEffect({
 });
 
 /** A gunship, or the boss, destroyed: a long roar of white noise, rumbling roughly down, ringing out. */
-export const EXPLODE_HUGE = createAudio90SoundEffect({
+export const EXPLODE_HUGE = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'lowpass12', cutoffHz: 800, envelope: { octaves: 3, decayMs: 1200, releaseMs: 500 } },
@@ -298,17 +298,17 @@ export const EXPLODE_HUGE = createAudio90SoundEffect({
 // ---------------------------------------------------------------------------
 
 /** The boss's warning, which sounds again and again while it shows: the orchestra hit, in the reverb. */
-export const WARNING = createAudio90SoundEffect({
-    instrument: STORM_HIT,
+export const WARNING = createAudio90Sound({
+    ...STORM_HIT_OPTIONS,
     note: 'A-3',
     lengthMs: 600,
     priority: 3,
-    volume: 7.85,
+    volume: 5.495,
     reverb: 0.4,
 });
 
 /** The boss taking hits. It is a quiet metal tick, played again and again while the shots land. */
-export const BOSS_HIT = createAudio90SoundEffect({
+export const BOSS_HIT = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [
@@ -323,7 +323,7 @@ export const BOSS_HIT = createAudio90SoundEffect({
 });
 
 /** One of the boss's attacks ending, broken or timed out: bells tumbling down, in the echo. */
-export const ATTACK_BROKEN = createAudio90SoundEffect({
+export const ATTACK_BROKEN = createAudio90Sound({
     engine: 'fm',
     algorithm: '2>1',
     operators: [

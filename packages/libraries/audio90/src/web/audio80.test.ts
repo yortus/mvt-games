@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createAudio80Instrument, OP_NOTE_OFF, OP_NOTE_ON, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX } from '../audio80';
+import { createAudio80Sound, OP_PLAY, OP_PLAY_OPTIONS, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX, OP_STOP } from '../audio80';
 import { type ChipBatch, COMMAND_STRIDE, MAX_MIX_VOLUME } from '../shared';
 import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
 import { createAudio80 } from './audio80';
@@ -16,23 +16,22 @@ describe('createAudio80, with a stand-in audio context', () => {
         const fake = createFakeContext('running');
         const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
-        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
-        audio80.noteOff(0);
+        audio80.stop(audio80.play(createAudio80Sound({ wave: 'saw' })));
         expect(fake.listBatches()).toHaveLength(0);
         await settle();
         expect(fake.listBatches()).toHaveLength(1);
-        expect(listOps(fake.listBatches()[0])).toEqual([OP_NOTE_ON, OP_NOTE_OFF]);
+        expect(listOps(fake.listBatches()[0])).toEqual([OP_PLAY_OPTIONS, OP_PLAY, OP_STOP]);
     });
 
     it('stamps a write made with no time to play as soon as it arrives', async () => {
         const fake = createFakeContext('running');
         const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
-        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
-        audio80.noteOff(0, 250);
+        audio80.play(createAudio80Sound({ wave: 'saw' }));
+        audio80.setFilter('a', 'cutoffHz', 800, 250);
         await settle();
         const [batch] = fake.listBatches();
-        expect([batch.commands[1], batch.commands[COMMAND_STRIDE + 1]]).toEqual([-Infinity, 250]);
+        expect([batch.commands[COMMAND_STRIDE + 1], batch.commands[2 * COMMAND_STRIDE + 1]]).toEqual([-Infinity, 250]);
     });
 
     it('sends no batch while the audio context is suspended', async () => {
@@ -40,13 +39,13 @@ describe('createAudio80, with a stand-in audio context', () => {
         const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
         for (let i = 0; i < 10; i++) {
-            audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+            audio80.play(createAudio80Sound({ wave: 'saw' }));
             await settle();
         }
         expect(fake.listBatches()).toHaveLength(0);
     });
 
-    it('sends the settings made while suspended once the context runs, but not the notes', async () => {
+    it('sends the settings made while suspended once the context runs, but not the plays', async () => {
         const fake = createFakeContext('suspended');
         const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
@@ -54,7 +53,7 @@ describe('createAudio80, with a stand-in audio context', () => {
         audio80.reserveVoices(4);
         audio80.setFilter('a', 'cutoffHz', 500);
         audio80.setFilter('a', 'cutoffHz', 800);
-        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        audio80.play(createAudio80Sound({ wave: 'saw' }));
         await settle();
         fake.setState('running');
         await settle();
@@ -64,32 +63,33 @@ describe('createAudio80, with a stand-in audio context', () => {
         expect(rest).toEqual([]);
     });
 
-    it('sends the instruments first played while suspended, once each', async () => {
+    it('sends the sounds first played while suspended, once each', async () => {
         const fake = createFakeContext('suspended');
         const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
-        const instrument = createAudio80Instrument({ wave: 'saw' });
-        audio80.noteOn(0, instrument, 57, 1);
+        const sound = createAudio80Sound({ wave: 'saw' });
+        audio80.play(sound);
         await settle();
         fake.setState('running');
-        audio80.noteOn(0, instrument, 57, 1);
+        audio80.play(sound);
         await settle();
-        expect(fake.messages.filter((message) => message.kind === 'instrument')).toHaveLength(1);
+        expect(fake.messages.filter((message) => message.kind === 'sound')).toHaveLength(1);
     });
 
-    it('sends a noteOff made while suspended, so a note started before still stops', async () => {
+    it('sends a stop made while suspended, so a sound played before still stops', async () => {
         const fake = createFakeContext('running');
         const { audio80, controls } = createAudio80({ context: fake.context });
         await controls.ready;
-        audio80.noteOn(2, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        const id = audio80.play(createAudio80Sound({ wave: 'saw' }), { lengthMs: Infinity });
         await settle();
         fake.setState('suspended');
-        audio80.noteOff(2);
+        audio80.stop(id);
         await settle();
         fake.setState('running');
         await settle();
         const [, held] = fake.listBatches();
-        expect(listOps(held)).toEqual([OP_NOTE_OFF]);
+        expect(listOps(held)).toEqual([OP_STOP]);
+        expect(listValues(held, OP_STOP, 2)).toEqual([id]);
     });
 
     it('sends a mix change made while suspended once the context runs', async () => {
@@ -112,14 +112,14 @@ describe('createAudio80, with a stand-in audio context', () => {
         expect(controls.isPaused).toBe(true);
         expect(fake.messages).toEqual([{ kind: 'pause' }]);
         audio80.setFilter('a', 'cutoffHz', 800);
-        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        audio80.play(createAudio80Sound({ wave: 'saw' }));
         await settle();
         expect(fake.listBatches()).toHaveLength(0);
         controls.resume();
         expect(controls.isPaused).toBe(false);
         await settle();
-        // The note's instrument is defined as it is first played, paused or not
-        expect(fake.messages.map((message) => message.kind)).toEqual(['pause', 'instrument', 'resume', 'batch']);
+        // The sound is defined as it is first played, paused or not
+        expect(fake.messages.map((message) => message.kind)).toEqual(['pause', 'sound', 'resume', 'batch']);
         expect(listOps(fake.listBatches()[0])).toEqual([OP_SET_FILTER]);
     });
 
@@ -139,7 +139,7 @@ describe('createAudio80, with a stand-in audio context', () => {
         controls.destroy();
         expect(fake.messages.at(-1)).toEqual({ kind: 'stop' });
         const sent = fake.messages.length;
-        audio80.noteOn(0, createAudio80Instrument({ wave: 'saw' }), 57, 1);
+        audio80.play(createAudio80Sound({ wave: 'saw' }));
         controls.pause();
         await settle();
         expect(fake.messages).toHaveLength(sent);

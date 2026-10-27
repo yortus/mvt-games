@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio90SoundEffect, HELD_ENVELOPE } from '../audio90';
+import { createAudio90Sound, HELD_ENVELOPE } from '../audio90';
 import { encodeWav, toInt16 } from './encode-wav';
 import { createHeadlessAudio80 } from './headless-audio80';
-import { findSounds, hashSamples, measurePeak, renderSoundEffect, renderTicks } from './render';
+import { findSounds, hashSamples, measurePeak, renderSound, renderTicks } from './render';
 
 describe('renderTicks', () => {
     for (const tickMs of [0, -1, NaN]) {
@@ -13,9 +13,9 @@ describe('renderTicks', () => {
 });
 
 describe('the render tools, with stereo sound', () => {
-    it('render an Audio90 effect in two channels, at its own pan', () => {
-        const effect = createAudio90SoundEffect({ oscillator: { wave: 'saw' }, envelope: HELD_ENVELOPE, note: 'C-5', lengthMs: 100, pan: -1 });
-        const { left, right } = renderSoundEffect(effect, { durationMs: 200 });
+    it('render an Audio90 sound in two channels, at its own pan', () => {
+        const zap = createAudio90Sound({ oscillator: { wave: 'saw' }, envelope: HELD_ENVELOPE, note: 'C-5', lengthMs: 100, pan: -1 });
+        const { left, right } = renderSound(zap, { durationMs: 200 });
         expect(left.length).toBe(9600);
         expect(measurePeak(left)).toBeGreaterThan(0.05);
         expect(measurePeak(right)).toBeLessThan(1e-6);
@@ -43,17 +43,17 @@ describe('the render tools, with stereo sound', () => {
 });
 
 describe('findSounds', () => {
-    const effect = createAudio90SoundEffect({ oscillator: { wave: 'saw' }, envelope: HELD_ENVELOPE, note: 'C-5', lengthMs: 100 });
+    const zap = createAudio90Sound({ oscillator: { wave: 'saw' }, envelope: HELD_ENVELOPE, note: 'C-5', lengthMs: 100 });
 
     it('finds each exported sound, by its export name, and skips what is not a sound', () => {
-        const { songs, effects } = findSounds({ ZAP: effect, SPEED: 3, LABEL: 'zap' });
-        expect(effects).toEqual([['ZAP', effect]]);
+        const { songs, sounds } = findSounds({ ZAP: zap, SPEED: 3, LABEL: 'zap' });
+        expect(sounds).toEqual([['ZAP', zap]]);
         expect(songs).toEqual([]);
     });
 
     it('finds the sounds in an exported array, each named for its place', () => {
-        const { effects } = findSounds({ FANFARES: [effect, undefined, effect], SPEEDS: [1, 2] });
-        expect(effects).toEqual([['FANFARES[0]', effect], ['FANFARES[2]', effect]]);
+        const { sounds } = findSounds({ FANFARES: [zap, undefined, zap], SPEEDS: [1, 2] });
+        expect(sounds).toEqual([['FANFARES[0]', zap], ['FANFARES[2]', zap]]);
     });
 });
 

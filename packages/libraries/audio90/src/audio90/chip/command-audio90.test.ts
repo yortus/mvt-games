@@ -5,19 +5,20 @@ import {
     AUDIO90_EFFECT_INDEX,
     AUDIO90_EFFECT_SETTING_INDEX,
     AUDIO90_VOICE_SETTING_INDEX,
-    type Audio90EffectData,
-    type Audio90InstrumentData,
+    type Audio90SoundData,
     type Audio90SampleData,
-    DEFAULT_AUDIO90_INSTRUMENT,
+    DEFAULT_AUDIO90_SOUND,
     ENGINE_SAMPLE,
     OP90_NOTE_ON,
-    OP90_PLAY_EFFECT,
+    OP90_PLAY,
+    OP90_PLAY_OPTIONS,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
+    OP90_STOP,
 } from '../synthesiser';
-import type { Audio90Instrument, Audio90Sample, Audio90SoundEffect } from '../notation';
+import type { Audio90Sample, Audio90Sound } from '../notation';
 import { createCommandAudio90 } from './command-audio90';
 
 describe('the Audio90\'s command writer', () => {
@@ -36,49 +37,56 @@ describe('the Audio90\'s command writer', () => {
         ]);
     });
 
-    it('plays an effect at once, at its own pan unless given one', () => {
-        const { writer, listCommands } = setUp();
-        const effect = createEffect(createInstrument());
-        writer.play(effect);
-        writer.play(effect, 0.75);
-        const [own, given] = listCommands();
-        expect([own[0], own[1], own[3], own[4]]).toEqual([OP90_PLAY_EFFECT, -Infinity, 0, 0]);
-        expect([given[3], given[4]]).toEqual([0.75, 1]);
+    it('plays a sound at once, as its options say, or as the sound says without them', () => {
+        const { writer, listCommands, sent } = setUp();
+        const sound = createSound({ note: 64, lengthMs: 100 });
+        const first = writer.play(sound);
+        const second = writer.play(sound, { note: 'C-4', lengthMs: Infinity, volume: 0.5, pan: 0.75, glideTo: 72 });
+        writer.stop(second);
+        const soundId = sent[0].id;
+        expect(listCommands()).toEqual([
+            [OP90_PLAY_OPTIONS, -Infinity, 100, -1, 0, 0],
+            [OP90_PLAY, -Infinity, soundId, first, 64, 1],
+            [OP90_PLAY_OPTIONS, -Infinity, -1, 72, 0.75, 1],
+            [OP90_PLAY, -Infinity, soundId, second, 60, 0.5],
+            [OP90_STOP, -Infinity, second, 0, 0, 0],
+        ]);
+        expect([first, second]).toEqual([1, 2]);
     });
 
-    it('sends each instrument once, until it forgets', () => {
+    it('sends each sound once, until it forgets', () => {
         const { writer, sent } = setUp();
-        const instrument = createInstrument();
-        writer.noteOn(0, instrument, 60, 1);
-        writer.noteOn(1, instrument, 64, 1);
-        expect(sent.filter((message) => message.kind === 'instrument')).toHaveLength(1);
+        const sound = createSound();
+        writer.noteOn(0, sound, 60, 1);
+        writer.play(sound);
+        expect(sent.filter((message) => message.kind === 'sound')).toHaveLength(1);
         writer.forget();
-        writer.noteOn(0, instrument, 60, 1);
-        expect(sent.filter((message) => message.kind === 'instrument')).toHaveLength(2);
+        writer.noteOn(0, sound, 60, 1);
+        expect(sent.filter((message) => message.kind === 'sound')).toHaveLength(2);
     });
 
-    it('sends a sample before the first instrument that plays it, and gives the instrument its id', () => {
+    it('sends a sample before the first sound that plays it, and gives the sound its id', () => {
         const { writer, sent, listCommands } = setUp();
         const sample = createSample();
-        const first = createInstrument({ engine: ENGINE_SAMPLE }, sample);
-        const second = createInstrument({ engine: ENGINE_SAMPLE, volume: 0.5 }, sample);
+        const first = createSound({ engine: ENGINE_SAMPLE }, sample);
+        const second = createSound({ engine: ENGINE_SAMPLE, volume: 0.5 }, sample);
         writer.noteOn(0, first, 60, 1);
         writer.noteOn(1, second, 60, 1);
-        expect(sent.map((message) => message.kind)).toEqual(['sample', 'instrument', 'instrument']);
+        expect(sent.map((message) => message.kind)).toEqual(['sample', 'sound', 'sound']);
         const sampleId = sent[0].id;
-        expect(sent.slice(1).map((message) => (message.data as Audio90InstrumentData).sample)).toEqual([sampleId, sampleId]);
-        // The instrument's own data is left as it was, so it can be sent again after a reset
+        expect(sent.slice(1).map((message) => (message.data as Audio90SoundData).sample)).toEqual([sampleId, sampleId]);
+        // The sound's own data is left as it was, so it can be sent again after a reset
         expect(first.data.sample).toBe(-1);
         const notes = listCommands().filter((command) => command[0] === OP90_NOTE_ON);
         expect(notes.map((command) => command[3])).toEqual([sent[1].id, sent[2].id]);
     });
 
-    it('sends the sample of an effect\'s instrument before the effect', () => {
+    it('sends the sample of a sound played on its own before the sound', () => {
         const { writer, sent } = setUp();
         const sample = createSample();
-        writer.play(createEffect(createInstrument({ engine: ENGINE_SAMPLE }, sample)));
-        expect(sent.map((message) => message.kind)).toEqual(['sample', 'effect']);
-        expect((sent[1].data as Audio90EffectData).instrument.sample).toBe(sent[0].id);
+        writer.play(createSound({ engine: ENGINE_SAMPLE }, sample));
+        expect(sent.map((message) => message.kind)).toEqual(['sample', 'sound']);
+        expect((sent[1].data as Audio90SoundData).sample).toBe(sent[0].id);
     });
 });
 
@@ -87,16 +95,15 @@ describe('the Audio90\'s command writer', () => {
 // ---------------------------------------------------------------------------
 
 interface Sent {
-    readonly kind: 'instrument' | 'effect' | 'sample';
+    readonly kind: 'sound' | 'sample';
     readonly id: number;
-    readonly data: Audio90InstrumentData | Audio90EffectData | Audio90SampleData;
+    readonly data: Audio90SoundData | Audio90SampleData;
 }
 
 function setUp() {
     const sent: Sent[] = [];
     const writer = createCommandAudio90({
-        onInstrument: (id, data) => sent.push({ kind: 'instrument', id, data }),
-        onEffect: (id, data) => sent.push({ kind: 'effect', id, data }),
+        onSound: (id, data) => sent.push({ kind: 'sound', id, data }),
         onSample: (id, data) => sent.push({ kind: 'sample', id, data }),
     });
     const listCommands = (): number[][] => {
@@ -107,14 +114,9 @@ function setUp() {
     return { writer, sent, listCommands };
 }
 
-/** An instrument made by hand, so the writer is tested apart from the notation: its data, with the sample it plays, if any. */
-function createInstrument(data: Partial<Audio90InstrumentData> = {}, sample?: Audio90Sample): Audio90Instrument {
-    return { chip: 'audio90', engine: sample === undefined ? 'analog' : 'sample', data: { ...DEFAULT_AUDIO90_INSTRUMENT, ...data }, sample };
-}
-
-function createEffect(instrument: Audio90Instrument): Audio90SoundEffect {
-    const data: Audio90EffectData = { instrument: instrument.data, note: 60, glideTo: Number.NaN, lengthMs: 100, volume: 1, pan: 0, priority: 0, maxVoices: 1 };
-    return { chip: 'audio90', data, instrument };
+/** A sound made by hand, so the writer is tested apart from the notation: its data, with the sample it plays, if any. */
+function createSound(data: Partial<Audio90SoundData> = {}, sample?: Audio90Sample): Audio90Sound {
+    return { chip: 'audio90', engine: sample === undefined ? 'analog' : 'sample', data: { ...DEFAULT_AUDIO90_SOUND, ...data }, sample };
 }
 
 /** A sample made by hand, of silence, with nothing to bounce. */

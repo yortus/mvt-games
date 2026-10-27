@@ -1,5 +1,5 @@
 /**
- * Renders every song and sound effect a module exports to WAV files, for
+ * Renders every song and sound a module exports to WAV files, for
  * listening without starting the site. An Audio80's sounds are mono files,
  * and an Audio90's stereo.
  *
@@ -15,7 +15,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong, type RenderedSamples, findSounds } from 'audio90/headless';
+import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, renderSong, renderSound, type RenderedSamples, findSounds } from 'audio90/headless';
 
 const SAMPLE_RATE = 48000;
 const ROOT = process.env.INIT_CWD ?? process.cwd();
@@ -23,7 +23,7 @@ const OUT = join(ROOT, 'renders');
 
 const modules = process.argv.slice(2);
 if (modules.length === 0) {
-    console.error('Name one or more modules that export songs or sound effects.');
+    console.error('Name one or more modules that export songs or sounds.');
     process.exit(1);
 }
 
@@ -33,10 +33,10 @@ for (const path of modules) {
     // Use the module's own path, so two games' `sounds.ts` files do not overwrite each other
     const folder = join(OUT, relative(ROOT, absolute).slice(0, -extname(absolute).length));
     mkdirSync(folder, { recursive: true });
-    const { songs, effects } = findSounds(exports);
-    if (songs.length + effects.length === 0) console.warn(`${path}: exports no songs or sound effects`);
+    const { songs, sounds } = findSounds(exports);
+    if (songs.length + sounds.length === 0) console.warn(`${path}: exports no songs or sounds`);
     for (const [name, song] of songs) write(folder, name, renderSong(song, { sampleRate: SAMPLE_RATE }), true);
-    for (const [name, effect] of effects) write(folder, name, renderSoundEffect(effect, { sampleRate: SAMPLE_RATE }), false);
+    for (const [name, sound] of sounds) write(folder, name, renderSound(sound, { sampleRate: SAMPLE_RATE }), false);
 }
 
 /**

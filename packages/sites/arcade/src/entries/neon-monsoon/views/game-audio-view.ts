@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { type Audio90, type Audio90SoundEffect, createMusicPlayer } from 'audio90';
+import { type Audio90, type Audio90Sound, createMusicPlayer } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
@@ -138,29 +138,29 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
 
         // The ship's own explosion starts as it is lost. Its loss has a sound of its own
         if (w.explosions.increased && !(w.phase.changed && w.phase.value === 'dying')) {
-            sound.play(chooseExplosion(bindings.lastExplosionSize()), toPan(bindings.lastExplosionX()));
+            sound.play(chooseExplosion(bindings.lastExplosionSize()), { pan: toPan(bindings.lastExplosionX()) });
         }
         if (w.extraLives.increased) sound.play(EXTEND);
         if (w.isBombing.changed && w.isBombing.value) sound.play(BOMB);
         // The focus follows its key even after the game ends. So the sweep plays only in play, like the guns' blips
-        if (w.isFocused.changed && w.isFocused.value && w.phase.value === 'playing') sound.play(FOCUS, toPan(bindings.shipX()));
-        if (w.items.increased) sound.play(bindings.lastItemKind() === 'power' ? POWER_UP : BOMB_PICKUP, toPan(bindings.shipX()));
-        if (w.gems.increased) sound.play(GEM, toPan(bindings.shipX()));
-        if (w.grazes.increased) sound.play(GRAZE, toPan(bindings.shipX()));
+        if (w.isFocused.changed && w.isFocused.value && w.phase.value === 'playing') sound.play(FOCUS, { pan: toPan(bindings.shipX()) });
+        if (w.items.increased) sound.play(bindings.lastItemKind() === 'power' ? POWER_UP : BOMB_PICKUP, { pan: toPan(bindings.shipX()) });
+        if (w.gems.increased) sound.play(GEM, { pan: toPan(bindings.shipX()) });
+        if (w.grazes.increased) sound.play(GRAZE, { pan: toPan(bindings.shipX()) });
 
-        if (w.blips.increased) sound.play(bindings.isFocused() ? FOCUSED_SHOT : SHOT, toPan(bindings.shipX()));
-        if (w.ticks.increased) sound.play(BOSS_HIT, toPan(bindings.bossX()));
+        if (w.blips.increased) sound.play(bindings.isFocused() ? FOCUSED_SHOT : SHOT, { pan: toPan(bindings.shipX()) });
+        if (w.ticks.increased) sound.play(BOSS_HIT, { pan: toPan(bindings.bossX()) });
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
         switch (phase) {
             case 'playing':
                 // After a lost ship, the music plays on
-                if (previous === 'dying') sound.play(RESPAWN, toPan(bindings.shipX()));
+                if (previous === 'dying') sound.play(RESPAWN, { pan: toPan(bindings.shipX()) });
                 else music.play(STAGE_THEME);
                 break;
             case 'dying':
-                sound.play(SHIP_EXPLODE, toPan(bindings.shipX()));
+                sound.play(SHIP_EXPLODE, { pan: toPan(bindings.shipX()) });
                 break;
             case 'tally':
                 music.play(STAGE_CLEAR);
@@ -180,11 +180,11 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
                 music.play(BOSS_THEME);
                 break;
             case 'breaking':
-                sound.play(ATTACK_BROKEN, toPan(bindings.bossX()));
+                sound.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
                 break;
             case 'exploding':
                 // The last attack has ended. The music stops for the boss's explosions
-                sound.play(ATTACK_BROKEN, toPan(bindings.bossX()));
+                sound.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
                 music.stop();
                 break;
             case 'absent':
@@ -228,6 +228,6 @@ function countSirens(warningElapsedMs: number): number {
 }
 
 /** Returns the sound of an explosion of this size. */
-function chooseExplosion(size: ExplosionSize | undefined): Audio90SoundEffect {
+function chooseExplosion(size: ExplosionSize | undefined): Audio90Sound {
     return size === 'huge' ? EXPLODE_HUGE : size === 'large' ? EXPLODE_LARGE : EXPLODE_SMALL;
 }
