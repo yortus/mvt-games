@@ -1,6 +1,8 @@
 import { Container } from 'pixi.js';
 import { findEntry } from '@mvtjs/arcade/entries';
-import { type EntryInputConfig, type PixiEntryStarter, type SoundChipsByKind, startPixiEntry } from '@mvtjs/arcade/entry-types';
+import {
+    type EntryInputConfig, type PixiEntryStarter, type SessionChips, type SoundChipFinder, type SoundChipKind, startPixiEntry,
+} from '@mvtjs/arcade/entry-types';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
@@ -37,23 +39,27 @@ const params = readParams();
 const measure = String(params.measure);
 const starter = await loadPixiStarter(String(params.entry));
 const stage = new Container();
-// An entry that plays on a chip plays on a silent one. Its clock advances as
-// the host advances the real chip's, so the audio views do their usual work,
-// but no sound is made. An entry that makes no sound is given no chip, as
-// the host gives it none.
-const audio80Chip = createHeadlessAudio80();
-const audio90Chip = createHeadlessAudio90();
-const chips: SoundChipsByKind = { audio80: audio80Chip, audio90: audio90Chip };
-const session = startPixiEntry(starter, { stage }, (kind) => chips[kind]);
-const chip = starter.soundChip === 'audio90' ? audio90Chip : audio80Chip;
-const sessionChip = starter.soundChip === undefined ? undefined : chip;
+// An entry that plays on chips plays on silent ones, one for its music and
+// one for its sound effects. Their clocks advance as the host advances the
+// real chips', so the audio views do their usual work, but no sound is made.
+// An entry that makes no sound is given no chips, as the host gives it none.
+const music = starter.soundChip === 'audio90' ? createHeadlessAudio90() : createHeadlessAudio80();
+const sfx = starter.soundChip === 'audio90' ? createHeadlessAudio90() : createHeadlessAudio80();
+// A starter asks only for the kind of chip it names, which these are. TypeScript can't follow that into their type
+const findChips: SoundChipFinder = <K extends SoundChipKind>() => ({ music, sfx }) as unknown as SessionChips<K>;
+const session = startPixiEntry(starter, { stage }, findChips);
+const sessionChips = starter.soundChip === undefined ? [] : [music, sfx];
+/** Advances the session's chips' clocks, as the host does each frame. */
+const updateChips = (deltaMs: number): void => {
+    for (let i = 0; i < sessionChips.length; i++) sessionChips[i].update(deltaMs);
+};
 const input = createInputScript(session.inputConfig);
 let frameIndex = 0;
 
 const frame = (): void => {
     input(frameIndex++);
     session.update(FRAME_MS);
-    sessionChip?.update(FRAME_MS);
+    updateChips(FRAME_MS);
     updateView(stage, FRAME_MS);
     refreshView(stage);
 };
@@ -67,7 +73,7 @@ if (measure === 'time') {
         input(frameIndex++);
         const start = performance.now();
         session.update(FRAME_MS);
-        chip.update(FRAME_MS);
+        updateChips(FRAME_MS);
         const modelsDone = performance.now();
         updateView(stage, FRAME_MS);
         const updateDone = performance.now();

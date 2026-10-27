@@ -3,19 +3,19 @@ import { createHeadlessAudio80, createHeadlessAudio90, type HeadlessAudio80, typ
 import { refreshView, updateView, type View } from '@mvtjs/html';
 import {
     type ArcadeEntry, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder,
-    type SoundChipKind, type SoundChipsByKind, startPixiEntry,
+    type SessionChips, type SoundChipKind, startPixiEntry,
 } from '../entry-types';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-/** The chip a session started headless plays on. It makes no sound. */
+/** The chips a session started headless plays on, one for its music and one for its sound effects. They make no sound. */
 export interface HeadlessSound {
-    /** Finds the chip, for the kind its starter names. */
-    readonly findChip: SoundChipFinder;
-    /** The chip, or undefined for an entry that makes no sound, which is given no chip. */
-    readonly chip: HeadlessAudio80 | HeadlessAudio90 | undefined;
+    /** Finds the chips, for the kind its starter names. */
+    readonly findChips: SoundChipFinder;
+    /** The chips, which an entry that makes no sound is given none of. */
+    readonly chips: readonly (HeadlessAudio80 | HeadlessAudio90)[];
 }
 
 // ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ export interface StartPixiHeadlessOptions {
     readonly starter: PixiEntryStarter;
     /** The bare container that the entry adds its view to. */
     readonly stage: Container;
-    /** The chip that the entry plays on, from `createHeadlessSound`. */
+    /** The chips that the entry plays on, from `createHeadlessSound`. */
     readonly sound: HeadlessSound;
 }
 
@@ -36,8 +36,8 @@ export interface AdvanceHeadlessOptions {
     readonly session: EntrySession;
     /** The views that the host would tick. For a Pixi entry, that is its stage. */
     readonly views: readonly View[];
-    /** The chip that the session plays on, if it plays on one. */
-    readonly chip: HeadlessAudio80 | HeadlessAudio90 | undefined;
+    /** The chips that the session plays on, if any. */
+    readonly chips: readonly (HeadlessAudio80 | HeadlessAudio90)[];
     readonly totalMs: number;
     /** Plays the entry's controls before each step, as `PixiEntryStarter.thumbnailInput` does. */
     readonly input?: (session: EntrySession, elapsedMs: number) => void;
@@ -48,20 +48,20 @@ export interface AdvanceHeadlessOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates the headless chip that `starter` plays on, which makes no sound.
+ * Creates the headless chips that `starter` plays on, which make no sound.
  * For an entry that makes no sound, it creates none.
  */
 export function createHeadlessSound(starter: EntryStarter): HeadlessSound {
     switch (starter.soundChip) {
         case undefined:
-            return { findChip: refuseChip, chip: undefined };
+            return { findChips: refuseChips, chips: [] };
         case 'audio80': {
-            const chip = createHeadlessAudio80();
-            return { findChip: createChipFinder('audio80', chip), chip };
+            const chips = { music: createHeadlessAudio80(), sfx: createHeadlessAudio80() };
+            return { findChips: createChipFinder('audio80', chips), chips: [chips.music, chips.sfx] };
         }
         case 'audio90': {
-            const chip = createHeadlessAudio90();
-            return { findChip: createChipFinder('audio90', chip), chip };
+            const chips = { music: createHeadlessAudio90(), sfx: createHeadlessAudio90() };
+            return { findChips: createChipFinder('audio90', chips), chips: [chips.music, chips.sfx] };
         }
     }
 }
@@ -76,7 +76,7 @@ export function createHeadlessSound(starter: EntryStarter): HeadlessSound {
 export function startPixiHeadless(options: StartPixiHeadlessOptions): EntrySession {
     const { entry, starter, stage, sound } = options;
     starter.fitTo?.(entry.screenWidth, entry.screenHeight);
-    return startPixiEntry(starter, { stage }, sound.findChip);
+    return startPixiEntry(starter, { stage }, sound.findChips);
 }
 
 /**
@@ -105,13 +105,13 @@ export async function waitForLayout(): Promise<void> {
  * from then.
  */
 export function advanceHeadless(options: AdvanceHeadlessOptions): void {
-    const { session, views, chip, totalMs, input } = options;
+    const { session, views, chips, totalMs, input } = options;
     let remaining = totalMs;
     while (remaining > 0) {
         const step = Math.min(FRAME_MS, remaining);
         input?.(session, totalMs - remaining);
         session.update(step);
-        chip?.update(step);
+        for (let i = 0; i < chips.length; i++) chips[i].update(step);
         for (let i = 0; i < views.length; i++) updateView(views[i], step);
         for (let i = 0; i < views.length; i++) refreshView(views[i]);
         remaining -= step;
@@ -137,16 +137,16 @@ function waitForFrame(): Promise<number> {
     return new Promise((resolve) => requestAnimationFrame(resolve));
 }
 
-/** The chip finder for an entry that makes no sound. Its sessions are given no chip, so this is never called. */
-function refuseChip(): never {
-    throw new Error('headless: this entry makes no sound, so it has no chip');
+/** The chip finder for an entry that makes no sound. Its sessions are given no chips, so this is never called. */
+function refuseChips(): never {
+    throw new Error('headless: this entry makes no sound, so it has no chips');
 }
 
-/** Finds `chip`, the one chip made, for the kind `made`. Its starter names that kind, so no other is asked for. */
-function createChipFinder<M extends SoundChipKind>(made: M, chip: SoundChipsByKind[M]): SoundChipFinder {
+/** Finds `chips`, the chips made, for the kind `made`. Its starter names that kind, so no other is asked for. */
+function createChipFinder<M extends SoundChipKind>(made: M, chips: SessionChips<M>): SoundChipFinder {
     return <K extends SoundChipKind>(kind: K) => {
         if ((kind as SoundChipKind) !== made) throw new Error(`headless: this entry plays on the ${made}, not the ${kind}`);
-        // `kind` is `made`, which TypeScript can't follow into the chip's type
-        return chip as unknown as SoundChipsByKind[K];
+        // `kind` is `made`, which TypeScript can't follow into the chips' type
+        return chips as unknown as SessionChips<K>;
     };
 }

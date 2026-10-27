@@ -10,7 +10,7 @@ describe('PauseMenuView', () => {
         const slider = music.querySelector<HTMLInputElement>('input')!;
         expect(slider.valueAsNumber).toBe(Math.round(state.musicVolume * Number(slider.max)));
         expect(music.classList.contains('is-off')).toBe(false);
-        state.effectsVolume = 0;
+        state.sfxVolume = 0;
         refreshView(menu);
         expect(effects.classList.contains('is-off')).toBe(true);
         expect(effects.querySelector('input')?.getAttribute('aria-valuetext')).toBe('Off');
@@ -20,11 +20,11 @@ describe('PauseMenuView', () => {
         const { menu, reports } = setUp();
         const effects = menu.querySelectorAll('.sound-control')[1];
         effects.querySelector<HTMLElement>('.sound-control-toggle')?.click();
-        expect(reports.effectsIconPresses).toBe(1);
+        expect(reports.sfxIconPresses).toBe(1);
         effects.querySelector<HTMLElement>('input')?.focus();
         press('Enter');
         press('Enter', { repeat: true });
-        expect(reports.effectsIconPresses).toBe(2);
+        expect(reports.sfxIconPresses).toBe(2);
     });
 
     it('says what pressing a sound\'s icon does, and leaves the icon out of the tab order', () => {
@@ -123,16 +123,16 @@ function setUp(initial: { isOpen?: boolean } = {}) {
     const state = {
         isOpen: initial.isOpen ?? true,
         musicVolume: 0.5,
-        effectsVolume: 0.5,
+        sfxVolume: 0.5,
     };
-    const reports = { musicVolume: -1, effectsIconPresses: 0, restarts: 0, exits: 0 };
+    const reports = { musicVolume: -1, sfxIconPresses: 0, restarts: 0, exits: 0 };
     const menu = PauseMenuView({
         isOpen: () => state.isOpen,
         heading: () => 'GAME PAUSED',
         musicVolume: () => state.musicVolume,
-        effectsVolume: () => state.effectsVolume,
+        sfxVolume: () => state.sfxVolume,
         onMusicVolumeChanged: (volume) => { reports.musicVolume = volume; },
-        onEffectsIconPressed: () => { reports.effectsIconPresses++; },
+        onSfxIconPressed: () => { reports.sfxIconPresses++; },
         onRestartPressed: () => { reports.restarts++; },
         onExitPressed: () => { reports.exits++; },
     });

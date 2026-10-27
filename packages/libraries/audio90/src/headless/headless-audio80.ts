@@ -16,7 +16,7 @@ import {
     createCommandAudio80,
     VOICE_COUNT,
 } from '../audio80';
-import { joinMembers, MIX_BUS_INDEX } from '../shared';
+import { joinMembers } from '../shared';
 import { createSongPlayer } from '../song-player';
 import { createHeadlessChip, type HeadlessChip, ignore } from './headless-chip';
 
@@ -74,8 +74,7 @@ export type Audio80Write =
     | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: Exclude<Audio80VoiceSetting, 'wave'>; readonly value: number; readonly time: number }
     | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: 'mode'; readonly value: Audio80FilterMode; readonly time: number }
     | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: Exclude<Audio80FilterSetting, 'mode'>; readonly value: number; readonly time: number }
-    | { readonly kind: 'set-echo'; readonly setting: Audio80EchoSetting; readonly value: number; readonly time: number }
-    | { readonly kind: 'reserve-voices'; readonly count: number; readonly time: number };
+    | { readonly kind: 'set-echo'; readonly setting: Audio80EchoSetting; readonly value: number; readonly time: number };
 
 // ---------------------------------------------------------------------------
 // Options
@@ -131,7 +130,6 @@ export function createHeadlessAudio80(options: HeadlessAudio80Options = {}): Hea
         setVoice: writer.setVoice,
         setFilter: writer.setFilter,
         setEcho: writer.setEcho,
-        reserveVoices: writer.reserveVoices,
         // The writer's own members, which the chip's type leaves out, for code that writes a song's notes
         noteOn: writer.noteOn,
         noteOff: writer.noteOff,
@@ -155,7 +153,7 @@ export function createHeadlessAudio80(options: HeadlessAudio80Options = {}): Hea
 const DEFAULT_SAMPLE_RATE = 48000;
 
 /** What a headless Audio80 writes through: a writer, and what the chip needs of one to play and stop sounds. */
-type Audio80Side = Audio80Writer & Pick<CommandAudio80, 'update' | 'play' | 'stop' | 'takePlayId' | 'setMix'>;
+type Audio80Side = Audio80Writer & Pick<CommandAudio80, 'update' | 'play' | 'stop' | 'takePlayId'>;
 
 /** Creates a writer that plays nothing. Every write is an empty function, and only the clock and the play ids move. */
 function createSilentWriter(): Audio80Side {
@@ -173,13 +171,11 @@ function createSilentWriter(): Audio80Side {
         play: () => nextPlayId++,
         stop: ignore,
         takePlayId: () => nextPlayId++,
-        setMix: ignore,
         noteOn: ignore,
         noteOff: ignore,
         setVoice: ignore,
         setFilter: ignore,
         setEcho: ignore,
-        reserveVoices: ignore,
         releaseAll: ignore,
     };
 }
@@ -204,7 +200,6 @@ function createLoggingWriter(log: Audio80Write[], inner: Audio80Side): Audio80Si
         // The chip logs its stops itself, since a stop of a song or of everything never reaches the writer
         stop: inner.stop,
         takePlayId: inner.takePlayId,
-        setMix: inner.setMix,
         noteOn(voice, sound, note, volume, atMs) {
             log.push({ kind: 'note-on', voice, sound, note, volume, time: atMs ?? inner.time });
             inner.noteOn(voice, sound, note, volume, atMs);
@@ -227,10 +222,6 @@ function createLoggingWriter(log: Audio80Write[], inner: Audio80Side): Audio80Si
             log.push({ kind: 'set-echo', setting, value, time: atMs ?? inner.time });
             inner.setEcho(setting, value, atMs);
         },
-        reserveVoices(count, atMs) {
-            log.push({ kind: 'reserve-voices', count, time: atMs ?? inner.time });
-            inner.reserveVoices(count, atMs);
-        },
         releaseAll: inner.releaseAll,
     };
 }
@@ -240,8 +231,8 @@ interface Rendering {
     readonly writer: CommandAudio80;
     /** Renders the next `output.length` samples into `output`, scaled by `gain`. */
     readonly render: (output: Float32Array, gain: number) => void;
-    /** Cuts every voice at once, forgets every sound, and sets the mix to these volumes at once. */
-    readonly cut: (musicVolume: number, effectsVolume: number) => void;
+    /** Cuts every voice at once, and forgets every sound. */
+    readonly cut: () => void;
 }
 
 /** Creates a synthesiser that renders at `sampleRate`, and the writer that feeds it, with nothing rendered yet. */
@@ -265,12 +256,10 @@ function createRendering(sampleRate: number, character: Audio80Character | undef
                 for (let i = 0; i < frames; i++) output[i] *= gain;
             }
         },
-        cut(musicVolume, effectsVolume) {
+        cut() {
             writer.clear(writer.commands);
             writer.forget();
             synthesiser.reset();
-            synthesiser.setMix(MIX_BUS_INDEX.music, musicVolume);
-            synthesiser.setMix(MIX_BUS_INDEX.effects, effectsVolume);
         },
     };
 }

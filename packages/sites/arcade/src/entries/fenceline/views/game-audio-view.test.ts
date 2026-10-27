@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
-import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, SNAP, STRING_TICK, TIE_OFF } from '../data';
+import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, SNAP, SNAPPED_TUNE, STRING_TICK, TIE_OFF } from '../data';
 import type { GamePhase } from '../models';
 import { CREAK_PERIOD_MS, GameAudioView } from './game-audio-view';
 
@@ -19,7 +19,8 @@ describe('GameAudioView', () => {
         extraLivesEarned: number;
         isSlackRunning: boolean;
     };
-    let chip: HeadlessAudio80;
+    let music: HeadlessAudio80;
+    let sfx: HeadlessAudio80;
     let view: Container;
 
     beforeEach(() => {
@@ -33,9 +34,11 @@ describe('GameAudioView', () => {
             extraLivesEarned: 0,
             isSlackRunning: false,
         };
-        chip = createHeadlessAudio80({ record: true });
+        music = createHeadlessAudio80({ record: true });
+        sfx = createHeadlessAudio80({ record: true });
         view = GameAudioView({
-            sound: chip,
+            music,
+            sfx,
             phase: () => state.phase,
             wireSteps: () => state.wireSteps,
             closures: () => state.closures,
@@ -48,17 +51,18 @@ describe('GameAudioView', () => {
             targetShare: () => 0.7,
         });
         tick();
-        chip.clear();
+        sfx.clear();
     });
 
     function tick(): void {
-        chip.update(STEP_MS);
+        music.update(STEP_MS);
+        sfx.update(STEP_MS);
         updateView(view, STEP_MS);
         refreshView(view);
     }
 
     function played(): unknown[] {
-        return chip.log.filter((entry) => entry.kind === 'play').map((entry) => (entry as { sound: unknown }).sound);
+        return sfx.log.filter((entry) => entry.kind === 'play').map((entry) => (entry as { sound: unknown }).sound);
     }
 
     it('plays nothing while nothing changes', () => {
@@ -78,10 +82,11 @@ describe('GameAudioView', () => {
         expect(played()).toEqual([STRING_TICK, TIE_OFF, BAA, BLOW_OUT, HATCH, EXTRA_LIFE]);
     });
 
-    it('twangs as the wire snaps', () => {
+    it('twangs as the wire snaps, and plays its tune on the music chip', () => {
         state.phase = 'snapped';
         tick();
         expect(played()).toEqual([SNAP]);
+        expect(music.song).toBe(SNAPPED_TUNE);
     });
 
     it('creaks again and again while slack runs, and stops when it stops', () => {
@@ -89,7 +94,7 @@ describe('GameAudioView', () => {
         for (let elapsed = 0; elapsed < CREAK_PERIOD_MS * 3; elapsed += STEP_MS) tick();
         expect(played().filter((effect) => effect === CREAK).length).toBe(3);
         state.isSlackRunning = false;
-        chip.clear();
+        sfx.clear();
         for (let elapsed = 0; elapsed < CREAK_PERIOD_MS * 3; elapsed += STEP_MS) tick();
         expect(played()).toEqual([]);
     });
@@ -98,7 +103,7 @@ describe('GameAudioView', () => {
         state.wireSteps = 30;
         state.closures = 4;
         tick();
-        chip.clear();
+        sfx.clear();
         state.wireSteps = 0;
         state.closures = 0;
         tick();

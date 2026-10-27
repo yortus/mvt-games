@@ -47,10 +47,6 @@ export const OP90_SET_EFFECT = 4;
 export const OP90_PLAY = 5;
 /** Releases every voice's note. No operands. */
 export const OP90_RELEASE_ALL = 6;
-/** Keeps voices for music. `a` is how many, counting up from voice 0. Sounds played on their own play only on the voices above them. */
-export const OP90_RESERVE_VOICES = 7;
-/** Sets a bus's gain. `a` is the bus (0 for music, 1 for sounds played on their own), and `b` the gain, from 0 to 2. It ramps over about 10 ms. */
-export const OP90_SET_MIX = 8;
 /** Sets how the chip sounds. `a` is the character's index in `AUDIO90_CHARACTERS`. */
 export const OP90_SET_CHARACTER = 9;
 /**

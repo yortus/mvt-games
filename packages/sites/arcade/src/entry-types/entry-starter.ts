@@ -1,6 +1,7 @@
 import type { Container } from 'pixi.js';
 import type { MetricKind, View } from '@mvtjs/pixi';
 import type { Audio80, Audio90 } from 'audio90';
+import type { MusicChip, SfxChip } from '#shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -16,10 +17,16 @@ export type EntryStarter = PixiEntryStarter | ElementEntryStarter;
 /** The sound chips an entry can play on. */
 export type SoundChipKind = 'audio80' | 'audio90';
 
-/** The chip of each kind, as an entry's audio views see it. */
+/** The chip of each kind. */
 export interface SoundChipsByKind {
     readonly audio80: Audio80;
     readonly audio90: Audio90;
+}
+
+/** The two chips of kind `K` that a session plays on: one for its music, and one for its sound effects. */
+export interface SessionChips<K extends SoundChipKind> {
+    readonly music: SoundChipsByKind[K];
+    readonly sfx: SoundChipsByKind[K];
 }
 
 /** The chip a starter plays on, or undefined for a starter that makes no sound. */
@@ -34,8 +41,9 @@ export type SoundChipField<K extends SoundChoice> = K extends SoundChipKind ? Ha
 /** A starter that plays on chip `K`. */
 export interface HasSoundChip<K extends SoundChipKind> {
     /**
-     * The chip the entry's audio views play on. The host loads it as it
-     * prepares the entry, and gives it to each session as `sound`.
+     * The kind of chip the entry's audio views play on. The host loads two of
+     * them as it prepares the entry, and gives them to each session as
+     * `music` and `sfx`.
      */
     readonly soundChip: K;
 }
@@ -50,38 +58,44 @@ export interface NamedSoundChip<K extends SoundChoice> {
 
 /** A starter that makes no sound. */
 export interface HasNoSoundChip {
-    /** Absent, since the entry makes no sound. Its sessions are given no chip. */
+    /** Absent, since the entry makes no sound. Its sessions are given no chips. */
     readonly soundChip?: undefined;
 }
 
-/** The `sound` start option that goes with a starter's chip. A starter that makes no sound is given none. */
+/** The `music` and `sfx` start options that go with a starter's chip. A starter that makes no sound is given neither. */
 export type SoundOption<K extends SoundChoice> = K extends SoundChipKind ? GivenSound<K> : GivenNoSound;
 
-/** The start options of a session that plays on chip `K`. */
+/**
+ * The start options of a session that plays on chips of kind `K`. The host
+ * owns both chips, pauses them with the game, and stops everything on them
+ * between sessions. They are silent when the entry is started headless, or
+ * where audio cannot start.
+ */
 export interface GivenSound<K extends SoundChipKind> {
-    /**
-     * The chip that the entry's audio views play on. The host owns it and
-     * resets it between sessions. It is silent when the entry is started
-     * headless, or where audio cannot start.
-     */
-    readonly sound: SoundChipsByKind[K];
+    /** The chip that the entry's views play music on, at the listener's music volume. */
+    readonly music: MusicChip<K>;
+    /** The chip that the entry's views play sound effects on, at the listener's sound effects volume. */
+    readonly sfx: SfxChip<K>;
 }
 
 /** The start options of a session that makes no sound. */
 export interface GivenNoSound {
     /** Absent, since the entry makes no sound. */
-    readonly sound?: undefined;
+    readonly music?: undefined;
+    /** Absent, since the entry makes no sound. */
+    readonly sfx?: undefined;
 }
 
-/** Finds the chip of a kind, for a session that plays on it. */
-export type SoundChipFinder = <K extends SoundChipKind>(kind: K) => SoundChipsByKind[K];
+/** Finds the chips of a kind, for a session that plays on them. */
+export type SoundChipFinder = <K extends SoundChipKind>(kind: K) => SessionChips<K>;
 
 /**
- * An entry drawn with Pixi on the host's stage, which plays on chip `K`, or
- * makes no sound. Without `K`, it is any Pixi entry, and TypeScript tells them
- * apart by `soundChip`. An entry makes its `load` with `definePixiLoader`,
- * which works out `K` from the `soundChip` its starter names, so that the
- * `sound` its sessions are given is that chip.
+ * An entry drawn with Pixi on the host's stage, which plays on chips of kind
+ * `K`, or makes no sound. Without `K`, it is any Pixi entry, and TypeScript
+ * tells them apart by `soundChip`. An entry makes its `load` with
+ * `definePixiLoader`, which works out `K` from the `soundChip` its starter
+ * names, so that the `music` and `sfx` its sessions are given are of that
+ * kind.
  */
 export type PixiEntryStarter<K extends SoundChoice = SoundChoice> = K extends unknown
     ? PixiEntryStarterFields<K> & SoundChipField<K>
@@ -288,8 +302,8 @@ export interface EntryInputConfig {
 /**
  * Returns `load`, typed for the chip its starter names. An entry's
  * `start/load.ts` makes its `load` with this, so TypeScript works the chip out
- * from the starter's `soundChip`: the `sound` that `start` is given is that
- * chip, or none for a starter that names no chip. A chip that does not exist
+ * from the starter's `soundChip`: the `music` and `sfx` that `start` is given
+ * are of that kind, or none for a starter that names no chip. A chip that does not exist
  * is an error, and nothing needs a type written.
  */
 export function definePixiLoader<K extends SoundChoice = undefined>(
@@ -308,28 +322,28 @@ export function defineElementLoader<K extends SoundChoice = undefined>(
 
 /**
  * Starts a session of a Pixi entry with `options`. An entry that plays on a
- * chip is also given the chip of its kind, from `findChip`. One that makes no
- * sound is given none.
+ * chip is also given the music and sound effects chips of its kind, from
+ * `findChips`. One that makes no sound is given none.
  */
-export function startPixiEntry(starter: PixiEntryStarter, options: PixiStartBase, findChip: SoundChipFinder): EntrySession {
+export function startPixiEntry(starter: PixiEntryStarter, options: PixiStartBase, findChips: SoundChipFinder): EntrySession {
     switch (starter.soundChip) {
         case undefined:
             return starter.start(options);
         case 'audio80':
-            return starter.start({ ...options, sound: findChip('audio80') });
+            return starter.start({ ...options, ...findChips('audio80') });
         case 'audio90':
-            return starter.start({ ...options, sound: findChip('audio90') });
+            return starter.start({ ...options, ...findChips('audio90') });
     }
 }
 
-/** Starts a session of an element entry with `options`, and its chip, as `startPixiEntry` does. */
-export function startElementEntry(starter: ElementEntryStarter, options: ElementStartBase, findChip: SoundChipFinder): ElementEntrySession {
+/** Starts a session of an element entry with `options`, and its chips, as `startPixiEntry` does. */
+export function startElementEntry(starter: ElementEntryStarter, options: ElementStartBase, findChips: SoundChipFinder): ElementEntrySession {
     switch (starter.soundChip) {
         case undefined:
             return starter.start(options);
         case 'audio80':
-            return starter.start({ ...options, sound: findChip('audio80') });
+            return starter.start({ ...options, ...findChips('audio80') });
         case 'audio90':
-            return starter.start({ ...options, sound: findChip('audio90') });
+            return starter.start({ ...options, ...findChips('audio90') });
     }
 }

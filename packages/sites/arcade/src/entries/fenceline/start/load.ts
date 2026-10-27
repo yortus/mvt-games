@@ -27,9 +27,9 @@ export const load = definePixiLoader(async () => {
             input?.onYDirectionChanged?.(move.y);
         },
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, music, sfx }): EntrySession {
             const gameModel = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS });
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, music, sfx });
             stage.addChild(gameView);
 
             // The way held is the latest of the two axes pressed, so a new press turns at once.

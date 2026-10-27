@@ -20,9 +20,10 @@ import { createHeadlessAudio80, createHeadlessAudio90, type HeadlessAudio80, typ
 export interface FakeWebAudio {
     /**
      * The browser's Audio80s are faked. Each is a headless chip that logs its
-     * writes. They are listed in the order they are made: the page's own chip
-     * first, as the sound is first prepared, then the entries' chip, as an
-     * entry that plays on it is first prepared.
+     * writes. They are listed in the order they are made: the page's own two
+     * first, for its sounds then its music, as the sound is first prepared,
+     * then the entries' two, for their music then their sound effects, as an
+     * entry that plays on them is first prepared.
      */
     readonly chips: readonly FakeChip[];
     /** The browser's Audio90s, faked in the same way, in the order they are made. */

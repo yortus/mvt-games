@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHeadlessAudio80, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, findSounds } from 'audio90/headless';
+import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, findSounds } from 'audio90/headless';
 import * as music from './music';
 import * as sounds from './sounds';
 
@@ -39,19 +39,12 @@ describe('dojo duel sounds', () => {
             expect(hashSamples(samples)).toMatchSnapshot();
         });
     }
-
-    it('leaves the effects four voices', () => {
-        const { voiceCount } = createHeadlessAudio80();
-        for (const [, song] of songs) expect(voiceCount - song.channelCount).toBeGreaterThanOrEqual(EFFECT_VOICES);
-    });
 });
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** How many of the chip's voices the music must leave free for the sound effects. */
-const EFFECT_VOICES = 4;
 /** Quieter than this, a sound is lost under the music. */
 const AUDIBLE = 0.08;
 /**

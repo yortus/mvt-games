@@ -1,6 +1,5 @@
 import { Container } from 'pixi.js';
-import type { Audio80 } from 'audio90';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';
 import type { GameModel } from '../models';
 import { ArenaView } from './arena-view';
@@ -15,8 +14,10 @@ import { MatchAudioView } from './match-audio-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip that the game's audio views play on. It is an output, so the view reads it once. */
-    sound: Audio80;
+    /** The chip the game's music plays on. It is the view's output, not model state, so the view reads it once. */
+    music: MusicChip<'audio80'>;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -84,17 +85,18 @@ export function GameView(bindings: GameViewBindings): Container {
     // The sounds of each fighter and of the match
     view.addChild(
         FighterAudioView({
-            sound: bindings.sound,
+            sfx: bindings.sfx,
             phase: () => game.player.phase,
             move: () => game.player.move,
         }),
         FighterAudioView({
-            sound: bindings.sound,
+            sfx: bindings.sfx,
             phase: () => game.opponent.phase,
             move: () => game.opponent.move,
         }),
         MatchAudioView({
-            sound: bindings.sound,
+            music: bindings.music,
+            sfx: bindings.sfx,
             phase: () => game.phase,
             playerPoints: () => game.match.playerPoints,
             opponentPoints: () => game.match.opponentPoints,

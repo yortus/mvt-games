@@ -194,7 +194,7 @@ function setUp(initial: Partial<{ shotsFired: number; rocksBroken: number }> = {
     };
     const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
-        sound: chip,
+        sfx: chip,
         phase: () => state.phase,
         shotsFired: () => state.shotsFired,
         rocksBroken: () => state.rocksBroken,

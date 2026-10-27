@@ -142,9 +142,9 @@ describe('ArcadeView', () => {
     describe('the sound', () => {
         it('mutes all the sound with the nav\'s speaker, and unmutes it with each sound at the level it had', () => {
             const { model, navTools, tick, view } = setUp();
-            const effectsVolume = 0.7;
+            const sfxVolume = 0.7;
             model.musicVolume = 0;
-            model.effectsVolume = effectsVolume;
+            model.sfxVolume = sfxVolume;
             const speaker = navTools.querySelector<HTMLElement>('.nav-sound')!;
             speaker.click();
             tick();
@@ -154,7 +154,7 @@ describe('ArcadeView', () => {
             tick();
             expect(model.isSoundMuted).toBe(false);
             expect(model.musicVolume).toBe(0);
-            expect(model.effectsVolume).toBe(effectsVolume);
+            expect(model.sfxVolume).toBe(sfxVolume);
             expect(speaker.classList.contains('is-off')).toBe(false);
             destroyElement(view);
         });
@@ -162,18 +162,18 @@ describe('ArcadeView', () => {
         it('brings sound back when the speaker is pressed with both sounds off, each at the level it had', () => {
             const { model, navTools, tick, view } = setUp();
             const musicVolume = 0.3;
-            const effectsVolume = 0.6;
+            const sfxVolume = 0.6;
             model.musicVolume = musicVolume;
-            model.effectsVolume = effectsVolume;
+            model.sfxVolume = sfxVolume;
             model.turnMusicOff();
-            model.turnEffectsOff();
+            model.turnSfxOff();
             tick();
             const speaker = navTools.querySelector<HTMLElement>('.nav-sound')!;
             expect(speaker.classList.contains('is-off')).toBe(true);
             speaker.click();
             tick();
             expect(model.musicVolume).toBe(musicVolume);
-            expect(model.effectsVolume).toBe(effectsVolume);
+            expect(model.sfxVolume).toBe(sfxVolume);
             expect(speaker.classList.contains('is-off')).toBe(false);
             destroyElement(view);
         });
@@ -181,12 +181,12 @@ describe('ArcadeView', () => {
         it('brings sound back at the default volumes when the speaker is pressed with both sounds slid to 0', () => {
             const { model, navTools, tick, view } = setUp();
             model.musicVolume = 0;
-            model.effectsVolume = 0;
+            model.sfxVolume = 0;
             navTools.querySelector<HTMLElement>('.nav-sound')!.click();
             tick();
             expect(model.isSoundMuted).toBe(false);
             expect(model.musicVolume).toBe(DEFAULT_SOUND_SETTINGS.musicVolume);
-            expect(model.effectsVolume).toBe(DEFAULT_SOUND_SETTINGS.effectsVolume);
+            expect(model.sfxVolume).toBe(DEFAULT_SOUND_SETTINGS.sfxVolume);
             destroyElement(view);
         });
 
@@ -255,7 +255,8 @@ function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: A
         liveEntry: () => undefined,
         isLiveShowing: () => false,
         navTools,
-        pageSound: audio80,
+        pageSfx: audio80,
+        pageMusic: audio80,
         audioViews: () => undefined,
         isSoundOffByDefault: () => false,
         isTurned: () => false,

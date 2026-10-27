@@ -21,10 +21,8 @@ import {
     OP90_NOTE_ON,
     OP90_PLAY,
     OP90_PLAY_OPTIONS,
-    OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
-    OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
     OP90_STOP,
@@ -291,14 +289,13 @@ describe('the Audio90 synthesiser', () => {
             expect(measureRms(after.subarray(toFrames(300), toFrames(400))) / before).toBeGreaterThan(0.9);
         });
 
-        it('plays a sound on a voice the music does not keep, at the pan the play gives', () => {
+        it('plays a sound on the highest free voice, at the pan the play gives', () => {
             const rig = createRig();
-            rig.reserve(4);
             const sound = rig.instrument({ ...FM_SINE, pan: -1 });
             rig.play(sound, { note: 69, lengthMs: 200, pan: 1 });
             const { left, right } = rig.render(100);
             const voice = findSounding(rig.synth);
-            expect(voice).toBeGreaterThanOrEqual(4);
+            expect(voice).toBe(AUDIO90_VOICE_COUNT - 1);
             expect(rig.synth.findSoundOn(voice)).toBe(sound);
             expect(measureRms(left)).toBeLessThan(measureRms(right) / 100);
         });
@@ -319,19 +316,6 @@ describe('the Audio90 synthesiser', () => {
             rig.stop(7);
             rig.render(500);
             expect(findSounding(rig.synth)).toBe(-1);
-        });
-
-        it('turns the sounds played on their own down on their bus, and leaves the music as it is', () => {
-            const rig = createRig();
-            rig.reserve(1);
-            rig.mix(1, 0);
-            rig.play(rig.instrument(FM_SINE), { note: 69, lengthMs: 500 });
-            // The bus ramps down over about 10 ms. All that is left after it is the output's slow settling
-            const soundOnly = measureRms(rig.render(100).left.subarray(toFrames(50)));
-            rig.noteOn(0, rig.instrument(FM_SINE), 69);
-            const music = measureRms(rig.render(100).left.subarray(toFrames(50)));
-            expect(music).toBeGreaterThan(0.05);
-            expect(soundOnly).toBeLessThan(music / 100);
         });
 
         it('rounds FM to nine bits in the console character', () => {
@@ -477,12 +461,6 @@ function createRig(options: Partial<Audio90SynthesiserOptions> = {}) {
         },
         character(character: Audio90Character): void {
             write(OP90_SET_CHARACTER, nowMs, AUDIO90_CHARACTERS.indexOf(character));
-        },
-        reserve(voices: number): void {
-            write(OP90_RESERVE_VOICES, nowMs, voices);
-        },
-        mix(bus: number, gain: number): void {
-            write(OP90_SET_MIX, nowMs, bus, gain);
         },
         /** Renders the next `ms`, in blocks of 128 samples, playing the commands written. */
         render(ms: number): Stereo {

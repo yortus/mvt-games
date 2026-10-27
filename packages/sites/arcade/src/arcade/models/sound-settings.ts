@@ -12,11 +12,11 @@ export interface ArcadeSoundSettings {
     /** The music's volume, from 0 to 1. 0 is off. */
     readonly musicVolume: number;
     /** The effects' volume, from 0 to 1. 0 is off. */
-    readonly effectsVolume: number;
+    readonly sfxVolume: number;
     /** The music's volume as it was turned off. It is undefined unless the music was turned off and not moved since. */
     readonly musicVolumeBeforeOff: number | undefined;
     /** The effects' volume as they were turned off, as for `musicVolumeBeforeOff`. */
-    readonly effectsVolumeBeforeOff: number | undefined;
+    readonly sfxVolumeBeforeOff: number | undefined;
     /** Whether all sound is muted. Muting leaves the volumes as they are, so unmuting brings each back. */
     readonly isMuted: boolean;
 }
@@ -24,9 +24,9 @@ export interface ArcadeSoundSettings {
 /** The settings a first visit starts with. The music and the effects are each at half volume, and nothing is muted. */
 export const DEFAULT_SOUND_SETTINGS: ArcadeSoundSettings = {
     musicVolume: 0.5,
-    effectsVolume: 0.5,
+    sfxVolume: 0.5,
     musicVolumeBeforeOff: undefined,
-    effectsVolumeBeforeOff: undefined,
+    sfxVolumeBeforeOff: undefined,
     isMuted: false,
 };
 
@@ -61,12 +61,13 @@ export function parseSoundSettings(text: string | undefined): ArcadeSoundSetting
     }
     const fields = typeof saved === 'object' && saved !== null ? saved as Record<string, unknown> : {};
     const musicVolume = parseVolume(fields.musicVolume, DEFAULT_SOUND_SETTINGS.musicVolume);
-    const effectsVolume = parseVolume(fields.effectsVolume, DEFAULT_SOUND_SETTINGS.effectsVolume);
+    // Settings saved before the sound effects' volume was named `sfxVolume` named it `effectsVolume`
+    const sfxVolume = parseVolume(fields.sfxVolume ?? fields.effectsVolume, DEFAULT_SOUND_SETTINGS.sfxVolume);
     return {
         musicVolume,
-        effectsVolume,
+        sfxVolume,
         musicVolumeBeforeOff: musicVolume > 0 ? undefined : parseLevel(fields.musicVolumeBeforeOff),
-        effectsVolumeBeforeOff: effectsVolume > 0 ? undefined : parseLevel(fields.effectsVolumeBeforeOff),
+        sfxVolumeBeforeOff: sfxVolume > 0 ? undefined : parseLevel(fields.sfxVolumeBeforeOff ?? fields.effectsVolumeBeforeOff),
         isMuted: fields.isMuted === true,
     };
 }

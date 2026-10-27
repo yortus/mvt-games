@@ -56,7 +56,7 @@ packages/sites/arcade/src/
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way, imported as `#pixel-glyphs`
-├── shared/              The site's shared views (overlay, pixel text, input, swipes), imported as `#shared`
+├── shared/              The site's shared views (overlay, pixel text, input, swipes) and the chip types views play on, imported as `#shared`
 ├── tunes/               The site's Audio90 tunes, their instruments and samples, which the Tune Tracker plays, imported as `#tunes`
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```

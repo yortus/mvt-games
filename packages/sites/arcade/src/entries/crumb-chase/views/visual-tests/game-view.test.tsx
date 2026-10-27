@@ -9,8 +9,8 @@ import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../view-constants';
 async function poseGame(advanceMs: number): Promise<ReturnType<typeof GameView>> {
     await textures.load();
     const model = createGameModel({ grid: MAZE_DATA, mouseSpawn: MOUSE_SPAWN, catSpawns: CAT_SPAWNS, penExit: PEN_EXIT });
-    // A headless chip makes no sound, and an image does not depend on what plays.
-    const view = GameView({ model, sound: createHeadlessAudio80() });
+    // Headless chips make no sound, and an image does not depend on what plays.
+    const view = GameView({ model, music: createHeadlessAudio80(), sfx: createHeadlessAudio80() });
     await advanceTime(advanceMs, model, view);
     return view;
 }

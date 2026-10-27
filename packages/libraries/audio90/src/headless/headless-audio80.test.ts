@@ -13,11 +13,11 @@ import {
     VOICE_SETTING_INDEX,
     type Audio80Wave,
 } from '../audio80';
-import { COMMAND_STRIDE, MAX_MIX_VOLUME } from '../shared';
+import { COMMAND_STRIDE } from '../shared';
 import { type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
 import { hashSamples, measurePeak } from './render';
 
-const MUSIC_VOLUME = 0.5;
+const VOLUME = 0.5;
 /** A tenth of a second at the default 48 kHz. */
 const FRAMES = 4800;
 const DEFAULT_SAMPLE_RATE = 48000;
@@ -43,8 +43,8 @@ describe('headless Audio80', () => {
             expect(() => renderFrames(chip)).toThrow('made without `render`');
         });
 
-        it('clamps its volumes as every chip does', () => {
-            expect(readClampedVolumes(createHeadlessAudio80())).toEqual([1, 0, MAX_MIX_VOLUME]);
+        it('clamps its volume as every chip does', () => {
+            expect(readClampedVolumes(createHeadlessAudio80())).toEqual([1, 0]);
         });
     });
 
@@ -74,8 +74,8 @@ describe('headless Audio80', () => {
             expect(chip.time).toBe(TICK_MS);
         });
 
-        it('clamps its volumes as every chip does', () => {
-            expect(readClampedVolumes(createHeadlessAudio80({ record: true }))).toEqual([1, 0, MAX_MIX_VOLUME]);
+        it('clamps its volume as every chip does', () => {
+            expect(readClampedVolumes(createHeadlessAudio80({ record: true }))).toEqual([1, 0]);
         });
 
         it('refuses to render', () => {
@@ -102,14 +102,14 @@ describe('headless Audio80', () => {
             expect(measurePeak(samples)).toBe(0);
         });
 
-        it('keeps a music volume set just before everything is stopped while paused, which cuts the voices', () => {
+        it('renders at its volume, and keeps it as everything is stopped while paused, which cuts the voices', () => {
             const quieter = createHeadlessAudio80({ render: true });
-            quieter.musicVolume = MUSIC_VOLUME;
+            quieter.volume = VOLUME;
             quieter.pause();
             quieter.stop();
             quieter.resume();
             const asWritten = createHeadlessAudio80({ render: true });
-            expect(measurePeak(playNote(quieter)) / measurePeak(playNote(asWritten))).toBeCloseTo(MUSIC_VOLUME, 1);
+            expect(measurePeak(playNote(quieter)) / measurePeak(playNote(asWritten))).toBeCloseTo(VOLUME, 1);
         });
 
         it('renders nothing when muted', () => {
@@ -118,8 +118,8 @@ describe('headless Audio80', () => {
             expect(measurePeak(playNote(chip))).toBe(0);
         });
 
-        it('clamps its volumes as every chip does', () => {
-            expect(readClampedVolumes(createHeadlessAudio80({ render: true }))).toEqual([1, 0, MAX_MIX_VOLUME]);
+        it('clamps its volume as every chip does', () => {
+            expect(readClampedVolumes(createHeadlessAudio80({ render: true }))).toEqual([1, 0]);
         });
 
         it('logs nothing', () => {
@@ -224,7 +224,6 @@ function writeOneOfEach(audio80: HeadlessAudio80): void {
     audio80.setVoice(1, 'volume', 0.5);
     audio80.setFilter('b', 'cutoffHz', 2000, 200);
     audio80.setEcho('level', 0.25);
-    audio80.reserveVoices(4, 300);
     audio80.stop();
 }
 
@@ -238,17 +237,16 @@ function buildOneOfEachLog(time: number): Audio80Write[] {
         { kind: 'set-voice', voice: 1, setting: 'volume', value: 0.5, time },
         { kind: 'set-filter', filter: 'b', setting: 'cutoffHz', value: 2000, time: 200 },
         { kind: 'set-echo', setting: 'level', value: 0.25, time },
-        { kind: 'reserve-voices', count: 4, time: 300 },
         { kind: 'stop', id: undefined, time: -Infinity },
     ];
 }
 
-/** Sets each volume outside its range and reads back what the chip kept. */
+/** Sets the volume above and below its range, and reads back what the chip kept each time. */
 function readClampedVolumes(chip: HeadlessAudio80): number[] {
     chip.volume = 3;
-    chip.musicVolume = -1;
-    chip.effectsVolume = MAX_MIX_VOLUME + 1;
-    return [chip.volume, chip.musicVolume, chip.effectsVolume];
+    const high = chip.volume;
+    chip.volume = -1;
+    return [high, chip.volume];
 }
 
 /** Starts a sustained note on a music voice and renders `FRAMES` samples of it. */

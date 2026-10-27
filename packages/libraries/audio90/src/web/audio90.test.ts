@@ -30,7 +30,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         await audio90.ready;
         expect(fake.processorNames).toEqual([AUDIO90_PROCESSOR_NAME]);
         expect(fake.nodeOptions[0].outputChannelCount).toEqual([2]);
-        expect(fake.nodeOptions[0].processorOptions).toMatchObject({ character: 'console', musicVolume: 1, effectsVolume: 1 });
+        expect(fake.nodeOptions[0].processorOptions).toEqual({ character: 'console' });
     });
 
     it('sends a sample once, before the first sound that plays it, and keeps its own copy', async () => {
@@ -247,17 +247,14 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect(fake.messages).toHaveLength(sent);
     });
 
-    it('sends a reset as everything is stopped while paused, then the mix again, and a stop when destroyed', async () => {
+    it('sends a reset as everything is stopped while paused, and a stop when destroyed', async () => {
         const fake = createFakeContext('running');
         const audio90 = createAudio90({ context: fake.context });
         await audio90.ready;
-        audio90.musicVolume = 0.5;
         audio90.pause();
         audio90.stop();
         audio90.resume();
         expect(fake.messages.at(-2)).toEqual({ kind: 'reset' });
-        await settle();
-        expect(fake.listBatches().at(-1)?.count).toBe(2);
         audio90.destroy();
         expect(fake.messages.at(-1)).toEqual({ kind: 'stop' });
     });

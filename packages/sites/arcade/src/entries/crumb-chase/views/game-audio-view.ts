@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';
 
@@ -11,8 +11,10 @@ import type { GamePhase } from '../models';
 
 /** What a `GameAudioView` plays on, and the state it plays the sounds of. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio80'>;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. The view starts the music for each phase as it changes. */
     readonly phase: () => GamePhase;
     /** How many crumbs are left in the maze. Each fall is a crumb eaten. */
@@ -46,7 +48,7 @@ export const SNEAK_SPEED_UP = 0.6;
  * pauses with the game.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound, totalCrumbs } = bindings;
+    const { music, sfx, totalCrumbs } = bindings;
     const view = new Container();
     view.label = 'game-audio';
     const watcher = watch({ phase: bindings.phase, remainingCrumbs: bindings.remainingCrumbs });
@@ -60,30 +62,30 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.phase.changed) playPhase(w.phase.value);
         // A fall is a crumb eaten. The first poll and the rise as a new game starts are not falls
         const crumbs = w.remainingCrumbs;
-        if (crumbs.decreased) sound.play(crumbs.value % 2 === 0 ? NIBBLE_LOW : NIBBLE_HIGH);
+        if (crumbs.decreased) sfx.play(crumbs.value % 2 === 0 ? NIBBLE_LOW : NIBBLE_HIGH);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        sound.tempoScale = computeTempoScale();
+        music.tempoScale = computeTempoScale();
     }
 
     function playPhase(phase: GamePhase): void {
         // A game can end during the start's tune. Playing the end's tune cancels the sneaking tune queued
         switch (phase) {
             case 'playing':
-                sound.play(GAME_START);
-                sound.queue(SNEAK);
+                music.play(GAME_START);
+                music.queue(SNEAK);
                 break;
             case 'game-over':
-                sound.play(CAUGHT);
+                music.play(CAUGHT);
                 break;
             case 'won':
-                sound.play(CLEARED);
+                music.play(CLEARED);
                 break;
         }
     }
 
     /** Returns the sneaking tune's tempo for the crumbs left, or 1 for every other song. */
     function computeTempoScale(): number {
-        if (sound.song !== SNEAK) return 1;
+        if (music.song !== SNEAK) return 1;
         return 1 + (1 - bindings.remainingCrumbs() / totalCrumbs) * SNEAK_SPEED_UP;
     }
 }

@@ -11,23 +11,28 @@ describe('sound settings', () => {
     });
 
     it('reads back what it saved', () => {
-        const settings = { musicVolume: 0, effectsVolume: 0.9, musicVolumeBeforeOff: 0.2, effectsVolumeBeforeOff: undefined, isMuted: true };
+        const settings = { musicVolume: 0, sfxVolume: 0.9, musicVolumeBeforeOff: 0.2, sfxVolumeBeforeOff: undefined, isMuted: true };
         expect(parseSoundSettings(formatSoundSettings(settings))).toEqual(settings);
+    });
+
+    it('reads the sound effects\' volume saved under its old name, `effectsVolume`', () => {
+        const parsed = parseSoundSettings(JSON.stringify({ musicVolume: 0.5, effectsVolume: 0, effectsVolumeBeforeOff: 0.7 }));
+        expect([parsed.sfxVolume, parsed.sfxVolumeBeforeOff]).toEqual([0, 0.7]);
     });
 
     it('takes the default for each setting missing, of the wrong type, or out of range', () => {
         const parsed = parseSoundSettings(JSON.stringify({
             musicVolume: 1.5,
-            effectsVolume: 0,
+            sfxVolume: 0,
             musicVolumeBeforeOff: 0,
-            effectsVolumeBeforeOff: '0.4',
+            sfxVolumeBeforeOff: '0.4',
             isMuted: 'yes',
         }));
-        expect(parsed).toEqual({ ...DEFAULT_SOUND_SETTINGS, effectsVolume: 0 });
+        expect(parsed).toEqual({ ...DEFAULT_SOUND_SETTINGS, sfxVolume: 0 });
     });
 
     it('drops the level a volume had before it was turned off, if the volume is not off', () => {
-        const parsed = parseSoundSettings(JSON.stringify({ ...DEFAULT_SOUND_SETTINGS, musicVolumeBeforeOff: 0.3, effectsVolumeBeforeOff: 0.7 }));
+        const parsed = parseSoundSettings(JSON.stringify({ ...DEFAULT_SOUND_SETTINGS, musicVolumeBeforeOff: 0.3, sfxVolumeBeforeOff: 0.7 }));
         expect(parsed).toEqual(DEFAULT_SOUND_SETTINGS);
     });
 });

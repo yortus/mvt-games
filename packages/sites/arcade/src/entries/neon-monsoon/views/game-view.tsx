@@ -3,8 +3,7 @@
 import { type Container, Graphics } from 'pixi.js';
 import { memoiseLast } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
-import type { Audio90 } from 'audio90';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { ARENA_WIDTH, textures } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { BombFlashView } from './bomb-flash-view';
@@ -30,8 +29,10 @@ import { WarningView } from './warning-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip the game's sound plays on. It is the view's output, not model state, so the view reads it once. */
-    sound: Audio90;
+    /** The chip the game's music plays on. It is the view's output, not model state, so the view reads it once. */
+    music: MusicChip<'audio90'>;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio90'>;
     /**
      * The best score in the Arcade's table for the game, from everyone who
      * has played it. The HUD's "HI" shows it, or this session's best if that
@@ -55,7 +56,7 @@ export interface GameViewBindings {
  * `BulletLayerView`, reading its field by index.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound, bestScore = () => 0 } = bindings;
+    const { model, music, sfx, bestScore = () => 0 } = bindings;
     const { scoring, ship, boss, stage, enemyBullets, playerShots, gems } = model;
     const tex = textures.get();
     const arenaMask = new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(0xffffff);
@@ -64,7 +65,8 @@ export function GameView(bindings: GameViewBindings): Container {
     return (
         <container>
             <GameAudioView
-                sound={sound}
+                music={music}
+                sfx={sfx}
                 phase={() => model.phase}
                 extendsEarned={() => scoring.extendsEarned}
                 isBombing={() => model.isBombing}

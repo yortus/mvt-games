@@ -2,9 +2,8 @@
 
 import type { Container } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { memoiseLast } from '@mvtjs/utils';
-import { isTouchDevice, OverlayView, SwipeInputView } from '#shared';
+import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '#shared';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { BeetleView } from './beetle-view';
@@ -28,8 +27,10 @@ import { WireView } from './wire-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip the game's sound plays on. It is the view's output, not model state, so the view reads it once. */
-    sound: Audio80;
+    /** The chip the game's music plays on. It is the view's output, not model state, so the view reads it once. */
+    music: MusicChip<'audio80'>;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,13 +51,14 @@ export interface GameViewBindings {
  * them, but the overlay's own taps come first.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound } = bindings;
+    const { model, music, sfx } = bindings;
     const overlayText = memoiseLast((phase: GamePhase) => describePhase(phase, model));
 
     return (
         <container>
             <GameAudioView
-                sound={sound}
+                music={music}
+                sfx={sfx}
                 phase={() => model.phase}
                 wireSteps={() => model.farmhand.wireStepCount}
                 closures={() => model.field.closureCount}

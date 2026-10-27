@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
     SHIP_CRASH, SHOT,
@@ -14,8 +14,10 @@ import type { GamePhase } from '../models';
 
 /** What a `GameAudioView` plays on, and the state it plays the sounds of. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio80'>;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. The view starts and stops the music as it changes. */
     readonly phase: () => GamePhase;
     /** Shots fired this game. The view plays a shot each time the count rises. */
@@ -57,11 +59,9 @@ export interface GameAudioViewBindings {
  * time a count rises, the metronomes' and the model's alike.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
-    let musicId = 0;
     const fuelAlarm = createMetronome();
     const saucers = createMetronome();
     const siren = createMetronome();
@@ -101,32 +101,32 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (phase.changed) playPhase(phase.value, phase.previous);
         // A rise in a count is one event. A count going back to 0 for a new game is not a rise
         const w = counts.poll();
-        if (w.shots.increased) sound.play(SHOT);
-        if (w.bombs.increased) sound.play(BOMB_DROP);
-        if (w.launches.increased) sound.play(ROCKET_LAUNCH);
-        if (w.enemies.increased) sound.play(EXPLOSION);
-        if (w.fuelTanks.increased) sound.play(REFUEL);
-        if (w.bases.increased) sound.play(BASE_DESTROYED);
-        if (w.alarms.increased) sound.play(FUEL_ALARM);
-        if (w.warbles.increased) sound.play(SAUCER);
-        if (w.sirens.increased) sound.play(BASE_SIREN);
+        if (w.shots.increased) sfx.play(SHOT);
+        if (w.bombs.increased) sfx.play(BOMB_DROP);
+        if (w.launches.increased) sfx.play(ROCKET_LAUNCH);
+        if (w.enemies.increased) sfx.play(EXPLOSION);
+        if (w.fuelTanks.increased) sfx.play(REFUEL);
+        if (w.bases.increased) sfx.play(BASE_DESTROYED);
+        if (w.alarms.increased) sfx.play(FUEL_ALARM);
+        if (w.warbles.increased) sfx.play(SAUCER);
+        if (w.sirens.increased) sfx.play(BASE_SIREN);
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
         switch (phase) {
             case 'playing':
                 // A new game or a new run starts with the march. The ship coming back does not
-                if (previous !== 'respawning') musicId = sound.play(LAUNCH);
+                if (previous !== 'respawning') music.play(LAUNCH);
                 break;
             case 'dying':
-                sound.stop(musicId);
-                sound.play(SHIP_CRASH);
+                music.stop();
+                sfx.play(SHIP_CRASH);
                 break;
             case 'section-clear':
-                musicId = sound.play(RUN_CLEAR);
+                music.play(RUN_CLEAR);
                 break;
             case 'game-over':
-                musicId = sound.play(GAME_OVER);
+                music.play(GAME_OVER);
                 break;
             case 'respawning':
                 break;

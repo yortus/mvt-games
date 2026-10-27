@@ -14,7 +14,7 @@ import {
     createAudio90Synthesiser,
     createCommandAudio90,
 } from '../audio90';
-import { joinMembers, MIX_BUS_INDEX } from '../shared';
+import { joinMembers } from '../shared';
 import { createSongPlayer } from '../song-player';
 import { createHeadlessChip, type HeadlessChip, ignore } from './headless-chip';
 
@@ -71,8 +71,7 @@ export type Audio90Write =
     | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: Audio90VoiceSetting; readonly value: number; readonly time: number }
     | Audio90EffectWrite
     | { readonly kind: 'set-character'; readonly character: Audio90Character; readonly time: number }
-    | { readonly kind: 'set-tempo'; readonly bpm: number; readonly time: number }
-    | { readonly kind: 'reserve-voices'; readonly count: number; readonly time: number };
+    | { readonly kind: 'set-tempo'; readonly bpm: number; readonly time: number };
 
 /** A write to one of an effect's settings, whose setting is one of that effect's. */
 export type Audio90EffectWrite = {
@@ -140,7 +139,6 @@ export function createHeadlessAudio90(options: HeadlessAudio90Options = {}): Hea
         setEffect: writer.setEffect,
         setCharacter: writer.setCharacter,
         setTempo: writer.setTempo,
-        reserveVoices: writer.reserveVoices,
         // The writer's own members, which the chip's type leaves out, for code that writes a song's notes
         noteOn: writer.noteOn,
         noteOff: writer.noteOff,
@@ -166,7 +164,7 @@ export function createHeadlessAudio90(options: HeadlessAudio90Options = {}): Hea
 const DEFAULT_SAMPLE_RATE = 48000;
 
 /** What a headless Audio90 writes through: a writer, and what the chip needs of one to play and stop sounds. */
-type Audio90Side = Audio90Writer & Pick<CommandAudio90, 'update' | 'play' | 'stop' | 'takePlayId' | 'setMix'>;
+type Audio90Side = Audio90Writer & Pick<CommandAudio90, 'update' | 'play' | 'stop' | 'takePlayId'>;
 
 /** Creates a writer that plays nothing. Every write is an empty function, and only the clock and the play ids move. */
 function createSilentWriter(): Audio90Side {
@@ -184,14 +182,12 @@ function createSilentWriter(): Audio90Side {
         play: () => nextPlayId++,
         stop: ignore,
         takePlayId: () => nextPlayId++,
-        setMix: ignore,
         noteOn: ignore,
         noteOff: ignore,
         setVoice: ignore,
         setEffect: ignore,
         setCharacter: ignore,
         setTempo: ignore,
-        reserveVoices: ignore,
         releaseAll: ignore,
     };
 }
@@ -216,7 +212,6 @@ function createLoggingWriter(log: Audio90Write[], inner: Audio90Side): Audio90Si
         // The chip logs its stops itself, since a stop of a song or of everything never reaches the writer
         stop: inner.stop,
         takePlayId: inner.takePlayId,
-        setMix: inner.setMix,
         noteOn(voice, sound, note, volume, atMs) {
             log.push({ kind: 'note-on', voice, sound, note, volume, time: atMs ?? inner.time });
             inner.noteOn(voice, sound, note, volume, atMs);
@@ -243,10 +238,6 @@ function createLoggingWriter(log: Audio90Write[], inner: Audio90Side): Audio90Si
             log.push({ kind: 'set-tempo', bpm, time: atMs ?? inner.time });
             inner.setTempo(bpm, atMs);
         },
-        reserveVoices(count, atMs) {
-            log.push({ kind: 'reserve-voices', count, time: atMs ?? inner.time });
-            inner.reserveVoices(count, atMs);
-        },
         releaseAll: inner.releaseAll,
     };
 }
@@ -256,8 +247,8 @@ interface Rendering {
     readonly writer: CommandAudio90;
     /** Renders the next `left.length` samples into `left` and `right`, scaled by `gain`. */
     readonly render: (left: Float32Array, right: Float32Array, gain: number) => void;
-    /** Cuts every voice at once, forgets every sound, and sets the mix to these volumes at once. */
-    readonly cut: (musicVolume: number, effectsVolume: number) => void;
+    /** Cuts every voice at once, and forgets every sound. */
+    readonly cut: () => void;
     /** Turns the scopes on or off. */
     readonly setScopes: (isOn: boolean) => void;
 }
@@ -292,12 +283,10 @@ function createRendering(sampleRate: number, character: Audio90Character | undef
                 }
             }
         },
-        cut(musicVolume, effectsVolume) {
+        cut() {
             writer.clear(writer.commands);
             writer.forget();
             synthesiser.reset();
-            synthesiser.setMix(MIX_BUS_INDEX.music, musicVolume);
-            synthesiser.setMix(MIX_BUS_INDEX.effects, effectsVolume);
         },
         setScopes(isOn) {
             synthesiser.scope = isOn ? scope : undefined;

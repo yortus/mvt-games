@@ -32,13 +32,13 @@ export const load = definePixiLoader(async () => {
             if (elapsedMs === 0) session.inputConfig?.onPrimaryButtonChanged?.(true);
         },
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, music }): EntrySession {
             const model = createTrackerModel({ tuneCount: TUNES.length });
             const font = createPixelFont({ sheet: textures.get().font });
-            const view = TrackerView({ model, sound, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font });
+            const view = TrackerView({ model, music, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font });
             stage.addChild(view);
             // The scopes cost the audio thread a little, so they are on only while the Tune Tracker runs
-            sound.setScopes(true);
+            music.setScopes(true);
 
             return {
                 // The host ticks the view with the rest of the stage
@@ -46,7 +46,7 @@ export const load = definePixiLoader(async () => {
                     model.update(deltaMs);
                 },
                 destroy(): void {
-                    sound.setScopes(false);
+                    music.setScopes(false);
                     stage.removeChild(view);
                     view.destroy({ children: true });
                 },

@@ -1,9 +1,8 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, Graphics } from 'pixi.js';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';
@@ -28,8 +27,10 @@ import { GameAudioView } from './game-audio-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip the game's audio view plays on. It is the view's output, not model state, so it is read once. */
-    sound: Audio80;
+    /** The chip the game's music plays on. It is the view's output, not model state, so the view reads it once. */
+    music: MusicChip<'audio80'>;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -43,14 +44,15 @@ export interface GameViewBindings {
  * empty slots hide themselves.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound } = bindings;
+    const { model, music, sfx } = bindings;
     const gameOverText = `GAME OVER\n\n${isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart'}`;
     const playMask = new Graphics().rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
 
     return (
         <container>
             <GameAudioView
-                sound={sound}
+                music={music}
+                sfx={sfx}
                 phase={() => model.phase}
                 shotsFired={() => model.shotsFired}
                 bombsDropped={() => model.bombsDropped}

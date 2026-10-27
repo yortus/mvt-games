@@ -134,7 +134,7 @@ function setUp(initial: Partial<State> = {}) {
     };
     const chip = createHeadlessAudio80({ record: true });
     const view = ArcadeAudioView({
-        sound: chip,
+        sfx: chip,
         phase: () => state.phase,
         isPaused: () => state.isPaused,
         isPanelOpen: () => state.isPanelOpen,

@@ -12,13 +12,13 @@ export const audio80Suite: Suite = {
             measure: ['time'],
             filtered: ['none', 'both'],
             wave: ['pulse', 'saw+pulse', 'noise'],
-            voices: [1, 4, 8],
+            voices: [1, 2, 4],
         }).map((params) => ({ params })),
         ...combinations({
             measure: ['allocation'],
             filtered: ['both'],
             wave: ['pulse'],
-            voices: [8],
+            voices: [4],
         }).map((params) => ({ params, nodeArgs: ALLOCATION_FLAGS, countsOnly: true })),
     ],
     tables: [
@@ -42,7 +42,7 @@ export const audio80Suite: Suite = {
         },
         {
             id: 'allocation',
-            title: 'Bytes allocated per block, eight voices, both filters, the echo',
+            title: 'Bytes allocated per block, four voices, both filters, the echo',
             metric: 'bytesPerBlock',
             unit: 'B',
             where: { measure: 'allocation' },
@@ -52,7 +52,7 @@ export const audio80Suite: Suite = {
         },
     ],
     labels: {
-        voices: { 1: '1 voice', 4: '4 voices', 8: '8 voices' },
+        voices: { 1: '1 voice', 2: '2 voices', 4: '4 voices' },
         wave: { 'pulse': 'pulse, with a sweep and vibrato', 'saw+pulse': 'saw and pulse combined', 'noise': 'noise' },
     },
 };

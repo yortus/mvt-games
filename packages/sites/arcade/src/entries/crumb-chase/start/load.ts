@@ -26,7 +26,7 @@ export const load = definePixiLoader(async () => {
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, music, sfx }): EntrySession {
             const gameModel = createGameModel({
                 grid: MAZE_DATA,
                 mouseSpawn: MOUSE_SPAWN,
@@ -34,7 +34,7 @@ export const load = definePixiLoader(async () => {
                 penExit: PEN_EXIT,
             });
 
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, music, sfx });
             stage.addChild(gameView);
 
             return {

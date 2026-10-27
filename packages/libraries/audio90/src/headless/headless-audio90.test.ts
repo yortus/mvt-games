@@ -1,6 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { AUDIO90_SCOPE_POINTS, type Audio90SoundOptions, type Audio90Writer, createAudio90Sound, HELD_ENVELOPE } from '../audio90';
-import { MAX_MIX_VOLUME } from '../shared';
 import { type Audio90Write, createHeadlessAudio90, type HeadlessAudio90 } from './headless-audio90';
 import { hashSamples, measurePeak } from './render';
 import type { StereoSamples } from './stereo-samples';
@@ -22,8 +21,8 @@ describe('headless Audio90', () => {
             expect(chip.voiceCount).toBe(16);
         });
 
-        it('clamps its volumes as every chip does', () => {
-            expect(readClampedVolumes(createHeadlessAudio90())).toEqual([1, 0, MAX_MIX_VOLUME]);
+        it('clamps its volume as every chip does', () => {
+            expect(readClampedVolumes(createHeadlessAudio90())).toEqual([1, 0]);
         });
     });
 
@@ -61,14 +60,14 @@ describe('headless Audio90', () => {
             expect(measurePeak(left)).toBeLessThan(1e-6);
         });
 
-        it('renders nothing when muted, and keeps a music volume set just before everything is stopped while paused', () => {
+        it('renders nothing when muted, and at its volume, which it keeps as everything is stopped while paused', () => {
             const muted = createHeadlessAudio90({ render: true });
             muted.isMuted = true;
             asWriter(muted).noteOn(0, INSTRUMENT, 57, 1);
             expect(measurePeak(renderFrames(muted))).toBe(0);
 
             const quiet = createHeadlessAudio90({ render: true });
-            quiet.musicVolume = 0.5;
+            quiet.volume = 0.5;
             quiet.pause();
             quiet.stop();
             quiet.resume();
@@ -151,7 +150,6 @@ function writeOneOfEach(audio90: HeadlessAudio90): void {
     audio90.setEffect('reverb', 'level', 0.25, 200);
     audio90.setCharacter('sampler');
     audio90.setTempo(120, 300);
-    audio90.reserveVoices(10);
     audio90.stop();
 }
 
@@ -166,17 +164,16 @@ function buildOneOfEachLog(time: number): Audio90Write[] {
         { kind: 'set-effect', effect: 'reverb', setting: 'level', value: 0.25, time: 200 },
         { kind: 'set-character', character: 'sampler', time },
         { kind: 'set-tempo', bpm: 120, time: 300 },
-        { kind: 'reserve-voices', count: 10, time },
         { kind: 'stop', id: undefined, time: -Infinity },
     ];
 }
 
-/** Sets each volume outside its range and reads back what the chip kept. */
+/** Sets the volume above and below its range, and reads back what the chip kept each time. */
 function readClampedVolumes(chip: HeadlessAudio90): number[] {
     chip.volume = 3;
-    chip.musicVolume = -1;
-    chip.effectsVolume = MAX_MIX_VOLUME + 1;
-    return [chip.volume, chip.musicVolume, chip.effectsVolume];
+    const high = chip.volume;
+    chip.volume = -1;
+    return [high, chip.volume];
 }
 
 /** Renders the chip's next `FRAMES` samples into new buffers. */

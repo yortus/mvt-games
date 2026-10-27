@@ -21,12 +21,12 @@ export const load = definePixiLoader(async () => {
         // Long enough for the section's banner to have faded
         thumbnailAdvanceMs: 3000,
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, music, sfx }): EntrySession {
             const gameModel = createGameModel({
                 sections: SECTIONS,
             });
 
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, music, sfx });
             stage.addChild(gameView);
 
             return {

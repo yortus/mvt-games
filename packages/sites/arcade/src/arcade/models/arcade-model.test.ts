@@ -417,7 +417,7 @@ describe('ArcadeModel', () => {
     describe('sound', () => {
         it('starts with the settings it is given, or the defaults', () => {
             expect(createArcadeModel(options()).soundSettings).toEqual(DEFAULT_SOUND_SETTINGS);
-            const kept = { ...DEFAULT_SOUND_SETTINGS, musicVolume: 0.1, effectsVolume: 0 };
+            const kept = { ...DEFAULT_SOUND_SETTINGS, musicVolume: 0.1, sfxVolume: 0 };
             expect(createArcadeModel({ ...options(), soundSettings: kept }).soundSettings).toEqual(kept);
         });
 
@@ -444,12 +444,12 @@ describe('ArcadeModel', () => {
 
         it('turns a sound that was slid to 0 on again at the default volume', () => {
             const model = createArcadeModel(options());
-            model.effectsVolume = DEFAULT_SOUND_SETTINGS.effectsVolume / 2;
-            model.turnEffectsOff();
-            model.turnEffectsOn();
-            model.effectsVolume = 0;
-            model.turnEffectsOn();
-            expect(model.effectsVolume).toBe(DEFAULT_SOUND_SETTINGS.effectsVolume);
+            model.sfxVolume = DEFAULT_SOUND_SETTINGS.sfxVolume / 2;
+            model.turnSfxOff();
+            model.turnSfxOn();
+            model.sfxVolume = 0;
+            model.turnSfxOn();
+            expect(model.sfxVolume).toBe(DEFAULT_SOUND_SETTINGS.sfxVolume);
         });
 
         it('turns nothing off that is off, and nothing on that is on', () => {
@@ -466,14 +466,14 @@ describe('ArcadeModel', () => {
 
         it('mutes and unmutes all the sound, and leaves a sound slid to 0 off', () => {
             const model = createArcadeModel(options());
-            const effectsVolume = 0.7;
+            const sfxVolume = 0.7;
             model.musicVolume = 0;
-            model.effectsVolume = effectsVolume;
+            model.sfxVolume = sfxVolume;
             model.isSoundMuted = true;
             expect(model.soundSettings.isMuted).toBe(true);
             model.isSoundMuted = false;
             expect(model.musicVolume).toBe(0);
-            expect(model.effectsVolume).toBe(effectsVolume);
+            expect(model.sfxVolume).toBe(sfxVolume);
             model.turnMusicOn();
             expect(model.musicVolume).toBe(DEFAULT_SOUND_SETTINGS.musicVolume);
         });
@@ -481,14 +481,14 @@ describe('ArcadeModel', () => {
         it('mutes and unmutes all the sound, and leaves a sound turned off still off, with its level kept', () => {
             const model = createArcadeModel(options());
             const musicVolume = 0.3;
-            const effectsVolume = 0.7;
+            const sfxVolume = 0.7;
             model.musicVolume = musicVolume;
             model.turnMusicOff();
-            model.effectsVolume = effectsVolume;
+            model.sfxVolume = sfxVolume;
             model.isSoundMuted = true;
             model.isSoundMuted = false;
             expect(model.musicVolume).toBe(0);
-            expect(model.effectsVolume).toBe(effectsVolume);
+            expect(model.sfxVolume).toBe(sfxVolume);
             model.turnMusicOn();
             expect(model.musicVolume).toBe(musicVolume);
         });
@@ -503,12 +503,12 @@ describe('ArcadeModel', () => {
 
         it('keeps volumes between 0 and 1, and turns NaN into 0', () => {
             const model = createArcadeModel(options());
-            model.effectsVolume = 1.7;
-            expect(model.effectsVolume).toBe(1);
+            model.sfxVolume = 1.7;
+            expect(model.sfxVolume).toBe(1);
             model.musicVolume = -0.2;
             expect(model.musicVolume).toBe(0);
-            model.effectsVolume = Number.NaN;
-            expect(model.effectsVolume).toBe(0);
+            model.sfxVolume = Number.NaN;
+            expect(model.sfxVolume).toBe(0);
         });
     });
 

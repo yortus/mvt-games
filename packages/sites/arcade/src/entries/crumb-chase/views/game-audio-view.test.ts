@@ -30,17 +30,17 @@ describe('GameAudioView', () => {
     });
 
     it('plays the start\'s tune as a game starts', () => {
-        const { chip, tickFor } = setUp();
+        const { music, tickFor } = setUp();
         tickFor(LISTEN_MS);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: GAME_START }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: GAME_START }));
     });
 
     it('plays the sneaking tune at its own tempo once the start\'s tune ends, with the maze full', () => {
-        const { chip, tickFor } = setUp();
-        const startMs = listNoteOns(chip.log)[0].time;
+        const { music, tickFor } = setUp();
+        const startMs = listNoteOns(music.log)[0].time;
         tickFor(computeSongDurationMs(GAME_START) + LISTEN_MS);
         const handOverMs = startMs + computeSongDurationMs(GAME_START);
-        expect(describeNoteOns(chip.log, handOverMs)).toEqual(recordSong({ song: SNEAK }));
+        expect(describeNoteOns(music.log, handOverMs)).toEqual(recordSong({ song: SNEAK }));
     });
 
     it.each([
@@ -48,13 +48,14 @@ describe('GameAudioView', () => {
         { remainingCrumbs: TOTAL_CRUMBS / 2, left: 'half the crumbs left' },
         { remainingCrumbs: 1, left: 'one crumb left' },
     ])('plays the sneaking tune faster the fewer crumbs are left, with $left', ({ remainingCrumbs }) => {
-        const { chip, state, tickFor } = setUpSneaking();
+        const { music, sfx, state, tickFor } = setUpSneaking();
         state.remainingCrumbs = remainingCrumbs;
-        chip.clear();
+        music.clear();
+        sfx.clear();
         tickFor(2000);
         const tempoScale = 1 + (1 - remainingCrumbs / TOTAL_CRUMBS) * SNEAK_SPEED_UP;
         const rowMs = 60000 / (SNEAK.bpm * SNEAK.rowsPerBeat);
-        const bass = listNoteOns(chip.log).filter((write) => write.voice === BASS_VOICE);
+        const bass = listNoteOns(music.log).filter((write) => write.voice === BASS_VOICE);
         expect(bass.length).toBeGreaterThan(4);
         for (let i = 1; i < bass.length; i++) {
             expect(bass[i].time - bass[i - 1].time).toBeCloseTo(rowMs * SNEAK_BASS_ROWS_APART / tempoScale);
@@ -65,55 +66,59 @@ describe('GameAudioView', () => {
         { phase: 'game-over', song: CAUGHT, remainingCrumbs: 1, ending: 'caught' },
         { phase: 'won', song: CLEARED, remainingCrumbs: 0, ending: 'won' },
     ] as const)('plays its tune at its own tempo as the game ends $ending, after the sneaking tune has sped up', ({ phase, song, remainingCrumbs }) => {
-        const { chip, state, tickFor } = setUpSneaking();
+        const { music, sfx, state, tickFor } = setUpSneaking();
         state.remainingCrumbs = remainingCrumbs;
         tickFor(TICK_MS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = phase;
         const listenMs = computeSongDurationMs(song);
         tickFor(listenMs);
-        expect(describeNoteOns(chip.log, 0, listenMs)).toEqual(recordSong({ song, listenMs }));
+        expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song, listenMs }));
     });
 
     it('plays only the caught tune when the mouse is caught during the start\'s tune', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         tickFor(1000);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'game-over';
         const listenMs = computeSongDurationMs(GAME_START) + computeSongDurationMs(CAUGHT);
         tickFor(listenMs);
-        expect(describeNoteOns(chip.log, 0, listenMs)).toEqual(recordSong({ song: CAUGHT, listenMs }));
+        expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song: CAUGHT, listenMs }));
     });
 
     it('plays the start\'s tune again, and no nibble, as a game starts after one ends', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         state.remainingCrumbs = 40;
         tickFor(TICK_MS);
         state.phase = 'game-over';
         tickFor(TICK_MS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         state.remainingCrumbs = TOTAL_CRUMBS;
         tickFor(LISTEN_MS);
-        expect(listPlays(chip.log)).toHaveLength(0);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: GAME_START }));
+        expect(listPlays(sfx.log)).toHaveLength(0);
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: GAME_START }));
     });
 
     it('nibbles for each crumb, low and high by turns, and not as the maze fills again', () => {
-        const { chip, state, tickFor } = setUp();
+        const { sfx, state, tickFor } = setUp();
         for (const remaining of [99, 98, 97, TOTAL_CRUMBS]) {
             state.remainingCrumbs = remaining;
             tickFor(TICK_MS);
         }
-        const nibbles = listPlays(chip.log).map((write) => write.sound);
+        const nibbles = listPlays(sfx.log).map((write) => write.sound);
         expect(nibbles).toEqual([NIBBLE_HIGH, NIBBLE_LOW, NIBBLE_HIGH]);
     });
 
     it('plays nothing while it is refreshed but not updated, as when paused', () => {
-        const { chip, view } = setUp();
-        chip.clear();
+        const { music, sfx, view } = setUp();
+        music.clear();
+        sfx.clear();
         for (let i = 0; i < 120; i++) refreshView(view);
-        expect(chip.log).toHaveLength(0);
+        expect([music.log, sfx.log]).toEqual([[], []]);
     });
 });
 
@@ -172,22 +177,25 @@ function recordSong(options: { song: Audio80Song; tempoScale?: number; listenMs?
 /** Sets up a view as a game starts, and runs its first tick. */
 function setUp() {
     const state = { phase: 'playing' as GamePhase, remainingCrumbs: TOTAL_CRUMBS };
-    const chip = createHeadlessAudio80({ record: true });
+    const music = createHeadlessAudio80({ record: true });
+    const sfx = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
-        sound: chip,
+        music,
+        sfx,
         phase: () => state.phase,
         remainingCrumbs: () => state.remainingCrumbs,
         totalCrumbs: TOTAL_CRUMBS,
     });
     const tickFor = (ms: number) => {
         for (let elapsed = 0; elapsed < ms; elapsed += TICK_MS) {
-            chip.update(TICK_MS);
+            music.update(TICK_MS);
+            sfx.update(TICK_MS);
             updateView(view, TICK_MS);
             refreshView(view);
         }
     };
     tickFor(TICK_MS);
-    return { chip, state, view, tickFor };
+    return { music, sfx, state, view, tickFor };
 }
 
 /** Sets up a view as a game starts, and runs it until the sneaking tune has played for a second. */

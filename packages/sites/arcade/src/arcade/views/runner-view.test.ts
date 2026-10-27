@@ -125,7 +125,7 @@ function setUp(): { runner: Element; state: RunnerState } {
             state.perfmonPresses++;
         },
         musicVolume: () => 0.5,
-        effectsVolume: () => 0.5,
+        sfxVolume: () => 0.5,
         isInfoOpen: () => state.isInfoOpen,
         onInfoPressed: () => {
             state.infoPresses++;

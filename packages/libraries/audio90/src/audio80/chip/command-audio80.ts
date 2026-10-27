@@ -1,4 +1,4 @@
-import { ASAP_STAMP, type CommandWriter, createCommandBuffer, MIX_BUS_INDEX, NO_GLIDE, toPlayLength, toPlayNote, toPlayVolume } from '../../shared';
+import { ASAP_STAMP, type CommandWriter, createCommandBuffer, NO_GLIDE, toPlayLength, toPlayNote, toPlayVolume } from '../../shared';
 import {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
@@ -9,10 +9,8 @@ import {
     OP_PLAY,
     OP_PLAY_OPTIONS,
     OP_RELEASE_ALL,
-    OP_RESERVE_VOICES,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_MIX,
     OP_SET_VOICE,
     OP_STOP,
     toFilterModeFlags,
@@ -151,9 +149,6 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
         setEcho(setting, value, atMs) {
             write(OP_SET_ECHO, atMs ?? clock[0], ECHO_SETTING_INDEX[setting], value, 0, 0);
         },
-        reserveVoices(voices, atMs) {
-            write(OP_RESERVE_VOICES, atMs ?? clock[0], voices, 0, 0, 0);
-        },
         releaseAll() {
             write(OP_RELEASE_ALL, clock[0], 0, 0, 0, 0);
         },
@@ -168,9 +163,6 @@ export function createCommandAudio80(options: CommandAudio80Options): CommandAud
             soundIds.clear();
         },
 
-        setMix(bus, gain) {
-            write(OP_SET_MIX, ASAP_STAMP, MIX_BUS_INDEX[bus], gain, 0, 0);
-        },
     };
 
     return writer;

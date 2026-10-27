@@ -420,15 +420,17 @@ a view that plays sounds instead of drawing visuals. It polls its bindings
 with `watch()`, and plays a sound when a value **changes**. It never plays
 from a state alone, which would play the sound every frame.
 
-- **[project convention]** It plays on a virtual sound chip from
-  `audio90`: the **Audio80** (eight mono voices, for 1980s games) or
-  the **Audio90** (sixteen stereo voices of FM, analog and samples, for
-  1990s games). The chip is a fixed binding, `sound: Audio80` or
-  `sound: Audio90`, which the view reads once. An entry names its chip in
-  its starter (`soundChip: 'audio90'`), and gets it from the host as
-  `sound`, in its start options.
+- **[project convention]** It plays on virtual sound chips from
+  `audio90`: the **Audio80** (four mono voices, for 1980s games) or the
+  **Audio90** (sixteen stereo voices of FM, analog and samples, for 1990s
+  games). An entry names its kind of chip in its starter
+  (`soundChip: 'audio90'`), and gets two from the host, in its start
+  options: `music`, which its songs play on, and `sfx`, which its sound
+  effects play on. A view's bindings take the ones it plays on, as fixed
+  bindings it reads once: `music: MusicChip<'audio80'>` and
+  `sfx: SfxChip<'audio80'>`, from `#shared`.
 - **On the Audio90, pan an effect where it happens:**
-  `sound.play(EXPLODE, toPan(x))`, with the pan from -1 (left) to 1
+  `sfx.play(EXPLODE, { pan: toPan(x) })`, with the pan from -1 (left) to 1
   (right). Set an effect's volume by its loudness against the music's
   -20 LUFS, not by its peak. An entry that plays samples bounces them in
   `load`, with `prepareAudio90Samples`.

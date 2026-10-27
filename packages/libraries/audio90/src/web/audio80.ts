@@ -19,6 +19,13 @@ export interface Audio80Options {
      * nothing, as `ready` explains.
      */
     readonly context?: AudioContext;
+    /**
+     * Whether the chip holds its sound while the page is hidden, as `pause`
+     * does, and plays on as it shows again, unless it was paused itself.
+     * Defaults to true. A page whose sound should play on in the background,
+     * such as a music player, turns it off.
+     */
+    readonly pauseWhenHidden?: boolean;
     /** How the chip sounds. Defaults to `'classic'`. */
     readonly character?: Audio80Character;
 }
@@ -44,6 +51,7 @@ export function createAudio80(options: Audio80Options = {}): Audio80 {
     const settings: Audio80RunnerSettings = { character: options.character };
     const web = createWebChip<Audio80PassedMessage, Audio80Song, Audio80Sound, Audio80PlayOptions>({
         context: options.context,
+        pauseWhenHidden: options.pauseWhenHidden ?? true,
         writer,
         heldSlots: AUDIO80_HELD_SLOTS,
         processorUrl,
@@ -63,6 +71,5 @@ export function createAudio80(options: Audio80Options = {}): Audio80 {
         setVoice: writer.setVoice,
         setFilter: writer.setFilter,
         setEcho: writer.setEcho,
-        reserveVoices: writer.reserveVoices,
     });
 }

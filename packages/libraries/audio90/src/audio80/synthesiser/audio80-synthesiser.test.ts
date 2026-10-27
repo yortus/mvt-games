@@ -11,7 +11,6 @@ import {
     OP_PLAY_OPTIONS,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_MIX,
     OP_SET_VOICE,
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
@@ -238,7 +237,6 @@ describe('Audio80 synthesiser: bad numbers', () => {
         ['cutoff', [OP_SET_FILTER, 0, FILTER_SETTING_INDEX.cutoffHz, Number.NaN, 0]],
         ['echo time', [OP_SET_ECHO, ECHO_SETTING_INDEX.timeMs, Number.NaN, 0, 0]],
         ['echo feedback', [OP_SET_ECHO, ECHO_SETTING_INDEX.feedback, Number.NaN, 0, 0]],
-        ['mix gain', [OP_SET_MIX, 0, Number.NaN, 0, 0]],
     ];
     for (const [name, [op, ...operands]] of writes) {
         it(`ignores a NaN ${name}, and plays the next note`, () => {
@@ -268,16 +266,6 @@ describe('Audio80 synthesiser: bad numbers', () => {
         expect(synthesiser.isSounding(1)).toBe(false);
         expect(synthesiser.isSounding(2)).toBe(true);
     });
-
-    it('ignores a NaN gain set directly', () => {
-        const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
-        synthesiser.setMix(0, Number.NaN);
-        synthesiser.defineSound(1, createAudio80Sound({ wave: 'saw' }).data);
-        synthesiser.enqueue(new Float64Array([OP_NOTE_ON, 0, 0, 1, 60, 1]), 1);
-        const samples = renderSynthesiser(synthesiser, 100);
-        expect(samples.every(Number.isFinite)).toBe(true);
-        expect(measurePeak(samples)).toBeGreaterThan(0.01);
-    });
 });
 
 describe('Audio80 synthesiser: stamps', () => {
@@ -293,92 +281,48 @@ describe('Audio80 synthesiser: stamps', () => {
     }
 });
 
-describe('Audio80 synthesiser: the mix', () => {
-    it('gives the music\'s voices and the effects\' voices separate gains', () => {
-        const musicOnly = measureMix({ music: 1, effects: 0 });
-        const effectsOnly = measureMix({ music: 0, effects: 1 });
-        const both = measureMix({ music: 1, effects: 1 });
-        expect(musicOnly).toBeGreaterThan(0.01);
-        expect(effectsOnly).toBeGreaterThan(0.01);
-        expect(both).toBeGreaterThan(Math.max(musicOnly, effectsOnly));
-        expect(measureMix({ music: 0, effects: 0 })).toBeLessThan(1e-4);
-    });
-
-    it('ramps to a new gain rather than jumping, so a moving slider does not click', () => {
-        const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        writer.noteOn(0, createAudio80Sound({ wave: 'triangle' }), 57, 1);
-        step();
-        writer.setMix('music', 0);
-        const samples = new Float32Array(16);
-        synthesiser.enqueue(writer.commands, writer.count);
-        writer.clear(writer.commands);
-        synthesiser.render(samples, 0, samples.length, 1000, 1000 / SAMPLE_RATE);
-        // Sixteen samples after the change, the gain has barely fallen
-        expect(measurePeak(samples)).toBeGreaterThan(0.05);
-    });
-
-    it('keeps the mix gains through a reset', () => {
-        const { synthesiser, writer, step, samples } = createSynthesiserWithWriter();
-        writer.setMix('music', 0);
-        step();
-        synthesiser.reset();
-        writer.forget();
-        writer.noteOn(0, createAudio80Sound({ wave: 'triangle' }), 57, 1);
-        for (let i = 0; i < 5; i++) step();
-        expect(synthesiser.isSounding(0)).toBe(true);
-        expect(measurePeak(samples)).toBeLessThan(1e-4);
-    });
-
-    function measureMix(gains: { music: number; effects: number }): number {
-        const { synthesiser, writer, step, samples } = createSynthesiserWithWriter();
-        synthesiser.setMix(0, gains.music);
-        synthesiser.setMix(1, gains.effects);
-        writer.noteOn(0, createAudio80Sound({ wave: 'triangle' }), 57, 1);
-        writer.play(BEEP);
-        step();
-        step();
-        return measureRms(samples);
-    }
-});
-
 describe('Audio80 synthesiser: played sounds', () => {
-    it('gives a played sound the highest free voice, so music starting in the same tick does not cut it', () => {
+    it('gives a played sound the highest free voice, away from the voices a song on the same chip takes first', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
         const tune = createAudio80Sound({ wave: 'pulse' });
-        // As when a ship returns: its sound plays, and the music starts again on voices 0 to 3
+        // As when a ship returns: its sound plays, and the music starts again from voice 0
         writer.play(BOOM);
-        writer.reserveVoices(4);
-        for (let v = 0; v < 4; v++) writer.noteOn(v, tune, 60 + v, 1);
+        for (let v = 0; v < VOICE_COUNT - 1; v++) writer.noteOn(v, tune, 60 + v, 1);
         step();
         const playing = listSoundsOn(synthesiser);
         expect(playing[VOICE_COUNT - 1]).toBeDefined();
-        expect(playing.slice(0, 4).every((id) => id === undefined)).toBe(true);
+        expect(playing.slice(0, VOICE_COUNT - 1).every((id) => id === undefined)).toBe(true);
     });
 
-    it('never plays a sound on a voice kept for music', () => {
+    it('with no voice free, takes the oldest voice whose sound has no higher priority', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        const musicVoices = VOICE_COUNT - 2;
-        // Reserve the voices a tick early. Plays skip ahead of stamped writes in the same tick
-        writer.reserveVoices(musicVoices);
+        // Every voice but two is held by a sound of the highest priority
+        const held = createAudio80Sound({ wave: 'pulse', note: 'C-3', priority: 3, maxVoices: VOICE_COUNT });
+        for (let v = 0; v < VOICE_COUNT - 2; v++) writer.play(held, { lengthMs: Infinity });
         step();
         writer.play(ZAP);
         step();
-        const zap = listSoundsOn(synthesiser).find((id) => id !== undefined);
         writer.play(BOOM);
         step();
-        const boom = listSoundsOn(synthesiser).find((id) => id !== undefined && id !== zap);
-        expect(boom).toBeDefined();
-        const boomVoice = listSoundsOn(synthesiser).indexOf(boom);
         // Both free voices are taken. So BEEP takes the oldest voice whose sound has no higher
-        // priority, which is ZAP's, not BOOM's
+        // priority, which is ZAP's, not BOOM's or the held sound's
         writer.play(BEEP);
         step();
         const playing = listSoundsOn(synthesiser);
-        expect(playing.slice(0, musicVoices).every((id) => id === undefined)).toBe(true);
-        expect(boomVoice).toBeGreaterThanOrEqual(musicVoices);
-        expect(playing[boomVoice]).toBe(boom);
-        expect(playing).not.toContain(zap);
-        expect(playing.filter((id) => id !== undefined)).toHaveLength(2);
+        expect(playing).toContain(writer.defineSound(BOOM));
+        expect(playing).toContain(writer.defineSound(BEEP));
+        expect(playing).not.toContain(writer.defineSound(ZAP));
+        expect(playing.filter((id) => id !== undefined)).toHaveLength(VOICE_COUNT);
+    });
+
+    it('takes a song\'s note when no voice is free', () => {
+        const { synthesiser, writer, step } = createSynthesiserWithWriter();
+        const tune = createAudio80Sound({ wave: 'pulse' });
+        for (let v = 0; v < VOICE_COUNT; v++) writer.noteOn(v, tune, 60 + v, 1);
+        step();
+        writer.play(ZAP);
+        step();
+        expect(listSoundsOn(synthesiser).filter((id) => id !== undefined)).toHaveLength(1);
     });
 
     it('restarts a sound\'s oldest voice when it already plays on its maximum, rather than taking another', () => {
@@ -392,14 +336,13 @@ describe('Audio80 synthesiser: played sounds', () => {
 
     it('never takes a voice from a sound of higher priority', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        writer.reserveVoices(VOICE_COUNT - 1);
+        const loud = createAudio80Sound({ wave: 'noise', note: 'C-4', priority: 2, maxVoices: VOICE_COUNT });
+        for (let v = 0; v < VOICE_COUNT; v++) writer.play(loud, { lengthMs: Infinity });
         step();
-        writer.play(BOOM);
-        step();
-        const boom = listSoundsOn(synthesiser)[VOICE_COUNT - 1];
+        const before = listSoundsOn(synthesiser);
         writer.play(ZAP);
         step();
-        expect(listSoundsOn(synthesiser)[VOICE_COUNT - 1]).toBe(boom);
+        expect(listSoundsOn(synthesiser)).toEqual(before);
     });
 
     it('frees a voice once its sound has died away', () => {
@@ -434,8 +377,6 @@ describe('Audio80 synthesiser: played sounds', () => {
 
     it('stops only the play it is given, and not a later play on the same voice', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        writer.reserveVoices(VOICE_COUNT - 1);
-        step();
         const first = writer.play(ZAP, { lengthMs: Infinity });
         step();
         // ZAP plays on one voice at most, so playing it again restarts that voice as a new play
@@ -513,12 +454,6 @@ function renderSynthesiser(synthesiser: Audio80Synthesiser, ms: number): Float32
     const samples = new Float32Array(toFrames(ms));
     synthesiser.render(samples, 0, samples.length, 0, 1000 / SAMPLE_RATE);
     return samples;
-}
-
-function measureRms(samples: Float32Array): number {
-    let sum = 0;
-    for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i];
-    return Math.sqrt(sum / samples.length);
 }
 
 /** Lists the sound each voice was played with, by voice: its id, or `undefined` for a voice playing none. */

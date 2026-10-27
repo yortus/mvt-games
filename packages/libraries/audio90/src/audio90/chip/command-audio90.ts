@@ -1,4 +1,4 @@
-import { ASAP_STAMP, type CommandWriter, createCommandBuffer, MIX_BUS_INDEX, NO_GLIDE, toPlayLength, toPlayNote, toPlayVolume } from '../../shared';
+import { ASAP_STAMP, type CommandWriter, createCommandBuffer, NO_GLIDE, toPlayLength, toPlayNote, toPlayVolume } from '../../shared';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
@@ -13,10 +13,8 @@ import {
     OP90_PLAY,
     OP90_PLAY_OPTIONS,
     OP90_RELEASE_ALL,
-    OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
-    OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
     OP90_STOP,
@@ -156,9 +154,6 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
         setTempo(bpm, atMs) {
             write(OP90_SET_TEMPO, atMs ?? clock[0], bpm, 0, 0, 0);
         },
-        reserveVoices(voices, atMs) {
-            write(OP90_RESERVE_VOICES, atMs ?? clock[0], voices, 0, 0, 0);
-        },
         releaseAll() {
             write(OP90_RELEASE_ALL, clock[0], 0, 0, 0, 0);
         },
@@ -174,9 +169,6 @@ export function createCommandAudio90(options: CommandAudio90Options): CommandAud
             sampleIds.clear();
         },
 
-        setMix(bus, gain) {
-            write(OP90_SET_MIX, ASAP_STAMP, MIX_BUS_INDEX[bus], gain, 0, 0);
-        },
     };
 
     return writer;

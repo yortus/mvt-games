@@ -97,17 +97,19 @@ describe('MatchAudioView', () => {
     });
 
     it('sounds the gong as the game starts, then plays the fight\'s tune as the fighting starts', () => {
-        const { chip, state, tick } = setUpMatchAudio();
-        expect(listPlays(chip.log, GONG)).toHaveLength(1);
-        chip.clear();
+        const { music, sfx, state, tick } = setUpMatchAudio();
+        expect(listPlays(sfx.log, GONG)).toHaveLength(1);
+        music.clear();
+        sfx.clear();
         state.phase = 'fighting';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: FIGHT_THEME }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: FIGHT_THEME }));
     });
 
     it('plays the tune on through a point, without starting it again', () => {
-        const { chip, state, tick } = setUpMatchAudio();
-        chip.clear();
+        const { music, sfx, state, tick } = setUpMatchAudio();
+        music.clear();
+        sfx.clear();
         state.phase = 'fighting';
         tick();
         runTicks(tick, SONG_TICKS / 3);
@@ -115,29 +117,32 @@ describe('MatchAudioView', () => {
         runTicks(tick, SONG_TICKS / 3);
         state.phase = 'fighting';
         runTicks(tick, SONG_TICKS / 3);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: FIGHT_THEME }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: FIGHT_THEME }));
     });
 
     it('stops the tune for the gong, then plays it from the top as the next round starts', () => {
-        const { chip, state, tick } = setUpMatchAudio();
+        const { music, sfx, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
         runTicks(tick, SONG_TICKS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'round-intro';
         runTicks(tick, SONG_TICKS);
-        expect(listPlays(chip.log, GONG)).toHaveLength(1);
-        expect(listNoteOns(chip.log)).toHaveLength(0);
-        chip.clear();
+        expect(listPlays(sfx.log, GONG)).toHaveLength(1);
+        expect(listNoteOns(music.log)).toHaveLength(0);
+        music.clear();
+        sfx.clear();
         state.phase = 'fighting';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: FIGHT_THEME }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: FIGHT_THEME }));
     });
 
     it('plays rising notes for each of the player\'s points and falling notes for each of the opponent\'s, and none as points go back to 0', () => {
-        const { chip, state, tick } = setUpMatchAudio();
+        const { music, sfx, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
         tick();
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.playerPoints = 1;
         tick();
         state.opponentPoints = 1;
@@ -145,48 +150,51 @@ describe('MatchAudioView', () => {
         state.playerPoints = 0;
         state.opponentPoints = 0;
         tick();
-        expect(chip.log).toEqual([
+        expect(sfx.log).toEqual([
             expect.objectContaining({ kind: 'play', sound: POINT_WON }),
             expect.objectContaining({ kind: 'play', sound: POINT_LOST }),
         ]);
     });
 
     it('plays no point\'s notes for the points that end a round when the clock runs out, only the round\'s jingle', () => {
-        const { chip, state, tick } = setUpMatchAudio();
+        const { music, sfx, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
         state.playerPoints = 1;
         tick();
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.playerPoints = POINTS_TO_WIN_ROUND;
         state.secondsLeft = 0;
         state.hasPlayerWon = true;
         state.phase = 'round-over';
         tick();
-        expect(listPlays(chip.log, POINT_WON)).toHaveLength(0);
-        expect(listNoteOns(chip.log).length).toBeGreaterThan(0);
+        expect(listPlays(sfx.log, POINT_WON)).toHaveLength(0);
+        expect(listNoteOns(music.log).length).toBeGreaterThan(0);
     });
 
     it('ticks in each of the round\'s last seconds, and not at 0 or as the clock goes back up', () => {
-        const { chip, state, tick } = setUpMatchAudio();
+        const { music, sfx, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
         tick();
-        chip.clear();
+        music.clear();
+        sfx.clear();
         for (let seconds = TICKING_SECONDS + 2; seconds >= 0; seconds--) {
             state.secondsLeft = seconds;
             tick();
         }
         state.secondsLeft = FULL_CLOCK_SECONDS;
         tick();
-        expect(listPlays(chip.log, TICK)).toHaveLength(TICKING_SECONDS);
+        expect(listPlays(sfx.log, TICK)).toHaveLength(TICKING_SECONDS);
     });
 
     it('advances no music while it is refreshed but not updated, with the clock of its chip standing still, as when paused', () => {
-        const { chip, state, tick, view } = setUpMatchAudio();
+        const { music, sfx, state, tick, view } = setUpMatchAudio();
         state.phase = 'fighting';
         tick();
-        chip.clear();
+        music.clear();
+        sfx.clear();
         for (let i = 0; i < SONG_TICKS; i++) refreshView(view);
-        expect(listNoteOns(chip.log)).toHaveLength(0);
+        expect(listNoteOns(music.log)).toHaveLength(0);
     });
 
     it.each([
@@ -195,14 +203,15 @@ describe('MatchAudioView', () => {
         { name: 'MATCH_WON', phase: 'match-over', winner: 'the player', hasPlayerWon: true, song: MATCH_WON },
         { name: 'MATCH_LOST', phase: 'match-over', winner: 'the opponent', hasPlayerWon: false, song: MATCH_LOST },
     ] as const)('plays $name when the phase becomes $phase and $winner has won', ({ phase, hasPlayerWon, song }) => {
-        const { chip, state, tick } = setUpMatchAudio();
+        const { music, sfx, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
         tick();
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.hasPlayerWon = hasPlayerWon;
         state.phase = phase;
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song }));
     });
 });
 
@@ -248,12 +257,12 @@ function recordSong(options: { song: Audio80Song }): string[] {
 
 /**
  * Returns a function that runs one tick as the Arcade does. It advances the
- * chip's clock, then updates and refreshes the view.
+ * chips' clocks, then updates and refreshes the view.
  */
-function createTicker(options: { chip: HeadlessAudio80; view: Container }): () => void {
-    const { chip, view } = options;
+function createTicker(options: { chips: readonly HeadlessAudio80[]; view: Container }): () => void {
+    const { chips, view } = options;
     return () => {
-        chip.update(TICK_MS);
+        for (const chip of chips) chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
@@ -269,8 +278,8 @@ function setUpFighterAudio(initial: Partial<{ phase: FighterPhase; move: MoveKin
         move: initial.move as MoveKind | undefined,
     };
     const chip = createHeadlessAudio80({ record: true });
-    const view = FighterAudioView({ sound: chip, phase: () => state.phase, move: () => state.move });
-    const tick = createTicker({ chip, view });
+    const view = FighterAudioView({ sfx: chip, phase: () => state.phase, move: () => state.move });
+    const tick = createTicker({ chips: [chip], view });
     tick();
     return { chip, state, tick };
 }
@@ -283,16 +292,18 @@ function setUpMatchAudio() {
         secondsLeft: FULL_CLOCK_SECONDS,
         hasPlayerWon: false,
     };
-    const chip = createHeadlessAudio80({ record: true });
+    const music = createHeadlessAudio80({ record: true });
+    const sfx = createHeadlessAudio80({ record: true });
     const view = MatchAudioView({
-        sound: chip,
+        music,
+        sfx,
         phase: () => state.phase,
         playerPoints: () => state.playerPoints,
         opponentPoints: () => state.opponentPoints,
         secondsLeft: () => state.secondsLeft,
         hasPlayerWon: () => state.hasPlayerWon,
     });
-    const tick = createTicker({ chip, view });
+    const tick = createTicker({ chips: [music, sfx], view });
     tick();
-    return { chip, state, tick, view };
+    return { music, sfx, state, tick, view };
 }

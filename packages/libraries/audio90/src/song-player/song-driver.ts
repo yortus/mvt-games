@@ -30,8 +30,6 @@ export interface SongDriver<S extends PlayableSong> {
     changeTempoScale: (song: S, stamp: number, tempoScale: number) => void;
     /** Releases every channel of `song`. */
     release: (song: S, stamp: number) => void;
-    /** Gives the song's voices back to the sound effects, once no song plays. */
-    finish: (stamp: number) => void;
     /** Sends the writes kept since the last refresh to the chip. */
     refresh: () => void;
 }

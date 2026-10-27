@@ -1,4 +1,4 @@
-import { COMMAND_STRIDE, type MixBus } from './commands';
+import { COMMAND_STRIDE } from './commands';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -43,11 +43,6 @@ export interface CommandWriter extends Pick<CommandBuffer, 'commands' | 'count' 
     update: (deltaMs: number) => void;
     /** Forgets every id. Each sound and sample is then passed on again the next time it is played. */
     forget: () => void;
-    /**
-     * Sets a bus's gain, from 0 to 2. It applies as soon as it arrives, not at
-     * a stamped time. It is for the listener's volume settings, not a song's.
-     */
-    setMix: (bus: MixBus, gain: number) => void;
 }
 
 /**

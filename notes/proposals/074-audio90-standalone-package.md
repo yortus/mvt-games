@@ -483,7 +483,9 @@ page's own Audio80 plays its interface sounds. `MUSIC_PREVIEW`, in
 `arcade/data/sounds.ts`, is a one-note song only so that it plays at the
 music's volume. It becomes a sound played on a chip at the music's volume:
 the entry's music chip, which the page already loads, or a second page
-chip. Decide in step 6.
+chip. Decided in step 6c: a second page chip, `pageMusic`, since the entry's
+music chip is paused while the pause menu, and its sliders, are open. The
+preview stays a one-note song, so it sets its filter as it starts.
 
 ### 5.9 A smaller API
 
@@ -804,9 +806,10 @@ package is finished. The progress log uses these numbers.
      the chip, and the music player and song slots go; one headless chip
      type and one `render`; `src/web/` split by thread (open question 8).~~
      Done, 2026-10-28 (section 12).
-   - **6c, a chip each:** no voices kept for music, no volume groups, the
+   - ~~**6c, a chip each:** no voices kept for music, no volume groups, the
      Audio80 at 4 voices, `music` and `sfx` chips for each entry,
-     `musicVolume` and `sfxVolume`, `pauseWhenHidden`.
+     `musicVolume` and `sfxVolume`, `pauseWhenHidden`.~~ Done, 2026-10-28
+     (section 12).
    - **6d, removals:** the setters, `time` and `atMs`; the tracker's
      helpers to `audio90/tracker`; `song.durationMs`.
 
@@ -1101,3 +1104,55 @@ package is finished. The progress log uses these numbers.
     the worklet, a peak of 0.129) and its shots; a session's start sent
     `pause`, a song `stop`, `reset` and `resume` in that order; Escape
     paused the chip; no page errors. Not yet listened to by a person.
+- **2026-10-28, step 6c done**, unstaged, after the user committed 6b:
+  - **The package.** The synthesisers keep no voices for music and mix no
+    groups apart: `OP_RESERVE_VOICES`, `OP_SET_MIX` and their Audio90
+    twins, `setMix`, `reserveVoices`, `MIX_BUS_INDEX` and the song driver's
+    `finish` are gone, and a song writes no voices to keep. The voice
+    chooser takes a free voice from the top down, or else the oldest song
+    note or sound of no higher priority. `musicVolume` and `effectsVolume`
+    left `SoundChip`; a chip has one `volume`. Removing the gains changed
+    no sample: they multiplied by 1. The Audio80 has 4 voices, and a song
+    with more channels was already an error, against `VOICE_COUNT`.
+  - **`pauseWhenHidden`** on `createAudio80` and `createAudio90`, true by
+    default: the browser's chip holds its sound while the page is hidden,
+    through the same pause message as `pause`, and `isPaused` reports only
+    the chip's own pause. A chip made in a hidden page starts held. With no
+    `document`, as in a worker, there is nothing to watch.
+  - **The Arcade.** An entry that names a kind of chip gets two, `music`
+    and `sfx`, typed for its views as `MusicChip<K>` and `SfxChip<K>`, from
+    `#shared`: a `Pick` of the members a view plays with, so a view
+    can't pause the chips or set their volumes (section 5.9, point 1). The
+    Audio90's `MusicChip` keeps `scope` and `setScopes` for the Tune
+    Tracker. `PageSound` has music and sound effects chips of each kind, and
+    `pageSfx` and `pageMusic` for the page; the music chips play at the
+    music's volume and the rest at the sound effects'. `isHidden` and its
+    combining went, since the chips hold themselves while the page is
+    hidden. The settings' `effectsVolume` is `sfxVolume`, with
+    `turnSfxOn`, `turnSfxOff` and the rest renamed to match, and settings
+    saved under the old names still read back. The menu still says
+    "Effects". The entry host pauses, resumes and stops both chips. Every
+    audio view plays its songs on `music` and its sounds on `sfx`, with no
+    play ids kept for the music (6b's `musicId`). Astrovoid and Kwazy Cactii
+    have no music, so they take only `sfx`.
+  - **Tests.** Each audio view test with music records the two chips apart,
+    and checks songs on the music chip's log and sounds on the other's. The
+    data tests' checks that songs left voices to the sound effects went.
+    Neon Monsoon's test finds a song's start by the tempo it sets, not the
+    voices it keeps. The sounds' hashes are unchanged; `EFFECTS_PREVIEW` is
+    `SFX_PREVIEW`, with the same hash.
+  - **Elsewhere:** the games benchmark ticks two chips, and the Audio80
+    benchmark measures 1, 2 and 4 voices, so its saved results no longer
+    match its columns until the next save. The playground's projects keep
+    one chip: none of its examples plays sound. AGENTS.md, the view skill
+    and the entries README describe the two chips. A changeset,
+    `.changeset/chip-each.md`.
+  - **Checked:** `npm run lint`, `npm run test:unit` (232 files, 3,015
+    tests), `npm run test:visual` (50 files, no image changed),
+    `npm run build` (first load 54.6 KB) and `npm run build:packages`. In
+    Playwright's headless shell, against the build, Galaxy Raiders made four
+    Audio80s; its music played on one (47 song places, peak 0.349) and its
+    shots on another, and hiding the page paused the page's two chips (the
+    entry's were already paused by Escape). No page errors. Not yet
+    listened to: Burrow Bust, Crumb Chase, Fruit Machine and Fuel Run at
+    their busiest, with 4 voices for their sound effects.

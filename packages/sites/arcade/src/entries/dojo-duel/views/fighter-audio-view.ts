@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, Audio80Sound } from 'audio90';
+import type { Audio80Sound } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { SfxChip } from '#shared';
 import { BLOCK, type FighterPhase, HIT, KICK_SWISH, LEAP_SWISH, type MoveKind, PUNCH_SWISH } from '../data';
 
 // ---------------------------------------------------------------------------
@@ -10,8 +11,8 @@ import { BLOCK, type FighterPhase, HIT, KICK_SWISH, LEAP_SWISH, type MoveKind, P
 
 /** What a `FighterAudioView` plays on, and the fighter's state it plays the sounds of. */
 export interface FighterAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The fighter's phase. The view plays a clack when it changes to 'blocking', and a hit when it changes to 'defeated'. */
     readonly phase: () => FighterPhase;
     /** The move the fighter is making, if any. The view plays a swish when it changes to a move. */
@@ -31,7 +32,7 @@ export interface FighterAudioViewBindings {
  * made twice, because the move goes back to none between them.
  */
 export function FighterAudioView(bindings: FighterAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { sfx } = bindings;
     const view = new Container();
     view.label = 'fighter-audio';
     const watcher = watch({ phase: bindings.phase, move: bindings.move });
@@ -45,10 +46,10 @@ export function FighterAudioView(bindings: FighterAudioViewBindings): Container 
     function refresh(): void {
         const w = watcher.poll();
         const move = w.move.value;
-        if (w.move.changed && move !== undefined) sound.play(chooseSwish(move));
+        if (w.move.changed && move !== undefined) sfx.play(chooseSwish(move));
         if (!w.phase.changed) return;
-        if (w.phase.value === 'blocking') sound.play(BLOCK);
-        else if (w.phase.value === 'defeated') sound.play(HIT);
+        if (w.phase.value === 'blocking') sfx.play(BLOCK);
+        else if (w.phase.value === 'defeated') sfx.play(HIT);
     }
 }
 

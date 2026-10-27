@@ -1,6 +1,5 @@
 import { Container } from 'pixi.js';
-import type { Audio80 } from 'audio90';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, type SfxChip } from '#shared';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from './view-constants';
@@ -14,8 +13,8 @@ import { HudView } from './hud-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip that the game's audio view plays on. It is an output, so the view reads it once. */
-    sound: Audio80;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -68,7 +67,7 @@ export function GameView(bindings: GameViewBindings): Container {
 
         // Sound
         view.addChild(GameAudioView({
-            sound: bindings.sound,
+            sfx: bindings.sfx,
             gamePhase: () => game.phase,
             boardPhase: () => game.board.phase,
             isSwapMatching: () => game.board.isSwapMatching,

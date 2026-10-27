@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createAudio80Sound, OP_PLAY, OP_PLAY_OPTIONS, OP_RELEASE_ALL, OP_RESERVE_VOICES, OP_SET_FILTER, OP_SET_MIX, OP_STOP } from '../audio80';
-import { type ChipBatch, COMMAND_STRIDE, MAX_MIX_VOLUME } from '../shared';
+import { createAudio80Sound, OP_PLAY, OP_PLAY_OPTIONS, OP_RELEASE_ALL, OP_SET_FILTER, OP_STOP } from '../audio80';
+import { type ChipBatch, COMMAND_STRIDE } from '../shared';
 import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
 import { createAudio80 } from './audio80';
-
-/** The synthesiser's number for the music bus, in a mix command. */
-const MUSIC_BUS = 0;
 
 describe('createAudio80, with a stand-in audio context', () => {
     afterEach(() => {
@@ -49,8 +46,7 @@ describe('createAudio80, with a stand-in audio context', () => {
         const fake = createFakeContext('suspended');
         const audio80 = createAudio80({ context: fake.context });
         await audio80.ready;
-        // As when a song starts, write the voices it keeps, its filter and its first note
-        audio80.reserveVoices(4);
+        // As when a song starts, write its filter and its first note
         audio80.setFilter('a', 'cutoffHz', 500);
         audio80.setFilter('a', 'cutoffHz', 800);
         audio80.play(createAudio80Sound({ wave: 'saw' }));
@@ -58,7 +54,7 @@ describe('createAudio80, with a stand-in audio context', () => {
         fake.setState('running');
         await settle();
         const [held, ...rest] = fake.listBatches();
-        expect(listOps(held).sort()).toEqual([OP_SET_FILTER, OP_RESERVE_VOICES].sort());
+        expect(listOps(held)).toEqual([OP_SET_FILTER]);
         expect(listValues(held, OP_SET_FILTER, 4)).toEqual([800]);
         expect(rest).toEqual([]);
     });
@@ -90,17 +86,6 @@ describe('createAudio80, with a stand-in audio context', () => {
         const [, held] = fake.listBatches();
         expect(listOps(held)).toEqual([OP_STOP]);
         expect(listValues(held, OP_STOP, 2)).toEqual([id]);
-    });
-
-    it('sends a mix change made while suspended once the context runs', async () => {
-        const fake = createFakeContext('suspended');
-        const audio80 = createAudio80({ context: fake.context });
-        await audio80.ready;
-        audio80.musicVolume = 0.25;
-        await settle();
-        fake.setState('running');
-        await settle();
-        expect(listValues(fake.listBatches()[0], OP_SET_MIX, 3, MUSIC_BUS)).toEqual([0.25]);
     });
 
     it('tells the worklet as it pauses and resumes, and keeps only the lasting writes made while paused', async () => {
@@ -202,12 +187,41 @@ describe('createAudio80, with a stand-in audio context', () => {
         await expect(audio80.ready).rejects.toThrow('no AudioWorklet here');
     });
 
-    it('clamps its volumes as every chip does', () => {
+    it('clamps its volume as every chip does', () => {
         const audio80 = createAudio80({ context: createFakeContext('running').context });
         audio80.volume = 3;
-        audio80.musicVolume = -1;
-        audio80.effectsVolume = MAX_MIX_VOLUME + 1;
-        expect([audio80.volume, audio80.musicVolume, audio80.effectsVolume]).toEqual([1, 0, MAX_MIX_VOLUME]);
+        const high = audio80.volume;
+        audio80.volume = -1;
+        expect([high, audio80.volume]).toEqual([1, 0]);
+    });
+
+    it('holds its sound while the page is hidden, apart from its own pause', async () => {
+        const page = createFakePage();
+        const fake = createFakeContext('running');
+        const audio80 = createAudio80({ context: fake.context });
+        await audio80.ready;
+        page.setHidden(true);
+        expect([audio80.isPaused, fake.messages.at(-1)]).toEqual([false, { kind: 'pause' }]);
+        // A pause while hidden changes nothing the worklet hears, and holds the chip once the page shows
+        audio80.pause();
+        page.setHidden(false);
+        expect(fake.messages.filter((message) => message.kind === 'pause' || message.kind === 'resume')).toEqual([{ kind: 'pause' }]);
+        audio80.resume();
+        expect(fake.messages.at(-1)).toEqual({ kind: 'resume' });
+        audio80.destroy();
+        expect(page.listenerCount()).toBe(0);
+    });
+
+    it('starts held in a hidden page, and plays on in one when made with pauseWhenHidden off', async () => {
+        const page = createFakePage();
+        page.setHidden(true);
+        // One chip at a time, since each stand-in context puts its own worklet node in place
+        const held = createFakeContext('running');
+        await createAudio80({ context: held.context }).ready;
+        const playing = createFakeContext('running');
+        await createAudio80({ context: playing.context, pauseWhenHidden: false }).ready;
+        expect(held.messages).toEqual([{ kind: 'pause' }]);
+        expect(playing.messages).toEqual([]);
     });
 });
 
@@ -218,6 +232,33 @@ describe('createAudio80, with a stand-in audio context', () => {
 /** Waits for the end of the task, when the chip sends what was written in it. */
 async function settle(): Promise<void> {
     await Promise.resolve();
+}
+
+/** Puts a stand-in page in place of the browser's `document`, which says whether the page is hidden. */
+function createFakePage() {
+    const events = new EventTarget();
+    let visibilityState: DocumentVisibilityState = 'visible';
+    let listeners = 0;
+    vi.stubGlobal('document', {
+        get visibilityState() {
+            return visibilityState;
+        },
+        addEventListener(name: string, listener: EventListener) {
+            listeners++;
+            events.addEventListener(name, listener);
+        },
+        removeEventListener(name: string, listener: EventListener) {
+            listeners--;
+            events.removeEventListener(name, listener);
+        },
+    });
+    return {
+        setHidden(isHidden: boolean) {
+            visibilityState = isHidden ? 'hidden' : 'visible';
+            events.dispatchEvent(new Event('visibilitychange'));
+        },
+        listenerCount: () => listeners,
+    };
 }
 
 /** Creates a stand-in audio context, and puts its `AudioWorkletNode` in place of the browser's. */

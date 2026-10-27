@@ -5,8 +5,8 @@ export {
 export {
     defineElementLoader, definePixiLoader, type ElementEntrySession, type ElementEntryStarter, type ElementEntryStarterFields, type ElementStartBase,
     type ElementStartOptions, type EntryInputConfig, type EntryScoring, type EntrySession, type EntryStarter,
-    type GivenNoSound, type GivenSound, type HasNoSoundChip, type HasSoundChip, type NamedSoundChip, type PixiEntryStarter, type PixiEntryStarterFields, type PixiStartBase, type PixiStartOptions,
-    type SoundChipField, type SoundChipFinder, type SoundChipKind, type SoundChipsByKind, type SoundChoice,
+    type GivenNoSound, type GivenSound, type HasNoSoundChip, type HasSoundChip, type NamedSoundChip, type PixiEntryStarter, type PixiEntryStarterFields, type PixiStartBase,
+    type PixiStartOptions, type SessionChips, type SoundChipField, type SoundChipFinder, type SoundChipKind, type SoundChipsByKind, type SoundChoice,
     type SoundOption, startElementEntry, startPixiEntry, type StartOptions,
 } from './entry-starter';
 export type { EntryFacts } from './entry-facts';

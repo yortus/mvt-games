@@ -122,7 +122,7 @@ function setUp() {
     const state: State = { gamePhase: 'playing', boardPhase: 'idle', isSwapMatching: false, cascadeStep: 0, matchedCellCount: 0 };
     const chip = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
-        sound: chip,
+        sfx: chip,
         gamePhase: () => state.gamePhase,
         boardPhase: () => state.boardPhase,
         isSwapMatching: () => state.isSwapMatching,

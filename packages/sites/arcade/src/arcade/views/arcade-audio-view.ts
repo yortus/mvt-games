@@ -1,6 +1,6 @@
-import type { Audio80 } from 'audio90';
 import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
+import type { SfxChip } from '#shared';
 import {
     BURN, CARD_TICK, DEVELOP, KEY_TICK_HIGH, KEY_TICK_LOW, LAUNCH, LOAD_FAILED, NO_RESULTS, PANEL_CLOSE, PANEL_OPEN, PAUSE, POWER_OFF,
     POWER_ON, RESUME, TAG_ADD, TAG_REMOVE,
@@ -15,7 +15,7 @@ import type { EntryTransitionPhase, WallEffectKind } from './entry-transition-vi
 /** What the Arcade's audio view plays on, and the state it plays the sounds of. */
 export interface ArcadeAudioViewBindings {
     /** The page's own chip, which the view plays on. Read once. */
-    readonly sound: Audio80;
+    readonly sfx: SfxChip<'audio80'>;
     /** Where the Arcade is, from browsing to playing an entry. */
     readonly phase: () => ArcadePhase;
     /** Whether the entry running is paused. */
@@ -62,7 +62,7 @@ export interface ArcadeAudioViewBindings {
  * state at that moment plays nothing.
  */
 export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement {
-    const { sound } = bindings;
+    const { sfx } = bindings;
     const view = document.createElement('div');
     view.className = 'arcade-audio';
     const watcher = watch({
@@ -84,23 +84,23 @@ export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement 
 
     function refresh(): void {
         const w = watcher.poll();
-        if (w.phase.changed && w.phase.previous === 'browsing') sound.play(LAUNCH);
+        if (w.phase.changed && w.phase.previous === 'browsing') sfx.play(LAUNCH);
         // A pause or resume chimes only while the entry keeps playing. Leaving the entry also clears the pause, and that plays nothing.
-        if (w.isPaused.changed && !w.phase.changed && (w.phase.value === 'revealing' || w.phase.value === 'playing')) sound.play(w.isPaused.value ? PAUSE : RESUME);
-        if (w.isPanelOpen.changed) sound.play(w.isPanelOpen.value ? PANEL_OPEN : PANEL_CLOSE);
+        if (w.isPaused.changed && !w.phase.changed && (w.phase.value === 'revealing' || w.phase.value === 'playing')) sfx.play(w.isPaused.value ? PAUSE : RESUME);
+        if (w.isPanelOpen.changed) sfx.play(w.isPanelOpen.value ? PANEL_OPEN : PANEL_CLOSE);
 
         // Choosing or removing a tag can change the search's text too. Only the tag's sound plays for that one action.
-        if (w.tags.changed) sound.play(w.tags.increased ? TAG_ADD : TAG_REMOVE);
-        else if (w.searchText.changed) sound.play(w.searchText.value.length % 2 === 0 ? KEY_TICK_LOW : KEY_TICK_HIGH);
-        if (w.shown.changed && w.shown.value === 0) sound.play(NO_RESULTS);
+        if (w.tags.changed) sfx.play(w.tags.increased ? TAG_ADD : TAG_REMOVE);
+        else if (w.searchText.changed) sfx.play(w.searchText.value.length % 2 === 0 ? KEY_TICK_LOW : KEY_TICK_HIGH);
+        if (w.shown.changed && w.shown.value === 0) sfx.play(NO_RESULTS);
 
-        if (w.loadFailure.changed && w.loadFailure.value !== undefined) sound.play(LOAD_FAILED);
+        if (w.loadFailure.changed && w.loadFailure.value !== undefined) sfx.play(LOAD_FAILED);
         if (w.wallEffect.changed) {
-            if (w.wallEffect.value === 'burn') sound.play(BURN);
-            else if (w.wallEffect.value === 'develop') sound.play(DEVELOP);
+            if (w.wallEffect.value === 'burn') sfx.play(BURN);
+            else if (w.wallEffect.value === 'develop') sfx.play(DEVELOP);
         }
         // The static starts as the beam comes on. Each burst lasts as long as the beam does.
-        if (w.isBeamOn.changed && w.isBeamOn.value) sound.play(bindings.transitionPhase() === 'powering-on' ? POWER_ON : POWER_OFF);
-        if (w.cardMoves.changed) sound.play(CARD_TICK);
+        if (w.isBeamOn.changed && w.isBeamOn.value) sfx.play(bindings.transitionPhase() === 'powering-on' ? POWER_ON : POWER_OFF);
+        if (w.cardMoves.changed) sfx.play(CARD_TICK);
     }
 }

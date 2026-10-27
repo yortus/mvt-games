@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import {
     FIGHT_THEME, type GamePhase, GONG, MATCH_LOST, MATCH_WON, POINT_LOST, POINT_WON, ROUND_LOST, ROUND_WON, TICK,
 } from '../data';
@@ -12,8 +12,10 @@ import {
 
 /** What a `MatchAudioView` plays on, and the state of the match it plays the sounds of. */
 export interface MatchAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio80'>;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. The view starts and stops the music as it changes. */
     readonly phase: () => GamePhase;
     /** The player's points this round. The view plays three rising notes each time the count rises. */
@@ -51,11 +53,9 @@ export const TICKING_SECONDS = 5;
  * the tune's place, and it pauses with the game.
  */
 export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'match-audio';
-    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
-    let musicId = 0;
     // The first poll sees the starting phase as a change, so the game opens with the gong
     const watcher = watch({
         phase: bindings.phase,
@@ -77,29 +77,29 @@ export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
         // phase, and the round's jingle marks them, so they get no notes of
         // their own.
         const isRoundEnding = w.phase.changed && phase === 'round-over';
-        if (w.playerPoints.increased && !isRoundEnding) sound.play(POINT_WON);
-        if (w.opponentPoints.increased && !isRoundEnding) sound.play(POINT_LOST);
+        if (w.playerPoints.increased && !isRoundEnding) sfx.play(POINT_WON);
+        if (w.opponentPoints.increased && !isRoundEnding) sfx.play(POINT_LOST);
         const seconds = w.secondsLeft;
         if (phase === 'fighting' && seconds.decreased && seconds.value > 0 && seconds.value <= TICKING_SECONDS) {
-            sound.play(TICK);
+            sfx.play(TICK);
         }
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
         switch (phase) {
             case 'round-intro':
-                sound.stop(musicId);
-                sound.play(GONG);
+                music.stop();
+                sfx.play(GONG);
                 break;
             case 'fighting':
                 // After a point, the tune carries on. A new round starts it from the top
-                if (previous !== 'point-scored') musicId = sound.play(FIGHT_THEME);
+                if (previous !== 'point-scored') music.play(FIGHT_THEME);
                 break;
             case 'round-over':
-                musicId = sound.play(bindings.hasPlayerWon() ? ROUND_WON : ROUND_LOST);
+                music.play(bindings.hasPlayerWon() ? ROUND_WON : ROUND_LOST);
                 break;
             case 'match-over':
-                musicId = sound.play(bindings.hasPlayerWon() ? MATCH_WON : MATCH_LOST);
+                music.play(bindings.hasPlayerWon() ? MATCH_WON : MATCH_LOST);
                 break;
             case 'point-scored':
                 break;

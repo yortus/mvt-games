@@ -16,7 +16,7 @@ export interface PauseMenuViewBindings {
     /** The music's volume, from 0 to 1. 0 is off. */
     readonly musicVolume: () => number;
     /** The sound effects' volume, from 0 to 1. 0 is off. */
-    readonly effectsVolume: () => number;
+    readonly sfxVolume: () => number;
     /** Reported as Resume is pressed. */
     readonly onResumePressed?: () => void;
     /** Reported as Restart, or R, is pressed. */
@@ -28,9 +28,9 @@ export interface PauseMenuViewBindings {
     /** Reported as the music's icon is pressed, or Enter on its slider. */
     readonly onMusicIconPressed?: () => void;
     /** Reported with the new volume, from 0 to 1, as the effects' slider moves. */
-    readonly onEffectsVolumeChanged?: (volume: number) => void;
+    readonly onSfxVolumeChanged?: (volume: number) => void;
     /** Reported as the effects' icon is pressed, or Enter on its slider. */
-    readonly onEffectsIconPressed?: () => void;
+    readonly onSfxIconPressed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -107,9 +107,9 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
                                 label="Effects"
                                 icon="🔊"
                                 id="pause-effects-volume"
-                                volume={bindings.effectsVolume}
-                                onVolumeChanged={(volume) => bindings.onEffectsVolumeChanged?.(volume)}
-                                onIconPressed={() => bindings.onEffectsIconPressed?.()}
+                                volume={bindings.sfxVolume}
+                                onVolumeChanged={(volume) => bindings.onSfxVolumeChanged?.(volume)}
+                                onIconPressed={() => bindings.onSfxIconPressed?.()}
                             />
                         </div>
                     </div>

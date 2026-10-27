@@ -21,7 +21,6 @@ import {
     FILTER_SETTINGS,
     OP_NOTE_OFF,
     OP_NOTE_ON,
-    OP_RESERVE_VOICES,
     OP_SET_ECHO,
     OP_SET_FILTER,
     OP_SET_VOICE,
@@ -77,7 +76,6 @@ export function createAudio80SongDriver(options: Audio80SongDriverOptions): Song
                 const known = instruments.indexOf(instrument);
                 return known >= 0 ? known : instruments.push(instrument) - 1;
             });
-            push(OP_RESERVE_VOICES, stamp, song.channelCount, 0, 0, 0);
             for (let f = 0; f < 2; f++) {
                 const settings = song.filters[f];
                 if (settings === undefined) continue;
@@ -161,10 +159,6 @@ export function createAudio80SongDriver(options: Audio80SongDriverOptions): Song
             for (let channel = 0; channel < song.channelCount; channel++) push(OP_NOTE_OFF, stamp, channel, 0, 0, 0);
         },
 
-        finish(stamp) {
-            push(OP_RESERVE_VOICES, stamp, 0, 0, 0, 0);
-        },
-
         refresh() {
             for (let i = 0; i < pendingCount; i++) {
                 const at = i * COMMAND_STRIDE;
@@ -191,9 +185,6 @@ export function createAudio80SongDriver(options: Audio80SongDriverOptions): Song
                         break;
                     case OP_SET_ECHO:
                         audio80.setEcho(ECHO_SETTINGS[a], b, stamp);
-                        break;
-                    case OP_RESERVE_VOICES:
-                        audio80.reserveVoices(a, stamp);
                         break;
                 }
             }

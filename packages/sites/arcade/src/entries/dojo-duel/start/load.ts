@@ -16,9 +16,9 @@ export const load = definePixiLoader(async () => {
         screenHeight: SCREEN_HEIGHT,
         thumbnailAdvanceMs: 2000,
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, music, sfx }): EntrySession {
             const gameModel = createGameModel();
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, music, sfx });
             stage.addChild(gameView);
 
             return {

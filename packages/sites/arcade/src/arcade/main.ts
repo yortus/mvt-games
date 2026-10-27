@@ -61,8 +61,9 @@ const ARCADE_PATH = `${SITE_PATH}arcade/`;
 const isTouch = isTouchDevice();
 const stage = document.createElement('div');
 stage.className = 'runner-stage';
-// The page's sound has the entries' chips, and one of its own, which plays
-// the menus' sounds. The host pauses an entry's chip as it pauses the game.
+// The page's sound has the entries' chips, and two of its own: one plays the
+// menus' sounds, and the other the music slider's preview. The host pauses an
+// entry's chips as it pauses the game.
 const sound = createPageSound({ isEnabled: true });
 const host = createEntryHost({ element: stage, isTouch, sound });
 // The Arcade has sounds of its own. Browsers play no sound before the
@@ -153,7 +154,8 @@ root.append(ArcadeView({
     homeLinks: [...document.querySelectorAll<HTMLElement>('.site-nav-brand, .site-nav-links a.active')],
     liveEntry: () => liveEntry,
     isLiveShowing: () => liveFrames >= LIVE_SHOWN_AFTER_FRAMES,
-    pageSound: sound.pageAudio80,
+    pageSfx: sound.pageSfx,
+    pageMusic: sound.pageMusic,
     audioViews: () => audioViews,
     // The model replaces its settings object whenever one changes, so the first object still there means no change
     isSoundOffByDefault: () => savedSoundSettings === undefined && model.soundSettings === firstSoundSettings && model.isSoundMuted,
@@ -209,11 +211,9 @@ let keptFavouriteIds = model.favouriteIds;
 // without warning. A browser that crashes or is killed gets no warning at
 // all, which is why the loop saves too.
 window.addEventListener('pagehide', saveGame);
+// The chips hold their sound themselves while the page is hidden
 document.addEventListener('visibilitychange', () => {
-    const isHidden = document.visibilityState === 'hidden';
-    if (isHidden) saveGame();
-    // The chips keep the sound card's time, not the page's frames, so they are paused while nobody sees the game
-    sound.isHidden = isHidden;
+    if (document.visibilityState === 'hidden') saveGame();
 });
 
 // A link to an entry (`arcade/crumb-chase/`) launches it; going back or forward in history follows,

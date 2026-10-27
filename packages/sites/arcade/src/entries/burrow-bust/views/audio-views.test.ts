@@ -45,19 +45,19 @@ describe('GameAudioView', () => {
     });
 
     it('plays the level\'s jingle as the game starts, then the walking tune', () => {
-        const { chip, tick } = setUpGameAudio({ isDiggerMoving: true });
+        const { music, tick } = setUpGameAudio({ isDiggerMoving: true });
         const ticks = Math.ceil(computeSongDurationMs(LEVEL_START) / TICK_MS) + SONG_TICKS;
         runTicks(tick, ticks);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: LEVEL_START, then: WALK_TUNE, ticks }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: LEVEL_START, then: WALK_TUNE, ticks }));
     });
 
     it.each([
         { isDiggerMoving: false, isEnemyFleeing: false },
         { isDiggerMoving: true, isEnemyFleeing: true },
     ])('plays the level\'s jingle at its own tempo, with the digger moving $isDiggerMoving and the last creature fleeing $isEnemyFleeing', (initial) => {
-        const { chip, tick } = setUpGameAudio(initial);
+        const { music, tick } = setUpGameAudio(initial);
         runTicks(tick, SONG_TICKS);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: LEVEL_START }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: LEVEL_START }));
     });
 
     for (const { phase, song } of JINGLES) {
@@ -65,92 +65,100 @@ describe('GameAudioView', () => {
             { isDiggerMoving: false, isEnemyFleeing: false },
             { isDiggerMoving: true, isEnemyFleeing: true },
         ])(`plays the ${phase} tune at its own tempo, with the digger moving $isDiggerMoving and the last creature fleeing $isEnemyFleeing`, (initial) => {
-            const { chip, state, tick } = setUpGameAudio(initial);
-            chip.clear();
+            const { music, sfx, state, tick } = setUpGameAudio(initial);
+            music.clear();
+            sfx.clear();
             state.phase = phase;
             runTicks(tick, SONG_TICKS + 1);
-            expect(describeNoteOns(chip.log)).toEqual(recordSong({ song }));
+            expect(describeNoteOns(music.log)).toEqual(recordSong({ song }));
         });
     }
 
     it('holds the walking tune while the digger stands, and moves it on as the digger moves', () => {
-        const { chip, state, tick } = setUpGameAudio({ phase: 'dying' });
-        chip.clear();
+        const { music, sfx, state, tick } = setUpGameAudio({ phase: 'dying' });
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         runTicks(tick, HOLD_TICKS + 1);
         state.isDiggerMoving = true;
         runTicks(tick, SONG_TICKS);
         // The view hears the digger move as it refreshes, after the chip has played that tick, so the tune moves
         // on from the tick after: one more tick held than the digger stood still for
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: WALK_TUNE, heldTicks: HOLD_TICKS + 1 }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: WALK_TUNE, heldTicks: HOLD_TICKS + 1 }));
     });
 
     it.each([
         { isEnemyFleeing: false, tempoScale: 1 },
         { isEnemyFleeing: true, tempoScale: HURRY_TEMPO },
     ])('plays the walking tune at $tempoScale times its tempo, with the last creature fleeing $isEnemyFleeing', ({ isEnemyFleeing, tempoScale }) => {
-        const { chip, state, tick } = setUpGameAudio({ phase: 'dying', isDiggerMoving: true, isEnemyFleeing });
-        chip.clear();
+        const { music, sfx, state, tick } = setUpGameAudio({ phase: 'dying', isDiggerMoving: true, isEnemyFleeing });
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: WALK_TUNE, tempoScale }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: WALK_TUNE, tempoScale }));
     });
 
     it('plays the death tune as the digger is caught, then the walking tune with no jingle', () => {
-        const { chip, state, tick } = setUpGameAudio({ isDiggerMoving: true });
-        chip.clear();
+        const { music, sfx, state, tick } = setUpGameAudio({ isDiggerMoving: true });
+        music.clear();
+        sfx.clear();
         state.phase = 'dying';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: DEATH }));
-        chip.clear();
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: DEATH }));
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: WALK_TUNE }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: WALK_TUNE }));
     });
 
     it('plays no walking tune after the game-over tune when the game ends during the level\'s jingle', () => {
-        const { chip, state, tick } = setUpGameAudio({ isDiggerMoving: true });
-        chip.clear();
+        const { music, sfx, state, tick } = setUpGameAudio({ isDiggerMoving: true });
+        music.clear();
+        sfx.clear();
         state.phase = 'game-over';
         const ticks = Math.ceil(computeSongDurationMs(GAME_OVER) / TICK_MS) + SONG_TICKS;
         runTicks(tick, ticks + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: GAME_OVER, ticks }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: GAME_OVER, ticks }));
     });
 
     it.each(['level-clear', 'game-over'] as const)('plays the level\'s jingle as play starts again after %s', (phase) => {
-        const { chip, state, tick } = setUpGameAudio({ phase, isDiggerMoving: true });
-        chip.clear();
+        const { music, sfx, state, tick } = setUpGameAudio({ phase, isDiggerMoving: true });
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: LEVEL_START }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: LEVEL_START }));
     });
 
     it('zips each time the harpoon shoots out', () => {
-        const { chip, state, tick } = setUpGameAudio();
+        const { sfx, state, tick } = setUpGameAudio();
         state.harpoonShots++;
         tick();
         tick();
         state.harpoonShots++;
         tick();
-        expect(listPlays(chip.log, HARPOON)).toHaveLength(2);
+        expect(listPlays(sfx.log, HARPOON)).toHaveLength(2);
     });
 
     it('zips for no first count, and none as a new digger\'s count starts again at 0', () => {
-        const { chip, state, tick } = setUpGameAudio({ harpoonShots: 5 });
-        expect(listPlays(chip.log, HARPOON)).toHaveLength(0);
+        const { sfx, state, tick } = setUpGameAudio({ harpoonShots: 5 });
+        expect(listPlays(sfx.log, HARPOON)).toHaveLength(0);
         state.harpoonShots = 0;
         tick();
-        expect(listPlays(chip.log, HARPOON)).toHaveLength(0);
+        expect(listPlays(sfx.log, HARPOON)).toHaveLength(0);
         state.harpoonShots = 1;
         tick();
-        expect(listPlays(chip.log, HARPOON)).toHaveLength(1);
+        expect(listPlays(sfx.log, HARPOON)).toHaveLength(1);
     });
 
     it('advances no music while it is refreshed but not updated, as when paused', () => {
-        const { chip, view } = setUpGameAudio({ isDiggerMoving: true });
-        chip.clear();
+        const { music, sfx, view } = setUpGameAudio({ isDiggerMoving: true });
+        music.clear();
+        sfx.clear();
         for (let i = 0; i < 120; i++) refreshView(view);
-        expect(chip.log).toHaveLength(0);
+        expect([music.log, sfx.log]).toEqual([[], []]);
     });
 });
 
@@ -286,10 +294,10 @@ function recordSong(options: { song: Audio80Song; then?: Audio80Song; tempoScale
     return describeNoteOns(chip.log);
 }
 
-/** Returns a function that runs one tick as the host does: the chip's clock, then the view's update and refresh. */
-function createTicker(chip: HeadlessAudio80, view: Container): () => void {
+/** Returns a function that runs one tick as the host does: the chips' clocks, then the view's update and refresh. */
+function createTicker(chips: readonly HeadlessAudio80[], view: Container): () => void {
     return () => {
-        chip.update(TICK_MS);
+        for (const chip of chips) chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
@@ -306,17 +314,19 @@ function setUpGameAudio(initial: Partial<{ phase: GamePhase; isDiggerMoving: boo
         harpoonShots: initial.harpoonShots ?? 0,
         isEnemyFleeing: initial.isEnemyFleeing ?? false,
     };
-    const chip = createHeadlessAudio80({ record: true });
+    const music = createHeadlessAudio80({ record: true });
+    const sfx = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
-        sound: chip,
+        music,
+        sfx,
         phase: () => state.phase,
         isDiggerMoving: () => state.isDiggerMoving,
         harpoonShots: () => state.harpoonShots,
         isEnemyFleeing: () => state.isEnemyFleeing,
     });
-    const tick = createTicker(chip, view);
+    const tick = createTicker([music, sfx], view);
     tick();
-    return { chip, state, view, tick };
+    return { music, sfx, state, view, tick };
 }
 
 function setUpEnemyAudio(initial: Partial<{ phase: EnemyPhase; inflationStage: InflationStage; isFireTelegraph: boolean; isFireActive: boolean }> = {}) {
@@ -329,14 +339,14 @@ function setUpEnemyAudio(initial: Partial<{ phase: EnemyPhase; inflationStage: I
     };
     const chip = createHeadlessAudio80({ record: true });
     const view = EnemyAudioView({
-        sound: chip,
+        sfx: chip,
         phase: () => state.phase,
         inflationStage: () => state.inflationStage,
         hasEscaped: () => state.hasEscaped,
         isFireTelegraph: () => state.isFireTelegraph,
         isFireActive: () => state.isFireActive,
     });
-    const tick = createTicker(chip, view);
+    const tick = createTicker([chip], view);
     tick();
     return { chip, state, tick };
 }
@@ -344,8 +354,8 @@ function setUpEnemyAudio(initial: Partial<{ phase: EnemyPhase; inflationStage: I
 function setUpRockAudio(initial: Partial<{ phase: RockPhase }> = {}) {
     const state = { phase: initial.phase ?? 'stable' };
     const chip = createHeadlessAudio80({ record: true });
-    const view = RockAudioView({ sound: chip, phase: () => state.phase });
-    const tick = createTicker(chip, view);
+    const view = RockAudioView({ sfx: chip, phase: () => state.phase });
+    const tick = createTicker([chip], view);
     tick();
     return { chip, state, tick };
 }

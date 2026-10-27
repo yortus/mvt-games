@@ -162,7 +162,6 @@ function createDrivenPlayer<S extends PlayableSong>(driver: SongDriver<S>): Song
             queued = undefined;
             if (song === undefined) return;
             driver.release(song, driver.time);
-            driver.finish(driver.time);
             song = undefined;
         },
 
@@ -212,7 +211,6 @@ function createDrivenPlayer<S extends PlayableSong>(driver: SongDriver<S>): Song
                 driver.release(song, stamp);
                 queued = undefined;
                 if (next === undefined) {
-                    driver.finish(stamp);
                     song = undefined;
                     break;
                 }

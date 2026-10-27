@@ -1,6 +1,7 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import type { Audio90, Audio90Sound } from 'audio90';
+import type { Audio90Sound } from 'audio90';
 import type { Tune } from '#tunes';
+import type { MusicChip } from '#shared';
 import type { TrackerModel } from '../models';
 import { ChannelMetersView } from './channel-meters-view';
 import { InstrumentsView } from './instruments-view';
@@ -22,9 +23,9 @@ import {
 // ---------------------------------------------------------------------------
 
 export interface TrackerViewBindings {
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio90'>;
     readonly model: TrackerModel;
-    /** The chip the tunes play on, which the view plays through and whose scopes it shows. */
-    readonly sound: Audio90;
     /** The tunes, in the order the model numbers them. */
     readonly tunes: readonly Tune[];
     /** Each instrument's name, as the instruments panel lists it. */
@@ -44,15 +45,15 @@ export interface TrackerViewBindings {
  * tune's patterns are laid out once, as the view is made.
  */
 export function TrackerView(bindings: TrackerViewBindings): Container {
-    const { model, sound, tunes, instrumentNames, font } = bindings;
+    const { model, music, tunes, instrumentNames, font } = bindings;
     const sheets = tunes.map((tune) => createPatternSheet({ song: tune.song }));
     const tune = () => tunes[model.tuneIndex];
     const song = () => tunes[model.tuneIndex].song;
     const sheet = () => sheets[model.tuneIndex];
     // A place is shown only if it is the place of the tune shown, so the views never read one tune's place
     // against another's patterns
-    const orderIndex = () => (sound.song === song() ? sound.orderIndex : 0);
-    const row = () => (sound.song === song() ? sound.row : 0);
+    const orderIndex = () => (music.song === song() ? music.orderIndex : 0);
+    const row = () => (music.song === song() ? music.row : 0);
 
     const view = new Container();
     const screen = new Sprite(Texture.WHITE);
@@ -61,7 +62,7 @@ export function TrackerView(bindings: TrackerViewBindings): Container {
     view.addChild(screen);
 
     view.addChild(TrackerAudioView({
-        sound,
+        music,
         songAt: (index) => tunes[index].song,
         tuneIndex: () => model.tuneIndex,
         isPlaying: () => model.isPlaying,
@@ -109,7 +110,7 @@ export function TrackerView(bindings: TrackerViewBindings): Container {
     instruments.position.set(INSTRUMENTS_X, PANELS_Y);
     view.addChild(instruments);
 
-    const meters = ChannelMetersView({ font, height: METERS_HEIGHT, sheet, scope: sound.scope });
+    const meters = ChannelMetersView({ font, height: METERS_HEIGHT, sheet, scope: music.scope });
     meters.y = METERS_Y;
     view.addChild(meters);
 

@@ -19,7 +19,7 @@ export const load = definePixiLoader(async () => {
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, music, sfx }): EntrySession {
             const gameModel = createGameModel({
                 levels: LEVELS,
                 fieldCols: FIELD_COLS,
@@ -28,7 +28,7 @@ export const load = definePixiLoader(async () => {
                 diggerSpawn: DIGGER_SPAWN,
             });
 
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, music, sfx });
             stage.addChild(gameView);
 
             let lastXDir: 'left' | 'none' | 'right' = 'none';

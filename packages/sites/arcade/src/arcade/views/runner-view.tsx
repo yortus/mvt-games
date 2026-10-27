@@ -26,7 +26,7 @@ export interface RunnerViewBindings {
     /** The music's volume, from 0 to 1. 0 is off. The pause menu shows it. */
     readonly musicVolume: () => number;
     /** The sound effects' volume, from 0 to 1. 0 is off. The pause menu shows it. */
-    readonly effectsVolume: () => number;
+    readonly sfxVolume: () => number;
     /** The chosen entry's name. */
     readonly title: () => string;
     /** Whether the chosen entry is a game, rather than a demo, which the pause menu's heading says. */
@@ -54,9 +54,9 @@ export interface RunnerViewBindings {
     /** Reported as the music's icon is pressed. */
     readonly onMusicIconPressed?: () => void;
     /** Reported with the new volume, from 0 to 1, as the effects' slider moves. */
-    readonly onEffectsVolumeChanged?: (volume: number) => void;
+    readonly onSfxVolumeChanged?: (volume: number) => void;
     /** Reported as the effects' icon is pressed. */
-    readonly onEffectsIconPressed?: () => void;
+    readonly onSfxIconPressed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,11 +211,11 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
                 isOpen={() => bindings.isPaused() && !bindings.isInfoOpen()}
                 heading={() => (bindings.isGame() ? 'GAME PAUSED' : 'DEMO PAUSED')}
                 musicVolume={bindings.musicVolume}
-                effectsVolume={bindings.effectsVolume}
+                sfxVolume={bindings.sfxVolume}
                 onMusicVolumeChanged={bindings.onMusicVolumeChanged}
                 onMusicIconPressed={bindings.onMusicIconPressed}
-                onEffectsVolumeChanged={bindings.onEffectsVolumeChanged}
-                onEffectsIconPressed={bindings.onEffectsIconPressed}
+                onSfxVolumeChanged={bindings.onSfxVolumeChanged}
+                onSfxIconPressed={bindings.onSfxIconPressed}
                 onResumePressed={bindings.onResumePressed}
                 onRestartPressed={bindings.onRestartPressed}
                 onExitPressed={bindings.onBackPressed}

@@ -30,10 +30,10 @@ const PLUCK = createAudio80Sound({
 });
 
 /**
- * The music slider's preview, one short twang. It is a song rather than a
- * sound effect, so it plays on the music's voices at the music's volume. It
- * is short, so a slider dragged across its steps plays one twang per step
- * rather than a pile of them.
+ * The music slider's preview, one short twang, which plays on the page's
+ * music chip, at the music's volume. It is a song rather than a sound, so it
+ * sets the chip's filter as it starts. It is short, so a slider dragged
+ * across its steps plays one twang per step rather than a pile of them.
  */
 export const MUSIC_PREVIEW = createAudio80Song({
     bpm: 150,
@@ -49,8 +49,8 @@ export const MUSIC_PREVIEW = createAudio80Song({
     volume: 1.6,
 });
 
-/** The effects slider's preview. It is a blip that steps up a fifth, then to the octave. */
-export const EFFECTS_PREVIEW = createAudio80Sound({
+/** The sound effects slider's preview. It is a blip that steps up a fifth, then to the octave. */
+export const SFX_PREVIEW = createAudio80Sound({
     note: 'G-5',
     stepMs: 35,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },

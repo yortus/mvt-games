@@ -93,7 +93,7 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
         // The entry runs headless, with no host and a silent chip, as when it is measured
         const sound = createHeadlessSound(starter);
         const session = startPixiHeadless({ entry, starter, stage: app.stage, sound });
-        advanceHeadless({ session, views: [app.stage], chip: sound.chip, totalMs, input: starter.thumbnailInput });
+        advanceHeadless({ session, views: [app.stage], chips: sound.chips, totalMs, input: starter.thumbnailInput });
         app.render();
         return;
     }
@@ -101,12 +101,12 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     root.style.width = `${entry.screenWidth}px`;
     root.style.height = `${entry.screenHeight}px`;
     const sound = createHeadlessSound(starter);
-    const session = startElementEntry(starter, { element: root }, sound.findChip);
+    const session = startElementEntry(starter, { element: root }, sound.findChips);
     // Some renderers start asynchronously, so this waits until they can draw,
     // and until an entry that sizes itself to its element knows its size.
     await session.ready;
     await waitForLayout();
-    advanceHeadless({ session, views: session.views, chip: sound.chip, totalMs });
+    advanceHeadless({ session, views: session.views, chips: sound.chips, totalMs });
     session.render();
 }
 

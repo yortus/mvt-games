@@ -13,7 +13,6 @@ import {
     createAudio90ChannelState,
     OP90_NOTE_OFF,
     OP90_NOTE_ON,
-    OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
@@ -83,9 +82,6 @@ export function createAudio90SongDriver(options: Audio90SongDriverOptions): Song
         setTempo(bpm, atMs) {
             push(OP90_SET_TEMPO, atMs ?? audio90.time, bpm, 0, 0, 0);
         },
-        reserveVoices(count, atMs) {
-            push(OP90_RESERVE_VOICES, atMs ?? audio90.time, count, 0, 0, 0);
-        },
         releaseAll: ignore,
     };
 
@@ -97,9 +93,6 @@ export function createAudio90SongDriver(options: Audio90SongDriverOptions): Song
         playRow: (song, orderIndex, row, stamp, lengthMs, scale) => writeAudio90Row(kept, song, state, orderIndex, row, stamp, lengthMs, scale),
         changeTempoScale: (song, stamp, scale) => writeAudio90TempoScale(kept, song, state, stamp, scale),
         release: (song, stamp) => releaseAudio90Song(kept, song, stamp),
-        finish(stamp) {
-            push(OP90_RESERVE_VOICES, stamp, 0, 0, 0, 0);
-        },
 
         refresh() {
             for (let i = 0; i < pendingCount; i++) {
@@ -129,9 +122,6 @@ export function createAudio90SongDriver(options: Audio90SongDriverOptions): Song
                         break;
                     case OP90_SET_TEMPO:
                         audio90.setTempo(a, stamp);
-                        break;
-                    case OP90_RESERVE_VOICES:
-                        audio90.reserveVoices(a, stamp);
                         break;
                 }
             }

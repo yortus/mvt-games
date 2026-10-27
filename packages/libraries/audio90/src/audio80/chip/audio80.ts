@@ -76,8 +76,6 @@ export interface Audio80Writer {
     setFilter: <S extends Audio80FilterSetting>(filter: Audio80FilterId, setting: S, value: Audio80FilterSettingValue<S>, atMs?: number) => void;
     /** Sets one of the echo's settings to `value` at `atMs`. `Audio80EchoSetting` gives each setting's range. */
     setEcho: (setting: Audio80EchoSetting, value: number, atMs?: number) => void;
-    /** Keeps voices 0 to `count` - 1 for music from `atMs`. Sounds played on their own play only on the rest. */
-    reserveVoices: (count: number, atMs?: number) => void;
     /** Releases every voice, music and sounds alike, as soon as it can. `stop` with no id calls it. */
     releaseAll: () => void;
 }

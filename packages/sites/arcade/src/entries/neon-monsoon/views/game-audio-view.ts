@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import type { Audio90, Audio90Sound } from 'audio90';
+import type { Audio90Sound } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
     EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, GRAZE, type ItemKind, POWER_UP, RESPAWN, SHIP_EXPLODE, SHOT, STAGE_CLEAR,
@@ -15,8 +16,10 @@ import type { BossPhase, ExplosionSize, GamePhase } from '../models';
 
 /** What a `GameAudioView` plays on, and the state it plays the sounds of. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio90;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio90'>;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio90'>;
     /** The game's phase. The view starts the music for each phase, and plays the ship's loss and return. */
     readonly phase: () => GamePhase;
     /** Extra lives earned this game. The view plays a chime each time the count rises. */
@@ -85,13 +88,11 @@ export interface GameAudioViewBindings {
  * model's alike.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound, arenaWidth } = bindings;
+    const { music, sfx, arenaWidth } = bindings;
     const view = new Container();
     view.label = 'game-audio';
 
     // Presentation state: the repeating sounds. The chip keeps the song's place
-    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
-    let musicId = 0;
     const guns = createMetronome();
     const hullTicks = createMetronome();
 
@@ -115,7 +116,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     // update makes, and anything the model does before it.
     watcher.poll();
     // A game starts in play, so the stage's theme starts with the view
-    musicId = sound.play(STAGE_THEME);
+    music.play(STAGE_THEME);
 
     setUpdate(view, update);
     setRefresh(view, refresh);
@@ -133,43 +134,43 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
         if (w.bossPhase.changed) playBossPhase(w.bossPhase.value);
         // The warning silences the stage's theme. The boss brings its own
-        if (w.isWarning.changed && w.isWarning.value) sound.stop(musicId);
-        if (w.sirens.increased) sound.play(WARNING);
+        if (w.isWarning.changed && w.isWarning.value) music.stop();
+        if (w.sirens.increased) sfx.play(WARNING);
 
         // The ship's own explosion starts as it is lost. Its loss has a sound of its own
         if (w.explosions.increased && !(w.phase.changed && w.phase.value === 'dying')) {
-            sound.play(chooseExplosion(bindings.lastExplosionSize()), { pan: toPan(bindings.lastExplosionX()) });
+            sfx.play(chooseExplosion(bindings.lastExplosionSize()), { pan: toPan(bindings.lastExplosionX()) });
         }
-        if (w.extraLives.increased) sound.play(EXTEND);
-        if (w.isBombing.changed && w.isBombing.value) sound.play(BOMB);
+        if (w.extraLives.increased) sfx.play(EXTEND);
+        if (w.isBombing.changed && w.isBombing.value) sfx.play(BOMB);
         // The focus follows its key even after the game ends. So the sweep plays only in play, like the guns' blips
-        if (w.isFocused.changed && w.isFocused.value && w.phase.value === 'playing') sound.play(FOCUS, { pan: toPan(bindings.shipX()) });
-        if (w.items.increased) sound.play(bindings.lastItemKind() === 'power' ? POWER_UP : BOMB_PICKUP, { pan: toPan(bindings.shipX()) });
-        if (w.gems.increased) sound.play(GEM, { pan: toPan(bindings.shipX()) });
-        if (w.grazes.increased) sound.play(GRAZE, { pan: toPan(bindings.shipX()) });
+        if (w.isFocused.changed && w.isFocused.value && w.phase.value === 'playing') sfx.play(FOCUS, { pan: toPan(bindings.shipX()) });
+        if (w.items.increased) sfx.play(bindings.lastItemKind() === 'power' ? POWER_UP : BOMB_PICKUP, { pan: toPan(bindings.shipX()) });
+        if (w.gems.increased) sfx.play(GEM, { pan: toPan(bindings.shipX()) });
+        if (w.grazes.increased) sfx.play(GRAZE, { pan: toPan(bindings.shipX()) });
 
-        if (w.blips.increased) sound.play(bindings.isFocused() ? FOCUSED_SHOT : SHOT, { pan: toPan(bindings.shipX()) });
-        if (w.ticks.increased) sound.play(BOSS_HIT, { pan: toPan(bindings.bossX()) });
+        if (w.blips.increased) sfx.play(bindings.isFocused() ? FOCUSED_SHOT : SHOT, { pan: toPan(bindings.shipX()) });
+        if (w.ticks.increased) sfx.play(BOSS_HIT, { pan: toPan(bindings.bossX()) });
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
         switch (phase) {
             case 'playing':
                 // After a lost ship, the music plays on
-                if (previous === 'dying') sound.play(RESPAWN, { pan: toPan(bindings.shipX()) });
-                else musicId = sound.play(STAGE_THEME);
+                if (previous === 'dying') sfx.play(RESPAWN, { pan: toPan(bindings.shipX()) });
+                else music.play(STAGE_THEME);
                 break;
             case 'dying':
-                sound.play(SHIP_EXPLODE, { pan: toPan(bindings.shipX()) });
+                sfx.play(SHIP_EXPLODE, { pan: toPan(bindings.shipX()) });
                 break;
             case 'tally':
-                musicId = sound.play(STAGE_CLEAR);
+                music.play(STAGE_CLEAR);
                 break;
             case 'game-over':
-                musicId = sound.play(GAME_OVER);
+                music.play(GAME_OVER);
                 break;
             case 'all-clear':
-                musicId = sound.play(ALL_CLEAR);
+                music.play(ALL_CLEAR);
                 break;
         }
     }
@@ -177,15 +178,15 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     function playBossPhase(phase: BossPhase): void {
         switch (phase) {
             case 'entering':
-                musicId = sound.play(BOSS_THEME);
+                music.play(BOSS_THEME);
                 break;
             case 'breaking':
-                sound.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
+                sfx.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
                 break;
             case 'exploding':
                 // The last attack has ended. The music stops for the boss's explosions
-                sound.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
-                sound.stop(musicId);
+                sfx.play(ATTACK_BROKEN, { pan: toPan(bindings.bossX()) });
+                music.stop();
                 break;
             case 'absent':
             case 'attacking':

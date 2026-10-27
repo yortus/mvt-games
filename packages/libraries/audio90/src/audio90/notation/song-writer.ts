@@ -51,15 +51,14 @@ export function createAudio90ChannelState(): Audio90ChannelState {
 }
 
 /**
- * Writes `song`'s settings as it starts, at chip time `stamp`: the voices it
- * keeps, its tempo scaled by `tempoScale`, its character, effects and pump,
+ * Writes `song`'s settings as it starts, at chip time `stamp`: its tempo
+ * scaled by `tempoScale`, its character, effects and pump,
  * and each channel's pan and sends from its mixer. It also clears `state`.
  * It runs once a song, so it is not on a hot path.
  */
 export function writeAudio90SongStart(chip: Audio90Writer, song: Audio90Song, state: Audio90ChannelState, stamp: number, tempoScale: number): void {
     state.instrument.fill(-1);
     state.slideRate.fill(0);
-    chip.reserveVoices(song.channelCount, stamp);
     chip.setTempo(song.bpm * tempoScale, stamp);
     if (song.character !== undefined) chip.setCharacter(song.character, stamp);
     const { reverb, echo, chorus, pump } = song;

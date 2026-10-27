@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import type { Audio80, Audio80Sound } from 'audio90';
+import type { Audio80Sound } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
+import type { SfxChip } from '#shared';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
     WAVE_CLEAR,
@@ -14,8 +15,8 @@ import type { AsteroidSize, GamePhase } from '../models';
 
 /** What a `GameAudioView` plays on, and the state it plays the sounds of. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. The view plays a sound as it changes, and the heartbeat runs only while the ship is in play. */
     readonly phase: () => GamePhase;
     /** Shots fired this game. The view plays a shot each time the count rises. */
@@ -48,7 +49,7 @@ export interface GameAudioViewBindings {
  * count rises, the metronomes' and the model's alike.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
 
@@ -83,25 +84,25 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     function refresh(): void {
         const w = watcher.poll();
         if (w.phase.changed) playPhase(w.phase.value);
-        if (w.shots.increased) sound.play(FIRE);
-        if (w.rocks.increased) sound.play(chooseBreak(bindings.lastBrokenRockSize()));
-        if (w.beats.increased) sound.play(w.beats.value % 2 === 0 ? BEAT_HIGH : BEAT_LOW);
-        if (w.thrustBursts.increased) sound.play(THRUST);
+        if (w.shots.increased) sfx.play(FIRE);
+        if (w.rocks.increased) sfx.play(chooseBreak(bindings.lastBrokenRockSize()));
+        if (w.beats.increased) sfx.play(w.beats.value % 2 === 0 ? BEAT_HIGH : BEAT_LOW);
+        if (w.thrustBursts.increased) sfx.play(THRUST);
     }
 
     function playPhase(phase: GamePhase): void {
         switch (phase) {
             case 'dying':
-                sound.play(SHIP_EXPLODE);
+                sfx.play(SHIP_EXPLODE);
                 break;
             case 'respawning':
-                sound.play(RESPAWN);
+                sfx.play(RESPAWN);
                 break;
             case 'wave-clear':
-                sound.play(WAVE_CLEAR);
+                sfx.play(WAVE_CLEAR);
                 break;
             case 'game-over':
-                sound.play(GAME_OVER);
+                sfx.play(GAME_OVER);
                 break;
             case 'playing':
                 break;

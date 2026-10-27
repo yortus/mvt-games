@@ -42,10 +42,6 @@ describe('arcade sounds', () => {
             expect(hashSamples(samples)).toMatchSnapshot();
         });
     }
-
-    it('leaves the effects most of the voices', () => {
-        for (const [, song] of songs) expect(song.channelCount).toBeLessThanOrEqual(3);
-    });
 });
 
 // ---------------------------------------------------------------------------

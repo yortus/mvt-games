@@ -6,7 +6,6 @@ import {
     clampVolume,
     createChipPlayback,
     joinMembers,
-    MAX_MIX_VOLUME,
     type PlayingWriter,
     type SoundChip,
 } from '../shared';
@@ -70,6 +69,8 @@ export interface WebChipOptions<S extends PlayableSong, Snd extends object, O> {
      * as it is destroyed.
      */
     readonly context?: AudioContext;
+    /** Whether the chip holds its sound while the page is hidden, as `pause` does. */
+    readonly pauseWhenHidden: boolean;
     /** The chip's writer, whose commands the chip sends. It has no clock of its own: the worklet's is the chip's. */
     readonly writer: PlayingWriter<Snd, O>;
     /** The chip's held-write slots: which writes to keep while the chip cannot play. */
@@ -80,7 +81,7 @@ export interface WebChipOptions<S extends PlayableSong, Snd extends object, O> {
     readonly processorName: string;
     /** How many channels the node outputs: 1 for a mono chip, 2 for a stereo one. */
     readonly channelCount: number;
-    /** The chip's settings for its processor. The listener's volumes, as they are when the node is made, are added to them. */
+    /** The chip's settings for its processor. */
     readonly settings: object;
     /** Handles a reply from the worklet other than the chip's own, such as a scope. Defaults to dropping it. */
     readonly onReply?: (reply: { readonly kind: string }) => void;
@@ -105,8 +106,9 @@ export interface WebChipOptions<S extends PlayableSong, Snd extends object, O> {
 /**
  * Creates the members every browser chip has, and starts loading its
  * worklet. `ready` resolves once the worklet is running. Until then, while
- * the context is suspended, and while the chip is paused, the chip keeps the
- * writes whose effect lasts, and sends them once it can play.
+ * the context is suspended, and while the chip is paused or the page hidden,
+ * the chip keeps the writes whose effect lasts, and sends them once it can
+ * play.
  */
 export function createWebChip<D extends PassedMessage, S extends PlayableSong, Snd extends object, O>(options: WebChipOptions<S, Snd, O>): WebChip<D, S, Snd, O> {
     const { writer } = options;
@@ -117,9 +119,9 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
     output.connect(context.destination);
     let volume = 1;
     let isMuted = false;
-    let musicVolume = 1;
-    let effectsVolume = 1;
+    // Paused by `pause`, and held while the page is hidden. The worklet holds the chip while either is true
     let isPaused = false;
+    let isHidden = false;
     let node: AudioWorkletNode | undefined;
     let isDestroyed = false;
     // Whether a send is due at the end of this task
@@ -150,13 +152,12 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
     const ready = Promise.resolve().then(async () => {
         await context.audioWorklet.addModule(options.processorUrl);
         if (isDestroyed) return;
-        // Send the listener's mix as it is now. A change made before the worklet ran could not be sent as a command
         node = new AudioWorkletNode(context, options.processorName, {
             numberOfInputs: 0,
             numberOfOutputs: 1,
             // A mono chip has one channel, which the browser plays on both speakers at full level on each
             outputChannelCount: [options.channelCount],
-            processorOptions: { ...options.settings, musicVolume, effectsVolume },
+            processorOptions: options.settings,
         });
         // The node is set before it is set up. This is safe, because the setup runs in one go, so `send`
         // cannot run part way through it
@@ -191,6 +192,13 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
     ready.catch(ignore);
     // Writes kept while the context was suspended can go once it runs
     context.addEventListener('statechange', onStateChange);
+    // A chip that pauses while the page is hidden starts held if it is made in a hidden page. With no page, as
+    // in a worker, there is nothing to watch
+    const isWatchingPage = options.pauseWhenHidden && typeof document !== 'undefined';
+    if (isWatchingPage) {
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        onVisibilityChange();
+    }
 
     const chip = joinMembers(
         createChipPlayback<S, Snd, O>({
@@ -209,7 +217,7 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
                 return volume;
             },
             set volume(value: number) {
-                volume = clampVolume(value, 1);
+                volume = clampVolume(value);
                 applyGain();
             },
             get isMuted() {
@@ -219,43 +227,20 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
                 isMuted = value;
                 applyGain();
             },
-            get musicVolume() {
-                return musicVolume;
-            },
-            set musicVolume(value: number) {
-                const clamped = clampVolume(value, MAX_MIX_VOLUME);
-                if (clamped === musicVolume) return;
-                musicVolume = clamped;
-                if (node !== undefined) writer.setMix('music', clamped);
-            },
-            get effectsVolume() {
-                return effectsVolume;
-            },
-            set effectsVolume(value: number) {
-                const clamped = clampVolume(value, MAX_MIX_VOLUME);
-                if (clamped === effectsVolume) return;
-                effectsVolume = clamped;
-                if (node !== undefined) writer.setMix('effects', clamped);
-            },
 
             pause() {
-                if (isPaused || isDestroyed) return;
-                isPaused = true;
-                send({ kind: 'pause' });
+                hold(true, isHidden);
             },
 
             resume() {
-                if (!isPaused || isDestroyed) return;
-                isPaused = false;
-                send({ kind: 'resume' });
-                // Writes kept while it was paused can go now
-                if (held.count > 0) sendSoon();
+                hold(false, isHidden);
             },
 
             destroy() {
                 if (isDestroyed) return;
                 isDestroyed = true;
                 context.removeEventListener('statechange', onStateChange);
+                if (isWatchingPage) document.removeEventListener('visibilitychange', onVisibilityChange);
                 if (node !== undefined) {
                     node.port.postMessage({ kind: 'stop' } satisfies RunnerMessage);
                     node.disconnect();
@@ -295,12 +280,12 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
     /**
      * Stops every voice's note, once the song has stopped. While the chip
      * plays, the notes are released, so each fades out as its envelope says.
-     * While it is paused, nothing is heard, so the worklet is reset instead,
-     * which cuts every voice, and forgets every sound and song sent. They are
-     * sent again as they are next played.
+     * While it is paused, or held while the page is hidden, nothing is heard,
+     * so the worklet is reset instead, which cuts every voice, and forgets
+     * every sound and song sent. They are sent again as they are next played.
      */
     function stopVoices(): void {
-        if (!isPaused) {
+        if (!isPaused && !isHidden) {
             writer.releaseAll();
             return;
         }
@@ -315,10 +300,27 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
         if (node === undefined) return;
         node.port.postMessage({ kind: 'reset' } satisfies RunnerMessage);
         options.onReset?.();
-        // The worklet keeps its mix through a reset. But a mix change not yet sent was just
-        // cleared, so write the mix again
-        writer.setMix('music', musicVolume);
-        writer.setMix('effects', effectsVolume);
+    }
+
+    /**
+     * Pauses the chip, or lets it play on, as `paused` (its own pause) and
+     * `hidden` (the page's) say. The worklet holds the chip while either is
+     * true, and hears only of a change between the two.
+     */
+    function hold(paused: boolean, hidden: boolean): void {
+        if (isDestroyed) return;
+        const wasHeld = isPaused || isHidden;
+        isPaused = paused;
+        isHidden = hidden;
+        const isHeld = isPaused || isHidden;
+        if (isHeld === wasHeld) return;
+        send({ kind: isHeld ? 'pause' : 'resume' });
+        // Writes kept while it was held can go now
+        if (!isHeld && held.count > 0) sendSoon();
+    }
+
+    function onVisibilityChange(): void {
+        hold(isPaused, document.visibilityState === 'hidden');
     }
 
     /** Sends a message to the worklet, or keeps it until the worklet runs. */
@@ -340,7 +342,7 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
     /** Sends the writes kept, then the writer's commands, or keeps those whose effect lasts if the chip can't play now. */
     function sendWrites(): void {
         isSendDue = false;
-        if (node === undefined || context.state !== 'running' || isPaused) {
+        if (node === undefined || context.state !== 'running' || isPaused || isHidden) {
             // If sent now, these writes would wait in the worklet and play all at once when the chip can play.
             // Keep only the writes whose effect lasts, as `HeldWrites` explains, and drop the rest
             if (!isDestroyed) held.keep(writer.commands, writer.count);

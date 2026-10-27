@@ -28,6 +28,13 @@ export interface Audio90Options {
      * other chips too, such as an Audio80.
      */
     readonly context?: AudioContext;
+    /**
+     * Whether the chip holds its sound while the page is hidden, as `pause`
+     * does, and plays on as it shows again, unless it was paused itself.
+     * Defaults to true. A page whose sound should play on in the background,
+     * such as a music player, turns it off.
+     */
+    readonly pauseWhenHidden?: boolean;
     /** How the chip sounds until a song sets it. Defaults to `'studio'`. */
     readonly character?: Audio90Character;
 }
@@ -67,6 +74,7 @@ export function createAudio90(options: Audio90Options = {}): Audio90 {
     let isScoping = false;
     const web = createWebChip<Audio90PassedMessage, Audio90Song, Audio90Sound, Audio90PlayOptions>({
         context: options.context,
+        pauseWhenHidden: options.pauseWhenHidden ?? true,
         writer,
         heldSlots: AUDIO90_HELD_SLOTS,
         processorUrl,
@@ -106,7 +114,6 @@ export function createAudio90(options: Audio90Options = {}): Audio90 {
         setEffect: writer.setEffect,
         setCharacter: writer.setCharacter,
         setTempo: writer.setTempo,
-        reserveVoices: writer.reserveVoices,
         scope,
         setScopes(isOn: boolean) {
             if (isOn === isScoping) return;

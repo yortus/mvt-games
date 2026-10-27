@@ -23,25 +23,25 @@ describe('MachineAudioView', () => {
         const t = setUp({ strips: NO_WIN_STRIPS });
         void t.model.spin();
         t.advance(TICK_MS);
-        expect(listPlays(t.chip.log, LEVER)).toHaveLength(1);
+        expect(listPlays(t.sfx.log, LEVER)).toHaveLength(1);
 
         // The first reel thunks as it starts to settle, not once it is at rest
         t.advance(FIRST_SETTLE_MS);
         expect(t.model.reels[0].phase).toBe('settling');
-        expect(listPlays(t.chip.log, REEL_STOP)).toHaveLength(1);
+        expect(listPlays(t.sfx.log, REEL_STOP)).toHaveLength(1);
         // And each of the others in turn, as it starts to settle
         for (let i = 1; i < t.model.reels.length; i++) {
             t.advance(SETTLE_STAGGER_MS);
-            expect(listPlays(t.chip.log, REEL_STOP), `reel ${i}`).toHaveLength(i + 1);
+            expect(listPlays(t.sfx.log, REEL_STOP), `reel ${i}`).toHaveLength(i + 1);
         }
 
         t.advance(LANDED_MS);
-        const clicks = listPlays(t.chip.log, REEL_CLICK).length;
+        const clicks = listPlays(t.sfx.log, REEL_CLICK).length;
         expect(clicks).toBeGreaterThan(10);
-        expect(listPlays(t.chip.log, REEL_STOP)).toHaveLength(t.model.reels.length);
+        expect(listPlays(t.sfx.log, REEL_STOP)).toHaveLength(t.model.reels.length);
 
         t.advance(1000);
-        expect(listPlays(t.chip.log, REEL_CLICK)).toHaveLength(clicks);
+        expect(listPlays(t.sfx.log, REEL_CLICK)).toHaveLength(clicks);
     });
 
     it('thunks once, not once for each reel, when a stop lands every reel at once', () => {
@@ -51,41 +51,41 @@ describe('MachineAudioView', () => {
         t.model.stop();
         t.advance(TICK_MS);
         for (const reel of t.model.reels) expect(reel.phase).toBe('settling');
-        expect(listPlays(t.chip.log, REEL_STOP)).toHaveLength(1);
+        expect(listPlays(t.sfx.log, REEL_STOP)).toHaveLength(1);
 
         t.advance(STOPPING_SETTLE_MS + TICK_MS);
         expect(t.model.phase).toBe('idle');
-        expect(listPlays(t.chip.log, REEL_STOP)).toHaveLength(1);
+        expect(listPlays(t.sfx.log, REEL_STOP)).toHaveLength(1);
     });
 
     it('sighs at a spin that wins nothing, with no jingle', () => {
         const t = setUp({ strips: NO_WIN_STRIPS });
         void t.model.spin();
         t.advance(LANDED_MS + 1000);
-        expect(listPlays(t.chip.log, NO_WIN)).toHaveLength(1);
-        expect(listNoteOns(t.chip.log)).toHaveLength(0);
+        expect(listPlays(t.sfx.log, NO_WIN)).toHaveLength(1);
+        expect(listNoteOns(t.music.log)).toHaveLength(0);
     });
 
     it('plays a jingle and a shower of coins for a win, then a chime for its way', () => {
         const t = setUp({ strips: WAY_OF_3_STRIPS });
         void t.model.spin();
         t.advance(LANDED_MS + CELEBRATION_OPENER_MS);
-        expect(describeNoteOns(t.chip.log)).toEqual(recordSong(WIN));
-        expect(listPlays(t.chip.log, COIN).length).toBeGreaterThan(5);
-        const coins = listPlays(t.chip.log, COIN).length;
+        expect(describeNoteOns(t.music.log)).toEqual(recordSong(WIN));
+        expect(listPlays(t.sfx.log, COIN).length).toBeGreaterThan(5);
+        const coins = listPlays(t.sfx.log, COIN).length;
 
         t.advance(CELEBRATION_STEP_MS);
-        expect(listPlays(t.chip.log, WAY_OF_3)).toHaveLength(1);
-        expect(listPlays(t.chip.log, COIN)).toHaveLength(coins);
-        expect(listPlays(t.chip.log, NO_WIN)).toHaveLength(0);
+        expect(listPlays(t.sfx.log, WAY_OF_3)).toHaveLength(1);
+        expect(listPlays(t.sfx.log, COIN)).toHaveLength(coins);
+        expect(listPlays(t.sfx.log, NO_WIN)).toHaveLength(0);
     });
 
     it('plays the longer jingle for a big win, and a higher chime for a longer way', () => {
         const t = setUp({ strips: WAY_OF_5_STRIPS });
         void t.model.spin();
         t.advance(LANDED_MS + computeSongDurationMs(BIG_WIN));
-        expect(describeNoteOns(t.chip.log)).toEqual(recordSong(BIG_WIN));
-        expect(listPlays(t.chip.log, WAY_OF_5)).toHaveLength(1);
+        expect(describeNoteOns(t.music.log)).toEqual(recordSong(BIG_WIN));
+        expect(listPlays(t.sfx.log, WAY_OF_5)).toHaveLength(1);
     });
 
     it('plays the slow tune as the credits run out, instead of the sigh', () => {
@@ -93,8 +93,8 @@ describe('MachineAudioView', () => {
         void t.model.spin();
         t.advance(LANDED_MS + computeSongDurationMs(GAME_OVER));
         expect(t.model.phase).toBe('gameOver');
-        expect(describeNoteOns(t.chip.log)).toEqual(recordSong(GAME_OVER));
-        expect(listPlays(t.chip.log, NO_WIN)).toHaveLength(0);
+        expect(describeNoteOns(t.music.log)).toEqual(recordSong(GAME_OVER));
+        expect(listPlays(t.sfx.log, NO_WIN)).toHaveLength(0);
     });
 
     it('cuts a jingle short when the next spin starts', () => {
@@ -105,12 +105,14 @@ describe('MachineAudioView', () => {
         t.model.stop();
         t.advance(TICK_MS);
         void t.model.spin();
-        t.chip.clear();
+        t.music.clear();
+        t.sfx.clear();
         t.advance(TICK_MS);
-        expect(t.chip.log).toContainEqual(expect.objectContaining({ kind: 'reserve-voices', count: 0 }));
-        t.chip.clear();
+        expect(t.music.song).toBeUndefined();
+        t.music.clear();
+        t.sfx.clear();
         t.advance(FIRST_SETTLE_MS);
-        expect(listNoteOns(t.chip.log)).toHaveLength(0);
+        expect(listNoteOns(t.music.log)).toHaveLength(0);
     });
 
     it('plays nothing for a machine at rest, nor for one already over', () => {
@@ -118,8 +120,8 @@ describe('MachineAudioView', () => {
         const over = setUp({ strips: NO_WIN_STRIPS, startingBalance: 0 });
         atRest.advance(1000);
         over.advance(1000);
-        expect(atRest.chip.log).toHaveLength(0);
-        expect(over.chip.log).toHaveLength(0);
+        expect([atRest.music.log, atRest.sfx.log]).toEqual([[], []]);
+        expect([over.music.log, over.sfx.log]).toEqual([[], []]);
     });
 });
 
@@ -162,18 +164,20 @@ type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
 
 function setUp(options: FruitMachineModelOptions) {
     const model = createFruitMachineModel({ seed: 5, ...options });
-    const chip = createHeadlessAudio80({ record: true });
-    const view = MachineAudioView({ model, sound: chip });
-    /** Runs ticks as the host does. It advances the chip's clock and the model, then updates and refreshes the view. */
+    const music = createHeadlessAudio80({ record: true });
+    const sfx = createHeadlessAudio80({ record: true });
+    const view = MachineAudioView({ model, music, sfx });
+    /** Runs ticks as the host does. It advances the chips' clocks and the model, then updates and refreshes the view. */
     const advance = (totalMs: number): void => {
         for (let elapsed = 0; elapsed < totalMs; elapsed += TICK_MS) {
-            chip.update(TICK_MS);
+            music.update(TICK_MS);
+            sfx.update(TICK_MS);
             model.update(TICK_MS);
             updateView(view, TICK_MS);
             refreshView(view);
         }
     };
-    return { model, chip, advance };
+    return { model, music, sfx, advance };
 }
 
 function listPlays(log: readonly Audio80Write[], effect: Play['sound']): Play[] {
@@ -188,7 +192,6 @@ function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {
  * Describes each note-on in `log` as its voice, its note and its time. The
  * time is in ms from the first note-on, to three decimal places. So two logs
  * of the same song match even when the song started at different chip times.
- * Effects are logged as plays, so every note-on is the music's.
  */
 function describeNoteOns(log: readonly Audio80Write[]): string[] {
     const noteOns = listNoteOns(log);

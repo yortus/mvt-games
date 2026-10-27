@@ -1,7 +1,8 @@
 /** @jsxImportSource @mvtjs/html */
-import type { Audio80 } from 'audio90';
+
 import { destroyElement, Match, Switch } from '@mvtjs/html';
 import { assert, memoiseLast, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';
 import type { ArcadeModel } from '../models';
 import { AboutView } from './about-view';
@@ -67,11 +68,14 @@ export interface ArcadeViewBindings {
      */
     readonly homeLinks?: readonly HTMLElement[];
     /**
-     * The page's own chip. It plays whether an entry runs, is paused or is
-     * held. The Arcade's own sounds and the pause menu's volume previews play
-     * on it. Read once.
+     * The page's own chip for sounds, at the sound effects' volume. It plays
+     * whether an entry runs, is paused or is held. The Arcade's own sounds
+     * and the pause menu's preview of the sound effects' volume play on it.
+     * Read once.
      */
-    readonly pageSound: Audio80;
+    readonly pageSfx: SfxChip<'audio80'>;
+    /** The page's own chip for music, at the music's volume, which the pause menu's music preview plays on. Read once. */
+    readonly pageMusic: MusicChip<'audio80'>;
     /**
      * The views that play the Arcade's own sounds, once the page has loaded
      * them. It is undefined until then, and none of the Arcade's sounds play.
@@ -294,17 +298,17 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 // While all the sound is muted, the pause menu shows each sound as off.
                 // Using a slider or an icon there unmutes the sound first.
                 musicVolume={() => (model.isSoundMuted ? 0 : model.musicVolume)}
-                effectsVolume={() => (model.isSoundMuted ? 0 : model.effectsVolume)}
+                sfxVolume={() => (model.isSoundMuted ? 0 : model.sfxVolume)}
                 onMusicVolumeChanged={(volume) => {
                     model.isSoundMuted = false;
                     model.musicVolume = volume;
                 }}
                 onMusicIconPressed={() => toggleSound(model.musicVolume, model.turnMusicOn, model.turnMusicOff)}
-                onEffectsVolumeChanged={(volume) => {
+                onSfxVolumeChanged={(volume) => {
                     model.isSoundMuted = false;
-                    model.effectsVolume = volume;
+                    model.sfxVolume = volume;
                 }}
-                onEffectsIconPressed={() => toggleSound(model.effectsVolume, model.turnEffectsOn, model.turnEffectsOff)}
+                onSfxIconPressed={() => toggleSound(model.sfxVolume, model.turnSfxOn, model.turnSfxOff)}
                 title={() => model.activeEntry?.name ?? ''}
                 isGame={() => model.activeEntry?.tags.kind === 'game'}
                 isLandscape={() => (model.activeEntry?.screenWidth ?? 0) > (model.activeEntry?.screenHeight ?? 0)}
@@ -370,7 +374,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         return (
             <div class="arcade-audio-views">
                 {views.ArcadeAudioView({
-                    sound: bindings.pageSound,
+                    sfx: bindings.pageSfx,
                     phase: () => model.phase,
                     isPaused: () => model.isPaused,
                     isPanelOpen: () => model.infoEntry !== undefined || model.isAboutOpen,
@@ -384,11 +388,12 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                     cardKeyMoves: () => cardKeyMoves,
                 })}
                 {views.VolumePreviewAudioView({
-                    sound: bindings.pageSound,
+                    music: bindings.pageMusic,
+                    sfx: bindings.pageSfx,
                     // The pause menu is open while the entry is paused.
                     isOpen: () => model.isPaused,
                     musicVolume: () => model.musicVolume,
-                    effectsVolume: () => model.effectsVolume,
+                    sfxVolume: () => model.sfxVolume,
                 })}
             </div>
         );
@@ -598,15 +603,15 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             return;
         }
         model.isSoundMuted = false;
-        if (model.musicVolume === 0 && model.effectsVolume === 0) {
+        if (model.musicVolume === 0 && model.sfxVolume === 0) {
             model.turnMusicOn();
-            model.turnEffectsOn();
+            model.turnSfxOn();
         }
     }
 
     /** Whether any sound plays, the music or the effects, with all the sound unmuted. */
     function isAnySoundOn(): boolean {
-        return !model.isSoundMuted && (model.musicVolume > 0 || model.effectsVolume > 0);
+        return !model.isSoundMuted && (model.musicVolume > 0 || model.sfxVolume > 0);
     }
 
     /**

@@ -1,9 +1,8 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
 import type { GameModel } from '../models';
@@ -22,8 +21,10 @@ import { RockAudioView } from './rock-audio-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip the game's audio views play on. It is an output, so it is read once. */
-    sound: Audio80;
+    /** The chip the game's music plays on. It is the view's output, not model state, so the view reads it once. */
+    music: MusicChip<'audio80'>;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,7 +37,7 @@ export interface GameViewBindings {
  * whose item views are reused as the collection changes.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound } = bindings;
+    const { model, music, sfx } = bindings;
     const canvasW = FIELD_COLS * TILE_SIZE;
     const canvasH = FIELD_ROWS * TILE_SIZE;
     const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
@@ -45,7 +46,8 @@ export function GameView(bindings: GameViewBindings): Container {
     return (
         <container>
             <GameAudioView
-                sound={sound}
+                music={music}
+                sfx={sfx}
                 phase={() => model.phase}
                 isDiggerMoving={() => model.digger.isMoving}
                 harpoonShots={() => model.digger.harpoonShots}
@@ -84,7 +86,7 @@ export function GameView(bindings: GameViewBindings): Container {
                             tileSize={() => TILE_SIZE}
                         />
                         <EnemyAudioView
-                            sound={sound}
+                            sfx={sfx}
                             phase={() => enemy().phase}
                             inflationStage={() => enemy().inflationStage}
                             hasEscaped={() => enemy().hasEscaped}
@@ -104,7 +106,7 @@ export function GameView(bindings: GameViewBindings): Container {
                             isAlive={() => rock().isAlive}
                             tileSize={() => TILE_SIZE}
                         />
-                        <RockAudioView sound={sound} phase={() => rock().phase} />
+                        <RockAudioView sfx={sfx} phase={() => rock().phase} />
                     </container>
                 )}
             </List>

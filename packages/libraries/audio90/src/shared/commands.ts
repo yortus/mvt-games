@@ -17,12 +17,6 @@ export const COMMAND_STRIDE = 6;
 /** The stamp of a write played as soon as it arrives, such as a sound played on its own. */
 export const ASAP_STAMP = -Infinity;
 
-/** A chip's mix buses: one for the voices playing music, one for those playing sound effects. */
-export type MixBus = 'music' | 'effects';
-
-/** Each mix bus's number in a chip's mix command. */
-export const MIX_BUS_INDEX: Readonly<Record<MixBus, number>> = { music: 0, effects: 1 };
-
 /**
  * A batch of commands, as the main thread sends them to a chip's worklet.
  * Only the first `count` commands of `commands` are in use.

@@ -4,30 +4,25 @@ import { chooseSoundVoice, type SoundVoices } from './choose-sound-voice';
 describe('choosing a voice for a sound', () => {
     it('takes the highest free voice', () => {
         const voices = toSoundVoices([MUSIC, FREE, FREE, MUSIC]);
-        expect(chooseSoundVoice(voices, 0, ZAP, 0, 1)).toBe(2);
-    });
-
-    it('never takes a voice kept for music, even a free one', () => {
-        const voices = toSoundVoices([FREE, FREE, MUSIC, MUSIC]);
-        expect(chooseSoundVoice(voices, 2, ZAP, 0, 1)).toBe(3);
+        expect(chooseSoundVoice(voices, ZAP, 0, 1)).toBe(2);
     });
 
     it('restarts the sound\'s oldest voice when it already plays on its maximum', () => {
         const voices = toSoundVoices([FREE, createPlayingVoice(ZAP, 0, 5), createPlayingVoice(ZAP, 0, 3), FREE]);
-        expect(chooseSoundVoice(voices, 0, ZAP, 0, 2)).toBe(2);
+        expect(chooseSoundVoice(voices, ZAP, 0, 2)).toBe(2);
         // Below its maximum, it takes a free voice instead
-        expect(chooseSoundVoice(voices, 0, ZAP, 0, 3)).toBe(3);
+        expect(chooseSoundVoice(voices, ZAP, 0, 3)).toBe(3);
     });
 
-    it('with no voice free, takes the oldest of equal or lower priority, or a leftover music note', () => {
+    it('with no voice free, takes the oldest of equal or lower priority, or a song\'s note', () => {
         const voices = toSoundVoices([createPlayingVoice(BOOM, 2, 1), createPlayingVoice(ZAP, 0, 4), { ...MUSIC, startedAt: 3 }]);
-        expect(chooseSoundVoice(voices, 0, BEEP, 0, 1)).toBe(2);
-        expect(chooseSoundVoice(voices, 0, BEEP, 2, 1)).toBe(0);
+        expect(chooseSoundVoice(voices, BEEP, 0, 1)).toBe(2);
+        expect(chooseSoundVoice(voices, BEEP, 2, 1)).toBe(0);
     });
 
     it('returns -1 when every voice it may take plays a sound of higher priority', () => {
-        const voices = toSoundVoices([MUSIC, createPlayingVoice(BOOM, 2, 1)]);
-        expect(chooseSoundVoice(voices, 1, ZAP, 0, 1)).toBe(-1);
+        const voices = toSoundVoices([createPlayingVoice(BOOM, 2, 1), createPlayingVoice(BOOM, 2, 2)]);
+        expect(chooseSoundVoice(voices, ZAP, 0, 1)).toBe(-1);
     });
 });
 

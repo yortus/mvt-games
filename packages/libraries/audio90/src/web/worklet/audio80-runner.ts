@@ -1,6 +1,6 @@
 import { type Audio80Character, type Audio80ChipMessage, type Audio80Song, createAudio80Synthesiser, createCommandAudio80 } from '../../audio80';
 import { createSongPlayer } from '../../song-player';
-import { type ChipReply, MIX_BUS_INDEX } from '../../shared';
+import type { ChipReply } from '../../shared';
 import { type ChipRunner, createChipRunner } from './chip-runner';
 import type { SongPlaceReply } from './song-messages';
 import { createWorkletSequencer } from './worklet-sequencer';
@@ -16,10 +16,6 @@ export type Audio80PassedMessage = Extract<Audio80ChipMessage, { readonly kind: 
 export interface Audio80RunnerSettings {
     /** How the chip sounds. Defaults to `'classic'`. */
     readonly character?: Audio80Character;
-    /** The starting gain on the voices playing music, 0 to 2. Defaults to 1. */
-    readonly musicVolume?: number;
-    /** The starting gain on the voices playing sounds on their own, 0 to 2. Defaults to 1. */
-    readonly effectsVolume?: number;
 }
 
 /** The name the Audio80's processor is registered under. */
@@ -49,8 +45,6 @@ export interface Audio80RunnerOptions extends Audio80RunnerSettings {
 export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<Audio80PassedMessage> {
     const { sampleRate } = options;
     const synthesiser = createAudio80Synthesiser({ sampleRate, character: options.character });
-    synthesiser.setMix(MIX_BUS_INDEX.music, options.musicVolume ?? 1);
-    synthesiser.setMix(MIX_BUS_INDEX.effects, options.effectsVolume ?? 1);
     return createChipRunner<Audio80PassedMessage>({
         sampleRate,
         channelCount: 1,

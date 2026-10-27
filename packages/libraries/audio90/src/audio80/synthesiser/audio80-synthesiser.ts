@@ -7,10 +7,8 @@ import {
     OP_PLAY,
     OP_PLAY_OPTIONS,
     OP_RELEASE_ALL,
-    OP_RESERVE_VOICES,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_MIX,
     OP_SET_VOICE,
     OP_STOP,
     VOICE_COUNT,
@@ -36,7 +34,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * The Audio80's synthesiser, which computes its sound. It has eight voices,
+ * The Audio80's synthesiser, which computes its sound. It has four voices,
  * two filters, an echo and an output stage, mixed to one channel because the
  * chip is mono. A voice is a channel that plays one note at a time. It also
  * has a driver, which plays sounds on the voices.
@@ -72,21 +70,8 @@ export interface Audio80Synthesiser {
      * still: the voices sound on, and only those commands apply.
      */
     render: (output: Float32Array, offset: number, frames: number, fromMs: number, msPerSample: number) => void;
-    /**
-     * Cuts every voice, empties the queue, and forgets every sound. It leaves the mix set by `setMix` as it is, because the mix is
-     * the listener's volume setting, not part of what was playing.
-     */
+    /** Cuts every voice, empties the queue, and forgets every sound. */
     reset: () => void;
-    /**
-     * Sets a bus's gain at once, without a ramp. A bus is a group of voices
-     * mixed together, and its gain multiplies their volume. Use this for the
-     * starting mix. Changes during play go through `OP_SET_MIX` commands.
-     * Those ramp, moving the gain to its new value gradually.
-     *
-     * @param bus 0 for music, 1 for sounds played on their own. Any other value is ignored.
-     * @param gain 0 to 2, where 1 is as written. It is held to that range. A non-finite gain is ignored.
-     */
-    setMix: (bus: number, gain: number) => void;
     /** Whether voice `voice` is making a sound. */
     isSounding: (voice: number) => boolean;
     /** Finds the sound that voice `voice` was played with, as `OP_PLAY` plays one. Returns its id, or `undefined` if the voice is not playing one. */
@@ -111,7 +96,7 @@ export interface Audio80SynthesiserOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates an Audio80's synthesiser. It starts silent, with every voice idle and the mix at 1. */
+/** Creates an Audio80's synthesiser. It starts silent, with every voice idle. */
 export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Audio80Synthesiser {
     const { sampleRate } = options;
     const character = options.character ?? 'classic';
@@ -119,7 +104,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const isQuantised = character === 'classic';
     const msPerAudioSample = 1000 / sampleRate;
     const echoDamping = adaptCoefficient(ECHO_DAMPING_AT_48K, sampleRate);
-    const mixRamp = adaptCoefficient(MIX_RAMP_AT_48K, sampleRate);
 
     const sounds = new Map<number, SoundData>();
 
@@ -170,7 +154,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const startedAt = new Float64Array(VOICE_COUNT);
     const soundVoices: SoundVoices = { soundId, soundPriority, startedAt, isSounding: isVoiceSounding };
     const playId = new Float64Array(VOICE_COUNT);
-    let musicVoices = 0;
     // How the next play plays, as its `OP_PLAY_OPTIONS` said: its length in ms, or -1 to hold, and its glide's note, or -1
     let nextPlayLengthMs = -1;
     let nextPlayGlideTo = -1;
@@ -196,12 +179,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     let echoDelay = 1;
     let echoFeedback = 0;
     let echoLevel = 0;
-
-    // ---- The mix: music's voices and played sounds' voices, each with a gain --
-    // Each bus's target gain and current gain. The current gain moves a little
-    // towards the target each sample, so a dragged slider does not click
-    const mixTarget = new Float64Array([1, 1]);
-    const mixGain = new Float64Array([1, 1]);
 
     // ---- Each sample's working values ----------------------------------------
     const voiceOut = new Float64Array(VOICE_COUNT);
@@ -256,11 +233,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             resetAll();
         },
 
-        setMix(bus, gain) {
-            if ((bus !== 0 && bus !== 1) || !Number.isFinite(gain)) return;
-            mixTarget[bus] = mixGain[bus] = clampGain(gain);
-        },
-
         isSounding(voice) {
             return isVoiceSounding(voice);
         },
@@ -311,12 +283,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 break;
             case OP_RELEASE_ALL:
                 for (let v = 0; v < VOICE_COUNT; v++) release(v);
-                break;
-            case OP_RESERVE_VOICES:
-                musicVoices = Math.max(0, Math.min(VOICE_COUNT, Math.round(a)));
-                break;
-            case OP_SET_MIX:
-                if (a === 0 || a === 1) mixTarget[a] = clampGain(b);
                 break;
         }
     }
@@ -449,7 +415,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         nextPlayGlideTo = -1;
         const data = sounds.get(id);
         if (data === undefined) return;
-        const v = chooseSoundVoice(soundVoices, musicVoices, id, data.priority, data.maxVoices);
+        const v = chooseSoundVoice(soundVoices, id, data.priority, data.maxVoices);
         if (v < 0) return;
         startNote(v, data, note, volume);
         soundId[v] = id;
@@ -571,17 +537,13 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             // The buses are summed in a typed array. V8 would box per-sample
             // doubles kept in closure variables or returned from functions
             for (let i = 0; i < BUS_COUNT; i++) bus[i] = 0;
-            mixGain[0] += (mixTarget[0] - mixGain[0]) * mixRamp;
-            mixGain[1] += (mixTarget[1] - mixGain[1]) * mixRamp;
             for (let v = 0; v < VOICE_COUNT; v++) {
                 if (envStage[v] === ENV_IDLE) continue;
                 stepEnvelope(v);
                 oscillate(v);
                 let x = voiceOut[v] * envLevel[v] * noteVolume[v] * stepVolume[v] * soundVolume[v] * VOICE_GAIN;
-                // Rounded to 8-bit steps before the bus gain, so a low volume slider does not make raw voices coarser
+                // Rounded to 8-bit steps before the mix level, so the steps stay where they are
                 if (isRaw) x = Math.round(x * 127) / 127;
-                // A voice is on the effects bus while it plays a sound played on its own, and on the music bus otherwise
-                x *= mixGain[soundId[v] >= 0 ? 1 : 0];
                 x *= MIX_LEVEL;
                 bus[route[v]] += x;
                 const send = echoSend[v];
@@ -836,7 +798,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             startedAt[v] = 0;
         }
         wavetable.fill(0);
-        musicVoices = 0;
         nextPlayLengthMs = -1;
         nextPlayGlideTo = -1;
         for (let f = 0; f < FILTER_COUNT; f++) {
@@ -867,7 +828,7 @@ const CONTROL_SAMPLES = 32;
 /** Each voice's share of full scale, before `MIX_LEVEL`. */
 const VOICE_GAIN = 0.3;
 /**
- * Every voice's level into the mix, after its bus gain. It is 3 dB down
+ * Every voice's level into the mix. It is 3 dB down
  * (1 / √2). With `VOICE_GAIN`, it leaves four voices at full volume a little
  * under full scale. It is applied separately from `VOICE_GAIN`, after the raw
  * character's rounding, so the rounding's steps stay where they are.
@@ -900,8 +861,6 @@ const DEFAULT_ECHO_MS = 300;
 const DEFAULT_ECHO_FEEDBACK = 0.35;
 const DEFAULT_ECHO_LEVEL = 0.5;
 const DC_POLE = 0.9995;
-/** The highest gain a bus can have, which plays it twice as loud as written. */
-const MAX_MIX_GAIN = 2;
 /** Below this size, a filter, echo or DC blocker state is set to 0, before it can become subnormal. */
 const TINY = 1e-20;
 
@@ -913,11 +872,6 @@ const REFERENCE_SAMPLE_RATE = 48000;
  * which darkens each repeat.
  */
 const ECHO_DAMPING_AT_48K = 0.35;
-/**
- * How far a bus's gain moves towards its target per sample, at 48 kHz. It
- * gets 90% of the way to its target in about 10 ms.
- */
-const MIX_RAMP_AT_48K = 0.005;
 
 // Each sample's buses. A voice's bus is its route: 0 for no filter, 1 for filter a, 2 for filter b
 const BUS_DRY = 0;
@@ -960,8 +914,4 @@ function toSourceVoice(v: number, source: number): number {
 
 function clamp01(value: number): number {
     return value < 0 ? 0 : value > 1 ? 1 : value;
-}
-
-function clampGain(value: number): number {
-    return value < 0 ? 0 : value > MAX_MIX_GAIN ? MAX_MIX_GAIN : value;
 }

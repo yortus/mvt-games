@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
-import type { Audio90, Audio90Song } from 'audio90';
+import type { Audio90Song } from 'audio90';
 import { setUpdate } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
+import type { MusicChip } from '#shared';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -9,8 +10,8 @@ import { watch } from '@mvtjs/utils';
 
 /** What the Tune Tracker's audio view plays through, what it plays, and the state it plays it from. */
 export interface TrackerAudioViewBindings {
-    /** The chip to play on, whose song the tracker's views show. It is the view's output, so the view reads it once. */
-    readonly sound: Audio90;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio90'>;
     /** The song of each tune, by its index. */
     readonly songAt: (index: number) => Audio90Song;
     readonly tuneIndex: () => number;
@@ -32,7 +33,7 @@ export interface TrackerAudioViewBindings {
  * nothing.
  */
 export function TrackerAudioView(bindings: TrackerAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { music } = bindings;
     const view = new Container();
     const watcher = watch({ isPlaying: bindings.isPlaying, starts: bindings.starts });
 
@@ -42,9 +43,9 @@ export function TrackerAudioView(bindings: TrackerAudioViewBindings): Container 
     function update(): void {
         const w = watcher.poll();
         if (!w.isPlaying.value) {
-            if (w.isPlaying.changed) sound.stop();
+            if (w.isPlaying.changed) music.stop();
         }
         // A start before the view's first poll counts too, so `changed`, not `increased`: the count only rises
-        else if (w.starts.changed) sound.play(bindings.songAt(bindings.tuneIndex()));
+        else if (w.starts.changed) music.play(bindings.songAt(bindings.tuneIndex()));
     }
 }

@@ -1,9 +1,8 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container, Graphics } from 'pixi.js';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import { ShipView } from './ship-view';
@@ -19,8 +18,8 @@ import { GameAudioView } from './game-audio-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip to play the game's sounds on. It is an output, so the view reads it once. */
-    sound: Audio80;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,14 +33,14 @@ export interface GameViewBindings {
  * bullets are a `<List>` over their array.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound } = bindings;
+    const { model, sfx } = bindings;
     const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
             <GameAudioView
-                sound={sound}
+                sfx={sfx}
                 phase={() => model.phase}
                 shotsFired={() => model.shotsFired}
                 rocksBroken={() => model.rocksBroken}

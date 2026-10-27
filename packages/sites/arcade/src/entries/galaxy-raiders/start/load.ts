@@ -25,12 +25,12 @@ export const load = definePixiLoader(async () => {
             session.inputConfig?.onPrimaryButtonChanged?.(isPressed);
         },
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, music, sfx }): EntrySession {
             const gameModel = createGameModel({
                 waves: WAVES,
             });
 
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, music, sfx });
             stage.addChild(gameView);
 
             return {

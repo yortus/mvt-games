@@ -295,7 +295,6 @@ describe('the Audio90\'s notation', () => {
             const audio90 = createRecordingWriter();
             const song = createAudio90Song({ ...TWO_CHANNELS, character: 'console', chorus: { level: 0.2 }, mixer: [{ pan: -1 }] });
             writeAudio90SongStart(audio90, song, createAudio90ChannelState(), 10, 1);
-            expect(audio90.log).toContainEqual({ kind: 'reserve-voices', count: 2, time: 10 });
             expect(audio90.log).toContainEqual({ kind: 'set-tempo', bpm: 120, time: 10 });
             expect(audio90.log).toContainEqual({ kind: 'set-character', character: 'console', time: 10 });
             expect(audio90.log).toContainEqual({ kind: 'set-effect', effect: 'chorus', setting: 'level', value: 0.2, time: 10 });

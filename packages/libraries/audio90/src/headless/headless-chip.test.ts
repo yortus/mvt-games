@@ -74,8 +74,8 @@ describe('a headless chip\'s stop', () => {
         chip.clear();
         chip.stop();
         expect(chip.song).toBeUndefined();
-        // The song releases its note, and gives its voices back to the sounds
-        expect(chip.log.map((write) => write.kind)).toEqual(['stop', 'note-off', 'reserve-voices']);
+        // The song releases its note
+        expect(chip.log.map((write) => write.kind)).toEqual(['stop', 'note-off']);
     });
 
     it('stops the song, and leaves the sounds playing, with the song\'s id', () => {
@@ -86,8 +86,8 @@ describe('a headless chip\'s stop', () => {
         chip.stop(song);
         expect(chip.song).toBeUndefined();
         expect(zap).not.toBe(song);
-        // The song releases its note, and gives its voices back to the sounds
-        expect(chip.log.map((write) => write.kind)).toEqual(['stop', 'note-off', 'reserve-voices']);
+        // The song releases its note
+        expect(chip.log.map((write) => write.kind)).toEqual(['stop', 'note-off']);
     });
 
     it('cuts every voice at once while the chip is paused, so nothing plays on as it resumes', () => {

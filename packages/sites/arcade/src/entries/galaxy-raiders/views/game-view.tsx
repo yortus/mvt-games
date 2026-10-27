@@ -1,9 +1,8 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container, Graphics } from 'pixi.js';
-import { isTouchDevice, OverlayView } from '#shared';
+import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import { ShipView } from './ship-view';
@@ -19,8 +18,10 @@ import { GameAudioView } from './game-audio-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip that the game's audio views play on. It is an output, so the view reads it once. */
-    sound: Audio80;
+    /** The chip the game's music plays on. It is the view's output, not model state, so the view reads it once. */
+    music: MusicChip<'audio80'>;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,14 +36,15 @@ export interface GameViewBindings {
  * `EnemyView` and an `EnemyAudioView`, which plays its sounds.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound } = bindings;
+    const { model, music, sfx } = bindings;
     const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
             <GameAudioView
-                sound={sound}
+                music={music}
+                sfx={sfx}
                 phase={() => model.phase}
                 shotsFired={() => model.shotsFired}
                 enemiesLeft={() => model.enemiesLeft}
@@ -59,7 +61,7 @@ export function GameView(bindings: GameViewBindings): Container {
                             isAlive={() => enemy().isAlive}
                         />
                         <EnemyAudioView
-                            sound={sound}
+                            sfx={sfx}
                             kind={() => enemy().kind}
                             phase={() => enemy().phase}
                             isAlive={() => enemy().isAlive}

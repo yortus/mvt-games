@@ -26,75 +26,81 @@ describe('GameAudioView', () => {
     });
 
     it('plays the march as a game starts', () => {
-        const { chip, tickFor } = setUp();
+        const { music, tickFor } = setUp();
         tickFor(LISTEN_MS);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: LAUNCH }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: LAUNCH }));
     });
 
     it('stops the march and plays the crash as the ship is lost', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         tickFor(TICK_MS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'dying';
         tickFor(LISTEN_MS);
-        expect(listPlays(chip.log).map((write) => write.sound)).toEqual([SHIP_CRASH]);
-        expect(listNoteOns(chip.log)).toHaveLength(0);
+        expect(listPlays(sfx.log).map((write) => write.sound)).toEqual([SHIP_CRASH]);
+        expect(listNoteOns(music.log)).toHaveLength(0);
     });
 
     it('plays no music as the ship comes back', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         for (const phase of ['dying', 'respawning'] as const) {
             state.phase = phase;
             tickFor(TICK_MS);
         }
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         tickFor(LISTEN_MS);
-        expect(listNoteOns(chip.log)).toHaveLength(0);
+        expect(listNoteOns(music.log)).toHaveLength(0);
     });
 
     it('plays the whole fanfare as a run is cleared, and it ends before the next run starts', () => {
-        const { chip, state, tickFor } = setUp();
-        chip.clear();
+        const { music, sfx, state, tickFor } = setUp();
+        music.clear();
+        sfx.clear();
         state.phase = 'section-clear';
         const listenMs = computeSongDurationMs(RUN_CLEAR);
         tickFor(listenMs);
-        expect(describeNoteOns(chip.log, 0, listenMs)).toEqual(recordSong({ song: RUN_CLEAR, listenMs }));
+        expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song: RUN_CLEAR, listenMs }));
         expect(listenMs).toBeLessThanOrEqual(SECTION_CLEAR_DELAY_MS);
     });
 
     it('plays the march as the next run starts', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         state.phase = 'section-clear';
         tickFor(SECTION_CLEAR_DELAY_MS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         tickFor(LISTEN_MS);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: LAUNCH }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: LAUNCH }));
     });
 
     it('plays the whole lament as the game ends', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         state.phase = 'dying';
         tickFor(TICK_MS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'game-over';
         const listenMs = computeSongDurationMs(GAME_OVER);
         tickFor(listenMs);
-        expect(describeNoteOns(chip.log, 0, listenMs)).toEqual(recordSong({ song: GAME_OVER, listenMs }));
+        expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song: GAME_OVER, listenMs }));
     });
 
     it('plays the march, and no other sound, as a new game starts after one ends', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         Object.assign(state, { shotsFired: 9, bombsDropped: 8, rocketsLaunched: 7, enemiesDestroyed: 6, fuelTanksDestroyed: 5, basesDestroyed: 1 });
         tickFor(TICK_MS);
         state.phase = 'game-over';
         tickFor(TICK_MS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         Object.assign(state, { ...START, phase: 'playing' });
         tickFor(LISTEN_MS);
-        expect(listPlays(chip.log)).toHaveLength(0);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: LAUNCH }));
+        expect(listPlays(sfx.log)).toHaveLength(0);
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: LAUNCH }));
     });
 
     it.each([
@@ -105,29 +111,30 @@ describe('GameAudioView', () => {
         { count: 'fuelTanksDestroyed', effect: REFUEL },
         { count: 'basesDestroyed', effect: BASE_DESTROYED },
     ] as const)('plays one sound, and only its own, each time $count rises', ({ count, effect }) => {
-        const { chip, state, tickFor } = setUp();
-        chip.clear();
+        const { music, sfx, state, tickFor } = setUp();
+        music.clear();
+        sfx.clear();
         for (let i = 1; i <= 2; i++) {
             state[count] = i;
             tickFor(TICK_MS * 3);
         }
-        expect(listPlays(chip.log).map((write) => write.sound)).toEqual([effect, effect]);
+        expect(listPlays(sfx.log).map((write) => write.sound)).toEqual([effect, effect]);
     });
 
     it('hears a rise made by the model in the tick before the view\'s first refresh', () => {
-        const { chip, state, tickFor } = createView();
+        const { sfx, state, tickFor } = createView();
         state.shotsFired = 1;
         state.rocketsLaunched = 1;
         tickFor(TICK_MS);
-        expect(listPlays(chip.log).map((write) => write.sound)).toEqual([SHOT, ROCKET_LAUNCH]);
+        expect(listPlays(sfx.log).map((write) => write.sound)).toEqual([SHOT, ROCKET_LAUNCH]);
     });
 
     it('sounds the alarm with fuel low, faster as it runs out, and not with enough', () => {
         const countAlarmsWith = (fuel: number): number => {
-            const { chip, state, tickFor } = setUp();
+            const { sfx, state, tickFor } = setUp();
             state.fuel = fuel;
             tickFor(3000);
-            return listPlaysOf(chip.log, FUEL_ALARM).length;
+            return listPlaysOf(sfx.log, FUEL_ALARM).length;
         };
         expect(countAlarmsWith(0.9)).toBe(0);
         expect(countAlarmsWith(0.2)).toBeGreaterThan(0);
@@ -135,36 +142,38 @@ describe('GameAudioView', () => {
     });
 
     it('warbles while saucers fly, and sounds the siren while waiting at the base', () => {
-        const { chip, state, tickFor } = setUp();
+        const { sfx, state, tickFor } = setUp();
         tickFor(1000);
-        expect(listPlaysOf(chip.log, SAUCER)).toHaveLength(0);
-        expect(listPlaysOf(chip.log, BASE_SIREN)).toHaveLength(0);
+        expect(listPlaysOf(sfx.log, SAUCER)).toHaveLength(0);
+        expect(listPlaysOf(sfx.log, BASE_SIREN)).toHaveLength(0);
         state.saucersFlying = 2;
         state.isWaitingAtBase = true;
         tickFor(2000);
-        expect(listPlaysOf(chip.log, SAUCER).length).toBeGreaterThan(2);
-        expect(listPlaysOf(chip.log, BASE_SIREN).length).toBeGreaterThan(1);
+        expect(listPlaysOf(sfx.log, SAUCER).length).toBeGreaterThan(2);
+        expect(listPlaysOf(sfx.log, BASE_SIREN).length).toBeGreaterThan(1);
     });
 
     it('repeats no sound outside play', () => {
-        const { chip, state, tickFor } = setUp();
+        const { music, sfx, state, tickFor } = setUp();
         Object.assign(state, { fuel: 0.05, saucersFlying: 2, isWaitingAtBase: true });
         for (const phase of ['dying', 'respawning', 'section-clear', 'game-over'] as const) {
             state.phase = phase;
             tickFor(TICK_MS);
-            chip.clear();
+            music.clear();
+            sfx.clear();
             tickFor(1000);
-            expect(listPlays(chip.log), phase).toHaveLength(0);
+            expect(listPlays(sfx.log), phase).toHaveLength(0);
         }
     });
 
     it('plays nothing while it is refreshed but not updated, as when paused', () => {
-        const { chip, state, view, tickFor } = setUp();
+        const { music, sfx, state, view, tickFor } = setUp();
         Object.assign(state, { fuel: 0.05, saucersFlying: 2, isWaitingAtBase: true });
         tickFor(TICK_MS);
-        chip.clear();
+        music.clear();
+        sfx.clear();
         for (let i = 0; i < 120; i++) refreshView(view);
-        expect(chip.log).toHaveLength(0);
+        expect([music.log, sfx.log]).toEqual([[], []]);
     });
 });
 
@@ -233,9 +242,11 @@ function recordSong(options: { song: Audio80Song; listenMs?: number }): string[]
 /** Creates a view as a game starts, before its first tick. */
 function createView() {
     const state = { phase: 'playing' as GamePhase, ...START };
-    const chip = createHeadlessAudio80({ record: true });
+    const music = createHeadlessAudio80({ record: true });
+    const sfx = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
-        sound: chip,
+        music,
+        sfx,
         phase: () => state.phase,
         shotsFired: () => state.shotsFired,
         bombsDropped: () => state.bombsDropped,
@@ -247,15 +258,16 @@ function createView() {
         saucersFlying: () => state.saucersFlying,
         isWaitingAtBase: () => state.isWaitingAtBase,
     });
-    // A tick as the game loop runs one: the chip's clock, then the view's update and refresh
+    // A tick as the game loop runs one: the chips' clocks, then the view's update and refresh
     const tickFor = (ms: number) => {
         for (let elapsed = 0; elapsed < ms; elapsed += TICK_MS) {
-            chip.update(TICK_MS);
+            music.update(TICK_MS);
+            sfx.update(TICK_MS);
             updateView(view, TICK_MS);
             refreshView(view);
         }
     };
-    return { chip, state, view, tickFor };
+    return { music, sfx, state, view, tickFor };
 }
 
 /** Creates a view as a game starts, and runs its first tick. */

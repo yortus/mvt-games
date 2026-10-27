@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, Audio80Sound } from 'audio90';
+import type { Audio80Sound } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { SfxChip } from '#shared';
 import { FIRE, FIRE_WARNING, GHOST, POP, PUMP_1, PUMP_2, PUMP_3, PUMP_4, SQUASH } from '../data';
 import type { EnemyPhase, InflationStage } from '../models';
 
@@ -11,8 +12,8 @@ import type { EnemyPhase, InflationStage } from '../models';
 
 /** What `EnemyAudioView` reads about one creature. */
 export interface EnemyAudioViewBindings {
-    /** The chip to play on. It is the view's output, not a query of the model, so it is read once. */
-    readonly sound: Audio80;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** What the creature is doing. */
     readonly phase: () => EnemyPhase;
     /** How far the creature is pumped up, from 0 to 4. Each rise is a pump. */
@@ -41,7 +42,7 @@ export interface EnemyAudioViewBindings {
  * starting. A new creature arrives at stage 0, on patrol, with no fire.
  */
 export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { sfx } = bindings;
     const view = new Container();
     view.label = 'enemy-audio';
     const watcher = watch({
@@ -70,7 +71,7 @@ export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
     }
 
     function play(effect: Audio80Sound | undefined): void {
-        if (effect !== undefined) sound.play(effect);
+        if (effect !== undefined) sfx.play(effect);
     }
 }
 

@@ -9,8 +9,11 @@
  *
  * A chip plays one song at a time, on a sequencer of its own. In a browser,
  * the sequencer runs on the audio thread, on the sound card's clock, so a
- * late frame never holds the music up. Sounds play over the song, each on a
- * voice the chip chooses.
+ * late frame never holds the music up. Sounds play, each on a voice the chip
+ * chooses. A chip can play a song and sounds together, but a sound may take
+ * a song's voice until that channel's next note takes it back, as on the old
+ * consoles. So a game plays its music on one chip and its sound effects on
+ * another.
  *
  * What it reports of the song, `song`, `orderIndex`, `row` and `beat`, is
  * what the listener hears now. In a browser, that trails what was asked by
@@ -37,10 +40,10 @@ export interface SoundChip<Song, Sound, PlayOptions> {
      * Plays a sound or a song, and returns the play's id, which `stop`
      * takes.
      *
-     * A sound plays now, on a voice the chip chooses from those the music
-     * does not keep. It picks a free voice if there is one. If not, it takes
-     * the voice of the oldest sound whose priority is no higher than this
-     * one's. If there is none, the sound doesn't play. A sound played with a
+     * A sound plays now, on a voice the chip chooses. It picks a free voice
+     * if there is one. If not, it takes the voice of the oldest song note, or
+     * of the oldest sound whose priority is no higher than this one's. If
+     * there is none, the sound doesn't play. A sound played with a
      * `lengthMs` of `Infinity` holds its note until it is stopped.
      *
      * A song starts from its beginning, in place of any song playing, and
@@ -90,30 +93,31 @@ export interface SoundChip<Song, Sound, PlayOptions> {
      * the song started at.
      */
     tempoScale: number;
-    /** Whether the chip is paused. A chip starts unpaused. */
+    /**
+     * Whether the chip is paused by `pause`. A chip starts unpaused. A
+     * browser's chip also holds its sound while the page is hidden, unless
+     * it was made with `pauseWhenHidden: false`, but that leaves `isPaused`
+     * as it is.
+     */
     readonly isPaused: boolean;
     /**
      * Holds the chip where it is, as a game pauses: its voices fade out at
      * once and keep their place, and its song stops moving. Call it as the
-     * game pauses, and as the page is hidden, if its sound should stop then.
-     * A chip on the same audio context plays on, so a pause menu can play
-     * its sounds on a chip of its own. Pausing a paused chip does nothing.
+     * game pauses. A chip on the same audio context plays on, so a pause menu
+     * can play its sounds on a chip of its own. Pausing a paused chip does
+     * nothing.
      */
     pause: () => void;
     /** Plays the chip on from where `pause` held it, fading its voices back in at once. Resuming a chip that isn't paused does nothing. */
     resume: () => void;
-    /** The whole chip's volume, 0 to 1. A value outside that range is clamped to it. */
+    /**
+     * The chip's volume, 0 to 1, where 1 plays its songs and sounds as they
+     * are written. A value outside that range is clamped to it. A change
+     * settles over about 30 ms, so it doesn't click.
+     */
     volume: number;
     /** Whether the chip is muted. A muted chip is silent, whatever `volume` says. */
     isMuted: boolean;
-    /**
-     * A gain on the voices playing music, from 0 to 2. A value outside that
-     * range is clamped to it. At 1, the voices play as their songs are
-     * written. It is the listener's setting, so `stop` leaves it alone.
-     */
-    musicVolume: number;
-    /** A gain on the voices playing sounds on their own. It works like `musicVolume`. */
-    effectsVolume: number;
     /** Stops the chip for good and releases what it holds, such as its worklet in a browser. Calls after this do nothing. */
     destroy: () => void;
 }
@@ -150,12 +154,9 @@ export interface SongSequencer<S> {
 // Functions
 // ---------------------------------------------------------------------------
 
-/** The highest `musicVolume` and `effectsVolume`, which plays twice as loud as written. */
-export const MAX_MIX_VOLUME = 2;
-
-/** Clamps a volume to the range 0 to `max`. NaN becomes 0. */
-export function clampVolume(value: number, max: number): number {
-    return value > 0 ? (value < max ? value : max) : 0;
+/** Clamps a volume to the range 0 to 1. NaN becomes 0. */
+export function clampVolume(value: number): number {
+    return value > 0 ? (value < 1 ? value : 1) : 0;
 }
 
 /**

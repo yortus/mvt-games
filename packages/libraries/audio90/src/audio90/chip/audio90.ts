@@ -87,8 +87,6 @@ export interface Audio90Writer {
      * still, and the echo keeps the last tempo above 0.
      */
     setTempo: (bpm: number, atMs?: number) => void;
-    /** Keeps voices 0 to `count` - 1 for music from `atMs`. Sounds played on their own play only on the rest. */
-    reserveVoices: (count: number, atMs?: number) => void;
     /** Releases every voice, music and sounds alike, as soon as it can. `stop` with no id calls it. */
     releaseAll: () => void;
 }

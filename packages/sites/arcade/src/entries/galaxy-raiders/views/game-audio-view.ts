@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import { GAME_OVER, RESPAWN, SHIP_HIT, SHOT, STAGE_CLEAR, STAGE_FANFARE, STAGE_TUNE } from '../data';
 import type { GamePhase } from '../models';
 
@@ -11,8 +11,10 @@ import type { GamePhase } from '../models';
 
 /** What a `GameAudioView` plays on, and the state it plays the sounds of. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio80'>;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. The view starts and stops the music as it changes. */
     readonly phase: () => GamePhase;
     /** Shots fired this game. The view plays a shot each time the count rises. */
@@ -46,11 +48,9 @@ export const HURRY_TEMPO = 1.15;
  * pauses with the game.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    // The play of the song playing, which `stop` takes, so stopping the music leaves the sounds playing
-    let musicId = 0;
     const watcher = watch({ phase: bindings.phase, shots: bindings.shotsFired });
 
     setRefresh(view, refresh);
@@ -61,32 +61,32 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         // The first poll sees the starting phase as a change, so the game opens with the fanfare
         if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
         // A rise in the count is a shot. The first poll and a reset to 0 on a restart are not rises
-        if (w.shots.increased) sound.play(SHOT);
+        if (w.shots.increased) sfx.play(SHOT);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        sound.tempoScale = sound.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
+        music.tempoScale = music.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
         switch (phase) {
             case 'playing':
                 if (previous === 'dying') {
-                    sound.play(RESPAWN);
-                    musicId = sound.play(STAGE_TUNE);
+                    sfx.play(RESPAWN);
+                    music.play(STAGE_TUNE);
                 }
                 else {
-                    musicId = sound.play(STAGE_FANFARE);
-                    sound.queue(STAGE_TUNE);
+                    music.play(STAGE_FANFARE);
+                    music.queue(STAGE_TUNE);
                 }
                 break;
             case 'dying':
-                sound.stop(musicId);
-                sound.play(SHIP_HIT);
+                music.stop();
+                sfx.play(SHIP_HIT);
                 break;
             case 'stage-clear':
-                musicId = sound.play(STAGE_CLEAR);
+                music.play(STAGE_CLEAR);
                 break;
             case 'game-over':
-                musicId = sound.play(GAME_OVER);
+                music.play(GAME_OVER);
                 break;
         }
     }

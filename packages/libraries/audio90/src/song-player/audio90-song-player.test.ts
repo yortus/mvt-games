@@ -35,8 +35,7 @@ describe('song player, on an Audio90', () => {
         player.update(ROW_MS * 2.5);
         expect(chip.log).toEqual([]);
         player.refresh();
-        expect(chip.log[0]).toEqual({ kind: 'reserve-voices', count: 2, time: 0 });
-        expect(chip.log).toContainEqual({ kind: 'set-tempo', bpm: BPM, time: 0 });
+        expect(chip.log[0]).toEqual({ kind: 'set-tempo', bpm: BPM, time: 0 });
         expect(chip.log).toContainEqual({ kind: 'set-effect', effect: 'pump', setting: 'voice', value: 1, time: 0 });
         expect(chip.log).toContainEqual({ kind: 'set-voice', voice: 0, setting: 'pan', value: -0.5, time: 0 });
         expect(listNoteOns(chip.log).map((write) => [write.voice, write.note, write.time])).toEqual([[0, 57, 0], [1, 36, 0], [0, 60, 2 * ROW_MS], [1, 36, 2 * ROW_MS]]);
@@ -71,7 +70,7 @@ describe('song player, on an Audio90', () => {
         expect(chip.log).toContainEqual({ kind: 'set-tempo', bpm: BPM, time: 12 * ROW_MS });
     });
 
-    it('plays a queued song at the end of the first, and gives the voices back when it stops', () => {
+    it('plays a queued song at the end of the first, and releases its notes when it stops', () => {
         const chip = createHeadlessAudio90({ record: true });
         const player = createSongPlayer({ audio90: asWriter(chip) });
         const next = createAudio90Song({ bpm: 120, instruments: { S: SAW }, patterns: { p: '| C-5 S' }, order: ['p'] });
@@ -79,10 +78,11 @@ describe('song player, on an Audio90', () => {
         player.queue(next);
         tick(chip, player, 1000 / 60, computeSongDurationMs(GROOVE) + 50);
         expect(player.song).toBe(next);
-        expect(chip.log).toContainEqual({ kind: 'reserve-voices', count: 1, time: computeSongDurationMs(GROOVE) });
+        // The queued song sets its tempo as it starts, at the end of the first
+        expect(chip.log).toContainEqual({ kind: 'set-tempo', bpm: next.bpm, time: computeSongDurationMs(GROOVE) });
         player.stop();
         player.refresh();
-        expect(chip.log.at(-1)).toMatchObject({ kind: 'reserve-voices', count: 0 });
+        expect(chip.log.at(-1)).toMatchObject({ kind: 'note-off', voice: 0 });
         expect(player.isPlaying).toBe(false);
     });
 

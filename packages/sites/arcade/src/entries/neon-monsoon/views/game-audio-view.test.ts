@@ -27,116 +27,119 @@ describe('GameAudioView', () => {
     });
 
     it('starts the stage\'s theme as the game starts', () => {
-        const { chip, tick } = setUp();
+        const { music, tick } = setUp();
         // The theme starts as the view is made, so its first tick, run by `setUp`, is one of the ticks listened to
         runTicks(tick, SONG_TICKS - 1);
-        expect(describeSongNotes(chip.log)).toEqual(recordSong(STAGE_THEME));
+        expect(describeSongNotes(music.log)).toEqual(recordSong(STAGE_THEME));
     });
 
     for (const previous of ['tally', 'game-over', 'all-clear'] as const) {
         it(`starts the stage's theme again as play follows the ${previous} phase`, () => {
-            const { chip, state, tick } = setUp();
+            const { music, state, tick } = setUp();
             state.phase = previous;
             tick();
             state.phase = 'playing';
             runTicks(tick, SONG_TICKS + 1);
-            expect(describeSongNotes(chip.log)).toEqual(recordSong(STAGE_THEME));
+            expect(describeSongNotes(music.log)).toEqual(recordSong(STAGE_THEME));
         });
     }
 
     for (const [phase, song] of [['tally', STAGE_CLEAR], ['game-over', GAME_OVER], ['all-clear', ALL_CLEAR]] as const) {
         it(`plays its own song as the game turns to the ${phase} phase`, () => {
-            const { chip, state, tick } = setUp();
+            const { music, state, tick } = setUp();
             state.phase = phase;
             runTicks(tick, SONG_TICKS + 1);
-            expect(describeSongNotes(chip.log)).toEqual(recordSong(song));
+            expect(describeSongNotes(music.log)).toEqual(recordSong(song));
         });
     }
 
     it('plays the guns\' first blip in the game\'s first tick', () => {
-        const { chip } = setUp({ isFiring: true });
-        expect(listPlays(chip.log, SHOT)).toHaveLength(1);
+        const { sfx } = setUp({ isFiring: true });
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(1);
     });
 
     it('patters while the guns fire, focused or not, and stops when they stop', () => {
-        const { chip, state, tick } = setUp();
+        const { music, sfx, state, tick } = setUp();
         state.isFiring = true;
         tickFor(tick, 1000);
-        expect(listPlays(chip.log, SHOT).length).toBeGreaterThan(3);
+        expect(listPlays(sfx.log, SHOT).length).toBeGreaterThan(3);
         state.isFocused = true;
         tickFor(tick, 1000);
-        expect(listPlays(chip.log, FOCUSED_SHOT).length).toBeGreaterThan(3);
+        expect(listPlays(sfx.log, FOCUSED_SHOT).length).toBeGreaterThan(3);
         state.isFiring = false;
-        chip.clear();
+        music.clear();
+        sfx.clear();
         tickFor(tick, 1000);
-        expect(listPlays(chip.log, SHOT)).toHaveLength(0);
-        expect(listPlays(chip.log, FOCUSED_SHOT)).toHaveLength(0);
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(0);
+        expect(listPlays(sfx.log, FOCUSED_SHOT)).toHaveLength(0);
     });
 
     it('sweeps down as the ship focuses in play, and not as it lets go or after the game ends', () => {
-        const { chip, state, tick } = setUp();
+        const { sfx, state, tick } = setUp();
         state.isFocused = true;
         tick();
         state.isFocused = false;
         tick();
-        expect(listPlays(chip.log, FOCUS)).toHaveLength(1);
+        expect(listPlays(sfx.log, FOCUS)).toHaveLength(1);
         state.phase = 'all-clear';
         tick();
         state.isFocused = true;
         tick();
-        expect(listPlays(chip.log, FOCUS)).toHaveLength(1);
+        expect(listPlays(sfx.log, FOCUS)).toHaveLength(1);
     });
 
     it('plays each explosion by its size', () => {
-        const { chip, state, tick } = setUp();
+        const { sfx, state, tick } = setUp();
         const sizes: readonly ExplosionSize[] = ['small', 'large', 'huge'];
         for (const size of sizes) {
             state.lastExplosionSize = size;
             state.explosionsStarted++;
             tick();
         }
-        expect(listPlays(chip.log, EXPLODE_SMALL)).toHaveLength(1);
-        expect(listPlays(chip.log, EXPLODE_LARGE)).toHaveLength(1);
-        expect(listPlays(chip.log, EXPLODE_HUGE)).toHaveLength(1);
+        expect(listPlays(sfx.log, EXPLODE_SMALL)).toHaveLength(1);
+        expect(listPlays(sfx.log, EXPLODE_LARGE)).toHaveLength(1);
+        expect(listPlays(sfx.log, EXPLODE_HUGE)).toHaveLength(1);
     });
 
     it('plays the ship\'s loss instead of its explosion, then its return, with the music playing on', () => {
-        const { chip, state, tick } = setUp();
+        const { music, sfx, state, tick } = setUp();
         state.phase = 'dying';
         state.lastExplosionSize = 'large';
         state.explosionsStarted++;
         tick();
-        expect(listPlays(chip.log, SHIP_EXPLODE)).toHaveLength(1);
-        expect(listPlays(chip.log, EXPLODE_LARGE)).toHaveLength(0);
+        expect(listPlays(sfx.log, SHIP_EXPLODE)).toHaveLength(1);
+        expect(listPlays(sfx.log, EXPLODE_LARGE)).toHaveLength(0);
 
-        chip.clear();
+        music.clear();
+
+        sfx.clear();
         state.phase = 'playing';
         tick();
-        expect(listPlays(chip.log, RESPAWN)).toHaveLength(1);
-        expect(listWrites(chip.log, 'reserve-voices')).toHaveLength(0);
+        expect(listPlays(sfx.log, RESPAWN)).toHaveLength(1);
+        expect(listWrites(music.log, 'stop')).toHaveLength(0);
     });
 
     it('chimes for each extra life, even one earned as the stage is cleared, and not as a new game starts the count again', () => {
-        const { chip, state, tick } = setUp();
+        const { sfx, state, tick } = setUp();
         state.extendsEarned++;
         tick();
-        expect(listPlays(chip.log, EXTEND)).toHaveLength(1);
+        expect(listPlays(sfx.log, EXTEND)).toHaveLength(1);
 
         state.phase = 'tally';
         state.extendsEarned++;
         tick();
-        expect(listPlays(chip.log, EXTEND)).toHaveLength(2);
+        expect(listPlays(sfx.log, EXTEND)).toHaveLength(2);
 
         state.phase = 'game-over';
         tick();
         state.phase = 'playing';
         state.extendsEarned = 0;
         tick();
-        expect(listPlays(chip.log, EXTEND)).toHaveLength(2);
+        expect(listPlays(sfx.log, EXTEND)).toHaveLength(2);
     });
 
     it('plays a sound for each kind of pickup, a gem, a graze and a bomb', () => {
-        const { chip, state, tick } = setUp();
+        const { sfx, state, tick } = setUp();
         const pickUp = (kind: ItemKind): void => {
             state.lastItemKind = kind;
             state.itemsCollected++;
@@ -148,73 +151,78 @@ describe('GameAudioView', () => {
         state.grazes++;
         state.isBombing = true;
         tick();
-        expect(listPlays(chip.log, POWER_UP)).toHaveLength(1);
-        expect(listPlays(chip.log, BOMB_PICKUP)).toHaveLength(1);
-        expect(listPlays(chip.log, GEM)).toHaveLength(1);
-        expect(listPlays(chip.log, GRAZE)).toHaveLength(1);
-        expect(listPlays(chip.log, BOMB)).toHaveLength(1);
+        expect(listPlays(sfx.log, POWER_UP)).toHaveLength(1);
+        expect(listPlays(sfx.log, BOMB_PICKUP)).toHaveLength(1);
+        expect(listPlays(sfx.log, GEM)).toHaveLength(1);
+        expect(listPlays(sfx.log, GRAZE)).toHaveLength(1);
+        expect(listPlays(sfx.log, BOMB)).toHaveLength(1);
     });
 
     it('stops the theme and sounds the warning as it starts, sounds it again while it shows, then plays the boss\'s theme', () => {
-        const { chip, state, tick } = setUp();
-        chip.clear();
+        const { music, sfx, state, tick } = setUp();
+        music.clear();
+        sfx.clear();
         runWarning(state, tick, TICK_MS);
-        expect(listWrites(chip.log, 'reserve-voices')).toEqual([expect.objectContaining({ count: 0 })]);
-        expect(listPlays(chip.log, WARNING)).toHaveLength(1);
+        expect(listWrites(music.log, 'stop')).toHaveLength(1);
+        expect(listPlays(sfx.log, WARNING)).toHaveLength(1);
         runWarning(state, tick, 2000);
-        expect(listPlays(chip.log, WARNING).length).toBeGreaterThan(2);
+        expect(listPlays(sfx.log, WARNING).length).toBeGreaterThan(2);
 
         state.warningElapsedMs = -1;
         state.bossPhase = 'entering';
-        chip.clear();
+        music.clear();
+        sfx.clear();
         runTicks(tick, SONG_TICKS + 1);
-        expect(listPlays(chip.log, WARNING)).toHaveLength(0);
-        expect(describeSongNotes(chip.log)).toEqual(recordSong(BOSS_THEME));
+        expect(listPlays(sfx.log, WARNING)).toHaveLength(0);
+        expect(describeSongNotes(music.log)).toEqual(recordSong(BOSS_THEME));
     });
 
     it('stops sounding the warning when the game ends during it', () => {
-        const { chip, state, tick } = setUp();
+        const { music, sfx, state, tick } = setUp();
         runWarning(state, tick, 500);
         // The game stops, and its warning timer with it, but the views still tick
         state.phase = 'game-over';
         tick();
-        chip.clear();
+        music.clear();
+        sfx.clear();
         tickFor(tick, 3000);
-        expect(listPlays(chip.log, WARNING)).toHaveLength(0);
+        expect(listPlays(sfx.log, WARNING)).toHaveLength(0);
     });
 
     it('ticks while shots land on the boss, and plays a break as an attack ends', () => {
-        const { chip, state, tick } = setUp();
+        const { music, sfx, state, tick } = setUp();
         state.bossPhase = 'attacking';
         state.bossMsSinceHit = 0;
         tickFor(tick, 500);
-        expect(listPlays(chip.log, BOSS_HIT).length).toBeGreaterThan(2);
+        expect(listPlays(sfx.log, BOSS_HIT).length).toBeGreaterThan(2);
         state.bossMsSinceHit = Infinity;
         state.bossPhase = 'breaking';
-        chip.clear();
+        music.clear();
+        sfx.clear();
         tickFor(tick, 500);
-        expect(listPlays(chip.log, BOSS_HIT)).toHaveLength(0);
-        expect(listPlays(chip.log, ATTACK_BROKEN)).toHaveLength(1);
+        expect(listPlays(sfx.log, BOSS_HIT)).toHaveLength(0);
+        expect(listPlays(sfx.log, ATTACK_BROKEN)).toHaveLength(1);
     });
 
     it('plays a break and stops the music as the last attack ends', () => {
-        const { chip, state, tick } = setUp({ bossPhase: 'attacking' });
-        chip.clear();
+        const { music, sfx, state, tick } = setUp({ bossPhase: 'attacking' });
+        music.clear();
+        sfx.clear();
         state.bossPhase = 'exploding';
         tick();
-        expect(listPlays(chip.log, ATTACK_BROKEN)).toHaveLength(1);
-        expect(listWrites(chip.log, 'reserve-voices')).toEqual([expect.objectContaining({ count: 0 })]);
+        expect(listPlays(sfx.log, ATTACK_BROKEN)).toHaveLength(1);
+        expect(listWrites(music.log, 'stop')).toHaveLength(1);
     });
 
     it('plays each sound where it happens: the ship\'s where the ship is, the boss\'s where the boss is, and each explosion where it went off', () => {
-        const { chip, state, tick } = setUp({ shipX: 0, bossX: ARENA / 2, lastExplosionX: ARENA });
+        const { sfx, state, tick } = setUp({ shipX: 0, bossX: ARENA / 2, lastExplosionX: ARENA });
         state.grazes++;
         state.lastExplosionSize = 'small';
         state.explosionsStarted++;
         state.bossPhase = 'breaking';
         state.isBombing = true;
         tick();
-        const panOf = (effect: Play['sound']) => listPlays(chip.log, effect)[0]?.options?.pan;
+        const panOf = (effect: Play['sound']) => listPlays(sfx.log, effect)[0]?.options?.pan;
         expect(panOf(GRAZE)).toBeLessThan(-0.5);
         expect(panOf(EXPLODE_SMALL)).toBeGreaterThan(0.5);
         expect(panOf(ATTACK_BROKEN)).toBeCloseTo(0, 9);
@@ -223,8 +231,8 @@ describe('GameAudioView', () => {
     });
 
     it('plays nothing for the counts\' starting values', () => {
-        const { chip } = setUp({ grazes: 40, explosionsStarted: 12, itemsCollected: 3, gemsCollected: 90, extendsEarned: 1 });
-        expect(listWrites(chip.log, 'play')).toHaveLength(0);
+        const { music, sfx } = setUp({ grazes: 40, explosionsStarted: 12, itemsCollected: 3, gemsCollected: 90, extendsEarned: 1 });
+        expect([listWrites(music.log, 'play'), listWrites(sfx.log, 'play')]).toEqual([[], []]);
     });
 });
 
@@ -270,9 +278,11 @@ function setUp(initial: Partial<State> = {}) {
         lastExplosionSize: undefined, itemsCollected: 0, lastItemKind: undefined, gemsCollected: 0,
         shipX: ARENA / 2, bossX: ARENA / 2, lastExplosionX: ARENA / 2, ...initial,
     };
-    const chip = createHeadlessAudio90({ record: true });
+    const music = createHeadlessAudio90({ record: true });
+    const sfx = createHeadlessAudio90({ record: true });
     const view = GameAudioView({
-        sound: chip,
+        music,
+        sfx,
         phase: () => state.phase,
         extendsEarned: () => state.extendsEarned,
         isBombing: () => state.isBombing,
@@ -292,14 +302,15 @@ function setUp(initial: Partial<State> = {}) {
         lastExplosionX: () => state.lastExplosionX,
         arenaWidth: ARENA,
     });
-    // One tick as the Arcade runs it: the chip's clock, then the view's update and refresh
+    // One tick as the Arcade runs it: the chips' clocks, then the view's update and refresh
     const tick = (): void => {
-        chip.update(TICK_MS);
+        music.update(TICK_MS);
+        sfx.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
     tick();
-    return { chip, state, tick };
+    return { music, sfx, state, tick };
 }
 
 function runTicks(tick: () => void, count: number): void {
@@ -330,16 +341,16 @@ function listPlays(log: readonly Audio90Write[], effect: Play['sound']): Play[] 
 
 /**
  * Describes each note-on of the song started last in `log`, as its voice, its
- * note and its time. A song starts by reserving its voices, so the notes
- * described are those after the last write that reserves more than none. The
- * time is in ms from the song's first note-on, to three decimal places. So the
- * notes of one song match even when it started at different chip times.
+ * note and its time. A song starts by setting the chip's tempo, and these
+ * songs play at their own tempo throughout, so the notes described are those
+ * after the last tempo set. The time is in ms from the song's first note-on, to
+ * three decimal places. So the notes of one song match even when it started
+ * at different chip times.
  */
 function describeSongNotes(log: readonly Audio90Write[]): string[] {
     let start = 0;
     for (let i = 0; i < log.length; i++) {
-        const write = log[i];
-        if (write.kind === 'reserve-voices' && write.count > 0) start = i;
+        if (log[i].kind === 'set-tempo') start = i;
     }
     const noteOns = log.slice(start).filter((write): write is NoteOn => write.kind === 'note-on');
     const startMs = noteOns.length > 0 ? noteOns[0].time : 0;

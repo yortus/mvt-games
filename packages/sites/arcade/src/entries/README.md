@@ -385,18 +385,20 @@ lays itself out for the area it is given, as Boids does), and
 
 ### Sound
 
-If your entry makes sound, its starter names the sound chip it plays on.
-There are two virtual sound chips, from `audio90`. The **Audio80** is
-in the spirit of the 1980s home computers. The **Audio90** has sixteen
-stereo voices of FM, analog and samples, in the spirit of the 1990s. The
-[Tune Tracker](./tune-tracker/start/load.ts) plays on the Audio90.
+If your entry makes sound, its starter names the kind of sound chip it
+plays on. There are two virtual sound chips, from `audio90`. The **Audio80**
+has four voices, in the spirit of the 1980s home computers. The **Audio90**
+has sixteen stereo voices of FM, analog and samples, in the spirit of the
+1990s. The [Tune Tracker](./tune-tracker/start/load.ts) plays on the Audio90.
 
-You name the chip in your starter's `soundChip`. `definePixiLoader` works
-out the chip's type from it, so `start` is given that chip as `sound`, with
-the right type. You don't need to write any types yourself. If you name a
-chip that doesn't exist, or use `sound` as the other chip, TypeScript tells
-you. The host loads the chip as it prepares your entry, and gives it to
-each session for your audio views:
+You name the kind in your starter's `soundChip`. The host gives each session
+two chips of that kind: `music`, which your songs play on, and `sfx`, which
+your sound effects play on. Each plays at the volume the visitor set for it,
+and a sound effect never takes a voice from a song. `definePixiLoader` works
+out the chips' types from `soundChip`, so you don't need to write any types
+yourself. If you name a chip that doesn't exist, or use a chip as the other
+kind, TypeScript tells you. The host loads the chips as it prepares your
+entry, and gives them to each session for your audio views:
 
 ```ts
 export const load = definePixiLoader(async () => {
@@ -406,14 +408,19 @@ export const load = definePixiLoader(async () => {
         kind: 'pixi',
         soundChip: 'audio80',
         // ...
-        start({ stage, sound }): EntrySession {   // sound: Audio80
+        start({ stage, music, sfx }): EntrySession {
             const gameModel = createGameModel({ /* options */ });
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, music, sfx });
             // ...
         },
     };
 });
 ```
+
+A view takes the chips it plays on as bindings, typed `MusicChip<'audio80'>`
+and `SfxChip<'audio80'>`, from `#shared`. They have only what a view
+plays with, such as `play` and `stop`. Pausing the chips and their volumes
+are the host's.
 
 Choose the chip that matches your entry's decade.
 [Using the Audio90](../../../../libraries/audio90/docs/using-the-audio90.md#which-chip)
@@ -427,9 +434,9 @@ prepareAudio90Samples(SAMPLES);
 ```
 
 If your entry makes no sound, leave `soundChip` out, as the Breakout
-example above does. Then its start options have no `sound`, and the host
-doesn't load a chip for it. If you read `sound` anyway, you'll find it
-typed `undefined`, so you can't give it to an audio view by mistake.
+example above does. Then its start options have no `music` or `sfx`, and
+the host doesn't load a chip for it. If you read them anyway, you'll find
+them typed `undefined`, so you can't give one to an audio view by mistake.
 
 ### Entries with their own renderers
 

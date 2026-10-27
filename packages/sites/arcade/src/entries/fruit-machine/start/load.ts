@@ -31,7 +31,7 @@ export const load = defineElementLoader(async () => {
         kind: 'element',
         soundChip: 'audio80',
         thumbnailAdvanceMs: 500,
-        start({ element, sound }): ElementEntrySession {
+        start({ element, music, sfx }): ElementEntrySession {
             element.classList.add('fruit-machine');
             element.innerHTML = QUADRANTS_HTML;
 
@@ -82,7 +82,7 @@ export const load = defineElementLoader(async () => {
 
             // --- Sound: a fifth view, with no visuals -------------------------
             // Never added to the page: the host walks it with the other views
-            const audio = MachineAudioView({ model, sound });
+            const audio = MachineAudioView({ model, music, sfx });
 
             // --- Sizing ------------------------------------------------------
             const pixiObserver = new ResizeObserver(fitPixi);

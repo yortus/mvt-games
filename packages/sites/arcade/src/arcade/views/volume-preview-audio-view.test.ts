@@ -2,38 +2,39 @@
 import { describe, expect, it } from 'vitest';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import { refreshView, updateView } from '@mvtjs/html';
-import { EFFECTS_PREVIEW, MUSIC_PREVIEW } from '../data';
+import { SFX_PREVIEW, MUSIC_PREVIEW } from '../data';
 import { VolumePreviewAudioView } from './volume-preview-audio-view';
 
 describe('VolumePreviewAudioView', () => {
-    it('previews a change to the music\'s volume with a phrase, and to the effects\' volume with a blip', () => {
-        const { view, state, chip } = setUp();
+    it('previews a change to the music\'s volume with a phrase on the music chip, and to the sound effects\' with a blip on theirs', () => {
+        const { view, state, music, sfx } = setUp();
         state.musicVolume = 0.7;
-        state.effectsVolume = 0.3;
+        state.sfxVolume = 0.3;
         refreshView(view);
-        expect(chip.log).toContainEqual(expect.objectContaining({ kind: 'reserve-voices', count: MUSIC_PREVIEW.channelCount }));
-        expect(listPlays(chip.log)).toEqual([EFFECTS_PREVIEW]);
+        expect(music.song).toBe(MUSIC_PREVIEW);
+        expect(listPlays(sfx.log)).toEqual([SFX_PREVIEW]);
     });
 
     it('previews nothing as the menu opens, nor a volume turned off', () => {
-        const { view, state, chip } = setUp({ isOpen: false });
+        const { view, state, music, sfx } = setUp({ isOpen: false });
         state.isOpen = true;
         state.musicVolume = 0.9;
         refreshView(view);
-        state.effectsVolume = 0;
+        state.sfxVolume = 0;
         refreshView(view);
-        expect(chip.log).toHaveLength(0);
+        expect([music.log, sfx.log]).toEqual([[], []]);
     });
 
     it('stops the music\'s preview as the menu closes', () => {
-        const { view, state, chip } = setUp();
+        const { view, state, music } = setUp();
         state.musicVolume = 0.7;
         refreshView(view);
         updateView(view, PHRASE_STARTED_MS);
         refreshView(view);
+        expect(music.song).toBe(MUSIC_PREVIEW);
         state.isOpen = false;
         refreshView(view);
-        expect(chip.log[chip.log.length - 1]).toMatchObject({ kind: 'reserve-voices', count: 0 });
+        expect(music.song).toBeUndefined();
     });
 });
 
@@ -45,17 +46,19 @@ function setUp(initial: { isOpen?: boolean } = {}) {
     const state = {
         isOpen: initial.isOpen ?? true,
         musicVolume: 0.5,
-        effectsVolume: 0.5,
+        sfxVolume: 0.5,
     };
-    const chip = createHeadlessAudio80({ record: true });
+    const music = createHeadlessAudio80({ record: true });
+    const sfx = createHeadlessAudio80({ record: true });
     const view = VolumePreviewAudioView({
-        sound: chip,
+        music,
+        sfx,
         isOpen: () => state.isOpen,
         musicVolume: () => state.musicVolume,
-        effectsVolume: () => state.effectsVolume,
+        sfxVolume: () => state.sfxVolume,
     });
     refreshView(view);
-    return { view, state, chip };
+    return { view, state, music, sfx };
 }
 
 /** A moment into the music's preview, once some of it has played. */

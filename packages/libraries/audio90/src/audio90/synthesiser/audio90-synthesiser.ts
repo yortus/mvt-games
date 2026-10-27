@@ -16,10 +16,8 @@ import {
     OP90_PLAY,
     OP90_PLAY_OPTIONS,
     OP90_RELEASE_ALL,
-    OP90_RESERVE_VOICES,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
-    OP90_SET_MIX,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
     OP90_STOP,
@@ -93,11 +91,9 @@ export interface Audio90Synthesiser {
     /**
      * Cuts every voice, empties the queue, and forgets every sound and
      * sample. The effects, the character and the tempo go back to
-     * their defaults. The mix stays as it is, because it is the listener's.
+     * their defaults.
      */
     reset: () => void;
-    /** Sets a bus's gain at once, without a ramp: 0 for music, 1 for sounds played on their own, from 0 to 2. */
-    setMix: (bus: number, gain: number) => void;
     /** Whether voice `voice` is making a sound. */
     isSounding: (voice: number) => boolean;
     /** How many analog oscillators the sounding voices run, which `AUDIO90_OSCILLATOR_BUDGET` caps. */
@@ -164,7 +160,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const maxCutoffHz = sampleRate * MAX_CUTOFF_SHARE;
     const controlMs = CONTROL_SAMPLES * msPerAudioSample;
     const defaultCharacter = AUDIO90_CHARACTERS.indexOf(options.character ?? 'studio');
-    const mixRamp = adapt(MIX_RAMP_AT_48K, sampleRate);
     const consoleSmoothing = 1 - Math.exp(-2 * Math.PI * CONSOLE_SAMPLE_HZ / sampleRate);
 
     const sounds = new Map<number, Audio90SoundData>();
@@ -297,7 +292,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const startedAt = new Float64Array(V);
     const soundVoices: SoundVoices = { soundId, soundPriority, startedAt, isSounding: isVoiceSounding };
     const playId = new Float64Array(V);
-    let musicVoices = 0;
     // How the next play plays, as its `OP90_PLAY_OPTIONS` said: its length in ms, or -1 to hold, its glide's note, or
     // -1, and its pan, if it has one of its own
     let nextPlayLengthMs = -1;
@@ -310,7 +304,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const currentNote = driver.currentNote;
     const noteSamples = driver.noteSamples;
 
-    // ---- Effects and the mix ---------------------------------------------------
+    // ---- Effects ----------------------------------------------------------------
     const chorusSize = Math.ceil(sampleRate * CHORUS_LINE_S);
     const chorusLine = new Float32Array(chorusSize);
     const echoSize = Math.ceil(sampleRate * MAX_ECHO_MS / 1000) + 1;
@@ -327,8 +321,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     // Every double that changes as sound plays is kept in a typed array. V8
     // boxes one kept in a closure variable each time it is written
     const fx = new Float64Array(FX_COUNT);
-    const mixTarget = new Float64Array([1, 1]);
-    const mixGain = new Float64Array([1, 1]);
     // The write positions, the sample count and the scope counter, as whole numbers
     const counters = new Float64Array(COUNTER_COUNT);
     let controlCountdown = 0;
@@ -409,11 +401,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             resetAll();
         },
 
-        setMix(bus, gain) {
-            if ((bus !== 0 && bus !== 1) || !Number.isFinite(gain)) return;
-            mixTarget[bus] = mixGain[bus] = clamp(gain, 0, MAX_MIX_GAIN);
-        },
-
         isSounding(voice) {
             return isVoiceSounding(voice);
         },
@@ -471,12 +458,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 break;
             case OP90_RELEASE_ALL:
                 for (let v = 0; v < V; v++) release(v);
-                break;
-            case OP90_RESERVE_VOICES:
-                musicVoices = Math.max(0, Math.min(V, Math.round(a)));
-                break;
-            case OP90_SET_MIX:
-                if (a === 0 || a === 1) mixTarget[a] = clamp(b, 0, MAX_MIX_GAIN);
                 break;
             case OP90_SET_CHARACTER:
                 if (a >= 0 && a < AUDIO90_CHARACTERS.length) character = Math.floor(a);
@@ -840,7 +821,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         hasNextPlayPan = false;
         const data = sounds.get(id);
         if (data === undefined) return;
-        const v = chooseSoundVoice(soundVoices, musicVoices, id, data.priority, data.maxVoices);
+        const v = chooseSoundVoice(soundVoices, id, data.priority, data.maxVoices);
         if (v < 0) return;
         // The voice takes none of the channel settings a song left on it. A pan of the play's own moves the
         // sound from its own pan to there
@@ -1007,8 +988,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 controlAll();
                 controlCountdown = CONTROL_SAMPLES;
             }
-            mixGain[0] += (mixTarget[0] - mixGain[0]) * mixRamp;
-            mixGain[1] += (mixTarget[1] - mixGain[1]) * mixRamp;
             fx[FX_PUMP] += (1 - fx[FX_PUMP]) * pumpCoef;
             const scopeAt = scope !== undefined && (counters[COUNTER_SCOPE] % AUDIO90_SCOPE_STRIDE) === 0
                 ? (counters[COUNTER_SCOPE] / AUDIO90_SCOPE_STRIDE) % AUDIO90_SCOPE_POINTS
@@ -1038,7 +1017,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 const isEffect = soundId[v] >= 0;
                 const accent = isAccented[v] === 1 ? 1 + ACCENT_GAIN * accentAmount[v] : 1;
                 let g = envLevel[amp] * noteVolume[v] * soundVolume[v] * stepVolume[v] * accent * lfoGain[v] * VOICE_GAIN;
-                g *= mixGain[isEffect ? 1 : 0];
                 if (!isEffect && v !== pumpVoice) g *= fx[FX_PUMP];
                 let l: number;
                 let r: number;
@@ -1496,7 +1474,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         fx.fill(0);
         fx[FX_PUMP] = 1;
         counters.fill(0);
-        musicVoices = 0;
         nextPlayLengthMs = -1;
         nextPlayGlideTo = -1;
         nextPlayPan = 0;
@@ -1552,12 +1529,6 @@ function toSampleIndex(stampMs: number, fromMs: number, msPerSample: number): nu
     return Math.ceil((stampMs - fromMs) / msPerSample);
 }
 
-/** A per-sample coefficient set at 48 kHz, for another rate, so it acts over the same time. At 48 kHz it is unchanged. */
-function adapt(coefficientAt48k: number, sampleRate: number): number {
-    if (sampleRate === 48000) return coefficientAt48k;
-    return 1 - Math.exp(Math.log(1 - coefficientAt48k) * 48000 / sampleRate);
-}
-
 /** One sample of a band-limited oscillator at phase `p`, moving `dt` a sample. */
 function oscillate(wave: number, p: number, dt: number, width: number): number {
     if (wave === WAVE90_SAW) return 2 * p - 1 - polyBlep(p, dt);
@@ -1600,8 +1571,6 @@ function computeReverbTotal(sampleRate: number): number {
 const CONTROL_SAMPLES = 32;
 const DEFAULT_QUEUE_CAPACITY = 4096;
 const VOICE_GAIN = 0.25;
-const MAX_MIX_GAIN = 2;
-const MIX_RAMP_AT_48K = 0.005;
 const MAX_DETUNE_SEMITONES = 0.5;
 const GOLDEN = 0.6180339887;
 /** How far, in cycles, a modulator at level 1 pushes its carrier. */

@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { SfxChip } from '#shared';
 import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
 import { MIN_CELLS_FOR_BIG_MATCH } from './view-constants';
@@ -12,8 +12,8 @@ import { MIN_CELLS_FOR_BIG_MATCH } from './view-constants';
 
 /** What the game's audio view reads from the game, and the chip it plays on. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. The view plays the notes for a new game and for the end as it changes. */
     readonly gamePhase: () => GamePhase;
     /** The board's phase. The view plays the moves, the matches and the landings as it changes. */
@@ -43,7 +43,7 @@ export interface GameAudioViewBindings {
  * change in the game's phase or the board's.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
     // The view does not poll here. Its first poll sees the game's first phase as a change, and plays a new game's notes.
@@ -55,22 +55,22 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     function refresh(): void {
         const w = watcher.poll();
         if (w.gamePhase.changed) {
-            if (w.gamePhase.value === 'playing') sound.play(NEW_GAME);
-            else sound.play(GAME_OVER);
+            if (w.gamePhase.value === 'playing') sfx.play(NEW_GAME);
+            else sfx.play(GAME_OVER);
         }
         // The first poll has no previous board phase. The board starts idle, so nothing has happened on it yet.
         if (w.boardPhase.changed && w.boardPhase.previous !== undefined) playBoardPhase(w.boardPhase.value, w.boardPhase.previous);
     }
 
     function playBoardPhase(phase: BoardPhase, previous: BoardPhase): void {
-        if (previous === 'settling') sound.play(LAND);
+        if (previous === 'settling') sfx.play(LAND);
         switch (phase) {
             case 'swapping':
                 // A swap that makes no line says nothing here. It knocks as it is undone, which is the answer to the move
-                if (bindings.isSwapMatching()) sound.play(SWAP);
+                if (bindings.isSwapMatching()) sfx.play(SWAP);
                 break;
             case 'reversing':
-                sound.play(SWAP_BACK);
+                sfx.play(SWAP_BACK);
                 break;
             case 'matching':
                 playMatch();
@@ -84,10 +84,10 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     function playMatch(): void {
         const step = bindings.cascadeStep();
         const index = Math.min(Math.max(step, 1), CASCADE_WHISTLES.length) - 1;
-        sound.play(CASCADE_WHISTLES[index]);
+        sfx.play(CASCADE_WHISTLES[index]);
         // The crackle is an effect of its own, so it bursts over the whistle on another voice instead of cutting it off
         const crackle = CASCADE_CRACKLES[index];
-        if (crackle !== undefined) sound.play(crackle);
-        if (bindings.matchedCellCount() >= MIN_CELLS_FOR_BIG_MATCH) sound.play(BIG_MATCH);
+        if (crackle !== undefined) sfx.play(crackle);
+        if (bindings.matchedCellCount() >= MIN_CELLS_FOR_BIG_MATCH) sfx.play(BIG_MATCH);
     }
 }

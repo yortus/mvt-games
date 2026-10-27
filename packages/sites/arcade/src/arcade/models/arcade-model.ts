@@ -176,15 +176,15 @@ export interface ArcadeModel {
      */
     musicVolume: number;
     /** The effects' volume, as for `musicVolume`. */
-    effectsVolume: number;
+    sfxVolume: number;
     /** Turns the music off, and keeps its volume for `turnMusicOn` to restore. Does nothing if the music is off. */
     readonly turnMusicOff: () => void;
     /** Turns the music on at the volume it was turned off at, or at the default. Does nothing if the music is on. */
     readonly turnMusicOn: () => void;
     /** Turns the effects off, as `turnMusicOff` does the music. */
-    readonly turnEffectsOff: () => void;
+    readonly turnSfxOff: () => void;
     /** Turns the effects on, as `turnMusicOn` does the music. */
-    readonly turnEffectsOn: () => void;
+    readonly turnSfxOn: () => void;
     /**
      * Whether all sound is muted, the music and the effects. Muting and
      * unmuting leave the volumes as they are, so each sound comes back at the
@@ -431,11 +431,11 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         set musicVolume(value) {
             changeSound({ musicVolume: clampVolume(value), musicVolumeBeforeOff: undefined });
         },
-        get effectsVolume() {
-            return soundSettings.effectsVolume;
+        get sfxVolume() {
+            return soundSettings.sfxVolume;
         },
-        set effectsVolume(value) {
-            changeSound({ effectsVolume: clampVolume(value), effectsVolumeBeforeOff: undefined });
+        set sfxVolume(value) {
+            changeSound({ sfxVolume: clampVolume(value), sfxVolumeBeforeOff: undefined });
         },
         turnMusicOff() {
             if (soundSettings.musicVolume === 0) return;
@@ -445,13 +445,13 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             if (soundSettings.musicVolume > 0) return;
             changeSound({ musicVolume: soundSettings.musicVolumeBeforeOff ?? DEFAULT_SOUND_SETTINGS.musicVolume, musicVolumeBeforeOff: undefined });
         },
-        turnEffectsOff() {
-            if (soundSettings.effectsVolume === 0) return;
-            changeSound({ effectsVolume: 0, effectsVolumeBeforeOff: soundSettings.effectsVolume });
+        turnSfxOff() {
+            if (soundSettings.sfxVolume === 0) return;
+            changeSound({ sfxVolume: 0, sfxVolumeBeforeOff: soundSettings.sfxVolume });
         },
-        turnEffectsOn() {
-            if (soundSettings.effectsVolume > 0) return;
-            changeSound({ effectsVolume: soundSettings.effectsVolumeBeforeOff ?? DEFAULT_SOUND_SETTINGS.effectsVolume, effectsVolumeBeforeOff: undefined });
+        turnSfxOn() {
+            if (soundSettings.sfxVolume > 0) return;
+            changeSound({ sfxVolume: soundSettings.sfxVolumeBeforeOff ?? DEFAULT_SOUND_SETTINGS.sfxVolume, sfxVolumeBeforeOff: undefined });
         },
         get isSoundMuted() {
             return soundSettings.isMuted;

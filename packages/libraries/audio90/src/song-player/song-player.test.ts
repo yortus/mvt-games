@@ -66,12 +66,9 @@ describe('song player', () => {
         expect(secondPass.find((write) => write.voice === 2)?.note).toBe(DRUM.note);
     });
 
-    it('releases on ===, and gives its voices back at the end', () => {
+    it('releases on ===, and stops at the end', () => {
         const { log, player } = playThrough(TUNE, () => 1000 / 60, computeSongDurationMs(TUNE) + 100);
         expect(log.some((write) => write.kind === 'note-off' && write.voice === 1 && write.time === 2 * ROW_MS)).toBe(true);
-        const reserves = log.filter((write) => write.kind === 'reserve-voices');
-        expect(reserves[0]).toMatchObject({ count: TUNE.channelCount, time: 0 });
-        expect(reserves[reserves.length - 1]).toMatchObject({ count: 0, time: computeSongDurationMs(TUNE) });
         expect(player.isPlaying).toBe(false);
     });
 
@@ -305,7 +302,6 @@ describe('song player', () => {
         player.stop();
         player.refresh();
         expect(chip.log.filter((write) => write.kind === 'note-off')).toHaveLength(TUNE.channelCount);
-        expect(chip.log[chip.log.length - 1]).toMatchObject({ kind: 'reserve-voices', count: 0 });
         expect(player.song).toBeUndefined();
     });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUDIO90_VOICE_COUNT, prepareAudio90Samples } from 'audio90';
+import { prepareAudio90Samples } from 'audio90';
 import { findSounds, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render } from 'audio90/headless';
 import { SAMPLES } from './instruments';
 import * as music from './music';
@@ -43,18 +43,12 @@ describe('neon monsoon sounds', { timeout: 30_000 }, () => {
             expect(hashSamples(samples)).toMatchSnapshot();
         });
     }
-
-    it('leaves the effects eight voices', () => {
-        for (const [, song] of songs) expect(AUDIO90_VOICE_COUNT - song.channelCount).toBeGreaterThanOrEqual(EFFECT_VOICES);
-    });
 });
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** How many of the chip's voices the music must leave free for the sound effects. */
-const EFFECT_VOICES = 8;
 /** Quieter than this, a sound is lost under the music. */
 const AUDIBLE = 0.08;
 /**

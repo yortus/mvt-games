@@ -8,7 +8,7 @@ function open(musicVolume: number): Element {
         isOpen: () => true,
         heading: () => 'GAME PAUSED',
         musicVolume: () => musicVolume,
-        effectsVolume: () => 0.5,
+        sfxVolume: () => 0.5,
     });
 }
 

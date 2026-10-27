@@ -23,9 +23,9 @@ export const load = definePixiLoader(async () => {
         // Long enough for the first kites to fly in.
         thumbnailAdvanceMs: 9000,
 
-        start({ stage, sound, bestScore }): EntrySession {
+        start({ stage, music, sfx, bestScore }): EntrySession {
             const gameModel = createGameModel({ events: STAGE_EVENTS, bossAttacks: BOSS_ATTACKS });
-            const gameView = GameView({ model: gameModel, sound, bestScore });
+            const gameView = GameView({ model: gameModel, music, sfx, bestScore });
             stage.addChild(gameView);
 
             return {

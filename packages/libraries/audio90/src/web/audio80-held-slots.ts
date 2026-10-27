@@ -3,10 +3,8 @@ import {
     FILTER_SETTINGS,
     OP_NOTE_OFF,
     OP_RELEASE_ALL,
-    OP_RESERVE_VOICES,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_MIX,
     OP_SET_VOICE,
     OP_STOP,
     VOICE_COUNT,
@@ -21,8 +19,7 @@ import { type HeldWriteSlots, isIndex, STOP_SLOT_COUNT } from './held-writes';
 /**
  * The Audio80's writes worth keeping while it cannot play: each voice's
  * latest `noteOff`, the latest `stop` of each recent play, the latest value
- * of each voice, filter and echo setting, the voices kept for music, the
- * mix, and the latest `releaseAll`.
+ * of each voice, filter and echo setting, and the latest `releaseAll`.
  */
 export const AUDIO80_HELD_SLOTS: HeldWriteSlots = createSlots();
 
@@ -34,15 +31,11 @@ export const AUDIO80_HELD_SLOTS: HeldWriteSlots = createSlots();
 function createSlots(): HeldWriteSlots {
     /** Filters `a` and `b`. */
     const filterCount = 2;
-    /** The music bus and the effects bus. */
-    const mixBusCount = 2;
     const noteOffBase = 0;
     const voiceBase = noteOffBase + VOICE_COUNT;
     const filterBase = voiceBase + VOICE_COUNT * VOICE_SETTINGS.length;
     const echoBase = filterBase + filterCount * FILTER_SETTINGS.length;
-    const reserveSlot = echoBase + ECHO_SETTINGS.length;
-    const mixBase = reserveSlot + 1;
-    const releaseAllSlot = mixBase + mixBusCount;
+    const releaseAllSlot = echoBase + ECHO_SETTINGS.length;
     const stopBase = releaseAllSlot + 1;
     return {
         slotCount: stopBase + STOP_SLOT_COUNT,
@@ -56,10 +49,6 @@ function createSlots(): HeldWriteSlots {
                     return isIndex(a, filterCount) && isIndex(b, FILTER_SETTINGS.length) ? filterBase + a * FILTER_SETTINGS.length + b : -1;
                 case OP_SET_ECHO:
                     return isIndex(a, ECHO_SETTINGS.length) ? echoBase + a : -1;
-                case OP_RESERVE_VOICES:
-                    return reserveSlot;
-                case OP_SET_MIX:
-                    return isIndex(a, mixBusCount) ? mixBase + a : -1;
                 case OP_RELEASE_ALL:
                     return releaseAllSlot;
                 case OP_STOP:

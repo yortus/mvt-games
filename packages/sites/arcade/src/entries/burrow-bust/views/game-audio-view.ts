@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import { DEATH, GAME_OVER, HARPOON, LEVEL_CLEAR, LEVEL_START, WALK_TUNE } from '../data';
 import type { GamePhase } from '../models';
 
@@ -11,8 +11,10 @@ import type { GamePhase } from '../models';
 
 /** What `GameAudioView` reads about the game. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not a query of the model, so it is read once. */
-    readonly sound: Audio80;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio80'>;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. Each change of phase plays its tune. */
     readonly phase: () => GamePhase;
     /** Whether the digger is on its way between tiles. The walking tune moves on only while it is. */
@@ -44,7 +46,7 @@ export const HURRY_TEMPO = 1.3;
  * nothing.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
     const watcher = watch({ phase: bindings.phase, harpoonShots: bindings.harpoonShots });
@@ -57,9 +59,9 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         // The first poll sees the game start, with no phase before it, so it plays the level's jingle
         if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
         // Each rise in the count is a shot. The count's first value is not a rise
-        if (w.harpoonShots.increased) sound.play(HARPOON);
+        if (w.harpoonShots.increased) sfx.play(HARPOON);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        sound.tempoScale = computeTempo();
+        music.tempoScale = computeTempo();
     }
 
     /**
@@ -68,7 +70,7 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
      * hurries while the last creature runs.
      */
     function computeTempo(): number {
-        if (sound.song !== WALK_TUNE) return 1;
+        if (music.song !== WALK_TUNE) return 1;
         if (!bindings.isDiggerMoving()) return 0;
         return bindings.isEnemyFleeing() ? HURRY_TEMPO : 1;
     }
@@ -78,21 +80,21 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
             case 'playing':
                 // Back from being caught, the walking tune starts at once. A new level or game plays its jingle first
                 if (previous === 'dying') {
-                    sound.play(WALK_TUNE);
+                    music.play(WALK_TUNE);
                 }
                 else {
-                    sound.play(LEVEL_START);
-                    sound.queue(WALK_TUNE);
+                    music.play(LEVEL_START);
+                    music.queue(WALK_TUNE);
                 }
                 break;
             case 'dying':
-                sound.play(DEATH);
+                music.play(DEATH);
                 break;
             case 'level-clear':
-                sound.play(LEVEL_CLEAR);
+                music.play(LEVEL_CLEAR);
                 break;
             case 'game-over':
-                sound.play(GAME_OVER);
+                music.play(GAME_OVER);
                 break;
         }
     }

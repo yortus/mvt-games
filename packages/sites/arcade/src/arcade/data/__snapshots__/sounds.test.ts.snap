@@ -6,8 +6,6 @@ exports[`arcade sounds > CARD_TICK sounds as it did, audible and unclipped 1`] =
 
 exports[`arcade sounds > DEVELOP sounds as it did, audible and unclipped 1`] = `"108c8ea2"`;
 
-exports[`arcade sounds > EFFECTS_PREVIEW sounds as it did, audible and unclipped 1`] = `"19a9e625"`;
-
 exports[`arcade sounds > KEY_TICK_HIGH sounds as it did, audible and unclipped 1`] = `"d0ac586c"`;
 
 exports[`arcade sounds > KEY_TICK_LOW sounds as it did, audible and unclipped 1`] = `"dd7e2010"`;
@@ -31,6 +29,8 @@ exports[`arcade sounds > POWER_OFF sounds as it did, audible and unclipped 1`] =
 exports[`arcade sounds > POWER_ON sounds as it did, audible and unclipped 1`] = `"4299d059"`;
 
 exports[`arcade sounds > RESUME sounds as it did, audible and unclipped 1`] = `"214c8852"`;
+
+exports[`arcade sounds > SFX_PREVIEW sounds as it did, audible and unclipped 1`] = `"19a9e625"`;
 
 exports[`arcade sounds > TAG_ADD sounds as it did, audible and unclipped 1`] = `"3c36ae2f"`;
 

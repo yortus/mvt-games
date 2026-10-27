@@ -9,7 +9,7 @@ import type { Audio80FilterMode, SoundData, Audio80Wave } from './sound-data';
 // shared folder, describes: an opcode, a stamp, and four operands.
 
 /** Voices on the chip, numbered from 0. */
-export const VOICE_COUNT = 8;
+export const VOICE_COUNT = 4;
 
 /** Starts a note. `a` is the voice, `b` the sound's id, `c` the note and `d` the volume. */
 export const OP_NOTE_ON = 1;
@@ -37,16 +37,6 @@ export const OP_SET_ECHO = 5;
 export const OP_PLAY = 6;
 /** Releases every voice's note. No operands. */
 export const OP_RELEASE_ALL = 7;
-/**
- * Keeps voices for music. `a` is how many, counting up from voice 0. Effects
- * play only on the voices above them.
- */
-export const OP_RESERVE_VOICES = 8;
-/**
- * Sets a bus's gain. `a` is the bus (0 for music, 1 for effects), and `b` the
- * gain, from 0 to 2. The gain ramps to its new value over about 10 ms.
- */
-export const OP_SET_MIX = 9;
 /**
  * Says how the next `OP_PLAY` plays. `a` is how long it holds its note
  * before releasing it, in ms, or -1 to hold it until it is stopped. `b` is

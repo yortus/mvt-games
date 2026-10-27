@@ -43,23 +43,24 @@ describe('GameAudioView', () => {
         expect(distinct.size).toBe(recordings.length);
     });
 
-    it('plays the fanfare as the game starts, on the music\'s voices', () => {
-        const { chip, tick } = setUpGameAudio();
+    it('plays the fanfare as the game starts, on the music chip', () => {
+        const { music, tick } = setUpGameAudio();
         runTicks(tick, SONG_TICKS);
-        expect(chip.log).toContainEqual(expect.objectContaining({ kind: 'reserve-voices', count: STAGE_FANFARE.channelCount }));
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: STAGE_FANFARE }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: STAGE_FANFARE }));
     });
 
-    it('plays a shot each time the ship fires', () => {
+    it('plays a shot each time the ship fires, on the sound effects chip', () => {
         const model = createGameModel({ waves: WAVES });
-        const chip = createHeadlessAudio80({ record: true });
+        const music = createHeadlessAudio80({ record: true });
+        const sfx = createHeadlessAudio80({ record: true });
         const view = GameAudioView({
-            sound: chip,
+            music,
+            sfx,
             phase: () => model.phase,
             shotsFired: () => model.shotsFired,
             enemiesLeft: () => model.enemiesLeft,
         });
-        const tick = createTicker({ chip, view, model });
+        const tick = createTicker({ chips: [music, sfx], view, model });
         tick();
         for (let shot = 0; shot < SHOTS; shot++) {
             model.fire();
@@ -67,81 +68,82 @@ describe('GameAudioView', () => {
             tick();
         }
         expect(model.shotsFired).toBe(SHOTS);
-        expect(listPlays(chip.log, SHOT)).toHaveLength(SHOTS);
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(SHOTS);
+        expect(listPlays(music.log, SHOT)).toHaveLength(0);
     });
 
     it('plays a shot once for a count that rises, and none for its first value or a fall to 0', () => {
-        const { chip, state, tick } = setUpGameAudio({ shotsFired: 7 });
-        expect(listPlays(chip.log, SHOT)).toHaveLength(0);
+        const { sfx, state, tick } = setUpGameAudio({ shotsFired: 7 });
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(0);
         state.shotsFired = 9;
         tick();
-        expect(listPlays(chip.log, SHOT)).toHaveLength(1);
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(1);
         state.shotsFired = 0;
         tick();
-        expect(listPlays(chip.log, SHOT)).toHaveLength(1);
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(1);
     });
 
     it('stops the music and plays the ship\'s loss, then its return and the tune', () => {
-        const { chip, state, tick } = setUpGameAudio();
+        const { music, sfx, state, tick } = setUpGameAudio();
         state.phase = 'dying';
         tick();
-        expect(listPlays(chip.log, SHIP_HIT)).toHaveLength(1);
-        expect(chip.log).toContainEqual(expect.objectContaining({ kind: 'reserve-voices', count: 0 }));
-        chip.clear();
+        expect(listPlays(sfx.log, SHIP_HIT)).toHaveLength(1);
+        expect(music.song).toBeUndefined();
+        music.clear();
         state.phase = 'playing';
         runTicks(tick, SONG_TICKS + 1);
-        expect(listPlays(chip.log, RESPAWN)).toHaveLength(1);
-        expect(chip.log).toContainEqual(expect.objectContaining({ kind: 'reserve-voices', count: STAGE_TUNE.channelCount }));
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: STAGE_TUNE }));
+        expect(listPlays(sfx.log, RESPAWN)).toHaveLength(1);
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: STAGE_TUNE }));
     });
 
     it('plays the fanfare again, and no shot, when a game starts after one ends', () => {
-        const { chip, state, tick } = setUpGameAudio({ shotsFired: 30 });
+        const { music, sfx, state, tick } = setUpGameAudio({ shotsFired: 30 });
         state.phase = 'game-over';
         tick();
-        chip.clear();
+        music.clear();
+        sfx.clear();
         state.phase = 'playing';
         state.shotsFired = 0;
         runTicks(tick, SONG_TICKS + 1);
-        expect(listPlays(chip.log, SHOT)).toHaveLength(0);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: STAGE_FANFARE }));
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(0);
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: STAGE_FANFARE }));
     });
 
     it.each([
         { enemiesLeft: HURRY_AT_MOST + 1, tempoScale: 1 },
         { enemiesLeft: HURRY_AT_MOST, tempoScale: HURRY_TEMPO },
     ])('plays the tune at $tempoScale times its tempo with $enemiesLeft raiders left', ({ enemiesLeft, tempoScale }) => {
-        const { chip, state, tick } = setUpGameAudio({ phase: 'dying', enemiesLeft });
-        chip.clear();
+        const { music, state, tick } = setUpGameAudio({ phase: 'dying', enemiesLeft });
+        music.clear();
         state.phase = 'playing';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: STAGE_TUNE, tempoScale }));
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: STAGE_TUNE, tempoScale }));
     });
 
     it('plays the stage-clear jingle at its own tempo, though no raiders are left', () => {
-        const { chip, state, tick } = setUpGameAudio({ enemiesLeft: 0 });
-        chip.clear();
+        const { music, state, tick } = setUpGameAudio({ enemiesLeft: 0 });
+        music.clear();
         state.phase = 'stage-clear';
         runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(chip.log)).toEqual(recordSong({ song: STAGE_CLEAR }));
-        const lead = listNoteOns(chip.log).filter((write) => write.voice === LEAD_VOICE);
+        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: STAGE_CLEAR }));
+        const lead = listNoteOns(music.log).filter((write) => write.voice === LEAD_VOICE);
         const rowMs = 60000 / (STAGE_CLEAR.bpm * STAGE_CLEAR.rowsPerBeat);
         expect(lead[1].time - lead[0].time).toBeCloseTo(rowMs * CLEAR_LEAD_ROWS_APART);
     });
 
     it('advances no music while it is refreshed but not updated, as when paused', () => {
-        const { chip, view } = setUpGameAudio();
-        chip.clear();
+        const { music, sfx, view } = setUpGameAudio();
+        music.clear();
         for (let i = 0; i < 120; i++) refreshView(view);
-        expect(chip.log).toHaveLength(0);
+        expect([music.log, sfx.log]).toEqual([[], []]);
     });
 
     it('plays nothing twice when refreshed twice', () => {
-        const { chip, state, view, tick } = setUpGameAudio();
+        const { sfx, state, view, tick } = setUpGameAudio();
         state.shotsFired = 1;
         tick();
         refreshView(view);
-        expect(listPlays(chip.log, SHOT)).toHaveLength(1);
+        expect(listPlays(sfx.log, SHOT)).toHaveLength(1);
     });
 });
 
@@ -227,14 +229,14 @@ function recordSong(options: { song: Audio80Song; tempoScale?: number }): string
 
 /**
  * Returns a function that runs one tick as the Arcade does. It updates the
- * model, if there is one, and advances the chip's clock. Then it updates and
- * refreshes the view.
+ * model, if there is one, and advances the chips' clocks. Then it updates
+ * and refreshes the view.
  */
-function createTicker(options: { chip: HeadlessAudio80; view: Container; model?: { update: (deltaMs: number) => void } }): () => void {
-    const { chip, view, model } = options;
+function createTicker(options: { chips: readonly HeadlessAudio80[]; view: Container; model?: { update: (deltaMs: number) => void } }): () => void {
+    const { chips, view, model } = options;
     return () => {
         model?.update(TICK_MS);
-        chip.update(TICK_MS);
+        for (const chip of chips) chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
     };
@@ -250,16 +252,18 @@ function setUpGameAudio(initial: Partial<{ phase: GamePhase; shotsFired: number;
         shotsFired: initial.shotsFired ?? 0,
         enemiesLeft: initial.enemiesLeft ?? WAVES[0].slots.length,
     };
-    const chip = createHeadlessAudio80({ record: true });
+    const music = createHeadlessAudio80({ record: true });
+    const sfx = createHeadlessAudio80({ record: true });
     const view = GameAudioView({
-        sound: chip,
+        music,
+        sfx,
         phase: () => state.phase,
         shotsFired: () => state.shotsFired,
         enemiesLeft: () => state.enemiesLeft,
     });
-    const tick = createTicker({ chip, view });
+    const tick = createTicker({ chips: [music, sfx], view });
     tick();
-    return { chip, state, view, tick };
+    return { music, sfx, state, view, tick };
 }
 
 function setUpEnemyAudio(initial: Partial<{ isAlive: boolean; phase: EnemyPhase; kind: EnemyKind }> = {}) {
@@ -270,12 +274,12 @@ function setUpEnemyAudio(initial: Partial<{ isAlive: boolean; phase: EnemyPhase;
     };
     const chip = createHeadlessAudio80({ record: true });
     const view = EnemyAudioView({
-        sound: chip,
+        sfx: chip,
         isAlive: () => state.isAlive,
         phase: () => state.phase,
         kind: () => state.kind,
     });
-    const tick = createTicker({ chip, view });
+    const tick = createTicker({ chips: [chip], view });
     tick();
     return { chip, state, tick };
 }

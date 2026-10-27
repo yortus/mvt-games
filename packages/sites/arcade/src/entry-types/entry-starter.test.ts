@@ -1,10 +1,10 @@
 import { Container } from 'pixi.js';
 import { describe, expect, expectTypeOf, it } from 'vitest';
-import type { Audio80, Audio90 } from 'audio90';
 import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
+import type { MusicChip, SfxChip } from '#shared';
 import {
     defineElementLoader, definePixiLoader, type ElementEntrySession, type ElementEntryStarter, type PixiEntryStarter,
-    type PixiStartOptions, type SoundChipFinder, type SoundChipsByKind, startPixiEntry,
+    type PixiStartOptions, type SessionChips, type SoundChipFinder, startPixiEntry,
 } from './entry-starter';
 
 // The type checks here run as the repo's types are checked. Each
@@ -12,72 +12,77 @@ import {
 // loaders are made as an entry makes its own, with no type written: the chip
 // is worked out from the starter's `soundChip`.
 
-describe('a starter\'s sound chip', () => {
-    it('gives a starter that names a chip that chip, typed as its kind', async () => {
-        const audio80 = createHeadlessAudio80();
-        let given: Audio80 | undefined;
+describe('a starter\'s sound chips', () => {
+    it('gives a starter that names a kind of chip a music chip and a sound effects chip of that kind', async () => {
+        const chips = createChips('audio80');
+        let given: object[] = [];
         const load = definePixiLoader(async () => ({
             ...PIXI_FIELDS,
             soundChip: 'audio80',
-            start: ({ sound }) => {
-                expectTypeOf(sound).toEqualTypeOf<Audio80>();
-                given = sound;
+            start: ({ music, sfx }) => {
+                expectTypeOf(music).toEqualTypeOf<MusicChip<'audio80'>>();
+                expectTypeOf(sfx).toEqualTypeOf<SfxChip<'audio80'>>();
+                given = [music, sfx];
                 return SESSION;
             },
         }));
         expectTypeOf(load).returns.resolves.toEqualTypeOf<PixiEntryStarter<'audio80'>>();
-        startPixiEntry(await load(), { stage: new Container() }, findIn(createChips({ audio80 })));
-        expect(given).toBe(audio80);
+        startPixiEntry(await load(), { stage: new Container() }, findIn('audio80', chips));
+        expect(given).toEqual([chips.music, chips.sfx]);
     });
 
-    it('gives a starter that names the Audio90 an Audio90, not the Audio80', async () => {
-        const audio90 = createHeadlessAudio90();
-        let given: Audio90 | undefined;
+    it('gives a starter that names the Audio90 Audio90s, which only play, and only the music chip their songs', async () => {
+        const chips = createChips('audio90');
+        let given: object | undefined;
         const load = definePixiLoader(async () => ({
             ...PIXI_FIELDS,
             soundChip: 'audio90',
-            start: ({ sound }) => {
-                given = sound;
+            start: ({ music }) => {
+                given = music;
                 return SESSION;
             },
         }));
         // Never called: it is here to be type checked
-        const filterOnAudio90 = (options: PixiStartOptions<'audio90'>): void => {
-            // @ts-expect-error The Audio90 has no Audio80 filters
-            options.sound.setFilter('a', 'cutoffHz', 500);
+        const misuse = (options: PixiStartOptions<'audio90'>): void => {
+            // @ts-expect-error The host pauses the chips, not the entry
+            options.music.pause();
+            // @ts-expect-error The sound effects chip reports no song
+            void options.sfx.song;
         };
-        startPixiEntry(await load(), { stage: new Container() }, findIn(createChips({ audio90 })));
-        expect(given).toBe(audio90);
-        expect(filterOnAudio90).toBeTypeOf('function');
+        startPixiEntry(await load(), { stage: new Container() }, findIn('audio90', chips));
+        expect(given).toBe(chips.music);
+        expect(misuse).toBeTypeOf('function');
     });
 
-    it('gives a starter that names no chip none, and its options have no sound', async () => {
+    it('gives a starter that names no chip none, and its options have no music or sound effects', async () => {
         // Never called: it is here to be type checked
         const playOnNoChip = (given: PixiStartOptions<undefined>): void => {
             // @ts-expect-error A session that makes no sound has no chip to play on
-            given.sound.releaseAll();
+            given.sfx.play();
         };
         let options: object | undefined;
         const load = definePixiLoader(async () => ({
             ...PIXI_FIELDS,
             start: (given) => {
-                expectTypeOf(given.sound).toEqualTypeOf<undefined>();
+                expectTypeOf(given.music).toEqualTypeOf<undefined>();
+                expectTypeOf(given.sfx).toEqualTypeOf<undefined>();
                 options = given;
                 return SESSION;
             },
         }));
         expectTypeOf(load).returns.resolves.toEqualTypeOf<PixiEntryStarter<undefined>>();
         startPixiEntry(await load(), { stage: new Container() }, refuseChip);
-        expect(options).not.toHaveProperty('sound');
+        expect(options).not.toHaveProperty('music');
+        expect(options).not.toHaveProperty('sfx');
         expect(playOnNoChip).toBeTypeOf('function');
     });
 
-    it('works out an element entry\'s chip the same way', async () => {
+    it('works out an element entry\'s chips the same way', async () => {
         const load = defineElementLoader(async () => ({
             kind: 'element',
             soundChip: 'audio90',
-            start: ({ sound }) => {
-                expectTypeOf(sound).toEqualTypeOf<Audio90>();
+            start: ({ music }) => {
+                expectTypeOf(music).toEqualTypeOf<MusicChip<'audio90'>>();
                 return ELEMENT_SESSION;
             },
         }));
@@ -104,14 +109,19 @@ const PIXI_FIELDS = { kind: 'pixi', screenWidth: 100, screenHeight: 100 } as con
 const SESSION = { update: () => {}, destroy: () => {} };
 const ELEMENT_SESSION: ElementEntrySession = { ...SESSION, views: [], render: () => {} };
 
-/** A chip of each kind: those given, and a headless chip for the rest. */
-function createChips(given: Partial<SoundChipsByKind>): SoundChipsByKind {
-    return { audio80: given.audio80 ?? createHeadlessAudio80(), audio90: given.audio90 ?? createHeadlessAudio90() };
+/** Headless chips of `kind`, one for music and one for sound effects. */
+function createChips<K extends 'audio80' | 'audio90'>(kind: K): SessionChips<K> {
+    const create = () => (kind === 'audio80' ? createHeadlessAudio80() : createHeadlessAudio90());
+    // `kind` says which chips these are, which TypeScript can't follow into their type
+    return { music: create(), sfx: create() } as unknown as SessionChips<K>;
 }
 
-/** A chip finder that finds each kind's chip in `chips`. */
-function findIn(chips: SoundChipsByKind): SoundChipFinder {
-    return (kind) => chips[kind];
+/** A chip finder that finds `chips` for `kind`, and refuses any other kind. */
+function findIn<M extends 'audio80' | 'audio90'>(made: M, chips: SessionChips<M>): SoundChipFinder {
+    return <K extends 'audio80' | 'audio90'>(kind: K) => {
+        if ((kind as string) !== made) throw new Error(`asked for the ${kind}, not the ${made}`);
+        return chips as unknown as SessionChips<K>;
+    };
 }
 
 /** A chip finder for a session that must not ask for one. */

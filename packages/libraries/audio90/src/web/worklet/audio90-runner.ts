@@ -7,7 +7,7 @@ import {
     createCommandAudio90,
 } from '../../audio90';
 import { createSongPlayer } from '../../song-player';
-import { type ChipReply, MIX_BUS_INDEX } from '../../shared';
+import type { ChipReply } from '../../shared';
 import { type ChipRunner, createChipRunner } from './chip-runner';
 import type { SongPlaceReply } from './song-messages';
 import { createWorkletSequencer } from './worklet-sequencer';
@@ -38,10 +38,6 @@ export interface Audio90ScopeReply {
 export interface Audio90RunnerSettings {
     /** How the chip sounds until a song sets it. Defaults to `'studio'`. */
     readonly character?: Audio90Character;
-    /** The starting gain on the voices playing music, 0 to 2. Defaults to 1. */
-    readonly musicVolume?: number;
-    /** The starting gain on the voices playing effects, 0 to 2. Defaults to 1. */
-    readonly effectsVolume?: number;
 }
 
 /** The name the Audio90's processor is registered under. */
@@ -81,8 +77,6 @@ export interface Audio90RunnerOptions extends Audio90RunnerSettings {
 export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<Audio90PassedMessage> {
     const { sampleRate, sendScope } = options;
     const synthesiser = createAudio90Synthesiser({ sampleRate, character: options.character });
-    synthesiser.setMix(MIX_BUS_INDEX.music, options.musicVolume ?? 1);
-    synthesiser.setMix(MIX_BUS_INDEX.effects, options.effectsVolume ?? 1);
     // The buffers the page has handed over to send scopes in, and the blocks since one was sent
     const spares: Float32Array[] = [];
     const counters = new Int32Array(1);

@@ -17,13 +17,13 @@ export const load = definePixiLoader(async () => {
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
 
-        start({ stage, sound }): EntrySession {
+        start({ stage, sfx }): EntrySession {
             const gameModel = createGameModel({
                 arenaWidth: ARENA_WIDTH,
                 arenaHeight: ARENA_HEIGHT,
             });
 
-            const gameView = GameView({ model: gameModel, sound });
+            const gameView = GameView({ model: gameModel, sfx });
             stage.addChild(gameView);
 
             return {

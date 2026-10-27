@@ -1,4 +1,4 @@
-import { clampVolume, createChipPlayback, joinMembers, MAX_MIX_VOLUME, type PlayingWriter, type SongSequencer, type SoundChip } from '../shared';
+import { clampVolume, createChipPlayback, joinMembers, type PlayingWriter, type SongSequencer, type SoundChip } from '../shared';
 import type { PlayableSong, SongPlayer } from '../song-player';
 
 // ---------------------------------------------------------------------------
@@ -32,15 +32,11 @@ export interface HeadlessChipOptions<Song extends PlayableSong, Sound extends ob
      * too. It logs its writes, renders them, both, or neither, as the chip
      * was asked to.
      */
-    readonly writer: Pick<PlayingWriter<Sound, PlayOptions>, 'update' | 'play' | 'stop' | 'releaseAll' | 'takePlayId' | 'setMix'>;
+    readonly writer: Pick<PlayingWriter<Sound, PlayOptions>, 'update' | 'play' | 'stop' | 'releaseAll' | 'takePlayId'>;
     /** The song player that plays the chip's songs on `writer`. */
     readonly player: SongPlayer<Song>;
-    /**
-     * Cuts every voice at once, as `stop` does while the chip is paused, and
-     * sets the mix to these volumes at once, on a chip that renders. A chip
-     * that doesn't has nothing to cut.
-     */
-    readonly cut?: (musicVolume: number, effectsVolume: number) => void;
+    /** Cuts every voice at once, as `stop` does while the chip is paused, on a chip that renders. A chip that doesn't has nothing to cut. */
+    readonly cut?: () => void;
     /** Logs a call to `stop`, on a chip that records. */
     readonly logStop?: (id: number | undefined) => void;
 }
@@ -54,8 +50,6 @@ export function createHeadlessChip<Song extends PlayableSong, Sound extends obje
     const { writer, player, cut, logStop } = options;
     let volume = 1;
     let isMuted = false;
-    let musicVolume = 1;
-    let effectsVolume = 1;
     let isPaused = false;
 
     // Each call takes effect at once, at the chip's time, and the song heard is the song playing, since a
@@ -108,27 +102,13 @@ export function createHeadlessChip<Song extends PlayableSong, Sound extends obje
             return volume;
         },
         set volume(value: number) {
-            volume = clampVolume(value, 1);
+            volume = clampVolume(value);
         },
         get isMuted() {
             return isMuted;
         },
         set isMuted(value: boolean) {
             isMuted = value;
-        },
-        get musicVolume() {
-            return musicVolume;
-        },
-        set musicVolume(value: number) {
-            musicVolume = clampVolume(value, MAX_MIX_VOLUME);
-            writer.setMix('music', musicVolume);
-        },
-        get effectsVolume() {
-            return effectsVolume;
-        },
-        set effectsVolume(value: number) {
-            effectsVolume = clampVolume(value, MAX_MIX_VOLUME);
-            writer.setMix('effects', effectsVolume);
         },
         stop(id?: number) {
             logStop?.(id);
@@ -155,8 +135,7 @@ export function createHeadlessChip<Song extends PlayableSong, Sound extends obje
             writer.releaseAll();
             return;
         }
-        // A mix change not yet rendered is cleared with the rest, so the cut sets the mix again
-        cut(musicVolume, effectsVolume);
+        cut();
     }
 }
 

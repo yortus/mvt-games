@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
+import type { MusicChip, SfxChip } from '#shared';
 import {
     BAA,
     BLOW_OUT,
@@ -26,8 +26,10 @@ import type { GamePhase } from '../models';
 
 /** What `GameAudioView` reads about the game. */
 export interface GameAudioViewBindings {
-    /** The chip to play on. It is the view's output, not a query of the model, so it is read once. */
-    readonly sound: Audio80;
+    /** The chip the music plays on. It is the view's output, so the view reads it once. */
+    readonly music: MusicChip<'audio80'>;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** The game's phase. Each change of phase plays its tune. */
     readonly phase: () => GamePhase;
     /** Steps of wire strung. Each rise ticks. */
@@ -74,7 +76,7 @@ export const CREAK_PERIOD_MS = 240;
  * fenced, and as the game ends. The view draws nothing.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
     const creaks = createMetronome();
@@ -100,20 +102,20 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         const w = watcher.poll();
         // The first poll sees the game start, with no phase before it, so it plays the round's jingle
         if (w.phase.changed) playPhase(w.phase.value);
-        if (w.wireSteps.increased) sound.play(STRING_TICK);
-        if (w.closures.increased) sound.play(TIE_OFF);
-        if (w.sheepPenned.increased) sound.play(BAA);
-        if (w.devilsBlownOut.increased) sound.play(BLOW_OUT);
-        if (w.beetlesHatched.increased) sound.play(HATCH);
-        if (w.extraLives.increased) sound.play(EXTRA_LIFE);
-        if (w.creaks.increased) sound.play(CREAK);
+        if (w.wireSteps.increased) sfx.play(STRING_TICK);
+        if (w.closures.increased) sfx.play(TIE_OFF);
+        if (w.sheepPenned.increased) sfx.play(BAA);
+        if (w.devilsBlownOut.increased) sfx.play(BLOW_OUT);
+        if (w.beetlesHatched.increased) sfx.play(HATCH);
+        if (w.extraLives.increased) sfx.play(EXTRA_LIFE);
+        if (w.creaks.increased) sfx.play(CREAK);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
-        sound.tempoScale = computeTempo();
+        music.tempoScale = computeTempo();
     }
 
     /** The meadow tune quickens as the share fenced off nears the round's target. Every other song plays at its own tempo. */
     function computeTempo(): number {
-        if (sound.song !== MEADOW_TUNE) return 1;
+        if (music.song !== MEADOW_TUNE) return 1;
         const progress = Math.min(1, bindings.share() / bindings.targetShare());
         return 1 + (FULL_FIELD_TEMPO - 1) * progress;
     }
@@ -121,23 +123,23 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     function playPhase(phase: GamePhase): void {
         switch (phase) {
             case 'ready':
-                sound.play(ROUND_START);
+                music.play(ROUND_START);
                 break;
             case 'playing':
-                sound.play(MEADOW_TUNE);
+                music.play(MEADOW_TUNE);
                 break;
             case 'snapped':
-                sound.play(SNAP);
-                sound.play(SNAPPED_TUNE);
+                sfx.play(SNAP);
+                music.play(SNAPPED_TUNE);
                 break;
             case 'round-clear':
-                sound.play(ROUND_CLEAR_TUNE);
+                music.play(ROUND_CLEAR_TUNE);
                 break;
             case 'farm-fenced':
-                sound.play(FARM_FENCED_TUNE);
+                music.play(FARM_FENCED_TUNE);
                 break;
             case 'game-over':
-                sound.play(GAME_OVER_TUNE);
+                music.play(GAME_OVER_TUNE);
                 break;
         }
     }

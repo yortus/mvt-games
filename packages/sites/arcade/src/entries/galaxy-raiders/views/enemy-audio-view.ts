@@ -1,7 +1,8 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80, Audio80Sound } from 'audio90';
+import type { Audio80Sound } from 'audio90';
 import { watch } from '@mvtjs/utils';
+import type { SfxChip } from '#shared';
 import { CARRIER_HIT, DIVE, SCOUT_HIT, STRIKER_HIT } from '../data';
 import type { EnemyKind, EnemyPhase } from '../models';
 
@@ -11,8 +12,8 @@ import type { EnemyKind, EnemyPhase } from '../models';
 
 /** What an `EnemyAudioView` plays on, and the raider's state it plays the sounds of. */
 export interface EnemyAudioViewBindings {
-    /** The chip to play on. It is the view's output, not model state, so the view reads it once. */
-    readonly sound: Audio80;
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
     /** Whether the raider is alive. The view plays its explosion when this goes from true to false. */
     readonly isAlive: () => boolean;
     /** The raider's phase. The view plays the whistle when it changes to 'diving'. */
@@ -34,7 +35,7 @@ export interface EnemyAudioViewBindings {
  * nothing.
  */
 export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
-    const { sound } = bindings;
+    const { sfx } = bindings;
     const view = new Container();
     view.label = 'enemy-audio';
     const watcher = watch({ isAlive: bindings.isAlive, phase: bindings.phase });
@@ -45,10 +46,10 @@ export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
     function refresh(): void {
         const w = watcher.poll();
         if (w.isAlive.changed && w.isAlive.previous === true) {
-            sound.play(chooseHit(bindings.kind()));
+            sfx.play(chooseHit(bindings.kind()));
         }
         else if (w.phase.changed && w.phase.value === 'diving' && w.phase.previous !== undefined) {
-            sound.play(DIVE);
+            sfx.play(DIVE);
         }
     }
 }

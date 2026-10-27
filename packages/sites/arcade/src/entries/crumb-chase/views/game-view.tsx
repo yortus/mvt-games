@@ -1,9 +1,8 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView, SwipeInputView } from '#shared';
+import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
 import { TILE_SIZE, CAT_COLORS, SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';
@@ -20,8 +19,10 @@ import { GameAudioView } from './game-audio-view';
 export interface GameViewBindings {
     /** The game to draw and play the sounds of. */
     model: GameModel;
-    /** The chip the game's sounds play on. It is the view's output, not model state, so the view reads it once. */
-    sound: Audio80;
+    /** The chip the game's music plays on. It is the view's output, not model state, so the view reads it once. */
+    music: MusicChip<'audio80'>;
+    /** The chip the game's sound effects play on, read once as `music` is. */
+    sfx: SfxChip<'audio80'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,7 +38,7 @@ export interface GameViewBindings {
  * the next corner that opens that way. The overlay's own taps come first.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sound } = bindings;
+    const { model, music, sfx } = bindings;
     const canvasW = MAZE_COLS * TILE_SIZE;
     const canvasH = MAZE_ROWS * TILE_SIZE;
     const isTouch = isTouchDevice();
@@ -58,7 +59,8 @@ export function GameView(bindings: GameViewBindings): Container {
                 onSwiped={(direction) => { model.direction = direction; }}
             />
             <GameAudioView
-                sound={sound}
+                music={music}
+                sfx={sfx}
                 phase={() => model.phase}
                 remainingCrumbs={() => model.maze.remainingCrumbs}
                 totalCrumbs={model.maze.totalCrumbs}
