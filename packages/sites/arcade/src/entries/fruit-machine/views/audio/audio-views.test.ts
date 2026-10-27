@@ -205,10 +205,8 @@ function recordSong(song: Audio80Song): string[] {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const music = createMusicPlayer({ audio80: chip });
     music.play(song);
-    music.refresh();
     for (let elapsed = 0; elapsed < computeSongDurationMs(song) + 1000; elapsed += TICK_MS) {
         controls.update(TICK_MS);
-        music.refresh();
     }
     return describeNoteOns(chip.log);
 }

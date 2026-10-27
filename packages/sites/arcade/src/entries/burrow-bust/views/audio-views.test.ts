@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type AudioControls, computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
+import { computeSongDurationMs, createMusicPlayer, type Audio80Song, type Audio80SoundEffect } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80, type HeadlessControls } from 'audio90/headless';
 import {
     DEATH, FIRE, FIRE_WARNING, GAME_OVER, GHOST, HARPOON, LEVEL_CLEAR, LEVEL_START, POP, PUMP_1, PUMP_2, PUMP_3,
     PUMP_4, ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE, SQUASH, WALK_TUNE,
@@ -279,18 +279,16 @@ function recordSong(options: { song: Audio80Song; then?: Audio80Song; tempoScale
     player.tempoScale = tempoAt(0);
     player.play(options.song);
     if (options.then !== undefined) player.queue(options.then);
-    player.refresh();
     const ticks = heldTicks + (options.ticks ?? SONG_TICKS);
     for (let i = 0; i < ticks; i++) {
         controls.update(TICK_MS);
         player.tempoScale = tempoAt(i + 1);
-        player.refresh();
     }
     return describeNoteOns(chip.log);
 }
 
 /** Returns a function that runs one tick as the host does: the chip's clock, then the view's update and refresh. */
-function createTicker(controls: AudioControls, view: Container): () => void {
+function createTicker(controls: HeadlessControls, view: Container): () => void {
     return () => {
         controls.update(TICK_MS);
         updateView(view, TICK_MS);

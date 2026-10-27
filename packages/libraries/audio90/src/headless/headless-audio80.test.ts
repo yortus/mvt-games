@@ -60,12 +60,11 @@ describe('headless Audio80', () => {
             expect(audio80.log).toEqual([]);
         });
 
-        it('keeps its log and its clock through flush, reset and destroy', async () => {
+        it('keeps its log and its clock through reset and destroy', async () => {
             const { audio80, controls } = createHeadlessAudio80({ record: true });
             await controls.ready;
             controls.update(TICK_MS);
             audio80.noteOff(0);
-            controls.flush();
             controls.reset();
             controls.destroy();
             expect(audio80.log).toEqual([{ kind: 'note-off', voice: 0, time: TICK_MS }]);

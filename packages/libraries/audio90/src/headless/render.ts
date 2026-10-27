@@ -1,7 +1,7 @@
 import { type Audio80Character, isAudio80Song, isAudio80SoundEffect, type Audio80Song, type Audio80SoundEffect } from '../audio80';
 import { createSongPlayer } from '../music-player';
 import { type Audio90Character, type Audio90Song, type Audio90SoundEffect, isAudio90Song, isAudio90SoundEffect } from '../audio90';
-import { type AudioControls, computeSongDurationMs } from '../shared';
+import { computeSongDurationMs, type HeadlessControls } from '../shared';
 import { createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
 import { createHeadlessAudio90, type HeadlessAudio90 } from './headless-audio90';
 import { toInt16 } from './encode-wav';
@@ -205,7 +205,7 @@ const FNV_PRIME = 0x01000193;
 
 /** What `runTicks` drives: a headless chip that renders, apart from which chip it is. */
 interface TickedRender {
-    readonly controls: AudioControls;
+    readonly controls: HeadlessControls;
     readonly sampleRate: number;
     /** How many frames to render in all. */
     readonly total: number;

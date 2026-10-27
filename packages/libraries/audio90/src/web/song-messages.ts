@@ -7,9 +7,7 @@
  * once, under an id, with the ids the page gave its instruments. `song-call`
  * asks a slot to play, queue or stop a song, or to change its tempo scale.
  *
- * Each call carries the chip time it was made at, so a song started while
- * the sound card could not play skips ahead to where it would have got to.
- * It also carries its slot's generation, which rises with each call that
+ * Each call carries its slot's generation, which rises with each call that
  * changes the song. The worklet sends it back with each place, so the page
  * can tell a place of the song it asked for from one of a song before.
  */
@@ -25,7 +23,6 @@ export interface SongCallMessage {
     readonly call: SongCall;
     readonly songId: number;
     readonly value: number;
-    readonly stampMs: number;
 }
 
 /** What a call to a slot asks for. */

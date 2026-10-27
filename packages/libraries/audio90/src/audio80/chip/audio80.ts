@@ -11,16 +11,14 @@ import type { Audio80Instrument, Audio80Song, Audio80SoundEffect } from '../nota
  * in 1980s home computers. A game's views see it as an output, like a
  * renderer. An audio view writes to it each time the view refreshes.
  *
- * Each write is stamped with a chip time, and the chip plays it at that
- * time. The chip's clock moves only when the game loop advances it, by the
- * models' delta each tick. So the chip never plays ahead of what it has been
- * told, and it pauses with the game. Effects are the exception, because they
- * play as soon as they arrive. The chip's clock, volumes and resets belong to
- * the game loop, through the `AudioControls` made alongside the chip.
- *
- * `atMs`, which most writes take last, is the chip time to apply the write
- * at, in ms. It defaults to `time`. A write stamped earlier than the chip has
- * already played applies at once.
+ * A write plays as soon as it can. Most writes also take `atMs`, the chip
+ * time to apply the write at, in ms, for code that schedules its notes
+ * ahead. A write stamped earlier than the chip has already played applies
+ * at once. In a browser, the chip's time is the sound card's, and stands
+ * still while the chip is paused. A headless chip has no sound card, so its
+ * time moves only as the code that owns it says. The chip's pausing,
+ * volumes and resets belong to the code that owns it, through the
+ * `AudioControls` made alongside the chip.
  *
  * Its methods take their arguments in order rather than as an options
  * object, because views call them every refresh and they must not allocate.
@@ -43,7 +41,12 @@ export interface Audio80 extends Audio80Writer {
  * its clock. A song's writes need no more of a chip than this.
  */
 export interface Audio80Writer {
-    /** The chip's clock, in ms. It is the sum of the deltas the game loop has advanced it by. */
+    /**
+     * The chip's time now, in ms. In a browser, it is the sound card's time
+     * since the chip first played, less the time it spent paused. On a
+     * headless chip, it is the sum of the deltas its controls' `update` has
+     * moved it on by.
+     */
     readonly time: number;
     /** How many voices the chip has, which is 8. */
     readonly voiceCount: number;
@@ -58,8 +61,8 @@ export interface Audio80Writer {
      * Starts `note` on `voice` with `instrument`. `note` is a note number,
      * where 60 is middle C, and `voice` is from 0 to 7. At a `volume` of 1,
      * the note plays at the instrument's own volume. The note starts at chip
-     * time `atMs`, in ms, which defaults to `time`. If the chip has already
-     * played past `atMs`, the note starts at once.
+     * time `atMs`, in ms, or as soon as it can without it. If the chip has
+     * already played past `atMs`, the note starts at once.
      */
     noteOn: (voice: number, instrument: Audio80Instrument, note: number, volume: number, atMs?: number) => void;
     /** Releases `voice`'s note at `atMs`. Its envelope starts its release, which fades the note out. */
@@ -80,14 +83,19 @@ export interface Audio80Writer {
     setEcho: (setting: Audio80EchoSetting, value: number, atMs?: number) => void;
     /** Keeps voices 0 to `count` - 1 for music from `atMs`. Effects play only on the rest. */
     reserveVoices: (count: number, atMs?: number) => void;
-    /** Releases every voice, music and effects, at `time`. */
+    /** Releases every voice, music and effects, as soon as it can. */
     releaseAll: () => void;
 }
 
-/** A chip and its controls, as each chip's factory makes them. The chip is for the game's views, and the controls are for the game loop. */
-export interface Audio80WithControls<A extends Audio80 = Audio80> {
-    /** The chip, which the game's views play on. */
+/**
+ * A chip and its controls, as each chip's factory makes them. The chip is
+ * for the code that plays sounds, such as a game's views, and the controls
+ * are for the code that owns the chip. A headless chip's controls are
+ * `HeadlessControls`, which also move its clock on.
+ */
+export interface Audio80WithControls<A extends Audio80 = Audio80, C extends AudioControls = AudioControls> {
+    /** The chip, which the code that plays sounds plays on. */
     readonly audio80: A;
-    /** The chip's controls, which only the game loop uses. */
-    readonly controls: AudioControls;
+    /** The chip's controls, which only the code that owns the chip uses. */
+    readonly controls: C;
 }

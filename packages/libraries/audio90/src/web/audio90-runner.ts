@@ -5,7 +5,6 @@ import {
     type Audio90Song,
     createAudio90Synthesiser,
     createCommandAudio90,
-    OP90_NOTE_ON,
 } from '../audio90';
 import { createSongPlayer } from '../music-player';
 import { type ChipReply, MIX_BUS_INDEX } from '../shared';
@@ -37,8 +36,6 @@ export interface Audio90ScopeReply {
 
 /** The settings the main thread gives the Audio90's processor when it is made. */
 export interface Audio90RunnerSettings {
-    /** The lead the clock keeps, in ms. Defaults to 100. */
-    readonly leadMs?: number;
     /** How the chip sounds until a song sets it. Defaults to `'studio'`. */
     readonly character?: Audio90Character;
     /** The starting gain on the voices playing music, 0 to 2. Defaults to 1. */
@@ -61,7 +58,7 @@ export const BLOCKS_PER_SCOPE = 4;
 export interface Audio90RunnerOptions extends Audio90RunnerSettings {
     /** The sound card's sample rate, in Hz. */
     readonly sampleRate: number;
-    /** Sends a batch's buffer back to the main thread, so it can be written into again, with where the clock is. */
+    /** Sends the main thread a batch's buffer, so it can be written into again, or where the clock is. It must copy the reply, as `postMessage` does. */
     readonly sendBack: (reply: ChipReply) => void;
     /** The audio context's count of frames, at the start of the next block. Defaults to counting the frames rendered. */
     readonly currentFrame?: () => number;
@@ -95,14 +92,12 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
         // defines nothing of its own
         createWriter: (idOf) => createCommandAudio90({ idOf, onInstrument: ignore, onEffect: ignore, onSample: ignore }),
         createPlayer: (writer) => createSongPlayer({ audio90: writer }),
-        noteOnOp: OP90_NOTE_ON,
         sendPlace: options.sendPlace,
     });
 
     return createChipRunner<Audio90PassedMessage>({
         sampleRate,
         channelCount: 2,
-        leadMs: options.leadMs,
         sendBack: options.sendBack,
         currentFrame: options.currentFrame,
         sequencer,

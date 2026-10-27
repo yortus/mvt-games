@@ -245,11 +245,9 @@ else if (engine === 'song') {
     const frames = SAMPLE_RATE / 60;
     const left = new Float32Array(frames);
     const right = new Float32Array(frames);
-    // One tick of a game loop: the chip's clock, which moves the song on, the view's refresh, then the sound up
-    // to the new time
+    // One tick of a game loop: the chip's clock, which moves the song on, then the sound up to the new time
     const tick = (): void => {
         chip.controls.update(TICK_MS);
-        player.refresh();
         chip.render(left, right);
     };
     // Two bars first, so every instrument has played and every sample is sent

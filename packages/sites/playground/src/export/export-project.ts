@@ -183,7 +183,7 @@ function indexTs(renderer: RendererKind): string {
         `import { ${host} } from './runner/${HOST_FILES[renderer]}';`,
         `import { runProject } from './runner/run-project';`,
         '',
-        `void runProject({ project, createHost: ${host}, createSound: () => createAudio80({ context: new AudioContext() }) });`,
+        `void runProject({ project, createHost: ${host}, createSound: () => createAudio80() });`,
         '',
     ].join('\n');
 }

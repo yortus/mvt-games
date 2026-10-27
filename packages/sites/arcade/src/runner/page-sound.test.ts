@@ -28,12 +28,8 @@ describe('createPageSound', () => {
             entry.chip.play(EFFECT);
             entry.chip.noteOn(0, INSTRUMENT, 60, 1);
             entry.chip.releaseAll();
-            entry.controls.update(TICK_MS);
-            entry.controls.flush();
             entry.controls.reset();
             sound.pageAudio80.play(EFFECT);
-            sound.pageControls.update(TICK_MS);
-            sound.pageControls.flush();
         }).not.toThrow();
         expect(entry.chip.time).toBe(0);
         await expect(entry.controls.ready).resolves.toBeUndefined();
@@ -113,19 +109,41 @@ describe('createPageSound', () => {
         for (const loaded of fake.chips) expect(loaded.controls.isMuted).toBe(false);
     });
 
-    it('passes each chip\'s writes and clock on once the chips load', async () => {
+    it('passes each chip\'s writes on once the chips load', async () => {
+        const sound = createPageSound({ isEnabled: true });
+        await sound.prepare('audio80');
+        const [pageChip, chip] = fake.chips;
+        sound.entryChips.audio80.chip.play(EFFECT);
+        sound.pageAudio80.play(EFFECT);
+        sound.pageAudio80.play(EFFECT);
+        expect(listPlays(chip.audio80.log)).toEqual([EFFECT]);
+        expect(listPlays(pageChip.audio80.log)).toEqual([EFFECT, EFFECT]);
+    });
+
+    it('pauses every chip while the page is hidden, and plays each on as it shows, but one whose controls are paused', async () => {
         const sound = createPageSound({ isEnabled: true });
         await sound.prepare('audio80');
         const [pageChip, chip] = fake.chips;
         const entry = sound.entryChips.audio80;
-        entry.controls.update(TICK_MS);
-        entry.chip.play(EFFECT);
-        sound.pageAudio80.play(EFFECT);
-        sound.pageAudio80.play(EFFECT);
-        expect(entry.chip.time).toBe(TICK_MS);
-        expect(sound.pageAudio80.time).toBe(0);
-        expect(listPlays(chip.audio80.log)).toEqual([EFFECT]);
-        expect(listPlays(pageChip.audio80.log)).toEqual([EFFECT, EFFECT]);
+        entry.controls.pause();
+        sound.isHidden = true;
+        expect([pageChip.controls.isPaused, chip.controls.isPaused]).toEqual([true, true]);
+        sound.isHidden = false;
+        expect([pageChip.controls.isPaused, chip.controls.isPaused]).toEqual([false, true]);
+        expect(entry.controls.isPaused).toBe(true);
+        entry.controls.resume();
+        expect(chip.controls.isPaused).toBe(false);
+    });
+
+    it('pauses a chip that loads while the page is hidden, or while its controls are paused', async () => {
+        const sound = createPageSound({ isEnabled: true });
+        sound.isHidden = true;
+        sound.entryChips.audio80.controls.pause();
+        await sound.prepare('audio80');
+        const [pageChip, chip] = fake.chips;
+        expect([pageChip.controls.isPaused, chip.controls.isPaused]).toEqual([true, true]);
+        sound.isHidden = false;
+        expect([pageChip.controls.isPaused, chip.controls.isPaused]).toEqual([false, true]);
     });
 
     it('loads the chips once, however often it is prepared', async () => {
@@ -235,7 +253,6 @@ describe('createPageSound', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const TICK_MS = 1000 / 60;
 const INSTRUMENT = createAudio80Instrument({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } });
 const EFFECT = createAudio80SoundEffect({ instrument: INSTRUMENT, note: 'C-5', lengthMs: 50 });
 

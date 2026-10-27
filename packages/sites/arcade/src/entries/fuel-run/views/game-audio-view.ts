@@ -109,7 +109,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.alarms.increased) sound.play(FUEL_ALARM);
         if (w.warbles.increased) sound.play(SAUCER);
         if (w.sirens.increased) sound.play(BASE_SIREN);
-        music.refresh();
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {

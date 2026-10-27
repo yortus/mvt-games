@@ -23,7 +23,7 @@ export interface FakeAudioContext {
     readonly nodeOptions: readonly AudioWorkletNodeOptions[];
     /** The names each node's processor was made with. */
     readonly processorNames: readonly string[];
-    /** Changes the context's state, as a browser does when audio starts or stops. */
+    /** Changes the context's state, and tells its `statechange` listeners, as a browser does when audio starts or stops. */
     setState: (state: AudioContextState) => void;
     /** Moves the context's `currentTime` to `seconds`, as the sound card plays. */
     setCurrentTime: (seconds: number) => void;
@@ -44,6 +44,7 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
     const messages: RunnerMessage[] = [];
     const nodeOptions: AudioWorkletNodeOptions[] = [];
     const processorNames: string[] = [];
+    const stateListeners = new Set<() => void>();
     const audioNode = { connect: ignore, disconnect: ignore };
     const port = {
         onmessage: undefined as ((event: { data: object }) => void) | undefined,
@@ -67,6 +68,16 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
         audioWorklet: {
             addModule: () => (loadError === undefined ? Promise.resolve() : Promise.reject(loadError)),
         },
+        resume: () => {
+            setState('running');
+            return Promise.resolve();
+        },
+        close: () => {
+            setState('closed');
+            return Promise.resolve();
+        },
+        addEventListener: (_name: 'statechange', listener: () => void) => stateListeners.add(listener),
+        removeEventListener: (_name: 'statechange', listener: () => void) => stateListeners.delete(listener),
     };
     return {
         context: context as unknown as AudioContext,
@@ -78,9 +89,7 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
         messages,
         nodeOptions,
         processorNames,
-        setState(next) {
-            current = next;
-        },
+        setState,
         setCurrentTime(seconds) {
             currentTime = seconds;
         },
@@ -89,6 +98,11 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
             port.onmessage?.({ data: reply });
         },
     };
+
+    function setState(next: AudioContextState): void {
+        current = next;
+        for (const listener of stateListeners) listener();
+    }
 }
 
 // ---------------------------------------------------------------------------

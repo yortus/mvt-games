@@ -11,18 +11,14 @@ import processorUrl from './audio90-processor?worker&url';
 /** How to make a browser's Audio90. */
 export interface Audio90Options {
     /**
-     * The audio context to play in. The caller must resume it after a user
-     * gesture, such as a click. Until it runs, the chip plays nothing, as
-     * `AudioControls.ready` explains. The context may hold other chips too,
-     * such as an Audio80.
+     * The audio context to play in. Without one, the chip makes its own,
+     * and starts it at the page's first click, tap or key press, since a
+     * browser lets sound start only after the visitor does something. With
+     * one, starting it is the caller's job. Until it runs, the chip plays
+     * nothing, as `AudioControls.ready` explains. The context may hold
+     * other chips too, such as an Audio80.
      */
-    readonly context: AudioContext;
-    /**
-     * How far, in ms, the worklet plays behind the newest chip time it has
-     * been sent. This leaves room for ticks that arrive late, so the music
-     * plays on through a late frame. Defaults to 100.
-     */
-    readonly leadMs?: number;
+    readonly context?: AudioContext;
     /** How the chip sounds until a song sets it. Defaults to `'studio'`. */
     readonly character?: Audio90Character;
 }
@@ -32,11 +28,11 @@ export interface Audio90Options {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an Audio90 for a browser, and its controls. Once a tick,
- * `AudioControls.flush` sends the chip's writes to an `AudioWorklet`, which
- * plays them in stereo. The controls' `ready` resolves once the worklet is
- * running. The worklet's code is its own module, loaded only when this is
- * called.
+ * Creates an Audio90 for a browser, and its controls. At the end of each
+ * task that writes to the chip, the writes go to an `AudioWorklet`, which
+ * plays them in stereo on the sound card's clock. The controls' `ready`
+ * resolves once the worklet is running. The worklet's code is its own
+ * module, loaded only when this is called.
  *
  * A sample is sent the first time an instrument that plays it is played. It
  * is copied, not moved, so the page keeps it for the next session.
@@ -49,13 +45,16 @@ export interface Audio90Options {
  * Each song is sent once, after its instruments and without their samples,
  * which the worklet already has by then.
  */
-export function createAudio90(options: Audio90Options): Audio90WithControls {
+export function createAudio90(options: Audio90Options = {}): Audio90WithControls {
     const writer = createCommandAudio90({
         onInstrument: (id, data) => web.send({ kind: 'instrument', id, data }),
         onEffect: (id, data) => web.send({ kind: 'effect', id, data }),
         onSample: (id, data) => web.send({ kind: 'sample', id, data }),
+        // The chip's time is the worklet's, so a write with no stamp plays as soon as it arrives
+        hasClock: false,
+        onFirstWrite: () => web.sendSoon(),
     });
-    const settings: Audio90RunnerSettings = { leadMs: options.leadMs, character: options.character };
+    const settings: Audio90RunnerSettings = { character: options.character };
     const scope = new Float32Array(AUDIO90_SCOPE_LENGTH);
     let isScoping = false;
     const web = createWebChip<Audio90PassedMessage, Audio90Song>({
@@ -87,7 +86,7 @@ export function createAudio90(options: Audio90Options): Audio90WithControls {
 
     const audio90: Audio90 = {
         get time() {
-            return writer.time;
+            return web.time;
         },
         get heardTime() {
             return web.heardTime;

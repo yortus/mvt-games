@@ -263,7 +263,6 @@ function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: A
         docsHref: '/docs/',
         performance: () => undefined,
         unmeasuredMetrics: () => [],
-        stallCount: () => 0,
         // As loaded, so the panel is built
         perfmon: () => PERFMON,
         homeLinks: options.homeLinks,

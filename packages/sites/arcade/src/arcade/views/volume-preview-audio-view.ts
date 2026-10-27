@@ -54,6 +54,5 @@ export function VolumePreviewAudioView(bindings: VolumePreviewAudioViewBindings)
             if (w.music.changed && w.music.value > 0) music.play(MUSIC_PREVIEW);
             if (w.effects.changed && w.effects.value > 0) sound.play(EFFECTS_PREVIEW);
         }
-        music.refresh();
     }
 }

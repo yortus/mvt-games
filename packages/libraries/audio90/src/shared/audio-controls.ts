@@ -3,17 +3,17 @@
 // ---------------------------------------------------------------------------
 
 /**
- * An audio chip's controls, for the code that runs the game loop and owns
- * the chip. They cover the chip's clock, its output, and the start and end
- * of each game. Every chip has the same controls, so the game loop drives
- * every chip in the same way.
+ * An audio chip's controls, for the code that owns the chip. They cover
+ * pausing it, its output, and the start and end of each game. Every chip has
+ * the same controls, so the code that owns them drives every chip in the
+ * same way.
  *
  * The chip's factory makes the controls alongside the chip, as a separate
- * object. The game's views are given the chip and play on it, and the
- * controls stay with the game loop. Only the game loop advances the clock,
- * pauses, resets between games and sets the listener's volumes. A view never
- * does. Because the controls are on another object, a view has no way to
- * call them.
+ * object. The code that plays sounds, such as a game's views, is given the
+ * chip, and the controls stay with the code that owns it. Only that code
+ * pauses the chip, resets it between games and sets the listener's volumes.
+ * Because the controls are on another object, the code given the chip has
+ * no way to call them.
  */
 export interface AudioControls {
     /**
@@ -22,23 +22,28 @@ export interface AudioControls {
      * For a chip with nothing to load, it is already resolved.
      *
      * The chip cannot play before `ready` resolves. In a browser, it also
-     * cannot play while the audio context is not running. Until it can, it
-     * drops notes and sound effects, so none play late. It keeps the latest
-     * value of each setting, such as a filter's cutoff, and applies it once
-     * it can play. A song sets most of its settings once, when it starts, so
-     * this keeps a song started meanwhile sounding right. It also keeps the
-     * latest call to stop a note (`noteOff`, or `releaseAll`) on each voice.
-     * So a note that started before the wait still stops.
+     * cannot play while the audio context is not running. It doesn't play
+     * while it is paused either. Until it can, it drops notes and sound
+     * effects, so none play late. It keeps the latest value of each setting,
+     * such as a filter's cutoff, and applies it once it can play. A song sets
+     * most of its settings once, when it starts, so this keeps a song started
+     * meanwhile sounding right. It also keeps the latest call to stop a note
+     * (`noteOff`, or `releaseAll`) on each voice. So a note that started
+     * before the wait still stops.
      */
     readonly ready: Promise<void>;
+    /** Whether the chip is paused. A chip starts unpaused. */
+    readonly isPaused: boolean;
     /**
-     * Advances the chip's clock by `deltaMs`. Call it once a tick with the
-     * models' delta, before the views update. Never call it while the game is
-     * paused.
+     * Holds the chip where it is, as a game pauses: its voices fade out at
+     * once and keep their place, and its songs stop moving. Call it as the
+     * game pauses, and as the page is hidden, if its sound should stop then.
+     * A chip on the same audio context plays on, so a pause menu can play
+     * its sounds on a chip of its own. Pausing a paused chip does nothing.
      */
-    update: (deltaMs: number) => void;
-    /** Sends this tick's writes to be played. Call it once a tick, after the views have refreshed. */
-    flush: () => void;
+    pause: () => void;
+    /** Plays the chip on from where `pause` held it, fading its voices back in at once. Resuming a chip that isn't paused does nothing. */
+    resume: () => void;
     /**
      * Silences every voice at once, and forgets every instrument and effect
      * played so far. Use it between games. The browser's chip fades its
@@ -58,18 +63,23 @@ export interface AudioControls {
     musicVolume: number;
     /** A gain on the voices playing effects. It works like `musicVolume`. */
     effectsVolume: number;
-    /**
-     * How many times the chip has stalled since it was made. A stall is a
-     * tick so late that the chip played all the time it had been given while
-     * the game was still running. The notes a game writes itself then wait,
-     * ringing on, until the ticks catch up. The music, which plays on the
-     * chip's own sequencer, and the effects play on through it. A chip with
-     * no sound card never stalls. A page can show it, as a sign of frames
-     * that reach the chip late.
-     */
-    readonly stallCount: number;
     /** Stops the chip for good and releases what it holds, such as its worklet in a browser. Writes after this do nothing. */
     destroy: () => void;
+}
+
+/**
+ * A headless chip's controls. A headless chip has no sound card to keep its
+ * time, so the code that owns it moves its clock on, by the same ticks as
+ * the game's models. So the same ticks always make the same notes, which is
+ * what makes a test of the sound exact.
+ */
+export interface HeadlessControls extends AudioControls {
+    /**
+     * Moves the chip's clock, and its songs, on by `deltaMs`. Call it once a
+     * tick with the models' delta, before the views update. While the chip is
+     * paused, it does nothing.
+     */
+    update: (deltaMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------

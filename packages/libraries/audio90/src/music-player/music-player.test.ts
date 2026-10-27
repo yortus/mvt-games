@@ -12,14 +12,12 @@ describe('music player', () => {
         const viaMusic = createHeadlessAudio80({ record: true });
         const music = createMusicPlayer({ audio80: viaMusic.audio80 });
         music.play(SONG);
-        music.refresh();
         const viaSong = createHeadlessAudio80({ record: true });
         const song = createSongPlayer({ audio80: viaSong.audio80 });
         song.play(SONG);
         song.refresh();
         for (let i = 0; i < 40; i++) {
             viaMusic.controls.update(TICK_MS);
-            music.refresh();
             viaSong.controls.update(TICK_MS);
             song.update(TICK_MS);
             song.refresh();
@@ -28,11 +26,10 @@ describe('music player', () => {
         expect(describeNoteOns(viaMusic.audio80.log).length).toBeGreaterThan(4);
     });
 
-    it('answers with the song it was asked for at once, before it refreshes, and from its start', () => {
+    it('answers with the song it was asked for at once, and from its start', () => {
         const { audio80, controls } = createHeadlessAudio80();
         const music = createMusicPlayer({ audio80 });
         music.play(SONG);
-        music.refresh();
         for (let i = 0; i < 20; i++) controls.update(TICK_MS);
         expect(music.row).toBeGreaterThan(0);
         music.play(OTHER_SONG);
@@ -45,37 +42,49 @@ describe('music player', () => {
         const { slot, calls } = createSlotStandIn();
         const music = createMusicPlayer({ audio80: createChipOn(slot) });
         music.queue(SONG);
-        expect(music.song).toBe(SONG);
-        music.refresh();
         slot.song = SONG;
         music.queue(OTHER_SONG);
         expect(music.song).toBe(SONG);
-        music.refresh();
         expect(calls).toEqual(['queue', 'queue']);
     });
 
-    it('sends its calls in order as it refreshes, the tempo first, and the tempo only when it changes', () => {
+    it('passes each call to its slot as it is made, and the tempo only when it changes', () => {
         const { slot, calls } = createSlotStandIn();
         const music = createMusicPlayer({ audio80: createChipOn(slot) });
         music.play(SONG);
         music.stop();
         music.play(OTHER_SONG);
         music.tempoScale = 0.5;
-        expect(calls).toEqual([]);
-        music.refresh();
-        expect(calls).toEqual(['tempo 0.5', 'play', 'stop', 'play']);
+        expect(calls).toEqual(['play', 'stop', 'play', 'tempo 0.5']);
         music.tempoScale = 0.5;
-        music.refresh();
         music.tempoScale = -1;
-        music.refresh();
         expect(calls.slice(4)).toEqual(['tempo 0']);
+        expect(music.tempoScale).toBe(0);
     });
 
-    it('reports where its slot says the song heard has got to, once its calls are sent', () => {
+    it('starts a song on a headless chip at the tempo set after it, as the song player does with the tempo set first', () => {
+        const viaMusic = createHeadlessAudio80({ record: true });
+        const music = createMusicPlayer({ audio80: viaMusic.audio80 });
+        music.play(SONG);
+        music.tempoScale = 2;
+        const viaSong = createHeadlessAudio80({ record: true });
+        const song = createSongPlayer({ audio80: viaSong.audio80 });
+        song.tempoScale = 2;
+        song.play(SONG);
+        song.refresh();
+        for (let i = 0; i < 20; i++) {
+            viaMusic.controls.update(TICK_MS);
+            viaSong.controls.update(TICK_MS);
+            song.update(TICK_MS);
+            song.refresh();
+        }
+        expect(describeNoteOns(viaMusic.audio80.log)).toEqual(describeNoteOns(viaSong.audio80.log));
+    });
+
+    it('reports where its slot says the song heard has got to', () => {
         const { slot } = createSlotStandIn();
         const music = createMusicPlayer({ audio80: createChipOn(slot) });
         music.play(SONG);
-        music.refresh();
         slot.song = SONG;
         slot.orderIndex = 1;
         slot.row = 3;

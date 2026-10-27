@@ -61,7 +61,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.harpoonShots.increased) sound.play(HARPOON);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = computeTempo();
-        music.refresh();
     }
 
     /**

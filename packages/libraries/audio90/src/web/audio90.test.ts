@@ -20,8 +20,6 @@ import { createFakeAudioContext, FAKE_BASE_LATENCY_S, FAKE_OUTPUT_LATENCY_S, FAK
 import type { SongMessage, SongPlaceReply } from './song-messages';
 import { createAudio90 } from './audio90';
 
-const TICK_MS = 16;
-
 describe('createAudio90, with a stand-in audio context', () => {
     afterEach(() => {
         vi.unstubAllGlobals();
@@ -43,7 +41,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         const sample = createSample();
         audio90.noteOn(0, createInstrument({ engine: ENGINE_SAMPLE }, sample), 60, 1);
         audio90.noteOn(1, createInstrument({ engine: ENGINE_SAMPLE, volume: 0.5 }, sample), 60, 1);
-        tick(controls);
+        await settle();
         expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'instrument', 'instrument', 'batch']);
         expect(sample.data.data.length).toBe(SAMPLE_LENGTH);
     });
@@ -66,13 +64,14 @@ describe('createAudio90, with a stand-in audio context', () => {
         audio90.setCharacter('sampler');
         audio90.setTempo(136);
         audio90.noteOn(0, createInstrument(), 60, 1);
-        tick(controls);
+        await settle();
         fake.setState('running');
-        tick(controls);
-        const [held, latest] = fake.listBatches();
+        await settle();
+        const [held, ...rest] = fake.listBatches();
         expect(listOps(held).sort()).toEqual([OP90_SET_EFFECT, OP90_SET_CHARACTER, OP90_SET_TEMPO].sort());
+        expect(listOps(held)).not.toContain(OP90_NOTE_ON);
         expect(listValues(held, OP90_SET_EFFECT, 4, AUDIO90_EFFECT_INDEX.reverb)).toEqual([0.5]);
-        expect(listOps(latest)).not.toContain(OP90_NOTE_ON);
+        expect(rest).toEqual([]);
     });
 
     it('turns scopes on with three buffers to send them in, and copies each scope in, sending its buffer back', async () => {
@@ -88,38 +87,35 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect(fake.messages.at(-1)?.kind).toBe('scope-buffer');
     });
 
-    it('hears each write as it is made, until the worklet has said where its clock is', async () => {
+    it('says its time is 0 until the worklet first says where its clock is', async () => {
         const fake = createFakeContext('running');
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
-        tick(controls);
-        expect(audio90.heardTime).toBe(audio90.time);
+        fake.setCurrentTime(1);
+        expect([audio90.time, audio90.heardTime]).toEqual([0, 0]);
     });
 
-    it('hears the chip time the worklet\'s clock had reached at the frame now at the speaker, and counts its stalls', async () => {
+    it('works out its time, and the time heard, from where the worklet\'s clock was at a frame, moved on by the frames since', async () => {
         const fake = createFakeContext('running');
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
-        for (let i = 0; i < 80; i++) tick(controls);
         const msPerSample = 1000 / FAKE_SAMPLE_RATE;
-        // The worklet was about to render frame 24,000, at chip time 400 ms, when the batch arrived
-        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 400, frame: 24000, msPerSample, stallCount: 2 });
+        // The worklet's clock was at 400 ms as it rendered frame 24,000
+        fake.reply({ kind: 'clock', playheadMs: 400, frame: 24000, msPerSample });
         // Half a second of frames later, the speaker plays a frame the latency behind
         fake.setCurrentTime(1);
         const speakerFrame = FAKE_SAMPLE_RATE * (1 - FAKE_BASE_LATENCY_S - FAKE_OUTPUT_LATENCY_S);
+        expect(audio90.time).toBeCloseTo(900, 6);
         expect(audio90.heardTime).toBeCloseTo(400 + (speakerFrame - 24000) * msPerSample, 6);
-        expect(audio90.heardTime).toBeLessThan(audio90.time);
-        expect(controls.stallCount).toBe(2);
     });
 
-    it('never hears past its own time', async () => {
+    it('holds its time while the worklet\'s clock is paused, and hears no further', async () => {
         const fake = createFakeContext('running');
         const { audio90, controls } = createAudio90({ context: fake.context });
         await controls.ready;
-        tick(controls);
-        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE, stallCount: 0 });
+        fake.reply({ kind: 'clock', playheadMs: 250, frame: 12000, msPerSample: 0 });
         fake.setCurrentTime(10);
-        expect(audio90.heardTime).toBe(audio90.time);
+        expect([audio90.time, audio90.heardTime]).toEqual([250, 250]);
     });
 
     it('sends a song once, after its instruments and without their samples, then each call to its slot', async () => {
@@ -128,14 +124,13 @@ describe('createAudio90, with a stand-in audio context', () => {
         await controls.ready;
         const slot = audio90.openSongSlot();
         const song = createSequencedSong(createInstrument({ engine: ENGINE_SAMPLE }, createSample()));
-        tick(controls);
         slot.play(song);
         slot.play(song);
-        expect(fake.messages.map((message) => message.kind)).toEqual(['batch', 'sample', 'instrument', 'song', 'song-call', 'song-call']);
-        const sent = fake.messages[3] as SongMessage;
+        expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'instrument', 'song', 'song-call', 'song-call']);
+        const sent = fake.messages[2] as SongMessage;
         expect(sent.kind === 'song' && (sent.song as Audio90Song).instruments[0].sample).toBeUndefined();
-        expect(fake.messages[4]).toMatchObject({ kind: 'song-call', slot: 1, call: 'play', songId: 1, generation: 1, stampMs: TICK_MS });
-        expect(fake.messages[5]).toMatchObject({ generation: 2 });
+        expect(fake.messages[3]).toEqual({ kind: 'song-call', slot: 1, call: 'play', songId: 1, generation: 1, value: 0 });
+        expect(fake.messages[4]).toMatchObject({ generation: 2 });
         slot.setTempoScale(0.5);
         expect(fake.messages.at(-1)).toMatchObject({ call: 'tempo', value: 0.5, generation: 2 });
         slot.stop();
@@ -152,7 +147,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         slot.play(song);
         expect([slot.song, slot.orderIndex, slot.row]).toEqual([song, 0, 0]);
         // The speaker trails the context's count by its latency
-        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE, stallCount: 0 });
+        fake.reply({ kind: 'clock', playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE });
         const lagFrames = (FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S) * FAKE_SAMPLE_RATE;
         for (let row = 0; row < 3; row++) fake.reply(createPlace({ frame: 4800 + row * 4800, row }));
         fake.setCurrentTime((4000 + lagFrames) / FAKE_SAMPLE_RATE);
@@ -169,7 +164,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         await controls.ready;
         const slot = audio90.openSongSlot();
         slot.play(createSequencedSong(createInstrument()));
-        fake.reply({ kind: 'buffer', commands: new Float64Array(COMMAND_STRIDE), playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE, stallCount: 0 });
+        fake.reply({ kind: 'clock', playheadMs: 0, frame: 0, msPerSample: 1000 / FAKE_SAMPLE_RATE });
         fake.reply(createPlace({ frame: 0, beat: 2, tempoScale: 0.5 }));
         const lagFrames = (FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S) * FAKE_SAMPLE_RATE;
         // Half a second after the place, at half the song's 120 BPM, is half a beat on
@@ -241,7 +236,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         controls.musicVolume = 0.5;
         controls.reset();
         expect(fake.messages.at(-1)).toEqual({ kind: 'reset' });
-        tick(controls);
+        await settle();
         expect(fake.listBatches().at(-1)?.count).toBe(2);
         controls.destroy();
         expect(fake.messages.at(-1)).toEqual({ kind: 'stop' });
@@ -264,14 +259,9 @@ function createPlace(place: Partial<SongPlaceReply>): SongPlaceReply {
     return { kind: 'song-place', slot: 1, generation: 1, frame: 0, songId: 1, orderIndex: 0, row: 0, beat: 0, tempoScale: 1, ...place };
 }
 
-interface Controls {
-    readonly update: (deltaMs: number) => void;
-    readonly flush: () => void;
-}
-
-function tick(controls: Controls): void {
-    controls.update(TICK_MS);
-    controls.flush();
+/** Waits for the end of the task, when the chip sends what was written in it. */
+async function settle(): Promise<void> {
+    await Promise.resolve();
 }
 
 /** Creates a stand-in audio context, and puts its `AudioWorkletNode` in place of the browser's. */

@@ -355,10 +355,8 @@ function recordSong(song: Audio90Song): string[] {
     const { audio90: chip, controls } = createHeadlessAudio90({ record: true });
     const player = createMusicPlayer({ audio90: chip });
     player.play(song);
-    player.refresh();
     for (let i = 0; i < SONG_TICKS; i++) {
         controls.update(TICK_MS);
-        player.refresh();
     }
     return describeSongNotes(chip.log);
 }

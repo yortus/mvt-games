@@ -99,8 +99,6 @@ export interface ArcadeViewBindings {
     readonly performance: () => PerformanceMetrics | undefined;
     /** The metrics the page can't measure as things stand, such as the GPU's time for an entry not drawn with Pixi. The Perfmon shows them as n/a. */
     readonly unmeasuredMetrics: () => readonly MetricKind[];
-    /** How many times the sound chips have stalled since the page loaded, which the Perfmon shows. */
-    readonly stallCount: () => number;
     /**
      * The Perfmon's panel, once the page has loaded it. It is undefined until
      * then. The page loads it the first time the Perfmon opens, so its first
@@ -357,7 +355,6 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             isOpen: () => model.isPerfmonOpen,
             metrics: bindings.performance,
             unmeasured: bindings.unmeasuredMetrics,
-            stallCount: bindings.stallCount,
         });
     }
 

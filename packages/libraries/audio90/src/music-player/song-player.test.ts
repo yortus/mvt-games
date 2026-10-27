@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createAudio80Instrument, createAudio80Song, type Audio80Song, type Audio80SongOptions, toCutoff } from '../audio80';
 import { type Audio80Write, createHeadlessAudio80 } from '../headless';
-import { type AudioControls, computeSongDurationMs, toNoteNumber } from '../shared';
+import { type HeadlessControls, computeSongDurationMs, toNoteNumber } from '../shared';
 import { createSongPlayer, type SongPlayer } from './song-player';
 
 const BPM = 150;
@@ -469,7 +469,7 @@ function playThrough(song: Audio80Song, tickMs: () => number, durationMs: number
 }
 
 /** Ticks as a game loop does: the chip's clock, then the view's update, then its refresh. */
-function tick(controls: AudioControls, player: SongPlayer<Audio80Song>, tickMs: () => number, durationMs: number): void {
+function tick(controls: HeadlessControls, player: SongPlayer<Audio80Song>, tickMs: () => number, durationMs: number): void {
     let elapsed = 0;
     player.refresh();
     while (elapsed < durationMs) {

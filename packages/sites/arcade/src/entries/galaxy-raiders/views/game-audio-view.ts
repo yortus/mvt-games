@@ -63,7 +63,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.shots.increased) sound.play(SHOT);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = music.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
-        music.refresh();
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {

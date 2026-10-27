@@ -110,7 +110,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.creaks.increased) sound.play(CREAK);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = computeTempo();
-        music.refresh();
     }
 
     /** The meadow tune quickens as the share fenced off nears the round's target. Every other song plays at its own tempo. */

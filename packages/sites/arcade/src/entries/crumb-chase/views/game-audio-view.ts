@@ -64,7 +64,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (crumbs.decreased) sound.play(crumbs.value % 2 === 0 ? NIBBLE_LOW : NIBBLE_HIGH);
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = computeTempoScale();
-        music.refresh();
     }
 
     function playPhase(phase: GamePhase): void {

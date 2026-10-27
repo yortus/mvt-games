@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type AudioControls, createMusicPlayer, type Audio80Song } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
+import { createMusicPlayer, type Audio80Song } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80, type HeadlessControls } from 'audio90/headless';
 import {
     CARRIER_HIT,
     DIVE,
@@ -220,10 +220,8 @@ function recordSong(options: { song: Audio80Song; tempoScale?: number }): string
     const player = createMusicPlayer({ audio80: chip });
     player.tempoScale = options.tempoScale ?? 1;
     player.play(options.song);
-    player.refresh();
     for (let i = 0; i < SONG_TICKS; i++) {
         controls.update(TICK_MS);
-        player.refresh();
     }
     return describeNoteOns(chip.log);
 }
@@ -233,7 +231,7 @@ function recordSong(options: { song: Audio80Song; tempoScale?: number }): string
  * model, if there is one, and advances the chip's clock. Then it updates and
  * refreshes the view.
  */
-function createTicker(options: { controls: AudioControls; view: Container; model?: { update: (deltaMs: number) => void } }): () => void {
+function createTicker(options: { controls: HeadlessControls; view: Container; model?: { update: (deltaMs: number) => void } }): () => void {
     const { controls, view, model } = options;
     return () => {
         model?.update(TICK_MS);

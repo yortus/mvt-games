@@ -83,7 +83,6 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
         }
         if (w.clicks.increased) sound.play(REEL_CLICK);
         if (w.coins.increased) sound.play(COIN);
-        music.refresh();
     }
 
     function playPhase(phase: MachinePhase, previous: MachinePhase): void {

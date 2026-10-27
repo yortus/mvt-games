@@ -82,7 +82,6 @@ export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
         if (phase === 'fighting' && seconds.decreased && seconds.value > 0 && seconds.value <= TICKING_SECONDS) {
             sound.play(TICK);
         }
-        music.refresh();
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {

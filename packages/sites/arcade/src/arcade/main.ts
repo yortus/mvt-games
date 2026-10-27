@@ -164,7 +164,6 @@ root.append(ArcadeView({
     performance: () => meter,
     perfmon: () => perfmon,
     unmeasuredMetrics,
-    stallCount: () => sound.stallCount,
     onLiveWanted: playLive,
     playRectFor: (entry, starter) => host.playRectFor({
         screenWidth: entry.screenWidth,
@@ -212,7 +211,10 @@ let keptFavouriteIds = model.favouriteIds;
 // all, which is why the loop saves too.
 window.addEventListener('pagehide', saveGame);
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') saveGame();
+    const isHidden = document.visibilityState === 'hidden';
+    if (isHidden) saveGame();
+    // The chips keep the sound card's time, not the page's frames, so they are paused while nobody sees the game
+    sound.isHidden = isHidden;
 });
 
 // A link to an entry (`arcade/crumb-chase/`) launches it; going back or forward in history follows,
@@ -253,14 +255,9 @@ function frame(timeMs: number): void {
         liveHost.tick(timeMs, deltaMs);
         if (liveEntry !== undefined && liveElement?.isConnected === true) liveFrames++;
     }
-    // The page's whole body is ticked, the Arcade and its tools in the site's
-    // nav. The page's own chip keeps time with it, as an entry's chip does
-    // with its session. Its clock advances before the views, and what they
-    // wrote is sent after them.
-    sound.pageControls.update(deltaMs);
+    // The page's whole body is ticked, the Arcade and its tools in the site's nav
     updateView(document.body, deltaMs);
     refreshView(document.body);
-    sound.pageControls.flush();
     meter?.endFrame();
 
     requestAnimationFrame(frame);

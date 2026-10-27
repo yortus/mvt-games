@@ -56,7 +56,6 @@ const frame = (): void => {
     sessionControls?.update(FRAME_MS);
     updateView(stage, FRAME_MS);
     refreshView(stage);
-    sessionControls?.flush();
 };
 
 if (measure === 'time') {
@@ -74,8 +73,6 @@ if (measure === 'time') {
         const updateDone = performance.now();
         refreshView(stage);
         const refreshDone = performance.now();
-        // The host sends the chip's writes after the refresh. The silent chip's `flush` does nothing, so it is not timed
-        controls.flush();
         modelsMs += modelsDone - start;
         updateMs += updateDone - modelsDone;
         refreshMs += refreshDone - updateDone;

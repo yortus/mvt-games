@@ -13,9 +13,10 @@
 
 **Status:** in progress, on the branch `audio90`. 068, which this builds
 on, was committed there as `0ebacfec` on 2026-10-27, and its last open item
-moved here (step 10). Steps 2 and 3, the move and the renames, are done,
-unstaged.
-Section 12 records the progress.
+moved here (step 10). Steps 1 to 5 are done: the move, the renames and one
+clock. Step 6, sounds and a chip each for music and sound effects (section
+5.8), is next. The docs come near the end (step 11), once the design has
+settled, and the Studio last. Section 12 records the progress.
 
 **Written:** 2026-10-25, against main at `5cd89d4c`, with proposal 068
 built in its worktree but not yet merged. Name availability checked on npm
@@ -35,12 +36,14 @@ clock, which changed the music player and the chip clock first),
 | Decision | Recommendation | Section |
 | --- | --- | --- |
 | Name | `audio90`, unscoped. Free on npm, and no other software found by that name | 3 |
-| Code names | Unchanged: `Audio90`, `Audio80`, `createAudio90Song`... The package is named for its newest chip | 3 |
+| Code names | Unchanged: `Audio90`, `Audio80`, `createAudio90Song`... The package is named for its newest chip. Instruments and sound effects become sounds (5.8) | 3 |
 | Where it lives | `packages/libraries/audio90/`, still in the workspace | 4 |
 | Versioning | Its own changesets version, out of the `@mvtjs/*` fixed group, as v-snap is | 4 |
 | Entry points | `audio90` to write sounds and play them through Web Audio; `audio90/headless` to play them with no speaker, anywhere: tests, rendering, WAV and loudness | 5.1 |
 | Factories | `createAudio90` and `createAudio80` for the browser chips. The headless ones keep their names | 5.2 |
 | Clock | One clock, the sound card's. The browser chip's `update`, `flush`, lead and stalls go. A host pauses a chip with `pause()` and `resume()`. Headless chips still move by `update(deltaMs)`, so tests stay exact. Decided by the user, 2026-10-27 | 5.3 |
+| Sounds | One kind, a sound (`createAudio90Sound`), in place of instruments and sound effects. A song's `instruments` hold sounds. `play(sound, options?)` replaces `noteOn`, and returns an id that `release(id)` takes. Decided by the user, 2026-10-27 | 5.8 |
+| Music and sound effects | A chip each. The voices kept for music and the two volume groups in each chip go, and each chip has one `volume`. The Audio80 has 4 voices, and the Audio90 keeps 16. Arcade entries get a `music` chip and an `sfx` chip. Decided by the user, 2026-10-27 | 5.8 |
 | Song files | A text format that `parseAudio90Song` reads and `formatAudio90Song` writes, round trip exact | 5.5 |
 | The first thing people see | `createPlayer()`, a simple player in the style of chiptune3's: play, pause, stop, repeat, seek, volume, tempo, pitch. The chip API stays beneath it, for games | 5.7 |
 | MVT material | Moves out of the package docs into the docs site's Sound and Music page | 6 |
@@ -234,16 +237,22 @@ Since 068, `createMusicPlayer({ audio90 })` (or `{ audio80 }`) has `play`,
 `queue`, `stop`, `tempoScale` and the heard `song`, `orderIndex`, `row` and
 `beat`, and no `update`. Its docs stop calling it presentation state.
 
-068 kept `refresh`: the player holds its calls until then, and sends them
-together, so a song that starts at a new tempo gets its tempo first (068,
-section 15.2). With one clock, the player sends its calls on a microtask
-instead, as the chip sends its other writes, so a song and its tempo still
-travel together, and `refresh` goes. Nobody calls anything each frame. An
-audio view calls `play` and `stop`, and sets `tempoScale`, in its refresh
-step, as it does now.
+068 kept `refresh`: the player held its calls until then, and sent them
+together, so a song that starts at a new tempo got its tempo first (068,
+section 15.2). With one clock, `refresh` goes, and the player sends each
+call to its slot as it is made. Nobody calls anything each frame. An audio
+view calls `play` and `stop`, and sets `tempoScale`, in its refresh step, as
+it does now.
 
-On a headless chip, a call still takes effect at once, so a recording chip
-logs the same notes at the same times.
+As built (step 5), a tempo set just after `play` still applies from the
+song's start. Both calls reach the sequencer before the song moves on: in
+the worklet, at the start of the same block, and on a headless chip, before
+its next `update`. The song's tempo and slides are rewritten at the song's
+start stamp, so its notes fall at exactly the same times as with the tempo
+set first. Only a glide in the song's first row keeps the tempo the song
+started at. Holding the calls until the chip next moves was tried first,
+and dropped: on a headless chip, a call then took effect a tick later than a
+test looks for it, and `SongSlot` promises it takes effect at once.
 
 ### 5.5 Song files
 
@@ -253,9 +262,8 @@ code base, but an editor, a share link or a game that loads its music at
 run time needs a file.
 
 Add `formatAudio90Song(song)`, which writes a song as text, and
-`parseAudio90Song(text)`, which reads it back. The same goes for sound
-effects and instruments. Use a JSON envelope for the instruments and
-settings, with each pattern as the tracker text the chips already read, so
+`parseAudio90Song(text)`, which reads it back. The same goes for sounds
+(5.8). Use a JSON envelope for the song's sounds and settings, with each pattern as the tracker text the chips already read, so
 a file is readable and diffs well. The test is a round trip: format then
 parse gives the same song, for every tune in the Arcade. The Tune Tracker
 already relies on the same kind of round trip for each cell.
@@ -298,7 +306,7 @@ player.repeat = 1;              // play the loop once more, then end
 player.pause();
 player.resume();
 player.seek(30_000);            // in ms, or player.seekTo(orderIndex, row)
-player.playEffect(coin);        // over the music, on the voices it leaves
+player.playSound(coin);         // over the music, on a chip of its own
 ```
 
 It is a thin layer over a chip, its controls and a music player. It follows this repo's style rather than chiptune3's: a
@@ -308,10 +316,10 @@ factory, not a class, and properties for settings rather than setters.
 | --- | --- | --- |
 | `play(buffer)`, `load(url)` | `play(song)`, `load(url)` | `play` exists. `load` needs the song file format (5.5) |
 | `stop` | `stop()` | Exists |
-| `pause`, `unpause`, `togglePause` | `pause()`, `resume()`, `isPaused` | The chip's own `pause` and `resume` (5.3), which hold the music and any effects ringing |
+| `pause`, `unpause`, `togglePause` | `pause()`, `resume()`, `isPaused` | The music chip's own `pause` and `resume` (5.3). Sounds play on their own chip (5.8), so a paused player still plays a menu's clicks |
 | `setRepeatCount` | `repeat`: how many more times the loop plays, `Infinity` by default | New, and small: the sequencer counts its returns to the song's `loop` |
 | `seek`, `setOrderRow` | `seek(ms)`, `seekTo(orderIndex, row)` | New, and the most work (below) |
-| `setVol` | `volume`, `musicVolume`, `effectsVolume` | Exist, on the controls |
+| `setVol` | `volume`, `musicVolume`, `sfxVolume` | Each chip's `volume` (5.8). `volume` scales both |
 | `setTempo` | `tempo` | Exists, as the music player's `tempoScale` |
 | `setPitch` | `pitch`, in semitones | New. Whole semitones are small, since the order already transposes patterns (`'verse+5'`). A fraction of a semitone needs each engine, samples too, to scale its frequency |
 | `setStereoSeparation` | `stereoWidth` | New, and small, on the Audio90's mix. The Audio80 is mono |
@@ -321,7 +329,8 @@ factory, not a class, and properties for settings rather than setters.
 | `onError` | `ready`, which rejects | Exists, on the controls |
 
 What the player keeps that chiptune3 lacks: sound effects over the music,
-and both chips. If each song says which chip it is for, `play` can make the
+on a second chip it makes when the first sound plays, and both kinds of
+chip. If each song says which chip it is for, `play` can make the
 chip it needs, so one player plays Audio80 and Audio90 songs alike.
 
 **Seeking** is the one hard part. A tracker song's state at a row depends on
@@ -338,8 +347,145 @@ when the audio thread reports them. The values they report can be polled
 too.
 
 The chip API stays beneath the player. A game, and every MVT app, uses the
-chip and a music player directly, pauses the chip when it pauses, and tests
-its audio views on a headless chip, which steps with its models.
+chips and a music player directly, pauses the chips when it pauses, and
+tests its audio views on headless chips, which step with its models.
+
+### 5.8 Sounds, and a chip each for music and sound effects
+
+Decided with the user, 2026-10-27, before the docs, so they are written
+once, with these names.
+
+**Two kinds for one idea.** Each chip has an instrument, which says how a
+voice sounds and which songs play, and a sound effect, which wraps an
+instrument with a note, a length and a volume, and which `play` plays on a
+voice the chip picks. They are one thing, a sound, at different stages: what
+it sounds like, and how it is played. The names make them look like two
+ideas, "instrument" suggests music, and "effect" also names the Audio90's
+reverb, echo, chorus and pump.
+
+**One kind: a sound.** `createAudio80Sound` and `createAudio90Sound` replace
+the four instrument and sound effect factories, with the types
+`Audio80Sound` and `Audio90Sound`, and `isAudio80Sound` and
+`isAudio90Sound`. A sound holds how a note sounds, and how it plays on its
+own: `note`, `glideTo`, `lengthMs`, `volume`, `priority` and `maxVoices`, and
+on the Audio90 `pan` and the sends.
+
+- A song's `instruments` keeps its name, and its values are sounds. An
+  instrument is a sound's role in a song, not a kind of its own. A song
+  takes the pitch, the length and the voice from its patterns, so it ignores
+  the sound's `note`, `glideTo`, `lengthMs`, `priority` and `maxVoices`.
+- The sound effect's `instrument` option goes. A play option changes the
+  note, or one sound's options are spread into another's.
+- `createAudio90Sample` stays: a sample is audio that a sound plays.
+- "Effect" in the API then means only the reverb, echo, chorus and pump.
+- The render script finds sounds among a module's exports, so it renders a
+  song's instruments too, each at its own note.
+
+**One way to play.** `play` and `noteOn` become one call, and `noteOff`
+becomes `release`, which pairs with `releaseAll`:
+
+```ts
+play: (sound: Audio80Sound, options?: Audio80PlayOptions) => number;
+release: (id: number, atMs?: number) => void;
+
+interface Audio80PlayOptions {
+    /** A note name, such as 'E-5', or a number, where 60 is middle C. Defaults to the sound's. */
+    readonly note?: string | number;
+    readonly glideTo?: string | number;
+    /** How long it's held before its release. Infinity holds it until `release`. Defaults to the sound's. */
+    readonly lengthMs?: number;
+    /** Scales the sound's own volume. Defaults to 1. */
+    readonly volume?: number;
+    /** The chip time to start at. Defaults to as soon as it can. */
+    readonly atMs?: number;
+}
+// Audio90PlayOptions adds pan.
+```
+
+```ts
+// Before
+chip.play(NIBBLE_HIGH);
+chip.play(EXPLOSION, 0.5);
+chip.noteOn(3, PAD, 64, 0.8, atMs);
+chip.noteOff(3);
+
+// After
+chip.play(NIBBLE, { note: 'E-5' });
+chip.play(EXPLOSION, { pan: 0.5 });
+const id = chip.play(PAD, { note: 64, volume: 0.8, lengthMs: Infinity, atMs });
+chip.release(id);
+```
+
+- **The id.** The worklet picks a sound's voice after `play` returns, so
+  `play` can't return the voice. It numbers each play with a counter
+  instead, and sends the number with the play. The worklet notes which play
+  each voice holds. `release(id)` releases that play's note, and does
+  nothing if its voice has since gone to another sound.
+- **No voice to choose.** Nothing outside the worklet picks a voice any
+  more, so `noteOn`'s voice has no replacement. Only the Arcade's stand-in
+  chip passes `noteOn` on today. `setVoice` also takes a voice (open
+  question 10).
+- **Hot paths.** The options object is made only when a sound plays, which
+  is rare. The check each frame for whether to play, such as a watched
+  count's `increased`, makes nothing (rule 5).
+
+**A chip each for music and sound effects.** Songs play on one chip, and
+sounds on another. What goes:
+
+- **Keeping voices for music.** `reserveVoices`, the chip's count of voices
+  kept for music, free voices taken from the top down so an effect doesn't
+  land where a song is about to start, and taking a note a song left
+  behind. Choosing a voice comes down to one rule: a free voice, or else the
+  oldest sound of equal or lower priority (`shared/choose-effect-voice.ts`).
+- **The two volume groups in each chip.** Today each voice is routed to the
+  music or the effects group by what it plays, and `setMix` sets each
+  group's gain. Each chip has one `volume` instead. `musicVolume` and
+  `effectsVolume` leave the controls. The Arcade keeps them as its settings,
+  `musicVolume` and `sfxVolume`, and sets each chip's `volume` from them.
+- **Shared settings.** A song's echo, filters, reverb, chorus and pump no
+  longer colour the sound effects. The pump ducks the music in time with one
+  of the song's voices, so it stays with the music.
+- **Mixed logs.** A recording chip's log holds only the music or only the
+  sounds, so a test reads the one it cares about.
+
+A chip doesn't stop a song and sounds sharing it, but it no longer protects
+the music: a sound may take a song's voice until that channel's next note
+takes it back, as on the old consoles. The docs say to use a chip for each.
+
+What it costs:
+
+- **Processing.** Each worklet runs its effects every sample, sounding or
+  not, so a second Audio90 roughly doubles that fixed part. Voices cost the
+  same, since the same notes play. Measure on a phone, in step 10.
+- **Samples.** A sample used by a song and by a sound is sent to both chips.
+- **Timing between chips.** Each chip keeps its own time, so a sound can't
+  be stamped on the music's clock (open question 9).
+- **The Arcade's entries** get two chips (below), which touches every entry
+  with sound, and its tests.
+
+**The Audio80 has 4 voices,** down from 8. An Audio80 entry has 8 in all, 4
+for music and 4 for sounds, as many as today. Several early sound chips had
+3 or 4 channels, and arcade boards often carried two or three chips, so two
+4-voice chips are true to the period.
+
+- Every Audio80 song in the Arcade uses 3 or 4 channels already, by the
+  comments in each entry's `data/music.ts`. A song with more than 4
+  channels becomes an error.
+- Burrow Bust, Crumb Chase, Fruit Machine and Fuel Run give effects 5 or 6
+  voices today, and get 4. Priority and `maxVoices` handle that, but their
+  busiest moments need a listen.
+- Two 4-voice chips synthesise as many voices as one 8-voice chip. Only the
+  echo and the two filters run twice, which is small on the Audio80.
+
+The Audio90 keeps 16 voices (the user), so an Audio90 entry has 32.
+
+**The Arcade.** An entry that names a chip gets two of that kind, `music`
+and `sfx`, in place of `sound`, and its tests' recording chips follow. The
+page's own Audio80 plays its interface sounds. `MUSIC_PREVIEW`, in
+`arcade/data/sounds.ts`, is a one-note song only so that it plays at the
+music's volume. It becomes a sound played on a chip at the music's volume:
+the entry's music chip, which the page already loads, or a second page
+chip. Decide in step 6.
 
 ## 6. Docs
 
@@ -399,8 +545,8 @@ history and a selection, which no game in the Arcade has.
 
 | Stage | What | Why first |
 | --- | --- | --- |
-| 1. Sound effect designer | Presets (coin, laser, hit, jump, explosion...), sliders for the wave, envelope, sweep and filter, a randomise and a mutate button, and Play. Exports the effect as code or as a file | Smallest, and the gap people notice first |
-| 2. Instrument editor | A panel for each Audio90 engine (FM operators, analog oscillators, sample recipes), a scope and a meter, and the computer keyboard as a piano | Instruments are the hardest part of a song to write by hand |
+| 1. Sound designer | Presets (coin, laser, hit, jump, explosion...), sliders for the wave, envelope, sweep and filter, a randomise and a mutate button, and Play. Exports the sound as code or as a file | Smallest, and the gap people notice first |
+| 2. Engine editor | A panel for each Audio90 engine (FM operators, analog oscillators, sample recipes), a scope and a meter, and the computer keyboard as a piano | A song's instruments are the hardest part of it to write by hand |
 | 3. Tracker | The Tune Tracker's pattern view, made editable: a cursor, notes entered from the keyboard, patterns, the order, copy and paste, undo | Reuses the views the Tune Tracker already has |
 | 4. Sharing | A song in a link, compressed, as the playground's share links are. Open in the Playground. Export as code, as a file, or as WAV | Needs the song file format (section 5.5) |
 
@@ -419,21 +565,25 @@ history and a selection, which no game in the Arcade has.
 1. ~~Merge 068.~~ Done: committed as `0ebacfec`, on the branch `audio90`,
    on 2026-10-27. It reshaped the music player and the chip clock, which
    sections 5.3 and 5.4 build on.
-2. Rename, move and re-version (sections 3, 4 and 7), with no API change
-   but the factory names. The Arcade keeps working throughout. The move and
-   rename are done (section 12); the factory names are step 3 of section
-   11.
-3. The neutral docs (section 6).
-4. One clock and the optional context (sections 5.3 and 5.2).
+2. ~~Rename, move and re-version (sections 3, 4 and 7), with no API change
+   but the factory names.~~ Done, 2026-10-27 (section 12).
+3. ~~One clock and the optional context (sections 5.3 and 5.2).~~ Done,
+   2026-10-27.
+4. Sounds, and a chip each for music and sound effects (section 5.8).
 5. The song file format (section 5.5).
 6. The player (section 5.7): first what exists and the small additions,
    then seeking and fractional pitch.
-7. Try the full build on a phone, as 068 left to do. Then publish
-   `audio90`, and deprecate `@mvtjs/chiptune`.
-8. The Studio, a stage at a time (section 8).
+7. Try the full build on a phone, as 068 left to do.
+8. The neutral docs (section 6), near the end, so they are written once,
+   after the design has settled (the user, 2026-10-27).
+9. Publish `audio90`, and deprecate `@mvtjs/chiptune`.
+10. The Studio, a stage at a time (section 8), last, once the package is
+    finished (the user).
 
-Steps 2 and 3 alone make it a standalone package. Steps 4 to 6 make it
-pleasant to use outside a game.
+Section 11 breaks these into numbered steps. In its numbers, the rename
+(steps 2 to 4), the docs (step 11) and publishing (step 12) alone make it a
+standalone package. Steps 5 to 9 make it pleasant to use outside a game,
+and the phone check, step 10, tries it where it is most likely to fail.
 
 ## 10. Open Questions
 
@@ -463,7 +613,7 @@ pleasant to use outside a game.
    `runner/web-chips.ts`, which re-exports the two browser factories, and
    loads that. Its first load is 54.7 KB again. The runner's tests mock
    that module rather than the package. Any page that wants the same split
-   needs the same small module, and the README should say so (step 5).
+   needs the same small module, and the README should say so (step 11).
 3. ~~**The free clock's default.**~~ Gone with the `clock` option: there
    is one clock (section 5.3, the user, 2026-10-27). What is left of it is
    that a game which forgets to pause its chip plays sound on while paused.
@@ -471,11 +621,9 @@ pleasant to use outside a game.
 4. ~~**A free-clock sequencer.**~~ Answered by 068 as built: the sequencer
    moves on in every block the chip clock doesn't plan as silence, so the
    new clock needs no change to it (section 5.3).
-5. **Pausing the player.** A chip's pause holds everything on it, music
-   and effects (section 5.3). Should a paused player still play effects,
-   such as a menu's clicks? Then it must hold only the sequencer, and
-   silence the music's voices. A game that wants that today plays its
-   menu's sounds on a second chip, as the Arcade does.
+5. ~~**Pausing the player.**~~ Answered by section 5.8: sounds play on a
+   chip of their own, so pausing the player pauses only the music's chip,
+   and a menu's clicks still play.
 6. **The player's name.** `createPlayer`, or `createAudio90Player`, which
    says what it plays but not that it plays Audio80 songs too?
 7. **The Studio's address.** Beside the others under the site, as
@@ -494,12 +642,28 @@ pleasant to use outside a game.
    past the new barrel, so the lint rule would need an exception. Renaming
    the folder `browser/` was considered and set aside: "web" names the API,
    Web Audio, not the platform, and the rename would carry into
-   `web-chip.ts`, `createWebChip` and `WebSongSlots`. Decide in step 6,
-   which rewrites `chip-clock.ts` and much of the page's side anyway.
+   `web-chip.ts`, `createWebChip` and `WebSongSlots`. Decide before the
+   docs, step 11, describe the package's layout.
    While there, `song-sequencer.ts` exports `createWorkletSequencer`, so
    its file is misnamed (`worklet-sequencer.ts`).
+9. **A clock shared by the music and the sounds.** With a chip each
+   (section 5.8), a sound can't be stamped on the music's clock, for
+   example to land exactly on a beat. `beat` is what the listener hears
+   now, so a sound played as it ticks over is heard one output delay late:
+   tens of milliseconds, more on some phones. Nothing in the Arcade needs
+   it today, and both chips run on one `AudioContext`, so a shared clock
+   could come later: chip time as the context's time, less the time spent
+   paused, would agree on two chips paused together.
+10. **`setVoice`.** It sets one voice's setting, and takes a voice number.
+    With no `noteOn`, nothing outside the worklet chooses voices (section
+    5.8). Should it take a play id, as `release` does, or go? Check its
+    callers in step 6.
 
 ## 11. Implementation Steps
+
+Reordered on 2026-10-27, at the user's request: the docs come near the
+end, after any other change to the design, and the Studio last, once the
+package is finished. The progress log uses these numbers.
 
 1. ~~Merge 068.~~ Done: `0ebacfec`, on the branch `audio90`.
 2. ~~Move the folder, rename the package, and swap the export condition
@@ -511,34 +675,56 @@ pleasant to use outside a game.
 4. ~~The playground's library list, descriptions and export dependencies
    name `audio90`. No alias for the old name (section 7).~~ Done with step
    2. The one-line description still says "A little sound chip", which
-   step 5 can make "Two little sound chips".
-5. Rewrite the README and the three guides. Move the MVT material to the
-   docs site's Sound and Music page. Update the glossary, project structure
-   and AGENTS.md.
-6. One clock (section 5.3): the browser chip on the sound card's time,
+   step 11 can make "Two little sound chips".
+5. ~~One clock (section 5.3): the browser chip on the sound card's time,
    with `pause` and `resume`, and writes sent by a microtask. Remove
    `update`, `flush`, the lead, the stalls and `stallCount` from the
    browser chip, and `refresh` from the music player. `update` moves to
    the headless chips' controls. The Arcade's entry host and page pause
    their chips, the page while it is hidden too, and the Perfmon loses
    "Chip stalls". Then the optional `context`. Unit tests in the fake audio
-   context, and a page test in a real browser. Before moving files, decide
-   open question 8, on the `src/web/` folder.
+   context, and a page test in a real browser.~~ Done, 2026-10-27
+   (section 12).
+6. Sounds, and a chip each for music and sound effects (section 5.8).
+   Decide open question 10 first.
+   - **The package:** one kind, a sound, in place of instruments and sound
+     effects; `play` with options, returning an id; `release`; no
+     `noteOn` or `noteOff`. Remove `reserveVoices`, the voices kept for
+     music and the two volume groups, so each chip has one `volume`. Take
+     the Audio80 to 4 voices, and make a song with more channels an error.
+     The render script, the changesets and the tests follow.
+   - **The Arcade:** `music` and `sfx` chips for each entry with sound, in
+     the entry host, `PageSound` and its stand-in chips; the settings'
+     `musicVolume` and `sfxVolume`; the music slider's preview; every
+     entry's sounds, songs, audio views and tests; the tunes and the Tune
+     Tracker. Listen to Burrow Bust, Crumb Chase, Fruit Machine and Fuel
+     Run at their busiest, with 4 voices for effects.
+   - **Elsewhere:** the playground's examples, starters and exported
+     projects, the benchmarks, and AGENTS.md's sound rule.
+   - **Checks:** lint, unit and visual tests, the build and its budget,
+     `build:packages`, and a page test in Playwright's headless shell, as
+     in step 5.
 7. Add `formatAudio90Song` and `parseAudio90Song`, with a round-trip test
    over every tune in the Arcade.
 8. Add `createPlayer` with what exists, plus `pause`, `resume`, `repeat`,
-   whole-semitone `pitch`, `stereoWidth`, `onEnded` and `onRow`. Make it
-   the README's first example.
+   whole-semitone `pitch`, `stereoWidth`, `onEnded` and `onRow`. It becomes
+   the README's first example in step 11.
 9. Add `seek` and `seekTo`, with a test that a song played from a row
    sounds the same as one seeked to it. Then fractional pitch.
 10. Try the full build on a phone, over Bluetooth too, as 068 left to do:
-    every entry's music on the sequencer, and pausing and resuming a game.
-    Then a changeset for the rename, beside 068's. Publish `audio90`'s
-    first version by hand, since npm trusts a workflow only with a package
-    that exists, then set up trusted publishing for it, as
+    every entry's music and sounds, pausing and resuming a game, and what a
+    second Audio90 costs (section 5.8). It comes before the docs, since
+    what it finds may change the design.
+11. Rewrite the README and the three guides. Move the MVT material to the
+    docs site's Sound and Music page. Update the glossary, project
+    structure and AGENTS.md. Decide open question 8 first, since the README
+    describes the package's layout.
+12. A changeset for the rename, beside 068's. Publish `audio90`'s first
+    version by hand, since npm trusts a workflow only with a package that
+    exists, then set up trusted publishing for it, as
     `.changeset/README.md`'s "The first release" says. Deprecate
     `@mvtjs/chiptune`.
-11. The Studio, stage 1, as its own proposal.
+13. The Studio, stage 1, as its own proposal, once `audio90` is published.
 
 ## 12. Progress
 
@@ -562,11 +748,11 @@ pleasant to use outside a game.
     (AGENTS.md, the README, the project structure, `.changeset/README.md`)
     says four `@mvtjs` libraries, with `audio90` and `v-snap` on versions of
     their own. The package README and the Audio80 guide say what changed
-    about entry points. The rest of their wording waits for step 5.
+    about entry points. The rest of their wording waits for step 11.
   - The playground's entry is `libraries/entries/audio90.ts`, and its type
     bundle script takes each library's npm name, so `audio90`'s types load
     under that name. An exported project that uses sound asks for
-    `audio90@^0.7.0`, which npm won't have until step 10.
+    `audio90@^0.7.0`, which npm won't have until step 12.
   - The Arcade gained `runner/web-chips.ts` (open question 2).
   - Checked: `npm run test:unit` (231 files), `npm run test:visual` (50
     files, no image changed), `npm run lint`, `npm run build` with its
@@ -585,3 +771,72 @@ pleasant to use outside a game.
   Checked: `tsc -b`, lint, `npm run test:unit`, `npm run build` (first
   load 54.7 KB) and `npm run build:packages`. Not yet heard in a real
   browser since the rename.
+- **2026-10-27, step 5 done**, unstaged, before the docs at the user's
+  choice, so they describe one clock:
+  - **The worklet's clock** (`web/chip-clock.ts`) plays from chip time 0 at
+    the sound card's rate. A pause holds chip time, fades out over one block
+    with the voices sounding, then plans silence, so the sequencer stops. A
+    resume fades back in. The lead, the catch-up, the stalls and the
+    one-second fade are gone. The runner sends a `clock` reply, with the
+    chip time at a frame and the rate, whenever the rate changes: at the
+    first block, and as it pauses and resumes. The page works out `time` and
+    `heardTime` from it. Batches lose `horizonMs`, and buffer replies carry
+    only the buffer.
+  - **The page's side** (`web/web-chip.ts`) sends the writer's commands at
+    the end of the task (the writers' new `onFirstWrite`), and the writer has
+    no clock (`hasClock: false`), so a write with no `atMs` plays as soon as
+    it arrives. While the chip is paused, it keeps only the lasting writes,
+    as while the context is suspended, and sends them as it resumes, as the
+    context starts, or as the worklet loads. `pause` and `resume` are
+    messages, kept until the worklet runs, and a reset before then keeps a
+    pause. Without a `context`, the chip makes its own, starts it at the
+    first `pointerdown`, `keydown` or `touchend`, and closes it when
+    destroyed. Where there is no `AudioContext`, as in Node, it throws and
+    names `audio90/headless`.
+  - **Song calls** carry no chip time, so the sequencer's skip-ahead and its
+    `noteOnOp` option are gone. A song started while audio cannot play
+    starts from its beginning.
+  - **Controls:** `AudioControls` has `pause`, `resume` and `isPaused`, and no
+    `update`, `flush` or `stallCount`. `HeadlessControls`, from
+    `audio90/headless`, adds `update`, which does nothing while paused.
+    `Audio80WithControls` and `Audio90WithControls` take the controls' type
+    as a second parameter, which the headless chips set.
+  - **The music player** passes each call to its slot at once, and sends
+    the tempo only as it changes (section 5.4).
+  - **The Arcade:** the entry host pauses the entry's chip as it pauses
+    the game, and resumes it for each new session. The Pixi stage and the
+    loop no longer touch the chips. `PageSound` lost `stallCount` and gained
+    `isHidden`, which `main.ts` sets on `visibilitychange`. Its stand-in
+    controls pause a chip while either its own controls or the hidden page
+    say so, so showing the page doesn't resume a paused game's chip. The
+    Perfmon's "Chip stalls" line and its CSS are gone. The audio views and
+    their tests lost every `refresh()` on a music player.
+  - **The playground's** sandbox pauses the chip while the project is
+    paused, and it and exported projects call `createAudio80()` with no
+    context. Before, neither ever started the context they made, so an
+    exported project's sound depended on the browser's autoplay rules.
+  - **Changesets:** `one-clock.md` describes the API change, and
+    `music-on-the-sequencer.md` no longer mentions `refresh` or the
+    skip-ahead. AGENTS.md's sound rule says how music and pausing work now.
+    The rest of the docs wait for step 11.
+  - **Checked:** `npm run lint`, `npm run test:unit` (231 files, 3,005
+    tests), `npm run test:visual` (50 files, no image changed),
+    `npm run build` (first load 54.7 KB) and `npm run build:packages`. In
+    Playwright's headless shell, against the build: Galaxy Raiders reported
+    20 rows in 2 s, none while paused with Escape (a `pause` posted, and a
+    clock reply with a rate of 0), and 20 in 2 s after resuming. Hiding the
+    page posted `pause` to both Audio80s, and no rows came until it showed
+    again. The Tune Tracker played 32 rows in 4 s on the Audio90. No page
+    errors. Not yet listened to by a person.
+- **2026-10-27, section 5.8 decided** with the user: one kind, a sound, in
+  place of instruments and sound effects, with a song's `instruments`
+  holding sounds; `play(sound, options?)` in place of `noteOn`, returning an
+  id for `release`; a chip each for music and sound effects, with
+  `musicVolume` and `sfxVolume` as the Arcade's settings; the Audio80 down to
+  4 voices, the Audio90 kept at 16. Step 6 does it. Open
+  question 5 is answered by it, and questions 9 and 10 are new.
+- **2026-10-27, steps reordered** at the user's request. The docs moved
+  from step 5 to step 11, after every change to the design. The phone
+  check, step 10, comes before them, since it may change the design too.
+  Publishing is step 12, and the Studio is last, step 13. One clock became
+  step 5, and sounds step 6. The entries above use the new numbers.

@@ -8,20 +8,19 @@ import type { SongCallMessage, SongMessage, SongPlaceReply } from './song-messag
 
 /**
  * A chip's sequencer, in its worklet. It plays songs on the sound card's
- * clock rather than the ticks, so a late frame on the page never holds the
- * music up. Each slot plays one song at a time, through a song player on a
- * writer and clock of its own.
+ * clock, so a late frame on the page never holds the music up. Each slot
+ * plays one song at a time, through a song player on a writer and clock of
+ * its own.
  *
  * Before each block the worklet renders, every slot moves on by the time the
  * block lasts, at the sound card's rate. Each write is then restamped with
  * the chip time of the sample it falls on, and queued with the page's
  * writes. So the songs move only in blocks the worklet renders, and stop
- * while the chip's clock is paused or waiting, as the game is.
+ * while the chip is paused.
  *
  * Calls from the page take effect at the start of the next block rendered.
- * A song started at a chip time the worklet has already played past, as
- * when the sound card could not play, skips ahead to where it would have got
- * to: its settings apply at once, and the notes it skipped are left out.
+ * A song started while the sound card could not play starts from its
+ * beginning once it can.
  */
 export interface WorkletSequencer {
     /** Takes a message from the page: a song to keep, or a call to a slot. */
@@ -53,8 +52,6 @@ export interface WorkletSequencerOptions<S extends SequencedSong, W extends Comm
     readonly createWriter: (idOf: (instrument: object) => number | undefined) => W;
     /** Creates a song player that writes to `writer`. */
     readonly createPlayer: (writer: W) => SongPlayer<S>;
-    /** The opcode of the chip's note-on command, which a song skipping ahead leaves out. */
-    readonly noteOnOp: number;
     /** Sends a slot's place to the page. It must copy the reply before it returns, as `postMessage` does, since the record is reused. */
     readonly sendPlace: (reply: SongPlaceReply) => void;
 }
@@ -65,7 +62,7 @@ export interface WorkletSequencerOptions<S extends SequencedSong, W extends Comm
 
 /** Creates a sequencer with no songs and no slots. */
 export function createWorkletSequencer<S extends SequencedSong, W extends CommandWriter>(options: WorkletSequencerOptions<S, W>): WorkletSequencer {
-    const { createWriter, createPlayer, noteOnOp, sendPlace } = options;
+    const { createWriter, createPlayer, sendPlace } = options;
     const msPerSample = 1000 / options.sampleRate;
     const songs = new Map<number, S>();
     const songIds = new Map<S, number>();
@@ -77,8 +74,6 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
     const slotsByNumber = new Map<number, Slot<S, W>>();
     // The calls waiting for the next block
     const calls: SongCallMessage[] = [];
-    // What a song skipping ahead keeps, grown as needed
-    let kept = new Float64Array(64 * COMMAND_STRIDE);
     // Reused for every place sent. Its fields are written, then it is copied as it is sent
     const reply = { kind: 'song-place' as const, slot: 0, generation: 0, frame: 0, songId: 0, orderIndex: 0, row: 0, beat: 0, tempoScale: 1 };
 
@@ -95,7 +90,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
         },
 
         advance(frames, fromMs, chipMsPerSample, frame, enqueue) {
-            for (let i = 0; i < calls.length; i++) apply(calls[i], fromMs, enqueue);
+            for (let i = 0; i < calls.length; i++) apply(calls[i]);
             calls.length = 0;
             const blockMs = frames * msPerSample;
             for (let s = 0; s < slots.length; s++) {
@@ -137,8 +132,8 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
         },
     };
 
-    /** Applies one call from the page to its slot, at the start of the block that covers chip time from `fromMs`. */
-    function apply(call: SongCallMessage, fromMs: number, enqueue: (commands: Float64Array, count: number) => void): void {
+    /** Applies one call from the page to its slot, at the start of the next block. */
+    function apply(call: SongCallMessage): void {
         const slot = findSlot(call.slot);
         slot.generation = call.generation;
         slot.isMoved = true;
@@ -153,35 +148,8 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
         }
         const song = songs.get(call.songId);
         if (song === undefined) return;
-        const startsNow = call.call === 'play' || !player.isPlaying;
         if (call.call === 'play') player.play(song);
         else player.queue(song);
-        // A song started at a chip time already played, as when the sound card could not play, skips ahead
-        const skipMs = fromMs - call.stampMs;
-        if (startsNow && skipMs > 0) skipAhead(slot, skipMs, enqueue);
-    }
-
-    /** Moves `slot`'s song on by `skipMs` at once, keeping what it sets and leaving out the notes it would have played. */
-    function skipAhead(slot: Slot<S, W>, skipMs: number, enqueue: (commands: Float64Array, count: number) => void): void {
-        const { writer, player } = slot;
-        writer.update(skipMs);
-        player.update(skipMs);
-        player.refresh();
-        const count = writer.count;
-        const commands = writer.commands;
-        if (kept.length < count * COMMAND_STRIDE) kept = new Float64Array(count * COMMAND_STRIDE);
-        let keptCount = 0;
-        for (let i = 0; i < count; i++) {
-            const from = i * COMMAND_STRIDE;
-            if (commands[from] === noteOnOp) continue;
-            const to = keptCount * COMMAND_STRIDE;
-            for (let j = 0; j < COMMAND_STRIDE; j++) kept[to + j] = commands[from + j];
-            // It applies as the block starts
-            kept[to + 1] = -Infinity;
-            keptCount++;
-        }
-        if (keptCount > 0) enqueue(kept, keptCount);
-        writer.clear(commands);
     }
 
     /** Sends where `slot` is, if it has moved to a new row, started or stopped a song, or taken a call since it was last sent. */

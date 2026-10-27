@@ -210,6 +210,9 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
         set isPaused(value) {
             isPaused = value;
+            // The chip's sound pauses with the game, voices held where they are
+            if (value) sessionControls?.pause();
+            else sessionControls?.resume();
         },
         get isTurned() {
             return isTurned;
@@ -239,8 +242,9 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             startOptions = options;
             isPaused = false;
             sessionControls = next.soundChip === undefined ? undefined : sound.entryChips[next.soundChip].controls;
-            // No sound of the last session's carries into this one
+            // No sound of the last session's carries into this one, and a chip left paused by it plays again
             sessionControls?.reset();
+            sessionControls?.resume();
             session = startSession(next, options);
         },
 
@@ -269,18 +273,12 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 return;
             }
             const elementSession = session as ElementEntrySession;
-            const controls = sessionControls;
-            if (!isPaused) {
-                elementSession.update(deltaMs);
-                // The chip's clock advances only with the models, so it stops while the game is paused
-                controls?.update(deltaMs);
-            }
+            if (!isPaused) elementSession.update(deltaMs);
             const views = elementSession.views;
             if (!isPaused) {
                 for (let i = 0; i < views.length; i++) updateView(views[i], deltaMs);
             }
             for (let i = 0; i < views.length; i++) refreshView(views[i]);
-            controls?.flush();
             elementSession.render();
         },
 
@@ -336,7 +334,6 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             isPaused: () => isPaused,
             isTurned: () => isTurned,
             findChip,
-            audioControls: () => sessionControls,
         });
         pixiStage.fit(areaRect.width, areaRect.height);
         pixiStage.isGpuTimed = isGpuTimed;

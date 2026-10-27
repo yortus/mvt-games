@@ -35,12 +35,10 @@ export interface FakeWebAudio {
     failsNextImport: boolean;
 }
 
-/** A fake browser chip, which logs its writes and counts the calls to its controls that a headless chip ignores. */
+/** A fake browser chip, which logs its writes and counts its resets, which a headless chip's controls do nothing to show. */
 export interface FakeChip {
     readonly audio80: Audio80 & Audio80Log;
     readonly controls: AudioControls;
-    /** How many times `AudioControls.flush` has been called. */
-    readonly flushCount: number;
     /** How many times `AudioControls.reset` has been called. */
     readonly resetCount: number;
 }
@@ -49,8 +47,6 @@ export interface FakeChip {
 export interface FakeAudio90Chip {
     readonly audio90: Audio90 & Audio90Log;
     readonly controls: AudioControls;
-    /** How many times `AudioControls.flush` has been called. */
-    readonly flushCount: number;
     /** How many times `AudioControls.reset` has been called. */
     readonly resetCount: number;
 }
@@ -163,21 +159,14 @@ function stubGlobal(name: string, value: unknown): void {
 function createFakeChip(options: { readonly fake: MutableFakeWebAudio }): Audio80WithControls {
     const { fake } = options;
     const chip = createHeadlessAudio80({ record: true });
-    let flushCount = 0;
     let resetCount = 0;
-    // A headless chip's `flush` and `reset` do nothing, so they are replaced with counters
-    chip.controls.flush = () => {
-        flushCount++;
-    };
+    // A recording chip's `reset` leaves no trace in its log, so it is replaced with a counter
     chip.controls.reset = () => {
         resetCount++;
     };
     fake.chips.push({
         audio80: chip.audio80,
         controls: chip.controls,
-        get flushCount() {
-            return flushCount;
-        },
         get resetCount() {
             return resetCount;
         },
@@ -189,21 +178,14 @@ function createFakeChip(options: { readonly fake: MutableFakeWebAudio }): Audio8
 function createFakeAudio90Chip(options: { readonly fake: MutableFakeWebAudio }): Audio90WithControls {
     const { fake } = options;
     const chip = createHeadlessAudio90({ record: true });
-    let flushCount = 0;
     let resetCount = 0;
-    // A headless chip's `flush` and `reset` do nothing, so they are replaced with counters
-    chip.controls.flush = () => {
-        flushCount++;
-    };
+    // A recording chip's `reset` leaves no trace in its log, so it is replaced with a counter
     chip.controls.reset = () => {
         resetCount++;
     };
     fake.audio90Chips.push({
         audio90: chip.audio90,
         controls: chip.controls,
-        get flushCount() {
-            return flushCount;
-        },
         get resetCount() {
             return resetCount;
         },

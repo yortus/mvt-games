@@ -12,16 +12,14 @@ import type { Audio90Instrument, Audio90Song, Audio90SoundEffect } from '../nota
  * it as an output, like a renderer. An audio view writes to it each time the
  * view refreshes.
  *
- * Its clock works as the Audio80's does. Each write is stamped with a chip
- * time, and the chip plays it at that time. The clock moves only when the
- * game loop advances it, by the models' delta each tick, so the chip pauses
- * with the game. Effects are the exception, because they play as soon as
- * they arrive. The chip's clock, volumes and resets belong to the game loop,
- * through the `AudioControls` made alongside the chip.
- *
- * `atMs`, which most writes take last, is the chip time to apply the write
- * at, in ms. It defaults to `time`. A write stamped earlier than the chip has
- * already played applies at once.
+ * Its clock works as the Audio80's does. A write plays as soon as it can.
+ * Most writes also take `atMs`, the chip time to apply the write at, in ms,
+ * for code that schedules its notes ahead. A write stamped earlier than the
+ * chip has already played applies at once. In a browser, the chip's time is
+ * the sound card's, and stands still while the chip is paused. A headless
+ * chip has no sound card, so its time moves only as the code that owns it
+ * says. The chip's pausing, volumes and resets belong to the code that owns
+ * it, through the `AudioControls` made alongside the chip.
  *
  * Its methods take their arguments in order rather than as an options
  * object, because views call them every refresh and they must not allocate.
@@ -31,8 +29,7 @@ import type { Audio90Instrument, Audio90Song, Audio90SoundEffect } from '../nota
 export interface Audio90 extends Audio90Writer {
     /**
      * The chip time, in ms, of the sound reaching the speaker now. In a
-     * browser, it trails `time` by the chip's lead and the sound card's
-     * latency. A view that shows the music as it is heard, as a tracker
+     * browser, it trails `time` by the sound card's latency. A view that shows the music as it is heard, as a tracker
      * does, reads it rather than `time`. A chip with no speaker hears each
      * write as it is made, so for it this is `time`.
      */
@@ -67,7 +64,7 @@ export interface Audio90 extends Audio90Writer {
  * than this.
  */
 export interface Audio90Writer {
-    /** The chip's clock, in ms. It is the sum of the deltas the game loop has advanced it by. */
+    /** The chip's time now, in ms, as the Audio80's `time` describes. */
     readonly time: number;
     /** How many voices the chip has, which is 16. */
     readonly voiceCount: number;
@@ -105,14 +102,19 @@ export interface Audio90Writer {
     setTempo: (bpm: number, atMs?: number) => void;
     /** Keeps voices 0 to `count` - 1 for music from `atMs`. Effects play only on the rest. */
     reserveVoices: (count: number, atMs?: number) => void;
-    /** Releases every voice, music and effects, at `time`. */
+    /** Releases every voice, music and effects, as soon as it can. */
     releaseAll: () => void;
 }
 
-/** An Audio90 and its controls, as each of its factories makes them. The chip is for the game's views, and the controls are for the game loop. */
-export interface Audio90WithControls<A extends Audio90 = Audio90> {
-    /** The chip, which the game's views play on. */
+/**
+ * An Audio90 and its controls, as each of its factories makes them. The chip
+ * is for the code that plays sounds, such as a game's views, and the
+ * controls are for the code that owns the chip. A headless chip's controls
+ * are `HeadlessControls`, which also move its clock on.
+ */
+export interface Audio90WithControls<A extends Audio90 = Audio90, C extends AudioControls = AudioControls> {
+    /** The chip, which the code that plays sounds plays on. */
     readonly audio90: A;
-    /** The chip's controls, which only the game loop uses. */
-    readonly controls: AudioControls;
+    /** The chip's controls, which only the code that owns the chip uses. */
+    readonly controls: C;
 }

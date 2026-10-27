@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type AudioControls, createMusicPlayer, type Audio80Song } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
+import { createMusicPlayer, type Audio80Song } from 'audio90';
+import { type Audio80Write, createHeadlessAudio80, type HeadlessControls } from 'audio90/headless';
 import {
     BLOCK,
     FIGHT_THEME,
@@ -241,10 +241,8 @@ function recordSong(options: { song: Audio80Song }): string[] {
     const { audio80: chip, controls } = createHeadlessAudio80({ record: true });
     const player = createMusicPlayer({ audio80: chip });
     player.play(options.song);
-    player.refresh();
     for (let i = 0; i < SONG_TICKS; i++) {
         controls.update(TICK_MS);
-        player.refresh();
     }
     return describeNoteOns(chip.log);
 }
@@ -253,7 +251,7 @@ function recordSong(options: { song: Audio80Song }): string[] {
  * Returns a function that runs one tick as the Arcade does. It advances the
  * chip's clock, then updates and refreshes the view.
  */
-function createTicker(options: { controls: AudioControls; view: Container }): () => void {
+function createTicker(options: { controls: HeadlessControls; view: Container }): () => void {
     const { controls, view } = options;
     return () => {
         controls.update(TICK_MS);

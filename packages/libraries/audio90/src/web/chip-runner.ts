@@ -1,4 +1,4 @@
-import type { ChipBatch, ChipReply } from '../shared';
+import type { ChipBatch, ChipClockReply, ChipReply } from '../shared';
 import { createChipClock } from './chip-clock';
 import type { SongMessage } from './song-messages';
 import type { WorkletSequencer } from './song-sequencer';
@@ -24,12 +24,19 @@ export interface ChipRunner<D extends PassedMessage = PassedMessage> {
 }
 
 /**
- * What the main thread sends a chip's worklet: a batch of commands, `reset`,
- * `stop` when the chip is destroyed, a message for the chip's sequencer, or
- * a message the runner passes to the chip's own part, such as one that
- * defines an instrument.
+ * What the main thread sends a chip's worklet: a batch of commands, `pause`
+ * or `resume`, `reset`, `stop` when the chip is destroyed, a message for the
+ * chip's sequencer, or a message the runner passes to the chip's own part,
+ * such as one that defines an instrument.
  */
-export type RunnerMessage<D extends PassedMessage = PassedMessage> = D | ChipBatch | SongMessage | { readonly kind: 'reset' } | { readonly kind: 'stop' };
+export type RunnerMessage<D extends PassedMessage = PassedMessage> =
+    | D
+    | ChipBatch
+    | SongMessage
+    | { readonly kind: 'pause' }
+    | { readonly kind: 'resume' }
+    | { readonly kind: 'reset' }
+    | { readonly kind: 'stop' };
 
 /**
  * A message the runner passes to the chip's own part: one that defines
@@ -62,11 +69,13 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
     readonly sampleRate: number;
     /** How many channels the chip renders: 1 for mono, 2 for stereo. */
     readonly channelCount: number;
-    /** The lead the clock keeps, in ms. Defaults to 100. */
-    readonly leadMs?: number;
     /** The chip's synthesiser. */
     readonly synthesiser: RunnerSynthesiser<D>;
-    /** Sends a batch's buffer back to the main thread, so it can be written into again, with where the clock is. */
+    /**
+     * Sends the main thread a batch's buffer, so it can be written into
+     * again, or where the clock is. It must copy the reply before it
+     * returns, as `postMessage` does, since a clock reply's record is reused.
+     */
     readonly sendBack: (reply: ChipReply) => void;
     /**
      * The audio context's count of frames, at the start of the next block.
@@ -86,10 +95,14 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates a runner with nothing queued. It is silent until its clock has a full lead. */
+/** Creates a runner with nothing queued, at chip time 0, playing. */
 export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOptions<D>): ChipRunner<D> {
     const { sampleRate, channelCount, synthesiser, sendBack, sequencer } = options;
-    const clock = createChipClock({ sampleRate, leadMs: options.leadMs });
+    const clock = createChipClock({ sampleRate });
+    // Reused for every clock reply. Its fields are written, then it is copied as it is sent
+    const clockReply: { -readonly [K in keyof ChipClockReply]: ChipClockReply[K] } = { kind: 'clock', playheadMs: 0, frame: 0, msPerSample: 0 };
+    // The rate last sent, so a reply goes only as it changes. NaN until the first block, so the first block sends one
+    let sentMsPerSample = Number.NaN;
     let isStopped = false;
     let renderedFrames = 0;
     const currentFrame = options.currentFrame ?? (() => renderedFrames);
@@ -107,15 +120,13 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
             switch (message.kind) {
                 case 'batch':
                     synthesiser.enqueue(message.commands, message.count);
-                    clock.receive(message.horizonMs);
-                    sendBack({
-                        kind: 'buffer',
-                        commands: message.commands,
-                        playheadMs: clock.playheadMs,
-                        frame: currentFrame(),
-                        msPerSample: clock.msPerSample,
-                        stallCount: clock.stallCount,
-                    });
+                    sendBack({ kind: 'buffer', commands: message.commands });
+                    break;
+                case 'pause':
+                    clock.pause();
+                    break;
+                case 'resume':
+                    clock.resume();
                     break;
                 case 'song':
                 case 'song-call':
@@ -126,7 +137,6 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
                     tails.set(lasts);
                     synthesiser.reset();
                     sequencer?.reset();
-                    clock.reset();
                     break;
                 case 'stop':
                     isStopped = true;
@@ -160,6 +170,14 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
 
     function render(channels: readonly Float32Array[], frames: number): void {
         clock.plan(frames);
+        if (clock.msPerSample !== sentMsPerSample) {
+            // The clock has started, paused or resumed, so the main thread's idea of chip time needs its new rate
+            sentMsPerSample = clock.msPerSample;
+            clockReply.playheadMs = clock.fromMs;
+            clockReply.frame = currentFrame();
+            clockReply.msPerSample = clock.msPerSample;
+            sendBack(clockReply);
+        }
         if (clock.isSilent) {
             for (let c = 0; c < channelCount; c++) channels[c].fill(0);
             return;

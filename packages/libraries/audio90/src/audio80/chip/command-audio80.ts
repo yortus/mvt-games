@@ -64,6 +64,15 @@ export interface CommandAudio80Options {
     /** How many commands a batch holds before it grows. Defaults to 256. */
     readonly capacity?: number;
     /**
+     * Whether the writer has a clock of its own, which stamps each write made
+     * with no `atMs`. Defaults to true. A browser's chip has none, since its
+     * time is the sound card's: each write it is given with no `atMs` plays as
+     * soon as it arrives.
+     */
+    readonly hasClock?: boolean;
+    /** Called as a command is written into an empty batch, so the code that sends the batches knows there is one to send. */
+    readonly onFirstWrite?: () => void;
+    /**
      * Gives the id of an instrument defined elsewhere, or undefined for one
      * this writer must define. A writer in the worklet uses it for the
      * instruments the page has already defined, so that the two writers'
@@ -78,14 +87,17 @@ export interface CommandAudio80Options {
 
 /**
  * Creates an Audio80 that turns each call into a command for the synthesiser.
- * Its clock starts at 0, and nothing has been written yet.
+ * Its clock starts at 0, or it has none if `hasClock` is false, and nothing
+ * has been written yet.
  */
 export function createCommandAudio80(options: CommandAudio80Options): CommandAudio80 {
     const { onInstrument, onEffect, idOf } = options;
-    const buffer = createCommandBuffer({ capacity: options.capacity });
+    const buffer = createCommandBuffer({ capacity: options.capacity, onFirstWrite: options.onFirstWrite });
     const write = buffer.write;
     // The clock, in a typed array: V8 boxes a double kept in a closure variable each time it is written, and this is written every tick
     const clock = new Float64Array(1);
+    // With no clock, each write with no `atMs` is stamped as soon as possible, and `update` leaves it so
+    if (options.hasClock === false) clock[0] = ASAP_STAMP;
     let nextId = 1;
     const instrumentIds = new Map<Audio80Instrument, number>();
     const effectIds = new Map<Audio80SoundEffect, number>();

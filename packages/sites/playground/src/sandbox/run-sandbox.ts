@@ -58,7 +58,8 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
     }
     report.post({ kind: 'started' });
 
-    const sound = createLazySound(() => createAudio80({ context: new AudioContext() }));
+    // The chip makes its own audio context, and starts it at the first click or key press in the preview
+    const sound = createLazySound(() => createAudio80());
     let host: RendererHost<object>;
     let ticked: StartResult;
     try {
@@ -101,16 +102,17 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         meter.startFrame();
         (globalThis as { __pgFrameStart?: number }).__pgFrameStart = performance.now();
         try {
+            // The chip keeps the sound card's time, so it is paused while the project is
+            if (isAdvancing) sound.controls()?.resume();
+            else sound.controls()?.pause();
             if (isAdvancing) {
                 // Type errors don't stop a project running, so its model may have no `update`
                 if (typeof ticked?.update === 'function') ticked.update(deltaMs);
-                sound.controls()?.update(deltaMs);
                 host.update(deltaMs);
             }
             host.refresh();
             host.render();
             meter.endFrame();
-            sound.controls()?.flush();
         }
         catch (error) {
             fail('frame', error);

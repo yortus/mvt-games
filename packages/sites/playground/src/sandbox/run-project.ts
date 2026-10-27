@@ -5,12 +5,12 @@ import type { RendererHost } from './renderer-host';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A sound chip, and the controls that advance it and send what it plays, each frame. */
+/** A sound chip, and the controls that pause it and let it play on. */
 export interface ProjectSound {
     readonly audio80: object;
     readonly controls: {
-        readonly update: (deltaMs: number) => void;
-        readonly flush: () => void;
+        readonly pause: () => void;
+        readonly resume: () => void;
     };
 }
 
@@ -56,11 +56,9 @@ export async function runProject<P extends Project>(options: RunProjectOptions<P
         const deltaMs = lastTime === undefined ? 0 : Math.min(time - lastTime, MAX_FRAME_MS);
         lastTime = time;
         ticked?.update(deltaMs);
-        sound.controls()?.update(deltaMs);
         host.update(deltaMs);
         host.refresh();
         host.render();
-        sound.controls()?.flush();
         requestAnimationFrame(frame);
     }
 }

@@ -11,17 +11,13 @@ import processorUrl from './audio80-processor?worker&url';
 /** How to make a browser's Audio80. */
 export interface Audio80Options {
     /**
-     * The audio context to play in. The caller must resume it after a user
-     * gesture, such as a click. Until it runs, the chip plays nothing, as
-     * `AudioControls.ready` explains.
+     * The audio context to play in. Without one, the chip makes its own,
+     * and starts it at the page's first click, tap or key press, since a
+     * browser lets sound start only after the visitor does something. With
+     * one, starting it is the caller's job. Until it runs, the chip plays
+     * nothing, as `AudioControls.ready` explains.
      */
-    readonly context: AudioContext;
-    /**
-     * How far, in ms, the worklet plays behind the newest chip time it has
-     * been sent. This leaves room for ticks that arrive late, so the music
-     * plays on through a late frame. Defaults to 100.
-     */
-    readonly leadMs?: number;
+    readonly context?: AudioContext;
     /** How the chip sounds. Defaults to `'classic'`. */
     readonly character?: Audio80Character;
 }
@@ -31,18 +27,21 @@ export interface Audio80Options {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an Audio80 for a browser, and its controls. Once a tick,
- * `AudioControls.flush` sends the chip's writes to an `AudioWorklet`, which
- * plays them. The controls' `ready` resolves once the worklet is running.
- * Its songs play on the worklet's own sequencer, on the sound card's clock.
+ * Creates an Audio80 for a browser, and its controls. At the end of each
+ * task that writes to the chip, the writes go to an `AudioWorklet`, which
+ * plays them on the sound card's clock. The controls' `ready` resolves once
+ * the worklet is running. Its songs play on the worklet's own sequencer.
  * Each song is sent once, after its instruments.
  */
-export function createAudio80(options: Audio80Options): Audio80WithControls {
+export function createAudio80(options: Audio80Options = {}): Audio80WithControls {
     const writer = createCommandAudio80({
         onInstrument: (id, data) => web.send({ kind: 'instrument', id, data }),
         onEffect: (id, data) => web.send({ kind: 'effect', id, data }),
+        // The chip's time is the worklet's, so a write with no stamp plays as soon as it arrives
+        hasClock: false,
+        onFirstWrite: () => web.sendSoon(),
     });
-    const settings: Audio80RunnerSettings = { leadMs: options.leadMs, character: options.character };
+    const settings: Audio80RunnerSettings = { character: options.character };
     const web = createWebChip<Audio80PassedMessage, Audio80Song>({
         context: options.context,
         writer,
@@ -58,7 +57,7 @@ export function createAudio80(options: Audio80Options): Audio80WithControls {
 
     const audio80: Audio80 = {
         get time() {
-            return writer.time;
+            return web.time;
         },
         voiceCount: writer.voiceCount,
         play: writer.play,

@@ -3,11 +3,11 @@
 // worklet, note names, the note driver, the effect voice allocator, a slot on
 // a chip's sequencer, and the tracker notation's grammar.
 
-export { type AudioControls, clampVolume, MAX_MIX_VOLUME } from './audio-controls';
+export { type AudioControls, clampVolume, type HeadlessControls, MAX_MIX_VOLUME } from './audio-controls';
 export { chooseEffectVoice, type EffectVoices } from './choose-effect-voice';
 export { createCommandQueue, type CommandQueue, type CommandQueueOptions } from './command-queue';
 export { type CommandBuffer, type CommandBufferOptions, type CommandWriter, createCommandBuffer } from './command-buffer';
-export { ASAP_STAMP, type ChipBatch, type ChipReply, COMMAND_STRIDE, MIX_BUS_INDEX, type MixBus } from './commands';
+export { ASAP_STAMP, type ChipBatch, type ChipBufferReply, type ChipClockReply, type ChipReply, COMMAND_STRIDE, MIX_BUS_INDEX, type MixBus } from './commands';
 export {
     createNoteDriver, DEFAULT_STEP_MS, type DriverInstrument, type DriverStep, MAX_ARPEGGIO, type NoteDriver, type NoteDriverOptions,
     type StepPitchMode,

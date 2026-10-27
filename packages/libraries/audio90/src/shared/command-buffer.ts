@@ -37,7 +37,7 @@ export interface CommandBuffer {
  * to send them on. The chip's controls are made from it.
  */
 export interface CommandWriter extends Pick<CommandBuffer, 'commands' | 'count' | 'clear'> {
-    /** The chip's clock, in ms. */
+    /** The writer's clock, in ms, which stamps each write made with no `atMs`. `-Infinity` for a writer with no clock. */
     readonly time: number;
     /** Advances `time` by `deltaMs`, in ms. */
     update: (deltaMs: number) => void;
@@ -58,6 +58,8 @@ export interface CommandWriter extends Pick<CommandBuffer, 'commands' | 'count' 
 export interface CommandBufferOptions {
     /** How many commands it holds before it grows. Defaults to 256. */
     readonly capacity?: number;
+    /** Called as a command is written into an empty batch, so the code that sends the batches knows there is one to send. */
+    readonly onFirstWrite?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -71,6 +73,7 @@ export function createCommandBuffer(options: CommandBufferOptions = {}): Command
     let size = Math.max(1, options.capacity ?? DEFAULT_CAPACITY) * COMMAND_STRIDE;
     let commands: Float64Array = new Float64Array(size);
     let count = 0;
+    const { onFirstWrite } = options;
 
     return {
         get commands() {
@@ -95,6 +98,7 @@ export function createCommandBuffer(options: CommandBufferOptions = {}): Command
             commands[at + 4] = c;
             commands[at + 5] = d;
             count++;
+            if (count === 1) onFirstWrite?.();
         },
 
         clear(buffer) {

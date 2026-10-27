@@ -36,3 +36,4 @@ export {
 } from './render';
 export type { RenderedSamples, StereoSamples } from './stereo-samples';
 export { encodeWav } from './encode-wav';
+export type { HeadlessControls } from '../shared';

@@ -40,8 +40,6 @@ export interface WebSongSlotsOptions<S extends PlayableSong> {
      * travels to the worklet.
      */
     readonly prepare: (song: S) => { readonly song: object; readonly instrumentIds: readonly number[] };
-    /** The chip's time, in ms, which each call is stamped with. */
-    readonly time: () => number;
     /** The audio context's frame reaching the speaker now, or undefined when it is not known. */
     readonly speakerFrame: () => number | undefined;
     /** The sound card's sample rate, in Hz. */
@@ -54,7 +52,7 @@ export interface WebSongSlotsOptions<S extends PlayableSong> {
 
 /** Creates a chip's song slots, with none open and no song sent. */
 export function createWebSongSlots<S extends PlayableSong>(options: WebSongSlotsOptions<S>): WebSongSlots<S> {
-    const { send, prepare, time, speakerFrame, sampleRate } = options;
+    const { send, prepare, speakerFrame, sampleRate } = options;
     // The songs sent, both ways round
     const songIds = new Map<S, number>();
     const songs = new Map<number, S>();
@@ -138,7 +136,7 @@ export function createWebSongSlots<S extends PlayableSong>(options: WebSongSlots
                 send({ kind: 'song', id: songId, song: prepared.song, instrumentIds: prepared.instrumentIds });
             }
         }
-        send({ kind: 'song-call', slot: state.slot, generation: state.generation, call: which, songId, value, stampMs: time() });
+        send({ kind: 'song-call', slot: state.slot, generation: state.generation, call: which, songId, value });
     }
 
     /**

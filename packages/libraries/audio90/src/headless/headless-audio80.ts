@@ -16,6 +16,7 @@ import {
     type Audio80Wave,
 } from '../audio80';
 import { createSongPlayer } from '../music-player';
+import type { HeadlessControls } from '../shared';
 import { createRenderedControls, createSilentControls, ignore } from './headless-controls';
 import { createHeadlessSongSlots } from './headless-song-slots';
 
@@ -42,7 +43,7 @@ import { createHeadlessSongSlots } from './headless-song-slots';
  * a log that nothing writes to.
  */
 export type HeadlessAudio80<O extends HeadlessAudio80Options = HeadlessAudio80Options> =
-    & Audio80WithControls<O extends { readonly record: true } ? Audio80 & Audio80Log : Audio80>
+    & Audio80WithControls<O extends { readonly record: true } ? Audio80 & Audio80Log : Audio80, HeadlessControls>
     & (O extends { readonly render: true | HeadlessAudio80RenderOptions } ? Audio80Renderer : unknown);
 
 /**
@@ -76,11 +77,9 @@ export type Audio80Write =
 
 /**
  * What a headless chip made with `render` adds. It plays every write exactly
- * at its stamp. Nothing here runs in real time, so unlike the browser's chip,
- * it does not need to play a little behind the game loop. Advance its clock
- * with `AudioControls.update`, then `render` the samples up to it. Its
- * volumes apply to the samples `render` writes. `AudioControls.flush` does
- * nothing, since `render` takes the writes itself.
+ * at its stamp. Advance its clock with `HeadlessControls.update`, then
+ * `render` the samples up to it. Its volumes apply to the samples `render`
+ * writes.
  */
 export interface Audio80Renderer {
     /** The sample rate it renders at, in Hz. */
@@ -127,7 +126,7 @@ export interface HeadlessAudio80RenderOptions {
 export function createHeadlessAudio80<const O extends HeadlessAudio80Options = HeadlessAudio80Options>(options?: O): HeadlessAudio80<O> {
     const record = options?.record === true;
     const render = options?.render ?? false;
-    let chip: Audio80WithControls;
+    let chip: Audio80WithControls<Audio80, HeadlessControls>;
     if (render !== false) chip = createRenderingChip({ ...(render === true ? {} : render), record });
     else if (record) chip = createRecordingChip();
     else chip = createSilentChip();
@@ -141,7 +140,7 @@ export function createHeadlessAudio80<const O extends HeadlessAudio80Options = H
 const DEFAULT_SAMPLE_RATE = 48000;
 
 /** Creates a chip that plays nothing and logs nothing. Every write is an empty function. */
-function createSilentChip(): Audio80WithControls {
+function createSilentChip(): Audio80WithControls<Audio80, HeadlessControls> {
     // In a typed array, so advancing it boxes no double
     const clock = new Float64Array(1);
     const audio80: Audio80 = {
@@ -172,7 +171,7 @@ function createSilentChip(): Audio80WithControls {
 }
 
 /** Creates a chip that logs every write and plays nothing. */
-function createRecordingChip(): Audio80WithControls<Audio80 & Audio80Log> {
+function createRecordingChip(): Audio80WithControls<Audio80 & Audio80Log, HeadlessControls> {
     const clock = { time: 0 };
     const audio80 = createRecorder(clock, () => songs.open());
     // Its songs play on the chip itself, so their notes are logged as any write is
@@ -188,7 +187,7 @@ function createRecordingChip(): Audio80WithControls<Audio80 & Audio80Log> {
 }
 
 /** Creates a chip that plays every write in memory, and also logs it if `record` is true. */
-function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly record: boolean }): Audio80WithControls & Audio80Renderer {
+function createRenderingChip(options: HeadlessAudio80RenderOptions & { readonly record: boolean }): Audio80WithControls<Audio80, HeadlessControls> & Audio80Renderer {
     const sampleRate = options.sampleRate ?? DEFAULT_SAMPLE_RATE;
     const msPerSample = 1000 / sampleRate;
     const synthesiser = createAudio80Synthesiser({ sampleRate, character: options.character });

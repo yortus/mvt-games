@@ -8,8 +8,8 @@
  *
  * The sequencer runs where the chip's sound is made. In a browser, that is
  * the audio thread, on the sound card's clock, so a late frame never holds the
- * music up. It still pauses with the game. A headless chip runs it on its own
- * clock, which the game loop advances.
+ * music up. It pauses as the chip does. A headless chip runs it on its own
+ * clock, which the code that owns the chip moves on.
  *
  * Each call takes effect at once on a headless chip, and as soon as the
  * audio thread hears of it in a browser. What the slot reports is what the

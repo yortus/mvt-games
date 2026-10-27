@@ -2,7 +2,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createAudio80Instrument, createAudio80Song } from '../audio80';
 import { type Audio90Song, createAudio90Instrument, createAudio90Song } from '../audio90';
 import { type Audio90Write, createHeadlessAudio90, measurePeak, renderSong } from '../headless';
-import { type AudioControls, computeSongDurationMs } from '../shared';
+import { type HeadlessControls, computeSongDurationMs } from '../shared';
 import { createSongPlayer, type SongPlayer } from './song-player';
 
 const BPM = 150;
@@ -120,7 +120,7 @@ function listNoteStamps(tickMs: () => number): number[] {
 }
 
 /** Ticks as a game loop does, for `durationMs`: the chip's clock, then the view's update, then its refresh. */
-function tick(controls: AudioControls, player: SongPlayer<Audio90Song>, tickMs: number | (() => number), durationMs: number): void {
+function tick(controls: HeadlessControls, player: SongPlayer<Audio90Song>, tickMs: number | (() => number), durationMs: number): void {
     let elapsed = 0;
     while (elapsed < durationMs - 1e-9) {
         const delta = typeof tickMs === 'number' ? tickMs : tickMs();

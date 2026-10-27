@@ -14,6 +14,7 @@ import {
     createCommandAudio90,
 } from '../audio90';
 import { createSongPlayer } from '../music-player';
+import type { HeadlessControls } from '../shared';
 import { createRenderedControls, createSilentControls, ignore } from './headless-controls';
 import { createHeadlessSongSlots } from './headless-song-slots';
 
@@ -40,7 +41,7 @@ import { createHeadlessSongSlots } from './headless-song-slots';
  * `render` and `sampleRate` only when `render` is given.
  */
 export type HeadlessAudio90<O extends HeadlessAudio90Options = HeadlessAudio90Options> =
-    & Audio90WithControls<O extends { readonly record: true } ? Audio90 & Audio90Log : Audio90>
+    & Audio90WithControls<O extends { readonly record: true } ? Audio90 & Audio90Log : Audio90, HeadlessControls>
     & (O extends { readonly render: true | HeadlessAudio90RenderOptions } ? Audio90Renderer : unknown);
 
 /**
@@ -77,10 +78,9 @@ export type Audio90EffectWrite = {
 
 /**
  * What a headless Audio90 made with `render` adds. It plays every write
- * exactly at its stamp. Advance its clock with `AudioControls.update`, then
- * `render` the samples up to it. Its volumes apply to the samples `render`
- * writes. `AudioControls.flush` does nothing, since `render` takes the writes
- * itself.
+ * exactly at its stamp. Advance its clock with `HeadlessControls.update`,
+ * then `render` the samples up to it. Its volumes apply to the samples
+ * `render` writes.
  */
 export interface Audio90Renderer {
     /** The sample rate it renders at, in Hz. */
@@ -127,7 +127,7 @@ export interface HeadlessAudio90RenderOptions {
 export function createHeadlessAudio90<const O extends HeadlessAudio90Options = HeadlessAudio90Options>(options?: O): HeadlessAudio90<O> {
     const record = options?.record === true;
     const render = options?.render ?? false;
-    let chip: Audio90WithControls;
+    let chip: Audio90WithControls<Audio90, HeadlessControls>;
     if (render !== false) chip = createRenderingChip({ ...(render === true ? {} : render), record });
     else if (record) chip = createRecordingChip();
     else chip = createSilentChip();
@@ -141,7 +141,7 @@ export function createHeadlessAudio90<const O extends HeadlessAudio90Options = H
 const DEFAULT_SAMPLE_RATE = 48000;
 
 /** Creates a chip that plays nothing and logs nothing. Every write is an empty function. */
-function createSilentChip(): Audio90WithControls {
+function createSilentChip(): Audio90WithControls<Audio90, HeadlessControls> {
     // In a typed array, so advancing it boxes no double
     const clock = new Float64Array(1);
     const audio90: Audio90 = {
@@ -179,7 +179,7 @@ function createSilentChip(): Audio90WithControls {
 }
 
 /** Creates a chip that logs every write and plays nothing. */
-function createRecordingChip(): Audio90WithControls<Audio90 & Audio90Log> {
+function createRecordingChip(): Audio90WithControls<Audio90 & Audio90Log, HeadlessControls> {
     const clock = { time: 0 };
     const audio90 = createRecorder(clock, () => songs.open());
     // Its songs play on the chip itself, so their notes are logged as any write is
@@ -195,7 +195,7 @@ function createRecordingChip(): Audio90WithControls<Audio90 & Audio90Log> {
 }
 
 /** Creates a chip that plays every write in memory, and also logs it if `record` is true. */
-function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly record: boolean }): Audio90WithControls & Audio90Renderer {
+function createRenderingChip(options: HeadlessAudio90RenderOptions & { readonly record: boolean }): Audio90WithControls<Audio90, HeadlessControls> & Audio90Renderer {
     const sampleRate = options.sampleRate ?? DEFAULT_SAMPLE_RATE;
     const msPerSample = 1000 / sampleRate;
     const synthesiser = createAudio90Synthesiser({ sampleRate, character: options.character });

@@ -1,5 +1,5 @@
 import type { PlayableSong } from '../music-player';
-import { type AudioControls, type ChipBatch, type ChipReply, clampVolume, type CommandWriter, MAX_MIX_VOLUME, type SongSlot } from '../shared';
+import { type AudioControls, type ChipBatch, type ChipBufferReply, type ChipClockReply, type ChipReply, clampVolume, type CommandWriter, MAX_MIX_VOLUME, type SongSlot } from '../shared';
 import type { PassedMessage, RunnerMessage } from './chip-runner';
 import { createHeldWrites, type HeldWriteSlots } from './held-writes';
 import type { SongMessage, SongPlaceReply } from './song-messages';
@@ -11,17 +11,22 @@ import { createWebSongSlots } from './web-song-slots';
 
 /**
  * What every chip in a browser has: an `AudioWorklet` node that plays the
- * chip's writes, the controls that send them to it, and the slots of the
- * chip's sequencer in the worklet. Each chip's factory makes its writer,
- * then this, and joins the two. `S` is the chip's song type.
+ * chip's writes, the controls that pause it and set its volumes, and the
+ * slots of the chip's sequencer in the worklet. Each chip's factory makes
+ * its writer, then this, and joins the two. `S` is the chip's song type.
+ *
+ * The writer's commands are sent at the end of the task they were written
+ * in, by a microtask, so the writes of one frame travel together. The chip's
+ * time is the worklet's clock, which runs on the sound card's.
  */
 export interface WebChip<D extends PassedMessage, S extends PlayableSong> {
     /** The chip's controls. */
     readonly controls: AudioControls;
+    /** The chip time now, in ms: where the worklet's clock is, as its last reply said. 0 until the worklet first plays. */
+    readonly time: number;
     /**
      * The chip time, in ms, of the sound reaching the speaker now. It trails
-     * the writer's time by the worklet's lead and the sound card's latency.
-     * Until the worklet runs, it is the writer's time.
+     * `time` by the sound card's latency. 0 until the worklet first plays.
      */
     readonly heardTime: number;
     /**
@@ -37,6 +42,8 @@ export interface WebChip<D extends PassedMessage, S extends PlayableSong> {
      * it. The buffers in `transfer` move with it, once the worklet runs.
      */
     send: (message: D, transfer?: Transferable[]) => void;
+    /** Sends the writer's commands at the end of the current task. The writer calls it as a write lands in an empty batch. */
+    sendSoon: () => void;
     /** Opens a slot on the chip's sequencer in the worklet, which plays one song at a time on the sound card's clock. */
     openSongSlot: () => SongSlot<S>;
 }
@@ -47,9 +54,14 @@ export interface WebChip<D extends PassedMessage, S extends PlayableSong> {
 
 /** How to make a chip's worklet node and controls. */
 export interface WebChipOptions<S extends PlayableSong> {
-    /** The audio context to play in. */
-    readonly context: AudioContext;
-    /** The chip's writer, whose commands the controls send each tick. */
+    /**
+     * The audio context to play in. Without one, the chip makes its own, and
+     * starts it at the page's first click, tap or key press, since a browser
+     * lets sound start only after the visitor does something. It closes it
+     * as it is destroyed.
+     */
+    readonly context?: AudioContext;
+    /** The chip's writer, whose commands the chip sends. It has no clock of its own: the worklet's is the chip's. */
     readonly writer: CommandWriter;
     /** The chip's held-write slots: which writes to keep while the chip cannot play. */
     readonly heldSlots: HeldWriteSlots;
@@ -61,7 +73,7 @@ export interface WebChipOptions<S extends PlayableSong> {
     readonly channelCount: number;
     /** The chip's settings for its processor. The controls add the listener's volumes as they are when the node is made. */
     readonly settings: object;
-    /** Handles a reply from the worklet other than a batch's buffer, such as a scope. Defaults to dropping it. */
+    /** Handles a reply from the worklet other than the chip's own, such as a scope. Defaults to dropping it. */
     readonly onReply?: (reply: { readonly kind: string }) => void;
     /** Called as the controls reset the chip, for what the chip's own part must reset too. */
     readonly onReset?: () => void;
@@ -79,11 +91,14 @@ export interface WebChipOptions<S extends PlayableSong> {
 
 /**
  * Creates a chip's controls, and starts loading its worklet. The controls'
- * `ready` resolves once the worklet is running. Until then, and while the
- * context is suspended, the controls keep the writes whose effect lasts.
+ * `ready` resolves once the worklet is running. Until then, while the
+ * context is suspended, and while the chip is paused, the chip keeps the
+ * writes whose effect lasts, and sends them once it can play.
  */
 export function createWebChip<D extends PassedMessage, S extends PlayableSong>(options: WebChipOptions<S>): WebChip<D, S> {
-    const { context, writer } = options;
+    const { writer } = options;
+    const isOwnContext = options.context === undefined;
+    const context = options.context ?? createOwnContext();
 
     const output = context.createGain();
     output.connect(context.destination);
@@ -91,29 +106,30 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
     let isMuted = false;
     let musicVolume = 1;
     let effectsVolume = 1;
+    let isPaused = false;
     let node: AudioWorkletNode | undefined;
     let isDestroyed = false;
+    // Whether a send is due at the end of this task
+    let isSendDue = false;
 
     // Messages sent before the worklet runs, sent once it does
-    const waiting: (D | SongMessage)[] = [];
+    const waiting: (D | SongMessage | RunnerMessage)[] = [];
     // Batch buffers the worklet has sent back, to reuse
     const spares: Float64Array[] = [];
     // The writes kept while the chip cannot play, sent once it can
     const held = createHeldWrites(options.heldSlots);
-    // Reused every tick. This is safe because `postMessage` copies the
+    // Reused for every batch. This is safe because `postMessage` copies the
     // message, and moves the transferred buffer, before it returns
-    const batch: BatchMessage = { kind: 'batch', commands: EMPTY, count: 0, horizonMs: 0 };
+    const batch: BatchMessage = { kind: 'batch', commands: EMPTY, count: 0 };
     const transfer: Transferable[] = [EMPTY.buffer];
     // Where the worklet's clock was as it last replied, and how many frames the speaker trails the context's
     // count. They are in a typed array, because V8 boxes a double kept in a closure variable each time it is
-    // written, and these are written every tick
+    // written, and the speaker's lag is written with every reply
     const heard = new Float64Array(HEARD_FIELDS);
     let hasHeard = false;
-    let stallCount = 0;
     const songSlots = createWebSongSlots<S>({
         send: (message) => send(message),
         prepare: options.prepareSong,
-        time: () => writer.time,
         speakerFrame: () => (!hasHeard || context.state !== 'running' ? undefined : findSpeakerFrame()),
         sampleRate: () => context.sampleRate,
     });
@@ -131,19 +147,21 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
         });
         // The node is set before it is set up. This is safe, because the setup runs in one go, so `send`
         // cannot run part way through it
-        node.port.onmessage = (event: MessageEvent<ChipReply | { readonly kind: string }>) => {
+        node.port.onmessage = (event: MessageEvent<ChipReply | SongPlaceReply | { readonly kind: string }>) => {
             const reply = event.data;
             if (reply.kind === 'song-place') {
                 songSlots.receive(reply as SongPlaceReply);
             }
-            else if (isBufferReply(reply)) {
-                if (spares.length < MAX_SPARES) spares.push(reply.commands);
-                heard[PLAYHEAD_MS] = reply.playheadMs;
-                heard[FRAME] = reply.frame;
-                heard[MS_PER_SAMPLE] = reply.msPerSample;
+            else if (reply.kind === 'buffer') {
+                if (spares.length < MAX_SPARES) spares.push((reply as ChipBufferReply).commands);
+            }
+            else if (reply.kind === 'clock') {
+                const clock = reply as ChipClockReply;
+                heard[PLAYHEAD_MS] = clock.playheadMs;
+                heard[FRAME] = clock.frame;
+                heard[MS_PER_SAMPLE] = clock.msPerSample;
                 heard[SPEAKER_LAG_FRAMES] = measureSpeakerLag();
                 hasHeard = true;
-                stallCount = reply.stallCount;
             }
             else {
                 options.onReply?.(reply);
@@ -152,13 +170,20 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
         node.connect(output);
         for (const message of waiting) node.port.postMessage(message);
         waiting.length = 0;
+        // Writes kept while the worklet loaded can go now, if the chip can play
+        if (held.count > 0) sendSoon();
     });
     // Mark the promise as handled, so a page that never awaits it gets no unhandled rejection. Code that
     // awaits it still sees the error
     ready.catch(ignore);
+    // Writes kept while the context was suspended can go once it runs
+    context.addEventListener('statechange', onStateChange);
 
     const controls: AudioControls = {
         ready,
+        get isPaused() {
+            return isPaused;
+        },
         get volume() {
             return volume;
         },
@@ -191,35 +216,19 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
             effectsVolume = clamped;
             if (node !== undefined) writer.setMix('effects', clamped);
         },
-        get stallCount() {
-            return stallCount;
-        },
-        update: writer.update,
 
-        flush() {
-            if (node === undefined || context.state !== 'running') {
-                // If sent now, these writes would wait in the worklet and play all at once when the
-                // context runs. Every tick would also need a new buffer. Keep only the writes whose
-                // effect lasts, as `HeldWrites` explains, and drop the rest
-                if (!isDestroyed) held.keep(writer.commands, writer.count);
-                writer.clear(writer.commands);
-                return;
-            }
-            if (held.count > 0) {
-                // Send these ahead of this tick's batch, because they were written before it
-                const count = held.count;
-                const commands = held.take();
-                node.port.postMessage({ kind: 'batch', commands, count, horizonMs: writer.time } satisfies ChipBatch, [commands.buffer]);
-            }
-            const commands = writer.commands;
-            batch.commands = commands;
-            batch.count = writer.count;
-            batch.horizonMs = writer.time;
-            transfer[0] = commands.buffer;
-            // The buffer is transferred, not copied, so `commands` is detached from here
-            // on. The writer goes on in a buffer the worklet sent back, or in a new one
-            node.port.postMessage(batch, transfer);
-            writer.clear(spares.pop());
+        pause() {
+            if (isPaused || isDestroyed) return;
+            isPaused = true;
+            send({ kind: 'pause' });
+        },
+
+        resume() {
+            if (!isPaused || isDestroyed) return;
+            isPaused = false;
+            send({ kind: 'resume' });
+            // Writes kept while it was paused can go now
+            if (held.count > 0) sendSoon();
         },
 
         reset() {
@@ -227,7 +236,8 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
             writer.forget();
             held.clear();
             waiting.length = 0;
-            hasHeard = false;
+            // A pause still waiting for the worklet was just cleared with the rest, so send it again
+            if (isPaused && node === undefined) waiting.push({ kind: 'pause' });
             // The worklet's sequencer forgets its songs as it resets, so the slots do too
             songSlots.reset();
             options.onReset?.();
@@ -242,6 +252,7 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
         destroy() {
             if (isDestroyed) return;
             isDestroyed = true;
+            context.removeEventListener('statechange', onStateChange);
             if (node !== undefined) {
                 node.port.postMessage({ kind: 'stop' } satisfies RunnerMessage);
                 node.disconnect();
@@ -253,31 +264,86 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
             held.clear();
             waiting.length = 0;
             spares.length = 0;
+            if (isOwnContext) {
+                stopListeningForGestures();
+                void context.close();
+            }
         },
     };
 
     return {
         controls,
+        get time() {
+            if (!hasHeard) return 0;
+            return findChipTimeAt(context.currentTime * context.sampleRate);
+        },
         get heardTime() {
-            if (!hasHeard || context.state !== 'running') return writer.time;
-            // The chip time the worklet's clock had reached at the frame now at the speaker
-            const time = heard[PLAYHEAD_MS] + (findSpeakerFrame() - heard[FRAME]) * heard[MS_PER_SAMPLE];
-            return time < writer.time ? time : writer.time;
+            if (!hasHeard) return 0;
+            return findChipTimeAt(findSpeakerFrame());
         },
         get speakerFrame() {
             return !hasHeard || context.state !== 'running' ? undefined : findSpeakerFrame();
         },
         send,
+        sendSoon,
         openSongSlot: () => songSlots.open(),
     };
 
     /** Sends a message to the worklet, or keeps it until the worklet runs. */
-    function send(message: D | SongMessage, transfer?: Transferable[]): void {
+    function send(message: D | SongMessage | RunnerMessage, transfer?: Transferable[]): void {
         if (isDestroyed) return;
         // A message kept until the worklet runs is copied as it is sent then, rather than moved
         if (node === undefined) waiting.push(message);
         else if (transfer === undefined) node.port.postMessage(message);
         else node.port.postMessage(message, transfer);
+    }
+
+    /** Sends the writer's commands at the end of this task, once, however many are written. */
+    function sendSoon(): void {
+        if (isSendDue) return;
+        isSendDue = true;
+        queueMicrotask(sendWrites);
+    }
+
+    /** Sends the writes kept, then the writer's commands, or keeps those whose effect lasts if the chip can't play now. */
+    function sendWrites(): void {
+        isSendDue = false;
+        if (node === undefined || context.state !== 'running' || isPaused) {
+            // If sent now, these writes would wait in the worklet and play all at once when the chip can play.
+            // Keep only the writes whose effect lasts, as `HeldWrites` explains, and drop the rest
+            if (!isDestroyed) held.keep(writer.commands, writer.count);
+            writer.clear(writer.commands);
+            return;
+        }
+        if (held.count > 0) {
+            // Send these ahead of the writer's, because they were written before them
+            const count = held.count;
+            const commands = held.take();
+            node.port.postMessage({ kind: 'batch', commands, count } satisfies ChipBatch, [commands.buffer]);
+        }
+        if (writer.count === 0) return;
+        const commands = writer.commands;
+        batch.commands = commands;
+        batch.count = writer.count;
+        transfer[0] = commands.buffer;
+        // The buffer is transferred, not copied, so `commands` is detached from here
+        // on. The writer goes on in a buffer the worklet sent back, or in a new one
+        node.port.postMessage(batch, transfer);
+        writer.clear(spares.pop());
+    }
+
+    function onStateChange(): void {
+        if (context.state === 'running') {
+            if (held.count > 0) sendSoon();
+            if (isOwnContext) stopListeningForGestures();
+        }
+    }
+
+    /** The chip time at the audio context's frame `frame`, from the worklet's last clock reply. */
+    function findChipTimeAt(frame: number): number {
+        // Before the reply's frame, the clock was paused, or had yet to play, so it was where the reply says
+        const since = frame - heard[FRAME];
+        return since > 0 ? heard[PLAYHEAD_MS] + since * heard[MS_PER_SAMPLE] : heard[PLAYHEAD_MS];
     }
 
     /** The audio context's frame at the speaker now, as the last reply measured the speaker's lag. */
@@ -296,18 +362,37 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong>(o
     function applyGain(): void {
         output.gain.setTargetAtTime(isMuted ? 0 : volume, context.currentTime, GAIN_SMOOTHING_S);
     }
+
+    /** Makes the chip's own audio context, and starts it at the page's first gesture if it can't start yet. */
+    function createOwnContext(): AudioContext {
+        if (typeof AudioContext === 'undefined') {
+            throw new Error('A browser chip needs Web Audio, and there is no AudioContext here. To play without a speaker, as in Node, use a headless chip from audio90/headless.');
+        }
+        const made = new AudioContext({ latencyHint: 'interactive' });
+        if (made.state !== 'running') {
+            for (const name of GESTURES) addEventListener(name, startOwnContext, GESTURE_LISTENER);
+        }
+        return made;
+    }
+
+    function startOwnContext(): void {
+        void context.resume();
+    }
+
+    function stopListeningForGestures(): void {
+        for (const name of GESTURES) removeEventListener(name, startOwnContext, GESTURE_LISTENER);
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
-/** A batch message whose fields can be set, so one record serves every tick. */
+/** A batch message whose fields can be set, so one record serves every batch. */
 interface BatchMessage {
     readonly kind: 'batch';
     commands: Float64Array;
     count: number;
-    horizonMs: number;
 }
 
 const MAX_SPARES = 2;
@@ -317,15 +402,15 @@ const FRAME = 1;
 const MS_PER_SAMPLE = 2;
 const SPEAKER_LAG_FRAMES = 3;
 const HEARD_FIELDS = 4;
-/** What the reused batch message holds until the first tick. */
+/** What the reused batch message holds until the first batch. */
 const EMPTY = new Float64Array(0);
 /** The time constant of a volume or mute change, in seconds. The change settles in about 30 ms, which is slow enough not to click. */
 const GAIN_SMOOTHING_S = 0.01;
+/** The gestures that let a page start sound. A tap ends with `touchend`, which some phones need rather than `pointerdown`. */
+const GESTURES = ['pointerdown', 'keydown', 'touchend'] as const;
+/** Listened for before anything else on the page, so a handler that stops the event can't keep the sound off. */
+const GESTURE_LISTENER: AddEventListenerOptions = { capture: true };
 
 function ignore(): void {
     // Handled by whoever awaits `ready`
-}
-
-function isBufferReply(reply: ChipReply | { readonly kind: string }): reply is ChipReply {
-    return reply.kind === 'buffer';
 }

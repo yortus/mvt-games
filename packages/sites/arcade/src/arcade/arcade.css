@@ -1270,16 +1270,6 @@ html.is-runner-turned .runner-sound-hint {
 .perfmon-float.is-dragging .mvt-perfmon { cursor: grabbing; }
 .perfmon-float .mvt-perfmon-info-body { cursor: auto; touch-action: pan-y; }
 .perfmon-float .mvt-perfmon-titlebar { color: var(--site-nav-text); }
-/* The chips' stalls, under the metrics, in the metrics' own type */
-.perfmon-float-stalls {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 4px;
-    padding-top: 4px;
-    border-top: 1px solid var(--site-nav-border);
-    color: var(--mvt-perfmon-muted);
-    font-variant-numeric: tabular-nums;
-}
 /* Once dragged, the view places it by its left and top */
 .perfmon-float.is-moved { right: auto; }
 /* With the runner turned, it drops from the turned screen's top right, as the sound's hint does */

@@ -1,4 +1,4 @@
-import { type AudioControls, clampVolume, type CommandWriter, MAX_MIX_VOLUME, MIX_BUS_INDEX } from '../shared';
+import { clampVolume, type CommandWriter, type HeadlessControls, MAX_MIX_VOLUME, MIX_BUS_INDEX } from '../shared';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -23,22 +23,31 @@ export interface RenderedControlsOptions {
 
 /**
  * Creates the controls of a chip that does not render. `update` moves its
- * clock on, and its songs, and `reset` stops its songs. Its volumes are kept
- * as set, and clamped as every chip clamps them. The rest of the controls do
- * nothing.
+ * clock on, and its songs, unless it is paused, and `reset` stops its songs.
+ * Its volumes are kept as set, and clamped as every chip clamps them. The
+ * rest of the controls do nothing.
  */
-export function createSilentControls(options: { readonly update: (deltaMs: number) => void; readonly reset: () => void }): AudioControls {
+export function createSilentControls(options: { readonly update: (deltaMs: number) => void; readonly reset: () => void }): HeadlessControls {
     const { update, reset } = options;
     let volume = 1;
     let isMuted = false;
     let musicVolume = 1;
     let effectsVolume = 1;
+    let isPaused = false;
     return {
         ready: Promise.resolve(),
-        // It has no sound card, so it never stalls
-        stallCount: 0,
-        update,
-        flush: ignore,
+        get isPaused() {
+            return isPaused;
+        },
+        pause() {
+            isPaused = true;
+        },
+        resume() {
+            isPaused = false;
+        },
+        update(deltaMs) {
+            if (!isPaused) update(deltaMs);
+        },
         reset,
         get volume() {
             return volume;
@@ -70,26 +79,33 @@ export function createSilentControls(options: { readonly update: (deltaMs: numbe
 
 /**
  * Creates the controls of a chip that renders in memory. `update` moves the
- * writer's clock on, and the mix is written as a command, as the browser's
- * chip writes it. The chip's `render` applies the volume and the mute
- * itself, reading them from these controls. `flush` does nothing, since
- * `render` takes the writes itself.
+ * writer's clock on, unless it is paused, and the mix is written as a
+ * command, as the browser's chip writes it. The chip's `render` applies the
+ * volume and the mute itself, reading them from these controls.
  */
-export function createRenderedControls(options: RenderedControlsOptions): AudioControls {
+export function createRenderedControls(options: RenderedControlsOptions): HeadlessControls {
     const { writer, synthesiser, onUpdate, onReset } = options;
     let volume = 1;
     let isMuted = false;
     let musicVolume = 1;
     let effectsVolume = 1;
+    let isPaused = false;
     return {
         ready: Promise.resolve(),
-        // It has no sound card, so it never stalls
-        stallCount: 0,
+        get isPaused() {
+            return isPaused;
+        },
+        pause() {
+            isPaused = true;
+        },
+        resume() {
+            isPaused = false;
+        },
         update(deltaMs) {
+            if (isPaused) return;
             writer.update(deltaMs);
             onUpdate(deltaMs);
         },
-        flush: ignore,
         reset() {
             onReset();
             writer.clear(writer.commands);

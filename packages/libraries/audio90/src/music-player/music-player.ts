@@ -8,18 +8,16 @@ import type { PlayableSong } from './song-driver';
 // ---------------------------------------------------------------------------
 
 /**
- * Plays one song at a time, playing channel n on voice n, on either chip. An
- * audio view owns one, and chooses what it plays: which song, when it starts
- * and stops, and its tempo. That choice is the view's presentation state.
+ * Plays one song at a time, playing channel n on voice n, on either chip.
+ * The code that owns it chooses what plays: which song, when it starts and
+ * stops, and how fast. Each call goes to the chip as it is made.
  *
  * The song's place is kept where the sound is made, on the chip's own
  * sequencer. In a browser, that is the audio thread, on the sound card's
- * clock, so a late frame never holds the music up. The sequencer still
- * pauses with the game, and a headless chip runs it on the game's ticks, so
- * the same ticks still make the same notes.
+ * clock, so a late frame never holds the music up, and the music pauses as
+ * the chip does. A headless chip moves it on as its clock moves, so the same
+ * ticks always make the same notes.
  *
- * A view calls `play`, `queue` and `stop` from its update or refresh step,
- * and `refresh` at the end of its refresh step, which sends them to the chip.
  * What the player reports, `orderIndex`, `row` and `beat`, is what the
  * listener hears now, so a view that shows the song, as a tracker does,
  * shows the row being heard. `S` is the song type of the chip it plays on,
@@ -47,7 +45,10 @@ export interface MusicPlayer<S extends PlayableSong> {
      * and its slides stop. On the Audio90, the LFOs and the echo timed in
      * beats follow it too, and a scale of 0 holds those LFOs. This suits music
      * that plays only while something moves. A negative or non-finite value
-     * acts as 0. A change is sent with the next `refresh`.
+     * acts as 0. A change goes to the chip at once. One made in the same
+     * moment as `play`, before it or after it, applies from the song's start,
+     * so the tempo can follow the song just chosen. Only a glide in the
+     * song's first row keeps the tempo the song started at.
      */
     tempoScale: number;
     /**
@@ -63,8 +64,6 @@ export interface MusicPlayer<S extends PlayableSong> {
     queue: (song: S) => void;
     /** Releases the song's notes, gives its voices back to effects, and stops. */
     stop: () => void;
-    /** Sends what was played, queued, stopped or changed since the last refresh to the chip. Call it from the view's refresh step. */
-    refresh: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,90 +90,38 @@ export function createMusicPlayer(options: MusicPlayerOptions): MusicPlayer<Audi
 // Internals
 // ---------------------------------------------------------------------------
 
-/** What a call waiting for `refresh` asks the slot to do. */
-type SlotCall = 'play' | 'queue' | 'stop';
-
-/** Creates a music player that sends its calls to `slot` as it refreshes. */
+/** Creates a music player that passes each call to `slot`, and sends a tempo only as it changes. */
 function createPlayerOnSlot<S extends PlayableSong>(slot: SongSlot<S>): MusicPlayer<S> {
-    // The calls waiting for `refresh`, in order, and the song each names. They are rare, so a list is fine
-    const calls: SlotCall[] = [];
-    const songs: (S | undefined)[] = [];
-    // Whether a waiting call changes the song playing, and the song it changes to. Until the calls are sent,
-    // the player answers with what they ask for
-    let isSongAsked = false;
-    let asked: S | undefined;
     let tempoScale = 1;
-    let sentScale = 1;
 
-    const player: MusicPlayer<S> = {
+    return {
         get song() {
-            return isSongAsked ? asked : slot.song;
+            return slot.song;
         },
         get isPlaying() {
-            return player.song !== undefined;
+            return slot.song !== undefined;
         },
         get beat() {
-            return isSongAsked ? 0 : slot.beat;
+            return slot.beat;
         },
         get orderIndex() {
-            return isSongAsked ? 0 : slot.orderIndex;
+            return slot.orderIndex;
         },
         get row() {
-            return isSongAsked ? 0 : slot.row;
+            return slot.row;
         },
         get tempoScale() {
             return tempoScale;
         },
         set tempoScale(value) {
-            tempoScale = Number.isFinite(value) && value > 0 ? value : 0;
+            const scale = Number.isFinite(value) && value > 0 ? value : 0;
+            // A view may set it every refresh, so only a change is sent
+            if (scale === tempoScale) return;
+            tempoScale = scale;
+            slot.setTempoScale(scale);
         },
-
-        play(song) {
-            ask('play', song);
-            isSongAsked = true;
-            asked = song;
-        },
-
-        queue(song) {
-            // With nothing playing, a queued song starts at once
-            if (!player.isPlaying) {
-                isSongAsked = true;
-                asked = song;
-            }
-            ask('queue', song);
-        },
-
-        stop() {
-            ask('stop', undefined);
-            isSongAsked = true;
-            asked = undefined;
-        },
-
-        refresh() {
-            // The tempo goes first, so a song started in the same tick starts at it
-            if (tempoScale !== sentScale) {
-                sentScale = tempoScale;
-                slot.setTempoScale(tempoScale);
-            }
-            if (calls.length === 0) return;
-            for (let i = 0; i < calls.length; i++) {
-                const song = songs[i];
-                const call = calls[i];
-                if (call === 'stop') slot.stop();
-                else if (song !== undefined && call === 'play') slot.play(song);
-                else if (song !== undefined) slot.queue(song);
-            }
-            calls.length = 0;
-            songs.length = 0;
-            isSongAsked = false;
-            asked = undefined;
-        },
+        play: slot.play,
+        queue: slot.queue,
+        stop: slot.stop,
     };
-
-    return player;
-
-    function ask(call: SlotCall, song: S | undefined): void {
-        calls.push(call);
-        songs.push(song);
-    }
 }

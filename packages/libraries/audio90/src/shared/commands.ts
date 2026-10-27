@@ -24,31 +24,38 @@ export type MixBus = 'music' | 'effects';
 export const MIX_BUS_INDEX: Readonly<Record<MixBus, number>> = { music: 0, effects: 1 };
 
 /**
- * A tick's commands, as the main thread sends them to a chip's worklet. Only
- * the first `count` commands of `commands` are in use. `horizonMs` is the
- * chip's time at the end of the tick, which the worklet's clock follows.
+ * A batch of commands, as the main thread sends them to a chip's worklet.
+ * Only the first `count` commands of `commands` are in use.
  */
 export interface ChipBatch {
     readonly kind: 'batch';
     readonly commands: Float64Array;
     readonly count: number;
-    readonly horizonMs: number;
 }
 
 /**
- * What a chip's worklet sends back as each batch arrives: the batch's
- * buffer, so the main thread can write into it again, and where the
- * worklet's clock is.
+ * What a chip's worklet sends back about its own running: a batch's buffer,
+ * so the main thread can write into it again, or where its clock is.
  */
-export interface ChipReply {
+export type ChipReply = ChipBufferReply | ChipClockReply;
+
+/** A batch's buffer, sent back as the batch arrives, so the main thread can write into it again. */
+export interface ChipBufferReply {
     readonly kind: 'buffer';
     readonly commands: Float64Array;
-    /** The chip time, in ms, that the next block the worklet renders starts at. */
+}
+
+/**
+ * Where the worklet's clock is, sent as the clock first plays, and each time
+ * it pauses or resumes. Until the next, chip time moves on from `playheadMs`
+ * by `msPerSample` for each frame after `frame`.
+ */
+export interface ChipClockReply {
+    readonly kind: 'clock';
+    /** The chip time, in ms, that the block at `frame` starts at. */
     readonly playheadMs: number;
     /** The audio context's count of frames, at the start of that block. */
     readonly frame: number;
-    /** The chip time each sample of the last block covered, in ms. It is 0 while chip time stands still. */
+    /** The chip time each sample covers from then on, in ms. It is 0 while the chip is paused. */
     readonly msPerSample: number;
-    /** How many times the worklet's clock has stalled, because a tick came later than its lead allows for. */
-    readonly stallCount: number;
 }

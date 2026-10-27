@@ -1,6 +1,5 @@
 import { Application, Container, TextureSource } from 'pixi.js';
 import { createGpuTimer, type GpuTimer, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
-import type { AudioControls } from 'audio90';
 import { KeyboardInputView, TouchInputView } from '#shared';
 import { type EntryInputConfig, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
@@ -65,12 +64,6 @@ export interface PixiStageOptions {
     readonly isTurned: () => boolean;
     /** Finds the chip of a kind, for a session that plays on one. */
     readonly findChip: SoundChipFinder;
-    /**
-     * The controls of the chip the session plays on, or undefined while no
-     * session plays on one. The stage advances the chip's clock with the
-     * session's models, and sends its writes after each refresh.
-     */
-    readonly audioControls: () => AudioControls | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,20 +169,14 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     }
 
     // Each step of the ticker runs the MVT order for the stage. First the
-    // entry's models advance, and its sound chip's clock with them. Then the
-    // stage's views update and refresh. Then the chip's writes are sent. The
+    // entry's models advance, then the stage's views update and refresh. The
     // application renders after this, from its own, later listener.
     app.ticker.add(() => {
         const deltaMs = app.ticker.deltaMS;
         const session = options.session();
-        const controls = options.audioControls();
-        if (session !== undefined && !options.isPaused()) {
-            session.update(deltaMs);
-            controls?.update(deltaMs);
-        }
+        if (session !== undefined && !options.isPaused()) session.update(deltaMs);
         updateView(app.stage, deltaMs);
         refreshView(app.stage);
-        controls?.flush();
     });
 
     const stage: PixiStage = {

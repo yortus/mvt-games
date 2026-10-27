@@ -150,7 +150,6 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
 
         if (w.blips.increased) sound.play(bindings.isFocused() ? FOCUSED_SHOT : SHOT, toPan(bindings.shipX()));
         if (w.ticks.increased) sound.play(BOSS_HIT, toPan(bindings.bossX()));
-        music.refresh();
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {

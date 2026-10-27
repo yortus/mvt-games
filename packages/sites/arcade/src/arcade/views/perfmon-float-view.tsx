@@ -18,13 +18,6 @@ export interface PerfmonFloatViewBindings {
     readonly metrics: () => PerformanceMetrics | undefined;
     /** The metrics that can't be measured as things stand, shown as n/a. */
     readonly unmeasured: () => readonly MetricKind[];
-    /**
-     * How many times the sound chips have stalled since the page loaded,
-     * because a frame came later than their lead allows for. The music and
-     * the effects play on through a stall. Only the notes a game writes
-     * itself wait for it.
-     */
-    readonly stallCount: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -39,8 +32,7 @@ export interface PerfmonFloatViewBindings {
  * changes size. It sits under the nav, and the runner's bar, so their menus
  * drop in front of it.
  * The explanation's text is left to scroll, rather than drag. The gauge in the
- * nav, or in the runner's bar, opens and closes it. Under the metrics, it
- * counts the sound chips' stalls, a sign of frames that reach them late.
+ * nav, or in the runner's bar, opens and closes it.
  */
 export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
     // Presentation state: where the visitor has dragged the panel, its left
@@ -53,18 +45,9 @@ export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
     let drawnX: number | undefined;
     let drawnY = 0;
     let isDragDrawn = false;
-    // The stall count as last shown, and its text, so a frame with no new stall makes no string
-    let shownStalls = 0;
-    let stallsText = '0';
     window.addEventListener('resize', keepInView);
 
     const panel = PerfmonView({ metrics: bindings.metrics, unmeasured: bindings.unmeasured, title: 'Performance', infoNote: NOTE });
-    panel.append(
-        <div class="perfmon-float-stalls">
-            <span text="Chip stalls" />
-            <span text={stallsShown} />
-        </div>,
-    );
 
     return (
         <div
@@ -85,16 +68,6 @@ export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
             {panel}
         </div>
     );
-
-    /** The stall count, as text. */
-    function stallsShown(): string {
-        const stalls = bindings.stallCount();
-        if (stalls !== shownStalls) {
-            shownStalls = stalls;
-            stallsText = String(stalls);
-        }
-        return stallsText;
-    }
 
     /** Writes where the panel was dragged to, once it has been, and whether it is being dragged now. */
     function place(e: HTMLElement): void {

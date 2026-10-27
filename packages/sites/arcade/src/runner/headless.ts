@@ -1,5 +1,5 @@
 import type { Container } from 'pixi.js';
-import type { AudioControls } from 'audio90';
+import type { HeadlessControls } from 'audio90/headless';
 import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
 import { refreshView, updateView, type View } from '@mvtjs/html';
 import {
@@ -16,7 +16,7 @@ export interface HeadlessSound {
     /** Finds the chip, for the kind its starter names. */
     readonly findChip: SoundChipFinder;
     /** The chip's controls, or undefined for an entry that makes no sound, which is given no chip. */
-    readonly controls: AudioControls | undefined;
+    readonly controls: HeadlessControls | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,7 +38,7 @@ export interface AdvanceHeadlessOptions {
     /** The views that the host would tick. For a Pixi entry, that is its stage. */
     readonly views: readonly View[];
     /** The controls of the chip that the session plays on, if it plays on one. */
-    readonly controls: AudioControls | undefined;
+    readonly controls: HeadlessControls | undefined;
     readonly totalMs: number;
     /** Plays the entry's controls before each step, as `PixiEntryStarter.thumbnailInput` does. */
     readonly input?: (session: EntrySession, elapsedMs: number) => void;
@@ -97,12 +97,13 @@ export async function waitForLayout(): Promise<void> {
 /**
  * Advances a session by `totalMs`, in the order that the host uses. Each
  * frame-sized step plays the input, if any, then updates the session's
- * models, its chip's clock and its views, refreshes the views, and sends the
- * chip's writes. The steps are small because a model with phases or
- * timelines would skip what happens between them in one giant step. Each
- * step refreshes, as each frame does, because a refresh is where a view
- * writes to its chip: a music player sends the song it starts there, and the
- * chip's sequencer moves the song on from then.
+ * models, its chip's clock and its views, and refreshes the views. A
+ * headless chip has no sound card to keep its time, so its clock moves with
+ * the models. The steps are small because a model with phases or timelines
+ * would skip what happens between them in one giant step. Each step
+ * refreshes, as each frame does, because a refresh is where a view writes to
+ * its chip: a music player sends the song it starts there, and the chip's
+ * sequencer moves the song on from then.
  */
 export function advanceHeadless(options: AdvanceHeadlessOptions): void {
     const { session, views, controls, totalMs, input } = options;
@@ -114,13 +115,11 @@ export function advanceHeadless(options: AdvanceHeadlessOptions): void {
         controls?.update(step);
         for (let i = 0; i < views.length; i++) updateView(views[i], step);
         for (let i = 0; i < views.length; i++) refreshView(views[i]);
-        controls?.flush();
         remaining -= step;
     }
     // With no time to advance, the views still show where they start
     if (totalMs > 0) return;
     for (let i = 0; i < views.length; i++) refreshView(views[i]);
-    controls?.flush();
 }
 
 /**
