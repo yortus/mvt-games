@@ -9,21 +9,15 @@ import type { Audio90Song, Audio90Sound } from '../notation';
 /**
  * The Audio90 is a sixteen-voice stereo sound chip in the spirit of the
  * synthesisers, samplers and game consoles of the 1990s. It plays songs, on
- * a sequencer of its own, and sounds over them, and can be paused and turned
- * down, as `SoundChip` describes.
+ * a sequencer of its own, and sounds, and can be paused and turned down, as
+ * `SoundChip` describes. Every play starts as soon as it reaches the chip,
+ * as on the Audio80.
  *
- * Its clock and setters work as the Audio80's do. It can also report what
- * each voice is playing, for a scope to draw.
+ * It can also report what each voice is playing, for a scope to draw. The
+ * scope's layout is in `audio90/tracker`, with the other helpers an editor
+ * needs.
  */
-export interface Audio90 extends SoundChip<Audio90Song, Audio90Sound, Audio90PlayOptions>, Omit<Audio90Writer, 'noteOn' | 'noteOff' | 'releaseAll'> {
-    /**
-     * The chip time, in ms, of the sound reaching the speaker now. In a
-     * browser, it trails `time` by the sound card's latency. A view that
-     * shows the music as it is heard, as a tracker does, reads it rather than
-     * `time`. A chip with no speaker hears each write as it is made, so for
-     * it this is `time`.
-     */
-    readonly heardTime: number;
+export interface Audio90 extends SoundChip<Audio90Song, Audio90Sound, Audio90PlayOptions> {
     /**
      * What each voice played last, while scopes are on, for a view to draw:
      * `AUDIO90_SCOPE_POINTS` points a voice, round and round, then each
@@ -56,7 +50,8 @@ export interface Audio90PlayOptions {
 
 /**
  * What writes notes and settings to an Audio90, and its clock. A song's
- * writes, and a sample's bounce, need no more of a chip than this.
+ * writes, and a sample's bounce, need no more of a chip than this. It is the
+ * chip's inside, as `Audio80Writer` is the Audio80's.
  */
 export interface Audio90Writer {
     /** The chip's time now, in ms, as the Audio80's `time` describes. */

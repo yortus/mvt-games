@@ -10,6 +10,7 @@ export default defineConfig({
     entry: {
         'index': 'src/index.ts',
         'headless/index': 'src/headless/index.ts',
+        'tracker/index': 'src/tracker/index.ts',
     },
     unbundle: true,
     platform: 'neutral',

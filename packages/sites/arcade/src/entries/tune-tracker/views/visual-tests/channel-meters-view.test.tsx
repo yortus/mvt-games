@@ -1,4 +1,4 @@
-import { AUDIO90_SCOPE_LENGTH, AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS } from 'audio90';
+import { AUDIO90_SCOPE_LENGTH, AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS } from 'audio90/tracker';
 import { advanceTime } from '@mvtjs/pixi';
 import { canvasTest } from 'v-snap';
 import { TUNES } from '#tunes';

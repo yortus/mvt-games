@@ -1,4 +1,5 @@
 import {
+    computeSongDurationMs,
     checkInstrumentLetters,
     checkLoop,
     checkTempo,
@@ -50,6 +51,11 @@ export interface Audio90Song {
     readonly order: readonly SongOrderEntry[];
     /** The index in `order` to go back to at the end, or -1 to play once. */
     readonly loop: number;
+    /**
+     * How long one pass through `order` lasts, in ms, at the song's own tempo.
+     * A song that loops goes on past it, from `loop`. Swing does not change it.
+     */
+    readonly durationMs: number;
     /** A gain on every note. At 1, the notes play as written. */
     readonly volume: number;
     /** Each channel's pan and sends as the song starts, one for every channel. */
@@ -296,6 +302,7 @@ export function createAudio90Song(options: Audio90SongOptions): Audio90Song {
         patterns: Object.freeze(patterns),
         order: Object.freeze(order),
         loop,
+        durationMs: computeSongDurationMs({ bpm, rowsPerBeat, order, patterns }),
         volume,
         mixer: Object.freeze(buildMixer(options.mixer ?? [], channelCount)),
         reverb: buildReverb(options.reverb),

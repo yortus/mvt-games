@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, type Audio80Song, type Audio80Sound } from 'audio90';
+import type { Audio80Song, Audio80Sound } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
@@ -60,7 +60,7 @@ describe('GameAudioView', () => {
         music.clear();
         sfx.clear();
         state.phase = 'section-clear';
-        const listenMs = computeSongDurationMs(RUN_CLEAR);
+        const listenMs = RUN_CLEAR.durationMs;
         tickFor(listenMs);
         expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song: RUN_CLEAR, listenMs }));
         expect(listenMs).toBeLessThanOrEqual(SECTION_CLEAR_DELAY_MS);
@@ -84,7 +84,7 @@ describe('GameAudioView', () => {
         music.clear();
         sfx.clear();
         state.phase = 'game-over';
-        const listenMs = computeSongDurationMs(GAME_OVER);
+        const listenMs = GAME_OVER.durationMs;
         tickFor(listenMs);
         expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song: GAME_OVER, listenMs }));
     });

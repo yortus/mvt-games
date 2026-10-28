@@ -1,14 +1,4 @@
-export type {
-    Audio80Character,
-    Audio80EchoSetting,
-    Audio80FilterId,
-    Audio80FilterMode,
-    Audio80FilterSetting,
-    Audio80FilterSettingValue,
-    Audio80VoiceSetting,
-    Audio80VoiceSettingValue,
-    Audio80Wave,
-} from './audio80';
+export type { Audio80Character, Audio80FilterId, Audio80FilterMode, Audio80Wave } from './audio80';
 export {
     createAudio80Song,
     createAudio80Sound,
@@ -24,26 +14,11 @@ export {
     type Audio80Vibrato,
 } from './audio80';
 export type { Audio80, Audio80PlayOptions } from './audio80';
-export type {
-    Audio90,
-    Audio90Character,
-    Audio90EffectId,
-    Audio90EffectSetting,
-    Audio90EffectSettings,
-    Audio90PlayOptions,
-    Audio90VoiceSetting,
-} from './audio90';
+export type { Audio90, Audio90Character, Audio90PlayOptions } from './audio90';
 export {
-    AUDIO90_CELL_TEXT_WIDTH,
-    AUDIO90_SAMPLE_MEMORY,
-    AUDIO90_SCOPE_LENGTH,
-    AUDIO90_SCOPE_PANS,
-    AUDIO90_SCOPE_POINTS,
-    AUDIO90_VOICE_COUNT,
     createAudio90Sample,
     createAudio90Song,
     createAudio90Sound,
-    formatAudio90Cell,
     prepareAudio90Samples,
     type Audio90ChannelMix,
     type Audio90ChorusSettings,
@@ -66,11 +41,10 @@ export {
     type Audio90SampleOptions,
     type Audio90Song,
     type Audio90SongOptions,
-    type Audio90SongPattern,
     type Audio90Sound,
     type Audio90SoundOptions,
     type Audio90Vibrato,
     type Audio90Wave,
 } from './audio90';
-export { computeSongDurationMs, type SoundChip } from './shared';
+export type { SoundChip } from './shared';
 export { createAudio80, createAudio90, type Audio80Options, type Audio90Options } from './web';

@@ -7,24 +7,16 @@ import type { Audio80Song, Audio80Sound } from '../notation';
 // ---------------------------------------------------------------------------
 
 /**
- * The Audio80 is an eight-voice sound chip in the spirit of the sound chips
- * in 1980s home computers. It plays songs, on a sequencer of its own, and
- * sounds over them, and can be paused and turned down, as `SoundChip`
- * describes.
- *
- * Its setters, such as `setFilter`, play as soon as they can, or at `atMs`,
- * the chip time to apply them at, in ms, for code that schedules ahead. A
- * write stamped earlier than the chip has already played applies at once. In
- * a browser, the chip's time is the sound card's, and stands still while the
- * chip is paused. A headless chip has no sound card, so its time moves only
- * as the code that owns it says.
+ * The Audio80 is a four-voice sound chip in the spirit of the sound chips in
+ * 1980s home computers. It plays songs, on a sequencer of its own, and sounds,
+ * and can be paused and turned down, as `SoundChip` describes. Every play
+ * starts as soon as it reaches the chip.
  *
  * `play` takes its options as an object. The code that plays a sound calls
  * it only as something happens, such as a shot being fired, so making the
- * object costs nothing that matters. The setters take their arguments in
- * order.
+ * object costs nothing that matters.
  */
-export interface Audio80 extends SoundChip<Audio80Song, Audio80Sound, Audio80PlayOptions>, Omit<Audio80Writer, 'noteOn' | 'noteOff' | 'releaseAll'> {}
+export type Audio80 = SoundChip<Audio80Song, Audio80Sound, Audio80PlayOptions>;
 
 /** How one play of a sound differs from the sound's own settings. Each option defaults to the sound's. */
 export interface Audio80PlayOptions {
@@ -40,7 +32,9 @@ export interface Audio80PlayOptions {
 
 /**
  * What writes notes and settings to an Audio80, and its clock. A song's
- * writes need no more of a chip than this.
+ * writes need no more of a chip than this. It is the chip's inside: the
+ * chip's own sequencer and its headless versions write through it, and the
+ * code that plays on the chip never sees it.
  */
 export interface Audio80Writer {
     /**

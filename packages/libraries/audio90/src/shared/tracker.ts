@@ -23,7 +23,7 @@ export interface SongTempo {
     readonly swing?: number;
 }
 
-/** What `computeSongDurationMs` reads of a song, which any chip's song has. */
+/** What `computeSongDurationMs` reads of a song, as it is made. */
 export interface SongTiming {
     readonly bpm: number;
     readonly rowsPerBeat: number;

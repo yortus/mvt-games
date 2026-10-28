@@ -20,6 +20,9 @@
         },
         "./headless": {
             "default": "./src/headless/index.ts"
+        },
+        "./tracker": {
+            "default": "./src/tracker/index.ts"
         }
     },
     "files": ["dist", "src", "docs", "!src/**/*.test.ts"],

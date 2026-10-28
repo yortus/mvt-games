@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, type Audio80Song, type Audio80Sound } from 'audio90';
+import type { Audio80Song, Audio80Sound } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
     DEATH, FIRE, FIRE_WARNING, GAME_OVER, GHOST, HARPOON, LEVEL_CLEAR, LEVEL_START, POP, PUMP_1, PUMP_2, PUMP_3,
@@ -46,7 +46,7 @@ describe('GameAudioView', () => {
 
     it('plays the level\'s jingle as the game starts, then the walking tune', () => {
         const { music, tick } = setUpGameAudio({ isDiggerMoving: true });
-        const ticks = Math.ceil(computeSongDurationMs(LEVEL_START) / TICK_MS) + SONG_TICKS;
+        const ticks = Math.ceil(LEVEL_START.durationMs / TICK_MS) + SONG_TICKS;
         runTicks(tick, ticks);
         expect(describeNoteOns(music.log)).toEqual(recordSong({ song: LEVEL_START, then: WALK_TUNE, ticks }));
     });
@@ -118,7 +118,7 @@ describe('GameAudioView', () => {
         music.clear();
         sfx.clear();
         state.phase = 'game-over';
-        const ticks = Math.ceil(computeSongDurationMs(GAME_OVER) / TICK_MS) + SONG_TICKS;
+        const ticks = Math.ceil(GAME_OVER.durationMs / TICK_MS) + SONG_TICKS;
         runTicks(tick, ticks + 1);
         expect(describeNoteOns(music.log)).toEqual(recordSong({ song: GAME_OVER, ticks }));
     });

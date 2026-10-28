@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { type Audio80, createAudio80Sound, createAudio80Song, type Audio80Song, type Audio80SongOptions, type Audio80Writer, toCutoff } from '../audio80';
-import { type Audio80Write, createHeadlessAudio80 } from '../headless';
-import { computeSongDurationMs, toNoteNumber } from '../shared';
+import { createAudio80Sound, createAudio80Song, type Audio80Song, type Audio80SongOptions, toCutoff } from '../audio80';
+import { toNoteNumber } from '../shared';
+import { type Audio80WriterCall, createRecordingAudio80Writer } from './recording-writers';
 import { createSongPlayer, type SongPlayer } from './song-player';
 
 const BPM = 150;
@@ -59,7 +59,7 @@ describe('song player', () => {
     });
 
     it('transposes written notes, and leaves an instrument\'s own note alone', () => {
-        const { log } = playThrough(TUNE, () => 1000 / 60, computeSongDurationMs(TUNE) + 100);
+        const { log } = playThrough(TUNE, () => 1000 / 60, TUNE.durationMs + 100);
         const notes = listNoteOns(log);
         const secondPass = notes.filter((write) => write.time >= 4 * ROW_MS);
         expect(secondPass.find((write) => write.voice === 0)?.note).toBe(requireNoteNumber('C-5') + TUNE.order[1].transpose);
@@ -67,7 +67,7 @@ describe('song player', () => {
     });
 
     it('releases on ===, and stops at the end', () => {
-        const { log, player } = playThrough(TUNE, () => 1000 / 60, computeSongDurationMs(TUNE) + 100);
+        const { log, player } = playThrough(TUNE, () => 1000 / 60, TUNE.durationMs + 100);
         expect(log.some((write) => write.kind === 'note-off' && write.voice === 1 && write.time === 2 * ROW_MS)).toBe(true);
         expect(player.isPlaying).toBe(false);
     });
@@ -92,50 +92,50 @@ describe('song player', () => {
     });
 
     it('plays a queued song as the one playing ends, without a gap', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         player.queue(createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] }));
-        tick(chip, player, () => 1000 / 60, computeSongDurationMs(TUNE) + 3 * ROW_MS);
+        tick(chip, player, () => 1000 / 60, TUNE.durationMs + 3 * ROW_MS);
         const firstOfNext = listNoteOns(chip.log).find((write) => write.note === requireNoteNumber('G-5'));
-        expect(firstOfNext?.time).toBeCloseTo(computeSongDurationMs(TUNE), 9);
+        expect(firstOfNext?.time).toBeCloseTo(TUNE.durationMs, 9);
     });
 
     it('plays a queued song instead of going back to its loop point', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 });
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(looped);
         tick(chip, player, () => 1000 / 60, ROW_MS);
         player.queue(next);
-        tick(chip, player, () => 1000 / 60, computeSongDurationMs(looped) + ROW_MS);
+        tick(chip, player, () => 1000 / 60, looped.durationMs + ROW_MS);
         const notes = listNoteOns(chip.log);
         expect(notes.filter((write) => write.note === requireNoteNumber('C-5')).map((write) => write.time)).toEqual([0]);
-        expect(notes.find((write) => write.note === requireNoteNumber('G-5'))?.time).toBeCloseTo(computeSongDurationMs(looped), 9);
+        expect(notes.find((write) => write.note === requireNoteNumber('G-5'))?.time).toBeCloseTo(looped.durationMs, 9);
         expect(player.song).toBe(next);
     });
 
     it('cancels a queued song when told to play another', () => {
         const queued = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         player.queue(queued);
         tick(chip, player, () => 1000 / 60, ROW_MS);
         player.play(TUNE);
-        tick(chip, player, () => 1000 / 60, computeSongDurationMs(TUNE) + 3 * ROW_MS);
+        tick(chip, player, () => 1000 / 60, TUNE.durationMs + 3 * ROW_MS);
         expect(listNoteOns(chip.log).some((write) => write.note === requireNoteNumber('G-5'))).toBe(false);
         expect(player.isPlaying).toBe(false);
     });
 
     it('releases the song playing when told to play another, and starts the new one at once', () => {
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * 1.5);
-        const switchedAt = chip.time;
+        const switchedAt = chip.writer.time;
         chip.clear();
         player.play(next);
         player.refresh();
@@ -147,19 +147,19 @@ describe('song player', () => {
     });
 
     it('plays faster by its tempo scale', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.tempoScale = 2;
         player.play(TUNE);
-        tick(chip, player, () => 1000 / 60, computeSongDurationMs(TUNE));
+        tick(chip, player, () => 1000 / 60, TUNE.durationMs);
         // Row 2, at double tempo
         expect(listNoteOns(chip.log).some((write) => Math.abs(write.time - ROW_MS) < 1e-9)).toBe(true);
         expect(player.isPlaying).toBe(false);
     });
 
     it('plays the rest of the song at a new tempo scale from the update after it changes', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         tick(chip, player, () => 10, 2 * ROW_MS);
         player.tempoScale = 2;
@@ -170,8 +170,8 @@ describe('song player', () => {
     });
 
     it('holds where it is at a tempo of 0, and carries on from there', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * 1.5);
         const before = listNoteOns(chip.log).length;
@@ -186,7 +186,7 @@ describe('song player', () => {
     });
 
     it('holds at a tempo scale that is negative or not finite', () => {
-        const player = createSongPlayer({ audio80: asWriter(createHeadlessAudio80({ record: true })) });
+        const player = createSongPlayer({ audio80: createRecordingAudio80Writer().writer });
         for (const scale of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
             player.tempoScale = scale;
             expect(player.tempoScale, `${scale}`).toBe(0);
@@ -194,8 +194,8 @@ describe('song player', () => {
     });
 
     it('ignores a deltaMs of 0 or less, or not finite', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 }));
         player.refresh();
         chip.clear();
@@ -211,8 +211,8 @@ describe('song player', () => {
         const steady = playThrough(song, () => 10, 2 * ROW_MS).log;
         expect(measureSlide(steady, 0, 0, ROW_MS)).toBeCloseTo(SLIDE, 9);
 
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(song);
         tick(chip, player, () => 10, ROW_MS / 2);
         player.tempoScale = 2;
@@ -221,23 +221,23 @@ describe('song player', () => {
         // a row early
         const rowEndMs = ROW_MS / 2 + ROW_MS / 4;
         expect(measureSlide(chip.log, 0, 0, rowEndMs)).toBeCloseTo(SLIDE, 9);
-        expect(measureSlide(chip.log, 0, rowEndMs, chip.time)).toBe(0);
+        expect(measureSlide(chip.log, 0, rowEndMs, chip.writer.time)).toBe(0);
     });
 
     it('stops a slide while the song is held, and carries it on when it resumes', () => {
         const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: SLIDE_THEN_HOLD } });
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(song);
         tick(chip, player, () => 10, ROW_MS / 2);
-        const heldAt = chip.time;
+        const heldAt = chip.writer.time;
         player.tempoScale = 0;
         tick(chip, player, () => 10, 5 * ROW_MS);
         expect(measureSlide(chip.log, 0, 0, heldAt)).toBeCloseTo(SLIDE / 2, 9);
-        expect(measureSlide(chip.log, 0, heldAt, chip.time)).toBe(0);
+        expect(measureSlide(chip.log, 0, heldAt, chip.writer.time)).toBe(0);
         player.tempoScale = 1;
         tick(chip, player, () => 10, 2 * ROW_MS);
-        expect(measureSlide(chip.log, 0, 0, chip.time)).toBeCloseTo(SLIDE, 9);
+        expect(measureSlide(chip.log, 0, 0, chip.writer.time)).toBeCloseTo(SLIDE, 9);
     });
 
     it('swings each odd row of a pattern late, the same on every pass', () => {
@@ -264,7 +264,7 @@ describe('song player', () => {
             | E-4 >
         `;
         const song = createAudio80Song({ ...ONE_CHANNEL, swing, patterns: { p: slid } });
-        const { log } = playThrough(song, () => 10, computeSongDurationMs(song));
+        const { log } = playThrough(song, () => 10, song.durationMs);
         const rowStarts = [0, (1 + swing) * ROW_MS, 2 * ROW_MS];
         expect(measureSlide(log, 0, rowStarts[0], rowStarts[1])).toBeCloseTo(SLIDE, 9);
         expect(measureSlide(log, 0, rowStarts[1], rowStarts[2])).toBeCloseTo(SLIDE, 9);
@@ -276,15 +276,15 @@ describe('song player', () => {
             | ...
         `;
         const glided = createAudio80Song({ ...ONE_CHANNEL, swing, patterns: { p: glide } });
-        expect(listSettingValues(playThrough(glided, () => 10, computeSongDurationMs(glided)).log, 'glide')).toEqual([(1 - swing) * ROW_MS]);
+        expect(listSettingValues(playThrough(glided, () => 10, glided.durationMs).log, 'glide')).toEqual([(1 - swing) * ROW_MS]);
     });
 
     it('carries on where it was after a pause, with no gap in its stamps', () => {
         const straight = listNoteStamps(TUNE, () => 1000 / 60);
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         const pausedAtMs = 100;
-        const totalMs = computeSongDurationMs(TUNE) + 100;
+        const totalMs = TUNE.durationMs + 100;
         player.play(TUNE);
         tick(chip, player, () => 1000 / 60, pausedAtMs);
         // While paused, the game loop advances neither the chip nor the view, but still refreshes the view
@@ -294,8 +294,8 @@ describe('song player', () => {
     });
 
     it('releases its notes and its voices when stopped', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         tick(chip, player, () => 1000 / 60, 50);
         chip.clear();
@@ -306,8 +306,8 @@ describe('song player', () => {
     });
 
     it('counts beats from the start of the song', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * ROWS_PER_BEAT);
         expect(player.beat).toBeCloseTo(1, 9);
@@ -316,8 +316,8 @@ describe('song player', () => {
     it('reports the row playing, through its loop and into a queued song', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(looped);
         const places = [[player.orderIndex, player.row]];
         for (let i = 0; i < 13; i++) {
@@ -339,8 +339,8 @@ describe('song player', () => {
     });
 
     it('writes nothing in its update step, and everything in its refresh', () => {
-        const chip = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(chip) });
+        const chip = createRecordingAudio80Writer();
+        const player = createSongPlayer({ audio80: chip.writer });
         player.play(TUNE);
         chip.update(500);
         player.update(500);
@@ -352,8 +352,8 @@ describe('song player', () => {
     it('plays every note at its song\'s volume', () => {
         const volume = 0.5;
         const song = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'] });
-        const asWritten = listNoteOns(playThrough(song, () => 10, computeSongDurationMs(song)).log);
-        const quieter = listNoteOns(playThrough(createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], volume }), () => 10, computeSongDurationMs(song)).log);
+        const asWritten = listNoteOns(playThrough(song, () => 10, song.durationMs).log);
+        const quieter = listNoteOns(playThrough(createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], volume }), () => 10, song.durationMs).log);
         expect(quieter.map((write) => write.volume)).toEqual(asWritten.map((write) => write.volume * volume));
     });
 });
@@ -394,8 +394,8 @@ const SLIDE_THEN_HOLD = `
     | ...
 `;
 
-type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
-type SetVoice = Extract<Audio80Write, { kind: 'set-voice'; value: number }>;
+type NoteOn = Extract<Audio80WriterCall, { kind: 'note-on' }>;
+type SetVoice = Extract<Audio80WriterCall, { kind: 'set-voice'; value: number }>;
 
 /** A note's number from its name, for notes the tests write. */
 function requireNoteNumber(name: string): number {
@@ -404,12 +404,12 @@ function requireNoteNumber(name: string): number {
     return number;
 }
 
-function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {
+function listNoteOns(log: readonly Audio80WriterCall[]): NoteOn[] {
     return log.filter((write): write is NoteOn => write.kind === 'note-on');
 }
 
 /** The values written to one voice setting, in order. */
-function listSettingValues(log: readonly Audio80Write[], setting: SetVoice['setting']): number[] {
+function listSettingValues(log: readonly Audio80WriterCall[], setting: SetVoice['setting']): number[] {
     return log.filter((write): write is SetVoice => write.kind === 'set-voice' && write.setting === setting).map((write) => write.value);
 }
 
@@ -418,7 +418,7 @@ function listSettingValues(log: readonly Audio80Write[], setting: SetVoice['sett
  * would play the log. A slide write sets the rate in semitones a second, and
  * a `noteOn` stops the slide.
  */
-function measureSlide(log: readonly Audio80Write[], voice: number, fromMs: number, toMs: number): number {
+function measureSlide(log: readonly Audio80WriterCall[], voice: number, fromMs: number, toMs: number): number {
     let rate = 0;
     let at = fromMs;
     let total = 0;
@@ -436,16 +436,16 @@ function measureSlide(log: readonly Audio80Write[], voice: number, fromMs: numbe
 }
 
 function listNoteStamps(song: Audio80Song, tickMs: () => number): number[] {
-    return listNoteOns(playThrough(song, tickMs, computeSongDurationMs(song) + 100).log).map((write) => write.time);
+    return listNoteOns(playThrough(song, tickMs, song.durationMs + 100).log).map((write) => write.time);
 }
 
 /** The note stamps of TUNE when it starts at the same chip time, either before the update or in the refresh. */
 function listStampsWhenPlayed(when: 'before-update' | 'in-refresh'): number[] {
-    const chip = createHeadlessAudio80({ record: true });
-    const player = createSongPlayer({ audio80: asWriter(chip) });
+    const chip = createRecordingAudio80Writer();
+    const player = createSongPlayer({ audio80: chip.writer });
     const tickMs = 1000 / 60;
     const startTick = 3;
-    const totalMs = computeSongDurationMs(TUNE) + 100;
+    const totalMs = TUNE.durationMs + 100;
     for (let i = 0; i * tickMs < totalMs; i++) {
         chip.update(tickMs);
         if (i === startTick && when === 'before-update') player.play(TUNE);
@@ -457,8 +457,8 @@ function listStampsWhenPlayed(when: 'before-update' | 'in-refresh'): number[] {
 }
 
 function playThrough(song: Audio80Song, tickMs: () => number, durationMs: number) {
-    const chip = createHeadlessAudio80({ record: true });
-    const player = createSongPlayer({ audio80: asWriter(chip) });
+    const chip = createRecordingAudio80Writer();
+    const player = createSongPlayer({ audio80: chip.writer });
     player.play(song);
     tick(chip, player, tickMs, durationMs);
     return { log: chip.log, player };
@@ -480,13 +480,4 @@ function tick(chip: { readonly update: (deltaMs: number) => void }, player: Song
 function expectClose(actual: readonly number[], expected: readonly number[]): void {
     expect(actual).toHaveLength(expected.length);
     for (let i = 0; i < expected.length; i++) expect(actual[i]).toBeCloseTo(expected[i], 6);
-}
-
-/**
- * A headless chip as its songs write to it. A headless chip is its own
- * writer, which its songs write their notes through, so the cast only names
- * what it already is.
- */
-function asWriter<C extends Audio80>(chip: C): C & Audio80Writer {
-    return chip as C & Audio80Writer;
 }

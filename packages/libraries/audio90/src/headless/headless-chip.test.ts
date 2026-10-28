@@ -57,9 +57,9 @@ describe('a headless chip\'s songs', () => {
         chip.play(SONG);
         chip.update(TICK_MS);
         chip.pause();
-        const time = chip.time;
+        const time = asWriter(chip).time;
         for (let i = 0; i < 20; i++) chip.update(TICK_MS);
-        expect([chip.time, chip.row]).toEqual([time, 0]);
+        expect([asWriter(chip).time, chip.row]).toEqual([time, 0]);
         chip.resume();
         for (let i = 0; i < 20; i++) chip.update(TICK_MS);
         expect(chip.row).toBeGreaterThan(0);

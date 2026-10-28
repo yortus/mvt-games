@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { computeSongDurationMs, type Audio80Song } from 'audio90';
+import type { Audio80Song } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';
@@ -38,8 +38,8 @@ describe('GameAudioView', () => {
     it('plays the sneaking tune at its own tempo once the start\'s tune ends, with the maze full', () => {
         const { music, tickFor } = setUp();
         const startMs = listNoteOns(music.log)[0].time;
-        tickFor(computeSongDurationMs(GAME_START) + LISTEN_MS);
-        const handOverMs = startMs + computeSongDurationMs(GAME_START);
+        tickFor(GAME_START.durationMs + LISTEN_MS);
+        const handOverMs = startMs + GAME_START.durationMs;
         expect(describeNoteOns(music.log, handOverMs)).toEqual(recordSong({ song: SNEAK }));
     });
 
@@ -72,7 +72,7 @@ describe('GameAudioView', () => {
         music.clear();
         sfx.clear();
         state.phase = phase;
-        const listenMs = computeSongDurationMs(song);
+        const listenMs = song.durationMs;
         tickFor(listenMs);
         expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song, listenMs }));
     });
@@ -83,7 +83,7 @@ describe('GameAudioView', () => {
         music.clear();
         sfx.clear();
         state.phase = 'game-over';
-        const listenMs = computeSongDurationMs(GAME_START) + computeSongDurationMs(CAUGHT);
+        const listenMs = GAME_START.durationMs + CAUGHT.durationMs;
         tickFor(listenMs);
         expect(describeNoteOns(music.log, 0, listenMs)).toEqual(recordSong({ song: CAUGHT, listenMs }));
     });
@@ -201,6 +201,6 @@ function setUp() {
 /** Sets up a view as a game starts, and runs it until the sneaking tune has played for a second. */
 function setUpSneaking() {
     const setup = setUp();
-    setup.tickFor(computeSongDurationMs(GAME_START) + 1000);
+    setup.tickFor(GAME_START.durationMs + 1000);
     return setup;
 }

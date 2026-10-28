@@ -1,15 +1,9 @@
 import {
     type Audio80,
     type Audio80Character,
-    type Audio80EchoSetting,
-    type Audio80FilterId,
-    type Audio80FilterMode,
-    type Audio80FilterSetting,
     type Audio80PlayOptions,
     type Audio80Song,
     type Audio80Sound,
-    type Audio80VoiceSetting,
-    type Audio80Wave,
     type Audio80Writer,
     type CommandAudio80,
     createAudio80Synthesiser,
@@ -58,23 +52,18 @@ export interface HeadlessAudio80 extends Audio80, HeadlessChip<Audio80Song, Audi
 }
 
 /**
- * One write, with the stamp it was given and its value as written. A play,
- * and a stop, are stamped `-Infinity`, because they apply as soon as they
- * arrive. A play keeps the options it was given, if any. A stop with no id
- * stops everything. A song's notes are logged as `note-on` and `note-off`.
- * The value is a name for a voice's `'wave'` and a filter's `'mode'`, and a
- * number for every other setting.
+ * One write, with the time it applies at. A play, and a stop, are stamped
+ * `-Infinity`, because they apply as soon as they arrive. A play keeps the
+ * options it was given, if any. A stop with no id stops everything. A song's
+ * notes are logged as `note-on` and `note-off`, at the chip time each plays
+ * at, on the voice of the song's channel. What else a song sets as it plays,
+ * such as its filters and slides, is not logged.
  */
 export type Audio80Write =
     | { readonly kind: 'play'; readonly sound: Audio80Sound; readonly id: number; readonly options: Audio80PlayOptions | undefined; readonly time: number }
     | { readonly kind: 'stop'; readonly id: number | undefined; readonly time: number }
     | { readonly kind: 'note-on'; readonly voice: number; readonly sound: Audio80Sound; readonly note: number; readonly volume: number; readonly time: number }
-    | { readonly kind: 'note-off'; readonly voice: number; readonly time: number }
-    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: 'wave'; readonly value: Audio80Wave; readonly time: number }
-    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: Exclude<Audio80VoiceSetting, 'wave'>; readonly value: number; readonly time: number }
-    | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: 'mode'; readonly value: Audio80FilterMode; readonly time: number }
-    | { readonly kind: 'set-filter'; readonly filter: Audio80FilterId; readonly setting: Exclude<Audio80FilterSetting, 'mode'>; readonly value: number; readonly time: number }
-    | { readonly kind: 'set-echo'; readonly setting: Audio80EchoSetting; readonly value: number; readonly time: number };
+    | { readonly kind: 'note-off'; readonly voice: number; readonly time: number };
 
 // ---------------------------------------------------------------------------
 // Options
@@ -123,6 +112,7 @@ export function createHeadlessAudio80(options: HeadlessAudio80Options = {}): Hea
     });
 
     return joinMembers(chip, {
+        // The writer's own members, which the chip's type leaves out, for code that writes a song's notes
         get time() {
             return writer.time;
         },
@@ -130,7 +120,6 @@ export function createHeadlessAudio80(options: HeadlessAudio80Options = {}): Hea
         setVoice: writer.setVoice,
         setFilter: writer.setFilter,
         setEcho: writer.setEcho,
-        // The writer's own members, which the chip's type leaves out, for code that writes a song's notes
         noteOn: writer.noteOn,
         noteOff: writer.noteOff,
         releaseAll: writer.releaseAll,
@@ -208,20 +197,10 @@ function createLoggingWriter(log: Audio80Write[], inner: Audio80Side): Audio80Si
             log.push({ kind: 'note-off', voice, time: atMs ?? inner.time });
             inner.noteOff(voice, atMs);
         },
-        setVoice(voice, setting, value, atMs) {
-            // The signature makes sure the setting and its value agree. TypeScript can't follow that
-            // into the union, so the write is cast
-            log.push({ kind: 'set-voice', voice, setting, value, time: atMs ?? inner.time } as Audio80Write);
-            inner.setVoice(voice, setting, value, atMs);
-        },
-        setFilter(filter, setting, value, atMs) {
-            log.push({ kind: 'set-filter', filter, setting, value, time: atMs ?? inner.time } as Audio80Write);
-            inner.setFilter(filter, setting, value, atMs);
-        },
-        setEcho(setting, value, atMs) {
-            log.push({ kind: 'set-echo', setting, value, time: atMs ?? inner.time });
-            inner.setEcho(setting, value, atMs);
-        },
+        // A song's settings are not logged
+        setVoice: inner.setVoice,
+        setFilter: inner.setFilter,
+        setEcho: inner.setEcho,
         releaseAll: inner.releaseAll,
     };
 }

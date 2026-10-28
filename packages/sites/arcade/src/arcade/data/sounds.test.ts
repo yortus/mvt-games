@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { computeSongDurationMs } from 'audio90';
 import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
@@ -31,7 +30,7 @@ describe('arcade sounds', () => {
 
     for (const [name, song] of songs) {
         // Loudness is averaged over blocks of 400 ms. A song much shorter than that would measure mostly the silence after it.
-        const isMeasurable = computeSongDurationMs(song) >= MEASURABLE_MS;
+        const isMeasurable = song.durationMs >= MEASURABLE_MS;
         it(`${name} sounds as it did, audible and unclipped${isMeasurable ? ', as loud as every other song' : ''}`, () => {
             const samples = render(song);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);

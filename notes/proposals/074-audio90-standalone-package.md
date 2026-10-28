@@ -810,8 +810,10 @@ package is finished. The progress log uses these numbers.
      Audio80 at 4 voices, `music` and `sfx` chips for each entry,
      `musicVolume` and `sfxVolume`, `pauseWhenHidden`.~~ Done, 2026-10-28
      (section 12).
-   - **6d, removals:** the setters, `time` and `atMs`; the tracker's
-     helpers to `audio90/tracker`; `song.durationMs`.
+   - ~~**6d, removals:** the setters, `time` and `atMs`; the tracker's
+     helpers to `audio90/tracker`; `song.durationMs`.~~ Done, 2026-10-28
+     (section 12). Still to do: listen to Burrow Bust, Crumb Chase, Fruit
+     Machine and Fuel Run at their busiest, with 4 voices for effects.
 
    What the whole step covers:
    - **The package:** one kind, a sound, in place of instruments and sound
@@ -1156,3 +1158,44 @@ package is finished. The progress log uses these numbers.
     entry's were already paused by Escape). No page errors. Not yet
     listened to: Burrow Bust, Crumb Chase, Fruit Machine and Fuel Run at
     their busiest, with 4 voices for their sound effects.
+- **2026-10-28, step 6d done**, unstaged, after the user committed 6c:
+  - **The chips.** `Audio80` is now just `SoundChip` of its song, sound and
+    play options, and `Audio90` adds only `scope` and `setScopes`. The
+    setters, `time`, `heardTime` and `voiceCount` left both; with them goes
+    every `atMs` a page could pass. The internal writers keep them all, for
+    the song drivers and the worklet's sequencer. The browser chip's clock
+    reply now only measures the speaker's lag, for the song's place, so
+    `findChipTimeAt` and its constants went.
+  - **Held writes.** A page writes only plays and stops, so a suspended
+    context keeps only stops and "release everything":
+    `createStopSlots` in `web/held-writes.ts` replaces the two chips'
+    `*-held-slots.ts` files.
+  - **Headless.** The log holds `play`, `stop`, `note-on` and `note-off`
+    (the user's choice): the settings a song makes pass through unlogged.
+    The headless chips keep the writer's members at run time, but their
+    types leave them out, so `render` and the package's tests cast to the
+    writer. The song player's tests use recording writers of their own,
+    `createRecordingAudio80Writer` and `createRecordingAudio90Writer` in
+    `song-player/recording-writers.ts`, which log the settings too, so the
+    slides and filters are still checked.
+  - **`audio90/tracker`**, a third entry point: the scope's layout,
+    `formatAudio90Cell`, `AUDIO90_CELL_TEXT_WIDTH`, `AUDIO90_SAMPLE_MEMORY`,
+    `AUDIO90_VOICE_COUNT` and `Audio90SongPattern`, which left the root.
+  - **`song.durationMs`**, one pass at the song's own tempo, set as the
+    song is made. `computeSongDurationMs` stays inside the package, and
+    `render` uses the song's own.
+  - **The Arcade.** `PageSound`'s Audio80 stand-in is the shared one alone,
+    and the Audio90's adds only the scopes. The Tune Tracker imports from
+    `audio90/tracker`. The tests read `song.durationMs`. Neon Monsoon's test
+    clears the music chip's log before the song it listens to, since the
+    log no longer has the tempo a song sets.
+  - **Elsewhere:** the benchmarks, the render script and the playground
+    used none of what went. The view skill checks a jingle with
+    `durationMs`. The package's README and guides still name the setters, for step 11. A
+    changeset, `.changeset/smaller-chip.md`.
+  - **Checked:** `npm run lint`, `npx tsc -b`, `npm run test:unit` (232
+    files, 3,008 tests), `npm run test:visual` (50 files, no image
+    changed), `npm run build` and `npm run build:packages` (attw and
+    publint clean, with `tracker/index` built). Not run in a browser: the
+    browser chip lost only its clock and the held settings, which the
+    stand-in context's tests cover.

@@ -6,9 +6,11 @@ import {
     type Audio90Song,
     type Audio90Sound,
     createCommandAudio90,
+    OP90_RELEASE_ALL,
+    OP90_STOP,
 } from '../audio90';
 import { joinMembers } from '../shared';
-import { AUDIO90_HELD_SLOTS } from './audio90-held-slots';
+import { createStopSlots } from './held-writes';
 import { createWebChip } from './web-chip';
 import { type Audio90PassedMessage, AUDIO90_PROCESSOR_NAME, type Audio90RunnerSettings, type Audio90ScopeReply } from './worklet';
 import processorUrl from './worklet/audio90-processor?worker&url';
@@ -76,7 +78,7 @@ export function createAudio90(options: Audio90Options = {}): Audio90 {
         context: options.context,
         pauseWhenHidden: options.pauseWhenHidden ?? true,
         writer,
-        heldSlots: AUDIO90_HELD_SLOTS,
+        heldSlots: createStopSlots({ stopOp: OP90_STOP, releaseAllOp: OP90_RELEASE_ALL }),
         processorUrl,
         processorName: AUDIO90_PROCESSOR_NAME,
         channelCount: 2,
@@ -103,17 +105,6 @@ export function createAudio90(options: Audio90Options = {}): Audio90 {
     });
 
     return joinMembers(web.chip, {
-        get time() {
-            return web.time;
-        },
-        get heardTime() {
-            return web.heardTime;
-        },
-        voiceCount: writer.voiceCount,
-        setVoice: writer.setVoice,
-        setEffect: writer.setEffect,
-        setCharacter: writer.setCharacter,
-        setTempo: writer.setTempo,
         scope,
         setScopes(isOn: boolean) {
             if (isOn === isScoping) return;

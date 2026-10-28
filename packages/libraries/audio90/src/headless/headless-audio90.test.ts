@@ -17,8 +17,8 @@ describe('headless Audio90', () => {
             const chip = createHeadlessAudio90();
             writeOneOfEach(chip);
             chip.update(25);
-            expect(chip.time).toBe(25);
-            expect(chip.voiceCount).toBe(16);
+            expect(asWriter(chip).time).toBe(25);
+            expect(asWriter(chip).voiceCount).toBe(16);
         });
 
         it('clamps its volume as every chip does', () => {
@@ -125,13 +125,13 @@ describe('headless Audio90', () => {
         });
     });
 
-    it('takes, in its type, only an effect\'s own settings', () => {
-        const audio90 = createHeadlessAudio90();
-        audio90.setEffect('echo', 'timeBeats', 0.75);
+    it('takes, in its writer\'s type, only an effect\'s own settings', () => {
+        const writer = asWriter(createHeadlessAudio90());
+        writer.setEffect('echo', 'timeBeats', 0.75);
         // @ts-expect-error: the reverb has no feedback
-        audio90.setEffect('reverb', 'feedback', 0.5);
+        writer.setEffect('reverb', 'feedback', 0.5);
         // @ts-expect-error: the chip has no such character
-        audio90.setCharacter('classic');
+        writer.setCharacter('classic');
     });
 
     it('has one type, whatever its options', () => {
@@ -141,15 +141,16 @@ describe('headless Audio90', () => {
     });
 });
 
-/** Makes one write of each kind: a play and its stop, then a song's notes and the rest, some stamped and some not. */
+/** Makes one write of each kind: a play and its stop, then a song's notes and settings, some stamped and some not. */
 function writeOneOfEach(audio90: HeadlessAudio90): void {
     audio90.stop(audio90.play(EFFECT, { pan: -0.5 }));
-    asWriter(audio90).noteOn(0, INSTRUMENT, 60, 1);
-    asWriter(audio90).noteOff(0, 100);
-    audio90.setVoice(1, 'brightness', 0.5);
-    audio90.setEffect('reverb', 'level', 0.25, 200);
-    audio90.setCharacter('sampler');
-    audio90.setTempo(120, 300);
+    const writer = asWriter(audio90);
+    writer.noteOn(0, INSTRUMENT, 60, 1);
+    writer.noteOff(0, 100);
+    writer.setVoice(1, 'brightness', 0.5);
+    writer.setEffect('reverb', 'level', 0.25, 200);
+    writer.setCharacter('sampler');
+    writer.setTempo(120, 300);
     audio90.stop();
 }
 
@@ -160,10 +161,6 @@ function buildOneOfEachLog(time: number): Audio90Write[] {
         { kind: 'stop', id: 1, time: -Infinity },
         { kind: 'note-on', voice: 0, sound: INSTRUMENT, note: 60, volume: 1, time },
         { kind: 'note-off', voice: 0, time: 100 },
-        { kind: 'set-voice', voice: 1, setting: 'brightness', value: 0.5, time },
-        { kind: 'set-effect', effect: 'reverb', setting: 'level', value: 0.25, time: 200 },
-        { kind: 'set-character', character: 'sampler', time },
-        { kind: 'set-tempo', bpm: 120, time: 300 },
         { kind: 'stop', id: undefined, time: -Infinity },
     ];
 }

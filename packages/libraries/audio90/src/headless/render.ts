@@ -1,6 +1,5 @@
 import { type Audio80Character, isAudio80Song, isAudio80Sound, type Audio80Song, type Audio80Sound, type Audio80Writer } from '../audio80';
 import { type Audio90Character, type Audio90Song, type Audio90Sound, type Audio90Writer, isAudio90Song, isAudio90Sound } from '../audio90';
-import { computeSongDurationMs } from '../shared';
 import { createSongPlayer } from '../song-player';
 import { createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
 import { createHeadlessAudio90, type HeadlessAudio90 } from './headless-audio90';
@@ -61,24 +60,24 @@ export function render(songOrSound: Audio80Song | Audio80Sound | Audio90Song | A
     const tickMs = options.tickMs ?? DEFAULT_TICK_MS;
     if (isAudio80Sound(songOrSound) || isAudio90Sound(songOrSound)) {
         if (songOrSound.chip === 'audio90') {
-            const chip = createHeadlessAudio90({ render: options as Audio90RenderOptions });
+            const chip = createRenderingAudio90(options as Audio90RenderOptions);
             chip.play(songOrSound);
             const durationMs = options.durationMs ?? songOrSound.data.lengthMs + songOrSound.data.envelope.releaseMs + TAIL_MS;
             return renderStereoTicks(chip, durationMs, tickMs, ignore);
         }
-        const chip = createHeadlessAudio80({ render: options as Audio80RenderOptions });
+        const chip = createRenderingAudio80(options as Audio80RenderOptions);
         chip.play(songOrSound);
         const durationMs = options.durationMs ?? songOrSound.data.lengthMs + songOrSound.data.releaseMs + TAIL_MS;
         return renderTicks(chip, durationMs, tickMs, ignore);
     }
     const song = songOrSound;
-    const passMs = computeSongDurationMs(song);
+    const passMs = song.durationMs;
     const durationMs = options.durationMs ?? passMs + TAIL_MS;
     if (song.chip === 'audio90') {
-        const chip = createHeadlessAudio90({ render: options as Audio90RenderOptions });
+        const chip = createRenderingAudio90(options as Audio90RenderOptions);
         // A song player of its own, rather than the chip's, so the song stops in a tick before that tick's notes are
-        // written. The chip is its own writer, which its type leaves out
-        const player = createSongPlayer({ audio90: chip as HeadlessAudio90 & Audio90Writer });
+        // written
+        const player = createSongPlayer({ audio90: chip });
         player.play(song);
         return renderStereoTicks(chip, durationMs, tickMs, (deltaMs) => {
             // Render one pass. A looping song is stopped where it would start again
@@ -87,8 +86,8 @@ export function render(songOrSound: Audio80Song | Audio80Sound | Audio90Song | A
             player.refresh();
         });
     }
-    const chip = createHeadlessAudio80({ render: options as Audio80RenderOptions });
-    const player = createSongPlayer({ audio80: chip as HeadlessAudio80 & Audio80Writer });
+    const chip = createRenderingAudio80(options as Audio80RenderOptions);
+    const player = createSongPlayer({ audio80: chip });
     player.play(song);
     return renderTicks(chip, durationMs, tickMs, (deltaMs) => {
         if (song.loop >= 0 && chip.time >= passMs) player.stop();
@@ -102,7 +101,7 @@ export function render(songOrSound: Audio80Song | Audio80Sound | Audio90Song | A
  * `tickMs` is in ms and must be more than 0. `onTick` is called after each
  * tick. Returns the samples.
  */
-export function renderTicks(chip: HeadlessAudio80, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): Float32Array {
+export function renderTicks(chip: HeadlessAudio80 & Audio80Writer, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): Float32Array {
     const samples = new Float32Array(Math.round(durationMs * chip.sampleRate / 1000));
     runTicks({
         chip,
@@ -116,7 +115,7 @@ export function renderTicks(chip: HeadlessAudio80, durationMs: number, tickMs: n
 }
 
 /** Ticks a headless Audio90 every `tickMs` for `durationMs`, as `renderTicks` ticks an Audio80, and renders both channels as it goes. */
-export function renderStereoTicks(chip: HeadlessAudio90, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): StereoSamples {
+export function renderStereoTicks(chip: HeadlessAudio90 & Audio90Writer, durationMs: number, tickMs: number, onTick: (deltaMs: number) => void): StereoSamples {
     const total = Math.round(durationMs * chip.sampleRate / 1000);
     const left = new Float32Array(total);
     const right = new Float32Array(total);
@@ -194,6 +193,16 @@ export function measurePeak(samples: RenderedSamples): number {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_TICK_MS = 1000 / 60;
+
+/** Creates an Audio80 that renders, as its own writer, with the clock its type leaves out. A song's notes are written through it. */
+function createRenderingAudio80(options: Audio80RenderOptions): HeadlessAudio80 & Audio80Writer {
+    return createHeadlessAudio80({ render: { sampleRate: options.sampleRate, character: options.character } }) as HeadlessAudio80 & Audio80Writer;
+}
+
+/** Creates an Audio90 that renders, as its own writer, as `createRenderingAudio80` does an Audio80. */
+function createRenderingAudio90(options: Audio90RenderOptions): HeadlessAudio90 & Audio90Writer {
+    return createHeadlessAudio90({ render: { sampleRate: options.sampleRate, character: options.character } }) as HeadlessAudio90 & Audio90Writer;
+}
 /** How long to render after a sound ends, so its release and echo can die away. */
 const TAIL_MS = 600;
 // The 32-bit FNV-1a hash's constants

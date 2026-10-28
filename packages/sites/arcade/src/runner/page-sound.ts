@@ -7,11 +7,11 @@ import {
     type Audio90PlayOptions,
     type Audio90Song,
     type Audio90Sound,
-    AUDIO90_SCOPE_LENGTH,
     type createAudio80,
     type createAudio90,
     type SoundChip,
 } from 'audio90';
+import { AUDIO90_SCOPE_LENGTH } from 'audio90/tracker';
 import type { SessionChips, SoundChipKind, SoundChipsByKind } from '../entry-types';
 import { toSliderGain } from './slider-gain';
 
@@ -44,9 +44,8 @@ import { toSliderGain } from './slider-gain';
  * a phone takes a call, starts again in the same way.
  *
  * Each chip stays the same object for the page's life. Until the chips load,
- * nothing stands behind these objects. Writes and songs are dropped, the
- * time stays at 0, and each chip only keeps the volumes, the tempo scale and
- * the pause it is given. Once the chips load, each takes what was kept, and
+ * nothing stands behind these objects. Plays are dropped, and each chip only
+ * keeps the volumes, the tempo scale and the pause it is given. Once the chips load, each takes what was kept, and
  * every call passes on to it.
  */
 export interface PageSound {
@@ -289,10 +288,6 @@ interface ChipMakers {
     readonly createAudio90: typeof createAudio90;
 }
 
-/** Every Audio80 has four voices. */
-const AUDIO80_VOICE_COUNT = 4;
-/** Every Audio90 has sixteen voices. */
-const AUDIO90_VOICE_COUNT = 16;
 /**
  * The id a stand-in chip gives a play it drops, as it drops every play until
  * its chip loads. A chip numbers its plays from 1, so `stop` with this id
@@ -305,7 +300,7 @@ type AnyChip = Audio80 | Audio90;
 
 /**
  * A chip that stands in for a chip still to come. Until `fill` gives it one,
- * writes, plays and songs are dropped, and it only keeps the volume, the mute,
+ * plays are dropped, and it only keeps the volume, the mute,
  * the tempo scale and the pause set. After that, every call passes on to that
  * chip, which takes what was kept. The calls are bound once, so passing one
  * on makes no garbage.
@@ -326,17 +321,8 @@ interface SlotPair<C extends AnyChip> {
 function createAudio80Slot(): ChipSlot<Audio80> {
     let filled: Audio80 | undefined;
     const shared = createSharedStandIn<Audio80Song, Audio80Sound, Audio80PlayOptions>(() => filled);
-    const own: Omit<Audio80, keyof SoundChip<Audio80Song, Audio80Sound, Audio80PlayOptions>> = {
-        get time() {
-            return filled === undefined ? 0 : filled.time;
-        },
-        voiceCount: AUDIO80_VOICE_COUNT,
-        setVoice: (voice, setting, value, atMs) => filled?.setVoice(voice, setting, value, atMs),
-        setFilter: (filter, setting, value, atMs) => filled?.setFilter(filter, setting, value, atMs),
-        setEcho: (setting, value, atMs) => filled?.setEcho(setting, value, atMs),
-    };
     return {
-        chip: addMembers(shared.chip, own),
+        chip: shared.chip,
         fill(next) {
             filled = next;
             shared.fill(next);
@@ -351,17 +337,6 @@ function createAudio90Slot(): ChipSlot<Audio90> {
     const silentScope = new Float32Array(AUDIO90_SCOPE_LENGTH);
     let isScoping = false;
     const own: Omit<Audio90, keyof SoundChip<Audio90Song, Audio90Sound, Audio90PlayOptions>> = {
-        get time() {
-            return filled === undefined ? 0 : filled.time;
-        },
-        get heardTime() {
-            return filled === undefined ? 0 : filled.heardTime;
-        },
-        voiceCount: AUDIO90_VOICE_COUNT,
-        setVoice: (voice, setting, value, atMs) => filled?.setVoice(voice, setting, value, atMs),
-        setEffect: (effect, setting, value, atMs) => filled?.setEffect(effect, setting, value, atMs),
-        setCharacter: (character, atMs) => filled?.setCharacter(character, atMs),
-        setTempo: (bpm, atMs) => filled?.setTempo(bpm, atMs),
         get scope() {
             return filled === undefined ? silentScope : filled.scope;
         },

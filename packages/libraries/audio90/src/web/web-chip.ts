@@ -1,7 +1,6 @@
 import {
     type ChipBatch,
     type ChipBufferReply,
-    type ChipClockReply,
     type ChipReply,
     clampVolume,
     createChipPlayback,
@@ -27,23 +26,11 @@ import type { PassedMessage, RunnerMessage, SongMessage, SongPlaceReply } from '
  *
  * The writer's commands are sent at the end of the task they were written
  * in, by a microtask, so the writes of one frame travel together. The chip's
- * time is the worklet's clock, which runs on the sound card's.
+ * clock is the worklet's, which runs on the sound card's.
  */
 export interface WebChip<D extends PassedMessage, S extends PlayableSong, Snd extends object, O> {
     /** The members every chip has, as `SoundChip` describes them. */
     readonly chip: SoundChip<S, Snd, O>;
-    /** The chip time now, in ms: where the worklet's clock is, as its last reply said. 0 until the worklet first plays. */
-    readonly time: number;
-    /**
-     * The chip time, in ms, of the sound reaching the speaker now. It trails
-     * `time` by the sound card's latency. 0 until the worklet first plays.
-     */
-    readonly heardTime: number;
-    /**
-     * The audio context's frame reaching the speaker now, or undefined until
-     * the worklet has replied and while the context is not running.
-     */
-    readonly speakerFrame: number | undefined;
     /**
      * Sends a message for the chip's own part of the worklet, such as one
      * that defines a sound. It is sent even while the audio context is
@@ -137,10 +124,9 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
     // message, and moves the transferred buffer, before it returns
     const batch: BatchMessage = { kind: 'batch', commands: EMPTY, count: 0 };
     const transfer: Transferable[] = [EMPTY.buffer];
-    // Where the worklet's clock was as it last replied, and how many frames the speaker trails the context's
-    // count. They are in a typed array, because V8 boxes a double kept in a closure variable each time it is
-    // written, and the speaker's lag is written with every reply
-    const heard = new Float64Array(HEARD_FIELDS);
+    // How many frames the speaker trails the context's count, measured as the worklet's clock replies. It is in a
+    // typed array, because V8 boxes a double kept in a closure variable each time it is written
+    const speakerLag = new Float64Array(1);
     let hasHeard = false;
     const songs = createWebSongs<S>({
         send: (message) => send(message),
@@ -170,11 +156,9 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
                 if (spares.length < MAX_SPARES) spares.push((reply as ChipBufferReply).commands);
             }
             else if (reply.kind === 'clock') {
-                const clock = reply as ChipClockReply;
-                heard[PLAYHEAD_MS] = clock.playheadMs;
-                heard[FRAME] = clock.frame;
-                heard[MS_PER_SAMPLE] = clock.msPerSample;
-                heard[SPEAKER_LAG_FRAMES] = measureSpeakerLag();
+                // The worklet's clock has started, paused or resumed. Only the songs' places need to know when
+                // that is heard, so the reply is when the speaker's lag is measured
+                speakerLag[0] = measureSpeakerLag();
                 hasHeard = true;
             }
             else {
@@ -260,22 +244,7 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
         },
     );
 
-    return {
-        chip,
-        get time() {
-            if (!hasHeard) return 0;
-            return findChipTimeAt(context.currentTime * context.sampleRate);
-        },
-        get heardTime() {
-            if (!hasHeard) return 0;
-            return findChipTimeAt(findSpeakerFrame());
-        },
-        get speakerFrame() {
-            return !hasHeard || context.state !== 'running' ? undefined : findSpeakerFrame();
-        },
-        send,
-        sendSoon,
-    };
+    return { chip, send, sendSoon };
 
     /**
      * Stops every voice's note, once the song has stopped. While the chip
@@ -373,16 +342,9 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
         }
     }
 
-    /** The chip time at the audio context's frame `frame`, from the worklet's last clock reply. */
-    function findChipTimeAt(frame: number): number {
-        // Before the reply's frame, the clock was paused, or had yet to play, so it was where the reply says
-        const since = frame - heard[FRAME];
-        return since > 0 ? heard[PLAYHEAD_MS] + since * heard[MS_PER_SAMPLE] : heard[PLAYHEAD_MS];
-    }
-
     /** The audio context's frame at the speaker now, as the last reply measured the speaker's lag. */
     function findSpeakerFrame(): number {
-        return context.currentTime * context.sampleRate - heard[SPEAKER_LAG_FRAMES];
+        return context.currentTime * context.sampleRate - speakerLag[0];
     }
 
     /** How many frames the speaker trails the context's count, as the audio context reports it. */
@@ -430,12 +392,6 @@ interface BatchMessage {
 }
 
 const MAX_SPARES = 2;
-/** Where each field is in `heard`. */
-const PLAYHEAD_MS = 0;
-const FRAME = 1;
-const MS_PER_SAMPLE = 2;
-const SPEAKER_LAG_FRAMES = 3;
-const HEARD_FIELDS = 4;
 /** What the reused batch message holds until the first batch. */
 const EMPTY = new Float64Array(0);
 /** The time constant of a volume or mute change, in seconds. The change settles in about 30 ms, which is slow enough not to click. */

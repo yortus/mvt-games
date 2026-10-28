@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createAudio80Sound, OP_PLAY, OP_PLAY_OPTIONS, OP_RELEASE_ALL, OP_SET_FILTER, OP_STOP } from '../audio80';
+import { createAudio80Sound, OP_PLAY, OP_PLAY_OPTIONS, OP_RELEASE_ALL, OP_STOP } from '../audio80';
 import { type ChipBatch, COMMAND_STRIDE } from '../shared';
 import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
 import { createAudio80 } from './audio80';
@@ -20,15 +20,14 @@ describe('createAudio80, with a stand-in audio context', () => {
         expect(listOps(fake.listBatches()[0])).toEqual([OP_PLAY_OPTIONS, OP_PLAY, OP_STOP]);
     });
 
-    it('stamps a write made with no time to play as soon as it arrives', async () => {
+    it('stamps every write to play as soon as it arrives', async () => {
         const fake = createFakeContext('running');
         const audio80 = createAudio80({ context: fake.context });
         await audio80.ready;
-        audio80.play(createAudio80Sound({ wave: 'saw' }));
-        audio80.setFilter('a', 'cutoffHz', 800, 250);
+        audio80.stop(audio80.play(createAudio80Sound({ wave: 'saw' })));
         await settle();
         const [batch] = fake.listBatches();
-        expect([batch.commands[COMMAND_STRIDE + 1], batch.commands[2 * COMMAND_STRIDE + 1]]).toEqual([-Infinity, 250]);
+        expect([batch.commands[1], batch.commands[COMMAND_STRIDE + 1], batch.commands[2 * COMMAND_STRIDE + 1]]).toEqual([-Infinity, -Infinity, -Infinity]);
     });
 
     it('sends no batch while the audio context is suspended', async () => {
@@ -42,20 +41,19 @@ describe('createAudio80, with a stand-in audio context', () => {
         expect(fake.listBatches()).toHaveLength(0);
     });
 
-    it('sends the settings made while suspended once the context runs, but not the plays', async () => {
+    it('drops the plays made while suspended, and sends one stop of everything once the context runs', async () => {
         const fake = createFakeContext('suspended');
         const audio80 = createAudio80({ context: fake.context });
         await audio80.ready;
-        // As when a song starts, write its filter and its first note
-        audio80.setFilter('a', 'cutoffHz', 500);
-        audio80.setFilter('a', 'cutoffHz', 800);
+        audio80.play(createAudio80Sound({ wave: 'saw' }));
+        audio80.stop();
+        audio80.stop();
         audio80.play(createAudio80Sound({ wave: 'saw' }));
         await settle();
         fake.setState('running');
         await settle();
         const [held, ...rest] = fake.listBatches();
-        expect(listOps(held)).toEqual([OP_SET_FILTER]);
-        expect(listValues(held, OP_SET_FILTER, 4)).toEqual([800]);
+        expect(listOps(held)).toEqual([OP_RELEASE_ALL]);
         expect(rest).toEqual([]);
     });
 
@@ -92,20 +90,22 @@ describe('createAudio80, with a stand-in audio context', () => {
         const fake = createFakeContext('running');
         const audio80 = createAudio80({ context: fake.context });
         await audio80.ready;
+        const id = audio80.play(createAudio80Sound({ wave: 'saw' }), { lengthMs: Infinity });
+        await settle();
         audio80.pause();
         audio80.pause();
         expect(audio80.isPaused).toBe(true);
-        expect(fake.messages).toEqual([{ kind: 'pause' }]);
-        audio80.setFilter('a', 'cutoffHz', 800);
-        audio80.play(createAudio80Sound({ wave: 'saw' }));
+        expect(fake.messages.at(-1)).toEqual({ kind: 'pause' });
+        audio80.stop(id);
+        audio80.play(createAudio80Sound({ wave: 'triangle' }));
         await settle();
-        expect(fake.listBatches()).toHaveLength(0);
+        expect(fake.listBatches()).toHaveLength(1);
         audio80.resume();
         expect(audio80.isPaused).toBe(false);
         await settle();
         // The sound is defined as it is first played, paused or not
-        expect(fake.messages.map((message) => message.kind)).toEqual(['pause', 'sound', 'resume', 'batch']);
-        expect(listOps(fake.listBatches()[0])).toEqual([OP_SET_FILTER]);
+        expect(fake.messages.map((message) => message.kind)).toEqual(['sound', 'batch', 'pause', 'sound', 'resume', 'batch']);
+        expect(listOps(fake.listBatches()[1])).toEqual([OP_STOP]);
     });
 
     it('sends a pause made before the worklet runs once it does, even after everything is stopped', async () => {

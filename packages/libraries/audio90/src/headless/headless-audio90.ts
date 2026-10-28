@@ -1,14 +1,11 @@
 import {
     type Audio90,
     type Audio90Character,
-    type Audio90EffectId,
-    type Audio90EffectSetting,
     type Audio90PlayOptions,
     type Audio90Song,
     type Audio90Sound,
     AUDIO90_SCOPE_LENGTH,
     AUDIO90_VOICE_COUNT,
-    type Audio90VoiceSetting,
     type Audio90Writer,
     type CommandAudio90,
     createAudio90Synthesiser,
@@ -56,27 +53,12 @@ export interface HeadlessAudio90 extends Audio90, HeadlessChip<Audio90Song, Audi
     renderInto: (left: Float32Array, right: Float32Array) => void;
 }
 
-/**
- * One write to an Audio90, with the stamp it was given and its value as
- * written. A play, and a stop, are stamped `-Infinity`, because they apply
- * as soon as they arrive. A play keeps the options it was given, if any. A
- * stop with no id stops everything. A song's notes are logged as `note-on`
- * and `note-off`.
- */
+/** One write to an Audio90, with the time it applies at, as for the Audio80's `Audio80Write`. */
 export type Audio90Write =
     | { readonly kind: 'play'; readonly sound: Audio90Sound; readonly id: number; readonly options: Audio90PlayOptions | undefined; readonly time: number }
     | { readonly kind: 'stop'; readonly id: number | undefined; readonly time: number }
     | { readonly kind: 'note-on'; readonly voice: number; readonly sound: Audio90Sound; readonly note: number; readonly volume: number; readonly time: number }
-    | { readonly kind: 'note-off'; readonly voice: number; readonly time: number }
-    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: Audio90VoiceSetting; readonly value: number; readonly time: number }
-    | Audio90EffectWrite
-    | { readonly kind: 'set-character'; readonly character: Audio90Character; readonly time: number }
-    | { readonly kind: 'set-tempo'; readonly bpm: number; readonly time: number };
-
-/** A write to one of an effect's settings, whose setting is one of that effect's. */
-export type Audio90EffectWrite = {
-    readonly [E in Audio90EffectId]: { readonly kind: 'set-effect'; readonly effect: E; readonly setting: Audio90EffectSetting<E>; readonly value: number; readonly time: number };
-}[Audio90EffectId];
+    | { readonly kind: 'note-off'; readonly voice: number; readonly time: number };
 
 // ---------------------------------------------------------------------------
 // Options
@@ -127,11 +109,8 @@ export function createHeadlessAudio90(options: HeadlessAudio90Options = {}): Hea
     });
 
     return joinMembers(chip, {
+        // The writer's own members, which the chip's type leaves out, for code that writes a song's notes
         get time() {
-            return writer.time;
-        },
-        // A chip with no speaker hears each write as it is made
-        get heardTime() {
             return writer.time;
         },
         voiceCount: AUDIO90_VOICE_COUNT,
@@ -139,7 +118,6 @@ export function createHeadlessAudio90(options: HeadlessAudio90Options = {}): Hea
         setEffect: writer.setEffect,
         setCharacter: writer.setCharacter,
         setTempo: writer.setTempo,
-        // The writer's own members, which the chip's type leaves out, for code that writes a song's notes
         noteOn: writer.noteOn,
         noteOff: writer.noteOff,
         releaseAll: writer.releaseAll,
@@ -220,24 +198,11 @@ function createLoggingWriter(log: Audio90Write[], inner: Audio90Side): Audio90Si
             log.push({ kind: 'note-off', voice, time: atMs ?? inner.time });
             inner.noteOff(voice, atMs);
         },
-        setVoice(voice, setting, value, atMs) {
-            log.push({ kind: 'set-voice', voice, setting, value, time: atMs ?? inner.time });
-            inner.setVoice(voice, setting, value, atMs);
-        },
-        setEffect(effect, setting, value, atMs) {
-            // The signature makes sure the effect and its setting agree. TypeScript can't follow that
-            // into the union, so the write is cast
-            log.push({ kind: 'set-effect', effect, setting, value, time: atMs ?? inner.time } as Audio90EffectWrite);
-            inner.setEffect(effect, setting, value, atMs);
-        },
-        setCharacter(character, atMs) {
-            log.push({ kind: 'set-character', character, time: atMs ?? inner.time });
-            inner.setCharacter(character, atMs);
-        },
-        setTempo(bpm, atMs) {
-            log.push({ kind: 'set-tempo', bpm, time: atMs ?? inner.time });
-            inner.setTempo(bpm, atMs);
-        },
+        // A song's settings are not logged
+        setVoice: inner.setVoice,
+        setEffect: inner.setEffect,
+        setCharacter: inner.setCharacter,
+        setTempo: inner.setTempo,
         releaseAll: inner.releaseAll,
     };
 }

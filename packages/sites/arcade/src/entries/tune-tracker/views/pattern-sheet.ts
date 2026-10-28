@@ -1,4 +1,5 @@
-import { AUDIO90_CELL_TEXT_WIDTH, type Audio90Song, formatAudio90Cell } from 'audio90';
+import type { Audio90Song } from 'audio90';
+import { AUDIO90_CELL_TEXT_WIDTH, formatAudio90Cell } from 'audio90/tracker';
 import { DOT_GLYPH, RULE_GLYPH } from './pixel-font';
 
 // ---------------------------------------------------------------------------

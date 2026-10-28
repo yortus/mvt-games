@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/html';
-import { type Audio80Song, computeSongDurationMs } from 'audio90';
+import type { Audio80Song } from 'audio90';
 import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
 import {
     BET, BIG_WIN, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, GAME_OVER, LEVER, NO_WIN, REEL_CLICK,
@@ -83,7 +83,7 @@ describe('MachineAudioView', () => {
     it('plays the longer jingle for a big win, and a higher chime for a longer way', () => {
         const t = setUp({ strips: WAY_OF_5_STRIPS });
         void t.model.spin();
-        t.advance(LANDED_MS + computeSongDurationMs(BIG_WIN));
+        t.advance(LANDED_MS + BIG_WIN.durationMs);
         expect(describeNoteOns(t.music.log)).toEqual(recordSong(BIG_WIN));
         expect(listPlays(t.sfx.log, WAY_OF_5)).toHaveLength(1);
     });
@@ -91,7 +91,7 @@ describe('MachineAudioView', () => {
     it('plays the slow tune as the credits run out, instead of the sigh', () => {
         const t = setUp({ strips: NO_WIN_STRIPS, startingBalance: BET });
         void t.model.spin();
-        t.advance(LANDED_MS + computeSongDurationMs(GAME_OVER));
+        t.advance(LANDED_MS + GAME_OVER.durationMs);
         expect(t.model.phase).toBe('gameOver');
         expect(describeNoteOns(t.music.log)).toEqual(recordSong(GAME_OVER));
         expect(listPlays(t.sfx.log, NO_WIN)).toHaveLength(0);
@@ -207,7 +207,7 @@ function describeNoteOns(log: readonly Audio80Write[]): string[] {
 function recordSong(song: Audio80Song): string[] {
     const chip = createHeadlessAudio80({ record: true });
     chip.play(song);
-    for (let elapsed = 0; elapsed < computeSongDurationMs(song) + 1000; elapsed += TICK_MS) {
+    for (let elapsed = 0; elapsed < song.durationMs + 1000; elapsed += TICK_MS) {
         chip.update(TICK_MS);
     }
     return describeNoteOns(chip.log);

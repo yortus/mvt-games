@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-    AUDIO90_EFFECT_INDEX,
     AUDIO90_SCOPE_LENGTH,
     type Audio90Sound,
     createAudio90Song,
@@ -9,10 +8,8 @@ import {
     type Audio90Song,
     DEFAULT_AUDIO90_SOUND,
     ENGINE_SAMPLE,
-    OP90_NOTE_ON,
-    OP90_SET_CHARACTER,
-    OP90_SET_EFFECT,
-    OP90_SET_TEMPO,
+    OP90_PLAY,
+    OP90_RELEASE_ALL,
 } from '../audio90';
 import { type ChipBatch, COMMAND_STRIDE } from '../shared';
 import { createFakeAudioContext, FAKE_BASE_LATENCY_S, FAKE_OUTPUT_LATENCY_S, FAKE_SAMPLE_RATE, type FakeAudioContext } from './fake-audio-context';
@@ -53,23 +50,20 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'sound']);
     });
 
-    it('sends the settings made while suspended once the context runs, but not the plays', async () => {
+    it('drops the plays made while suspended, and sends one stop of everything once the context runs', async () => {
         const fake = createFakeContext('suspended');
         const audio90 = createAudio90({ context: fake.context });
         await audio90.ready;
-        // As when a song starts: its effects, its character and its tempo, and a sound played
-        audio90.setEffect('reverb', 'level', 0.3);
-        audio90.setEffect('reverb', 'level', 0.5);
-        audio90.setCharacter('sampler');
-        audio90.setTempo(136);
+        audio90.play(createSound());
+        audio90.stop();
+        audio90.stop();
         audio90.play(createSound());
         await settle();
         fake.setState('running');
         await settle();
         const [held, ...rest] = fake.listBatches();
-        expect(listOps(held).sort()).toEqual([OP90_SET_EFFECT, OP90_SET_CHARACTER, OP90_SET_TEMPO].sort());
-        expect(listOps(held)).not.toContain(OP90_NOTE_ON);
-        expect(listValues(held, OP90_SET_EFFECT, 4, AUDIO90_EFFECT_INDEX.reverb)).toEqual([0.5]);
+        expect(listOps(held)).toEqual([OP90_RELEASE_ALL]);
+        expect(listOps(held)).not.toContain(OP90_PLAY);
         expect(rest).toEqual([]);
     });
 
@@ -84,37 +78,6 @@ describe('createAudio90, with a stand-in audio context', () => {
         fake.reply({ kind: 'scope', data });
         expect(audio90.scope[0]).toBe(0.25);
         expect(fake.messages.at(-1)?.kind).toBe('scope-buffer');
-    });
-
-    it('says its time is 0 until the worklet first says where its clock is', async () => {
-        const fake = createFakeContext('running');
-        const audio90 = createAudio90({ context: fake.context });
-        await audio90.ready;
-        fake.setCurrentTime(1);
-        expect([audio90.time, audio90.heardTime]).toEqual([0, 0]);
-    });
-
-    it('works out its time, and the time heard, from where the worklet\'s clock was at a frame, moved on by the frames since', async () => {
-        const fake = createFakeContext('running');
-        const audio90 = createAudio90({ context: fake.context });
-        await audio90.ready;
-        const msPerSample = 1000 / FAKE_SAMPLE_RATE;
-        // The worklet's clock was at 400 ms as it rendered frame 24,000
-        fake.reply({ kind: 'clock', playheadMs: 400, frame: 24000, msPerSample });
-        // Half a second of frames later, the speaker plays a frame the latency behind
-        fake.setCurrentTime(1);
-        const speakerFrame = FAKE_SAMPLE_RATE * (1 - FAKE_BASE_LATENCY_S - FAKE_OUTPUT_LATENCY_S);
-        expect(audio90.time).toBeCloseTo(900, 6);
-        expect(audio90.heardTime).toBeCloseTo(400 + (speakerFrame - 24000) * msPerSample, 6);
-    });
-
-    it('holds its time while the worklet\'s clock is paused, and hears no further', async () => {
-        const fake = createFakeContext('running');
-        const audio90 = createAudio90({ context: fake.context });
-        await audio90.ready;
-        fake.reply({ kind: 'clock', playheadMs: 250, frame: 12000, msPerSample: 0 });
-        fake.setCurrentTime(10);
-        expect([audio90.time, audio90.heardTime]).toEqual([250, 250]);
     });
 
     it('sends a song once, after its instruments and without their samples, then each call to its sequencer', async () => {
@@ -302,14 +265,4 @@ function listOps(batch: ChipBatch): number[] {
     const ops: number[] = [];
     for (let i = 0; i < batch.count; i++) ops.push(batch.commands[i * COMMAND_STRIDE]);
     return ops;
-}
-
-/** The values at `field` (2 to 5 for `a` to `d`) of the commands of `op` in `batch` whose `a` is `a`. */
-function listValues(batch: ChipBatch, op: number, field: number, a: number): number[] {
-    const values: number[] = [];
-    for (let i = 0; i < batch.count; i++) {
-        const at = i * COMMAND_STRIDE;
-        if (batch.commands[at] === op && batch.commands[at + 2] === a) values.push(batch.commands[at + field]);
-    }
-    return values;
 }

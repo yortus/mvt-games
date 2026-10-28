@@ -1,4 +1,3 @@
-import { computeSongDurationMs } from '../../shared';
 import { AUDIO90_SAMPLE_MEMORY, type Audio90SampleData } from '../synthesiser';
 import { bounceAudio90Song } from './bounce';
 import { checkRange, parseNote } from './sound';
@@ -79,7 +78,7 @@ export function createAudio90Sample(options: Audio90SampleOptions): Audio90Sampl
     const bits = options.bits ?? 16;
     if (!BITS.includes(bits)) throw new Error(`sample: bits: ${bits} is not one of ${BITS.join(', ')}`);
     const rootNote = options.rootNote === undefined ? DEFAULT_ROOT_NOTE : parseNote(options.rootNote, 'sample: rootNote');
-    const lengthMs = checkRange(options.lengthMs ?? computeSongDurationMs(options.bounce), Number.MIN_VALUE, Infinity, 'lengthMs', 'sample');
+    const lengthMs = checkRange(options.lengthMs ?? options.bounce.durationMs, Number.MIN_VALUE, Infinity, 'lengthMs', 'sample');
     const length = Math.max(1, Math.round(lengthMs * rate / 1000));
     const slices = options.slices ?? 1;
     if (!(Number.isInteger(slices) && slices >= 1 && slices <= MAX_SLICES)) throw new Error(`sample: slices: ${slices} is not a whole number from 1 to ${MAX_SLICES}`);

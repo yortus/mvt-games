@@ -38,6 +38,7 @@ describe('GameAudioView', () => {
             const { music, state, tick } = setUp();
             state.phase = previous;
             tick();
+            music.clear();
             state.phase = 'playing';
             runTicks(tick, SONG_TICKS + 1);
             expect(describeSongNotes(music.log)).toEqual(recordSong(STAGE_THEME));
@@ -47,6 +48,7 @@ describe('GameAudioView', () => {
     for (const [phase, song] of [['tally', STAGE_CLEAR], ['game-over', GAME_OVER], ['all-clear', ALL_CLEAR]] as const) {
         it(`plays its own song as the game turns to the ${phase} phase`, () => {
             const { music, state, tick } = setUp();
+            music.clear();
             state.phase = phase;
             runTicks(tick, SONG_TICKS + 1);
             expect(describeSongNotes(music.log)).toEqual(recordSong(song));
@@ -340,19 +342,14 @@ function listPlays(log: readonly Audio90Write[], effect: Play['sound']): Play[] 
 }
 
 /**
- * Describes each note-on of the song started last in `log`, as its voice, its
- * note and its time. A song starts by setting the chip's tempo, and these
- * songs play at their own tempo throughout, so the notes described are those
- * after the last tempo set. The time is in ms from the song's first note-on, to
- * three decimal places. So the notes of one song match even when it started
- * at different chip times.
+ * Describes each note-on in `log`, as its voice, its note and its time. The
+ * log holds only notes, not which song played them, so a test clears it just
+ * before the song it listens to starts. The time is in ms from the first
+ * note-on, to three decimal places. So the notes of one song match even when
+ * it started at different chip times.
  */
 function describeSongNotes(log: readonly Audio90Write[]): string[] {
-    let start = 0;
-    for (let i = 0; i < log.length; i++) {
-        if (log[i].kind === 'set-tempo') start = i;
-    }
-    const noteOns = log.slice(start).filter((write): write is NoteOn => write.kind === 'note-on');
+    const noteOns = log.filter((write): write is NoteOn => write.kind === 'note-on');
     const startMs = noteOns.length > 0 ? noteOns[0].time : 0;
     return noteOns.map((write) => `${write.voice}:${write.note}@${(write.time - startMs).toFixed(3)}`);
 }

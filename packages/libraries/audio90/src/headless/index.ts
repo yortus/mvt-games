@@ -6,7 +6,6 @@
 export { createHeadlessAudio80, type Audio80Write, type HeadlessAudio80, type HeadlessAudio80Options, type HeadlessAudio80RenderOptions } from './headless-audio80';
 export {
     createHeadlessAudio90,
-    type Audio90EffectWrite,
     type Audio90Write,
     type HeadlessAudio90,
     type HeadlessAudio90Options,

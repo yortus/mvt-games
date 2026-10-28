@@ -1,8 +1,8 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createAudio80Sound, createAudio80Song } from '../audio80';
-import { type Audio90, type Audio90Song, type Audio90Writer, createAudio90Sound, createAudio90Song } from '../audio90';
-import { type Audio90Write, createHeadlessAudio90, measurePeak, render } from '../headless';
-import { computeSongDurationMs } from '../shared';
+import { type Audio90Song, createAudio90Sound, createAudio90Song } from '../audio90';
+import { measurePeak, render } from '../headless';
+import { type Audio90WriterCall, createRecordingAudio90Writer } from './recording-writers';
 import { createSongPlayer, type SongPlayer } from './song-player';
 
 const BPM = 150;
@@ -28,8 +28,8 @@ const GROOVE = createAudio90Song({
 
 describe('song player, on an Audio90', () => {
     it('writes the song\'s settings, then each row at its chip time, and nothing until it refreshes', () => {
-        const chip = createHeadlessAudio90({ record: true });
-        const player = createSongPlayer({ audio90: asWriter(chip) });
+        const chip = createRecordingAudio90Writer();
+        const player = createSongPlayer({ audio90: chip.writer });
         player.play(GROOVE);
         chip.update(ROW_MS * 2.5);
         player.update(ROW_MS * 2.5);
@@ -55,8 +55,8 @@ describe('song player, on an Audio90', () => {
     });
 
     it('tells the chip the tempo its scale makes, and 0 while it holds the song still', () => {
-        const chip = createHeadlessAudio90({ record: true });
-        const player = createSongPlayer({ audio90: asWriter(chip) });
+        const chip = createRecordingAudio90Writer();
+        const player = createSongPlayer({ audio90: chip.writer });
         player.play(GROOVE);
         tick(chip, player, ROW_MS, ROW_MS);
         player.tempoScale = 0.5;
@@ -71,15 +71,15 @@ describe('song player, on an Audio90', () => {
     });
 
     it('plays a queued song at the end of the first, and releases its notes when it stops', () => {
-        const chip = createHeadlessAudio90({ record: true });
-        const player = createSongPlayer({ audio90: asWriter(chip) });
+        const chip = createRecordingAudio90Writer();
+        const player = createSongPlayer({ audio90: chip.writer });
         const next = createAudio90Song({ bpm: 120, instruments: { S: SAW }, patterns: { p: '| C-5 S' }, order: ['p'] });
         player.play(GROOVE);
         player.queue(next);
-        tick(chip, player, 1000 / 60, computeSongDurationMs(GROOVE) + 50);
+        tick(chip, player, 1000 / 60, GROOVE.durationMs + 50);
         expect(player.song).toBe(next);
         // The queued song sets its tempo as it starts, at the end of the first
-        expect(chip.log).toContainEqual({ kind: 'set-tempo', bpm: next.bpm, time: computeSongDurationMs(GROOVE) });
+        expect(chip.log).toContainEqual({ kind: 'set-tempo', bpm: next.bpm, time: GROOVE.durationMs });
         player.stop();
         player.refresh();
         expect(chip.log.at(-1)).toMatchObject({ kind: 'note-off', voice: 0 });
@@ -94,7 +94,7 @@ describe('song player, on an Audio90', () => {
     });
 
     it('takes, in its type, only songs of the chip it plays on', () => {
-        const player = createSongPlayer({ audio90: asWriter(createHeadlessAudio90()) });
+        const player = createSongPlayer({ audio90: createRecordingAudio90Writer().writer });
         expectTypeOf(player).toEqualTypeOf<SongPlayer<Audio90Song>>();
         const audio80Song = createAudio80Song({ bpm: 120, instruments: { L: createAudio80Sound({}) }, patterns: { p: '| C-4 L' }, order: ['p'] });
         // Never called: it is here to be type checked
@@ -112,10 +112,10 @@ describe('song player, on an Audio90', () => {
 
 /** GROOVE's note stamps, played once through with ticks of `tickMs`. */
 function listNoteStamps(tickMs: () => number): number[] {
-    const chip = createHeadlessAudio90({ record: true });
-    const player = createSongPlayer({ audio90: asWriter(chip) });
+    const chip = createRecordingAudio90Writer();
+    const player = createSongPlayer({ audio90: chip.writer });
     player.play(GROOVE);
-    tick(chip, player, tickMs, computeSongDurationMs(GROOVE) - 1);
+    tick(chip, player, tickMs, GROOVE.durationMs - 1);
     return listNoteOns(chip.log).map((write) => write.time);
 }
 
@@ -131,15 +131,6 @@ function tick(chip: { readonly update: (deltaMs: number) => void }, player: Song
     }
 }
 
-function listNoteOns(log: readonly Audio90Write[]): Extract<Audio90Write, { kind: 'note-on' }>[] {
-    return log.filter((write): write is Extract<Audio90Write, { kind: 'note-on' }> => write.kind === 'note-on');
-}
-
-/**
- * A headless chip as its songs write to it. A headless chip is its own
- * writer, which its songs write their notes through, so the cast only names
- * what it already is.
- */
-function asWriter<C extends Audio90>(chip: C): C & Audio90Writer {
-    return chip as C & Audio90Writer;
+function listNoteOns(log: readonly Audio90WriterCall[]): Extract<Audio90WriterCall, { kind: 'note-on' }>[] {
+    return log.filter((write): write is Extract<Audio90WriterCall, { kind: 'note-on' }> => write.kind === 'note-on');
 }

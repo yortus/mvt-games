@@ -1,6 +1,5 @@
-import { type Audio80, type Audio80Character, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createCommandAudio80 } from '../audio80';
-import { joinMembers } from '../shared';
-import { AUDIO80_HELD_SLOTS } from './audio80-held-slots';
+import { type Audio80, type Audio80Character, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createCommandAudio80, OP_RELEASE_ALL, OP_STOP } from '../audio80';
+import { createStopSlots } from './held-writes';
 import { createWebChip } from './web-chip';
 import { type Audio80PassedMessage, AUDIO80_PROCESSOR_NAME, type Audio80RunnerSettings } from './worklet';
 import processorUrl from './worklet/audio80-processor?worker&url';
@@ -53,7 +52,7 @@ export function createAudio80(options: Audio80Options = {}): Audio80 {
         context: options.context,
         pauseWhenHidden: options.pauseWhenHidden ?? true,
         writer,
-        heldSlots: AUDIO80_HELD_SLOTS,
+        heldSlots: createStopSlots({ stopOp: OP_STOP, releaseAllOp: OP_RELEASE_ALL }),
         processorUrl,
         processorName: AUDIO80_PROCESSOR_NAME,
         // The chip is mono. The browser plays its one channel on both speakers
@@ -63,13 +62,5 @@ export function createAudio80(options: Audio80Options = {}): Audio80 {
         prepareSong: (song) => ({ song, soundIds: song.instruments.map(writer.defineSound) }),
     });
 
-    return joinMembers(web.chip, {
-        get time() {
-            return web.time;
-        },
-        voiceCount: writer.voiceCount,
-        setVoice: writer.setVoice,
-        setFilter: writer.setFilter,
-        setEcho: writer.setEcho,
-    });
+    return web.chip;
 }

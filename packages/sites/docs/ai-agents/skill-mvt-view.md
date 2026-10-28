@@ -471,7 +471,7 @@ from a state alone, which would play the sound every frame.
   everything on the chip, sounds too, and `stop(id)` stops only that play.
 - **A new song cuts the old one short.** Playing a song releases the song
   playing and cancels any song queued. A jingle that starts a phase must be
-  no longer than the phase. Check it with `computeSongDurationMs`.
+  no longer than the phase. Check it with the song's `durationMs`.
 - **Test** against a chip from `createHeadlessAudio80({ record: true })` or
   `createHeadlessAudio90({ record: true })`, in `audio90/headless`. Advance
   its clock with its `update`, tick the view, and check the chip's `log`

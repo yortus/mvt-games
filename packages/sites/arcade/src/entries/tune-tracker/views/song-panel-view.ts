@@ -1,5 +1,4 @@
 import { Container } from 'pixi.js';
-import { computeSongDurationMs } from 'audio90';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Tune } from '#tunes';
 import { cacheAsPixels, PANEL_LINE_X, PANEL_LINE_Y, PanelView } from './panel-view';
@@ -60,7 +59,7 @@ export function SongPanelView(bindings: SongPanelViewBindings): Container {
         writeSetting(lines[5], 'SWING', `${Math.round(song.swing * 100)}%`);
         writeSetting(lines[6], 'CHANNELS', String(song.channelCount));
         writeSetting(lines[7], 'PATTERNS', `${song.patterns.length}, ${song.order.length} in order`);
-        writeSetting(lines[8], 'LENGTH', formatDuration(computeSongDurationMs(song)));
+        writeSetting(lines[8], 'LENGTH', formatDuration(song.durationMs));
         writeSetting(lines[9], 'SOUND', song.character ?? 'unchanged');
         writeSetting(lines[10], 'EFFECTS', listEffects(song).join(' '));
         view.updateCacheTexture();

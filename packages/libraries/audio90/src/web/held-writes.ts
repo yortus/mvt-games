@@ -6,22 +6,19 @@ import { COMMAND_STRIDE } from '../shared';
 
 /**
  * The writes worth keeping while a chip cannot play, to send once it can. A
- * chip cannot play before its worklet runs, or while its audio context is
- * suspended.
+ * chip cannot play before its worklet runs, while its audio context is
+ * suspended, or while it is paused.
  *
- * It keeps the latest value of each setting. A song sets most of its
- * settings once, when it starts, such as its filters and echo. If those were
- * lost, the song would sound wrong until it started again.
+ * A page writes only plays and stops: a song's settings are written in the
+ * worklet, by the chip's own sequencer. It keeps each `stop` of a play, up to
+ * `STOP_SLOT_COUNT` of them, and the latest stop of every voice. Then a note
+ * that started before the chip stopped playing still stops.
  *
- * It keeps the latest call to stop a note (`noteOff`) on each voice, and
- * each `stop` of a play, up to `STOP_SLOT_COUNT` of them. Then a note that
- * started before the chip stopped playing still stops.
+ * It drops plays. Sent late, they would all play at once.
  *
- * It drops notes and plays. Sent late, they would all play at once.
- *
- * It holds at most one command per setting and voice, so it never grows.
- * Which writes those are is each chip's: a chip's `HeldWriteSlots` gives
- * each write worth keeping a slot of its own.
+ * It holds at most one command a slot, so it never grows. Which writes those
+ * are is each chip's: a chip's `HeldWriteSlots` gives each write worth keeping
+ * a slot of its own.
  */
 export interface HeldWrites {
     /** How many commands are held. */
@@ -115,7 +112,21 @@ export const STOP_SLOT_COUNT = 32;
 // Functions
 // ---------------------------------------------------------------------------
 
-/** Whether `value` is a whole number from 0 to `length` - 1. Each chip's slots use it to check a command's operands. */
-export function isIndex(value: number, length: number): boolean {
-    return Number.isInteger(value) && value >= 0 && value < length;
+/**
+ * Lays out the slots of a chip's held writes: one for the latest release of
+ * every voice, and `STOP_SLOT_COUNT` for the stops of plays. `stopOp` and
+ * `releaseAllOp` are the chip's opcodes for them.
+ */
+export function createStopSlots(options: { readonly stopOp: number; readonly releaseAllOp: number }): HeldWriteSlots {
+    const { stopOp, releaseAllOp } = options;
+    const releaseAllSlot = 0;
+    const stopBase = 1;
+    return {
+        slotCount: stopBase + STOP_SLOT_COUNT,
+        findSlot(op, a) {
+            if (op === releaseAllOp) return releaseAllSlot;
+            if (op === stopOp) return Number.isInteger(a) && a > 0 ? stopBase + a % STOP_SLOT_COUNT : -1;
+            return -1;
+        },
+    };
 }

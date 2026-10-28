@@ -1,4 +1,5 @@
 import {
+    computeSongDurationMs,
     checkInstrumentLetters,
     checkLoop,
     checkTempo,
@@ -48,6 +49,11 @@ export interface Audio80Song {
     readonly order: readonly SongOrderEntry[];
     /** The index in `order` to go back to at the end, or -1 to play once. */
     readonly loop: number;
+    /**
+     * How long one pass through `order` lasts, in ms, at the song's own tempo.
+     * A song that loops goes on past it, from `loop`. Swing does not change it.
+     */
+    readonly durationMs: number;
     /** Filters `a` and `b`, as the song sets them as it starts. */
     readonly filters: readonly (Audio80FilterSettings | undefined)[];
     /** The echo, as the song sets it as it starts, or undefined to leave it as it is. */
@@ -222,6 +228,7 @@ export function createAudio80Song(options: Audio80SongOptions): Audio80Song {
         patterns,
         order,
         loop,
+        durationMs: computeSongDurationMs({ bpm, rowsPerBeat, order, patterns }),
         filters: [options.filters?.a, options.filters?.b],
         echo: options.echo,
         volume,

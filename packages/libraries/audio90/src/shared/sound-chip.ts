@@ -29,11 +29,9 @@ export interface SoundChip<Song, Sound, PlayOptions> {
      * The chip cannot play before `ready` resolves. In a browser, it also
      * cannot play while the audio context is not running. It doesn't play
      * while it is paused either. Until it can, it drops the sounds played, so
-     * none play late. It keeps the latest value of each setting, such as a
-     * filter's cutoff, and applies it once it can play. A song sets most of
-     * its settings once, when it starts, so this keeps a song started
-     * meanwhile sounding right. It also keeps each `stop`, so a sound that
-     * started before the wait still stops.
+     * none play late. It keeps each `stop`, so a sound that started before
+     * the wait still stops. A song played meanwhile starts from its
+     * beginning once the chip can play.
      */
     readonly ready: Promise<void>;
     /**

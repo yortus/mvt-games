@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createAudio80Song, createAudio80Sound } from 'audio90';
+import { createAudio80Song, createAudio80Sound, createAudio90Sound } from 'audio90';
 import type { Audio80Write } from 'audio90/headless';
 import { type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
 import { createPageSound } from './page-sound';
@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 describe('createPageSound', () => {
-    it('ignores writes made before the chips load, without error, and keeps none for later', async () => {
+    it('ignores plays made before the chips load, without error, and keeps none for later', async () => {
         const sound = createPageSound({ isEnabled: true });
         const { music, sfx } = sound.entryChips.audio80;
         expect(() => {
@@ -30,7 +30,7 @@ describe('createPageSound', () => {
             music.stop();
             sound.pageSfx.play(EFFECT);
         }).not.toThrow();
-        expect([music.time, music.song]).toEqual([0, undefined]);
+        expect(music.song).toBeUndefined();
         await expect(music.ready).resolves.toBeUndefined();
 
         await sound.prepare('audio80');
@@ -65,8 +65,8 @@ describe('createPageSound', () => {
         const [music, sfx] = fake.audio90Chips;
         expect([music.volume, sfx.volume]).toEqual([toSliderGain(0.3), toSliderGain(0.8)]);
         expect([music.isMuted, sfx.isMuted]).toEqual([true, true]);
-        sound.entryChips.audio90.music.setTempo(120);
-        expect(music.log).toEqual([{ kind: 'set-tempo', bpm: 120, time: 0 }]);
+        sound.entryChips.audio90.music.play(createAudio90Sound({}));
+        expect(music.log.map((write) => write.kind)).toEqual(['play']);
         sound.destroy();
     });
 
