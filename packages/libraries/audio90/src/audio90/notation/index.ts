@@ -48,14 +48,7 @@ export {
     NO_NOTE90,
     RELEASE90,
 } from './song';
-export {
-    type Audio90ChannelState,
-    createAudio90ChannelState,
-    releaseAudio90Song,
-    writeAudio90Row,
-    writeAudio90SongStart,
-    writeAudio90TempoScale,
-} from './song-writer';
+export { createAudio90SongDriver } from './song-driver';
 export {
     type Audio90Engine,
     type Audio90FilterMode,

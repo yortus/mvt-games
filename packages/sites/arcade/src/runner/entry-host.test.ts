@@ -2,7 +2,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setRefresh } from '@mvtjs/html';
 import { createAudio80Sound } from 'audio90';
-import type { Audio80Write } from 'audio90/headless';
 import type { MusicChip } from '#shared';
 import type { ElementEntryStarter } from '../entry-types';
 import { createEntryHost, type EntryHost } from './entry-host';
@@ -31,7 +30,7 @@ describe('createEntryHost', () => {
         host.start(game.starter);
         host.tick(0, TICK_MS);
 
-        expect(listPlays(entryChips().sfx.log)).toEqual([EFFECT]);
+        expect(entryChips().sfx.played).toEqual([EFFECT]);
         destroyAll(host, sound);
     });
 
@@ -102,7 +101,7 @@ describe('createEntryHost', () => {
         expect(fake.chips).toHaveLength(PAGE_CHIPS + ENTRY_CHIPS);
         host.start(game.starter);
         host.tick(0, TICK_MS);
-        expect(listPlays(entryChips().sfx.log)).toEqual([EFFECT]);
+        expect(entryChips().sfx.played).toEqual([EFFECT]);
         destroyAll(host, sound);
     });
 
@@ -199,6 +198,3 @@ function createFakeSilentDemo() {
 }
 
 /** Returns the sound effects played, in order. */
-function listPlays(log: readonly Audio80Write[]): unknown[] {
-    return log.filter((write) => write.kind === 'play').map((write) => (write as { sound: unknown }).sound);
-}

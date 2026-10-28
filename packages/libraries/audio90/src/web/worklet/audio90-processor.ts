@@ -10,11 +10,9 @@ registerChipProcessor<Audio90RunnerSettings, Audio90PassedMessage>(AUDIO90_PROCE
         ...settings,
         sampleRate,
         currentFrame,
-        // A buffer goes back to the page, moved rather than copied. A clock reply is only numbers
-        sendBack: (reply) => post(reply, reply.kind === 'buffer' ? [reply.commands.buffer] : NOTHING_MOVED),
         sendScope: (reply) => post(reply, [reply.data.buffer]),
         sendPlace: (reply) => post(reply, NOTHING_MOVED),
     }));
 
-/** What a song's place, or a clock reply, moves with it: nothing, since it is only numbers. */
+/** What a song's place moves with it: nothing, since it is only numbers. */
 const NOTHING_MOVED: Transferable[] = [];

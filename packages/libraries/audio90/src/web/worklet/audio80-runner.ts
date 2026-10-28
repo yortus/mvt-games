@@ -1,7 +1,6 @@
-import { type Audio80Character, type Audio80ChipMessage, type Audio80Song, createAudio80Synthesiser, createCommandAudio80 } from '../../audio80';
-import { createSongPlayer } from '../../song-player';
-import type { ChipReply } from '../../shared';
-import { type ChipRunner, createChipRunner } from './chip-runner';
+import { type Audio80Character, type Audio80PlayOptions, type Audio80Sound, createAudio80SongDriver, createAudio80SoundIds, createAudio80Synthesiser, type SoundData, VOICE_COUNT } from '../../audio80';
+import { createCommandWriter, createSongPlayer } from '../../shared';
+import { type ChipRunner, createChipRunner, type ScopeReply } from './chip-runner';
 import type { SongPlaceReply } from './song-messages';
 import { createWorkletSequencer } from './worklet-sequencer';
 
@@ -10,7 +9,11 @@ import { createWorkletSequencer } from './worklet-sequencer';
 // ---------------------------------------------------------------------------
 
 /** The messages that define what an Audio80's commands use: its sounds. */
-export type Audio80PassedMessage = Extract<Audio80ChipMessage, { readonly kind: 'sound' }>;
+export interface Audio80PassedMessage {
+    readonly kind: 'sound';
+    readonly id: number;
+    readonly data: SoundData;
+}
 
 /** The settings the main thread gives the Audio80's processor when it is made. */
 export interface Audio80RunnerSettings {
@@ -29,10 +32,10 @@ export const AUDIO80_PROCESSOR_NAME = 'audio80-chip';
 export interface Audio80RunnerOptions extends Audio80RunnerSettings {
     /** The sound card's sample rate, in Hz. */
     readonly sampleRate: number;
-    /** Sends the main thread a batch's buffer, so it can be written into again, or where the clock is. It must copy the reply, as `postMessage` does. */
-    readonly sendBack: (reply: ChipReply) => void;
     /** The audio context's count of frames, at the start of the next block. Defaults to counting the frames rendered. */
     readonly currentFrame?: () => number;
+    /** Sends a scope to the main thread, in a buffer it handed over, which moves with the message. */
+    readonly sendScope: (reply: ScopeReply) => void;
     /** Sends where the song is, each time it reaches a new row, or takes a call. It must copy the reply, as `postMessage` does. */
     readonly sendPlace: (reply: SongPlaceReply) => void;
 }
@@ -48,17 +51,24 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
     return createChipRunner<Audio80PassedMessage>({
         sampleRate,
         channelCount: 1,
-        sendBack: options.sendBack,
+        voiceCount: VOICE_COUNT,
         currentFrame: options.currentFrame,
-        sequencer: createWorkletSequencer<Audio80Song, ReturnType<typeof createCommandAudio80>>({
+        sendScope: options.sendScope,
+        sequencer: createWorkletSequencer({
             sampleRate,
             // Every sound a song plays was defined by the page, so the writer defines nothing of its own
-            createWriter: (idOf) => createCommandAudio80({ idOf, onSound: ignore }),
-            createPlayer: (writer) => createSongPlayer({ audio80: writer }),
+            createWriter: (idOf) => createCommandWriter<Audio80Sound, Audio80PlayOptions>({ soundIds: createAudio80SoundIds({ idOf, onSound: ignore }) }),
+            createPlayer: (writer) => createSongPlayer(createAudio80SongDriver(writer)),
             sendPlace: options.sendPlace,
         }),
         synthesiser: {
             enqueue: synthesiser.enqueue,
+            get scope() {
+                return synthesiser.scope;
+            },
+            set scope(scope) {
+                synthesiser.scope = scope;
+            },
             reset: synthesiser.reset,
             receive(message) {
                 synthesiser.defineSound(message.id, message.data);

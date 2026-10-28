@@ -1,11 +1,21 @@
-import { chooseSoundVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, LN_SEMITONE, type SoundVoices } from '../../shared';
+import {
+    chooseSoundVoice,
+    COMMAND_STRIDE,
+    createCommandQueue,
+    createNoteDriver,
+    LN_SEMITONE,
+    OP_PLAY,
+    OP_PLAY_OPTIONS,
+    OP_RELEASE_ALL,
+    OP_STOP,
+    SCOPE_POINTS,
+    SCOPE_STRIDE,
+    type SoundVoices,
+} from '../../shared';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
     AUDIO90_EFFECT_SETTING_INDEX,
-    AUDIO90_SCOPE_PANS,
-    AUDIO90_SCOPE_POINTS,
-    AUDIO90_SCOPE_STRIDE,
     AUDIO90_VOICE_COUNT,
     AUDIO90_VOICE_SETTING_INDEX,
     type Audio90Character,
@@ -13,14 +23,10 @@ import {
     type Audio90EffectSetting,
     OP90_NOTE_OFF,
     OP90_NOTE_ON,
-    OP90_PLAY,
-    OP90_PLAY_OPTIONS,
-    OP90_RELEASE_ALL,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
-    OP90_STOP,
 } from './commands';
 import {
     type Audio90EnvelopeData,
@@ -98,14 +104,14 @@ export interface Audio90Synthesiser {
     isSounding: (voice: number) => boolean;
     /** How many analog oscillators the sounding voices run, which `AUDIO90_OSCILLATOR_BUDGET` caps. */
     readonly oscillatorCount: number;
-    /** The id of the sound voice `voice` was played with, as `OP90_PLAY` plays one, or undefined. */
+    /** The id of the sound voice `voice` was played with, as `OP_PLAY` plays one, or undefined. */
     findSoundOn: (voice: number) => number | undefined;
     /**
      * Where to write each voice's output for a scope, or undefined for none.
-     * It holds `AUDIO90_SCOPE_LENGTH` numbers: `AUDIO90_SCOPE_POINTS` points a
-     * voice, one every `AUDIO90_SCOPE_STRIDE` samples, round and round, then each voice's pan
-     * from `AUDIO90_SCOPE_PANS`, from -1 (left) to 1 (right). A silent voice's
-     * points and pan are 0.
+     * It holds `toScopeLength(AUDIO90_VOICE_COUNT)` numbers: `SCOPE_POINTS`
+     * points a voice, one every `SCOPE_STRIDE` samples, round and round, then
+     * each voice's pan, from -1 (left) to 1 (right). A silent voice's points
+     * and pan are 0.
      */
     scope: Float32Array | undefined;
 }
@@ -292,7 +298,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const startedAt = new Float64Array(V);
     const soundVoices: SoundVoices = { soundId, soundPriority, startedAt, isSounding: isVoiceSounding };
     const playId = new Float64Array(V);
-    // How the next play plays, as its `OP90_PLAY_OPTIONS` said: its length in ms, or -1 to hold, its glide's note, or
+    // How the next play plays, as its `OP_PLAY_OPTIONS` said: its length in ms, or -1 to hold, its glide's note, or
     // -1, and its pan, if it has one of its own
     let nextPlayLengthMs = -1;
     let nextPlayGlideTo = -1;
@@ -444,19 +450,19 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             case OP90_SET_EFFECT:
                 setEffect(a, b, c);
                 break;
-            case OP90_PLAY_OPTIONS:
+            case OP_PLAY_OPTIONS:
                 nextPlayLengthMs = a;
                 nextPlayGlideTo = b;
                 nextPlayPan = c;
                 hasNextPlayPan = d === 1;
                 break;
-            case OP90_PLAY:
+            case OP_PLAY:
                 playSound(a, b, c, d);
                 break;
-            case OP90_STOP:
+            case OP_STOP:
                 stop(a);
                 break;
-            case OP90_RELEASE_ALL:
+            case OP_RELEASE_ALL:
                 for (let v = 0; v < V; v++) release(v);
                 break;
             case OP90_SET_CHARACTER:
@@ -676,9 +682,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
 
     function setVoice(v: number, setting: number, value: number): void {
         switch (setting) {
-            case AUDIO90_VOICE_SETTING_INDEX.note:
-                driver.setNote(v, value);
-                break;
             case AUDIO90_VOICE_SETTING_INDEX.volume:
                 noteVolume[v] = Math.max(0, value);
                 break;
@@ -809,7 +812,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         }
     }
 
-    /** Plays sound `id` on a voice it chooses, as play `play`, with the options the `OP90_PLAY_OPTIONS` before it gave. */
+    /** Plays sound `id` on a voice it chooses, as play `play`, with the options the `OP_PLAY_OPTIONS` before it gave. */
     function playSound(id: number, play: number, note: number, volume: number): void {
         const lengthMs = nextPlayLengthMs;
         const glideTo = nextPlayGlideTo;
@@ -989,10 +992,10 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 controlCountdown = CONTROL_SAMPLES;
             }
             fx[FX_PUMP] += (1 - fx[FX_PUMP]) * pumpCoef;
-            const scopeAt = scope !== undefined && (counters[COUNTER_SCOPE] % AUDIO90_SCOPE_STRIDE) === 0
-                ? (counters[COUNTER_SCOPE] / AUDIO90_SCOPE_STRIDE) % AUDIO90_SCOPE_POINTS
+            const scopeAt = scope !== undefined && (counters[COUNTER_SCOPE] % SCOPE_STRIDE) === 0
+                ? (counters[COUNTER_SCOPE] / SCOPE_STRIDE) % SCOPE_POINTS
                 : -1;
-            counters[COUNTER_SCOPE] = (counters[COUNTER_SCOPE] + 1) % (AUDIO90_SCOPE_POINTS * AUDIO90_SCOPE_STRIDE);
+            counters[COUNTER_SCOPE] = (counters[COUNTER_SCOPE] + 1) % (SCOPE_POINTS * SCOPE_STRIDE);
 
             let dryL = 0;
             let dryR = 0;
@@ -1003,8 +1006,8 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             for (let v = 0; v < V; v++) {
                 const amp = v * ENVS_PER_VOICE;
                 if (envStage[amp] === ENV_IDLE) {
-                    if (scopeAt >= 0) scope![v * AUDIO90_SCOPE_POINTS + scopeAt] = 0;
-                    if (scopeAt === 0) scope![AUDIO90_SCOPE_PANS + v] = 0;
+                    if (scopeAt >= 0) scope![v * SCOPE_POINTS + scopeAt] = 0;
+                    if (scopeAt === 0) scope![SCOPE_PANS + v] = 0;
                     continue;
                 }
                 const kind = engine[v];
@@ -1030,8 +1033,8 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                     l = x * panL[v];
                     r = x * panR[v];
                 }
-                if (scopeAt >= 0) scope![v * AUDIO90_SCOPE_POINTS + scopeAt] = (l + r) * SCOPE_GAIN;
-                if (scopeAt === 0) scope![AUDIO90_SCOPE_PANS + v] = voicePan[v];
+                if (scopeAt >= 0) scope![v * SCOPE_POINTS + scopeAt] = (l + r) * SCOPE_GAIN;
+                if (scopeAt === 0) scope![SCOPE_PANS + v] = voicePan[v];
                 dryL += l;
                 dryR += r;
                 const at = v * SEND_COUNT;
@@ -1589,6 +1592,8 @@ const MAX_CUTOFF_SHARE = 0.45;
 const CONSOLE_SAMPLE_HZ = 9000;
 const SAMPLER_DRIVE = 1.4;
 const SCOPE_GAIN = 2;
+/** Where a scope's pans start: voice v's pan is at `SCOPE_PANS + v`. */
+const SCOPE_PANS = AUDIO90_VOICE_COUNT * SCOPE_POINTS;
 const DC_POLE = 0.9995;
 const TINY = 1e-20;
 const NOISE_SEED = 0x1234567;

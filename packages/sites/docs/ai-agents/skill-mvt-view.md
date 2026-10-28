@@ -472,10 +472,12 @@ from a state alone, which would play the sound every frame.
 - **A new song cuts the old one short.** Playing a song releases the song
   playing and cancels any song queued. A jingle that starts a phase must be
   no longer than the phase. Check it with the song's `durationMs`.
-- **Test** against a chip from `createHeadlessAudio80({ record: true })` or
-  `createHeadlessAudio90({ record: true })`, in `audio90/headless`. Advance
-  its clock with its `update`, tick the view, and check the chip's `log`
-  property.
+- **Test** against a chip from `createHeadlessAudio80()` or
+  `createHeadlessAudio90()`, in `audio90/headless`, with Vitest's spies on
+  its `play`, `queue` and `stop`, set before the view is made. Advance its
+  clock with its `update`, tick the view, and check what the view asked of
+  it, and its `song` and `tempoScale`. How a chip plays a song is tested with
+  the chip, not with each view.
 
 Full guide: [Sound and Music](../building-with-mvt/presenting-the-world/sound.md) ·
 [Using the Audio80](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/docs/using-the-audio80.md) ·

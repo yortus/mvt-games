@@ -25,12 +25,17 @@
             "default": "./src/tracker/index.ts"
         }
     },
+    "imports": {
+        "#rendering-audio80": "./src/headless/rendering-audio80.ts",
+        "#rendering-audio90": "./src/headless/rendering-audio90.ts"
+    },
     "files": ["dist", "src", "docs", "!src/**/*.test.ts"],
     "scripts": {
         "build": "tsdown",
         "prepack": "tsdown && node scripts/publish-manifest.ts apply",
         "postpack": "node scripts/publish-manifest.ts restore",
-        "render-wav": "tsx --conditions=@mvtjs/source scripts/render-wav.ts"
+        "render-wav": "tsx --conditions=@mvtjs/source scripts/render-wav.ts",
+        "bench": "node bench/run.ts"
     },
     "devDependencies": {
         "@arethetypeswrong/core": "^0.18.5",

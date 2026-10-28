@@ -18,7 +18,9 @@
  * What it reports of the song, `song`, `orderIndex`, `row` and `beat`, is
  * what the listener hears now. In a browser, that trails what was asked by
  * the time the sound takes to reach the speaker. So a view that shows the
- * song, as a tracker does, shows the row being heard.
+ * song, as a tracker does, shows the row being heard. A view that shows what
+ * each voice plays attaches a scope with `createScope`, from
+ * `audio90/tracker`.
  */
 export interface SoundChip<Song, Sound, PlayOptions> {
     /**
@@ -144,8 +146,11 @@ export interface SongSequencer<S> {
     queue: (song: S) => void;
     /** Releases the song's notes, gives its voices back to sounds, and stops. */
     stop: () => void;
-    /** Sets the tempo scale, where 1 is the song's own tempo and 0 holds it where it is. */
-    setTempoScale: (scale: number) => void;
+    /**
+     * The tempo scale, where 1 is the song's own tempo and 0 holds it where
+     * it is. A negative or non-finite value acts as 0.
+     */
+    tempoScale: number;
 }
 
 // ---------------------------------------------------------------------------

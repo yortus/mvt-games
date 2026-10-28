@@ -1,111 +1,87 @@
-import type { Audio80Song, Audio80Writer } from '../audio80';
-import type { Audio90Song, Audio90Writer } from '../audio90';
-import { createAudio80SongDriver } from './audio80-driver';
-import { createAudio90SongDriver } from './audio90-driver';
-import type { PlayableSong, SongDriver } from './song-driver';
+import type { SongSequencer } from './sound-chip';
+import type { SongTiming } from './tracker';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
+/** What the song player reads of any chip's song: its timing, its swing and its loop. */
+export interface PlayableSong extends SongTiming {
+    /** How late each odd-numbered row of a pattern plays, as a share of a row, from 0 to 0.5. */
+    readonly swing: number;
+    /** The index in `order` to go back to at the end, or -1 to play once. */
+    readonly loop: number;
+}
+
+/**
+ * The ids a chip's commands name its sounds by. The first time a sound is
+ * given an id, it is defined for the chip, as the chip's code says. `Sound`
+ * is the chip's sound type.
+ */
+export interface SoundIds<Sound> {
+    /** The id the chip's commands name `sound` by. The first time, it defines the sound for the chip. */
+    soundId: (sound: Sound) => number;
+    /** Forgets every id, as the chip forgets every sound it was given. Each is defined again as it is next used. */
+    forget: () => void;
+}
+
+/**
+ * What a song writes to its chip through: the chip's commands, each stamped
+ * with the chip time it applies at, and the ids the commands name its sounds
+ * by. `Sound` is the chip's sound type.
+ */
+export interface SongWriter<Sound> extends Pick<SoundIds<Sound>, 'soundId'> {
+    /** The chip's time now, in ms. */
+    readonly time: number;
+    /** Writes one command, laid out as `COMMAND_STRIDE` describes. */
+    write: (op: number, stamp: number, a: number, b: number, c: number, d: number) => void;
+}
+
+/**
+ * What a chip's songs write, for the song player, which keeps their time.
+ * The player calls each method with the chip time the writes are stamped
+ * with, and the driver writes them to its chip at once.
+ */
+export interface SongDriver<S extends PlayableSong> {
+    /** The chip's clock, in ms. */
+    readonly time: number;
+    /** Writes `song`'s settings as it starts. Its first row follows. */
+    start: (song: S, stamp: number, tempoScale: number) => void;
+    /** Writes row `row` of order entry `orderIndex`, which lasts `lengthMs` of song time. */
+    playRow: (song: S, orderIndex: number, row: number, stamp: number, lengthMs: number, tempoScale: number) => void;
+    /** Writes what a new tempo scale changes, such as the channels' slides. */
+    changeTempoScale: (song: S, stamp: number, tempoScale: number) => void;
+    /** Releases every channel of `song`. */
+    release: (song: S, stamp: number) => void;
+}
+
 /**
  * Plays one song at a time, playing channel n on voice n, on either chip. It
  * runs where the chip's sound is made: in a browser, on the audio thread,
  * where the sequencer moves it on by each block the sound card asks for; in
- * a headless chip, with the chip's clock. A view never makes one. It plays
- * songs on the chip, which plays them through one.
+ * a headless chip, with the chip's clock.
  *
- * `update` advances the song and queues the notes that fall in the time it
- * covers, each stamped with its exact time on the clock of the writer it
- * plays on. `refresh` writes the queued notes. `S` is the song type of the
- * chip it plays on, `Audio80Song` or `Audio90Song`.
- *
- * Call `update` after the writer's clock has advanced by the same `deltaMs`.
+ * Each call writes at once, at the driver's time. `update` advances the
+ * song, and writes the notes that fall in the time it covers, each stamped
+ * with its exact time. Call it after the chip's clock has advanced by the
+ * same `deltaMs`. What it reports is where the song is on the chip's clock:
+ * the row whose notes were written last.
  */
-export interface SongPlayer<S extends PlayableSong> {
-    /** The song playing, or undefined once it ends or is stopped. */
-    readonly song: S | undefined;
-    /** Whether a song is playing. It is true while `song` is defined, even while a `tempoScale` of 0 holds it still. */
-    readonly isPlaying: boolean;
-    /** Where the song is, in beats from its start. Views can use it to move in time with the music. */
-    readonly beat: number;
+export interface SongPlayer<S extends PlayableSong> extends SongSequencer<S> {
     /**
-     * The entry in the song's order whose row is playing: the row whose
-     * notes were written last, at a time no later than the writer's now. 0
-     * when no song is playing.
-     */
-    readonly orderIndex: number;
-    /** The row playing, within the pattern of the entry at `orderIndex`. 0 when no song is playing. */
-    readonly row: number;
-    /**
-     * A multiplier on the song's tempo, where 1 plays it at its own tempo. 0
-     * holds the song where it is. Its notes ring on as their envelopes allow,
-     * and its slides stop. On the Audio90, the LFOs and the echo timed in
-     * beats follow it too, and a scale of 0 holds those LFOs. This suits music
-     * that plays only while something moves. A negative or non-finite value
-     * acts as 0. Set it before calling `update`, which then plays the time
-     * it covers at the new tempo.
-     */
-    tempoScale: number;
-    /**
-     * Starts `song` from its beginning now. It releases any song playing, and
-     * cancels any song queued, so nothing queued before plays after it.
-     */
-    play: (song: S) => void;
-    /**
-     * Plays `song` without a gap when the song playing reaches the end of its
-     * order, even if that song loops. If no song is playing, it plays `song`
-     * at once.
-     */
-    queue: (song: S) => void;
-    /** Releases the song's notes, gives its voices back to effects, and stops. */
-    stop: () => void;
-    /**
-     * Advances the song by `deltaMs`, and queues the notes that fall in that
+     * Advances the song by `deltaMs`, and writes the notes that fall in that
      * time. `deltaMs` must be finite. Does nothing for a `deltaMs` of 0 or
      * less.
      */
     update: (deltaMs: number) => void;
-    /** Writes the queued notes to the writer. */
-    refresh: () => void;
 }
-
-// ---------------------------------------------------------------------------
-// Options
-// ---------------------------------------------------------------------------
-
-/**
- * What `createSongPlayer` needs: the writer it plays on, named by its chip's
- * kind. Its notes are stamped with the writer's clock.
- */
-export type SongPlayerOptions = { readonly audio80: Audio80Writer } | { readonly audio90: Audio90Writer };
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates a song player that writes to an Audio80, with no song playing. */
-export function createSongPlayer(options: { readonly audio80: Audio80Writer }): SongPlayer<Audio80Song>;
-/** Creates a song player that writes to an Audio90, with no song playing. Each song tells the chip its tempo too. */
-export function createSongPlayer(options: { readonly audio90: Audio90Writer }): SongPlayer<Audio90Song>;
-export function createSongPlayer(options: SongPlayerOptions): SongPlayer<Audio80Song> | SongPlayer<Audio90Song> {
-    if ('audio90' in options) return createDrivenPlayer(createAudio90SongDriver({ audio90: options.audio90 }));
-    return createDrivenPlayer(createAudio80SongDriver({ audio80: options.audio80 }));
-}
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-// Each of the player's times' place in its `times`
-const ROW_MS = 0;
-const SONG_MS = 1;
-const NEXT_ROW_MS = 2;
-const STARTED_AT_MS = 3;
-const TIME_COUNT = 4;
-
-/** Creates a song player that keeps a song's time, and has `driver` write it. */
-function createDrivenPlayer<S extends PlayableSong>(driver: SongDriver<S>): SongPlayer<S> {
+/** Creates a song player that keeps a song's time, and has `driver` write it, with no song playing. */
+export function createSongPlayer<S extends PlayableSong>(driver: SongDriver<S>): SongPlayer<S> {
     let song: S | undefined;
     let queued: S | undefined;
     let tempoScale = 1;
@@ -127,9 +103,6 @@ function createDrivenPlayer<S extends PlayableSong>(driver: SongDriver<S>): Song
     const player: SongPlayer<S> = {
         get song() {
             return song;
-        },
-        get isPlaying() {
-            return song !== undefined;
         },
         get beat() {
             return song === undefined ? 0 : times[SONG_MS] * song.bpm / 60000;
@@ -217,10 +190,6 @@ function createDrivenPlayer<S extends PlayableSong>(driver: SongDriver<S>): Song
                 start(next, stamp);
             }
         },
-
-        refresh() {
-            driver.refresh();
-        },
     };
 
     return player;
@@ -276,3 +245,14 @@ function createDrivenPlayer<S extends PlayableSong>(driver: SongDriver<S>): Song
         if (orderIndex >= song.order.length) isAtEnd = true;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+// Each of the player's times' place in its `times`
+const ROW_MS = 0;
+const SONG_MS = 1;
+const NEXT_ROW_MS = 2;
+const STARTED_AT_MS = 3;
+const TIME_COUNT = 4;

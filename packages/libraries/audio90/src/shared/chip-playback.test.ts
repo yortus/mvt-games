@@ -98,7 +98,12 @@ function createPlaybackOnStandIns() {
         play: (song) => calls.push(`play ${song.name}`),
         queue: (song) => calls.push(`queue ${song.name}`),
         stop: () => calls.push('stop song'),
-        setTempoScale: (scale) => calls.push(`tempo ${scale}`),
+        get tempoScale() {
+            return 1;
+        },
+        set tempoScale(scale: number) {
+            calls.push(`tempo ${scale}`);
+        },
     };
     const playback = createChipPlayback<StandInSong, StandInSound, undefined>({
         songs,

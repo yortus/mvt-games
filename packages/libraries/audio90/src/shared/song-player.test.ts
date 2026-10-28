@@ -1,8 +1,22 @@
-import { describe, expect, it } from 'vitest';
-import { createAudio80Sound, createAudio80Song, type Audio80Song, type Audio80SongOptions, toCutoff } from '../audio80';
-import { toNoteNumber } from '../shared';
-import { type Audio80WriterCall, createRecordingAudio80Writer } from './recording-writers';
-import { createSongPlayer, type SongPlayer } from './song-player';
+import { describe, expect, it, vi } from 'vitest';
+import {
+    createAudio80Song,
+    createAudio80SongDriver,
+    createAudio80Sound,
+    FILTER_SETTING_INDEX,
+    OP_NOTE_OFF,
+    OP_NOTE_ON,
+    OP_SET_ECHO,
+    OP_SET_FILTER,
+    OP_SET_VOICE,
+    toCutoff,
+    VOICE_SETTING_INDEX,
+    type Audio80Song,
+    type Audio80SongOptions,
+    type Audio80Sound,
+} from '../audio80';
+import { toNoteNumber } from './notes';
+import { createSongPlayer, type SongPlayer, type SongWriter } from './song-player';
 
 const BPM = 150;
 const ROWS_PER_BEAT = 4;
@@ -49,11 +63,11 @@ describe('song player', () => {
         expect(stamps).toContain(4 * ROW_MS);
     });
 
-    it('times rows the same whether it is played before the update or in the refresh', () => {
+    it('times rows the same whether it is played before or after the update in a tick', () => {
         const beforeUpdate = listStampsWhenPlayed('before-update');
-        const inRefresh = listStampsWhenPlayed('in-refresh');
+        const afterUpdate = listStampsWhenPlayed('after-update');
         expect(beforeUpdate.length).toBeGreaterThan(0);
-        expectClose(beforeUpdate, inRefresh);
+        expectClose(beforeUpdate, afterUpdate);
         // Row 2 has a note on one channel. It plays two rows after the start, not a tick early
         expect(beforeUpdate.some((time) => Math.abs(time - (beforeUpdate[0] + 2 * ROW_MS)) < 1e-9)).toBe(true);
     });
@@ -69,31 +83,31 @@ describe('song player', () => {
     it('releases on ===, and stops at the end', () => {
         const { log, player } = playThrough(TUNE, () => 1000 / 60, TUNE.durationMs + 100);
         expect(log.some((write) => write.kind === 'note-off' && write.voice === 1 && write.time === 2 * ROW_MS)).toBe(true);
-        expect(player.isPlaying).toBe(false);
+        expect(player.song !== undefined).toBe(false);
     });
 
     it('sends each cell\'s effects to the chip with its note', () => {
         const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: '| C-4 L a37 ~46 p8 fA' } });
         const { log } = playThrough(song, () => 10, ROW_MS / 2);
-        expect(listSettingValues(log, 'arpeggio')).toEqual([0x37]);
-        expect(listSettingValues(log, 'vibratoDepth')).toEqual([4 / 8]);
-        expect(listSettingValues(log, 'vibratoRate')).toEqual([6]);
-        expect(listSettingValues(log, 'pulseWidth')).toEqual([8 / 16]);
-        const cutoffs = log.filter((write) => write.kind === 'set-filter' && write.setting === 'cutoffHz');
-        expect(cutoffs).toEqual([expect.objectContaining({ filter: LEAD.filter, value: toCutoff(0xA), time: 0 })]);
+        expect(listSettingValues(log, VOICE_SETTING_INDEX.arpeggio)).toEqual([0x37]);
+        expect(listSettingValues(log, VOICE_SETTING_INDEX.vibratoDepth)).toEqual([4 / 8]);
+        expect(listSettingValues(log, VOICE_SETTING_INDEX.vibratoRate)).toEqual([6]);
+        expect(listSettingValues(log, VOICE_SETTING_INDEX.pulseWidth)).toEqual([8 / 16]);
+        const cutoffs = log.filter((write) => write.kind === 'set-filter' && write.setting === FILTER_SETTING_INDEX.cutoffHz);
+        expect(cutoffs).toEqual([expect.objectContaining({ filter: 0, value: toCutoff(0xA), time: 0 })]);
     });
 
     it('goes back to its loop point at the end', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
         const { log, player } = playThrough(looped, () => 1000 / 60, 3 * 4 * ROW_MS + 1);
-        expect(player.isPlaying).toBe(true);
+        expect(player.song !== undefined).toBe(true);
         // Pattern b's first note plays three times: once in order, then twice more around the loop
         expect(listNoteOns(log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS, 8 * ROW_MS, 12 * ROW_MS]);
     });
 
     it('plays a queued song as the one playing ends, without a gap', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(TUNE);
         player.queue(createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] }));
         tick(chip, player, () => 1000 / 60, TUNE.durationMs + 3 * ROW_MS);
@@ -104,8 +118,8 @@ describe('song player', () => {
     it('plays a queued song instead of going back to its loop point', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 });
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(looped);
         tick(chip, player, () => 1000 / 60, ROW_MS);
         player.queue(next);
@@ -118,27 +132,26 @@ describe('song player', () => {
 
     it('cancels a queued song when told to play another', () => {
         const queued = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(TUNE);
         player.queue(queued);
         tick(chip, player, () => 1000 / 60, ROW_MS);
         player.play(TUNE);
         tick(chip, player, () => 1000 / 60, TUNE.durationMs + 3 * ROW_MS);
         expect(listNoteOns(chip.log).some((write) => write.note === requireNoteNumber('G-5'))).toBe(false);
-        expect(player.isPlaying).toBe(false);
+        expect(player.song !== undefined).toBe(false);
     });
 
     it('releases the song playing when told to play another, and starts the new one at once', () => {
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * 1.5);
         const switchedAt = chip.writer.time;
         chip.clear();
         player.play(next);
-        player.refresh();
         const offs = chip.log.filter((write) => write.kind === 'note-off');
         expect(offs.map((write) => write.time)).toEqual(new Array<number>(TUNE.channelCount).fill(switchedAt));
         expect(listNoteOns(chip.log).find((write) => write.voice === 0)).toMatchObject({ note: requireNoteNumber('G-5'), time: switchedAt });
@@ -147,19 +160,19 @@ describe('song player', () => {
     });
 
     it('plays faster by its tempo scale', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.tempoScale = 2;
         player.play(TUNE);
         tick(chip, player, () => 1000 / 60, TUNE.durationMs);
         // Row 2, at double tempo
         expect(listNoteOns(chip.log).some((write) => Math.abs(write.time - ROW_MS) < 1e-9)).toBe(true);
-        expect(player.isPlaying).toBe(false);
+        expect(player.song !== undefined).toBe(false);
     });
 
     it('plays the rest of the song at a new tempo scale from the update after it changes', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(TUNE);
         tick(chip, player, () => 10, 2 * ROW_MS);
         player.tempoScale = 2;
@@ -170,8 +183,8 @@ describe('song player', () => {
     });
 
     it('holds where it is at a tempo of 0, and carries on from there', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * 1.5);
         const before = listNoteOns(chip.log).length;
@@ -186,7 +199,7 @@ describe('song player', () => {
     });
 
     it('holds at a tempo scale that is negative or not finite', () => {
-        const player = createSongPlayer({ audio80: createRecordingAudio80Writer().writer });
+        const player = createSongPlayer(createAudio80SongDriver(createTestWriter().writer));
         for (const scale of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
             player.tempoScale = scale;
             expect(player.tempoScale, `${scale}`).toBe(0);
@@ -194,14 +207,12 @@ describe('song player', () => {
     });
 
     it('ignores a deltaMs of 0 or less, or not finite', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 }));
-        player.refresh();
         chip.clear();
         chip.update(ROW_MS);
         for (const deltaMs of [0, -10, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) player.update(deltaMs);
-        player.refresh();
         expect(chip.log).toHaveLength(0);
         expect(player.beat).toBe(0);
     });
@@ -211,8 +222,8 @@ describe('song player', () => {
         const steady = playThrough(song, () => 10, 2 * ROW_MS).log;
         expect(measureSlide(steady, 0, 0, ROW_MS)).toBeCloseTo(SLIDE, 9);
 
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(song);
         tick(chip, player, () => 10, ROW_MS / 2);
         player.tempoScale = 2;
@@ -226,8 +237,8 @@ describe('song player', () => {
 
     it('stops a slide while the song is held, and carries it on when it resumes', () => {
         const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: SLIDE_THEN_HOLD } });
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(song);
         tick(chip, player, () => 10, ROW_MS / 2);
         const heldAt = chip.writer.time;
@@ -269,45 +280,30 @@ describe('song player', () => {
         expect(measureSlide(log, 0, rowStarts[0], rowStarts[1])).toBeCloseTo(SLIDE, 9);
         expect(measureSlide(log, 0, rowStarts[1], rowStarts[2])).toBeCloseTo(SLIDE, 9);
         // Row 2 is the last row. The row after it is row 0 of the next pass, which is on the beat
-        expect(listSettingValues(log, 'glide')).toEqual([ROW_MS]);
+        expect(listSettingValues(log, VOICE_SETTING_INDEX.glide)).toEqual([ROW_MS]);
         const glide = `
             | C-4 L
             | D-4 >
             | ...
         `;
         const glided = createAudio80Song({ ...ONE_CHANNEL, swing, patterns: { p: glide } });
-        expect(listSettingValues(playThrough(glided, () => 10, glided.durationMs).log, 'glide')).toEqual([(1 - swing) * ROW_MS]);
-    });
-
-    it('carries on where it was after a pause, with no gap in its stamps', () => {
-        const straight = listNoteStamps(TUNE, () => 1000 / 60);
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
-        const pausedAtMs = 100;
-        const totalMs = TUNE.durationMs + 100;
-        player.play(TUNE);
-        tick(chip, player, () => 1000 / 60, pausedAtMs);
-        // While paused, the game loop advances neither the chip nor the view, but still refreshes the view
-        for (let i = 0; i < 30; i++) player.refresh();
-        tick(chip, player, () => 1000 / 60, totalMs - pausedAtMs);
-        expectClose(listNoteOns(chip.log).map((write) => write.time), straight);
+        expect(listSettingValues(playThrough(glided, () => 10, glided.durationMs).log, VOICE_SETTING_INDEX.glide)).toEqual([(1 - swing) * ROW_MS]);
     });
 
     it('releases its notes and its voices when stopped', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(TUNE);
         tick(chip, player, () => 1000 / 60, 50);
         chip.clear();
         player.stop();
-        player.refresh();
         expect(chip.log.filter((write) => write.kind === 'note-off')).toHaveLength(TUNE.channelCount);
         expect(player.song).toBeUndefined();
     });
 
     it('counts beats from the start of the song', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * ROWS_PER_BEAT);
         expect(player.beat).toBeCloseTo(1, 9);
@@ -316,8 +312,8 @@ describe('song player', () => {
     it('reports the row playing, through its loop and into a queued song', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
+        const chip = createTestWriter();
+        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
         player.play(looped);
         const places = [[player.orderIndex, player.row]];
         for (let i = 0; i < 13; i++) {
@@ -336,17 +332,6 @@ describe('song player', () => {
         expect(listNoteOns(chip.log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS, 8 * ROW_MS, 12 * ROW_MS]);
         player.stop();
         expect([player.orderIndex, player.row]).toEqual([0, 0]);
-    });
-
-    it('writes nothing in its update step, and everything in its refresh', () => {
-        const chip = createRecordingAudio80Writer();
-        const player = createSongPlayer({ audio80: chip.writer });
-        player.play(TUNE);
-        chip.update(500);
-        player.update(500);
-        expect(chip.log).toHaveLength(0);
-        player.refresh();
-        expect(chip.log.length).toBeGreaterThan(0);
     });
 
     it('plays every note at its song\'s volume', () => {
@@ -394,8 +379,16 @@ const SLIDE_THEN_HOLD = `
     | ...
 `;
 
-type NoteOn = Extract<Audio80WriterCall, { kind: 'note-on' }>;
-type SetVoice = Extract<Audio80WriterCall, { kind: 'set-voice'; value: number }>;
+/** One command the song wrote, as the test writer reads it back. Settings are named by their numbers in the commands. */
+type Write =
+    | { readonly kind: 'note-on'; readonly voice: number; readonly sound: Audio80Sound; readonly note: number; readonly volume: number; readonly time: number }
+    | { readonly kind: 'note-off'; readonly voice: number; readonly time: number }
+    | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: number; readonly value: number; readonly time: number }
+    | { readonly kind: 'set-filter'; readonly filter: number; readonly setting: number; readonly value: number; readonly time: number }
+    | { readonly kind: 'set-echo'; readonly setting: number; readonly value: number; readonly time: number };
+
+type NoteOn = Extract<Write, { kind: 'note-on' }>;
+type SetVoice = Extract<Write, { kind: 'set-voice' }>;
 
 /** A note's number from its name, for notes the tests write. */
 function requireNoteNumber(name: string): number {
@@ -404,12 +397,12 @@ function requireNoteNumber(name: string): number {
     return number;
 }
 
-function listNoteOns(log: readonly Audio80WriterCall[]): NoteOn[] {
+function listNoteOns(log: readonly Write[]): NoteOn[] {
     return log.filter((write): write is NoteOn => write.kind === 'note-on');
 }
 
 /** The values written to one voice setting, in order. */
-function listSettingValues(log: readonly Audio80WriterCall[], setting: SetVoice['setting']): number[] {
+function listSettingValues(log: readonly Write[], setting: number): number[] {
     return log.filter((write): write is SetVoice => write.kind === 'set-voice' && write.setting === setting).map((write) => write.value);
 }
 
@@ -418,19 +411,19 @@ function listSettingValues(log: readonly Audio80WriterCall[], setting: SetVoice[
  * would play the log. A slide write sets the rate in semitones a second, and
  * a `noteOn` stops the slide.
  */
-function measureSlide(log: readonly Audio80WriterCall[], voice: number, fromMs: number, toMs: number): number {
+function measureSlide(log: readonly Write[], voice: number, fromMs: number, toMs: number): number {
     let rate = 0;
     let at = fromMs;
     let total = 0;
     for (const write of log) {
-        const isSlide = write.kind === 'set-voice' && write.setting === 'slide';
+        const isSlide = write.kind === 'set-voice' && write.setting === VOICE_SETTING_INDEX.slide;
         if ((!isSlide && write.kind !== 'note-on') || !('voice' in write) || write.voice !== voice) continue;
         if (write.time >= toMs) break;
         if (write.time > at) {
             total += rate * (write.time - at) / 1000;
             at = write.time;
         }
-        rate = write.kind === 'set-voice' && write.setting === 'slide' ? write.value : 0;
+        rate = write.kind === 'set-voice' && write.setting === VOICE_SETTING_INDEX.slide ? write.value : 0;
     }
     return total + rate * (toMs - at) / 1000;
 }
@@ -439,10 +432,10 @@ function listNoteStamps(song: Audio80Song, tickMs: () => number): number[] {
     return listNoteOns(playThrough(song, tickMs, song.durationMs + 100).log).map((write) => write.time);
 }
 
-/** The note stamps of TUNE when it starts at the same chip time, either before the update or in the refresh. */
-function listStampsWhenPlayed(when: 'before-update' | 'in-refresh'): number[] {
-    const chip = createRecordingAudio80Writer();
-    const player = createSongPlayer({ audio80: chip.writer });
+/** The note stamps of TUNE when it starts at the same chip time, either before the update or after it. */
+function listStampsWhenPlayed(when: 'before-update' | 'after-update'): number[] {
+    const chip = createTestWriter();
+    const player = createSongPlayer(createAudio80SongDriver(chip.writer));
     const tickMs = 1000 / 60;
     const startTick = 3;
     const totalMs = TUNE.durationMs + 100;
@@ -450,34 +443,79 @@ function listStampsWhenPlayed(when: 'before-update' | 'in-refresh'): number[] {
         chip.update(tickMs);
         if (i === startTick && when === 'before-update') player.play(TUNE);
         player.update(tickMs);
-        if (i === startTick && when === 'in-refresh') player.play(TUNE);
-        player.refresh();
+        if (i === startTick && when === 'after-update') player.play(TUNE);
     }
     return listNoteOns(chip.log).map((write) => write.time);
 }
 
 function playThrough(song: Audio80Song, tickMs: () => number, durationMs: number) {
-    const chip = createRecordingAudio80Writer();
-    const player = createSongPlayer({ audio80: chip.writer });
+    const chip = createTestWriter();
+    const player = createSongPlayer(createAudio80SongDriver(chip.writer));
     player.play(song);
     tick(chip, player, tickMs, durationMs);
     return { log: chip.log, player };
 }
 
-/** Ticks as a game loop does: the chip's clock, then the view's update, then its refresh. */
+/** Ticks as a chip does: its clock, then its song. */
 function tick(chip: { readonly update: (deltaMs: number) => void }, player: SongPlayer<Audio80Song>, tickMs: () => number, durationMs: number): void {
     let elapsed = 0;
-    player.refresh();
     while (elapsed < durationMs) {
         const delta = tickMs();
         elapsed += delta;
         chip.update(delta);
         player.update(delta);
-        player.refresh();
     }
 }
 
 function expectClose(actual: readonly number[], expected: readonly number[]): void {
     expect(actual).toHaveLength(expected.length);
     for (let i = 0; i < expected.length; i++) expect(actual[i]).toBeCloseTo(expected[i], 6);
+}
+
+/**
+ * A writer for a song to write to, whose `write` is a mock, with a clock the
+ * test moves on. `log` reads the calls back, oldest first.
+ */
+function createTestWriter() {
+    const clock = { ms: 0 };
+    const sounds: Audio80Sound[] = [];
+    const writer: SongWriter<Audio80Sound> = {
+        get time() {
+            return clock.ms;
+        },
+        write: vi.fn(),
+        soundId(sound) {
+            const known = sounds.indexOf(sound);
+            return known >= 0 ? known : sounds.push(sound) - 1;
+        },
+    };
+    return {
+        writer,
+        get log(): Write[] {
+            return vi.mocked(writer.write).mock.calls.map(([op, time, a, b, c, d]) => toWrite(op, time, a, b, c, d, sounds));
+        },
+        clear() {
+            vi.mocked(writer.write).mockClear();
+        },
+        update(deltaMs: number) {
+            clock.ms += deltaMs;
+        },
+    };
+}
+
+function toWrite(op: number, time: number, a: number, b: number, c: number, d: number, sounds: readonly Audio80Sound[]): Write {
+    switch (op) {
+        case OP_NOTE_ON:
+            return { kind: 'note-on', voice: a, sound: sounds[b], note: c, volume: d, time };
+        case OP_NOTE_OFF:
+            return { kind: 'note-off', voice: a, time };
+        case OP_SET_VOICE:
+            return { kind: 'set-voice', voice: a, setting: b, value: c, time };
+        case OP_SET_FILTER:
+            return { kind: 'set-filter', filter: a, setting: b, value: c, time };
+        case OP_SET_ECHO:
+            return { kind: 'set-echo', setting: a, value: b, time };
+        default:
+            throw new Error(`a song wrote op ${op}, which it never should`);
+    }
 }

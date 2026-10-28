@@ -1,4 +1,5 @@
 import { prepareAudio90Samples } from 'audio90';
+import { createScope } from 'audio90/tracker';
 import { INSTRUMENT_NAMES, SAMPLES, TUNES } from '#tunes';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { textures } from '../data';
@@ -35,10 +36,10 @@ export const load = definePixiLoader(async () => {
         start({ stage, music }): EntrySession {
             const model = createTrackerModel({ tuneCount: TUNES.length });
             const font = createPixelFont({ sheet: textures.get().font });
-            const view = TrackerView({ model, music, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font });
+            // A scope costs the audio thread a little, so one is attached only while the Tune Tracker runs
+            const scope = createScope(music);
+            const view = TrackerView({ model, music, scope, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font });
             stage.addChild(view);
-            // The scopes cost the audio thread a little, so they are on only while the Tune Tracker runs
-            music.setScopes(true);
 
             return {
                 // The host ticks the view with the rest of the stage
@@ -46,7 +47,7 @@ export const load = definePixiLoader(async () => {
                     model.update(deltaMs);
                 },
                 destroy(): void {
-                    music.setScopes(false);
+                    scope.destroy();
                     stage.removeChild(view);
                     view.destroy({ children: true });
                 },

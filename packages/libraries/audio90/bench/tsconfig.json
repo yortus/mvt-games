@@ -1,0 +1,9 @@
+{
+    // The benchmarks run in Node, so they have Node's types, which the
+    // package's source, which runs in browsers too, doesn't
+    "extends": "../../../../tsconfig.base.json",
+    "compilerOptions": {
+        "types": ["node", "vite/client"]
+    },
+    "include": ["."]
+}

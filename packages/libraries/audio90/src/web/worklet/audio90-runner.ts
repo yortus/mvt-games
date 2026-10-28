@@ -1,14 +1,16 @@
 import {
     type Audio90Character,
-    type Audio90ChipMessage,
-    AUDIO90_SCOPE_LENGTH,
-    type Audio90Song,
+    AUDIO90_VOICE_COUNT,
+    type Audio90PlayOptions,
+    createAudio90SongDriver,
     createAudio90Synthesiser,
-    createCommandAudio90,
+    createAudio90SoundIds,
+    type Audio90SampleData,
+    type Audio90Sound,
+    type Audio90SoundData,
 } from '../../audio90';
-import { createSongPlayer } from '../../song-player';
-import type { ChipReply } from '../../shared';
-import { type ChipRunner, createChipRunner } from './chip-runner';
+import { createCommandWriter, createSongPlayer } from '../../shared';
+import { type ChipRunner, createChipRunner, type ScopeReply } from './chip-runner';
 import type { SongPlaceReply } from './song-messages';
 import { createWorkletSequencer } from './worklet-sequencer';
 
@@ -16,23 +18,10 @@ import { createWorkletSequencer } from './worklet-sequencer';
 // Interface
 // ---------------------------------------------------------------------------
 
-/**
- * The messages the Audio90's runner takes beside the batches and the songs:
- * those that define what its commands use (its sounds and samples), and
- * those about its scopes. `scopes` turns them on or off.
- * `scope-buffer` hands the worklet an array of `AUDIO90_SCOPE_LENGTH`
- * numbers to send a scope back in, so that sending one allocates nothing.
- */
+/** The messages that define what an Audio90's commands use: its sounds and its samples. */
 export type Audio90PassedMessage =
-    | Extract<Audio90ChipMessage, { readonly kind: 'sound' | 'sample' }>
-    | { readonly kind: 'scopes'; readonly isOn: boolean }
-    | { readonly kind: 'scope-buffer'; readonly data: Float32Array };
-
-/** What the Audio90's worklet sends back beside a batch's buffer and its songs' places: a scope, in a buffer the page handed it. */
-export interface Audio90ScopeReply {
-    readonly kind: 'scope';
-    readonly data: Float32Array;
-}
+    | { readonly kind: 'sound'; readonly id: number; readonly data: Audio90SoundData }
+    | { readonly kind: 'sample'; readonly id: number; readonly data: Audio90SampleData };
 
 /** The settings the main thread gives the Audio90's processor when it is made. */
 export interface Audio90RunnerSettings {
@@ -43,9 +32,6 @@ export interface Audio90RunnerSettings {
 /** The name the Audio90's processor is registered under. */
 export const AUDIO90_PROCESSOR_NAME = 'audio90-chip';
 
-/** How many blocks pass between scopes sent: one every fourth block, about 94 a second at 48 kHz. */
-export const BLOCKS_PER_SCOPE = 4;
-
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
@@ -54,12 +40,10 @@ export const BLOCKS_PER_SCOPE = 4;
 export interface Audio90RunnerOptions extends Audio90RunnerSettings {
     /** The sound card's sample rate, in Hz. */
     readonly sampleRate: number;
-    /** Sends the main thread a batch's buffer, so it can be written into again, or where the clock is. It must copy the reply, as `postMessage` does. */
-    readonly sendBack: (reply: ChipReply) => void;
     /** The audio context's count of frames, at the start of the next block. Defaults to counting the frames rendered. */
     readonly currentFrame?: () => number;
     /** Sends a scope to the main thread, in a buffer it handed over, which moves with the message. */
-    readonly sendScope: (reply: Audio90ScopeReply) => void;
+    readonly sendScope: (reply: ScopeReply) => void;
     /** Sends where the song is, each time it reaches a new row, or takes a call. It must copy the reply, as `postMessage` does. */
     readonly sendPlace: (reply: SongPlaceReply) => void;
 }
@@ -70,35 +54,34 @@ export interface Audio90RunnerOptions extends Audio90RunnerSettings {
 
 /**
  * Creates the runner of an Audio90's worklet, which renders its two
- * channels, left and right, and plays its songs on its own sequencer. While
- * scopes are on, it sends one every `BLOCKS_PER_SCOPE` blocks, when the page
- * has handed it a buffer to send it in. A reset turns them off.
+ * channels, left and right, and plays its songs on its own sequencer.
  */
 export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<Audio90PassedMessage> {
-    const { sampleRate, sendScope } = options;
+    const { sampleRate } = options;
     const synthesiser = createAudio90Synthesiser({ sampleRate, character: options.character });
-    // The buffers the page has handed over to send scopes in, and the blocks since one was sent
-    const spares: Float32Array[] = [];
-    const counters = new Int32Array(1);
-    const sequencer = createWorkletSequencer<Audio90Song, ReturnType<typeof createCommandAudio90>>({
+    const sequencer = createWorkletSequencer({
         sampleRate,
         // Every sound a song plays was defined by the page, so the writer defines nothing of its own
-        createWriter: (idOf) => createCommandAudio90({ idOf, onSound: ignore, onSample: ignore }),
-        createPlayer: (writer) => createSongPlayer({ audio90: writer }),
+        createWriter: (idOf) => createCommandWriter<Audio90Sound, Audio90PlayOptions>({ soundIds: createAudio90SoundIds({ idOf, onSound: ignore, onSample: ignore }) }),
+        createPlayer: (writer) => createSongPlayer(createAudio90SongDriver(writer)),
         sendPlace: options.sendPlace,
     });
 
     return createChipRunner<Audio90PassedMessage>({
         sampleRate,
         channelCount: 2,
-        sendBack: options.sendBack,
+        voiceCount: AUDIO90_VOICE_COUNT,
         currentFrame: options.currentFrame,
+        sendScope: options.sendScope,
         sequencer,
         synthesiser: {
             enqueue: synthesiser.enqueue,
-            reset() {
-                synthesiser.reset();
-                turnScopesOff();
+            reset: synthesiser.reset,
+            get scope() {
+                return synthesiser.scope;
+            },
+            set scope(scope) {
+                synthesiser.scope = scope;
             },
             receive(message) {
                 switch (message.kind) {
@@ -109,41 +92,18 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
                         // A sample too big for what is left of sample memory is dropped, and the notes that use it are silent
                         synthesiser.defineSample(message.id, message.data);
                         break;
-                    case 'scopes':
-                        if (!message.isOn) turnScopesOff();
-                        else synthesiser.scope ??= new Float32Array(AUDIO90_SCOPE_LENGTH);
-                        break;
-                    case 'scope-buffer':
-                        // A buffer that comes back after the scopes are turned off is dropped
-                        if (synthesiser.scope !== undefined && spares.length < MAX_SPARES) spares.push(message.data);
-                        break;
                 }
             },
             render(channels, frames, fromMs, msPerSample) {
                 synthesiser.render(channels[0], channels[1], 0, frames, fromMs, msPerSample);
-                const scope = synthesiser.scope;
-                if (scope === undefined) return;
-                counters[0] = (counters[0] + 1) % BLOCKS_PER_SCOPE;
-                if (counters[0] !== 0 || spares.length === 0) return;
-                const data = spares.pop()!;
-                data.set(scope);
-                sendScope({ kind: 'scope', data });
             },
         },
     });
-
-    function turnScopesOff(): void {
-        synthesiser.scope = undefined;
-        spares.length = 0;
-    }
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/** The most buffers kept to send scopes in. The page hands over three. */
-const MAX_SPARES = 3;
 
 function ignore(): void {
     // The page defines every sound a song plays

@@ -1,5 +1,4 @@
-import { type Audio80, type Audio80Character, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createCommandAudio80, OP_RELEASE_ALL, OP_STOP } from '../audio80';
-import { createStopSlots } from './held-writes';
+import { type Audio80, type Audio80Character, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createAudio80SoundIds, VOICE_COUNT } from '../audio80';
 import { createWebChip } from './web-chip';
 import { type Audio80PassedMessage, AUDIO80_PROCESSOR_NAME, type Audio80RunnerSettings } from './worklet';
 import processorUrl from './worklet/audio80-processor?worker&url';
@@ -34,32 +33,27 @@ export interface Audio80Options {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates an Audio80 for a browser. At the end of each task that writes to
- * the chip, the writes go to an `AudioWorklet`, which plays them on the sound
- * card's clock. Its `ready` resolves once the worklet is running. Its songs
- * play on the worklet's own sequencer. Each song is sent once, after its
+ * Creates an Audio80 for a browser. Each play goes to an `AudioWorklet`,
+ * which plays it on the sound card's clock. Its `ready` resolves once the
+ * worklet is running. Its songs play on the worklet's own sequencer. Each
+ * sound is sent the first time it is played, and each song once, after its
  * instruments.
  */
 export function createAudio80(options: Audio80Options = {}): Audio80 {
-    const writer = createCommandAudio80({
-        onSound: (id, data) => web.send({ kind: 'sound', id, data }),
-        // The chip's time is the worklet's, so a write with no stamp plays as soon as it arrives
-        hasClock: false,
-        onFirstWrite: () => web.sendSoon(),
-    });
+    const sounds = createAudio80SoundIds({ onSound: (id, data) => web.send({ kind: 'sound', id, data }) });
     const settings: Audio80RunnerSettings = { character: options.character };
     const web = createWebChip<Audio80PassedMessage, Audio80Song, Audio80Sound, Audio80PlayOptions>({
         context: options.context,
         pauseWhenHidden: options.pauseWhenHidden ?? true,
-        writer,
-        heldSlots: createStopSlots({ stopOp: OP_STOP, releaseAllOp: OP_RELEASE_ALL }),
+        sounds,
         processorUrl,
         processorName: AUDIO80_PROCESSOR_NAME,
         // The chip is mono. The browser plays its one channel on both speakers
         channelCount: 1,
+        voiceCount: VOICE_COUNT,
         settings,
-        // Its sounds are defined first, under the writer's ids
-        prepareSong: (song) => ({ song, soundIds: song.instruments.map(writer.defineSound) }),
+        // Its sounds are defined first, under the page's ids
+        prepareSong: (song) => ({ song, soundIds: song.instruments.map(sounds.soundId) }),
     });
 
     return web.chip;

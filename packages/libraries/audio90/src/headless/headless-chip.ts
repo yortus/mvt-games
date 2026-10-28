@@ -1,5 +1,15 @@
-import { clampVolume, createChipPlayback, joinMembers, type PlayingWriter, type SongSequencer, type SoundChip } from '../shared';
-import type { PlayableSong, SongPlayer } from '../song-player';
+import {
+    type AnyPlayOptions,
+    clampVolume,
+    type CommandWriter,
+    createChipPlayback,
+    createCommandWriter,
+    joinMembers,
+    type PlayableSong,
+    type PlayDefaults,
+    type SongPlayer,
+    type SoundChip,
+} from '../shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -29,16 +39,14 @@ export interface HeadlessChip<Song, Sound, PlayOptions> extends SoundChip<Song, 
 export interface HeadlessChipOptions<Song extends PlayableSong, Sound extends object, PlayOptions> {
     /**
      * What the chip writes through, which its song writes its notes through
-     * too. It logs its writes, renders them, both, or neither, as the chip
-     * was asked to.
+     * too: a synthesiser's in memory, for a chip that renders, or a silent
+     * writer, for one that doesn't.
      */
-    readonly writer: Pick<PlayingWriter<Sound, PlayOptions>, 'update' | 'play' | 'stop' | 'releaseAll' | 'takePlayId'>;
+    readonly writer: Pick<CommandWriter<Sound, PlayOptions>, 'update' | 'play' | 'stop' | 'releaseAll' | 'takePlayId'>;
     /** The song player that plays the chip's songs on `writer`. */
     readonly player: SongPlayer<Song>;
     /** Cuts every voice at once, as `stop` does while the chip is paused, on a chip that renders. A chip that doesn't has nothing to cut. */
     readonly cut?: () => void;
-    /** Logs a call to `stop`, on a chip that records. */
-    readonly logStop?: (id: number | undefined) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,51 +55,20 @@ export interface HeadlessChipOptions<Song extends PlayableSong, Sound extends ob
 
 /** Creates the members every headless chip has, with its clock at 0, unpaused, and no song playing. */
 export function createHeadlessChip<Song extends PlayableSong, Sound extends object, PlayOptions>(options: HeadlessChipOptions<Song, Sound, PlayOptions>): HeadlessChip<Song, Sound, PlayOptions> {
-    const { writer, player, cut, logStop } = options;
+    const { writer, player, cut } = options;
     let volume = 1;
     let isMuted = false;
     let isPaused = false;
 
-    // Each call takes effect at once, at the chip's time, and the song heard is the song playing, since a
-    // headless chip has no speaker to wait for
-    const songs: SongSequencer<Song> = {
-        get song() {
-            return player.song;
-        },
-        get orderIndex() {
-            return player.orderIndex;
-        },
-        get row() {
-            return player.row;
-        },
-        get beat() {
-            return player.beat;
-        },
-        play(song) {
-            player.play(song);
-            player.refresh();
-        },
-        queue(song) {
-            player.queue(song);
-            player.refresh();
-        },
-        stop() {
-            player.stop();
-            player.refresh();
-        },
-        setTempoScale(scale) {
-            // The player tells the chip at its next update, which plays at the new tempo from then
-            player.tempoScale = scale;
-        },
-    };
     const playback = createChipPlayback<Song, Sound, PlayOptions>({
-        songs,
+        // Each call takes effect at once, at the chip's time, and the song heard is the song playing, since a
+        // headless chip has no speaker to wait for
+        songs: player,
         playSound: writer.play,
         stopSound: writer.stop,
         takePlayId: writer.takePlayId,
         stopVoices,
     });
-    const stopPlay = playback.stop;
 
     return joinMembers(playback, {
         ready: Promise.resolve(),
@@ -110,10 +87,6 @@ export function createHeadlessChip<Song extends PlayableSong, Sound extends obje
         set isMuted(value: boolean) {
             isMuted = value;
         },
-        stop(id?: number) {
-            logStop?.(id);
-            stopPlay(id);
-        },
         pause() {
             isPaused = true;
         },
@@ -124,7 +97,6 @@ export function createHeadlessChip<Song extends PlayableSong, Sound extends obje
             if (isPaused) return;
             writer.update(deltaMs);
             player.update(deltaMs);
-            player.refresh();
         },
         destroy: ignore,
     });
@@ -139,7 +111,28 @@ export function createHeadlessChip<Song extends PlayableSong, Sound extends obje
     }
 }
 
-/** Does nothing. A silent chip's writes are this function. */
-export function ignore(): void {
+/**
+ * Creates the writer of a chip that doesn't render, with its clock at 0. It
+ * checks and numbers each play, as every chip does, and its songs write to
+ * it, but its commands go nowhere: it empties itself each time its clock
+ * moves on, so it never grows.
+ */
+export function createSilentWriter<Sound extends { readonly data: PlayDefaults }, PlayOptions extends AnyPlayOptions>(): CommandWriter<Sound, PlayOptions> {
+    // No sound is defined anywhere, so every sound has the same id
+    const writer = createCommandWriter<Sound, PlayOptions>({ soundIds: { soundId: () => 0, forget: ignore } });
+    const update = writer.update;
+    return joinMembers(writer, {
+        update(deltaMs: number) {
+            writer.clear();
+            update(deltaMs);
+        },
+    });
+}
+
+/** The sample rate a headless chip renders at unless it is told another, in Hz. */
+export const DEFAULT_SAMPLE_RATE = 48000;
+
+/** Does nothing. */
+function ignore(): void {
     // Nothing to do
 }

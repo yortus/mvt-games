@@ -164,7 +164,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let pixiStage: PixiStage | undefined;
     const sound = options.sound ?? createPageSound({ isEnabled: false });
     const isSoundOwned = options.sound === undefined;
-    const findChip: SoundChipFinder = (kind) => sound.entryChips[kind];
+    const findChip: SoundChipFinder = (kind) => sound.findSessionChips(kind);
     // The chip the session plays on, or undefined for a session that makes no sound
     let sessionChips: SessionChips<SoundChipKind> | undefined;
 
@@ -246,7 +246,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             starter = next;
             startOptions = options;
             isPaused = false;
-            sessionChips = next.soundChip === undefined ? undefined : sound.entryChips[next.soundChip];
+            sessionChips = next.soundChip === undefined ? undefined : sound.findSessionChips(next.soundChip);
             // No sound of the last session's carries into this one, and a chip left paused by it plays again
             stopChips(sessionChips);
             sessionChips?.music.resume();

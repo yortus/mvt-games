@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMMAND_STRIDE } from '../../shared';
+import { COMMAND_STRIDE, OP_PLAY, OP_PLAY_OPTIONS, OP_STOP } from '../../shared';
 import {
     AUDIO90_OSCILLATOR_BUDGET,
     AUDIO90_SAMPLE_MEMORY,
@@ -19,13 +19,10 @@ import {
     type Audio90VoiceSetting,
     OP90_NOTE_OFF,
     OP90_NOTE_ON,
-    OP90_PLAY,
-    OP90_PLAY_OPTIONS,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
     OP90_SET_VOICE,
-    OP90_STOP,
 } from './commands';
 import {
     type Audio90SoundData,
@@ -450,11 +447,11 @@ function createRig(options: Partial<Audio90SynthesiserOptions> = {}) {
         },
         /** Plays sound `sound`, as a play's two commands do. A length of -1 holds it until it is stopped. */
         play(sound: number, play: { readonly note: number; readonly lengthMs: number; readonly pan?: number; readonly id?: number }): void {
-            write(OP90_PLAY_OPTIONS, -Infinity, play.lengthMs, -1, play.pan ?? 0, play.pan === undefined ? 0 : 1);
-            write(OP90_PLAY, -Infinity, sound, play.id ?? 1, play.note, 1);
+            write(OP_PLAY_OPTIONS, -Infinity, play.lengthMs, -1, play.pan ?? 0, play.pan === undefined ? 0 : 1);
+            write(OP_PLAY, -Infinity, sound, play.id ?? 1, play.note, 1);
         },
         stop(id: number): void {
-            write(OP90_STOP, -Infinity, id);
+            write(OP_STOP, -Infinity, id);
         },
         tempo(bpm: number): void {
             write(OP90_SET_TEMPO, nowMs, bpm);

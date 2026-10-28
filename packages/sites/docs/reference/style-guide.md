@@ -779,10 +779,10 @@ writing is easy to scan, but it's hard for someone new to learn from.
 - **Start a factory's JSDoc with "Creates".** For example: "Creates an
   Audio80 that turns each call into a command for the synthesiser."
 - **In prose, name a member by its owner,** not by a variable from a code
-  sample. Write "`Audio80.play`" or "the chip's `log` property", not
-  "`audio80.log`", which reads like a file name to someone who hasn't seen
-  the sample. Code samples can use their own variables, since they define
-  them.
+  sample. Write "`Audio80.play`" or "the chip's `song` property", not
+  "`music.song`", which names a variable that someone who hasn't seen the
+  sample doesn't know. Code samples can use their own variables, since they
+  define them.
 
 ### Explaining Behaviour
 

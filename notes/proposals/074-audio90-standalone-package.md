@@ -797,7 +797,7 @@ package is finished. The progress log uses these numbers.
    (section 12).
 6. Sounds, a chip each for music and sound effects, and the smaller API
    (sections 5.8 and 5.9). Both rewrite the chip's interface, so they go
-   together, in four parts that each leave lint, the tests and the build
+   together, in five parts that each leave lint, the tests and the build
    passing, and each change the package and the Arcade together:
    - ~~**6a, sounds:** one kind in place of instruments and sound effects;
      `play(sound, options)` returning an id; `stop(id)`; no `noteOn` or
@@ -812,8 +812,92 @@ package is finished. The progress log uses these numbers.
      (section 12).
    - ~~**6d, removals:** the setters, `time` and `atMs`; the tracker's
      helpers to `audio90/tracker`; `song.durationMs`.~~ Done, 2026-10-28
-     (section 12). Still to do: listen to Burrow Bust, Crumb Chase, Fruit
-     Machine and Fuel Run at their busiest, with 4 voices for effects.
+     (section 12). The user listened to the four busiest games after 6c,
+     and they sounded fine.
+   - **6e, simplify.** A review after 6d (section 12, 2026-10-28) found
+     about 800 to 1,000 of the package's 11,700 lines that could go, most
+     of them doubled between the chips or left over from writes the page no
+     longer makes. The user asked for all of it, in parts that each leave
+     lint, the tests and the build passing:
+     1. **The writer by numbers.** The writer is internal now, so it takes
+        each setting as the number the song's cells hold, and the drivers
+        forward it as it is. The reverse tables, `listNamesByIndex`, the
+        setting-name unions and the `*SettingValue` types go, and so do the
+        voice settings no song writes. Fix `Audio80Writer`'s docs, which
+        still say 8 voices.
+     2. **Plain messages from the page.** The page writes only plays, stops
+        and stopping everything, so each goes to the worklet as a message of
+        its own. While the chip can't play, plays are dropped and the rest
+        are sent anyway. The batches, the spare buffers, the held writes,
+        `sendSoon`, `onFirstWrite` and `hasClock` go, and the page keeps no
+        command writer, only its sound ids and the checks on play options.
+        The worklet's clock reply goes too: the page measures the speaker's
+        lag as each song place arrives.
+     3. **The song player writes as it updates.** `update` and `refresh`
+        become one, and the player is the `SongSequencer` itself, so the
+        headless chip's adapter goes.
+     4. **One interface for both chips, and scopes attached.** A scope is
+        not needed to play music and sounds, so it leaves the chip:
+        `createScope(chip)`, in `audio90/tracker`, attaches one, as an
+        `AnalyserNode` attaches to a node. It returns a `Scope`:
+        `voiceCount`, `data` (`SCOPE_POINTS` points a voice, then each
+        voice's pan) and `destroy`. Each chip's factory registers its
+        hooks in a `WeakMap` private to the package, so the chip carries no
+        member for it, not even a hidden one. The chip sends scopes only
+        while one is attached, and copies each into every scope attached.
+        Both chips have them; an Audio80's pans are 0. A chip with no hooks,
+        such as a headless chip that doesn't render, gives a silent scope.
+        `scope` and `setScopes` leave the Audio90, so `Audio80` and
+        `Audio90` are plain `SoundChip`s, differing only in their song,
+        sound and play option types. `AUDIO90_SCOPE_PANS` and
+        `AUDIO90_SCOPE_LENGTH` give way to `SCOPE_POINTS`. In the Arcade,
+        the entry host passes a session the loaded chips rather than
+        `PageSound`'s stand-ins, which a session gets only while sound is
+        off, so `createScope` finds the real chip; the Tune Tracker attaches
+        its scope as it starts and destroys it as it ends, and `MusicChip`
+        loses its Audio90 members. (The user, 2026-10-28, in place of an
+        `isScopeOn` property on every chip: other options were the chip's
+        output node for an `AnalyserNode`, which sees only the mix, and a
+        factory option, which keeps it on the chip's type.)
+     5. **No headless log.** Tests spy on the chip's `play`, `queue` and
+        `stop`, and read its `song`, `row` and `tempoScale`: a view chooses
+        the song and its tempo, and the package's own tests check how the
+        song plays. The `record` option, the logging writers, `Audio80Write`,
+        `Audio90Write` and the recording writers go; the song player's tests
+        use a writer made of `vi.fn()`. The Arcade's audio view tests compare
+        calls and state, not notes, and the "tells every song apart" tests
+        go. The headless chips carry no hidden writer members, so `render`
+        builds what it needs from the package's internal parts, with no
+        casts, and a chip made with no options keeps a writer it clears
+        each update instead of a silent writer of its own.
+     6. **Shared code for the two chips.** One tracker parser in
+        `shared/tracker.ts`, driven by each chip's table of tokens, with
+        `formatAudio90Cell` reading the same table. The synthesisers share
+        `render`, `enqueue`, `toSampleIndex` (the Audio90's lacks the
+        Audio80's `- 1e-9`, so a stamp on a sample boundary can apply a
+        sample late), the play bookkeeping, the envelope stepper, the
+        filter maths, polyBLEP and their constants, and one numbering of
+        the common opcodes. Then the smaller repeats: `parseNote`, the
+        highest-note checks, the tables that copy each other (the echo
+        defaults, the Audio90's `DEFAULT_*` effects, `tokens.ts`, the engine
+        and character mirrors), and `Audio80Sound.note` and `.filter`. The
+        two row writers live in matching places; the Audio80's names gain
+        the chip's prefix; barrel exports used only by tests go. One way to
+        say each thing: `legato.glideMs` goes in favour of `glideMs`, and
+        `filter.envelope` in favour of a `modEnvelope` aimed at the cutoff.
+        The audio hash tests must stay exact, apart from any render the
+        `toSampleIndex` fix moves, which the user hears first, and the
+        benchmarks (`npm run bench -w audio90`, saved in the package's
+        `bench/results/`) run before and after.
+     7. **Tests.** Remove the duplicates the review found (the volume clamp
+        tested 5 times, "refuses to render" 3 times, the raw command test,
+        the voice choice repeated in the synthesiser tests, the browser
+        tests copied between chips, a reset test another covers), share the
+        browser test helpers, and keep the test support files out of the
+        published package. Fill the gaps: the worklet's `tempo` and `queue`
+        calls, the browser chip's volume and mute, an Audio80 song through a
+        browser chip, and the worklet's note stamps against the headless
+        player's.
 
    What the whole step covers:
    - **The package:** one kind, a sound, in place of instruments and sound
@@ -843,7 +927,9 @@ package is finished. The progress log uses these numbers.
    over every tune in the Arcade.
 8. Add to the chip what a music player needs (section 5.7): the `repeat`
    and whole-semitone `pitch` play options, `stereoWidth`, and the
-   `onEnded` and `onRow` options. A chip playing a song becomes the
+   `onEnded` and `onRow` options. Music fades too (the user, 2026-10-28):
+   games fade their music out all the time, and today a page steps
+   `volume` itself, so something like `stop(id, { fadeMs })`. A chip playing a song becomes the
    README's first example in step 11.
 9. Add the `startMs` play option, and starting at an order entry and row,
    with a test that a song started at a row sounds the same as one played
@@ -1199,3 +1285,194 @@ package is finished. The progress log uses these numbers.
     publint clean, with `tracker/index` built). Not run in a browser: the
     browser chip lost only its clock and the held settings, which the
     stand-in context's tests cover.
+- **2026-10-28, a review after 6d**, of the API, the code and the tests,
+  with other sound libraries for comparison (Howler, Tone.js, ZzFX and
+  ZzFXM, chiptune3):
+  - **The API** is small: 15 members on a chip, one play options object,
+    and four constructors. Only audio90 has a ticked headless clock with
+    exact tests, the song's place as heard through the speaker's lag,
+    gapless `queue` and voices stolen by priority. It lacks events, repeat
+    counts and seeking (steps 8 and 9), changes to a play after it starts,
+    and fades. Unused notation features (several song tokens, `fixedHz`,
+    `oscillatorB`, `isReversed`, sync and ring) stay, as the chips'
+    character.
+  - **The code:** about 800 to 1,000 lines could go, listed as 6e's parts.
+  - **The tests:** 5,021 lines, 43% of the source, mostly valuable; about
+    280 lines of duplicates, and four gaps that matter more (6e, part 7).
+  - **The user's answers:** all of the simplifications, as 6e; music fades
+    noted for step 8; `isScopeOn` in place of `setScopes`, then, after
+    parts 1 and 3, a scope attached with `createScope` from
+    `audio90/tracker` instead, off the chip's interface; scopes on the
+    Audio80 too, so both chips have one interface; and no headless log,
+    with tests that spy on the chip and read its state.
+- **2026-10-28, 6e parts 1 and 3 done together**, unstaged, since the drivers
+  kept their writes only for a refresh to decode:
+  - **One writer for songs.** `SongWriter<Sound>`, in `shared/song-player.ts`,
+    is `time`, `write(op, stamp, a, b, c, d)` and `soundId(sound)`, which the
+    command writers implement. `Audio80Writer` and `Audio90Writer` are gone,
+    and so are the command writers' `noteOn`, `noteOff`, setters and
+    `voiceCount`; `defineSound` is `soundId`. The drivers write each command
+    as they make it, with no pending buffer, reverse tables or name round
+    trip. The voice settings no song writes went: on the Audio80 `note`,
+    `echoSend`, `filter`, `wave`, `syncSource` and `ringSource` (a sound
+    still sets sync and ring from its data), and on the Audio90 `note`.
+    With them went the `*SettingValue` types and `VOICE_SETTINGS`,
+    `FILTER_SETTINGS` and `ECHO_SETTINGS`.
+  - **Matching places.** The song player is in `shared/song-player.ts` and
+    takes a driver: `createSongPlayer(createAudio80SongDriver(writer))`. Each
+    chip's driver is in its `notation/song-driver.ts`; the Audio90's replaces
+    `song-writer.ts`, and the sample bounce uses it. `src/song-player/`, the
+    recording writers among it, is gone.
+  - **The player writes as it updates.** `refresh` and `isPlaying` went, and
+    the player is a `SongSequencer`, whose `setTempoScale` is now a
+    `tempoScale` property, so the headless chip's adapter went.
+  - **Tests.** The song player's tests use a writer whose `write` is a
+    `vi.fn()`, read back as commands; the Audio90 driver's tests, with the two
+    moved from `notation.test.ts`, are in `song-driver.test.ts`. The headless
+    tests write through small helpers until part 5 rewrites them. The
+    reverse tables' test, a pause test that only refreshed, the overloads'
+    type test and the setter type tests went.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (231 files, 2,994
+    tests, the audio hashes unchanged), `npm run build` (54.3 KB) and
+    `npm run build:packages`. In Playwright's headless shell, Galaxy
+    Raiders' music played on its chip (47 song places, peak 0.349, as in
+    6c) and its shots on another, with no page errors. The package's source
+    is about 11,240 lines, down from 11,950.
+- **2026-10-28, 6e part 2 done**, unstaged, with the browser chips' share of
+  part 7:
+  - **Plain messages.** A play goes to the worklet as a `play` message, with
+    the sound's id, the play's id and its checked numbers; a stop as `stop`,
+    and stopping everything as `release-all`. The chip's own destroy
+    message is now `destroy`. While the chip can't play (the worklet not
+    yet running, the context suspended, the chip paused or the page
+    hidden), a play is dropped as it is made, though its sound is still
+    defined, and a stop is still sent; before the worklet runs, nothing has
+    played, so a stop is dropped too. Gone: the batches, the spare and
+    returned buffers, `held-writes.ts`, `sendSoon`, `onFirstWrite`,
+    `hasClock`, `ChipBatch`, `ChipBufferReply` and the chips'
+    `*ChipMessage` types, and the command buffer's `clear(buffer)`.
+  - **No clock reply.** The page measures the speaker's lag as each song
+    place arrives, so the worklet's `clock` reply and `ChipClockReply` went.
+  - **One writer.** The four play opcodes are shared (`OP_PLAY_OPTIONS`,
+    `OP_PLAY`, `OP_STOP`, `OP_RELEASE_ALL` in `shared/commands.ts`), so the
+    runner turns a `play` message into its commands, and one
+    `createCommandWriter`, in `shared/command-writer.ts`, replaces
+    `createCommandAudio80` and `createCommandAudio90`. It takes a chip's
+    sound ids, `createAudio80SoundIds` or `createAudio90SoundIds` (in each
+    `chip/`), which the page uses too. `checkPlay` and `writePlay`, in
+    `shared/play-options.ts`, check and write a play for every chip.
+  - **Tests.** The browser chips' shared behaviour is tested once, on the
+    Audio80, and the Audio90's file keeps only its own; the copied tests
+    went. New: a browser chip's volume and mute (the fake context records
+    its gains), an Audio80 song through a browser chip, and the worklet's
+    `tempo` and `queue` calls. The runner's tests play as the page does;
+    the clock reply's test and a reset test another covered went.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (231 files, 2,991
+    tests), `npm run build` (54.3 KB), `npm run build:packages`, and Galaxy
+    Raiders in Playwright's headless shell: its music on its chip (46 song
+    places, peak 0.349), its shots as `play` messages on another, the pause
+    menu's sound on the page's chip, and no page errors. The package's
+    source is about 10,920 lines, and its tests about 4,900.
+- **2026-10-28, 6e part 4 done**, unstaged:
+  - **`createScope`.** `shared/scope.ts` holds `Scope`, `SCOPE_POINTS`,
+    `SCOPE_STRIDE`, `toScopeLength`, the private `WeakMap` of scope
+    sources, `registerScopeSource`, and `createScopeTargets`, which keeps
+    the scopes attached to a chip and copies each scope into every one.
+    `audio90/tracker` exports `createScope`, `Scope` and `SCOPE_POINTS`, in
+    place of the `AUDIO90_SCOPE_*` constants. A `Scope` gives `points` and
+    `pans` as two views of one array, so a view needs no offsets.
+  - **Both chips.** The Audio80's synthesiser writes a scope as it renders,
+    scaled so a voice at full volume spans about -1 to 1; the audio hashes
+    are unchanged. The worklet runner handles `scopes`, `scope-buffer` and
+    the `scope` reply for every chip, so the Audio90's runner lost its
+    scope code, and the browser chip registers its source in
+    `web-chip.ts`, so `web/audio90.ts` is as plain as the Audio80's and the
+    `onReply` and `onReset` hooks went. The headless chips register
+    `createHeadlessScopes`, which fills on each render, or stays silent.
+    `Audio90` is a plain `SoundChip`.
+  - **The Arcade.** `PageSound` has one slot factory, whose slots know the
+    chip `loaded` behind them, and `findSessionChips(kind)`, which the entry
+    host uses, so a session gets the loaded chips, and stand-ins only
+    before they load and while sound is off. `MusicChip` is a `Pick` of
+    the same members on both chips. The Tune Tracker attaches its scope as
+    it starts and destroys it as it ends; `TrackerView` and
+    `ChannelMetersView` take the `Scope`, and a channel the scope has no
+    voice for, as with a stand-in, shows as silent.
+  - **Tests.** The browser scope tests moved to the Audio80's file, with
+    two scopes attached at once; new tests of `createScope` itself, of the
+    Audio80's scope headless, and that a scope changes no rendered sample;
+    `findSessionChips`.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (232 files, 2,998
+    tests), `npm run test:visual` (50 files, no image changed), `npm run
+    build` (54.0 KB) and `npm run build:packages`. In Playwright's headless
+    shell, the Tune Tracker's music chip sent about 90 scopes a second with
+    the tune playing (peak 1.46), and none once it was exited, with no page
+    errors. The package's source is about 11,110 lines (up 190, for the
+    Audio80's scopes and the registry), and its tests about 4,970. A
+    changeset, `.changeset/attached-scopes.md`.
+- **2026-10-28, 6e part 5 done**, unstaged:
+  - **No headless log.** `record`, `log`, `clear`, `Audio80Write`,
+    `Audio90Write`, the logging writers and the headless chips' hidden
+    writer members are gone. A chip that doesn't render has a silent
+    writer, `createSilentWriter` in `headless-chip.ts`, which checks and
+    numbers plays as every chip does and empties itself as its clock moves
+    on. The two headless files are each a short factory and the chip's
+    rendering parts, `createAudio80Rendering` and `createAudio90Rendering`,
+    which `render` builds on directly, with its own song player; the audio
+    hashes are unchanged. `renderTicks` is internal, and `render` refuses a
+    tick of 0 or less itself.
+  - **Tests of views spy.** Each Arcade audio view test makes its chips with
+    `createSpiedChip()`, spies on `play`, `queue` and `stop` before the view
+    is made, and checks what the view asked of them, and the music chip's
+    `song`, `tempoScale` and `beat`. The note-by-note comparisons and the
+    "tells every song apart" tests went (Burrow Bust's by hand, the other
+    eleven files by three agents, from Burrow Bust's as the model). Two
+    tests now measure the tempo the view sets rather than the gaps between
+    notes: Crumb Chase's speed-up and Galaxy Raiders' stage-clear jingle.
+    The runner's fake browser chips keep `played` themselves. The package's
+    headless tests use the public API, and the headless chip's own tests
+    compare a song played on the chip with `render`, by hash.
+  - **Docs:** the view skill's testing advice, and a style guide example
+    that named the log. A changeset, `.changeset/no-headless-log.md`.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (232 files, 2,976
+    tests), `npm run test:visual` (50 files, no image changed), `npm run
+    build` (54.0 KB) and `npm run build:packages`. The package's source is
+    about 10,870 lines, and its tests about 4,700.
+- **2026-10-28, after 6e part 5**, unstaged, from the user's questions on
+  what the audio view tests are worth, and whether the headless chips could
+  be simpler:
+  - **Audio view tests test the view.** An audit of the entries' ten audio
+    test files found checks of the chip (`song` and `beat` after time
+    passes, a queued song taking over, `song` after a `stop`), of `watch` (a
+    count's first value or fall to 0, nothing played when nothing changes,
+    for a view with no update step) and of the model. 14 tests went, and
+    those checks in the rest (82 lines added, 364 removed). Fuel Run's
+    fanfare-fits-the-pause check is its own test. Fenceline's tempo, picked
+    from `music.song`, has no test, a gap to fill in part 7.
+  - **A headless chip is silent.** `createHeadlessAudio80()` and
+    `createHeadlessAudio90()` take no options, and have no `sampleRate`,
+    `renderInto` or scope. The rendering chips, `createRenderingAudio80`
+    and `createRenderingAudio90` in `src/headless/rendering-audio*.ts`, are
+    internal: `render` builds on their parts, as before, and the package's
+    tests and benchmarks use them. The Audio80's scope tests moved to its
+    synthesiser's tests. A changeset, `.changeset/silent-headless-chip.md`,
+    and two unreleased changesets brought into line.
+  - **The benchmarks are in the package**, so `audio90` can move to a repo
+    of its own without untangling the repo's benchmarks (the user):
+    `bench/run.ts` bundles each suite with rolldown, as an app's build
+    would, runs each case three times in its own process, prints the
+    medians, and with `--save` writes `bench/results/<suite>.md`. The cases
+    reach the rendering chips through `imports` mappings
+    (`#rendering-audio80`, `#rendering-audio90`), which the published
+    manifest leaves out. The Audio90's "effects alone" case had broken (an
+    empty pattern is refused now); with no voices it plays no song.
+  - **Measured** (saved): the Audio80 7.6 to 13 µs a block, 0 B; the
+    Audio90 14.6 µs for the effects alone to 174 µs for 16 voices of the
+    mix; a busy song 621 µs and 44 B a tick. The sample engine allocates
+    13 B a block and the mix 10 B, where the old results (2026-10-16,
+    esbuild) had 1 B. Not yet known whether that is a change since then or
+    the bundler; worth a look with the sampling heap profiler in part 6.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (234 files, 2,960
+    tests), `npm run test:visual` (50 files), `npm run build` (54.0 KB) and
+    `npm run build:packages`. The package's docs still describe the old
+    headless options and the log; step 11 rewrites them.

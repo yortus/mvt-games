@@ -1,4 +1,4 @@
-import type { ChipBatch, ChipClockReply, ChipReply } from '../../shared';
+import { ASAP_STAMP, type CheckedPlay, createCommandBuffer, OP_RELEASE_ALL, OP_STOP, toScopeLength, writePlay } from '../../shared';
 import { createChipClock } from './chip-clock';
 import type { SongMessage } from './song-messages';
 import type { WorkletSequencer } from './worklet-sequencer';
@@ -15,8 +15,8 @@ import type { WorkletSequencer } from './worklet-sequencer';
  * chip's runner gives it the chip's synthesiser.
  */
 export interface ChipRunner<D extends PassedMessage = PassedMessage> {
-    /** Whether a `stop` message has arrived. From then on it renders silence, and the processor ends. */
-    readonly isStopped: boolean;
+    /** Whether a `destroy` message has arrived. From then on it renders silence, and the processor ends. */
+    readonly isDestroyed: boolean;
     /** Handles one message from the main thread. */
     receive: (message: RunnerMessage<D>) => void;
     /** Renders one block into `channels`, filling each. A mono chip has one channel, and a stereo chip two. */
@@ -24,28 +24,47 @@ export interface ChipRunner<D extends PassedMessage = PassedMessage> {
 }
 
 /**
- * What the main thread sends a chip's worklet: a batch of commands, `pause`
- * or `resume`, `reset`, `stop` when the chip is destroyed, a message for the
- * chip's sequencer, or a message the runner passes to the chip's own part,
- * such as one that defines a sound.
+ * What the main thread sends a chip's worklet: a play of a sound, a stop of
+ * one play or of everything, `pause` or `resume`, `reset`, `destroy` when
+ * the chip is destroyed, a message for the chip's sequencer, a message about
+ * its scopes, or a message the runner passes to the chip's own part, such as
+ * one that defines a sound. `scopes` turns the scopes on or off, and
+ * `scope-buffer` hands the worklet an array to send a scope back in, so that
+ * sending one allocates nothing.
  */
 export type RunnerMessage<D extends PassedMessage = PassedMessage> =
     | D
-    | ChipBatch
+    | PlayMessage
     | SongMessage
+    | { readonly kind: 'stop'; readonly id: number }
+    | { readonly kind: 'release-all' }
     | { readonly kind: 'pause' }
     | { readonly kind: 'resume' }
     | { readonly kind: 'reset' }
-    | { readonly kind: 'stop' };
+    | { readonly kind: 'destroy' }
+    | { readonly kind: 'scopes'; readonly isOn: boolean }
+    | { readonly kind: 'scope-buffer'; readonly data: Float32Array };
 
-/**
- * A message the runner passes to the chip's own part: one that defines
- * something the commands use, such as a sound or a sample, or one about the
- * scopes.
- */
-export interface PassedMessage {
-    readonly kind: 'sound' | 'sample' | 'scopes' | 'scope-buffer';
+/** What a chip's worklet sends back beside its songs' places: a scope, in a buffer the page handed it. */
+export interface ScopeReply {
+    readonly kind: 'scope';
+    readonly data: Float32Array;
 }
+
+/** A play of sound `soundId`, as play `id`, checked on the page. It plays as soon as it arrives. */
+export interface PlayMessage extends CheckedPlay {
+    readonly kind: 'play';
+    readonly soundId: number;
+    readonly id: number;
+}
+
+/** A message the runner passes to the chip's own part: one that defines something the commands use, such as a sound or a sample. */
+export interface PassedMessage {
+    readonly kind: 'sound' | 'sample';
+}
+
+/** How many blocks pass between scopes sent: one every fourth block, about 94 a second at 48 kHz. */
+export const BLOCKS_PER_SCOPE = 4;
 
 /** What the runner needs of a chip's synthesiser. Each chip's runner adapts its synthesiser to it. */
 export interface RunnerSynthesiser<D extends PassedMessage> {
@@ -57,6 +76,8 @@ export interface RunnerSynthesiser<D extends PassedMessage> {
     render: (channels: readonly Float32Array[], frames: number, fromMs: number, msPerSample: number) => void;
     /** Cuts every voice, and forgets what was defined. */
     reset: () => void;
+    /** Where the synthesiser writes each voice's output for a scope as it renders, or undefined for none. */
+    scope: Float32Array | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,14 +90,12 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
     readonly sampleRate: number;
     /** How many channels the chip renders: 1 for mono, 2 for stereo. */
     readonly channelCount: number;
+    /** How many voices the chip has, which its scopes show. */
+    readonly voiceCount: number;
+    /** Sends a scope to the main thread, in a buffer it handed over, which moves with the message. */
+    readonly sendScope: (reply: ScopeReply) => void;
     /** The chip's synthesiser. */
     readonly synthesiser: RunnerSynthesiser<D>;
-    /**
-     * Sends the main thread a batch's buffer, so it can be written into
-     * again, or where the clock is. It must copy the reply before it
-     * returns, as `postMessage` does, since a clock reply's record is reused.
-     */
-    readonly sendBack: (reply: ChipReply) => void;
     /**
      * The audio context's count of frames, at the start of the next block.
      * The main thread knows when that frame reaches the speaker. Defaults to
@@ -97,13 +116,15 @@ export interface ChipRunnerOptions<D extends PassedMessage> {
 
 /** Creates a runner with nothing queued, at chip time 0, playing. */
 export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOptions<D>): ChipRunner<D> {
-    const { sampleRate, channelCount, synthesiser, sendBack, sequencer } = options;
+    const { sampleRate, channelCount, synthesiser, sequencer, sendScope } = options;
+    const scopeLength = toScopeLength(options.voiceCount);
+    // The buffers the page has handed over to send scopes in, and the blocks since one was sent
+    const scopeBuffers: Float32Array[] = [];
+    const scopeCounter = new Int32Array(1);
     const clock = createChipClock({ sampleRate });
-    // Reused for every clock reply. Its fields are written, then it is copied as it is sent
-    const clockReply: { -readonly [K in keyof ChipClockReply]: ChipClockReply[K] } = { kind: 'clock', playheadMs: 0, frame: 0, msPerSample: 0 };
-    // The rate last sent, so a reply goes only as it changes. NaN until the first block, so the first block sends one
-    let sentMsPerSample = Number.NaN;
-    let isStopped = false;
+    // The commands a play or a stop makes, queued with the synthesiser as it arrives
+    const commands = createCommandBuffer({ capacity: 2 });
+    let isDestroyed = false;
     let renderedFrames = 0;
     const currentFrame = options.currentFrame ?? (() => renderedFrames);
     // Each channel's last sample of the last block. After a reset, `tails` holds those samples, and
@@ -112,15 +133,23 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
     const tails = new Float64Array(channelCount);
 
     return {
-        get isStopped() {
-            return isStopped;
+        get isDestroyed() {
+            return isDestroyed;
         },
 
         receive(message) {
             switch (message.kind) {
-                case 'batch':
-                    synthesiser.enqueue(message.commands, message.count);
-                    sendBack({ kind: 'buffer', commands: message.commands });
+                case 'play':
+                    writePlay(commands.write, message.soundId, message.id, message);
+                    enqueueCommands();
+                    break;
+                case 'stop':
+                    commands.write(OP_STOP, ASAP_STAMP, message.id, 0, 0, 0);
+                    enqueueCommands();
+                    break;
+                case 'release-all':
+                    commands.write(OP_RELEASE_ALL, ASAP_STAMP, 0, 0, 0, 0);
+                    enqueueCommands();
                     break;
                 case 'pause':
                     clock.pause();
@@ -132,14 +161,24 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
                 case 'song-call':
                     sequencer?.receive(message);
                     break;
+                case 'scopes':
+                    if (!message.isOn) turnScopesOff();
+                    else synthesiser.scope ??= new Float32Array(scopeLength);
+                    break;
+                case 'scope-buffer':
+                    // A buffer that comes back after the scopes are turned off is dropped
+                    if (synthesiser.scope !== undefined && scopeBuffers.length < MAX_SCOPE_BUFFERS) scopeBuffers.push(message.data);
+                    break;
                 case 'reset':
                     // Cutting the output from where it is to 0 would click
                     tails.set(lasts);
                     synthesiser.reset();
+                    // The page turns them on again, if it still wants them
+                    turnScopesOff();
                     sequencer?.reset();
                     break;
-                case 'stop':
-                    isStopped = true;
+                case 'destroy':
+                    isDestroyed = true;
                     break;
                 default:
                     synthesiser.receive(message);
@@ -149,7 +188,7 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
 
         process(channels) {
             const frames = channels[0].length;
-            if (isStopped) {
+            if (isDestroyed) {
                 for (let c = 0; c < channelCount; c++) channels[c].fill(0);
                 renderedFrames += frames;
                 return;
@@ -168,16 +207,29 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
         },
     };
 
+    function turnScopesOff(): void {
+        synthesiser.scope = undefined;
+        scopeBuffers.length = 0;
+    }
+
+    /** Sends the scope every `BLOCKS_PER_SCOPE` blocks while scopes are on, if the page has handed over a buffer. */
+    function sendScopeIfDue(): void {
+        const scope = synthesiser.scope;
+        if (scope === undefined) return;
+        scopeCounter[0] = (scopeCounter[0] + 1) % BLOCKS_PER_SCOPE;
+        if (scopeCounter[0] !== 0 || scopeBuffers.length === 0) return;
+        const data = scopeBuffers.pop()!;
+        data.set(scope);
+        sendScope({ kind: 'scope', data });
+    }
+
+    function enqueueCommands(): void {
+        synthesiser.enqueue(commands.commands, commands.count);
+        commands.clear();
+    }
+
     function render(channels: readonly Float32Array[], frames: number): void {
         clock.plan(frames);
-        if (clock.msPerSample !== sentMsPerSample) {
-            // The clock has started, paused or resumed, so the main thread's idea of chip time needs its new rate
-            sentMsPerSample = clock.msPerSample;
-            clockReply.playheadMs = clock.fromMs;
-            clockReply.frame = currentFrame();
-            clockReply.msPerSample = clock.msPerSample;
-            sendBack(clockReply);
-        }
         if (clock.isSilent) {
             for (let c = 0; c < channelCount; c++) channels[c].fill(0);
             return;
@@ -185,6 +237,7 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
         // The songs move on by this block before it renders, so their writes fall within it
         sequencer?.advance(frames, clock.fromMs, clock.msPerSample, currentFrame(), synthesiser.enqueue);
         synthesiser.render(channels, frames, clock.fromMs, clock.msPerSample);
+        sendScopeIfDue();
         const from = clock.gainFrom;
         const to = clock.gainTo;
         if (from === 1 && to === 1) return;
@@ -194,3 +247,10 @@ export function createChipRunner<D extends PassedMessage>(options: ChipRunnerOpt
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How many buffers the page hands over for scopes, which is three: one always on its way back while another fills. */
+const MAX_SCOPE_BUFFERS = 3;

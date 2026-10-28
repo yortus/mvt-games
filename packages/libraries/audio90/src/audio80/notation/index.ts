@@ -19,3 +19,4 @@ export {
     RELEASE,
 } from './song';
 export type { Audio80EchoSettings, Audio80FilterSettings, Audio80Song, Audio80SongOptions, SongOrderEntry, SongPattern } from './song';
+export { createAudio80SongDriver } from './song-driver';

@@ -1,8 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type Audio80Song } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
+import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
     BLOCK,
     FIGHT_THEME,
@@ -28,15 +27,15 @@ import { MatchAudioView, TICKING_SECONDS } from './match-audio-view';
 
 const TICK_MS = 1000 / 60;
 
-/**
- * How many ticks a test listens to a song for. This is half a second, and the
- * test 'tells every song apart within the ticks it listens for' checks that
- * it is long enough.
- */
-const SONG_TICKS = 30;
-
 /** A clock reading far above the seconds that tick, as at the start of a round. */
 const FULL_CLOCK_SECONDS = 30;
+
+// The views are tested by what they ask of their chips: which songs and sounds they play, and when they stop the
+// music. How a chip plays a song is the chip's own concern, tested with it.
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe('FighterAudioView', () => {
     it.each([
@@ -49,7 +48,7 @@ describe('FighterAudioView', () => {
         tick();
         state.move = undefined;
         tick();
-        expect(chip.log).toEqual([expect.objectContaining({ kind: 'play', sound: swish })]);
+        expect(listPlayed(chip)).toEqual([swish]);
     });
 
     it('swishes again when the same move starts a second time', () => {
@@ -60,7 +59,7 @@ describe('FighterAudioView', () => {
             state.move = undefined;
             tick();
         }
-        expect(listPlays(chip.log, KICK_SWISH)).toHaveLength(2);
+        expect(listPlayed(chip).filter((sound) => sound === KICK_SWISH)).toHaveLength(2);
     });
 
     it('clacks as the fighter blocks, and cracks as they go down', () => {
@@ -71,89 +70,63 @@ describe('FighterAudioView', () => {
         tick();
         state.phase = 'defeated';
         tick();
-        expect(chip.log).toEqual([
-            expect.objectContaining({ kind: 'play', sound: BLOCK }),
-            expect.objectContaining({ kind: 'play', sound: HIT }),
-        ]);
+        expect(listPlayed(chip)).toEqual([BLOCK, HIT]);
     });
 
     it('plays nothing for the state it starts in', () => {
         const { chip } = setUpFighterAudio({ phase: 'defeated', move: 'jump' });
-        expect(chip.log).toHaveLength(0);
+        expect(chip.play).not.toHaveBeenCalled();
     });
 });
 
 describe('MatchAudioView', () => {
-    it('tells every song apart within the ticks it listens for', () => {
-        const recordings = [
-            recordSong({ song: FIGHT_THEME }),
-            recordSong({ song: ROUND_WON }),
-            recordSong({ song: ROUND_LOST }),
-            recordSong({ song: MATCH_WON }),
-            recordSong({ song: MATCH_LOST }),
-        ];
-        const distinct = new Set(recordings.map((notes) => notes.join(' ')));
-        expect(distinct.size).toBe(recordings.length);
-    });
-
     it('sounds the gong as the game starts, then plays the fight\'s tune as the fighting starts', () => {
         const { music, sfx, state, tick } = setUpMatchAudio();
-        expect(listPlays(sfx.log, GONG)).toHaveLength(1);
-        music.clear();
-        sfx.clear();
+        expect(listPlayed(sfx)).toEqual([GONG]);
+        vi.clearAllMocks();
         state.phase = 'fighting';
-        runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: FIGHT_THEME }));
+        tick();
+        expect(listPlayed(music)).toEqual([FIGHT_THEME]);
     });
 
     it('plays the tune on through a point, without starting it again', () => {
-        const { music, sfx, state, tick } = setUpMatchAudio();
-        music.clear();
-        sfx.clear();
+        const { music, state, tick } = setUpMatchAudio();
+        vi.clearAllMocks();
         state.phase = 'fighting';
         tick();
-        runTicks(tick, SONG_TICKS / 3);
         state.phase = 'point-scored';
-        runTicks(tick, SONG_TICKS / 3);
+        tick();
         state.phase = 'fighting';
-        runTicks(tick, SONG_TICKS / 3);
-        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: FIGHT_THEME }));
+        tick();
+        expect(listPlayed(music)).toEqual([FIGHT_THEME]);
+        expect(music.stop).not.toHaveBeenCalled();
     });
 
     it('stops the tune for the gong, then plays it from the top as the next round starts', () => {
         const { music, sfx, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
-        runTicks(tick, SONG_TICKS);
-        music.clear();
-        sfx.clear();
+        tick();
+        vi.clearAllMocks();
         state.phase = 'round-intro';
-        runTicks(tick, SONG_TICKS);
-        expect(listPlays(sfx.log, GONG)).toHaveLength(1);
-        expect(listNoteOns(music.log)).toHaveLength(0);
-        music.clear();
-        sfx.clear();
-        state.phase = 'fighting';
-        runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(music.log)).toEqual(recordSong({ song: FIGHT_THEME }));
-    });
-
-    it('plays rising notes for each of the player\'s points and falling notes for each of the opponent\'s, and none as points go back to 0', () => {
-        const { music, sfx, state, tick } = setUpMatchAudio();
+        tick();
+        expect(listPlayed(sfx)).toEqual([GONG]);
+        expect(music.stop).toHaveBeenCalledOnce();
+        vi.clearAllMocks();
         state.phase = 'fighting';
         tick();
-        music.clear();
-        sfx.clear();
+        expect(listPlayed(music)).toEqual([FIGHT_THEME]);
+    });
+
+    it('plays rising notes for each of the player\'s points and falling notes for each of the opponent\'s', () => {
+        const { sfx, state, tick } = setUpMatchAudio();
+        state.phase = 'fighting';
+        tick();
+        vi.clearAllMocks();
         state.playerPoints = 1;
         tick();
         state.opponentPoints = 1;
         tick();
-        state.playerPoints = 0;
-        state.opponentPoints = 0;
-        tick();
-        expect(sfx.log).toEqual([
-            expect.objectContaining({ kind: 'play', sound: POINT_WON }),
-            expect.objectContaining({ kind: 'play', sound: POINT_LOST }),
-        ]);
+        expect(listPlayed(sfx)).toEqual([POINT_WON, POINT_LOST]);
     });
 
     it('plays no point\'s notes for the points that end a round when the clock runs out, only the round\'s jingle', () => {
@@ -161,40 +134,28 @@ describe('MatchAudioView', () => {
         state.phase = 'fighting';
         state.playerPoints = 1;
         tick();
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         state.playerPoints = POINTS_TO_WIN_ROUND;
         state.secondsLeft = 0;
         state.hasPlayerWon = true;
         state.phase = 'round-over';
         tick();
-        expect(listPlays(sfx.log, POINT_WON)).toHaveLength(0);
-        expect(listNoteOns(music.log).length).toBeGreaterThan(0);
+        expect(sfx.play).not.toHaveBeenCalled();
+        expect(listPlayed(music)).toEqual([ROUND_WON]);
     });
 
     it('ticks in each of the round\'s last seconds, and not at 0 or as the clock goes back up', () => {
-        const { music, sfx, state, tick } = setUpMatchAudio();
+        const { sfx, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
         tick();
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         for (let seconds = TICKING_SECONDS + 2; seconds >= 0; seconds--) {
             state.secondsLeft = seconds;
             tick();
         }
         state.secondsLeft = FULL_CLOCK_SECONDS;
         tick();
-        expect(listPlays(sfx.log, TICK)).toHaveLength(TICKING_SECONDS);
-    });
-
-    it('advances no music while it is refreshed but not updated, with the clock of its chip standing still, as when paused', () => {
-        const { music, sfx, state, tick, view } = setUpMatchAudio();
-        state.phase = 'fighting';
-        tick();
-        music.clear();
-        sfx.clear();
-        for (let i = 0; i < SONG_TICKS; i++) refreshView(view);
-        expect(listNoteOns(music.log)).toHaveLength(0);
+        expect(listPlayed(sfx)).toEqual(Array.from({ length: TICKING_SECONDS }, () => TICK));
     });
 
     it.each([
@@ -203,15 +164,14 @@ describe('MatchAudioView', () => {
         { name: 'MATCH_WON', phase: 'match-over', winner: 'the player', hasPlayerWon: true, song: MATCH_WON },
         { name: 'MATCH_LOST', phase: 'match-over', winner: 'the opponent', hasPlayerWon: false, song: MATCH_LOST },
     ] as const)('plays $name when the phase becomes $phase and $winner has won', ({ phase, hasPlayerWon, song }) => {
-        const { music, sfx, state, tick } = setUpMatchAudio();
+        const { music, state, tick } = setUpMatchAudio();
         state.phase = 'fighting';
         tick();
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         state.hasPlayerWon = hasPlayerWon;
         state.phase = phase;
-        runTicks(tick, SONG_TICKS + 1);
-        expect(describeNoteOns(music.log)).toEqual(recordSong({ song }));
+        tick();
+        expect(listPlayed(music)).toEqual([song]);
     });
 });
 
@@ -219,40 +179,18 @@ describe('MatchAudioView', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Play = Extract<Audio80Write, { kind: 'play' }>;
-type NoteOn = Extract<Audio80Write, { kind: 'note-on' }>;
-
-function listPlays(log: readonly Audio80Write[], effect: Play['sound']): Play[] {
-    return log.filter((write): write is Play => write.kind === 'play' && write.sound === effect);
+/** Creates a headless chip whose `play`, `queue` and `stop` are spied on, so a test can read what a view asked of it. */
+function createSpiedChip(): HeadlessAudio80 {
+    const chip = createHeadlessAudio80();
+    vi.spyOn(chip, 'play');
+    vi.spyOn(chip, 'queue');
+    vi.spyOn(chip, 'stop');
+    return chip;
 }
 
-function listNoteOns(log: readonly Audio80Write[]): NoteOn[] {
-    return log.filter((write): write is NoteOn => write.kind === 'note-on');
-}
-
-/**
- * Describes each note-on in `log` as its voice, its note and its time. The
- * time is in ms from the first note-on, to three decimal places. So two logs
- * of the same song match even when the song started at different chip times.
- */
-function describeNoteOns(log: readonly Audio80Write[]): string[] {
-    const noteOns = listNoteOns(log);
-    const startMs = noteOns.length > 0 ? noteOns[0].time : 0;
-    return noteOns.map((write) => `${write.voice}:${write.note}@${(write.time - startMs).toFixed(3)}`);
-}
-
-/**
- * Plays `song` on a chip of its own for `SONG_TICKS` ticks after the
- * one it starts in, and describes the notes it plays. This is what a view
- * that plays `song` should play over the same ticks.
- */
-function recordSong(options: { song: Audio80Song }): string[] {
-    const chip = createHeadlessAudio80({ record: true });
-    chip.play(options.song);
-    for (let i = 0; i < SONG_TICKS; i++) {
-        chip.update(TICK_MS);
-    }
-    return describeNoteOns(chip.log);
+/** The songs and sounds played on `chip`, oldest first. */
+function listPlayed(chip: HeadlessAudio80): unknown[] {
+    return vi.mocked(chip.play).mock.calls.map((call) => call[0]);
 }
 
 /**
@@ -268,16 +206,12 @@ function createTicker(options: { chips: readonly HeadlessAudio80[]; view: Contai
     };
 }
 
-function runTicks(tick: () => void, count: number): void {
-    for (let i = 0; i < count; i++) tick();
-}
-
 function setUpFighterAudio(initial: Partial<{ phase: FighterPhase; move: MoveKind }> = {}) {
     const state = {
         phase: initial.phase ?? 'idle' as FighterPhase,
         move: initial.move as MoveKind | undefined,
     };
-    const chip = createHeadlessAudio80({ record: true });
+    const chip = createSpiedChip();
     const view = FighterAudioView({ sfx: chip, phase: () => state.phase, move: () => state.move });
     const tick = createTicker({ chips: [chip], view });
     tick();
@@ -292,8 +226,8 @@ function setUpMatchAudio() {
         secondsLeft: FULL_CLOCK_SECONDS,
         hasPlayerWon: false,
     };
-    const music = createHeadlessAudio80({ record: true });
-    const sfx = createHeadlessAudio80({ record: true });
+    const music = createSpiedChip();
+    const sfx = createSpiedChip();
     const view = MatchAudioView({
         music,
         sfx,
@@ -305,5 +239,5 @@ function setUpMatchAudio() {
     });
     const tick = createTicker({ chips: [music, sfx], view });
     tick();
-    return { music, sfx, state, tick, view };
+    return { music, sfx, state, tick };
 }

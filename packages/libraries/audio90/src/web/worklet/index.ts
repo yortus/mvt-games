@@ -4,6 +4,6 @@
 // its URL, with `?worker&url`, so the worklet's code never joins the page's.
 
 export { type Audio80PassedMessage, AUDIO80_PROCESSOR_NAME, type Audio80RunnerSettings } from './audio80-runner';
-export { type Audio90PassedMessage, AUDIO90_PROCESSOR_NAME, type Audio90RunnerSettings, type Audio90ScopeReply } from './audio90-runner';
-export type { PassedMessage, RunnerMessage } from './chip-runner';
+export { type Audio90PassedMessage, AUDIO90_PROCESSOR_NAME, type Audio90RunnerSettings } from './audio90-runner';
+export type { PassedMessage, PlayMessage, RunnerMessage, ScopeReply } from './chip-runner';
 export type { SongCall, SongMessage, SongPlaceReply } from './song-messages';

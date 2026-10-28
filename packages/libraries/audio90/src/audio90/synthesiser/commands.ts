@@ -1,6 +1,3 @@
-import type { ChipBatch } from '../../shared';
-import type { Audio90SoundData, Audio90SampleData } from './sound-data';
-
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -10,22 +7,6 @@ import type { Audio90SoundData, Audio90SampleData } from './sound-data';
 
 /** Voices on the chip, numbered from 0. */
 export const AUDIO90_VOICE_COUNT = 16;
-
-/** How many points of each voice a scope keeps. */
-export const AUDIO90_SCOPE_POINTS = 64;
-
-/**
- * How many samples apart a scope's points are: one every eighth sample, so a
- * scope shows 512 samples, about 11 ms at 48 kHz, long enough for a cycle of
- * a bass note.
- */
-export const AUDIO90_SCOPE_STRIDE = 8;
-
-/** Where a scope's pans start: voice v's pan is at `AUDIO90_SCOPE_PANS + v`. */
-export const AUDIO90_SCOPE_PANS = AUDIO90_VOICE_COUNT * AUDIO90_SCOPE_POINTS;
-
-/** How many numbers a scope holds: each voice's points, then each voice's pan. */
-export const AUDIO90_SCOPE_LENGTH = AUDIO90_SCOPE_PANS + AUDIO90_VOICE_COUNT;
 
 /** Starts a note. `a` is the voice, `b` the sound's id, `c` the note and `d` the volume. */
 export const OP90_NOTE_ON = 1;
@@ -39,14 +20,6 @@ export const OP90_SET_VOICE = 3;
  * settings, and `c` the value.
  */
 export const OP90_SET_EFFECT = 4;
-/**
- * Plays a sound on a voice the chip chooses. `a` is the sound's id, `b` the
- * play's id, `c` the note and `d` the volume. The `OP90_PLAY_OPTIONS` written
- * just before it says how long it lasts, where it glides and where it sits.
- */
-export const OP90_PLAY = 5;
-/** Releases every voice's note. No operands. */
-export const OP90_RELEASE_ALL = 6;
 /** Sets how the chip sounds. `a` is the character's index in `AUDIO90_CHARACTERS`. */
 export const OP90_SET_CHARACTER = 9;
 /**
@@ -55,22 +28,9 @@ export const OP90_SET_CHARACTER = 9;
  * echo keeps the last tempo above 0.
  */
 export const OP90_SET_TEMPO = 10;
-/**
- * Says how the next `OP90_PLAY` plays. `a` is how long it holds its note
- * before releasing it, in ms, or -1 to hold it until it is stopped. `b` is
- * the note it glides to over that time, or -1 for none. `c` is where it
- * sits, from -1 (left) to 1 (right), which is used when `d` is 1. When `d`
- * is 0, it sits at the sound's own pan. A play always writes one just before
- * its `OP90_PLAY`, with the same stamp.
- */
-export const OP90_PLAY_OPTIONS = 11;
-/** Releases the note of a play, if it is still sounding. `a` is the play's id. */
-export const OP90_STOP = 12;
 
 /** A setting of one voice that can be written directly. */
 export type Audio90VoiceSetting =
-    /** A note number, which may be fractional for a bend. It changes the pitch without starting a note. */
-    | 'note'
     /** The note's volume, 0 or more. 1 plays it as written. */
     | 'volume'
     /** -1 (left) to 1 (right). */
@@ -144,22 +104,21 @@ export type Audio90Character = 'studio' | 'console' | 'sampler';
 
 /** Each voice setting's number in an `OP90_SET_VOICE` command. */
 export const AUDIO90_VOICE_SETTING_INDEX: Readonly<Record<Audio90VoiceSetting, number>> = {
-    note: 0,
-    volume: 1,
-    pan: 2,
-    brightness: 3,
-    reverbSend: 4,
-    echoSend: 5,
-    chorusSend: 6,
-    arpeggio: 7,
-    vibratoDepth: 8,
-    vibratoRate: 9,
-    slide: 10,
-    glide: 11,
-    chord: 12,
-    slice: 13,
-    accent: 14,
-    pulseWidth: 15,
+    volume: 0,
+    pan: 1,
+    brightness: 2,
+    reverbSend: 3,
+    echoSend: 4,
+    chorusSend: 5,
+    arpeggio: 6,
+    vibratoDepth: 7,
+    vibratoRate: 8,
+    slide: 9,
+    glide: 10,
+    chord: 11,
+    slice: 12,
+    accent: 13,
+    pulseWidth: 14,
 };
 
 /** Each effect's number in an `OP90_SET_EFFECT` command. */
@@ -175,15 +134,3 @@ export const AUDIO90_EFFECT_SETTING_INDEX: { readonly [E in Audio90EffectId]: Re
 
 /** The characters, at their numbers in an `OP90_SET_CHARACTER` command. */
 export const AUDIO90_CHARACTERS: readonly Audio90Character[] = ['studio', 'console', 'sampler'];
-
-/**
- * A message the main thread sends the Audio90's worklet. A `batch` carries
- * commands. A `sound` message carries a sound, and a `sample` message a
- * sample, the first time it is played, before the commands that use it. A
- * `reset` clears the chip so the next game starts fresh.
- */
-export type Audio90ChipMessage =
-    | ChipBatch
-    | { readonly kind: 'sound'; readonly id: number; readonly data: Audio90SoundData }
-    | { readonly kind: 'sample'; readonly id: number; readonly data: Audio90SampleData }
-    | { readonly kind: 'reset' };

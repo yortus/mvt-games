@@ -1,17 +1,4 @@
-import {
-    type Audio80,
-    type Audio80PlayOptions,
-    type Audio80Song,
-    type Audio80Sound,
-    type Audio90,
-    type Audio90PlayOptions,
-    type Audio90Song,
-    type Audio90Sound,
-    type createAudio80,
-    type createAudio90,
-    type SoundChip,
-} from 'audio90';
-import { AUDIO90_SCOPE_LENGTH } from 'audio90/tracker';
+import type { Audio80, Audio90, createAudio80, createAudio90, SoundChip } from 'audio90';
 import type { SessionChips, SoundChipKind, SoundChipsByKind } from '../entry-types';
 import { toSliderGain } from './slider-gain';
 
@@ -56,6 +43,14 @@ export interface PageSound {
      * then follows the loaded chip's.
      */
     readonly entryChips: EntryChips;
+    /**
+     * The chips a session of kind `kind` plays on: the loaded chips, once
+     * they have loaded, so code that needs the chip itself, such as
+     * `createScope`, finds it; until then, and always while sound is off,
+     * the stand-ins in `entryChips`, which pass every call on to the chips
+     * once they load.
+     */
+    findSessionChips: <K extends SoundChipKind>(kind: K) => SessionChips<K>;
     /** The page's own chip for sounds that belong to no session, such as a menu's. It is silent until it loads. */
     readonly pageSfx: Audio80;
     /** The page's own chip for music, such as the music slider's preview. It is silent until it loads. */
@@ -112,14 +107,14 @@ export interface PageSoundOptions {
 /** Creates the page's sound, with every chip silent until `prepare` loads it. */
 export function createPageSound(options: PageSoundOptions): PageSound {
     const entrySlots: { readonly [K in SoundChipKind]: SlotPair<SoundChipsByKind[K]> } = {
-        audio80: { music: createAudio80Slot(), sfx: createAudio80Slot() },
-        audio90: { music: createAudio90Slot(), sfx: createAudio90Slot() },
+        audio80: { music: createSlot(), sfx: createSlot() },
+        audio90: { music: createSlot(), sfx: createSlot() },
     };
     const entryChips: EntryChips = {
         audio80: { music: entrySlots.audio80.music.chip, sfx: entrySlots.audio80.sfx.chip },
         audio90: { music: entrySlots.audio90.music.chip, sfx: entrySlots.audio90.sfx.chip },
     };
-    const pageSlots: SlotPair<Audio80> = { music: createAudio80Slot(), sfx: createAudio80Slot() };
+    const pageSlots: SlotPair<Audio80> = { music: createSlot(), sfx: createSlot() };
     // The chips that play at the music's volume, and those that play at the sound effects', for the settings
     const musicChips: readonly AnyChip[] = [pageSlots.music.chip, entryChips.audio80.music, entryChips.audio90.music];
     const sfxChips: readonly AnyChip[] = [pageSlots.sfx.chip, entryChips.audio80.sfx, entryChips.audio90.sfx];
@@ -137,6 +132,10 @@ export function createPageSound(options: PageSoundOptions): PageSound {
 
     return {
         entryChips,
+        findSessionChips(kind) {
+            const slots = entrySlots[kind];
+            return { music: slots.music.loaded ?? slots.music.chip, sfx: slots.sfx.loaded ?? slots.sfx.chip };
+        },
         pageSfx: pageSlots.sfx.chip,
         pageMusic: pageSlots.music.chip,
         get settings() {
@@ -305,67 +304,30 @@ type AnyChip = Audio80 | Audio90;
  * chip, which takes what was kept. The calls are bound once, so passing one
  * on makes no garbage.
  */
-interface ChipSlot<C extends AnyChip> {
+interface ChipSlot<C> {
     /** The chip that stands in. */
     readonly chip: C;
+    /** The chip behind the slot, once `fill` has given it one. */
+    readonly loaded: C | undefined;
     /** Puts `chip` behind the slot, with the volume, the mute, the tempo scale and the pause set so far. */
     fill: (chip: C) => void;
 }
 
 /** Two slots of one kind: one for music and one for sound effects. */
-interface SlotPair<C extends AnyChip> {
+interface SlotPair<C> {
     readonly music: ChipSlot<C>;
     readonly sfx: ChipSlot<C>;
 }
 
-function createAudio80Slot(): ChipSlot<Audio80> {
-    let filled: Audio80 | undefined;
-    const shared = createSharedStandIn<Audio80Song, Audio80Sound, Audio80PlayOptions>(() => filled);
-    return {
-        chip: shared.chip,
-        fill(next) {
-            filled = next;
-            shared.fill(next);
-        },
-    };
-}
-
-function createAudio90Slot(): ChipSlot<Audio90> {
-    let filled: Audio90 | undefined;
-    const shared = createSharedStandIn<Audio90Song, Audio90Sound, Audio90PlayOptions>(() => filled);
-    // What the scopes read until the chip loads: silence
-    const silentScope = new Float32Array(AUDIO90_SCOPE_LENGTH);
-    let isScoping = false;
-    const own: Omit<Audio90, keyof SoundChip<Audio90Song, Audio90Sound, Audio90PlayOptions>> = {
-        get scope() {
-            return filled === undefined ? silentScope : filled.scope;
-        },
-        setScopes(isOn) {
-            // Kept, so a chip still to load turns them on as it is filled
-            isScoping = isOn;
-            filled?.setScopes(isOn);
-        },
-    };
-    return {
-        chip: addMembers(shared.chip, own),
-        fill(next) {
-            filled = next;
-            shared.fill(next);
-            if (isScoping) next.setScopes(true);
-        },
-    };
-}
-
-/** The members every chip has, standing in for the chip that `read` returns once it has loaded, as a `ChipSlot`'s chip does. */
-function createSharedStandIn<Song, Sound, PlayOptions>(read: () => SoundChip<Song, Sound, PlayOptions> | undefined): {
-    readonly chip: SoundChip<Song, Sound, PlayOptions>;
-    readonly fill: (chip: SoundChip<Song, Sound, PlayOptions>) => void;
-} {
+/** Creates a slot with no chip behind it yet, whose chip keeps a volume of 1, unmuted, at a tempo scale of 1, unpaused. */
+function createSlot<Song, Sound, PlayOptions>(): ChipSlot<SoundChip<Song, Sound, PlayOptions>> {
+    let filled: SoundChip<Song, Sound, PlayOptions> | undefined;
     // The volume, the mute, the tempo scale and the pause as set, kept for the chip to come
     let volume = 1;
     let isMuted = false;
     let tempoScale = 1;
     let isPaused = false;
+    const read = () => filled;
 
     const chip: SoundChip<Song, Sound, PlayOptions> = {
         get ready() {
@@ -430,22 +392,17 @@ function createSharedStandIn<Song, Sound, PlayOptions>(read: () => SoundChip<Son
     };
     return {
         chip,
+        get loaded() {
+            return filled;
+        },
         fill(next) {
+            filled = next;
             next.volume = volume;
             next.isMuted = isMuted;
             next.tempoScale = tempoScale;
             if (isPaused) next.pause();
         },
     };
-}
-
-/**
- * Copies the members of `extra` onto `base`, getters and setters as they
- * are, and returns `base`. A stand-in joins the members every chip has with
- * its own chip's this way, without reading a getter as it copies it.
- */
-function addMembers<B extends object, E extends object>(base: B, extra: E): B & E {
-    return Object.defineProperties(base, Object.getOwnPropertyDescriptors(extra)) as B & E;
 }
 
 /** Warns that sound is off, because audio could not start. */

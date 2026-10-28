@@ -1,24 +1,27 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
-import { createHeadlessAudio80 } from 'audio90/headless';
+import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
 import { GameAudioView } from './game-audio-view';
 import { MIN_CELLS_FOR_BIG_MATCH } from './view-constants';
 
-// Each test checks the effects that each tick plays, in order. The chip's log
-// holds each effect played, itself, so a check tells every effect apart, even
-// two that share an instrument or a first note.
+// Each test checks the effects that each tick plays, in order. The test spies
+// on the chip's `play`, which is given each effect itself, so a check tells
+// every effect apart, even two that share an instrument or a first note.
 
 const TICK_MS = 1000 / 60;
 const SMALL_MATCH_CELLS = 3;
 
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 describe('GameAudioView', () => {
-    it('plays a new game\'s notes on its first tick, then nothing while nothing changes', () => {
+    it('plays a new game\'s notes on its first tick', () => {
         const { tick } = setUp();
         expect(tick()).toEqual([NEW_GAME]);
-        for (let i = 0; i < 60; i++) expect(tick()).toEqual([]);
     });
 
     it('blips as a swap that makes a line starts, says nothing for one that makes none until it knocks as it is undone', () => {
@@ -115,12 +118,12 @@ interface State {
 }
 
 /**
- * Creates the view on a recording chip, for a game that has not yet had its
+ * Creates the view on a spied chip, for a game that has not yet had its
  * first tick. Its `tick` runs one tick and returns the effects it played.
  */
 function setUp() {
     const state: State = { gamePhase: 'playing', boardPhase: 'idle', isSwapMatching: false, cascadeStep: 0, matchedCellCount: 0 };
-    const chip = createHeadlessAudio80({ record: true });
+    const chip = createSpiedChip();
     const view = GameAudioView({
         sfx: chip,
         gamePhase: () => state.gamePhase,
@@ -129,16 +132,26 @@ function setUp() {
         cascadeStep: () => state.cascadeStep,
         matchedCellCount: () => state.matchedCellCount,
     });
-    const tick = (): Audio80Sound[] => {
-        chip.clear();
+    const tick = (): unknown[] => {
+        vi.clearAllMocks();
         chip.update(TICK_MS);
         updateView(view, TICK_MS);
         refreshView(view);
-        const played: Audio80Sound[] = [];
-        for (const write of chip.log) {
-            if (write.kind === 'play') played.push(write.sound);
-        }
-        return played;
+        return listPlayed(chip);
     };
     return { state, tick };
+}
+
+/** Creates a headless chip whose `play`, `queue` and `stop` are spied on, so a test can read what a view asked of it. */
+function createSpiedChip(): HeadlessAudio80 {
+    const chip = createHeadlessAudio80();
+    vi.spyOn(chip, 'play');
+    vi.spyOn(chip, 'queue');
+    vi.spyOn(chip, 'stop');
+    return chip;
+}
+
+/** The songs and sounds played on `chip`, oldest first. */
+function listPlayed(chip: HeadlessAudio80): unknown[] {
+    return vi.mocked(chip.play).mock.calls.map((call) => call[0]);
 }

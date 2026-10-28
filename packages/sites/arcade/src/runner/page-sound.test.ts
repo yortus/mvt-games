@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAudio80Song, createAudio80Sound, createAudio90Sound } from 'audio90';
-import type { Audio80Write } from 'audio90/headless';
 import { type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';
 import { createPageSound } from './page-sound';
 import { toSliderGain } from './slider-gain';
@@ -34,7 +33,7 @@ describe('createPageSound', () => {
         await expect(music.ready).resolves.toBeUndefined();
 
         await sound.prepare('audio80');
-        for (const chip of fake.chips) expect(chip.log).toEqual([]);
+        for (const chip of fake.chips) expect(chip.played).toEqual([]);
     });
 
     it('loads only the page\'s own chips when no entry chip is asked for', async () => {
@@ -44,12 +43,30 @@ describe('createPageSound', () => {
         sound.pageSfx.play(EFFECT);
         sound.pageMusic.play(SONG);
         const [pageSfx, pageMusic] = fake.chips;
-        expect(listPlays(pageSfx.log)).toEqual([EFFECT]);
+        expect(pageSfx.played).toEqual([EFFECT]);
         expect(pageMusic.song).toBe(SONG);
 
         await sound.prepare('audio80');
         expect(fake.chips).toHaveLength(PAGE_CHIPS + ENTRY_CHIPS);
         expect(fake.audio90Chips).toHaveLength(0);
+    });
+
+    it('gives a session the stand-ins until its chips load, and the loaded chips after', async () => {
+        const sound = createPageSound({ isEnabled: true });
+        const standIns = sound.findSessionChips('audio90');
+        expect([standIns.music === sound.entryChips.audio90.music, standIns.sfx === sound.entryChips.audio90.sfx]).toEqual([true, true]);
+        await sound.prepare('audio90');
+        const [music, sfx] = fake.audio90Chips;
+        const chips = sound.findSessionChips('audio90');
+        expect([chips.music === music, chips.sfx === sfx]).toEqual([true, true]);
+        sound.destroy();
+    });
+
+    it('gives a session the stand-ins while sound is off', async () => {
+        const sound = createPageSound({ isEnabled: false });
+        await sound.prepare('audio80');
+        const chips = sound.findSessionChips('audio80');
+        expect([chips.music === sound.entryChips.audio80.music, chips.sfx === sound.entryChips.audio80.sfx]).toEqual([true, true]);
     });
 
     it('loads the Audio90s only when an entry that plays on them is prepared, with the settings and mute set before', async () => {
@@ -66,7 +83,7 @@ describe('createPageSound', () => {
         expect([music.volume, sfx.volume]).toEqual([toSliderGain(0.3), toSliderGain(0.8)]);
         expect([music.isMuted, sfx.isMuted]).toEqual([true, true]);
         sound.entryChips.audio90.music.play(createAudio90Sound({}));
-        expect(music.log.map((write) => write.kind)).toEqual(['play']);
+        expect(music.played).toHaveLength(1);
         sound.destroy();
     });
 
@@ -112,9 +129,9 @@ describe('createPageSound', () => {
         sound.entryChips.audio80.music.play(SONG);
         sound.pageSfx.play(EFFECT);
         sound.pageSfx.play(EFFECT);
-        expect(listPlays(sfx.log)).toEqual([EFFECT]);
+        expect(sfx.played).toEqual([EFFECT]);
         expect([music.song, sound.entryChips.audio80.music.song]).toEqual([SONG, SONG]);
-        expect(listPlays(pageSfx.log)).toEqual([EFFECT, EFFECT]);
+        expect(pageSfx.played).toEqual([EFFECT, EFFECT]);
     });
 
     it('passes a pause on to a chip that loads after it', async () => {
@@ -243,6 +260,3 @@ const ENTRY_CHIPS = 2;
 const SONG = createAudio80Song({ bpm: 120, instruments: { s: EFFECT }, patterns: { p: '| C-4 s' }, order: ['p'] });
 
 /** Returns the sound effects played, in order. */
-function listPlays(log: readonly Audio80Write[]): unknown[] {
-    return log.filter((write) => write.kind === 'play').map((write) => (write as { sound: unknown }).sound);
-}

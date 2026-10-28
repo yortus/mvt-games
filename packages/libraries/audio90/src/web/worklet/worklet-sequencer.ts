@@ -1,5 +1,4 @@
-import { COMMAND_STRIDE, type CommandWriter } from '../../shared';
-import type { PlayableSong, SongPlayer } from '../../song-player';
+import { COMMAND_STRIDE, type CommandWriter, type PlayableSong, type SongPlayer } from '../../shared';
 import type { SongCallMessage, SongMessage, SongPlaceReply } from './song-messages';
 
 // ---------------------------------------------------------------------------
@@ -43,7 +42,10 @@ export interface WorkletSequencer {
 /** A song the sequencer can play: a song of either chip, which names its instruments. */
 export type SequencedSong = PlayableSong & { readonly instruments: readonly object[] };
 
-export interface WorkletSequencerOptions<S extends SequencedSong, W extends CommandWriter> {
+/** What the sequencer needs of the writer its songs play on: its clock and the commands written. */
+export type SequencerWriter = Pick<CommandWriter<never, never>, 'time' | 'update' | 'commands' | 'count' | 'clear'>;
+
+export interface WorkletSequencerOptions<S extends SequencedSong, W extends SequencerWriter> {
     /** The sound card's sample rate, in Hz. */
     readonly sampleRate: number;
     /** Creates the writer the songs play on. It names each instrument by `idOf`, the id the page gave it. */
@@ -59,7 +61,7 @@ export interface WorkletSequencerOptions<S extends SequencedSong, W extends Comm
 // ---------------------------------------------------------------------------
 
 /** Creates a sequencer with no songs, and nothing playing. */
-export function createWorkletSequencer<S extends SequencedSong, W extends CommandWriter>(options: WorkletSequencerOptions<S, W>): WorkletSequencer {
+export function createWorkletSequencer<S extends SequencedSong, W extends SequencerWriter>(options: WorkletSequencerOptions<S, W>): WorkletSequencer {
     const { sendPlace } = options;
     const msPerSample = 1000 / options.sampleRate;
     const songs = new Map<number, S>();
@@ -95,7 +97,6 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
             const musicFromMs = writer.time;
             writer.update(blockMs);
             player.update(blockMs);
-            player.refresh();
             const count = writer.count;
             if (count > 0) {
                 // Each write is stamped on the song's own clock. Restamp it with the chip time of the sample it
@@ -107,7 +108,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
                     if (stamp !== -Infinity) commands[at] = fromMs + (stamp - musicFromMs) / msPerSample * chipMsPerSample;
                 }
                 enqueue(commands, count);
-                writer.clear(commands);
+                writer.clear();
             }
             sendIfMoved(frame);
         },
@@ -115,8 +116,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Comman
         reset() {
             // The synthesiser is reset too, so the song's releases are dropped rather than queued
             player.stop();
-            player.refresh();
-            writer.clear(writer.commands);
+            writer.clear();
             calls.length = 0;
             songs.clear();
             songIds.clear();

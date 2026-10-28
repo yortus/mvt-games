@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
-import type { Audio80Sound } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import { refreshView } from '@mvtjs/html';
 import {
     BURN, CARD_TICK, DEVELOP, KEY_TICK_HIGH, KEY_TICK_LOW, LAUNCH, LOAD_FAILED, NO_RESULTS, PANEL_CLOSE, PANEL_OPEN, PAUSE, POWER_OFF,
@@ -11,10 +10,16 @@ import type { ArcadePhase } from '../models';
 import { POWER_OFF_BEAM_MS, POWER_ON_BEAM_MS, type EntryTransitionPhase, type WallEffectKind } from './entry-transition-view-model';
 import { ArcadeAudioView } from './arcade-audio-view';
 
+// The view is tested by what it asks of its chip: which sounds it plays, and when.
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 describe('ArcadeAudioView', () => {
     it('plays nothing for the page as it first is', () => {
         const { chip } = setUp({ phase: 'playing', isPaused: true, searchText: 'boid', shownCount: 0 });
-        expect(listPlays(chip.log)).toEqual([]);
+        expect(chip.play).not.toHaveBeenCalled();
     });
 
     it('ticks high and low by turns as the search is typed in, and plays one sound for a tag chosen or removed', () => {
@@ -28,7 +33,7 @@ describe('ArcadeAudioView', () => {
         tick();
         state.chosenTagCount = 0;
         tick();
-        expect(listPlays(chip.log)).toEqual([KEY_TICK_HIGH, KEY_TICK_LOW, TAG_ADD, TAG_REMOVE]);
+        expect(listPlayed(chip)).toEqual([KEY_TICK_HIGH, KEY_TICK_LOW, TAG_ADD, TAG_REMOVE]);
     });
 
     it('bonks as a search matches nothing', () => {
@@ -36,7 +41,7 @@ describe('ArcadeAudioView', () => {
         state.searchText = 'zz';
         state.shownCount = 0;
         tick();
-        expect(listPlays(chip.log)).toContain(NO_RESULTS);
+        expect(listPlayed(chip)).toContain(NO_RESULTS);
     });
 
     it('blips as a panel opens and closes, and ticks as the keyboard moves between cards', () => {
@@ -47,7 +52,7 @@ describe('ArcadeAudioView', () => {
         tick();
         state.cardKeyMoves++;
         tick();
-        expect(listPlays(chip.log)).toEqual([PANEL_OPEN, PANEL_CLOSE, CARD_TICK]);
+        expect(listPlayed(chip)).toEqual([PANEL_OPEN, PANEL_CLOSE, CARD_TICK]);
     });
 
     it('plays the coin, the burn, the screen powering on and off, and the cards developing, on the way in and out', () => {
@@ -70,7 +75,7 @@ describe('ArcadeAudioView', () => {
         state.transitionPhase = 'returning';
         state.wallEffect = 'develop';
         tick();
-        expect(listPlays(chip.log)).toEqual([LAUNCH, BURN, POWER_ON, POWER_OFF, DEVELOP]);
+        expect(listPlayed(chip)).toEqual([LAUNCH, BURN, POWER_ON, POWER_OFF, DEVELOP]);
     });
 
     it('plays no static while there is no beam, as when less motion is asked for', () => {
@@ -79,7 +84,7 @@ describe('ArcadeAudioView', () => {
         tick();
         state.transitionPhase = 'powering-off';
         tick();
-        expect(listPlays(chip.log)).toEqual([]);
+        expect(chip.play).not.toHaveBeenCalled();
     });
 
     it('makes each burst of static last as long as the beam', () => {
@@ -98,14 +103,14 @@ describe('ArcadeAudioView', () => {
         state.phase = 'browsing';
         state.isPaused = false;
         tick();
-        expect(listPlays(chip.log)).toEqual([PAUSE, RESUME, PAUSE]);
+        expect(listPlayed(chip)).toEqual([PAUSE, RESUME, PAUSE]);
     });
 
     it('buzzes for an entry that could not load', () => {
         const { chip, state, tick } = setUp();
         state.loadFailure = 'It would not load.';
         tick();
-        expect(listPlays(chip.log)).toEqual([LOAD_FAILED]);
+        expect(listPlayed(chip)).toEqual([LOAD_FAILED]);
     });
 });
 
@@ -132,7 +137,7 @@ function setUp(initial: Partial<State> = {}) {
         phase: 'browsing', isPaused: false, isPanelOpen: false, searchText: '', chosenTagCount: 0, shownCount: 12,
         loadFailure: undefined, transitionPhase: 'idle', wallEffect: 'none', isBeamOn: false, cardKeyMoves: 0, ...initial,
     };
-    const chip = createHeadlessAudio80({ record: true });
+    const chip = createSpiedChip();
     const view = ArcadeAudioView({
         sfx: chip,
         phase: () => state.phase,
@@ -152,6 +157,14 @@ function setUp(initial: Partial<State> = {}) {
     return { chip, state, tick };
 }
 
-function listPlays(log: readonly Audio80Write[]): Audio80Sound[] {
-    return log.filter((write): write is Extract<Audio80Write, { kind: 'play' }> => write.kind === 'play').map((write) => write.sound);
+/** Creates a headless chip whose `play` is spied on, so a test can read what the view asked of it. */
+function createSpiedChip(): HeadlessAudio80 {
+    const chip = createHeadlessAudio80();
+    vi.spyOn(chip, 'play');
+    return chip;
+}
+
+/** The sounds played on `chip`, oldest first. */
+function listPlayed(chip: HeadlessAudio80): unknown[] {
+    return vi.mocked(chip.play).mock.calls.map((call) => call[0]);
 }

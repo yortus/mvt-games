@@ -1,5 +1,6 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 import type { Audio90Sound } from 'audio90';
+import type { Scope } from 'audio90/tracker';
 import type { Tune } from '#tunes';
 import type { MusicChip } from '#shared';
 import type { TrackerModel } from '../models';
@@ -25,6 +26,8 @@ import {
 export interface TrackerViewBindings {
     /** The chip the music plays on. It is the view's output, so the view reads it once. */
     readonly music: MusicChip<'audio90'>;
+    /** What each of the chip's voices is playing, for the channels' meters. The chip fills it, so the view reads it once. */
+    readonly scope: Scope;
     readonly model: TrackerModel;
     /** The tunes, in the order the model numbers them. */
     readonly tunes: readonly Tune[];
@@ -45,7 +48,7 @@ export interface TrackerViewBindings {
  * tune's patterns are laid out once, as the view is made.
  */
 export function TrackerView(bindings: TrackerViewBindings): Container {
-    const { model, music, tunes, instrumentNames, font } = bindings;
+    const { model, music, scope, tunes, instrumentNames, font } = bindings;
     const sheets = tunes.map((tune) => createPatternSheet({ song: tune.song }));
     const tune = () => tunes[model.tuneIndex];
     const song = () => tunes[model.tuneIndex].song;
@@ -110,7 +113,7 @@ export function TrackerView(bindings: TrackerViewBindings): Container {
     instruments.position.set(INSTRUMENTS_X, PANELS_Y);
     view.addChild(instruments);
 
-    const meters = ChannelMetersView({ font, height: METERS_HEIGHT, sheet, scope: music.scope });
+    const meters = ChannelMetersView({ font, height: METERS_HEIGHT, sheet, scope });
     meters.y = METERS_Y;
     view.addChild(meters);
 

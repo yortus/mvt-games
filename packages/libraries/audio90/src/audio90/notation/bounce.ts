@@ -1,8 +1,9 @@
-import { COMMAND_STRIDE } from '../../shared';
-import { createAudio90Synthesiser } from '../synthesiser';
-import { createCommandAudio90 } from '../chip';
+import { COMMAND_STRIDE, createCommandWriter } from '../../shared';
+import { AUDIO90_EFFECT_INDEX, AUDIO90_EFFECT_SETTING_INDEX, createAudio90Synthesiser, OP90_SET_EFFECT } from '../synthesiser';
+import { type Audio90PlayOptions, createAudio90SoundIds } from '../chip';
+import type { Audio90Sound } from './sound';
 import type { Audio90Song } from './song';
-import { createAudio90ChannelState, releaseAudio90Song, writeAudio90Row, writeAudio90SongStart } from './song-writer';
+import { createAudio90SongDriver } from './song-driver';
 
 // Bouncing: playing a song on the Audio90's own engines, in memory, and
 // keeping what it renders as a sample. Every sample the chip plays is made
@@ -39,15 +40,17 @@ export function bounceAudio90Song(options: BounceOptions): Int16Array {
     // With no effect of its own, the song's bounce is dry, so its effects need not run at all
     const hasEffects = song.reverb !== undefined || song.echo !== undefined || song.chorus !== undefined;
     const synthesiser = createAudio90Synthesiser({ sampleRate, character: song.character, queueCapacity: QUEUE_CAPACITY, hasEffects });
-    const writer = createCommandAudio90({
-        onSound: (id, data) => synthesiser.defineSound(id, data),
-        onSample: (id, data) => synthesiser.defineSample(id, data),
+    const writer = createCommandWriter<Audio90Sound, Audio90PlayOptions>({
+        soundIds: createAudio90SoundIds({
+            onSound: (id, data) => synthesiser.defineSound(id, data),
+            onSample: (id, data) => synthesiser.defineSample(id, data),
+        }),
     });
-    writer.setEffect('reverb', 'level', 0, 0);
-    writer.setEffect('echo', 'level', 0, 0);
-    writer.setEffect('chorus', 'level', 0, 0);
-    const state = createAudio90ChannelState();
-    writeAudio90SongStart(writer, song, state, 0, 1);
+    writer.write(OP90_SET_EFFECT, 0, AUDIO90_EFFECT_INDEX.reverb, AUDIO90_EFFECT_SETTING_INDEX.reverb.level, 0, 0);
+    writer.write(OP90_SET_EFFECT, 0, AUDIO90_EFFECT_INDEX.echo, AUDIO90_EFFECT_SETTING_INDEX.echo.level, 0, 0);
+    writer.write(OP90_SET_EFFECT, 0, AUDIO90_EFFECT_INDEX.chorus, AUDIO90_EFFECT_SETTING_INDEX.chorus.level, 0, 0);
+    const driver = createAudio90SongDriver(writer);
+    driver.start(song, 0, 1);
 
     const rowMs = 60000 / (song.bpm * song.rowsPerBeat);
     const swingMs = song.swing * rowMs;
@@ -58,11 +61,11 @@ export function bounceAudio90Song(options: BounceOptions): Int16Array {
             // An odd row is late by the swing. A row lasts until the next starts, and the next pattern's first row is never late
             const delayMs = row % 2 === 1 ? swingMs : 0;
             const nextDelayMs = row + 1 < rowCount && row % 2 === 0 ? swingMs : 0;
-            writeAudio90Row(writer, song, state, orderIndex, row, gridMs + delayMs, rowMs + nextDelayMs - delayMs, 1);
+            driver.playRow(song, orderIndex, row, gridMs + delayMs, rowMs + nextDelayMs - delayMs, 1);
             gridMs += rowMs;
         }
     }
-    releaseAudio90Song(writer, song, gridMs);
+    driver.release(song, gridMs);
 
     const frames = Math.max(1, Math.round(options.lengthMs * sampleRate / 1000));
     const left = new Float32Array(frames);

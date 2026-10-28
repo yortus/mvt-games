@@ -49,7 +49,8 @@ else throw new Error(`Unknown command ${JSON.stringify(command)}: use apply or r
 async function apply(): Promise<void> {
     if (existsSync(KEPT)) throw new Error(`${KEPT} exists, from a pack that didn't finish. Rename it to package.json, then pack again.`);
     const text = readFileSync(MANIFEST, 'utf8');
-    const manifest = JSON.parse(text) as { exports: Record<string, { default: string }> };
+    // The `imports` mappings are for the package's benchmarks, which aren't published
+    const { imports: _imports, ...manifest } = JSON.parse(text) as { exports: Record<string, { default: string }>; imports?: unknown };
     const exports: Record<string, { types: string; default: string }> = {};
     for (const [path, entry] of Object.entries(manifest.exports)) {
         const built = entry.default.replace(/^\.\/src\//, './dist/').replace(/\.ts$/, '');

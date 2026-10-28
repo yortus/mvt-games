@@ -1,8 +1,8 @@
 import { type Audio80Wave, createAudio80Song, createAudio80Sound } from 'audio90';
-import { createHeadlessAudio80 } from 'audio90/headless';
-import { allocationPerFrame, readParams, report, timeFrames } from '../harness/measure';
+import { createRenderingAudio80 } from '#rendering-audio80';
+import { allocationPerFrame, readParams, report, timeFrames } from './measure';
 
-// Measured file for the `audio80` suite. It times the headless chip rendering
+// Measured file for the `audio80` suite. It times the Audio80 rendering
 // one block of 128 samples, which is how much a browser's audio thread asks
 // for at a time. Each block goes into the same buffer, with nothing new
 // written. Every voice holds a note that keeps the chip busy, with a pulse
@@ -18,7 +18,7 @@ const voices = Number(params.voices);
 const wave = String(params.wave) as Audio80Wave;
 const isFiltered = String(params.filtered) === 'both';
 
-const chip = createHeadlessAudio80({ render: { sampleRate: SAMPLE_RATE } });
+const chip = createRenderingAudio80({ sampleRate: SAMPLE_RATE });
 const instruments = [0, 1].map((half) => createAudio80Sound({
     wave,
     pulseWidth: 0.3,

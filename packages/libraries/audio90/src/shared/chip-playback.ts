@@ -67,7 +67,7 @@ export function createChipPlayback<Song extends SongTiming, Sound extends object
             // A view may set it every refresh, so only a change is sent
             if (scale === tempoScale) return;
             tempoScale = scale;
-            songs.setTempoScale(scale);
+            songs.tempoScale = scale;
         },
 
         play(target: Song | Sound, playOptions?: PlayOptions) {

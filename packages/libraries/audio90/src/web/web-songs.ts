@@ -1,5 +1,4 @@
-import type { SongSequencer } from '../shared';
-import type { PlayableSong } from '../song-player';
+import type { PlayableSong, SongSequencer } from '../shared';
 import type { SongCall, SongMessage, SongPlaceReply } from './worklet';
 
 // ---------------------------------------------------------------------------
@@ -57,6 +56,7 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
     let generation = 0;
     // The song last asked for, which is reported until a place of it is heard
     let asked: S | undefined;
+    let tempoScale = 1;
     // The places kept, round and round
     const places = new Float64Array(HISTORY * PLACE_FIELDS);
     let newest = -1;
@@ -92,7 +92,11 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
             changeSong(undefined);
             call('stop', undefined, 0);
         },
-        setTempoScale(scale) {
+        get tempoScale() {
+            return tempoScale;
+        },
+        set tempoScale(scale) {
+            tempoScale = scale;
             call('tempo', undefined, scale);
         },
 

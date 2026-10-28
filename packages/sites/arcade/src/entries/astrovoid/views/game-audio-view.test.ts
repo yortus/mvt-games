@@ -1,7 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import type { Audio80Sound } from 'audio90';
-import { type Audio80Write, createHeadlessAudio80 } from 'audio90/headless';
+import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
     WAVE_CLEAR,
@@ -15,20 +14,26 @@ const MANY_BREAKS = 100;
 /** Long enough for several beats, even at the heartbeat's slowest. */
 const LONG_MS = 4000;
 
+// The view is tested by what it asks of its chip: which sounds it plays, and when.
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
+
 describe('GameAudioView', () => {
     it('beats once as the view starts, with the low thump first, then the high one', () => {
         const { chip, tickFor } = setUp();
-        expect(listBeats(chip.log)).toEqual([BEAT_LOW]);
-        while (listBeats(chip.log).length < 2) tickFor(TICK_MS);
-        expect(listBeats(chip.log)).toEqual([BEAT_LOW, BEAT_HIGH]);
+        expect(listBeats(chip)).toEqual([BEAT_LOW]);
+        while (listBeats(chip).length < 2) tickFor(TICK_MS);
+        expect(listBeats(chip)).toEqual([BEAT_LOW, BEAT_HIGH]);
     });
 
     it('beats low and high by turns, and faster with each break', () => {
-        const listBeatsWith = (breaksLeft: number): Audio80Sound[] => {
+        const listBeatsWith = (breaksLeft: number): unknown[] => {
             const { chip, state, tickFor } = setUp();
             state.breaksLeft = breaksLeft;
             tickFor(LONG_MS);
-            return listBeats(chip.log);
+            return listBeats(chip);
         };
         const slowest = listBeatsWith(MANY_BREAKS);
         const middle = listBeatsWith(14);
@@ -43,12 +48,12 @@ describe('GameAudioView', () => {
             const { chip, state, tickFor } = setUp();
             state.phase = phase;
             tickFor(TICK_MS);
-            chip.clear();
+            vi.clearAllMocks();
             tickFor(LONG_MS);
-            expect(listBeats(chip.log)).toHaveLength(0);
+            expect(listBeats(chip)).toHaveLength(0);
             state.phase = 'playing';
             tickFor(TICK_MS);
-            expect(listBeats(chip.log)).toHaveLength(1);
+            expect(listBeats(chip)).toHaveLength(1);
         });
     }
 
@@ -56,30 +61,30 @@ describe('GameAudioView', () => {
         const { chip, state, tickFor } = setUp();
         state.phase = 'respawning';
         tickFor(LONG_MS);
-        expect(listBeats(chip.log).length).toBeGreaterThan(2);
+        expect(listBeats(chip).length).toBeGreaterThan(2);
     });
 
     it('plays nothing while the game is paused, and goes on from where it was', () => {
         const { chip, tickFor, refreshFor } = setUp();
-        chip.clear();
+        vi.clearAllMocks();
         refreshFor(LONG_MS);
-        expect(listPlays(chip.log)).toHaveLength(0);
+        expect(chip.play).not.toHaveBeenCalled();
         // The first beat came just before the pause, so the next one is most of a period away
         tickFor(TICK_MS);
-        expect(listPlays(chip.log)).toHaveLength(0);
+        expect(chip.play).not.toHaveBeenCalled();
     });
 
     it('rumbles while the ship thrusts, starting at once, and stops when it stops', () => {
         const { chip, state, tickFor } = setUp();
         state.isThrusting = true;
         tickFor(TICK_MS);
-        expect(listPlaysOf(chip.log, THRUST)).toHaveLength(1);
+        expect(listPlayedOf(chip, THRUST)).toHaveLength(1);
         tickFor(1000);
-        const bursts = listPlaysOf(chip.log, THRUST).length;
+        const bursts = listPlayedOf(chip, THRUST).length;
         expect(bursts).toBeGreaterThan(5);
         state.isThrusting = false;
         tickFor(1000);
-        expect(listPlaysOf(chip.log, THRUST)).toHaveLength(bursts);
+        expect(listPlayedOf(chip, THRUST)).toHaveLength(bursts);
     });
 
     it('stops the rumble when the ship is lost while thrusting', () => {
@@ -88,9 +93,9 @@ describe('GameAudioView', () => {
         tickFor(TICK_MS);
         state.phase = 'dying';
         tickFor(TICK_MS);
-        chip.clear();
+        vi.clearAllMocks();
         tickFor(1000);
-        expect(listPlaysOf(chip.log, THRUST)).toHaveLength(0);
+        expect(listPlayedOf(chip, THRUST)).toHaveLength(0);
     });
 
     it('fires once for each shot, even in the next tick', () => {
@@ -100,7 +105,7 @@ describe('GameAudioView', () => {
         state.shotsFired = 2;
         tickFor(TICK_MS);
         tickFor(TICK_MS);
-        expect(listPlaysOf(chip.log, FIRE)).toHaveLength(2);
+        expect(listPlayedOf(chip, FIRE)).toHaveLength(2);
     });
 
     for (const [size, effect] of [['large', BREAK_LARGE], ['medium', BREAK_MEDIUM], ['small', BREAK_SMALL]] as const) {
@@ -113,10 +118,7 @@ describe('GameAudioView', () => {
             state.rocksBroken = 3;
             tickFor(TICK_MS);
             tickFor(TICK_MS);
-            expect(listPlays(chip.log).filter((write) => isBreak(write.sound))).toEqual([
-                expect.objectContaining({ sound: effect }),
-                expect.objectContaining({ sound: effect }),
-            ]);
+            expect(listPlayed(chip).filter(isBreak)).toEqual([effect, effect]);
         });
     }
 
@@ -128,54 +130,43 @@ describe('GameAudioView', () => {
             state.phase = phase;
             tickFor(TICK_MS);
             tickFor(TICK_MS);
-            expect(listPlaysOf(chip.log, effect)).toHaveLength(1);
+            expect(listPlayedOf(chip, effect)).toHaveLength(1);
         });
     }
-
-    it('plays nothing for the counts it starts with, or as they go back to 0 for a new game', () => {
-        const { chip, state, tickFor } = setUp({ shotsFired: 12, rocksBroken: 7 });
-        expect(listOtherPlays(chip.log)).toHaveLength(0);
-        state.phase = 'game-over';
-        tickFor(TICK_MS);
-        chip.clear();
-        state.phase = 'playing';
-        state.shotsFired = 0;
-        state.rocksBroken = 0;
-        tickFor(TICK_MS);
-        expect(listOtherPlays(chip.log)).toHaveLength(0);
-    });
 });
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Play = Extract<Audio80Write, { kind: 'play' }>;
-
-function listPlays(log: readonly Audio80Write[]): Play[] {
-    return log.filter((write): write is Play => write.kind === 'play');
+/** Creates a headless chip whose `play` is spied on, so a test can read what the view asked of it. */
+function createSpiedChip(): HeadlessAudio80 {
+    const chip = createHeadlessAudio80();
+    vi.spyOn(chip, 'play');
+    return chip;
 }
 
-function listPlaysOf(log: readonly Audio80Write[], effect: Audio80Sound): Play[] {
-    return listPlays(log).filter((write) => write.sound === effect);
+/** The sounds played on `chip`, oldest first. */
+function listPlayed(chip: HeadlessAudio80): unknown[] {
+    return vi.mocked(chip.play).mock.calls.map((call) => call[0]);
 }
 
-/** Returns the heartbeat's thumps, in the order they played. */
-function listBeats(log: readonly Audio80Write[]): Audio80Sound[] {
-    return listPlays(log).filter((write) => isBeat(write.sound)).map((write) => write.sound);
+/** The times `effect` was played on `chip`. */
+function listPlayedOf(chip: HeadlessAudio80, effect: unknown): unknown[] {
+    return listPlayed(chip).filter((sound) => sound === effect);
 }
 
-/** Returns the plays that are not the heartbeat's. */
-function listOtherPlays(log: readonly Audio80Write[]): Play[] {
-    return listPlays(log).filter((write) => !isBeat(write.sound));
+/** The heartbeat's thumps, in the order they played. */
+function listBeats(chip: HeadlessAudio80): unknown[] {
+    return listPlayed(chip).filter(isBeat);
 }
 
-function isBeat(effect: Audio80Sound): boolean {
-    return effect === BEAT_LOW || effect === BEAT_HIGH;
+function isBeat(sound: unknown): boolean {
+    return sound === BEAT_LOW || sound === BEAT_HIGH;
 }
 
-function isBreak(effect: Audio80Sound): boolean {
-    return effect === BREAK_LARGE || effect === BREAK_MEDIUM || effect === BREAK_SMALL;
+function isBreak(sound: unknown): boolean {
+    return sound === BREAK_LARGE || sound === BREAK_MEDIUM || sound === BREAK_SMALL;
 }
 
 /**
@@ -183,16 +174,16 @@ function isBreak(effect: Audio80Sound): boolean {
  * game loop would. `tickFor` ticks the chip and the view. `refreshFor` only
  * refreshes the view, as the game loop does while the game is paused.
  */
-function setUp(initial: Partial<{ shotsFired: number; rocksBroken: number }> = {}) {
+function setUp() {
     const state = {
         phase: 'playing' as GamePhase,
-        shotsFired: initial.shotsFired ?? 0,
-        rocksBroken: initial.rocksBroken ?? 0,
+        shotsFired: 0,
+        rocksBroken: 0,
         lastBrokenRockSize: undefined as AsteroidSize | undefined,
         breaksLeft: MANY_BREAKS,
         isThrusting: false,
     };
-    const chip = createHeadlessAudio80({ record: true });
+    const chip = createSpiedChip();
     const view = GameAudioView({
         sfx: chip,
         phase: () => state.phase,

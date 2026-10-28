@@ -1,26 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { type Audio80Writer, createAudio80Sound, createAudio80Song } from '../audio80';
-import { createSongPlayer } from '../song-player';
-import { type Audio80Write, createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
+import { createAudio80Song, createAudio80Sound } from '../audio80';
+import { createHeadlessAudio80 } from './headless-audio80';
+import { hashSamples, measurePeak, render } from './render';
+import { createRenderingAudio80, type RenderingAudio80 } from './rendering-audio80';
+
+// What every headless chip does, tested on the Audio80. The two chips' own tests cover what each does alone.
 
 const TICK_MS = 16;
+/** One tick's samples at the default 48 kHz. */
+const TICK_FRAMES = 768;
 
 describe('a headless chip\'s songs', () => {
-    it('play the same notes, at the same times, as a song player on the same chip', () => {
-        const viaChip = createHeadlessAudio80({ record: true });
-        viaChip.play(SONG);
-        const viaPlayer = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(viaPlayer) });
-        player.play(SONG);
-        player.refresh();
-        for (let i = 0; i < 40; i++) {
-            viaChip.update(TICK_MS);
-            viaPlayer.update(TICK_MS);
-            player.update(TICK_MS);
-            player.refresh();
-        }
-        expect(describeNoteOns(viaChip.log)).toEqual(describeNoteOns(viaPlayer.log));
-        expect(describeNoteOns(viaChip.log).length).toBeGreaterThan(4);
+    it('play as `render` plays them, tick by tick', () => {
+        const chip = createRenderingAudio80();
+        chip.play(SONG);
+        const samples = renderTicks(chip, 40);
+        expect(measurePeak(samples)).toBeGreaterThan(0.05);
+        expect(hashSamples(samples)).toBe(hashSamples(render(SONG, { tickMs: TICK_MS, durationMs: 40 * TICK_MS })));
     });
 
     it('answer with the song asked for at once, and from its start', () => {
@@ -34,22 +30,14 @@ describe('a headless chip\'s songs', () => {
         expect(chip.song).toBeUndefined();
     });
 
-    it('start at the tempo set just after the song, as a song player does with the tempo set first', () => {
-        const viaChip = createHeadlessAudio80({ record: true });
-        viaChip.play(SONG);
-        viaChip.tempoScale = 2;
-        const viaPlayer = createHeadlessAudio80({ record: true });
-        const player = createSongPlayer({ audio80: asWriter(viaPlayer) });
-        player.tempoScale = 2;
-        player.play(SONG);
-        player.refresh();
-        for (let i = 0; i < 20; i++) {
-            viaChip.update(TICK_MS);
-            viaPlayer.update(TICK_MS);
-            player.update(TICK_MS);
-            player.refresh();
-        }
-        expect(describeNoteOns(viaChip.log)).toEqual(describeNoteOns(viaPlayer.log));
+    it('start at a tempo scale set just after the song, as at one set before it', () => {
+        const after = createRenderingAudio80();
+        after.play(SONG);
+        after.tempoScale = 2;
+        const before = createRenderingAudio80();
+        before.tempoScale = 2;
+        before.play(SONG);
+        expect(hashSamples(renderTicks(after, 20))).toBe(hashSamples(renderTicks(before, 20)));
     });
 
     it('stand still while the chip is paused', () => {
@@ -57,9 +45,9 @@ describe('a headless chip\'s songs', () => {
         chip.play(SONG);
         chip.update(TICK_MS);
         chip.pause();
-        const time = asWriter(chip).time;
+        const beat = chip.beat;
         for (let i = 0; i < 20; i++) chip.update(TICK_MS);
-        expect([asWriter(chip).time, chip.row]).toEqual([time, 0]);
+        expect([chip.row, chip.beat]).toEqual([0, beat]);
         chip.resume();
         for (let i = 0; i < 20; i++) chip.update(TICK_MS);
         expect(chip.row).toBeGreaterThan(0);
@@ -67,59 +55,53 @@ describe('a headless chip\'s songs', () => {
 });
 
 describe('a headless chip\'s stop', () => {
-    it('releases the song\'s notes and its own, with no id', () => {
-        const chip = createHeadlessAudio80({ record: true });
+    it('releases the song\'s notes and every sound, with no id', () => {
+        const chip = createRenderingAudio80();
         chip.play(SONG);
-        chip.update(TICK_MS);
-        chip.clear();
+        chip.play(ZAP, { lengthMs: Infinity });
+        renderTicks(chip, 2);
         chip.stop();
         expect(chip.song).toBeUndefined();
-        // The song releases its note
-        expect(chip.log.map((write) => write.kind)).toEqual(['stop', 'note-off']);
+        // A second on, every release has died away
+        expect(measurePeak(renderTicks(chip, 60).subarray(-TICK_FRAMES))).toBeLessThan(1e-6);
     });
 
     it('stops the song, and leaves the sounds playing, with the song\'s id', () => {
-        const chip = createHeadlessAudio80({ record: true });
+        const chip = createRenderingAudio80();
         const song = chip.play(SONG);
-        const zap = chip.play(ZAP);
-        chip.clear();
+        const zap = chip.play(ZAP, { lengthMs: Infinity });
+        renderTicks(chip, 2);
         chip.stop(song);
-        expect(chip.song).toBeUndefined();
-        expect(zap).not.toBe(song);
-        // The song releases its note
-        expect(chip.log.map((write) => write.kind)).toEqual(['stop', 'note-off']);
+        expect([chip.song, zap === song]).toEqual([undefined, false]);
+        expect(measurePeak(renderTicks(chip, 60).subarray(-TICK_FRAMES))).toBeGreaterThan(0.01);
     });
 
     it('cuts every voice at once while the chip is paused, so nothing plays on as it resumes', () => {
-        const chip = createHeadlessAudio80({ render: true });
+        const chip = createRenderingAudio80();
         chip.play(ZAP, { lengthMs: Infinity });
-        chip.update(TICK_MS);
-        chip.renderInto(new Float32Array(768));
+        renderTicks(chip, 1);
         chip.pause();
         chip.stop();
         chip.resume();
-        chip.update(TICK_MS);
-        const after = new Float32Array(768);
-        chip.renderInto(after);
-        expect(Math.max(...after.map(Math.abs))).toBe(0);
+        expect(measurePeak(renderTicks(chip, 1))).toBe(0);
     });
 
     it('lets each voice fade out as its envelope says while the chip plays', () => {
-        const chip = createHeadlessAudio80({ render: true });
+        const chip = createRenderingAudio80();
         chip.play(ZAP, { lengthMs: Infinity });
-        chip.update(TICK_MS);
-        chip.renderInto(new Float32Array(768));
+        renderTicks(chip, 1);
         chip.stop();
-        chip.update(TICK_MS);
-        const after = new Float32Array(768);
-        chip.renderInto(after);
-        expect(Math.max(...after.map(Math.abs))).toBeGreaterThan(0.01);
+        expect(measurePeak(renderTicks(chip, 1))).toBeGreaterThan(0.01);
     });
 });
 
-describe('a headless chip made without render', () => {
-    it('refuses to render, since it has nothing to render', () => {
-        expect(() => createHeadlessAudio80().renderInto(new Float32Array(16))).toThrow('made without `render`');
+describe('a headless chip', () => {
+    it('clamps its volume as every chip does', () => {
+        const chip = createHeadlessAudio80();
+        chip.volume = 3;
+        const high = chip.volume;
+        chip.volume = -1;
+        expect([high, chip.volume]).toEqual([1, 0]);
     });
 });
 
@@ -127,10 +109,14 @@ describe('a headless chip made without render', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type NoteOn = Extract<Audio80Write, { readonly kind: 'note-on' }>;
-
-function describeNoteOns(log: readonly Audio80Write[]): string[] {
-    return log.filter((write): write is NoteOn => write.kind === 'note-on').map((write) => `${write.voice}:${write.note}@${write.time.toFixed(3)}`);
+/** Ticks the chip `ticks` times, as a game loop does, rendering each tick's samples, and returns them. */
+function renderTicks(chip: RenderingAudio80, ticks: number): Float32Array {
+    const samples = new Float32Array(ticks * TICK_FRAMES);
+    for (let i = 0; i < ticks; i++) {
+        chip.update(TICK_MS);
+        chip.renderInto(samples.subarray(i * TICK_FRAMES, (i + 1) * TICK_FRAMES));
+    }
+    return samples;
 }
 
 const SONG = createAudio80Song({
@@ -143,12 +129,3 @@ const SONG = createAudio80Song({
 const OTHER_SONG = createAudio80Song({ bpm: 90, instruments: { s: createAudio80Sound({ wave: 'pulse' }) }, patterns: { a: '| A-3 s' }, order: ['a'] });
 /** A sound with a slow release, so a release is still heard a tick later, and a cut is not. */
 const ZAP = createAudio80Sound({ wave: 'saw', note: 'A-4', envelope: { attackMs: 2, decayMs: 0, sustain: 1, releaseMs: 500 } });
-
-/**
- * A headless chip as its songs write to it. A headless chip is its own
- * writer, which its songs write their notes through, so the cast only names
- * what it already is.
- */
-function asWriter(chip: HeadlessAudio80): HeadlessAudio80 & Audio80Writer {
-    return chip as HeadlessAudio80 & Audio80Writer;
-}

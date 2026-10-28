@@ -10,7 +10,6 @@ import {
     LFO_SQUARE,
     WAVE90_PULSE,
 } from '../synthesiser';
-import { type Audio90WriterCall, createRecordingAudio90Writer } from '../../song-player';
 import { type Audio90Sound, createAudio90Sound, isAudio90Sound } from './sound';
 import { createAudio90Sample, prepareAudio90Samples } from './sample';
 import { AUDIO90_CELL_TEXT_WIDTH, formatAudio90Cell } from './format-cell';
@@ -30,8 +29,6 @@ import {
     createAudio90Song,
     isAudio90Song,
 } from './song';
-import { createAudio90ChannelState, writeAudio90Row, writeAudio90SongStart } from './song-writer';
-import { toPan } from './tokens';
 
 describe('the Audio90\'s notation', () => {
     describe('sounds', () => {
@@ -289,31 +286,6 @@ describe('the Audio90\'s notation', () => {
             expect(() => createAudio90Song({ bpm: 120, instruments: { S: STAB }, patterns: { p: seventeen }, order: ['p'] })).toThrow('17 channels is more than the chip\'s 16 voices');
         });
     });
-
-    describe('what a song writes', () => {
-        it('sets the song\'s tempo, character, effects, pump and mixer as it starts', () => {
-            const audio90 = createRecordingAudio90Writer();
-            const song = createAudio90Song({ ...TWO_CHANNELS, character: 'console', chorus: { level: 0.2 }, mixer: [{ pan: -1 }] });
-            writeAudio90SongStart(audio90.writer, song, createAudio90ChannelState(), 10, 1);
-            expect(audio90.log).toContainEqual({ kind: 'set-tempo', bpm: 120, time: 10 });
-            expect(audio90.log).toContainEqual({ kind: 'set-character', character: 'console', time: 10 });
-            expect(audio90.log).toContainEqual({ kind: 'set-effect', effect: 'chorus', setting: 'level', value: 0.2, time: 10 });
-            // A song with no pump turns off one a song before may have left on
-            expect(audio90.log).toContainEqual({ kind: 'set-effect', effect: 'pump', setting: 'voice', value: -1, time: 10 });
-            expect(audio90.log).toContainEqual({ kind: 'set-voice', voice: 0, setting: 'pan', value: -1, time: 10 });
-            expect(audio90.log).toContainEqual({ kind: 'set-voice', voice: 1, setting: 'pan', value: 0, time: 10 });
-            expect(audio90.log.some((write) => write.kind === 'set-effect' && write.effect === 'reverb')).toBe(false);
-        });
-
-        it('writes a row\'s channel settings before its note, and the note\'s own effects after it', () => {
-            const audio90 = createRecordingAudio90Writer();
-            const song = createAudio90Song({ bpm: 120, instruments: { S: STAB }, patterns: { p: '| A-4 S c47 P40 ! r6' }, order: ['p+2'] });
-            writeAudio90Row(audio90.writer, song, createAudio90ChannelState(), 0, 0, 5, 125, 1);
-            expect(listKinds(audio90.log)).toEqual(['set-voice pan', 'set-voice reverbSend', 'note-on', 'set-voice accent', 'set-voice chord']);
-            expect(audio90.log[0]).toMatchObject({ value: toPan(0x40), time: 5 });
-            expect(audio90.log[2]).toMatchObject({ note: 71, sound: STAB });
-        });
-    });
 });
 
 // ---------------------------------------------------------------------------
@@ -353,6 +325,3 @@ function measureInt16Peak(data: Int16Array): number {
 }
 
 /** Each write's kind, with the setting for a voice setting. */
-function listKinds(log: readonly Audio90WriterCall[]): string[] {
-    return log.map((write) => (write.kind === 'set-voice' ? `set-voice ${write.setting}` : write.kind));
-}

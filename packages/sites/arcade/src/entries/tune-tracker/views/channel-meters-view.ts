@@ -1,5 +1,5 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import { AUDIO90_SCOPE_PANS, AUDIO90_SCOPE_POINTS, AUDIO90_VOICE_COUNT } from 'audio90/tracker';
+import { AUDIO90_VOICE_COUNT, type Scope, SCOPE_POINTS } from 'audio90/tracker';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import type { PatternSheet } from './pattern-sheet';
 import { createGlyphRow, GLYPH_HEIGHT, GLYPH_WIDTH, type PixelFont } from './pixel-font';
@@ -16,11 +16,12 @@ export interface ChannelMetersViewBindings {
     /** The song's patterns, laid out: each meter sits over its channel's column. */
     readonly sheet: () => PatternSheet;
     /**
-     * The chip's latest report of its voices: `AUDIO90_SCOPE_POINTS` samples of
-     * each voice's output, then each voice's pan. The chip fills it in, so the
-     * view reads the array once and its contents every frame.
+     * What each of the chip's voices is playing, and where it sits. The chip
+     * fills it, so the view reads it once and its arrays' contents every
+     * frame. A channel with no voice in the scope, as on a chip that is still
+     * silent, shows as a silent voice.
      */
-    readonly scope: Float32Array;
+    readonly scope: Scope;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,7 +36,8 @@ export interface ChannelMetersViewBindings {
  * presentation state, advanced in the update step.
  */
 export function ChannelMetersView(bindings: ChannelMetersViewBindings): Container {
-    const { font, height, scope } = bindings;
+    const { font, height } = bindings;
+    const { points: scopePoints, pans, voiceCount } = bindings.scope;
     // The sheet the meters are laid out for
     let shown: PatternSheet | undefined;
     // Each voice's level, from 0 to 1, which falls back from its peaks
@@ -67,7 +69,7 @@ export function ChannelMetersView(bindings: ChannelMetersViewBindings): Containe
         pan.y = PAN_Y;
         pan.setSize(PAN_MARK_WIDTH, PAN_MARK_HEIGHT);
         const points: Sprite[] = [];
-        for (let i = 0; i < AUDIO90_SCOPE_POINTS; i++) points.push(createBlock(container, MUSIC_COLOR));
+        for (let i = 0; i < SCOPE_POINTS; i++) points.push(createBlock(container, MUSIC_COLOR));
         return { container, well, track, level, pan, points, width: 0 };
     }
 
@@ -106,33 +108,35 @@ export function ChannelMetersView(bindings: ChannelMetersViewBindings): Containe
             meter.container.position.set(left + sheet.channelColumns[v] * GLYPH_WIDTH, Math.floor((height - METER_HEIGHT) / 2));
             meter.well.setSize(width, SCOPE_HEIGHT);
             meter.track.setSize(width, LEVEL_HEIGHT);
-            for (let i = 0; i < AUDIO90_SCOPE_POINTS; i++) {
+            for (let i = 0; i < SCOPE_POINTS; i++) {
                 const point = meter.points[i];
-                point.x = Math.round(i * (width - 1) / (AUDIO90_SCOPE_POINTS - 1));
+                point.x = Math.round(i * (width - 1) / (SCOPE_POINTS - 1));
                 point.setSize(1, 1);
             }
         }
     }
 
     function drawMeter(meter: Meter, v: number): void {
-        const at = v * AUDIO90_SCOPE_POINTS;
+        const at = v * SCOPE_POINTS;
         const peak = measurePeak(v);
         const scale = peak > 0 ? 1 / Math.max(peak, QUIETEST_SHAPE) : 0;
         const middle = SCOPE_Y + SCOPE_HEIGHT / 2;
         const half = SCOPE_HEIGHT / 2 - 1;
-        for (let i = 0; i < AUDIO90_SCOPE_POINTS; i++) {
-            meter.points[i].y = Math.round(middle - 0.5 - scope[at + i] * scale * half);
+        for (let i = 0; i < SCOPE_POINTS; i++) {
+            // A silent voice, or a channel with no voice in the scope, draws a flat line
+            meter.points[i].y = Math.round(middle - 0.5 - (scale === 0 ? 0 : scopePoints[at + i] * scale * half));
         }
         meter.level.setSize(Math.round(meter.width * levels[v]), LEVEL_HEIGHT);
         meter.pan.visible = peak > 0;
-        meter.pan.x = Math.round((scope[AUDIO90_SCOPE_PANS + v] + 1) / 2 * (meter.width - PAN_MARK_WIDTH));
+        if (peak > 0) meter.pan.x = Math.round((pans[v] + 1) / 2 * (meter.width - PAN_MARK_WIDTH));
     }
 
-    /** The loudest sample in voice `v`'s scope, from 0 to 1. */
+    /** The loudest sample in voice `v`'s scope, from 0 to 1. A channel with no voice in the scope is silent. */
     function measurePeak(v: number): number {
-        const at = v * AUDIO90_SCOPE_POINTS;
+        if (v >= voiceCount) return 0;
+        const at = v * SCOPE_POINTS;
         let peak = 0;
-        for (let i = 0; i < AUDIO90_SCOPE_POINTS; i++) peak = Math.max(peak, Math.abs(scope[at + i]));
+        for (let i = 0; i < SCOPE_POINTS; i++) peak = Math.max(peak, Math.abs(scopePoints[at + i]));
         return peak;
     }
 }

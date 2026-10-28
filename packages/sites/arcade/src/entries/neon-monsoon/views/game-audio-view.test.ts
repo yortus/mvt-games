@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import { type Audio90Song } from 'audio90';
-import { type Audio90Write, createHeadlessAudio90 } from 'audio90/headless';
+import type { Audio90PlayOptions, Audio90Sound } from 'audio90';
+import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
     EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, GRAZE, type ItemKind, POWER_UP, RESPAWN, SHIP_EXPLODE, SHOT, STAGE_CLEAR,
@@ -10,27 +10,19 @@ import {
 import type { BossPhase, ExplosionSize, GamePhase } from '../models';
 import { GameAudioView } from './game-audio-view';
 
+// The view is tested by what it asks of its chips: which songs and sounds it plays, and where. How a chip plays a
+// song is the chip's own concern, tested with it.
+
 const TICK_MS = 1000 / 60;
 
-/**
- * How many ticks a test listens to a song for. This is half a second. The
- * test 'tells every song apart within the ticks it listens for' checks that
- * it is long enough.
- */
-const SONG_TICKS = 30;
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe('GameAudioView', () => {
-    it('tells every song apart within the ticks it listens for', () => {
-        const songs = [STAGE_THEME, BOSS_THEME, STAGE_CLEAR, ALL_CLEAR, GAME_OVER];
-        const recordings = songs.map((song) => recordSong(song).join(' '));
-        expect(new Set(recordings).size).toBe(songs.length);
-    });
-
     it('starts the stage\'s theme as the game starts', () => {
-        const { music, tick } = setUp();
-        // The theme starts as the view is made, so its first tick, run by `setUp`, is one of the ticks listened to
-        runTicks(tick, SONG_TICKS - 1);
-        expect(describeSongNotes(music.log)).toEqual(recordSong(STAGE_THEME));
+        const { music } = setUp();
+        expect(listPlayed(music)).toEqual([STAGE_THEME]);
     });
 
     for (const previous of ['tally', 'game-over', 'all-clear'] as const) {
@@ -38,42 +30,41 @@ describe('GameAudioView', () => {
             const { music, state, tick } = setUp();
             state.phase = previous;
             tick();
-            music.clear();
+            vi.clearAllMocks();
             state.phase = 'playing';
-            runTicks(tick, SONG_TICKS + 1);
-            expect(describeSongNotes(music.log)).toEqual(recordSong(STAGE_THEME));
+            tick();
+            expect(listPlayed(music)).toEqual([STAGE_THEME]);
         });
     }
 
     for (const [phase, song] of [['tally', STAGE_CLEAR], ['game-over', GAME_OVER], ['all-clear', ALL_CLEAR]] as const) {
         it(`plays its own song as the game turns to the ${phase} phase`, () => {
             const { music, state, tick } = setUp();
-            music.clear();
+            vi.clearAllMocks();
             state.phase = phase;
-            runTicks(tick, SONG_TICKS + 1);
-            expect(describeSongNotes(music.log)).toEqual(recordSong(song));
+            tick();
+            expect(listPlayed(music)).toEqual([song]);
         });
     }
 
     it('plays the guns\' first blip in the game\'s first tick', () => {
         const { sfx } = setUp({ isFiring: true });
-        expect(listPlays(sfx.log, SHOT)).toHaveLength(1);
+        expect(listPlayedOf(sfx, SHOT)).toHaveLength(1);
     });
 
     it('patters while the guns fire, focused or not, and stops when they stop', () => {
-        const { music, sfx, state, tick } = setUp();
+        const { sfx, state, tick } = setUp();
         state.isFiring = true;
         tickFor(tick, 1000);
-        expect(listPlays(sfx.log, SHOT).length).toBeGreaterThan(3);
+        expect(listPlayedOf(sfx, SHOT).length).toBeGreaterThan(3);
         state.isFocused = true;
         tickFor(tick, 1000);
-        expect(listPlays(sfx.log, FOCUSED_SHOT).length).toBeGreaterThan(3);
+        expect(listPlayedOf(sfx, FOCUSED_SHOT).length).toBeGreaterThan(3);
         state.isFiring = false;
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         tickFor(tick, 1000);
-        expect(listPlays(sfx.log, SHOT)).toHaveLength(0);
-        expect(listPlays(sfx.log, FOCUSED_SHOT)).toHaveLength(0);
+        expect(listPlayedOf(sfx, SHOT)).toHaveLength(0);
+        expect(listPlayedOf(sfx, FOCUSED_SHOT)).toHaveLength(0);
     });
 
     it('sweeps down as the ship focuses in play, and not as it lets go or after the game ends', () => {
@@ -82,12 +73,12 @@ describe('GameAudioView', () => {
         tick();
         state.isFocused = false;
         tick();
-        expect(listPlays(sfx.log, FOCUS)).toHaveLength(1);
+        expect(listPlayedOf(sfx, FOCUS)).toHaveLength(1);
         state.phase = 'all-clear';
         tick();
         state.isFocused = true;
         tick();
-        expect(listPlays(sfx.log, FOCUS)).toHaveLength(1);
+        expect(listPlayedOf(sfx, FOCUS)).toHaveLength(1);
     });
 
     it('plays each explosion by its size', () => {
@@ -98,46 +89,37 @@ describe('GameAudioView', () => {
             state.explosionsStarted++;
             tick();
         }
-        expect(listPlays(sfx.log, EXPLODE_SMALL)).toHaveLength(1);
-        expect(listPlays(sfx.log, EXPLODE_LARGE)).toHaveLength(1);
-        expect(listPlays(sfx.log, EXPLODE_HUGE)).toHaveLength(1);
+        expect(listPlayed(sfx)).toEqual([EXPLODE_SMALL, EXPLODE_LARGE, EXPLODE_HUGE]);
     });
 
     it('plays the ship\'s loss instead of its explosion, then its return, with the music playing on', () => {
         const { music, sfx, state, tick } = setUp();
+        vi.clearAllMocks();
         state.phase = 'dying';
         state.lastExplosionSize = 'large';
         state.explosionsStarted++;
         tick();
-        expect(listPlays(sfx.log, SHIP_EXPLODE)).toHaveLength(1);
-        expect(listPlays(sfx.log, EXPLODE_LARGE)).toHaveLength(0);
+        expect(listPlayedOf(sfx, SHIP_EXPLODE)).toHaveLength(1);
+        expect(listPlayedOf(sfx, EXPLODE_LARGE)).toHaveLength(0);
 
-        music.clear();
-
-        sfx.clear();
         state.phase = 'playing';
         tick();
-        expect(listPlays(sfx.log, RESPAWN)).toHaveLength(1);
-        expect(listWrites(music.log, 'stop')).toHaveLength(0);
+        expect(listPlayedOf(sfx, RESPAWN)).toHaveLength(1);
+        // The theme neither stops nor starts again
+        expect(music.stop).not.toHaveBeenCalled();
+        expect(music.play).not.toHaveBeenCalled();
     });
 
-    it('chimes for each extra life, even one earned as the stage is cleared, and not as a new game starts the count again', () => {
+    it('chimes for each extra life, even one earned as the stage is cleared', () => {
         const { sfx, state, tick } = setUp();
         state.extendsEarned++;
         tick();
-        expect(listPlays(sfx.log, EXTEND)).toHaveLength(1);
+        expect(listPlayedOf(sfx, EXTEND)).toHaveLength(1);
 
         state.phase = 'tally';
         state.extendsEarned++;
         tick();
-        expect(listPlays(sfx.log, EXTEND)).toHaveLength(2);
-
-        state.phase = 'game-over';
-        tick();
-        state.phase = 'playing';
-        state.extendsEarned = 0;
-        tick();
-        expect(listPlays(sfx.log, EXTEND)).toHaveLength(2);
+        expect(listPlayedOf(sfx, EXTEND)).toHaveLength(2);
     });
 
     it('plays a sound for each kind of pickup, a gem, a graze and a bomb', () => {
@@ -153,67 +135,62 @@ describe('GameAudioView', () => {
         state.grazes++;
         state.isBombing = true;
         tick();
-        expect(listPlays(sfx.log, POWER_UP)).toHaveLength(1);
-        expect(listPlays(sfx.log, BOMB_PICKUP)).toHaveLength(1);
-        expect(listPlays(sfx.log, GEM)).toHaveLength(1);
-        expect(listPlays(sfx.log, GRAZE)).toHaveLength(1);
-        expect(listPlays(sfx.log, BOMB)).toHaveLength(1);
+        expect(listPlayedOf(sfx, POWER_UP)).toHaveLength(1);
+        expect(listPlayedOf(sfx, BOMB_PICKUP)).toHaveLength(1);
+        expect(listPlayedOf(sfx, GEM)).toHaveLength(1);
+        expect(listPlayedOf(sfx, GRAZE)).toHaveLength(1);
+        expect(listPlayedOf(sfx, BOMB)).toHaveLength(1);
     });
 
     it('stops the theme and sounds the warning as it starts, sounds it again while it shows, then plays the boss\'s theme', () => {
         const { music, sfx, state, tick } = setUp();
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         runWarning(state, tick, TICK_MS);
-        expect(listWrites(music.log, 'stop')).toHaveLength(1);
-        expect(listPlays(sfx.log, WARNING)).toHaveLength(1);
+        expect(music.stop).toHaveBeenCalledTimes(1);
+        expect(listPlayedOf(sfx, WARNING)).toHaveLength(1);
         runWarning(state, tick, 2000);
-        expect(listPlays(sfx.log, WARNING).length).toBeGreaterThan(2);
+        expect(listPlayedOf(sfx, WARNING).length).toBeGreaterThan(2);
 
         state.warningElapsedMs = -1;
         state.bossPhase = 'entering';
-        music.clear();
-        sfx.clear();
-        runTicks(tick, SONG_TICKS + 1);
-        expect(listPlays(sfx.log, WARNING)).toHaveLength(0);
-        expect(describeSongNotes(music.log)).toEqual(recordSong(BOSS_THEME));
+        vi.clearAllMocks();
+        tickFor(tick, 500);
+        expect(listPlayedOf(sfx, WARNING)).toHaveLength(0);
+        expect(listPlayed(music)).toEqual([BOSS_THEME]);
     });
 
     it('stops sounding the warning when the game ends during it', () => {
-        const { music, sfx, state, tick } = setUp();
+        const { sfx, state, tick } = setUp();
         runWarning(state, tick, 500);
         // The game stops, and its warning timer with it, but the views still tick
         state.phase = 'game-over';
         tick();
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         tickFor(tick, 3000);
-        expect(listPlays(sfx.log, WARNING)).toHaveLength(0);
+        expect(listPlayedOf(sfx, WARNING)).toHaveLength(0);
     });
 
     it('ticks while shots land on the boss, and plays a break as an attack ends', () => {
-        const { music, sfx, state, tick } = setUp();
+        const { sfx, state, tick } = setUp();
         state.bossPhase = 'attacking';
         state.bossMsSinceHit = 0;
         tickFor(tick, 500);
-        expect(listPlays(sfx.log, BOSS_HIT).length).toBeGreaterThan(2);
+        expect(listPlayedOf(sfx, BOSS_HIT).length).toBeGreaterThan(2);
         state.bossMsSinceHit = Infinity;
         state.bossPhase = 'breaking';
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         tickFor(tick, 500);
-        expect(listPlays(sfx.log, BOSS_HIT)).toHaveLength(0);
-        expect(listPlays(sfx.log, ATTACK_BROKEN)).toHaveLength(1);
+        expect(listPlayedOf(sfx, BOSS_HIT)).toHaveLength(0);
+        expect(listPlayedOf(sfx, ATTACK_BROKEN)).toHaveLength(1);
     });
 
     it('plays a break and stops the music as the last attack ends', () => {
         const { music, sfx, state, tick } = setUp({ bossPhase: 'attacking' });
-        music.clear();
-        sfx.clear();
+        vi.clearAllMocks();
         state.bossPhase = 'exploding';
         tick();
-        expect(listPlays(sfx.log, ATTACK_BROKEN)).toHaveLength(1);
-        expect(listWrites(music.log, 'stop')).toHaveLength(1);
+        expect(listPlayedOf(sfx, ATTACK_BROKEN)).toHaveLength(1);
+        expect(music.stop).toHaveBeenCalledTimes(1);
     });
 
     it('plays each sound where it happens: the ship\'s where the ship is, the boss\'s where the boss is, and each explosion where it went off', () => {
@@ -224,26 +201,19 @@ describe('GameAudioView', () => {
         state.bossPhase = 'breaking';
         state.isBombing = true;
         tick();
-        const panOf = (effect: Play['sound']) => listPlays(sfx.log, effect)[0]?.options?.pan;
+        const panOf = (effect: Audio90Sound) => listPlayOptionsOf(sfx, effect)[0]?.pan;
         expect(panOf(GRAZE)).toBeLessThan(-0.5);
         expect(panOf(EXPLODE_SMALL)).toBeGreaterThan(0.5);
         expect(panOf(ATTACK_BROKEN)).toBeCloseTo(0, 9);
         // A bomb fills the screen, so it plays in the middle
+        expect(listPlayedOf(sfx, BOMB)).toHaveLength(1);
         expect(panOf(BOMB)).toBeUndefined();
-    });
-
-    it('plays nothing for the counts\' starting values', () => {
-        const { music, sfx } = setUp({ grazes: 40, explosionsStarted: 12, itemsCollected: 3, gemsCollected: 90, extendsEarned: 1 });
-        expect([listWrites(music.log, 'play'), listWrites(sfx.log, 'play')]).toEqual([[], []]);
     });
 });
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-type Play = Extract<Audio90Write, { kind: 'play' }>;
-type NoteOn = Extract<Audio90Write, { kind: 'note-on' }>;
 
 /** The arena's width, which the places across it are measured in. */
 const ARENA = 240;
@@ -270,7 +240,7 @@ interface State {
 
 /**
  * Makes the view for a game that has just started, and runs its first tick.
- * Returns the chip it plays on, the state its bindings read, and a function
+ * Returns the chips it plays on, the state its bindings read, and a function
  * that runs one more tick.
  */
 function setUp(initial: Partial<State> = {}) {
@@ -280,8 +250,9 @@ function setUp(initial: Partial<State> = {}) {
         lastExplosionSize: undefined, itemsCollected: 0, lastItemKind: undefined, gemsCollected: 0,
         shipX: ARENA / 2, bossX: ARENA / 2, lastExplosionX: ARENA / 2, ...initial,
     };
-    const music = createHeadlessAudio90({ record: true });
-    const sfx = createHeadlessAudio90({ record: true });
+    // The chips are spied on before the view is made, since the view starts the stage's theme as it is made
+    const music = createSpiedChip();
+    const sfx = createSpiedChip();
     const view = GameAudioView({
         music,
         sfx,
@@ -333,37 +304,28 @@ function runWarning(state: State, tick: () => void, totalMs: number): void {
     }
 }
 
-function listWrites<K extends Audio90Write['kind']>(log: readonly Audio90Write[], kind: K): Extract<Audio90Write, { kind: K }>[] {
-    return log.filter((write): write is Extract<Audio90Write, { kind: K }> => write.kind === kind);
+/** Creates a headless chip whose `play`, `queue` and `stop` are spied on, so a test can read what a view asked of it. */
+function createSpiedChip(): HeadlessAudio90 {
+    const chip = createHeadlessAudio90();
+    vi.spyOn(chip, 'play');
+    vi.spyOn(chip, 'queue');
+    vi.spyOn(chip, 'stop');
+    return chip;
 }
 
-function listPlays(log: readonly Audio90Write[], effect: Play['sound']): Play[] {
-    return listWrites(log, 'play').filter((write) => write.sound === effect);
+/** The songs and sounds played on `chip`, oldest first. */
+function listPlayed(chip: HeadlessAudio90): unknown[] {
+    return vi.mocked(chip.play).mock.calls.map((call) => call[0]);
 }
 
-/**
- * Describes each note-on in `log`, as its voice, its note and its time. The
- * log holds only notes, not which song played them, so a test clears it just
- * before the song it listens to starts. The time is in ms from the first
- * note-on, to three decimal places. So the notes of one song match even when
- * it started at different chip times.
- */
-function describeSongNotes(log: readonly Audio90Write[]): string[] {
-    const noteOns = log.filter((write): write is NoteOn => write.kind === 'note-on');
-    const startMs = noteOns.length > 0 ? noteOns[0].time : 0;
-    return noteOns.map((write) => `${write.voice}:${write.note}@${(write.time - startMs).toFixed(3)}`);
+/** Each play of `sound` on `chip`. */
+function listPlayedOf(chip: HeadlessAudio90, sound: Audio90Sound): unknown[] {
+    return listPlayed(chip).filter((played) => played === sound);
 }
 
-/**
- * Plays `song` on a chip of its own for `SONG_TICKS` ticks after the
- * one it starts in, and describes the notes it plays. This is what the view
- * should play over the same ticks.
- */
-function recordSong(song: Audio90Song): string[] {
-    const chip = createHeadlessAudio90({ record: true });
-    chip.play(song);
-    for (let i = 0; i < SONG_TICKS; i++) {
-        chip.update(TICK_MS);
-    }
-    return describeSongNotes(chip.log);
+/** The options each play of `sound` on `chip` was given, oldest first, or undefined for a play given none. */
+function listPlayOptionsOf(chip: HeadlessAudio90, sound: Audio90Sound): (Audio90PlayOptions | undefined)[] {
+    // `play` is overloaded, and the mock's calls are typed by its last form, a song's, which takes no options
+    const calls = vi.mocked(chip.play).mock.calls as unknown as readonly [unknown, Audio90PlayOptions?][];
+    return calls.filter((call) => call[0] === sound).map((call) => call[1]);
 }

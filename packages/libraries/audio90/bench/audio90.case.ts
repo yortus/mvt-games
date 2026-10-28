@@ -5,14 +5,14 @@ import {
     createAudio90Sample,
     createAudio90Song,
 } from 'audio90';
-import { createHeadlessAudio90 } from 'audio90/headless';
-import { allocationPerFrame, readParams, report, timeFrames } from '../harness/measure';
+import { createRenderingAudio90 } from '#rendering-audio90';
+import { allocationPerFrame, readParams, report, timeFrames } from './measure';
 
-// Measured file for the `audio90` suite. It times the headless Audio90
+// Measured file for the `audio90` suite. It times the Audio90
 // rendering one stereo block of 128 samples, which is how much a browser's
 // audio thread asks for at a time, with every voice holding a note and the
-// three effects running. It also times a busy song played through the music
-// player a tick at a time, as a game loop plays it, and bouncing samples, as
+// three effects running. It also times a busy song played on the chip
+// a tick at a time, as a game loop plays it, and bouncing samples, as
 // an entry does while it loads. Every sound here is written for the suite.
 
 const SAMPLE_RATE = 48000;
@@ -240,7 +240,7 @@ if (measure === 'bounce') {
     report({ msPerBounce: times[3], samples: length });
 }
 else if (engine === 'song') {
-    const chip = createHeadlessAudio90({ render: { sampleRate: SAMPLE_RATE } });
+    const chip = createRenderingAudio90({ sampleRate: SAMPLE_RATE });
     chip.play(createSong());
     const frames = SAMPLE_RATE / 60;
     const left = new Float32Array(frames);
@@ -256,16 +256,17 @@ else if (engine === 'song') {
     report({ usPerTick, bytesPerTick: await allocationPerFrame(tick) });
 }
 else {
-    const chip = createHeadlessAudio90({ render: { sampleRate: SAMPLE_RATE, character: engine === 'fm-console' ? 'console' : 'studio' } });
-    // Every voice holds a note, as a song's first row starts them: one channel a voice
-    const sounds = engine === 'mix' ? MIX : [ONE_ENGINE[engine]];
-    const letters = 'abcdefgh';
-    const instruments: Record<string, Audio90Sound> = {};
-    for (let i = 0; i < sounds.length; i++) instruments[letters[i]] = sounds[i];
-    const cells: string[] = [];
-    for (let v = 0; v < voices; v++) cells.push(`| ${toNoteName(48 + (v * 5) % 24)} ${letters[v % sounds.length]} vC`);
-    const held = createAudio90Song({ bpm: 120, instruments, patterns: { p: cells.join(' ') }, order: ['p'] });
-    chip.play(held);
+    const chip = createRenderingAudio90({ sampleRate: SAMPLE_RATE, character: engine === 'fm-console' ? 'console' : 'studio' });
+    // Every voice holds a note, as a song's first row starts them: one channel a voice. With no voices, only the effects run
+    if (voices > 0) {
+        const sounds = engine === 'mix' ? MIX : [ONE_ENGINE[engine]];
+        const letters = 'abcdefgh';
+        const instruments: Record<string, Audio90Sound> = {};
+        for (let i = 0; i < sounds.length; i++) instruments[letters[i]] = sounds[i];
+        const cells: string[] = [];
+        for (let v = 0; v < voices; v++) cells.push(`| ${toNoteName(48 + (v * 5) % 24)} ${letters[v % sounds.length]} vC`);
+        chip.play(createAudio90Song({ bpm: 120, instruments, patterns: { p: cells.join(' ') }, order: ['p'] }));
+    }
     // One tick starts the song's first row. The song moves no further, since nothing else moves the chip's clock
     chip.update(TICK_MS);
     const left = new Float32Array(BLOCK);

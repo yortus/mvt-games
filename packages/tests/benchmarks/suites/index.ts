@@ -1,6 +1,4 @@
 import type { Suite } from '../harness/suite';
-import { audio80Suite } from './audio80';
-import { audio90Suite } from './audio90';
 import { changeDetectionSuite } from './change-detection';
 import { constructionSuite } from './construction';
 import { fallingSandScalingSuite } from './falling-sand-scaling';
@@ -26,6 +24,4 @@ export const suites: readonly Suite[] = [
     memorySuite,
     gamesAndDemosSuite,
     fallingSandScalingSuite,
-    audio80Suite,
-    audio90Suite,
 ];

@@ -1,4 +1,3 @@
-import type { ChipBatch } from '../shared';
 import type { RunnerMessage } from './worklet';
 
 // A stand-in for a browser's audio context, for the browser chips' tests in
@@ -27,8 +26,10 @@ export interface FakeAudioContext {
     setState: (state: AudioContextState) => void;
     /** Moves the context's `currentTime` to `seconds`, as the sound card plays. */
     setCurrentTime: (seconds: number) => void;
-    /** The batches among `messages`. */
-    listBatches: () => ChipBatch[];
+    /** The messages of one kind among `messages`, oldest first. */
+    listMessages: <K extends RunnerMessage['kind']>(kind: K) => Extract<RunnerMessage, { readonly kind: K }>[];
+    /** Each gain the chip has set its output to, oldest first. */
+    readonly gains: readonly number[];
     /** Delivers `reply` to the node's port, as the worklet would send it. */
     reply: (reply: object) => void;
 }
@@ -44,6 +45,7 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
     const messages: RunnerMessage[] = [];
     const nodeOptions: AudioWorkletNodeOptions[] = [];
     const processorNames: string[] = [];
+    const gains: number[] = [];
     const stateListeners = new Set<() => void>();
     const audioNode = { connect: ignore, disconnect: ignore };
     const port = {
@@ -64,7 +66,7 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
         baseLatency: FAKE_BASE_LATENCY_S,
         outputLatency: FAKE_OUTPUT_LATENCY_S,
         destination: audioNode,
-        createGain: () => ({ ...audioNode, gain: { setTargetAtTime: ignore } }),
+        createGain: () => ({ ...audioNode, gain: { setTargetAtTime: (value: number) => gains.push(value) } }),
         audioWorklet: {
             addModule: () => (loadError === undefined ? Promise.resolve() : Promise.reject(loadError)),
         },
@@ -93,7 +95,8 @@ export function createFakeAudioContext(state: AudioContextState, loadError?: Err
         setCurrentTime(seconds) {
             currentTime = seconds;
         },
-        listBatches: () => messages.filter((message): message is ChipBatch => message.kind === 'batch'),
+        listMessages: <K extends RunnerMessage['kind']>(kind: K) => messages.filter((message): message is Extract<RunnerMessage, { readonly kind: K }> => message.kind === kind),
+        gains,
         reply(reply) {
             port.onmessage?.({ data: reply });
         },

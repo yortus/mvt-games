@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { Audio80Writer } from '../audio80';
+import { createAudio80Sound } from '../audio80';
 import { createAudio90Sound, HELD_ENVELOPE } from '../audio90';
 import { encodeWav, toInt16 } from './encode-wav';
-import { createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
-import { findSounds, hashSamples, measurePeak, render, renderTicks } from './render';
+import { findSounds, hashSamples, measurePeak, render } from './render';
 
-describe('renderTicks', () => {
+describe('render', () => {
     for (const tickMs of [0, -1, NaN]) {
         it(`refuses a tick of ${tickMs} ms, which would never reach the end`, () => {
-            expect(() => renderTicks(createHeadlessAudio80({ render: true }) as HeadlessAudio80 & Audio80Writer, 100, tickMs, () => undefined)).toThrow('tickMs must be positive');
+            expect(() => render(createAudio80Sound({}), { tickMs })).toThrow('render: tickMs must be above 0');
         });
     }
 });

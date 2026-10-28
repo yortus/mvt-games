@@ -19,8 +19,8 @@ import { createHeadlessAudio80, createHeadlessAudio90, type HeadlessAudio80, typ
 /** The fake browser's audio, as a test sees and steers it. */
 export interface FakeWebAudio {
     /**
-     * The browser's Audio80s are faked. Each is a headless chip that logs its
-     * writes. They are listed in the order they are made: the page's own two
+     * The browser's Audio80s are faked. Each is a headless chip that keeps
+     * what is played on it. They are listed in the order they are made: the page's own two
      * first, for its sounds then its music, as the sound is first prepared,
      * then the entries' two, for their music then their sound effects, as an
      * entry that plays on them is first prepared.
@@ -36,14 +36,16 @@ export interface FakeWebAudio {
     failsNextImport: boolean;
 }
 
-/** A fake browser chip: a headless chip that logs its writes, and counts the times everything on it was stopped. */
-export interface FakeChip extends HeadlessAudio80 {
-    /** How many times `stop` has been called with no id, which stops everything. */
-    readonly stopAllCount: number;
-}
+/** A fake browser chip: a headless chip that keeps what is played on it, and counts the times everything on it was stopped. */
+export interface FakeChip extends HeadlessAudio80, PlayRecord {}
 
 /** A fake browser Audio90, as `FakeChip` is a fake Audio80. */
-export interface FakeAudio90Chip extends HeadlessAudio90 {
+export interface FakeAudio90Chip extends HeadlessAudio90, PlayRecord {}
+
+/** What a fake chip keeps of the calls made on it. */
+export interface PlayRecord {
+    /** Each sound and song played on the chip, oldest first. */
+    readonly played: readonly object[];
     /** How many times `stop` has been called with no id, which stops everything. */
     readonly stopAllCount: number;
 }
@@ -154,31 +156,41 @@ function stubGlobal(name: string, value: unknown): void {
 
 /** Creates a fake browser chip, and adds it to the fake's chips. */
 function createFakeChip(options: { readonly fake: MutableFakeWebAudio }): Audio80 {
-    const chip = countStopsAll(createHeadlessAudio80({ record: true }));
+    const chip = recordPlays(createHeadlessAudio80());
     options.fake.chips.push(chip);
     return chip;
 }
 
 /** Creates a fake browser Audio90, and adds it to the fake's Audio90s. */
 function createFakeAudio90Chip(options: { readonly fake: MutableFakeWebAudio }): Audio90 {
-    const chip = countStopsAll(createHeadlessAudio90({ record: true }));
+    const chip = recordPlays(createHeadlessAudio90());
     options.fake.audio90Chips.push(chip);
     return chip;
 }
 
-/** Makes `chip` count the times `stop` is called with no id, which a test can't read from a log that it may have cleared. */
-function countStopsAll<C extends HeadlessAudio80 | HeadlessAudio90>(chip: C): C & { readonly stopAllCount: number } {
+/** Makes `chip` keep each sound and song played on it, and count the times `stop` is called with no id. */
+function recordPlays<C extends HeadlessAudio80 | HeadlessAudio90>(chip: C): C & PlayRecord {
+    const played: object[] = [];
     let stopAllCount = 0;
+    // The chip's `play` takes a song or a sound, and the record takes either, so it is called as the one function it is
+    const play = chip.play as (target: object, options?: object) => number;
     const stop = chip.stop;
     return Object.defineProperties(chip, {
+        play: {
+            value(target: object, options?: object) {
+                played.push(target);
+                return play(target, options);
+            },
+        },
         stop: {
             value(id?: number) {
                 if (id === undefined) stopAllCount++;
                 stop(id);
             },
         },
+        played: { value: played },
         stopAllCount: { get: () => stopAllCount },
-    }) as C & { readonly stopAllCount: number };
+    }) as C & PlayRecord;
 }
 
 /** Creates a fake audio context, which starts in `options.state`. */

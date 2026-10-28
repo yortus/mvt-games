@@ -70,6 +70,7 @@ const DEV_FILES = [
     '**/*.test.{ts,tsx}',
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
+    '**/bench/**',
     'packages/tests/benchmarks/**',
     'packages/sites/docs/**',
     '**/*.config.{ts,js}',

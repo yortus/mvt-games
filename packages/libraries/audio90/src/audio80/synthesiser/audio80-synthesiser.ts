@@ -1,16 +1,25 @@
-import { chooseSoundVoice, COMMAND_STRIDE, createCommandQueue, createNoteDriver, LN_SEMITONE, type SoundVoices } from '../../shared';
+import {
+    chooseSoundVoice,
+    COMMAND_STRIDE,
+    createCommandQueue,
+    createNoteDriver,
+    LN_SEMITONE,
+    OP_PLAY,
+    OP_PLAY_OPTIONS,
+    OP_RELEASE_ALL,
+    OP_STOP,
+    SCOPE_POINTS,
+    SCOPE_STRIDE,
+    type SoundVoices,
+} from '../../shared';
 import {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
     OP_NOTE_OFF,
     OP_NOTE_ON,
-    OP_PLAY,
-    OP_PLAY_OPTIONS,
-    OP_RELEASE_ALL,
     OP_SET_ECHO,
     OP_SET_FILTER,
     OP_SET_VOICE,
-    OP_STOP,
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
 } from './commands';
@@ -76,6 +85,14 @@ export interface Audio80Synthesiser {
     isSounding: (voice: number) => boolean;
     /** Finds the sound that voice `voice` was played with, as `OP_PLAY` plays one. Returns its id, or `undefined` if the voice is not playing one. */
     findSoundOn: (voice: number) => number | undefined;
+    /**
+     * Where to write each voice's output for a scope, or undefined for none.
+     * It holds `toScopeLength(VOICE_COUNT)` numbers: `SCOPE_POINTS` points a
+     * voice, one every `SCOPE_STRIDE` samples, round and round, then each
+     * voice's pan, which is 0, since the chip is mono. A silent voice's points
+     * are 0.
+     */
+    scope: Float32Array | undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,11 +211,14 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     let controlCountdown = 0;
     let sampleClock = 0;
+    // Where the scope's next point is, in samples. In a typed array, so counting boxes no number
+    const scopeCounter = new Int32Array(1);
 
     resetAll();
 
     const synthesiser: Audio80Synthesiser = {
         sampleRate,
+        scope: undefined,
 
         defineSound(id, data) {
             sounds.set(id, data);
@@ -331,9 +351,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     function setVoice(v: number, setting: number, value: number): void {
         switch (setting) {
-            case VOICE_SETTING_INDEX.note:
-                driver.setNote(v, value);
-                break;
             case VOICE_SETTING_INDEX.pulseWidth:
                 pulseWidth[v] = clamp01(value);
                 pulseSweepMs[v] = 0;
@@ -341,15 +358,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             case VOICE_SETTING_INDEX.volume:
                 // Not capped at 1, so a song can lift a quiet sound
                 noteVolume[v] = Math.max(0, value);
-                break;
-            case VOICE_SETTING_INDEX.echoSend:
-                echoSend[v] = clamp01(value);
-                break;
-            case VOICE_SETTING_INDEX.filter:
-                route[v] = value === 1 || value === 2 ? value : 0;
-                break;
-            case VOICE_SETTING_INDEX.wave:
-                wave[v] = value & (WAVE_TRIANGLE | WAVE_SAW | WAVE_PULSE | WAVE_NOISE | WAVE_TABLE);
                 break;
             case VOICE_SETTING_INDEX.arpeggio:
                 driver.setArpeggio(v, value);
@@ -365,12 +373,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 break;
             case VOICE_SETTING_INDEX.glide:
                 driver.setGlide(v, value);
-                break;
-            case VOICE_SETTING_INDEX.syncSource:
-                syncSource[v] = toSourceVoice(v, value);
-                break;
-            case VOICE_SETTING_INDEX.ringSource:
-                ringSource[v] = toSourceVoice(v, value);
                 break;
         }
     }
@@ -511,11 +513,14 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     function renderSamples(output: Float32Array, start: number, count: number): void {
         const end = start + count;
+        const scope = synthesiser.scope;
         for (let s = start; s < end; s++) {
             if (--controlCountdown <= 0) {
                 controlAll();
                 controlCountdown = CONTROL_SAMPLES;
             }
+            const scopeAt = scope !== undefined && (scopeCounter[0] % SCOPE_STRIDE) === 0 ? (scopeCounter[0] / SCOPE_STRIDE) % SCOPE_POINTS : -1;
+            scopeCounter[0] = (scopeCounter[0] + 1) % (SCOPE_POINTS * SCOPE_STRIDE);
 
             // Advance every phase before applying sync, so a voice synced to a
             // higher-numbered voice sees that voice's wrap in the same sample
@@ -538,10 +543,14 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             // doubles kept in closure variables or returned from functions
             for (let i = 0; i < BUS_COUNT; i++) bus[i] = 0;
             for (let v = 0; v < VOICE_COUNT; v++) {
-                if (envStage[v] === ENV_IDLE) continue;
+                if (envStage[v] === ENV_IDLE) {
+                    if (scopeAt >= 0) scope![v * SCOPE_POINTS + scopeAt] = 0;
+                    continue;
+                }
                 stepEnvelope(v);
                 oscillate(v);
                 let x = voiceOut[v] * envLevel[v] * noteVolume[v] * stepVolume[v] * soundVolume[v] * VOICE_GAIN;
+                if (scopeAt >= 0) scope![v * SCOPE_POINTS + scopeAt] = x * SCOPE_GAIN;
                 // Rounded to 8-bit steps before the mix level, so the steps stay where they are
                 if (isRaw) x = Math.round(x * 127) / 127;
                 x *= MIX_LEVEL;
@@ -834,6 +843,8 @@ const VOICE_GAIN = 0.3;
  * character's rounding, so the rounding's steps stay where they are.
  */
 const MIX_LEVEL = Math.SQRT1_2;
+/** Scales a voice's output for a scope, so a voice at full volume spans about -1 to 1. */
+const SCOPE_GAIN = 1 / VOICE_GAIN;
 const NOISE_CLOCKS_PER_CYCLE = 16;
 const LFSR_SEED = 0x7ffff8;
 const DEFAULT_QUEUE_CAPACITY = 4096;

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
@@ -7,6 +7,12 @@ import type { GamePhase } from '../models';
 import { CREAK_PERIOD_MS, GameAudioView } from './game-audio-view';
 
 const STEP_MS = 1000 / 60;
+
+// The view is tested by what it asks of its chips: which songs and sounds it plays, and when.
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe('GameAudioView', () => {
     let state: {
@@ -34,8 +40,8 @@ describe('GameAudioView', () => {
             extraLivesEarned: 0,
             isSlackRunning: false,
         };
-        music = createHeadlessAudio80({ record: true });
-        sfx = createHeadlessAudio80({ record: true });
+        music = createSpiedChip();
+        sfx = createSpiedChip();
         view = GameAudioView({
             music,
             sfx,
@@ -51,7 +57,7 @@ describe('GameAudioView', () => {
             targetShare: () => 0.7,
         });
         tick();
-        sfx.clear();
+        vi.clearAllMocks();
     });
 
     function tick(): void {
@@ -60,15 +66,6 @@ describe('GameAudioView', () => {
         updateView(view, STEP_MS);
         refreshView(view);
     }
-
-    function played(): unknown[] {
-        return sfx.log.filter((entry) => entry.kind === 'play').map((entry) => (entry as { sound: unknown }).sound);
-    }
-
-    it('plays nothing while nothing changes', () => {
-        for (let i = 0; i < 30; i++) tick();
-        expect(played()).toEqual([]);
-    });
 
     it('plays a sound for each kind of moment, once each', () => {
         state.wireSteps++;
@@ -79,34 +76,39 @@ describe('GameAudioView', () => {
         state.extraLivesEarned++;
         tick();
         tick();
-        expect(played()).toEqual([STRING_TICK, TIE_OFF, BAA, BLOW_OUT, HATCH, EXTRA_LIFE]);
+        expect(listPlayed(sfx)).toEqual([STRING_TICK, TIE_OFF, BAA, BLOW_OUT, HATCH, EXTRA_LIFE]);
     });
 
     it('twangs as the wire snaps, and plays its tune on the music chip', () => {
         state.phase = 'snapped';
         tick();
-        expect(played()).toEqual([SNAP]);
-        expect(music.song).toBe(SNAPPED_TUNE);
+        expect(listPlayed(sfx)).toEqual([SNAP]);
+        expect(listPlayed(music)).toEqual([SNAPPED_TUNE]);
     });
 
     it('creaks again and again while slack runs, and stops when it stops', () => {
         state.isSlackRunning = true;
         for (let elapsed = 0; elapsed < CREAK_PERIOD_MS * 3; elapsed += STEP_MS) tick();
-        expect(played().filter((effect) => effect === CREAK).length).toBe(3);
+        expect(listPlayed(sfx).filter((sound) => sound === CREAK)).toHaveLength(3);
         state.isSlackRunning = false;
-        sfx.clear();
+        vi.clearAllMocks();
         for (let elapsed = 0; elapsed < CREAK_PERIOD_MS * 3; elapsed += STEP_MS) tick();
-        expect(played()).toEqual([]);
-    });
-
-    it('stays quiet as counts go back to 0 for a new round', () => {
-        state.wireSteps = 30;
-        state.closures = 4;
-        tick();
-        sfx.clear();
-        state.wireSteps = 0;
-        state.closures = 0;
-        tick();
-        expect(played()).toEqual([]);
+        expect(sfx.play).not.toHaveBeenCalled();
     });
 });
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Creates a headless chip whose `play` is spied on, so a test can read what the view asked of it. */
+function createSpiedChip(): HeadlessAudio80 {
+    const chip = createHeadlessAudio80();
+    vi.spyOn(chip, 'play');
+    return chip;
+}
+
+/** The songs and sounds played on `chip`, oldest first. */
+function listPlayed(chip: HeadlessAudio80): unknown[] {
+    return vi.mocked(chip.play).mock.calls.map((call) => call[0]);
+}

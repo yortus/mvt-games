@@ -49,7 +49,7 @@ export function registerChipProcessor<S, D extends PassedMessage>(name: string, 
         /** Renders one block. Returns false once the chip is destroyed, so that the browser stops calling it and can free the node. */
         process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
             this.runner.process(outputs[0]);
-            return !this.runner.isStopped;
+            return !this.runner.isDestroyed;
         }
     }
 
