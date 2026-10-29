@@ -66,6 +66,9 @@ presentation state, refresh views, render. Models settle before views read.
   repeating sounds are the view's presentation state.
 - String-literal unions, not enums
 - 4-space indent, lower-kebab-case files, PascalCase types, camelCase rest
+- A file is named for its main export, whatever folder it is in
+  (bounceAudio90Song in bounce-audio90-song.ts, createScoreModel in
+  score-model.ts)
 - TypeScript 5.9, Pixi.js 8, GSAP 3, Vite 8
 
 ## Documentation

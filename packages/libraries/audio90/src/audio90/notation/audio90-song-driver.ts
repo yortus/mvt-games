@@ -25,7 +25,7 @@ import {
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
 } from '../synthesiser';
-import type { Audio90Sound } from './sound';
+import type { Audio90Sound } from './audio90-sound';
 import {
     type Audio90Song,
     CELL90_ACCENT,
@@ -36,8 +36,8 @@ import {
     CELL90_REVERB,
     CELL90_SLICE,
     CELL90_STRIDE,
-} from './song';
-import { toPan } from './tokens';
+} from './audio90-song';
+import { toPan } from './to-pan';
 
 // ---------------------------------------------------------------------------
 // Factory

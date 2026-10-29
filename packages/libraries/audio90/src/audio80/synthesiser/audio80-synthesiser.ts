@@ -29,7 +29,7 @@ import {
     SVF_STRIDE,
     tuneStateVariableFilter,
 } from '../../shared';
-import { AUDIO80_ECHO_SETTING_INDEX, AUDIO80_FILTER_SETTING_INDEX, OP80_SET_ECHO, OP80_SET_FILTER, AUDIO80_VOICE_COUNT, AUDIO80_VOICE_SETTING_INDEX } from './commands';
+import { AUDIO80_ECHO_SETTING_INDEX, AUDIO80_FILTER_SETTING_INDEX, OP80_SET_ECHO, OP80_SET_FILTER, AUDIO80_VOICE_COUNT, AUDIO80_VOICE_SETTING_INDEX } from './audio80-commands';
 import {
     type Audio80Character,
     FILTER80_BANDPASS,
@@ -43,7 +43,7 @@ import {
     WAVE80_TABLE,
     WAVE80_TRIANGLE,
     AUDIO80_WAVETABLE_SIZE,
-} from './sound-data';
+} from './audio80-sound-data';
 
 // ---------------------------------------------------------------------------
 // Interface

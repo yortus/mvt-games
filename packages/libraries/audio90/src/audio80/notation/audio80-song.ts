@@ -1,6 +1,6 @@
 import { type CellGrammar, COMMON_CELL_TOKENS, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
 import { type Audio80FilterId, type Audio80FilterMode, AUDIO80_VOICE_COUNT } from '../synthesiser';
-import type { Audio80Sound } from './sound';
+import type { Audio80Sound } from './audio80-sound';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -70,8 +70,8 @@ export interface Audio80EchoSettings {
 
 /**
  * How many numbers each cell takes in `SongPattern.cells`. A cell starts with
- * the fields every chip's cells have, `CELL_NOTE` to `CELL_PULSE`, in the
- * shared folder's tracker, and ends with the Audio80's own.
+ * the fields every chip's cells have, `CELL_NOTE` to `CELL_PULSE`, and ends
+ * with the Audio80's own.
  */
 export const CELL80_STRIDE = 10;
 /** A cutoff level, 0 to 15, or -1. */

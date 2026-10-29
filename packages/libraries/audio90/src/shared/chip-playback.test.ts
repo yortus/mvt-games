@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createChipPlayback } from './chip-playback';
 import type { SongSequencer } from './sound-chip';
-import type { SongTiming } from './tracker';
+import type { SongTiming } from './compute-song-duration-ms';
 
 describe('a chip\'s playback', () => {
     it('starts a song it is asked to queue at once when nothing plays, and after the song playing otherwise', () => {

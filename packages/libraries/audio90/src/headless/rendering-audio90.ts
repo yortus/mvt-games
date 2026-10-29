@@ -1,12 +1,6 @@
-import {
-    type Audio90Character,
-    type Audio90PlayOptions,
-    type Audio90Sound,
-    createAudio90SongDriver,
-    createAudio90SoundIds,
-    createAudio90Synthesiser,
-} from '../audio90';
-import { type CommandWriter, createCommandWriter, createSongPlayer, joinMembers } from '../shared';
+import { type Audio90Character, createAudio90SongDriver } from '../audio90';
+import { createSongPlayer, joinMembers } from '../shared';
+import { createAudio90Renderer } from './audio90-renderer';
 import type { HeadlessAudio90 } from './headless-audio90';
 import { createHeadlessChip, DEFAULT_SAMPLE_RATE } from './headless-chip';
 
@@ -48,60 +42,16 @@ export interface RenderingAudio90Options {
 /** Creates a rendering Audio90, with its clock at 0, nothing played and nothing rendered. */
 export function createRenderingAudio90(options: RenderingAudio90Options = {}): RenderingAudio90 {
     const sampleRate = options.sampleRate ?? DEFAULT_SAMPLE_RATE;
-    const rendering = createAudio90Rendering({ sampleRate, character: options.character });
+    const renderer = createAudio90Renderer({ sampleRate, character: options.character });
     const chip = createHeadlessChip({
-        writer: rendering.writer,
-        player: createSongPlayer(createAudio90SongDriver(rendering.writer)),
-        cut: rendering.cut,
+        writer: renderer.writer,
+        player: createSongPlayer(createAudio90SongDriver(renderer.writer)),
+        cut: renderer.cut,
     });
     return joinMembers(chip, {
         sampleRate,
         renderInto(left: Float32Array, right: Float32Array) {
-            rendering.render(left, right, chip.isMuted ? 0 : chip.volume);
+            renderer.render(left, right, chip.isMuted ? 0 : chip.volume);
         },
     });
-}
-
-/** An Audio90's synthesiser in memory, the writer that feeds it, and how to render it and cut it, as for the Audio80. */
-export interface Audio90Rendering {
-    readonly writer: CommandWriter<Audio90Sound, Audio90PlayOptions>;
-    /** Renders the next `left.length` samples into `left` and `right`, up to the writer's time, scaled by `gain`. */
-    readonly render: (left: Float32Array, right: Float32Array, gain: number) => void;
-    /** Cuts every voice at once, and forgets every sound. */
-    readonly cut: () => void;
-}
-
-/** Creates an Audio90's synthesiser that renders at `sampleRate`, and the writer that feeds it, with nothing rendered yet. */
-export function createAudio90Rendering(options: { readonly sampleRate: number; readonly character: Audio90Character | undefined }): Audio90Rendering {
-    const msPerSample = 1000 / options.sampleRate;
-    const synthesiser = createAudio90Synthesiser({ sampleRate: options.sampleRate, character: options.character });
-    const writer = createCommandWriter<Audio90Sound, Audio90PlayOptions>({
-        soundIds: createAudio90SoundIds({
-            onSound: (id, data) => synthesiser.defineSound(id, data),
-            // A sample too big for what is left of sample memory is dropped, as the worklet drops it
-            onSample: (id, data) => synthesiser.defineSample(id, data),
-        }),
-    });
-    let renderedFrames = 0;
-    return {
-        writer,
-        render(left, right, gain) {
-            synthesiser.enqueue(writer.commands, writer.count);
-            writer.clear();
-            const frames = left.length;
-            synthesiser.render(left, right, 0, frames, renderedFrames * msPerSample, msPerSample);
-            renderedFrames += frames;
-            if (gain !== 1) {
-                for (let i = 0; i < frames; i++) {
-                    left[i] *= gain;
-                    right[i] *= gain;
-                }
-            }
-        },
-        cut() {
-            writer.clear();
-            writer.forget();
-            synthesiser.reset();
-        },
-    };
 }

@@ -38,6 +38,11 @@ export function toNoteName(note: number): string {
     return NAMES[note % 12] + String(Math.floor(note / 12) - 1);
 }
 
+/** Whether a song or a sound may play a note number. The range is `LOWEST_NOTE` to `HIGHEST_NOTE`. */
+export function isNoteInRange(note: number): boolean {
+    return note >= LOWEST_NOTE && note <= HIGHEST_NOTE;
+}
+
 /**
  * The natural log of the ratio between two notes a semitone apart. The ratio
  * of notes `n` semitones apart is `Math.exp(n * LN_SEMITONE)`.

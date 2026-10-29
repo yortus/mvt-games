@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createAudio80Song, createAudio80Sound } from '../audio80';
+import { hashSamples } from './hash-samples';
 import { createHeadlessAudio80 } from './headless-audio80';
-import { hashSamples, measurePeak, render } from './render';
+import { measurePeak } from './measure-peak';
+import { render } from './render';
 import { createRenderingAudio80, type RenderingAudio80 } from './rendering-audio80';
 
 // What every headless chip does, tested on the Audio80. The two chips' own tests cover what each does alone.

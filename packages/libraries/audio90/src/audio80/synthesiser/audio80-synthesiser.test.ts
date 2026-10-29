@@ -10,8 +10,8 @@ import {
     OP80_SET_FILTER,
     AUDIO80_VOICE_COUNT,
     AUDIO80_VOICE_SETTING_INDEX,
-} from './commands';
-import { type Audio80Character, FILTER80_LOWPASS } from './sound-data';
+} from './audio80-commands';
+import { type Audio80Character, FILTER80_LOWPASS } from './audio80-sound-data';
 import {
     type CommandWriter, createCommandWriter, OP_NOTE_OFF, OP_NOTE_ON, OP_PLAY, OP_PLAY_OPTIONS, OP_SET_VOICE, SCOPE_POINTS, toFrequency, toScopeLength,
 } from '../../shared';

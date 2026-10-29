@@ -20,7 +20,7 @@ import {
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-} from './commands';
+} from './audio90-commands';
 import {
     type Audio90SoundData,
     type Audio90SampleData,
@@ -34,7 +34,7 @@ import {
     MAX_UNISON,
     OP_WAVE_SINE,
     WAVE90_SAW,
-} from './sound-data';
+} from './audio90-sound-data';
 
 describe('the Audio90 synthesiser', () => {
     describe('its engines', () => {

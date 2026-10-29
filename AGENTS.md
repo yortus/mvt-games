@@ -104,6 +104,7 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 - **`_` prefix** for intentionally unused parameters
 - **Plain writing** - in docs, comments, test names and messages: a friendly, mentoring voice in everyday language (talk to the reader as "you", say why as well as what), short, complete sentences, terms explained where first used, no in-house names in packages. This is the default unless told otherwise. See [Style Guide: Writing](packages/sites/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
+- **A file is named for its main export** - `bounceAudio90Song` in `bounce-audio90-song.ts`, `createScoreModel` in `score-model.ts`; enclosing folders are not part of the name. Prefer one main export to a file; only a small collection of small items takes a collective name (`commands.ts`). Rename the file and its test with the export. See [Style Guide: File Naming](packages/sites/docs/reference/style-guide.md#file-naming)
 
 Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 

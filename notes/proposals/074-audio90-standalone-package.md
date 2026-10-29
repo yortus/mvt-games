@@ -1642,3 +1642,39 @@ package is finished. The progress log uses these numbers.
     `formatHexToken` to `printHexToken`. `formatCell`, written for either
     chip, is inlined into it, since only the Audio90's cells are printed,
     and `AUDIO80_CELL_GRAMMAR` is private to its song's file.
+- **2026-10-29, exports and file names**, unstaged.
+  - **Exports.** `FILTER80_MODES` is gone (nothing used it), and the
+    stages `ENV_ATTACK`, `ENV_DECAY` and `ENV_SUSTAIN` are private to
+    `envelopes.ts`. Folder `index.ts` files no longer export what only
+    their own folder uses: the `CELL80_*` and `CELL90_*` fields, the
+    `WAVE80_*` and `FILTER80_*` flags, `bounceAudio90Song`,
+    `Audio90SongEcho`, `AUDIO90_OSCILLATOR_BUDGET`, `HELD_LENGTH`,
+    `NO_GLIDE`, `HIGHEST_NOTE_NAME` and `PlayMessage`.
+  - **Placement.** `hashSamples`, `findSounds` and `measurePeak` left
+    `render.ts` for files of their own, with their tests, and the WAV test
+    moved to `encode-wav.test.ts`. `checkRange` has its own file.
+    `createAudio80Rendering` became `createAudio80Renderer`, in
+    `audio80-renderer.ts`, so it is not mistaken for
+    `createRenderingAudio80`; the same for the Audio90.
+  - **File names.** The user made the rule exact, and it is now in the
+    style guide: a file is named for its main export's whole name, and its
+    folders never shorten it. So the notation files became
+    `audio80-song.ts`, `audio80-sound.ts`, `audio80-song-driver.ts`,
+    `audio90-song.ts`, `audio90-sound.ts`, `audio90-sample.ts`,
+    `audio90-song-driver.ts` and `bounce-audio90-song.ts`.
+  - **Splits, as the user decided.** `song-text.ts` became
+    `print-audio90-song.ts` and `parse-audio90-song.ts`, with the text's
+    shape in `song-json.ts` and `mapValues` in its own file. The shared
+    `tracker.ts` became `song-core.ts` (the types), `parse-song-core.ts`,
+    `cell-grammar.ts` (the cell fields and tokens),
+    `compute-song-duration-ms.ts`, and a file for each token and row
+    helper; `isNoteInRange` joined `notes.ts`, and `checkInstrumentLetters`
+    is private to `parse-song-core.ts`. `tokens.ts` became
+    `audio90-tokens.ts`, with `lookUpName` and `toPan` in their own files.
+    The chips' `sound-data.ts` and `commands.ts` gained their chip's name,
+    and `shared/scope.ts` became `scope-source.ts`. The two
+    `notation.test.ts` files became a test for each of the song, sound and
+    sample files, and `tracker.test.ts` a test for each helper.
+  - **Checked:** lint, `npx tsc -b`, the package's and the tunes' tests
+    (46 files, 357 tests) and `npm run build`. The home page is 54.6 KB of
+    its 60 KB budget, from 54.4 KB.

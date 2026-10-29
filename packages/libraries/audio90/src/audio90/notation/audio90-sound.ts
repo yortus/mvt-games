@@ -16,7 +16,8 @@ import {
     MAX_OPERATORS,
     MAX_UNISON,
 } from '../synthesiser';
-import type { Audio90Sample } from './sample';
+import { checkRange } from './check-range';
+import type { Audio90Sample } from './audio90-sample';
 import {
     type Audio90Engine,
     type Audio90FilterMode,
@@ -26,11 +27,11 @@ import {
     ENGINE_INDEX,
     FILTER90_MODE_INDEX,
     LFO_SHAPE_INDEX,
-    lookUpName,
     OPERATOR_WAVE_INDEX,
-    toPan,
     WAVE90_INDEX,
-} from './tokens';
+} from './audio90-tokens';
+import { lookUpName } from './look-up-name';
+import { toPan } from './to-pan';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -344,15 +345,6 @@ export function isAudio90Sound(value: unknown): value is Audio90Sound {
 /** The options `createAudio90Sound` made `sound` from, as a song's text holds them. Undefined for a sound it did not make. */
 export function findAudio90SoundOptions(sound: Audio90Sound): Audio90SoundOptions | undefined {
     return SOUNDS.get(sound);
-}
-
-/** Returns `value` if it is a number from `min` to `max`, or throws an error that names the option at `path`. */
-export function checkRange(value: number, min: number, max: number, path: string, prefix = 'sound'): number {
-    if (!(value >= min && value <= max)) {
-        const range = max === Infinity ? `${min} or more` : `${min} to ${max}`;
-        throw new Error(`${prefix}: ${path}: ${value} is not ${range}`);
-    }
-    return value;
 }
 
 // ---------------------------------------------------------------------------

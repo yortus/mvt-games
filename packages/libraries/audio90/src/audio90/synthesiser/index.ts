@@ -1,6 +1,5 @@
 export {
     AUDIO90_EFFECT_DEFAULTS,
-    AUDIO90_OSCILLATOR_BUDGET,
     AUDIO90_SAMPLE_MEMORY,
     type Audio90Synthesiser,
     type Audio90SynthesiserOptions,
@@ -20,7 +19,7 @@ export {
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-} from './commands';
+} from './audio90-commands';
 export {
     type Audio90EnvelopeData,
     type Audio90SoundData,
@@ -51,4 +50,4 @@ export {
     WAVE90_SAW,
     WAVE90_SINE,
     WAVE90_TRIANGLE,
-} from './sound-data';
+} from './audio90-sound-data';

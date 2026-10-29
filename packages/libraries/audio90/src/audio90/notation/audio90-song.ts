@@ -1,6 +1,7 @@
 import { type CellGrammar, COMMON_CELL_TOKENS, printHexToken, MAX_ECHO_FEEDBACK, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
 import { type Audio90Character, AUDIO90_CHARACTERS, AUDIO90_EFFECT_DEFAULTS, AUDIO90_VOICE_COUNT } from '../synthesiser';
-import { type Audio90Sound, checkRange } from './sound';
+import { checkRange } from './check-range';
+import type { Audio90Sound } from './audio90-sound';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -72,8 +73,7 @@ export interface Audio90SongEcho {
 /**
  * How many numbers each cell takes in `Audio90SongPattern.cells`. A cell
  * starts with the fields every chip's cells have, `CELL_NOTE` to
- * `CELL_PULSE`, in the shared folder's tracker, and ends with the Audio90's
- * own.
+ * `CELL_PULSE`, and ends with the Audio90's own.
  */
 export const CELL90_STRIDE = 16;
 /** A brightness, 0 to 15, or -1. */

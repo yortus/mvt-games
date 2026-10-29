@@ -121,6 +121,34 @@ scoreModel.ts     ❌
 score_model.ts    ❌
 ```
 
+A file is named for its main export. That way you can go from a name to its
+file, or from a file to what it holds, without having to look. Write the
+export's name in kebab case. For a factory, leave out `create`: its file
+holds the thing it makes, and that thing's interface too.
+
+| Main export                           | File                     |
+| ------------------------------------- | ------------------------ |
+| `createScoreModel` (and `ScoreModel`) | `score-model.ts`         |
+| `HudView`                             | `hud-view.ts`            |
+| `measureLoudness`                     | `measure-loudness.ts`    |
+| `bounceAudio90Song`                   | `bounce-audio90-song.ts` |
+
+A number stays joined to the word before it, so `Audio90` becomes `audio90`.
+
+The folders a file sits in are not part of its name. A file in an `audio90/`
+folder that exports `createAudio90Song` is `audio90-song.ts`, not `song.ts`.
+Folders change, and you don't see them in a search for a file or in a list of
+imports.
+
+Prefer one main export to a file. Short files cost nothing noticeable, in
+Node or in a bundle. The exception is a small collection of small, related
+items, such as a set of constants or a few short helpers. A file like that
+takes a name for the collection, such as `commands.ts` or `notes.ts`. Keep
+this the exception, not the rule.
+
+When you rename a file's main export, rename the file in the same change,
+and its test file too.
+
 ## Formatting
 
 - Use **4 spaces** for indentation (no tabs).

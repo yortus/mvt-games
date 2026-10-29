@@ -1,8 +1,8 @@
 import { parseNote } from '../../shared';
 import { AUDIO90_SAMPLE_MEMORY, type Audio90SampleData } from '../synthesiser';
-import { bounceAudio90Song } from './bounce';
-import { checkRange } from './sound';
-import type { Audio90Song } from './song';
+import { bounceAudio90Song } from './bounce-audio90-song';
+import { checkRange } from './check-range';
+import type { Audio90Song } from './audio90-song';
 
 // ---------------------------------------------------------------------------
 // Interface

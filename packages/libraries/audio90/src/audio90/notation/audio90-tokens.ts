@@ -25,7 +25,7 @@ import {
 // The Audio90's names for its engines, waves, filter modes and LFO shapes,
 // and the numbers the chip is sent for them. The grammar that every chip's
 // notation shares, such as rows, cells and hex tokens, is in the shared
-// folder's tracker.
+// folder.
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -85,21 +85,3 @@ export const LFO_SHAPE_INDEX: Readonly<Record<Audio90LfoShape, number>> = {
     saw: LFO_SAW,
     random: LFO_RANDOM,
 };
-
-// ---------------------------------------------------------------------------
-// Functions
-// ---------------------------------------------------------------------------
-
-/** The number of `name` in `index`, or throws an error that starts with `where` and lists the names allowed. */
-export function lookUpName<T extends string>(index: Readonly<Record<T, number>>, name: string, where: string): number {
-    if (Object.hasOwn(index, name)) return index[name as T];
-    throw new Error(`${where}: '${name}' is not one of ${Object.keys(index).join(', ')}`);
-}
-
-/**
- * The pan of a two-digit hex value, as the `P` token writes it: `00` is hard
- * left, `80` the centre and `FF` hard right.
- */
-export function toPan(value: number): number {
-    return value < 0x80 ? (value - 0x80) / 0x80 : (value - 0x80) / 0x7f;
-}

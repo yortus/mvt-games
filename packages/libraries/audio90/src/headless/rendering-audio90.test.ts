@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Audio90SoundOptions, createAudio90Sound } from '../audio90';
-import { hashSamples, measurePeak } from './render';
+import { hashSamples } from './hash-samples';
+import { measurePeak } from './measure-peak';
 import { createRenderingAudio90, type RenderingAudio90 } from './rendering-audio90';
 import type { StereoSamples } from './stereo-samples';
 

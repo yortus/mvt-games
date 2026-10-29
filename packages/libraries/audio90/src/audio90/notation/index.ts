@@ -1,4 +1,3 @@
-export { bounceAudio90Song, type BounceOptions } from './bounce';
 export {
     type Audio90Envelope,
     type Audio90Filter,
@@ -12,8 +11,8 @@ export {
     type Audio90Vibrato,
     createAudio90Sound,
     isAudio90Sound,
-} from './sound';
-export { type Audio90Sample, type Audio90SampleLoop, type Audio90SampleOptions, createAudio90Sample, prepareAudio90Samples } from './sample';
+} from './audio90-sound';
+export { type Audio90Sample, type Audio90SampleLoop, type Audio90SampleOptions, createAudio90Sample, prepareAudio90Samples } from './audio90-sample';
 export {
     type Audio90ChannelMix,
     type Audio90ChorusSettings,
@@ -21,27 +20,19 @@ export {
     type Audio90PumpSettings,
     type Audio90ReverbSettings,
     type Audio90Song,
-    type Audio90SongEcho,
     type Audio90SongOptions,
     type Audio90SongPattern,
     AUDIO90_CELL_GRAMMAR,
-    CELL90_ACCENT,
-    CELL90_BRIGHTNESS,
-    CELL90_CHORD,
-    CELL90_ECHO,
-    CELL90_PAN,
-    CELL90_REVERB,
-    CELL90_SLICE,
-    CELL90_STRIDE,
     createAudio90Song,
     isAudio90Song,
-} from './song';
-export { createAudio90SongDriver } from './song-driver';
-export { parseAudio90Song, printAudio90Song } from './song-text';
+} from './audio90-song';
+export { createAudio90SongDriver } from './audio90-song-driver';
+export { parseAudio90Song } from './parse-audio90-song';
+export { printAudio90Song } from './print-audio90-song';
 export {
     type Audio90Engine,
     type Audio90FilterMode,
     type Audio90LfoShape,
     type Audio90OperatorWave,
     type Audio90Wave,
-} from './tokens';
+} from './audio90-tokens';

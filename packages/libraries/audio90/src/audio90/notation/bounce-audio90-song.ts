@@ -1,9 +1,9 @@
 import { COMMAND_STRIDE, createCommandWriter } from '../../shared';
 import { AUDIO90_EFFECT_INDEX, AUDIO90_EFFECT_SETTING_INDEX, createAudio90Synthesiser, OP90_SET_EFFECT } from '../synthesiser';
 import { type Audio90PlayOptions, createAudio90SoundIds } from '../chip';
-import type { Audio90Sound } from './sound';
-import type { Audio90Song } from './song';
-import { createAudio90SongDriver } from './song-driver';
+import type { Audio90Sound } from './audio90-sound';
+import type { Audio90Song } from './audio90-song';
+import { createAudio90SongDriver } from './audio90-song-driver';
 
 // Bouncing: playing a song on the Audio90's own engines, in memory, and
 // keeping what it renders as a sample. Every sample the chip plays is made

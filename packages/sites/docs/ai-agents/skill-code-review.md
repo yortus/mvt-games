@@ -209,7 +209,7 @@ architecture and engineering concerns.
 
 | Element | Convention |
 | ------- | ---------- |
-| Files | `lower-kebab-case.ts` |
+| Files | `lower-kebab-case.ts`, named for the main export (`bounceAudio90Song` in `bounce-audio90-song.ts`, a factory without `create`), whatever folder it is in |
 | Types | `PascalCase`, suffix `Model` / `View` as appropriate |
 | Functions/variables | `camelCase`; factories are `createXxx` |
 | Function names | Start with a verb (`measureLoudness`, not `loudnessOf`); conversions `to` + target (`toInt16`); views and bindings are exempt |

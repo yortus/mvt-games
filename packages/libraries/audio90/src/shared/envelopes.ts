@@ -45,9 +45,9 @@ export interface EnvelopeTimes {
 
 /** An envelope that has ended, or never started. */
 export const ENV_IDLE = 0;
-export const ENV_ATTACK = 1;
-export const ENV_DECAY = 2;
-export const ENV_SUSTAIN = 3;
+const ENV_ATTACK = 1;
+const ENV_DECAY = 2;
+const ENV_SUSTAIN = 3;
 export const ENV_RELEASE = 4;
 
 // ---------------------------------------------------------------------------

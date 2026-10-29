@@ -10,10 +10,10 @@ import {
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
 } from '../synthesiser';
-import { type Audio90Sound, createAudio90Sound } from './sound';
-import { type Audio90Song, createAudio90Song } from './song';
-import { createAudio90SongDriver } from './song-driver';
-import { toPan } from './tokens';
+import { type Audio90Sound, createAudio90Sound } from './audio90-sound';
+import { type Audio90Song, createAudio90Song } from './audio90-song';
+import { createAudio90SongDriver } from './audio90-song-driver';
+import { toPan } from './to-pan';
 
 const BPM = 150;
 const ROW_MS = 60000 / (BPM * 4);

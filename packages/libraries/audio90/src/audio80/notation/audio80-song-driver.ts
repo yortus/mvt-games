@@ -26,8 +26,8 @@ import {
     AUDIO80_VOICE_COUNT,
     AUDIO80_VOICE_SETTING_INDEX,
 } from '../synthesiser';
-import type { Audio80Sound } from './sound';
-import { type Audio80Song, CELL80_FILTER, CELL80_STRIDE } from './song';
+import type { Audio80Sound } from './audio80-sound';
+import { type Audio80Song, CELL80_FILTER, CELL80_STRIDE } from './audio80-song';
 
 // ---------------------------------------------------------------------------
 // Factory

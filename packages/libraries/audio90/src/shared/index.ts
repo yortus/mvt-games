@@ -1,8 +1,9 @@
 // What every chip uses: what every chip has, and its playing members, the
 // layout of a stamped command, the buffer a writer fills, the messages to a
-// worklet, note names, the song player, and the tracker notation's grammar;
-// and the parts of every chip's synthesiser: its queue of commands, its
-// envelopes, its note driver, its voices' plays, and the maths it shares.
+// worklet, note names, the song player, and the tracker notation (its cells,
+// and how songs and their tokens are parsed); and the parts of every chip's
+// synthesiser: its queue of commands, its envelopes, its note driver, its
+// voices' plays, and the maths it shares.
 
 export { type ChipPlayback, type ChipPlaybackOptions, createChipPlayback } from './chip-playback';
 export { type CommandScheduler, type CommandSchedulerOptions, createCommandScheduler } from './command-scheduler';
@@ -12,13 +13,13 @@ export {
     ASAP_STAMP, COMMAND_STRIDE, OP_NOTE_OFF, OP_NOTE_ON, OP_PLAY, OP_PLAY_OPTIONS, OP_RELEASE_ALL, OP_SET_VOICE, OP_STOP,
 } from './commands';
 export {
-    createEnvelopes, ENV_ATTACK, ENV_DECAY, ENV_IDLE, ENV_RELEASE, ENV_SUSTAIN, type Envelopes, type EnvelopesOptions, type EnvelopeTimes,
+    createEnvelopes, ENV_IDLE, ENV_RELEASE, type Envelopes, type EnvelopesOptions, type EnvelopeTimes,
 } from './envelopes';
 export {
     createNoteDriver, DEFAULT_STEP_MS, type DriverSound, type DriverStep, MAX_ARPEGGIO, type NoteDriver, type NoteDriverOptions,
     type StepPitchMode,
 } from './note-driver';
-export { type AnyPlayOptions, checkPlay, type CheckedPlay, HELD_LENGTH, NO_GLIDE, type PlayDefaults, writePlay } from './play-options';
+export { type AnyPlayOptions, checkPlay, type CheckedPlay, type PlayDefaults, writePlay } from './play-options';
 export { clampVolume, joinMembers, type SongSequencer, type SoundChip } from './sound-chip';
 export {
     createScopeTargets,
@@ -29,10 +30,10 @@ export {
     type ScopeSource,
     type ScopeTargets,
     toScopeLength,
-} from './scope';
+} from './scope-source';
 export { createSoundPlays, type SoundPlays, type SoundPlaysOptions, type SoundVoices } from './sound-plays';
 export { createSongPlayer, type PlayableSong, type SongDriver, type SongPlayer, type SongWriter, type SoundIds } from './song-player';
-export { toFrequency, HIGHEST_NOTE, HIGHEST_NOTE_NAME, LN_SEMITONE, LOWEST_NOTE, toNoteName, toNoteNumber } from './notes';
+export { toFrequency, HIGHEST_NOTE, LN_SEMITONE, LOWEST_NOTE, toNoteName, toNoteNumber } from './notes';
 export {
     clamp,
     clearTinyValues,
@@ -65,19 +66,15 @@ export {
     type CellToken,
     COMMON_CELL_TOKENS,
     DEFAULT_VIBRATO,
-    printHexToken,
     NO_NOTE,
-    parseHexToken,
-    parseNote,
-    parseNoteToken,
-    parseRelativePitch,
-    parseSongCore,
     RELEASE,
-    type SongChip,
-    type SongCore,
-    type SongCoreOptions,
-    type SongOrderEntry,
-    type SongPattern,
-    splitRows,
-    splitTokens,
-} from './tracker';
+} from './cell-grammar';
+export { parseHexToken } from './parse-hex-token';
+export { parseNote } from './parse-note';
+export { parseNoteToken } from './parse-note-token';
+export { parseRelativePitch } from './parse-relative-pitch';
+export { parseSongCore, type SongChip } from './parse-song-core';
+export { printHexToken } from './print-hex-token';
+export type { SongCore, SongCoreOptions, SongOrderEntry, SongPattern } from './song-core';
+export { splitRows } from './split-rows';
+export { splitTokens } from './split-tokens';

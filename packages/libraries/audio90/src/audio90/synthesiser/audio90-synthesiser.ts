@@ -44,7 +44,7 @@ import {
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-} from './commands';
+} from './audio90-commands';
 import {
     type Audio90SoundData,
     type Audio90SampleData,
@@ -65,7 +65,7 @@ import {
     WAVE90_PULSE,
     WAVE90_SAW,
     WAVE90_TRIANGLE,
-} from './sound-data';
+} from './audio90-sound-data';
 
 // ---------------------------------------------------------------------------
 // Interface

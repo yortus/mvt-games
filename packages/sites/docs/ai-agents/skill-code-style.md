@@ -42,6 +42,21 @@ scoreModel.ts     ❌
 score_model.ts    ❌
 ```
 
+A file is named for its main export, in kebab case, so a name leads to its
+file and a file to what it holds:
+
+- A factory's file leaves out `create`: `createScoreModel` (and
+  `ScoreModel`) is in `score-model.ts`.
+- Other exports keep their whole name: `HudView` is in `hud-view.ts`, and
+  `bounceAudio90Song` is in `bounce-audio90-song.ts`. A number stays joined
+  to the word before it.
+- Enclosing folders are not part of the name. `createAudio90Song` is in
+  `audio90-song.ts` even inside an `audio90/` folder.
+- Prefer one main export to a file. Only a small collection of small,
+  related items (a set of constants, a few short helpers) takes a collective
+  name, such as `commands.ts`.
+- Rename the file, and its test, in the same change as its main export.
+
 ## Formatting
 
 - **4 spaces** for indentation (no tabs).

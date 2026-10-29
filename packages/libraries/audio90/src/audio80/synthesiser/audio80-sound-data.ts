@@ -170,9 +170,6 @@ export const FILTER80_LOWPASS = 1;
 export const FILTER80_BANDPASS = 2;
 /** The filter mode flag for high pass. */
 export const FILTER80_HIGHPASS = 4;
-/** Every `Audio80FilterMode`. A mode can be held as a number, which is its index here. */
-export const FILTER80_MODES: readonly Audio80FilterMode[] = ['lowpass', 'bandpass', 'highpass', 'notch', 'lowpass+bandpass', 'bandpass+highpass'];
-
 /** How many levels a wavetable has. */
 export const AUDIO80_WAVETABLE_SIZE = 32;
 
