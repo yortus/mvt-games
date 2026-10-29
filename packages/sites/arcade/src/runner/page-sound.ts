@@ -1,4 +1,14 @@
-import type { Audio80, Audio90, createAudio80, createAudio90, SoundChip } from 'audio90';
+import type {
+    Audio80,
+    Audio90,
+    Audio90PlayOptions,
+    Audio90Song,
+    Audio90Sound,
+    createAudio80,
+    createAudio90,
+    SongPlayOptions,
+    SoundChip,
+} from 'audio90';
 import type { SessionChips, SoundChipKind, SoundChipsByKind } from '../entry-types';
 import { toSliderGain } from './slider-gain';
 
@@ -108,7 +118,7 @@ export interface PageSoundOptions {
 export function createPageSound(options: PageSoundOptions): PageSound {
     const entrySlots: { readonly [K in SoundChipKind]: SlotPair<SoundChipsByKind[K]> } = {
         audio80: { music: createSlot(), sfx: createSlot() },
-        audio90: { music: createSlot(), sfx: createSlot() },
+        audio90: { music: createAudio90Slot(), sfx: createAudio90Slot() },
     };
     const entryChips: EntryChips = {
         audio80: { music: entrySlots.audio80.music.chip, sfx: entrySlots.audio80.sfx.chip },
@@ -319,6 +329,33 @@ interface SlotPair<C> {
     readonly sfx: ChipSlot<C>;
 }
 
+/** Creates a slot for an Audio90, whose chip also keeps a stereo width of 1 for the chip to come. */
+function createAudio90Slot(): ChipSlot<Audio90> {
+    const slot = createSlot<Audio90Song, Audio90Sound, Audio90PlayOptions>();
+    let filled: Audio90 | undefined;
+    let stereoWidth = 1;
+    // The slot's chip gains the Audio90's own member, as a getter and setter that pass on to the chip to come
+    const chip = Object.defineProperty(slot.chip, 'stereoWidth', {
+        get: () => filled?.stereoWidth ?? stereoWidth,
+        set(value: number) {
+            stereoWidth = value;
+            if (filled !== undefined) filled.stereoWidth = value;
+        },
+        enumerable: true,
+    }) as Audio90;
+    return {
+        chip,
+        get loaded() {
+            return filled;
+        },
+        fill(next) {
+            filled = next;
+            slot.fill(next);
+            next.stereoWidth = stereoWidth;
+        },
+    };
+}
+
 /** Creates a slot with no chip behind it yet, whose chip keeps a volume of 1, unmuted, at a tempo scale of 1, unpaused. */
 function createSlot<Song, Sound, PlayOptions>(): ChipSlot<SoundChip<Song, Sound, PlayOptions>> {
     let filled: SoundChip<Song, Sound, PlayOptions> | undefined;
@@ -333,14 +370,14 @@ function createSlot<Song, Sound, PlayOptions>(): ChipSlot<SoundChip<Song, Sound,
         get ready() {
             return read()?.ready ?? NOTHING_TO_LOAD;
         },
-        play(target: Song | Sound, options?: PlayOptions) {
+        play(target: Song | Sound, options?: PlayOptions | SongPlayOptions) {
             // The chip's `play` takes a song or a sound. TypeScript can't pass the two on through its two
             // signatures, so it is called as the one function it is
-            const play = read()?.play as ((target: Song | Sound, options?: PlayOptions) => number) | undefined;
+            const play = read()?.play as ((target: Song | Sound, options?: PlayOptions | SongPlayOptions) => number) | undefined;
             return play === undefined ? NO_PLAY : play(target, options);
         },
-        queue: (song) => read()?.queue(song) ?? NO_PLAY,
-        stop: (id) => read()?.stop(id),
+        queue: (song, options) => read()?.queue(song, options) ?? NO_PLAY,
+        stop: (id, options) => read()?.stop(id, options),
         get song() {
             return read()?.song;
         },

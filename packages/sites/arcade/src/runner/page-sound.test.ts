@@ -87,6 +87,17 @@ describe('createPageSound', () => {
         sound.destroy();
     });
 
+    it('gives an Audio90 the stereo width set on its stand-in before it loaded, and passes a change on after', async () => {
+        const sound = createPageSound({ isEnabled: true });
+        sound.entryChips.audio90.music.stereoWidth = 0.5;
+        await sound.prepare('audio90');
+        const [music, sfx] = fake.audio90Chips;
+        expect([music.stereoWidth, sfx.stereoWidth]).toEqual([0.5, 1]);
+        sound.entryChips.audio90.sfx.stereoWidth = 0;
+        expect([sound.entryChips.audio90.sfx.stereoWidth, sfx.stereoWidth]).toEqual([0, 0]);
+        sound.destroy();
+    });
+
     it('gives the chips the settings, the mute and the tempo scale set before they loaded', async () => {
         const sound = createPageSound({ isEnabled: true });
         sound.settings = { musicVolume: 0.3, sfxVolume: 0 };

@@ -12,6 +12,8 @@ export interface Audio90Renderer {
     readonly render: (left: Float32Array, right: Float32Array, gain: number) => void;
     /** Cuts every voice at once, and forgets every sound. */
     readonly cut: () => void;
+    /** Sets the stereo width the synthesiser renders at, from 0 (mono) to 1. */
+    readonly setStereoWidth: (width: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,5 +64,6 @@ export function createAudio90Renderer(options: Audio90RendererOptions): Audio90R
             writer.forget();
             synthesiser.reset();
         },
+        setStereoWidth: synthesiser.setStereoWidth,
     };
 }

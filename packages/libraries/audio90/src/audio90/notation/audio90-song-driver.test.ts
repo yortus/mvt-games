@@ -42,7 +42,7 @@ describe('createAudio90SongDriver', () => {
     it('sets the song\'s tempo, character, effects, pump and mixer as it starts', () => {
         const chip = createTestWriter();
         const song = createAudio90Song({ ...TWO_CHANNELS, character: 'console', chorus: { level: 0.2 }, mixer: [{ pan: -1 }] });
-        createAudio90SongDriver(chip.writer).start(song, 10, 1);
+        createAudio90SongDriver(chip.writer).start(song, 10, 1, 0);
         expect(chip.log).toContainEqual({ op: OP90_SET_TEMPO, time: 10, a: 120, b: 0, c: 0, d: 0 });
         expect(chip.log).toContainEqual({ op: OP90_SET_CHARACTER, time: 10, a: AUDIO90_CHARACTERS.indexOf('console'), b: 0, c: 0, d: 0 });
         expect(chip.log).toContainEqual({ op: OP90_SET_EFFECT, time: 10, a: AUDIO90_EFFECT_INDEX.chorus, b: AUDIO90_EFFECT_SETTING_INDEX.chorus.level, c: 0.2, d: 0 });
@@ -69,7 +69,7 @@ describe('createAudio90SongDriver', () => {
 describe('song player, on an Audio90', () => {
     it('writes the song\'s settings, then each row at its chip time', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio90SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio90SongDriver(chip.writer) });
         player.play(GROOVE);
         chip.update(ROW_MS * 2.5);
         player.update(ROW_MS * 2.5);
@@ -95,7 +95,7 @@ describe('song player, on an Audio90', () => {
 
     it('tells the chip the tempo its scale makes, and 0 while it holds the song still', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio90SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio90SongDriver(chip.writer) });
         player.play(GROOVE);
         tick(chip, player, ROW_MS, ROW_MS);
         player.tempoScale = 0.5;
@@ -111,7 +111,7 @@ describe('song player, on an Audio90', () => {
 
     it('plays a queued song at the end of the first, and releases its notes when it stops', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio90SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio90SongDriver(chip.writer) });
         const next = createAudio90Song({ bpm: 120, instruments: { S: SAW }, patterns: { p: '| C-5 S' }, order: ['p'] });
         player.play(GROOVE);
         player.queue(next);
@@ -139,7 +139,7 @@ describe('song player, on an Audio90', () => {
 /** GROOVE's note stamps, played once through with ticks of `tickMs`. */
 function listNoteStamps(tickMs: () => number): number[] {
     const chip = createTestWriter();
-    const player = createSongPlayer(createAudio90SongDriver(chip.writer));
+    const player = createSongPlayer({ driver: createAudio90SongDriver(chip.writer) });
     player.play(GROOVE);
     tick(chip, player, tickMs, GROOVE.durationMs - 1);
     return listNoteOns(chip.log).map((write) => write.time);

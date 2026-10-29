@@ -1,5 +1,5 @@
 import { type Audio80, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createAudio80SongDriver } from '../audio80';
-import { createSongPlayer } from '../shared';
+import type { SongCallbacks } from '../shared';
 import { createHeadlessChip, createSilentWriter, type HeadlessChip } from './headless-chip';
 
 // ---------------------------------------------------------------------------
@@ -22,11 +22,18 @@ import { createHeadlessChip, createSilentWriter, type HeadlessChip } from './hea
 export interface HeadlessAudio80 extends Audio80, HeadlessChip<Audio80Song, Audio80Sound, Audio80PlayOptions> {}
 
 // ---------------------------------------------------------------------------
+// Options
+// ---------------------------------------------------------------------------
+
+/** How a headless Audio80 tells its owner of its songs: what it calls, during `update`, as they reach each row and end. */
+export type HeadlessAudio80Options = SongCallbacks<Audio80Song>;
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 /** Creates a headless Audio80, with its clock at 0 and nothing played. */
-export function createHeadlessAudio80(): HeadlessAudio80 {
+export function createHeadlessAudio80(options: HeadlessAudio80Options = {}): HeadlessAudio80 {
     const writer = createSilentWriter<Audio80Sound, Audio80PlayOptions>();
-    return createHeadlessChip({ writer, player: createSongPlayer(createAudio80SongDriver(writer)) });
+    return createHeadlessChip({ writer, driver: createAudio80SongDriver(writer), callbacks: options });
 }

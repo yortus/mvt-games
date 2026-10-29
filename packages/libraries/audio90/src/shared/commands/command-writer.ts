@@ -22,7 +22,11 @@ export interface CommandWriter<Sound, PlayOptions> extends SongWriter<Sound>, So
     play: (sound: Sound, options?: PlayOptions) => number;
     /** Releases the note of the play with id `id`, as the chip's `stop` does. */
     stop: (id: number) => void;
-    /** Releases every voice, music and sounds alike, at the writer's time. */
+    /**
+     * Releases every voice, music and sounds alike, as soon as it reaches the
+     * chip, in its turn with the plays and stops written around it, as a
+     * browser's chip takes it. So a sound played just after it still plays.
+     */
     releaseAll: () => void;
     /** Takes the next play's id, for a play the writer doesn't write itself, such as a song's. */
     takePlayId: () => number;
@@ -82,7 +86,7 @@ export function createCommandWriter<Sound extends { readonly data: PlayDefaults 
             write(OP_STOP, ASAP_STAMP, id, 0, 0, 0);
         },
         releaseAll() {
-            write(OP_RELEASE_ALL, clock[0], 0, 0, 0, 0);
+            write(OP_RELEASE_ALL, ASAP_STAMP, 0, 0, 0, 0);
         },
         takePlayId: () => nextPlayId++,
     };

@@ -8,6 +8,7 @@ import {
     type PlayableSong,
     type PlayDefaults,
     registerScopeSource,
+    type SongCallbacks,
     type SoundChip,
     type SoundIds,
     toScopeLength,
@@ -76,6 +77,8 @@ export interface WebChipOptions<S extends PlayableSong, Snd> {
      * song as it travels.
      */
     readonly prepareSong: (song: S) => { readonly song: object; readonly soundIds: readonly number[] };
+    /** What the chip calls as its songs reach each row, and end by themselves. */
+    readonly callbacks?: SongCallbacks<S>;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +128,8 @@ export function createWebChip<D extends PassedMessage, S extends PlayableSong, S
         prepare: options.prepareSong,
         speakerFrame: () => (!hasHeard || context.state !== 'running' ? undefined : findSpeakerFrame()),
         sampleRate: () => context.sampleRate,
+        onRow: options.callbacks?.onRow,
+        onEnded: options.callbacks?.onEnded,
     });
 
     const ready = Promise.resolve().then(async () => {

@@ -12,7 +12,8 @@ import {
     type Audio80SongOptions,
     type Audio80Sound,
 } from '../audio80';
-import { OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE } from './commands';
+import { OP_FADE, OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE } from './commands';
+import type { CheckedSongPlay } from './check-song-play';
 import { toNoteNumber } from './notes';
 import { createSongPlayer, type SongPlayer, type SongWriter } from './song-player';
 
@@ -103,13 +104,109 @@ describe('song player', () => {
         expect(listNoteOns(log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS, 8 * ROW_MS, 12 * ROW_MS]);
     });
 
+    it('goes back to its loop point only as many more times as its repeat says, then ends', () => {
+        const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
+        const once = playThrough(looped, () => 1000 / 60, 4 * 4 * ROW_MS + 1, { repeat: 1, pitch: 0, fadeMs: 0 });
+        expect(listNoteOns(once.log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS, 8 * ROW_MS]);
+        expect(once.player.song).toBeUndefined();
+        const never = playThrough(looped, () => 1000 / 60, 3 * 4 * ROW_MS + 1, { repeat: 0, pitch: 0, fadeMs: 0 });
+        expect(listNoteOns(never.log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS]);
+        expect(never.player.song).toBeUndefined();
+    });
+
+    it('plays every note but an instrument\'s own note its pitch up, on top of the order\'s transposition', () => {
+        const pitch = -5;
+        const { log } = playThrough(TUNE, () => 1000 / 60, TUNE.durationMs + 100, { repeat: 0, pitch, fadeMs: 0 });
+        const secondPass = listNoteOns(log).filter((write) => write.time >= 4 * ROW_MS);
+        expect(listNoteOns(log)[0].note).toBe(requireNoteNumber('C-5') + pitch);
+        expect(secondPass.find((write) => write.voice === 0)?.note).toBe(requireNoteNumber('C-5') + TUNE.order[1].transpose + pitch);
+        expect(secondPass.find((write) => write.voice === 2)?.note).toBe(DRUM.data.note);
+    });
+
+    it('calls onRow for each row it writes, and onEnded as a song ends by itself, but not as it is stopped or followed', () => {
+        const chip = createTestWriter();
+        const calls: string[] = [];
+        const player = createSongPlayer({
+            driver: createAudio80SongDriver(chip.writer),
+            onRow: (song, orderIndex, row) => calls.push(`${song === TUNE ? 'tune' : 'other'} ${orderIndex}:${row}`),
+            onEnded: (song) => calls.push(`${song === TUNE ? 'tune' : 'other'} ended`),
+        });
+        const short = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
+        player.play(short);
+        expect(calls).toEqual(['other 0:0']);
+        player.queue(TUNE);
+        tick(chip, player, () => 1000 / 60, short.durationMs + TUNE.durationMs + 100);
+        // The queued song follows without the first ending, then plays its two entries and ends
+        expect(calls).toEqual([
+            'other 0:0', 'other 0:1', 'other 0:2', 'other 0:3',
+            'tune 0:0', 'tune 0:1', 'tune 0:2', 'tune 0:3', 'tune 1:0', 'tune 1:1', 'tune 1:2', 'tune 1:3',
+            'tune ended',
+        ]);
+        player.play(TUNE);
+        player.stop();
+        expect(calls.at(-1)).toBe('tune 0:0');
+    });
+
+    it('fades out as it is stopped with a fade, playing on until the fade ends, then cuts the chip, without ending by itself', () => {
+        const chip = createTestWriter();
+        const ended: Audio80Song[] = [];
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer), onEnded: (song) => ended.push(song) });
+        const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 });
+        player.play(looped);
+        tick(chip, player, () => ROW_MS, ROW_MS);
+        const fadeMs = 2.5 * ROW_MS;
+        player.stop(fadeMs);
+        expect(chip.log.at(-1)).toEqual({ kind: 'fade', isIn: false, ms: fadeMs, time: ROW_MS });
+        // It plays the rows due before the fade ends, and is still the song playing
+        tick(chip, player, () => ROW_MS, 2 * ROW_MS);
+        expect(player.song).toBe(looped);
+        tick(chip, player, () => ROW_MS, 2 * ROW_MS);
+        expect(player.song).toBeUndefined();
+        const notes = listNoteOns(chip.log).filter((write) => write.voice === 2);
+        expect(notes.map((write) => write.time)).toEqual([0, 2 * ROW_MS]);
+        // As the fade ends, it releases the song's notes and cuts the chip, which leaves it at full volume
+        const fadeEnd = ROW_MS + fadeMs;
+        expect(chip.log.filter((write) => write.kind === 'fade').at(-1)).toEqual({ kind: 'fade', isIn: false, ms: 0, time: fadeEnd });
+        expect(chip.log.some((write) => write.kind === 'note-off' && write.time === fadeEnd)).toBe(true);
+        expect(ended).toEqual([]);
+    });
+
+    it('cuts what a fade-out left as the next song starts, and fades that song in if its play says so', () => {
+        const chip = createTestWriter();
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
+        player.play(TUNE);
+        player.stop(1000);
+        player.play(TUNE, { repeat: 0, pitch: 0, fadeMs: 300 });
+        const fades = chip.log.filter((write) => write.kind === 'fade');
+        expect(fades).toEqual([
+            { kind: 'fade', isIn: false, ms: 1000, time: 0 },
+            { kind: 'fade', isIn: false, ms: 0, time: 0 },
+            { kind: 'fade', isIn: true, ms: 300, time: 0 },
+        ]);
+        expect(player.song).toBe(TUNE);
+    });
+
+    it('starts a song queued during a fade-out as the fade ends', () => {
+        const chip = createTestWriter();
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
+        const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 });
+        const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
+        player.play(looped);
+        player.stop(ROW_MS / 2);
+        player.queue(next);
+        tick(chip, player, () => ROW_MS, ROW_MS);
+        expect(player.song).toBe(next);
+        expect(listNoteOns(chip.log).find((write) => write.note === requireNoteNumber('G-5'))?.time).toBe(ROW_MS / 2);
+    });
+
     it('plays a queued song as the one playing ends, without a gap', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
-        player.queue(createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] }));
+        player.queue(createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] }), { repeat: Infinity, pitch: 2, fadeMs: 0 });
         tick(chip, player, () => 1000 / 60, TUNE.durationMs + 3 * ROW_MS);
-        const firstOfNext = listNoteOns(chip.log).find((write) => write.note === requireNoteNumber('G-5'));
+        // The queued song plays at the pitch it was queued with
+        const firstOfNext = listNoteOns(chip.log).find((write) => write.note === requireNoteNumber('G-5') + 2);
         expect(firstOfNext?.time).toBeCloseTo(TUNE.durationMs, 9);
     });
 
@@ -117,7 +214,7 @@ describe('song player', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 });
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(looped);
         tick(chip, player, () => 1000 / 60, ROW_MS);
         player.queue(next);
@@ -131,7 +228,7 @@ describe('song player', () => {
     it('cancels a queued song when told to play another', () => {
         const queued = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
         player.queue(queued);
         tick(chip, player, () => 1000 / 60, ROW_MS);
@@ -144,7 +241,7 @@ describe('song player', () => {
     it('releases the song playing when told to play another, and starts the new one at once', () => {
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * 1.5);
         const switchedAt = chip.writer.time;
@@ -159,7 +256,7 @@ describe('song player', () => {
 
     it('plays faster by its tempo scale', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.tempoScale = 2;
         player.play(TUNE);
         tick(chip, player, () => 1000 / 60, TUNE.durationMs);
@@ -170,7 +267,7 @@ describe('song player', () => {
 
     it('plays the rest of the song at a new tempo scale from the update after it changes', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
         tick(chip, player, () => 10, 2 * ROW_MS);
         player.tempoScale = 2;
@@ -182,7 +279,7 @@ describe('song player', () => {
 
     it('holds where it is at a tempo of 0, and carries on from there', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * 1.5);
         const before = listNoteOns(chip.log).length;
@@ -197,7 +294,7 @@ describe('song player', () => {
     });
 
     it('holds at a tempo scale that is negative or not finite', () => {
-        const player = createSongPlayer(createAudio80SongDriver(createTestWriter().writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(createTestWriter().writer) });
         for (const scale of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
             player.tempoScale = scale;
             expect(player.tempoScale, `${scale}`).toBe(0);
@@ -206,7 +303,7 @@ describe('song player', () => {
 
     it('ignores a deltaMs of 0 or less, or not finite', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(createAudio80Song({ ...TUNE_OPTIONS, order: ['a'], loop: 0 }));
         chip.clear();
         chip.update(ROW_MS);
@@ -221,7 +318,7 @@ describe('song player', () => {
         expect(measureSlide(steady, 0, 0, ROW_MS)).toBeCloseTo(SLIDE, 9);
 
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(song);
         tick(chip, player, () => 10, ROW_MS / 2);
         player.tempoScale = 2;
@@ -236,7 +333,7 @@ describe('song player', () => {
     it('stops a slide while the song is held, and carries it on when it resumes', () => {
         const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: SLIDE_THEN_HOLD } });
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(song);
         tick(chip, player, () => 10, ROW_MS / 2);
         const heldAt = chip.writer.time;
@@ -290,7 +387,7 @@ describe('song player', () => {
 
     it('releases its notes and its voices when stopped', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
         tick(chip, player, () => 1000 / 60, 50);
         chip.clear();
@@ -301,7 +398,7 @@ describe('song player', () => {
 
     it('counts beats from the start of the song', () => {
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
         tick(chip, player, () => 10, ROW_MS * ROWS_PER_BEAT);
         expect(player.beat).toBeCloseTo(1, 9);
@@ -311,7 +408,7 @@ describe('song player', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
         const next = createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] });
         const chip = createTestWriter();
-        const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(looped);
         const places = [[player.orderIndex, player.row]];
         for (let i = 0; i < 13; i++) {
@@ -383,7 +480,8 @@ type Write =
     | { readonly kind: 'note-off'; readonly voice: number; readonly time: number }
     | { readonly kind: 'set-voice'; readonly voice: number; readonly setting: number; readonly value: number; readonly time: number }
     | { readonly kind: 'set-filter'; readonly filter: number; readonly setting: number; readonly value: number; readonly time: number }
-    | { readonly kind: 'set-echo'; readonly setting: number; readonly value: number; readonly time: number };
+    | { readonly kind: 'set-echo'; readonly setting: number; readonly value: number; readonly time: number }
+    | { readonly kind: 'fade'; readonly isIn: boolean; readonly ms: number; readonly time: number };
 
 type NoteOn = Extract<Write, { kind: 'note-on' }>;
 type SetVoice = Extract<Write, { kind: 'set-voice' }>;
@@ -433,7 +531,7 @@ function listNoteStamps(song: Audio80Song, tickMs: () => number): number[] {
 /** The note stamps of TUNE when it starts at the same chip time, either before the update or after it. */
 function listStampsWhenPlayed(when: 'before-update' | 'after-update'): number[] {
     const chip = createTestWriter();
-    const player = createSongPlayer(createAudio80SongDriver(chip.writer));
+    const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
     const tickMs = 1000 / 60;
     const startTick = 3;
     const totalMs = TUNE.durationMs + 100;
@@ -446,10 +544,10 @@ function listStampsWhenPlayed(when: 'before-update' | 'after-update'): number[] 
     return listNoteOns(chip.log).map((write) => write.time);
 }
 
-function playThrough(song: Audio80Song, tickMs: () => number, durationMs: number) {
+function playThrough(song: Audio80Song, tickMs: () => number, durationMs: number, play?: CheckedSongPlay) {
     const chip = createTestWriter();
-    const player = createSongPlayer(createAudio80SongDriver(chip.writer));
-    player.play(song);
+    const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
+    player.play(song, play);
     tick(chip, player, tickMs, durationMs);
     return { log: chip.log, player };
 }
@@ -513,6 +611,8 @@ function toWrite(op: number, time: number, a: number, b: number, c: number, d: n
             return { kind: 'set-filter', filter: a, setting: b, value: c, time };
         case OP80_SET_ECHO:
             return { kind: 'set-echo', setting: a, value: b, time };
+        case OP_FADE:
+            return { kind: 'fade', isIn: a === 1, ms: b, time };
         default:
             throw new Error(`a song wrote op ${op}, which it never should`);
     }

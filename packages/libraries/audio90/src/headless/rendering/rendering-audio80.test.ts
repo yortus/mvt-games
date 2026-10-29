@@ -11,6 +11,18 @@ const SAW: Audio80SoundOptions = { wave: 'saw', envelope: { attackMs: 0, decayMs
 const HELD = createAudio80Sound(SAW);
 
 describe('rendering Audio80', () => {
+    it('fades a song out as it is stopped with a fade, and ends in silence', () => {
+        const chip = createRenderingAudio80();
+        const id = chip.play(createAudio80Song({ bpm: 120, instruments: { s: HELD }, patterns: { p: '| C-4 s' }, order: ['p'], loop: 0 }));
+        const full = renderMs(chip, 100);
+        chip.stop(id, { fadeMs: 200 });
+        const fading = renderMs(chip, 200);
+        const tenth = fading.length / 10;
+        expect(measurePeak(fading.subarray(0, tenth))).toBeGreaterThan(measurePeak(full) * 0.5);
+        expect(measurePeak(fading.subarray(9 * tenth))).toBeLessThan(measurePeak(fading.subarray(0, tenth)) / 100);
+        expect(measurePeak(renderMs(chip, 100))).toBe(0);
+    });
+
     it('renders at 48 kHz unless told otherwise', () => {
         expect(createRenderingAudio80().sampleRate).toBe(DEFAULT_SAMPLE_RATE);
         expect(createRenderingAudio80({ sampleRate: 22050 }).sampleRate).toBe(22050);
@@ -63,6 +75,18 @@ function playHeld(chip: RenderingAudio80): Float32Array {
 }
 
 /** Renders the chip's next `FRAMES` samples into a new buffer. */
+/** Moves the chip's clock on by `ms`, a tick at a time, and renders the samples that time covers, at the default 48 kHz. */
+function renderMs(chip: RenderingAudio80, ms: number): Float32Array {
+    const tickMs = 10;
+    const tickFrames = 480;
+    const output = new Float32Array(ms / tickMs * tickFrames);
+    for (let at = 0; at < output.length; at += tickFrames) {
+        chip.update(tickMs);
+        chip.renderInto(output.subarray(at, at + tickFrames));
+    }
+    return output;
+}
+
 function renderFrames(chip: RenderingAudio80): Float32Array {
     const samples = new Float32Array(FRAMES);
     chip.renderInto(samples);

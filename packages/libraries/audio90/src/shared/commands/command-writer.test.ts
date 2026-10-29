@@ -18,7 +18,8 @@ describe('createCommandWriter', () => {
             [OP_PLAY_OPTIONS, -Infinity, HELD_LENGTH, 72, 0.75, 1],
             [OP_PLAY, -Infinity, SOUND_ID, second, 60, 0.5],
             [OP_STOP, -Infinity, second, 0, 0, 0],
-            [OP_RELEASE_ALL, 50, 0, 0, 0, 0],
+            // Every call from the page applies as soon as it can, in the order made, as in a browser
+            [OP_RELEASE_ALL, -Infinity, 0, 0, 0, 0],
         ]);
         expect([first, second, writer.takePlayId()]).toEqual([1, 2, 3]);
     });

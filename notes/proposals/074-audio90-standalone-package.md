@@ -795,10 +795,11 @@ package is finished. The progress log uses these numbers.
    "Chip stalls". Then the optional `context`. Unit tests in the fake audio
    context, and a page test in a real browser.~~ Done, 2026-10-27
    (section 12).
-6. Sounds, a chip each for music and sound effects, and the smaller API
+6. ~~Sounds, a chip each for music and sound effects, and the smaller API
    (sections 5.8 and 5.9). Both rewrite the chip's interface, so they go
    together, in five parts that each leave lint, the tests and the build
-   passing, and each change the package and the Arcade together:
+   passing, and each change the package and the Arcade together:~~ Done,
+   2026-10-29 (section 12).
    - ~~**6a, sounds:** one kind in place of instruments and sound effects;
      `play(sound, options)` returning an id; `stop(id)`; no `noteOn` or
      `noteOff` on the chips.~~ Done, 2026-10-28 (section 12).
@@ -814,11 +815,11 @@ package is finished. The progress log uses these numbers.
      helpers to `audio90/tracker`; `song.durationMs`.~~ Done, 2026-10-28
      (section 12). The user listened to the four busiest games after 6c,
      and they sounded fine.
-   - **6e, simplify.** A review after 6d (section 12, 2026-10-28) found
+   - ~~**6e, simplify.** A review after 6d (section 12, 2026-10-28) found
      about 800 to 1,000 of the package's 11,700 lines that could go, most
      of them doubled between the chips or left over from writes the page no
      longer makes. The user asked for all of it, in parts that each leave
-     lint, the tests and the build passing:
+     lint, the tests and the build passing:~~ Done, 2026-10-29 (section 12).
      1. **The writer by numbers.** The writer is internal now, so it takes
         each setting as the number the song's cells hold, and the drivers
         forward it as it is. The reverse tables, `listNamesByIndex`, the
@@ -925,12 +926,13 @@ package is finished. The progress log uses these numbers.
      in step 5.
 7. ~~Add `formatAudio90Song` and `parseAudio90Song`, with a round-trip test
    over every tune in the Arcade.~~ Done, 2026-10-29.
-8. Add to the chip what a music player needs (section 5.7): the `repeat`
+8. ~~Add to the chip what a music player needs (section 5.7): the `repeat`
    and whole-semitone `pitch` play options, `stereoWidth`, and the
    `onEnded` and `onRow` options. Music fades too (the user, 2026-10-28):
    games fade their music out all the time, and today a page steps
-   `volume` itself, so something like `stop(id, { fadeMs })`. A chip playing a song becomes the
-   README's first example in step 11.
+   `volume` itself, so something like `stop(id, { fadeMs })`.~~ Done,
+   2026-10-29, in four chunks (section 12). A chip playing a song becomes
+   the README's first example in step 11.
 9. Add the `startMs` play option, and starting at an order entry and row,
    with a test that a song started at a row sounds the same as one played
    to it. Then fractional pitch.
@@ -1686,3 +1688,82 @@ package is finished. The progress log uses these numbers.
   `#rendering-audio80` and `#rendering-audio90` imports, and the README's
   layout, follow. `web/worklet/` (12 files, 9 of them code) stays flat: its
   only split is by chip, which would make two folders of two files.
+- **2026-10-29, step 8 started.** The user chose both recommendations: a
+  `pitch` that takes a note out of range throws from `play`, and fades are
+  even in decibels, with a fade-in too.
+  - **Chunk 1, `repeat` and `pitch`**, unstaged. `play(song, options)` and
+    `queue(song, options)` take `SongPlayOptions`: `repeat`, how many more
+    times the loop plays (`Infinity` by default, 0 to end at the end of the
+    order), and `pitch`, whole semitones added to every note but an
+    instrument's own, as the order's transposition is. `checkSongPlay`, in
+    `shared/check-song-play.ts`, checks them on the page and finds each
+    song's note range once (a `WeakMap`), so a bad play throws before
+    anything changes. The checked play goes to the sequencer: the song
+    player counts its returns to the loop and gives the driver the pitch as
+    the song starts; a browser chip sends both in the `song-call` message.
+    `PlayableSong` gained the song's notes, which the check reads. Tests:
+    the check, the player's repeats and pitch (a queued song's too), the
+    playback checking before it plays, the message, and the worklet ending
+    a song after its repeats. Changeset `.changeset/song-play-options.md`.
+  - **Chunk 2, `stereoWidth`**, unstaged. The Audio90 has `stereoWidth`,
+    0 (mono) to 1 (as written), clamped like `volume`. The synthesiser
+    applies it last, after the limiter, as mid and side: each side becomes
+    a blend of the two, so 0 is mono exactly and nothing passes the limit,
+    and at 1 the output is untouched, so every audio hash stays exact. It
+    glides to a new width over about 30 ms, as the volume does, and
+    `reset` leaves it, since it is the listener's setting. A browser chip
+    sends it to the worklet as a `stereo-width` message (sent once the
+    worklet runs, like the rest); the headless Audio90 keeps it, and the
+    rendering one sets it on its synthesiser. The Arcade's Audio90
+    stand-ins keep it for the chip to come, as they keep the volume.
+    Found on the way: a headless chip's `releaseAll` was stamped with the
+    chip's time, so the queue (sorted by stamp) applied it after plays
+    stamped "as soon as possible", releasing a sound played just after
+    `stop()`. It is stamped "as soon as possible" now, so calls apply in
+    the order made, as in a browser. No audio hash moved. Changesets
+    `stereo-width.md` and `headless-stop-order.md`.
+  - **Chunk 3, `onRow` and `onEnded`**, unstaged. `SongCallbacks<Song>`,
+    in `shared/song-callbacks.ts`, is given as a chip is made: to
+    `createAudio80` and `createAudio90`, whose options extend it, and to
+    `createHeadlessAudio80` and `createHeadlessAudio90`, which now take
+    options of their own. `onEnded` is only for a song ending by itself; a
+    `stop`, or a queued song following, calls nothing. In a browser, the
+    page's songs work both out from the places the worklet already sends,
+    in the current generation: a new song, entry or row calls `onRow`, and
+    no song after one calls `onEnded`. A stop changes the generation, so it
+    calls nothing. They are called as the place arrives, a moment before it
+    is heard, as section 5.7 said. The song player calls them as it writes,
+    so the headless chip holds them, in reused arrays, and calls them after
+    each `update`, never inside `play` or `stop`. `createSongPlayer` takes
+    one options object now (`driver`, `onRow`, `onEnded`), and the headless
+    chip makes its player from a `driver`. Changeset `song-callbacks.md`.
+  - **Chunk 4, music fades**, unstaged. `stop(id?, { fadeMs })`
+    (`StopOptions`, checked by `checkStopFadeMs`) and a `fadeMs` song play
+    option. The fade is the synthesiser's, on its whole output, so it runs
+    on the sound card's clock: `shared/synthesiser/fade.ts` keeps the gain
+    in a typed array and moves it by the same factor each sample, so it is
+    even in decibels, down to `FADE_FLOOR_DB` (-60). A fade-out ends in
+    silence: the synthesiser cuts every voice and empties its effect lines,
+    keeping every setting, and goes back to full volume, so no tail comes
+    back. A new shared opcode, `OP_FADE` (15), carries it; a fade-out over
+    0 ms is that cut at once. The song player writes the fades through its
+    driver (`SongDriver.fade`): it plays the song on through a fade-out and
+    writes no row at or after its end, then releases the song and writes
+    the cut at the end's exact stamp, so the player and the synthesiser
+    agree whichever gets there first. A song started while a fade-out may
+    have left the chip quiet cuts first; a song queued during a fade-out
+    starts as it ends. `stop` with no id and a fade leaves the voices to
+    the fade's cut, unless no song is playing. A song that fades out
+    doesn't call `onEnded`. In a browser, a stop with a fade keeps the
+    generation, so the song's places still count while it is heard. The
+    fade multiplies by exactly 1 at full volume, so every audio hash stayed
+    exact. No Arcade entry stepped its music's volume by hand, so none
+    changed. Changeset `music-fades.md`.
+  - **Benchmarks after step 8**, interleaved with HEAD (a copy of the
+    committed package in the scratchpad): rendering level within the noise
+    (the busy mix on 16 voices 175 and 198 µs against 172 and 179), and
+    the song tick 641 µs on average against 667 (+4%, within its ±6 to
+    13%), its allocation down from 44 to 33 B a tick.
+  - **Checked:** lint, `npx tsc -b`, the package's tests (45 files, 357)
+    and the Arcade's (149 files, 1,516), and `npm run build:arcade`: the
+    home page is 54.8 KB of its 60 KB budget, from 54.6 KB.

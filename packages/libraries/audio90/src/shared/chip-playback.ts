@@ -1,5 +1,8 @@
-import type { SongSequencer, SoundChip } from './sound-chip';
+import { checkSongPlay, type SongPlayOptions } from './check-song-play';
+import { checkStopFadeMs } from './stop-options';
 import type { SongTiming } from './notation';
+import type { PlayableSong } from './song-player';
+import type { SongSequencer, SoundChip } from './sound-chip';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -38,7 +41,7 @@ export interface ChipPlaybackOptions<Song, Sound, PlayOptions> {
  * of 1. `play` tells a song from a sound by its order of patterns, which a
  * sound has none of.
  */
-export function createChipPlayback<Song extends SongTiming, Sound extends object, PlayOptions>(
+export function createChipPlayback<Song extends PlayableSong, Sound extends object, PlayOptions>(
     options: ChipPlaybackOptions<Song, Sound, PlayOptions>,
 ): ChipPlayback<Song, Sound, PlayOptions> {
     const { songs, playSound, stopSound, takePlayId, stopVoices } = options;
@@ -70,29 +73,34 @@ export function createChipPlayback<Song extends SongTiming, Sound extends object
             songs.tempoScale = scale;
         },
 
-        play(target: Song | Sound, playOptions?: PlayOptions) {
-            if (!isSong(target)) return playSound(target, playOptions);
+        play(target: Song | Sound, playOptions?: PlayOptions | SongPlayOptions) {
+            if (!isSong(target)) return playSound(target, playOptions as PlayOptions | undefined);
+            const checked = checkSongPlay(target, playOptions as SongPlayOptions | undefined);
             songPlayId = takePlayId();
-            songs.play(target);
+            songs.play(target, checked);
             return songPlayId;
         },
 
-        queue(song) {
+        queue(song, songOptions) {
+            const checked = checkSongPlay(song, songOptions);
             // With nothing playing, a queued song starts at once, as a play of its own
             if (songs.song === undefined) songPlayId = takePlayId();
-            songs.queue(song);
+            songs.queue(song, checked);
             return songPlayId;
         },
 
-        stop(id) {
+        stop(id, stopOptions) {
+            const fadeMs = checkStopFadeMs(stopOptions);
             if (id === undefined) {
                 songPlayId = NO_SONG_PLAY;
-                songs.stop();
-                stopVoices();
+                // A fade cuts every voice as it ends, so only a stop with no fade, or no song to fade, stops them now
+                const isFading = fadeMs > 0 && songs.song !== undefined;
+                songs.stop(fadeMs);
+                if (!isFading) stopVoices();
             }
             else if (id === songPlayId && id !== NO_SONG_PLAY) {
                 songPlayId = NO_SONG_PLAY;
-                songs.stop();
+                songs.stop(fadeMs);
             }
             else {
                 stopSound(id);

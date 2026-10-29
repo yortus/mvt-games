@@ -58,9 +58,13 @@ export interface PlayMessage extends CheckedPlay {
     readonly id: number;
 }
 
-/** A message the runner passes to the chip's own part: one that defines something the commands use, such as a sound or a sample. */
+/**
+ * A message the runner passes to the chip's own part: one that defines
+ * something the commands use, such as a sound or a sample, or sets one of the
+ * chip's own settings, such as the Audio90's stereo width.
+ */
 export interface PassedMessage {
-    readonly kind: 'sound' | 'sample';
+    readonly kind: 'sound' | 'sample' | 'stereo-width';
 }
 
 /** How many blocks pass between scopes sent: one every fourth block, about 94 a second at 48 kHz. */

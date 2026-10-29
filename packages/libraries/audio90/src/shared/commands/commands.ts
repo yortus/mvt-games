@@ -45,3 +45,11 @@ export const OP_PLAY = 12;
 export const OP_STOP = 13;
 /** Releases every voice's note. No operands. */
 export const OP_RELEASE_ALL = 14;
+/**
+ * Fades the chip's whole output, evenly in decibels. `a` is 1 to fade in
+ * from near silence, or 0 to fade out from where it is, and `b` is how long
+ * the fade takes, in ms. A fade-out ends in silence: the chip cuts every
+ * voice, empties its effects, and goes back to full volume. A fade-out over
+ * 0 ms does that at once.
+ */
+export const OP_FADE = 15;

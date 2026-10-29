@@ -5,6 +5,7 @@ import {
     CONTROL_SAMPLES,
     createCommandScheduler,
     createEnvelopes,
+    createFade,
     createNoteDriver,
     createSoundPlays,
     DC_POLE,
@@ -14,6 +15,7 @@ import {
     MAX_CUTOFF_SHARE,
     MAX_ECHO_FEEDBACK,
     MIN_CUTOFF_HZ,
+    OP_FADE,
     OP_NOTE_OFF,
     OP_NOTE_ON,
     OP_PLAY,
@@ -116,6 +118,13 @@ export interface Audio90Synthesiser {
      * their defaults.
      */
     reset: () => void;
+    /**
+     * Sets how wide the stereo mix is, from 0 (mono, both sides the same) to
+     * 1 (as the voices and effects place it). A value outside that range is
+     * clamped to it. A change settles over about 30 ms, so it doesn't click.
+     * It is the listener's setting, so `reset` leaves it as it is.
+     */
+    setStereoWidth: (width: number) => void;
     /** Whether voice `voice` is making a sound. */
     isSounding: (voice: number) => boolean;
     /** How many analog oscillators the sounding voices run, which `AUDIO90_OSCILLATOR_BUDGET` caps. */
@@ -338,6 +347,12 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     // The write positions, the sample count and the scope counter, as whole numbers
     const counters = new Float64Array(COUNTER_COUNT);
     let controlCountdown = 0;
+    // The stereo width heard, and the width it moves to, which `reset` leaves alone
+    const width = Float64Array.of(1, 1);
+    const widthCoef = 1 - Math.exp(-1 / (WIDTH_SMOOTHING_S * sampleRate));
+    // The fade on the whole output, and its gain now
+    const fade = createFade({ sampleRate });
+    const fadeGain = fade.gain;
 
     // The effects' settings, which change only with commands
     let reverbSize = 0;
@@ -402,6 +417,10 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             resetAll();
         },
 
+        setStereoWidth(value) {
+            width[WIDTH_TARGET] = value > 0 ? (value < 1 ? value : 1) : 0;
+        },
+
         isSounding: isVoiceSounding,
 
         get oscillatorCount() {
@@ -454,6 +473,16 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 break;
             case OP_RELEASE_ALL:
                 for (let v = 0; v < V; v++) release(v);
+                break;
+            case OP_FADE:
+                // A fade-out over no time cuts every voice at once, at full volume after
+                if (a !== 1 && b <= 0) {
+                    fade.reset();
+                    silence();
+                }
+                else {
+                    fade.start(a === 1, b);
+                }
                 break;
             case OP90_SET_CHARACTER:
                 if (a >= 0 && a < AUDIO90_CHARACTERS.length) character = Math.floor(a);
@@ -946,6 +975,8 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         const outputDrive = isSampler ? SAMPLER_DRIVE : 1;
         const scope = synthesiser.scope;
         for (let s = start; s < end; s++) {
+            // A fade-out that has reached silence leaves nothing to come back as the gain returns to full
+            if (fade.step()) silence();
             if (--controlCountdown <= 0) {
                 controlAll();
                 controlCountdown = CONTROL_SAMPLES;
@@ -1023,8 +1054,23 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             fx[FX_LIMIT_L] = fx[FX_DC_OUT_L] * outputDrive;
             fx[FX_LIMIT_R] = fx[FX_DC_OUT_R] * outputDrive;
             limit();
-            left[s] = fx[FX_LIMIT_L];
-            right[s] = fx[FX_LIMIT_R];
+            if (width[WIDTH_NOW] !== width[WIDTH_TARGET]) {
+                width[WIDTH_NOW] += (width[WIDTH_TARGET] - width[WIDTH_NOW]) * widthCoef;
+                if (Math.abs(width[WIDTH_TARGET] - width[WIDTH_NOW]) < WIDTH_SNAP) width[WIDTH_NOW] = width[WIDTH_TARGET];
+            }
+            // Narrow the mix by scaling what differs between the sides, last, so a width of 0 is mono exactly. Each
+            // side becomes a blend of the two, so it stays within the limit. At full width it is left as it is
+            let l = fx[FX_LIMIT_L];
+            let r = fx[FX_LIMIT_R];
+            if (width[WIDTH_NOW] !== 1) {
+                const mid = (l + r) * 0.5;
+                const side = (l - r) * 0.5 * width[WIDTH_NOW];
+                l = mid + side;
+                r = mid - side;
+            }
+            // The fade, last of all. At full volume, a gain of exactly 1 leaves the output exactly as it is
+            left[s] = l * fadeGain[0];
+            right[s] = r * fadeGain[0];
         }
         counters[COUNTER_SAMPLES] += count;
     }
@@ -1348,7 +1394,22 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         return 1 - Math.exp(-2 * Math.PI * clamp(hz, MIN_CUTOFF_HZ, sampleRate * MAX_CUTOFF_SHARE) / sampleRate);
     }
 
+    /** Cuts every voice and empties the effects, keeping every setting, as a fade-out ends in silence. */
+    function silence(): void {
+        envelopes.reset();
+        plays.reset();
+        filterState.fill(0);
+        chorusLine.fill(0);
+        echoLineL.fill(0);
+        echoLineR.fill(0);
+        reverbLines.fill(0);
+        diffuserLines.fill(0);
+        fx.fill(0);
+        fx[FX_PUMP] = 1;
+    }
+
     function resetAll(): void {
+        fade.reset();
         envelopes.reset();
         plays.reset();
         for (let v = 0; v < V; v++) {
@@ -1468,6 +1529,14 @@ const BRIGHTNESS_OCTAVES = 6;
 const ACCENT_GAIN = 0.3;
 /** The ladder's feedback at full resonance, where it rings at its cutoff. */
 const LADDER_MAX_FEEDBACK = 4;
+/** The time constant of a stereo width change, in seconds. The change settles in about 30 ms, as the chip's volume does. */
+const WIDTH_SMOOTHING_S = 0.01;
+/** How close the width heard must come to its target before it lands on it. */
+const WIDTH_SNAP = 1e-6;
+// Each width's place in `width`
+const WIDTH_NOW = 0;
+const WIDTH_TARGET = 1;
+
 /** The console character's smoothing of samples, as a cutoff in Hz. */
 const CONSOLE_SAMPLE_HZ = 9000;
 const SAMPLER_DRIVE = 1.4;

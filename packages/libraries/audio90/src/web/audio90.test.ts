@@ -37,6 +37,17 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect(sample.data.data.length).toBe(SAMPLE_LENGTH);
     });
 
+    it('sends its stereo width as it changes, clamped to 0 to 1, even before the worklet runs', async () => {
+        const fake = installFakeAudioContext('running');
+        const audio90 = createAudio90({ context: fake.context });
+        expect(audio90.stereoWidth).toBe(1);
+        audio90.stereoWidth = 0.25;
+        await audio90.ready;
+        audio90.stereoWidth = -1;
+        expect(audio90.stereoWidth).toBe(0);
+        expect(fake.messages).toEqual([{ kind: 'stereo-width', width: 0.25 }, { kind: 'stereo-width', width: 0 }]);
+    });
+
     it('sends the sounds first played before the worklet ran, once it runs, in order', async () => {
         const fake = installFakeAudioContext('running');
         const audio90 = createAudio90({ context: fake.context });
@@ -51,12 +62,12 @@ describe('createAudio90, with a stand-in audio context', () => {
         await audio90.ready;
         const song = createSequencedSong(createSound({ engine: ENGINE_SAMPLE }, createSample()));
         audio90.play(song);
-        audio90.play(song);
+        audio90.play(song, { repeat: 1, pitch: -2 });
         expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'sound', 'song', 'song-call', 'song-call']);
         const sent = fake.messages[2] as SongMessage;
         expect(sent.kind === 'song' && (sent.song as Audio90Song).instruments[0].sample).toBeUndefined();
-        expect(fake.messages[3]).toEqual({ kind: 'song-call', call: 'play', songId: 1, generation: 1, value: 0 });
-        expect(fake.messages[4]).toMatchObject({ generation: 2 });
+        expect(fake.messages[3]).toEqual({ kind: 'song-call', call: 'play', songId: 1, generation: 1, repeat: Infinity, pitch: 0, fadeMs: 0, value: 0 });
+        expect(fake.messages[4]).toMatchObject({ generation: 2, repeat: 1, pitch: -2 });
         audio90.tempoScale = 0.5;
         expect(fake.messages.at(-1)).toMatchObject({ call: 'tempo', value: 0.5, generation: 2 });
         audio90.stop();
@@ -121,6 +132,45 @@ describe('createAudio90, with a stand-in audio context', () => {
         fake.setCurrentTime(1);
         fake.reply(createPlace({ songId: 0 }));
         expect(audio90.song).toBeUndefined();
+    });
+
+    it('calls onRow as each new row\'s place arrives, and onEnded as the song ends by itself, but not as the page stops it', async () => {
+        const fake = installFakeAudioContext('running');
+        const calls: string[] = [];
+        const audio90 = createAudio90({
+            context: fake.context,
+            onRow: (_song, orderIndex, row) => calls.push(`row ${orderIndex}:${row}`),
+            onEnded: () => calls.push('ended'),
+        });
+        await audio90.ready;
+        audio90.play(createSequencedSong(createSound()));
+        fake.reply(createPlace({ row: 0 }));
+        // A place sent for a call, with the row unchanged, is not a new row
+        fake.reply(createPlace({ row: 0, tempoScale: 2 }));
+        fake.reply(createPlace({ row: 1 }));
+        fake.reply(createPlace({ songId: 0 }));
+        expect(calls).toEqual(['row 0:0', 'row 0:1', 'ended']);
+        audio90.play(createSequencedSong(createSound()));
+        fake.reply(createPlace({ generation: 2, songId: 2, row: 0 }));
+        audio90.stop();
+        fake.reply(createPlace({ generation: 3, songId: 0 }));
+        expect(calls).toEqual(['row 0:0', 'row 0:1', 'ended', 'row 0:0']);
+    });
+
+    it('keeps reporting a song stopped with a fade until it ends, and doesn\'t call onEnded as it does', async () => {
+        const fake = installFakeAudioContext('running');
+        const ended: unknown[] = [];
+        const audio90 = createAudio90({ context: fake.context, onEnded: (song) => ended.push(song) });
+        await audio90.ready;
+        const song = createSequencedSong(createSound());
+        const id = audio90.play(song);
+        fake.setCurrentTime(1);
+        fake.reply(createPlace({ row: 0 }));
+        audio90.stop(id, { fadeMs: 500 });
+        expect(fake.listMessages('song-call').at(-1)).toMatchObject({ call: 'stop', fadeMs: 500, generation: 1 });
+        expect(audio90.song).toBe(song);
+        fake.reply(createPlace({ songId: 0 }));
+        expect([audio90.song, ended]).toEqual([undefined, []]);
     });
 
     it('stops the song with its play\'s id, and leaves a song played since alone', async () => {

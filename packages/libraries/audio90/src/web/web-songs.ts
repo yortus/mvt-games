@@ -1,4 +1,4 @@
-import type { PlayableSong, SongSequencer } from '../shared';
+import { type CheckedSongPlay, DEFAULT_SONG_PLAY, type PlayableSong, type SongCallbacks, type SongSequencer } from '../shared';
 import type { SongCall, SongMessage, SongPlaceReply } from './worklet';
 
 // ---------------------------------------------------------------------------
@@ -15,6 +15,11 @@ import type { SongCall, SongMessage, SongPlaceReply } from './worklet';
  * only the places of the latest generation. So a place of the song before,
  * still on its way, never shows against the song asked for. Until a place
  * of the song asked for reaches the speaker, it reports the song's start.
+ *
+ * It calls its callbacks as each place arrives, before the listener hears
+ * it: for each new row of the song asked for, and as that song ends by
+ * itself. A song stopped from the page changes the generation, so its end
+ * calls nothing.
  */
 export interface WebSongs<S extends PlayableSong> extends SongSequencer<S> {
     /** Takes a place the worklet sent. */
@@ -27,7 +32,7 @@ export interface WebSongs<S extends PlayableSong> extends SongSequencer<S> {
 // Options
 // ---------------------------------------------------------------------------
 
-export interface WebSongsOptions<S extends PlayableSong> {
+export interface WebSongsOptions<S extends PlayableSong> extends SongCallbacks<S> {
     /** Sends a message to the worklet. */
     readonly send: (message: SongMessage) => void;
     /**
@@ -48,7 +53,7 @@ export interface WebSongsOptions<S extends PlayableSong> {
 
 /** Creates a chip's songs, with no song sent and none playing. */
 export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<S>): WebSongs<S> {
-    const { send, prepare, speakerFrame, sampleRate } = options;
+    const { send, prepare, speakerFrame, sampleRate, onRow, onEnded } = options;
     // The songs sent, both ways round
     const songIds = new Map<S, number>();
     const songs = new Map<number, S>();
@@ -61,6 +66,13 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
     const places = new Float64Array(HISTORY * PLACE_FIELDS);
     let newest = -1;
     let count = 0;
+    // The song and row of the place that arrived last in this generation, for the callbacks. A song id of 0 is
+    // no song
+    let arrivedSongId = 0;
+    let arrivedOrderIndex = 0;
+    let arrivedRow = 0;
+    // Whether the page has stopped the song that arrived last, so its end is not one it came to by itself
+    let isStopping = false;
 
     const webSongs: WebSongs<S> = {
         get song() {
@@ -79,25 +91,31 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
         get beat() {
             return findHeardBeat();
         },
-        play(song) {
+        play(song, play = DEFAULT_SONG_PLAY) {
             changeSong(song);
-            call('play', song, 0);
+            call('play', song, play, 0);
         },
-        queue(song) {
+        queue(song, play = DEFAULT_SONG_PLAY) {
             // With nothing playing, a queued song starts at once, so it changes the song
             if (webSongs.song === undefined) changeSong(song);
-            call('queue', song, 0);
+            call('queue', song, play, 0);
         },
-        stop() {
+        stop(fadeMs = 0) {
+            isStopping = true;
+            if (fadeMs > 0) {
+                // The song plays on as it fades, so it is still the song heard, and its places still count
+                call('stop', undefined, { ...DEFAULT_SONG_PLAY, fadeMs }, 0);
+                return;
+            }
             changeSong(undefined);
-            call('stop', undefined, 0);
+            call('stop', undefined, DEFAULT_SONG_PLAY, 0);
         },
         get tempoScale() {
             return tempoScale;
         },
         set tempoScale(scale) {
             tempoScale = scale;
-            call('tempo', undefined, scale);
+            call('tempo', undefined, DEFAULT_SONG_PLAY, scale);
         },
 
         receive(reply) {
@@ -112,6 +130,7 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
             places[at + PLACE_ROW] = reply.row;
             places[at + PLACE_BEAT] = reply.beat;
             places[at + PLACE_TEMPO_SCALE] = reply.tempoScale;
+            tellCallbacks(reply);
         },
 
         reset() {
@@ -123,7 +142,7 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
     return webSongs;
 
     /** Sends `which` to the sequencer, sending `song` first if it has not been sent. */
-    function call(which: SongCall, song: S | undefined, value: number): void {
+    function call(which: SongCall, song: S | undefined, play: CheckedSongPlay, value: number): void {
         let songId = 0;
         if (song !== undefined) {
             songId = songIds.get(song) ?? 0;
@@ -135,7 +154,7 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
                 send({ kind: 'song', id: songId, song: prepared.song, soundIds: prepared.soundIds });
             }
         }
-        send({ kind: 'song-call', generation, call: which, songId, value });
+        send({ kind: 'song-call', generation, call: which, songId, repeat: play.repeat, pitch: play.pitch, fadeMs: play.fadeMs, value });
     }
 
     /**
@@ -172,6 +191,29 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
         generation++;
         asked = song;
         count = 0;
+        if (song === undefined) return;
+        arrivedSongId = 0;
+        isStopping = false;
+    }
+
+    /** Calls `onRow` if the place that arrived is a new row, or `onEnded` if the song playing has ended by itself. */
+    function tellCallbacks(reply: SongPlaceReply): void {
+        const { songId, orderIndex, row } = reply;
+        const before = arrivedSongId;
+        if (songId === before && orderIndex === arrivedOrderIndex && row === arrivedRow) return;
+        arrivedSongId = songId;
+        arrivedOrderIndex = orderIndex;
+        arrivedRow = row;
+        if (songId === 0) {
+            // No song now, in the generation a song was playing in, so it ran to its end, unless the page stopped it
+            const ended = songs.get(before);
+            if (ended !== undefined && !isStopping) onEnded?.(ended);
+            return;
+        }
+        // A song queued behind one the page stopped is not stopped itself
+        if (songId !== before) isStopping = false;
+        const song = songs.get(songId);
+        if (song !== undefined) onRow?.(song, orderIndex, row);
     }
 }
 

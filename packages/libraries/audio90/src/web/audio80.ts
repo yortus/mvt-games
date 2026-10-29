@@ -1,4 +1,5 @@
 import { type Audio80, type Audio80Character, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createAudio80SoundIds, AUDIO80_VOICE_COUNT } from '../audio80';
+import type { SongCallbacks } from '../shared';
 import { createWebChip } from './web-chip';
 import { type Audio80PassedMessage, AUDIO80_PROCESSOR_NAME, type Audio80RunnerSettings } from './worklet';
 import processorUrl from './worklet/audio80-processor?worker&url';
@@ -8,7 +9,7 @@ import processorUrl from './worklet/audio80-processor?worker&url';
 // ---------------------------------------------------------------------------
 
 /** How to make a browser's Audio80. */
-export interface Audio80Options {
+export interface Audio80Options extends SongCallbacks<Audio80Song> {
     /**
      * The audio context to play in. Without one, the chip makes its own,
      * and starts it at the page's first click, tap or key press, since a
@@ -47,6 +48,7 @@ export function createAudio80(options: Audio80Options = {}): Audio80 {
         pauseWhenHidden: options.pauseWhenHidden ?? true,
         sounds,
         processorUrl,
+        callbacks: options,
         processorName: AUDIO80_PROCESSOR_NAME,
         // The chip is mono. The browser plays its one channel on both speakers
         channelCount: 1,

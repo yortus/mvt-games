@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { CheckedSongPlay } from './check-song-play';
 import { createChipPlayback } from './chip-playback';
 import type { SongSequencer } from './sound-chip';
-import type { SongTiming } from './notation';
+import type { PlayableSong } from './song-player';
 
 describe('a chip\'s playback', () => {
     it('starts a song it is asked to queue at once when nothing plays, and after the song playing otherwise', () => {
@@ -25,6 +26,27 @@ describe('a chip\'s playback', () => {
         playback.tempoScale = -1;
         expect(calls.slice(5)).toEqual(['tempo 0']);
         expect(playback.tempoScale).toBe(0);
+    });
+
+    it('checks a song\'s options before it plays or queues it, and passes them on with their defaults', () => {
+        const { playback, calls, songPlays } = createPlaybackOnStandIns();
+        expect(() => playback.play(SONG_A, { repeat: -1 })).toThrow('play: repeat must be');
+        expect(() => playback.queue(SONG_A, { pitch: 0.5 })).toThrow('play: pitch must be');
+        expect(calls).toEqual([]);
+        playback.play(SONG_A, { repeat: 2 });
+        playback.queue(SONG_B, { pitch: -1 });
+        expect(songPlays).toEqual([{ repeat: 2, pitch: 0, fadeMs: 0 }, { repeat: Infinity, pitch: -1, fadeMs: 0 }]);
+    });
+
+    it('stops every voice at once with no id, unless the song fades out, whose end cuts them', () => {
+        const { playback, songs, calls } = createPlaybackOnStandIns();
+        // With no song to fade, the voices stop at once
+        playback.stop(undefined, { fadeMs: 100 });
+        expect(calls).toEqual(['stop song over 100 ms', 'stop voices']);
+        songs.song = SONG_A;
+        playback.stop(undefined, { fadeMs: 100 });
+        expect(calls.slice(2)).toEqual(['stop song over 100 ms']);
+        expect(() => playback.stop(undefined, { fadeMs: -1 })).toThrow('stop: fadeMs must be 0 or more, and finite; got -1');
     });
 
     it('reports where the sequencer says the song heard has got to', () => {
@@ -78,9 +100,9 @@ type StandInSound = typeof ZAP;
 
 /** A stand-in song, which has an order of patterns, as every song has. */
 function createSong(name: string): StandInSong {
-    return { name, bpm: 120, rowsPerBeat: 4, order: [], patterns: [] };
+    return { name, bpm: 120, rowsPerBeat: 4, swing: 0, loop: -1, channelCount: 1, order: [], patterns: [] };
 }
-interface StandInSong extends SongTiming {
+interface StandInSong extends PlayableSong {
     readonly name: string;
 }
 const SONG_A = createSong('song a');
@@ -89,15 +111,23 @@ const SONG_B = createSong('song b');
 /** A chip's playback on a sequencer whose place a test sets, which notes each call made to it and to the sound side. */
 function createPlaybackOnStandIns() {
     const calls: string[] = [];
+    // How each song played or queued was asked to play
+    const songPlays: (CheckedSongPlay | undefined)[] = [];
     let nextPlayId = 1;
     const songs: { -readonly [K in keyof SongSequencer<StandInSong>]: SongSequencer<StandInSong>[K] } = {
         song: undefined,
         orderIndex: 0,
         row: 0,
         beat: 0,
-        play: (song) => calls.push(`play ${song.name}`),
-        queue: (song) => calls.push(`queue ${song.name}`),
-        stop: () => calls.push('stop song'),
+        play: (song, play) => {
+            songPlays.push(play);
+            calls.push(`play ${song.name}`);
+        },
+        queue: (song, play) => {
+            songPlays.push(play);
+            calls.push(`queue ${song.name}`);
+        },
+        stop: (fadeMs) => calls.push(fadeMs !== undefined && fadeMs > 0 ? `stop song over ${fadeMs} ms` : 'stop song'),
         get tempoScale() {
             return 1;
         },
@@ -112,5 +142,5 @@ function createPlaybackOnStandIns() {
         takePlayId: () => nextPlayId++,
         stopVoices: () => calls.push('stop voices'),
     });
-    return { playback, songs, calls };
+    return { playback, songs, calls, songPlays };
 }

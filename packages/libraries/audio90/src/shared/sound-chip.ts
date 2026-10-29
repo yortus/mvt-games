@@ -1,3 +1,6 @@
+import type { CheckedSongPlay, SongPlayOptions } from './check-song-play';
+import type { StopOptions } from './stop-options';
+
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
@@ -47,18 +50,22 @@ export interface SoundChip<Song, Sound, PlayOptions> {
      *
      * A song starts from its beginning, in place of any song playing, and
      * any song queued is cancelled, so nothing queued before plays after it.
+     * Its options say how many more times its loop plays, and how far to
+     * transpose it. It throws if they are not valid, or take a note out of
+     * the chip's range.
      */
     play: {
         (sound: Sound, options?: PlayOptions): number;
-        (song: Song): number;
+        (song: Song, options?: SongPlayOptions): number;
     };
     /**
      * Plays `song` without a gap when the song playing reaches the end of
      * its order, even if that song loops. If no song is playing, it plays
      * `song` at once. It returns the id of the play it follows, which `stop`
-     * takes, or a new one if it starts at once.
+     * takes, or a new one if it starts at once. It takes the options `play`
+     * takes for a song, and throws as it does.
      */
-    queue: (song: Song) => number;
+    queue: (song: Song, options?: SongPlayOptions) => number;
     /**
      * Stops the play with id `id`. For a sound, it releases the play's note,
      * so it fades out as its envelope's release says. It does nothing if the
@@ -69,8 +76,16 @@ export interface SoundChip<Song, Sound, PlayOptions> {
      * With no `id`, it stops everything: the song, and every voice's note.
      * While the chip is paused, nothing is heard, so it cuts every voice at
      * once instead, rather than letting the notes fade out as it resumes.
+     *
+     * With a `fadeMs` and a song playing, the song plays on as the chip fades
+     * out, and stops as the fade ends, when the chip cuts every voice,
+     * sounds included. Until then, `song` and `row` report it, as it is still
+     * heard. A song played meanwhile starts at full volume, and one queued
+     * meanwhile starts as the fade ends. With no song playing, or for a
+     * sound's id, it stops as it would without one. It throws for a `fadeMs`
+     * that is not 0 or more and finite.
      */
-    stop: (id?: number) => void;
+    stop: (id?: number, options?: StopOptions) => void;
     /** The song heard playing, or undefined when none is. A song played, queued with none playing, or stopped shows here at once. */
     readonly song: Song | undefined;
     /** The entry in the song's order whose row is heard now. 0 when no song is playing, and while a song just played has yet to reach the speaker. */
@@ -139,12 +154,20 @@ export interface SongSequencer<S> {
     readonly row: number;
     /** Where the song heard has got to, in beats from its start. 0 when no song is playing. */
     readonly beat: number;
-    /** Starts `song` from its beginning, releasing any song playing, and cancels any song queued. */
-    play: (song: S) => void;
-    /** Plays `song` without a gap when the song playing reaches the end of its order, or at once if none is playing. */
-    queue: (song: S) => void;
-    /** Releases the song's notes, gives its voices back to sounds, and stops. */
-    stop: () => void;
+    /**
+     * Starts `song` from its beginning, releasing any song playing, and
+     * cancels any song queued. `play` says how it plays, and defaults to
+     * looping until it is stopped, at its own pitch.
+     */
+    play: (song: S, play?: CheckedSongPlay) => void;
+    /** Plays `song` without a gap when the song playing reaches the end of its order, or at once if none is playing, as `play` says. */
+    queue: (song: S, play?: CheckedSongPlay) => void;
+    /**
+     * Releases the song's notes, gives its voices back to sounds, and stops.
+     * With a `fadeMs` above 0, it fades the chip out first, and the song stops
+     * as the fade ends.
+     */
+    stop: (fadeMs?: number) => void;
     /**
      * The tempo scale, where 1 is the song's own tempo and 0 holds it where
      * it is. A negative or non-finite value acts as 0.

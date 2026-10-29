@@ -16,12 +16,20 @@ export type SongMessage =
     | { readonly kind: 'song'; readonly id: number; readonly song: object; readonly soundIds: readonly number[] }
     | SongCallMessage;
 
-/** A call to a chip's sequencer. `songId` names the song for `play` and `queue`, and `value` is the scale for `tempo`. */
+/**
+ * A call to a chip's sequencer. `songId` names the song for `play` and
+ * `queue`, and `repeat`, `pitch` and `fadeMs` say how it plays, checked on
+ * the page. For `stop`, `fadeMs` is how long to fade out over first. `value`
+ * is the scale for `tempo`.
+ */
 export interface SongCallMessage {
     readonly kind: 'song-call';
     readonly generation: number;
     readonly call: SongCall;
     readonly songId: number;
+    readonly repeat: number;
+    readonly pitch: number;
+    readonly fadeMs: number;
     readonly value: number;
 }
 

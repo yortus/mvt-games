@@ -1,5 +1,5 @@
-import { type Audio80Character, createAudio80SongDriver } from '../../audio80';
-import { createSongPlayer, joinMembers } from '../../shared';
+import { type Audio80Character, type Audio80Song, createAudio80SongDriver } from '../../audio80';
+import { joinMembers, type SongCallbacks } from '../../shared';
 import { createAudio80Renderer } from './audio80-renderer';
 import type { HeadlessAudio80 } from '../headless-audio80';
 import { createHeadlessChip, DEFAULT_SAMPLE_RATE } from '../headless-chip';
@@ -33,7 +33,7 @@ export interface RenderingAudio80 extends HeadlessAudio80 {
 // ---------------------------------------------------------------------------
 
 /** How a rendering Audio80 renders. */
-export interface RenderingAudio80Options {
+export interface RenderingAudio80Options extends SongCallbacks<Audio80Song> {
     /** The sample rate to render at, in Hz. Defaults to 48,000. */
     readonly sampleRate?: number;
     /** How the chip sounds. Defaults to `'classic'`. */
@@ -50,8 +50,9 @@ export function createRenderingAudio80(options: RenderingAudio80Options = {}): R
     const renderer = createAudio80Renderer({ sampleRate, character: options.character });
     const chip = createHeadlessChip({
         writer: renderer.writer,
-        player: createSongPlayer(createAudio80SongDriver(renderer.writer)),
+        driver: createAudio80SongDriver(renderer.writer),
         cut: renderer.cut,
+        callbacks: options,
     });
     return joinMembers(chip, {
         sampleRate,

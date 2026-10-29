@@ -49,6 +49,6 @@ export {
     type Audio90Vibrato,
     type Audio90Wave,
 } from './audio90';
-export { SCOPE_POINTS, type SoundChip } from './shared';
+export { SCOPE_POINTS, type SongCallbacks, type SongPlayOptions, type SoundChip, type StopOptions } from './shared';
 export { AUDIO90_CELL_TEXT_WIDTH, createScope, printAudio90Cell, type Scope } from './tracker';
 export { createAudio80, createAudio90, type Audio80Options, type Audio90Options } from './web';

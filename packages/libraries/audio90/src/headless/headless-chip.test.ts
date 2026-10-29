@@ -52,6 +52,25 @@ describe('a headless chip\'s songs', () => {
         for (let i = 0; i < 20; i++) chip.update(TICK_MS);
         expect(chip.row).toBeGreaterThan(0);
     });
+
+    it('call the chip\'s callbacks during update, never inside play, for each row and as a song ends by itself', () => {
+        const calls: string[] = [];
+        const chip = createHeadlessAudio80({
+            onRow: (song, orderIndex, row) => calls.push(`${song === SONG ? 'song' : 'other'} ${orderIndex}:${row}`),
+            onEnded: (song) => calls.push(`${song === SONG ? 'song' : 'other'} ended`),
+        });
+        chip.play(SONG, { repeat: 0 });
+        expect(calls).toEqual([]);
+        chip.update(TICK_MS);
+        expect(calls).toEqual(['song 0:0']);
+        // Nothing moves while paused, so nothing is called
+        chip.pause();
+        for (let i = 0; i < 20; i++) chip.update(TICK_MS);
+        expect(calls).toHaveLength(1);
+        chip.resume();
+        for (let i = 0; i * TICK_MS < SONG.durationMs + 100; i++) chip.update(TICK_MS);
+        expect(calls).toEqual(['song 0:0', 'song 0:1', 'song 0:2', 'song 0:3', 'song 1:0', 'song 1:1', 'song ended']);
+    });
 });
 
 describe('a headless chip\'s stop', () => {

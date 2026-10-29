@@ -58,7 +58,7 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
             sampleRate,
             // Every sound a song plays was defined by the page, so the writer defines nothing of its own
             createWriter: (idOf) => createCommandWriter<Audio80Sound, Audio80PlayOptions>({ soundIds: createAudio80SoundIds({ idOf, onSound: ignore }) }),
-            createPlayer: (writer) => createSongPlayer(createAudio80SongDriver(writer)),
+            createPlayer: (writer) => createSongPlayer({ driver: createAudio80SongDriver(writer) }),
             sendPlace: options.sendPlace,
         }),
         synthesiser: {

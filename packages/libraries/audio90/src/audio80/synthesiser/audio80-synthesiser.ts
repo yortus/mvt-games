@@ -4,6 +4,7 @@ import {
     CONTROL_SAMPLES,
     createCommandScheduler,
     createEnvelopes,
+    createFade,
     createNoteDriver,
     createSoundPlays,
     DC_POLE,
@@ -12,6 +13,7 @@ import {
     MAX_CUTOFF_SHARE,
     MAX_ECHO_FEEDBACK,
     MIN_CUTOFF_HZ,
+    OP_FADE,
     OP_NOTE_OFF,
     OP_NOTE_ON,
     OP_PLAY,
@@ -202,6 +204,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const bus = new Float64Array(BUS_COUNT);
     // The echo's damping state, and the DC blocker's last input and output
     const mix = new Float64Array(MIX_STATE_COUNT);
+    // The fade on the whole output, and its gain now
+    const fade = createFade({ sampleRate });
+    const fadeGain = fade.gain;
 
     // ---- The queue -----------------------------------------------------------
     const scheduler = createCommandScheduler({ capacity: options.queueCapacity, apply, renderRun: renderSamples });
@@ -279,6 +284,16 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 break;
             case OP_RELEASE_ALL:
                 for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) release(v);
+                break;
+            case OP_FADE:
+                // A fade-out over no time cuts every voice at once, at full volume after
+                if (a !== 1 && b <= 0) {
+                    fade.reset();
+                    silence();
+                }
+                else {
+                    fade.start(a === 1, b);
+                }
                 break;
         }
     }
@@ -460,6 +475,8 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         const end = start + count;
         const scope = synthesiser.scope;
         for (let s = start; s < end; s++) {
+            // A fade-out that has reached silence leaves nothing to come back as the gain returns to full
+            if (fade.step()) silence();
             if (--controlCountdown <= 0) {
                 controlAll();
                 controlCountdown = CONTROL_SAMPLES;
@@ -519,7 +536,8 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             // Remove any DC offset, then soft clip. Soft clipping rounds off a loud moment rather than cracking
             mix[DC_OUT] = out - mix[DC_IN] + DC_POLE * mix[DC_OUT];
             mix[DC_IN] = out;
-            output[s] = Math.tanh(mix[DC_OUT]);
+            // The fade, last of all. At full volume, a gain of exactly 1 leaves the output exactly as it is
+            output[s] = Math.tanh(mix[DC_OUT]) * fadeGain[0];
         }
         sampleClock += count;
     }
@@ -654,7 +672,17 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         areFiltersDirty = false;
     }
 
+    /** Cuts every voice and empties the filters and the echo, keeping every setting, as a fade-out ends in silence. */
+    function silence(): void {
+        envelopes.reset();
+        plays.reset();
+        filterState.fill(0);
+        echo.fill(0);
+        mix.fill(0);
+    }
+
     function resetAll(): void {
+        fade.reset();
         envelopes.reset();
         plays.reset();
         for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) {

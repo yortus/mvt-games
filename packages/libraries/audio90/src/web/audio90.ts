@@ -7,6 +7,7 @@ import {
     AUDIO90_VOICE_COUNT,
     createAudio90SoundIds,
 } from '../audio90';
+import { clampVolume, joinMembers, type SongCallbacks } from '../shared';
 import { createWebChip } from './web-chip';
 import { type Audio90PassedMessage, AUDIO90_PROCESSOR_NAME, type Audio90RunnerSettings } from './worklet';
 import processorUrl from './worklet/audio90-processor?worker&url';
@@ -16,7 +17,7 @@ import processorUrl from './worklet/audio90-processor?worker&url';
 // ---------------------------------------------------------------------------
 
 /** How to make a browser's Audio90. */
-export interface Audio90Options {
+export interface Audio90Options extends SongCallbacks<Audio90Song> {
     /**
      * The audio context to play in. Without one, the chip makes its own,
      * and starts it at the page's first click, tap or key press, since a
@@ -65,6 +66,7 @@ export function createAudio90(options: Audio90Options = {}): Audio90 {
         pauseWhenHidden: options.pauseWhenHidden ?? true,
         sounds,
         processorUrl,
+        callbacks: options,
         processorName: AUDIO90_PROCESSOR_NAME,
         channelCount: 2,
         voiceCount: AUDIO90_VOICE_COUNT,
@@ -78,5 +80,15 @@ export function createAudio90(options: Audio90Options = {}): Audio90 {
         },
     });
 
-    return web.chip;
+    let stereoWidth = 1;
+    return joinMembers(web.chip, {
+        get stereoWidth() {
+            return stereoWidth;
+        },
+        set stereoWidth(value: number) {
+            // A width is clamped to 0 to 1, as a volume is
+            stereoWidth = clampVolume(value);
+            web.send({ kind: 'stereo-width', width: stereoWidth });
+        },
+    });
 }

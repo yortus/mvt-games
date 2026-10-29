@@ -68,7 +68,7 @@ export function render(songOrSound: Audio80Song | Audio80Sound | Audio90Song | A
     const durationMs = options.durationMs ?? passMs + TAIL_MS;
     if (song.chip === 'audio90') {
         const renderer = createAudio90Renderer({ sampleRate, character: (options as Audio90RenderOptions).character });
-        const player = createSongPlayer(createAudio90SongDriver(renderer.writer));
+        const player = createSongPlayer({ driver: createAudio90SongDriver(renderer.writer) });
         player.play(song);
         return renderStereo(renderer, {
             sampleRate,
@@ -82,7 +82,7 @@ export function render(songOrSound: Audio80Song | Audio80Sound | Audio90Song | A
         });
     }
     const renderer = createAudio80Renderer({ sampleRate, character: (options as Audio80RenderOptions).character });
-    const player = createSongPlayer(createAudio80SongDriver(renderer.writer));
+    const player = createSongPlayer({ driver: createAudio80SongDriver(renderer.writer) });
     player.play(song);
     return renderMono(renderer, {
         sampleRate,

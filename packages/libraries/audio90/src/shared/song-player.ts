@@ -1,12 +1,15 @@
+import { type CheckedSong, type CheckedSongPlay, DEFAULT_SONG_PLAY } from './check-song-play';
+import type { SongPattern, SongTiming } from './notation';
+import type { SongCallbacks } from './song-callbacks';
 import type { SongSequencer } from './sound-chip';
-import type { SongTiming } from './notation';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What the song player reads of any chip's song: its timing, its swing and its loop. */
-export interface PlayableSong extends SongTiming {
+/** What the song player reads of any chip's song: its timing, its swing and its loop, and its notes, which a play's options are checked against. */
+export interface PlayableSong extends SongTiming, CheckedSong {
+    readonly patterns: readonly SongPattern[];
     /** How late each odd-numbered row of a pattern plays, as a share of a row, from 0 to 0.5. */
     readonly swing: number;
     /** The index in `order` to go back to at the end, or -1 to play once. */
@@ -45,14 +48,20 @@ export interface SongWriter<Sound> extends Pick<SoundIds<Sound>, 'soundId'> {
 export interface SongDriver<S extends PlayableSong> {
     /** The chip's clock, in ms. */
     readonly time: number;
-    /** Writes `song`'s settings as it starts. Its first row follows. */
-    start: (song: S, stamp: number, tempoScale: number) => void;
+    /** Writes `song`'s settings as it starts, to play `pitch` semitones up from its notes. Its first row follows. */
+    start: (song: S, stamp: number, tempoScale: number, pitch: number) => void;
     /** Writes row `row` of order entry `orderIndex`, which lasts `lengthMs` of song time. */
     playRow: (song: S, orderIndex: number, row: number, stamp: number, lengthMs: number, tempoScale: number) => void;
     /** Writes what a new tempo scale changes, such as the channels' slides. */
     changeTempoScale: (song: S, stamp: number, tempoScale: number) => void;
     /** Releases every channel of `song`. */
     release: (song: S, stamp: number) => void;
+    /**
+     * Fades the chip's whole output over `ms`: in from near silence, or out
+     * from where it is. A fade-out over 0 ms cuts every voice at once, and
+     * puts the chip back at full volume.
+     */
+    fade: (stamp: number, isIn: boolean, ms: number) => void;
 }
 
 /**
@@ -77,13 +86,36 @@ export interface SongPlayer<S extends PlayableSong> extends SongSequencer<S> {
 }
 
 // ---------------------------------------------------------------------------
+// Options
+// ---------------------------------------------------------------------------
+
+/**
+ * How a song player plays: the driver that writes its songs, and what it
+ * calls as it writes each row and as a song ends by itself. It calls them at
+ * once, inside `play`, `queue` and `update`, so a chip that must not call
+ * the page's callbacks there holds them until it can.
+ */
+export interface SongPlayerOptions<S extends PlayableSong> extends SongCallbacks<S> {
+    /** What writes the songs to the chip. */
+    readonly driver: SongDriver<S>;
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates a song player that keeps a song's time, and has `driver` write it, with no song playing. */
-export function createSongPlayer<S extends PlayableSong>(driver: SongDriver<S>): SongPlayer<S> {
+/** Creates a song player that keeps a song's time, and has its driver write it, with no song playing. */
+export function createSongPlayer<S extends PlayableSong>(options: SongPlayerOptions<S>): SongPlayer<S> {
+    const { driver, onRow, onEnded } = options;
     let song: S | undefined;
     let queued: S | undefined;
+    // How the song queued plays, and how many more times the song playing goes back to its loop
+    let queuedPlay = DEFAULT_SONG_PLAY;
+    let repeatsLeft = Infinity;
+    // Whether the song is fading out to stop, and whether the chip may be below full volume from a fade-out,
+    // until it is cut
+    let isFadingOut = false;
+    let isFaded = false;
     let tempoScale = 1;
     // The tempo scale the driver was last told
     let sentScale = 1;
@@ -120,22 +152,38 @@ export function createSongPlayer<S extends PlayableSong>(driver: SongDriver<S>):
             tempoScale = Number.isFinite(value) && value > 0 ? value : 0;
         },
 
-        play(next) {
+        play(next, play = DEFAULT_SONG_PLAY) {
             queued = undefined;
             if (song !== undefined) driver.release(song, driver.time);
-            start(next, driver.time);
+            isFadingOut = false;
+            start(next, play, driver.time);
         },
 
-        queue(next) {
-            if (song === undefined) start(next, driver.time);
-            else queued = next;
+        queue(next, play = DEFAULT_SONG_PLAY) {
+            if (song === undefined) {
+                start(next, play, driver.time);
+                return;
+            }
+            queued = next;
+            queuedPlay = play;
         },
 
-        stop() {
+        stop(fadeMs = 0) {
             queued = undefined;
             if (song === undefined) return;
-            driver.release(song, driver.time);
+            const time = driver.time;
+            if (fadeMs > 0) {
+                // The song plays on as the chip fades, and stops as the fade ends
+                isFadingOut = true;
+                isFaded = true;
+                times[FADE_END_MS] = time + fadeMs;
+                driver.fade(time, false, fadeMs);
+                return;
+            }
+            // A fade under way runs on to silence, taking the released notes with it
+            driver.release(song, time);
             song = undefined;
+            isFadingOut = false;
         },
 
         update(deltaMs) {
@@ -154,49 +202,63 @@ export function createSongPlayer<S extends PlayableSong>(driver: SongDriver<S>):
                 sentScale = scale;
                 driver.changeTempoScale(song, stamp, scale);
             }
-            if (scale === 0 || coveredMs <= 0) return;
-
-            let remaining = coveredMs * scale;
-            for (;;) {
+            if (scale > 0 && coveredMs > 0) {
+                let remaining = coveredMs * scale;
+                for (;;) {
                 // The next row's time: its place on the grid, plus the swing's delay on an odd row of its
                 // pattern. Worked out here without a choice between doubles, which would make V8 box one
-                const at = times[NEXT_ROW_MS] + (isAtEnd ? 0 : row % 2) * song.swing * times[ROW_MS];
-                if (at > times[SONG_MS] + remaining) {
-                    times[SONG_MS] += remaining;
-                    break;
-                }
-                const step = at > times[SONG_MS] ? at - times[SONG_MS] : 0;
-                stamp += step / scale;
-                remaining -= step;
-                times[SONG_MS] = at;
-                if (!isAtEnd) {
-                    playRow(stamp);
-                    continue;
-                }
-                const next = queued;
-                if (next === undefined && song.loop >= 0) {
+                    const at = times[NEXT_ROW_MS] + (isAtEnd ? 0 : row % 2) * song.swing * times[ROW_MS];
+                    if (at > times[SONG_MS] + remaining) {
+                        times[SONG_MS] += remaining;
+                        break;
+                    }
+                    const step = at > times[SONG_MS] ? at - times[SONG_MS] : 0;
+                    stamp += step / scale;
+                    remaining -= step;
+                    times[SONG_MS] = at;
+                    // Nothing more is written once a fade-out has ended
+                    if (isFadingOut && stamp >= times[FADE_END_MS]) break;
+                    if (!isAtEnd) {
+                        playRow(stamp);
+                        continue;
+                    }
+                    const next = queued;
+                    if (next === undefined && song.loop >= 0 && repeatsLeft > 0) {
                     // Go back to the loop point. Its first row is due now, so the next turn of this loop plays it at once
-                    orderIndex = song.loop;
-                    row = 0;
-                    isAtEnd = false;
-                    continue;
+                        repeatsLeft--;
+                        orderIndex = song.loop;
+                        row = 0;
+                        isAtEnd = false;
+                        continue;
+                    }
+                    driver.release(song, stamp);
+                    queued = undefined;
+                    if (next === undefined) {
+                        const ended = song;
+                        song = undefined;
+                        // A song that reaches its end as it fades out was stopped, so it doesn't end by itself
+                        if (!isFadingOut) onEnded?.(ended);
+                        isFadingOut = false;
+                        break;
+                    }
+                    start(next, queuedPlay, stamp);
                 }
-                driver.release(song, stamp);
-                queued = undefined;
-                if (next === undefined) {
-                    song = undefined;
-                    break;
-                }
-                start(next, stamp);
             }
+            if (isFadingOut && time >= times[FADE_END_MS]) endFadeOut();
         },
     };
 
     return player;
 
-    /** Starts `next` at chip time `stamp`, with its settings and then its first row. It runs once a song, so it is not on the hot path. */
-    function start(next: S, stamp: number): void {
+    /** Starts `next` at chip time `stamp`, as `play` says, with its settings and then its first row. It runs once a song, so it is not on the hot path. */
+    function start(next: S, play: CheckedSongPlay, stamp: number): void {
+        // A song never plays into a fade-out meant for the one before, so whatever that left sounding is cut
+        if (isFaded) driver.fade(stamp, false, 0);
+        isFaded = false;
+        isFadingOut = false;
+        if (play.fadeMs > 0) driver.fade(stamp, true, play.fadeMs);
         song = next;
+        repeatsLeft = play.repeat;
         orderIndex = 0;
         row = 0;
         times[ROW_MS] = 60000 / (next.bpm * next.rowsPerBeat);
@@ -204,8 +266,22 @@ export function createSongPlayer<S extends PlayableSong>(driver: SongDriver<S>):
         times[NEXT_ROW_MS] = 0;
         isAtEnd = false;
         times[STARTED_AT_MS] = stamp;
-        driver.start(next, stamp, tempoScale);
+        driver.start(next, stamp, tempoScale, play.pitch);
         playRow(stamp);
+    }
+
+    /** Ends a fade-out as the chip reaches silence: cuts every voice, and starts the song queued, if there is one. */
+    function endFadeOut(): void {
+        if (song === undefined) return;
+        const stamp = times[FADE_END_MS];
+        driver.release(song, stamp);
+        driver.fade(stamp, false, 0);
+        isFaded = false;
+        isFadingOut = false;
+        const next = queued;
+        queued = undefined;
+        if (next === undefined) song = undefined;
+        else start(next, queuedPlay, stamp);
     }
 
     /** Has the driver write the row at the cursor, at chip time `stamp`, and moves the cursor on. */
@@ -214,6 +290,7 @@ export function createSongPlayer<S extends PlayableSong>(driver: SongDriver<S>):
         driver.playRow(song, orderIndex, row, stamp, computeRowLengthMs(), tempoScale);
         playingOrderIndex = orderIndex;
         playingRow = row;
+        onRow?.(song, orderIndex, row);
         advanceRow();
     }
 
@@ -255,4 +332,5 @@ const ROW_MS = 0;
 const SONG_MS = 1;
 const NEXT_ROW_MS = 2;
 const STARTED_AT_MS = 3;
-const TIME_COUNT = 4;
+const FADE_END_MS = 4;
+const TIME_COUNT = 5;

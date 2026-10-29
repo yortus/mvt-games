@@ -5,9 +5,11 @@ import {
     createChipPlayback,
     createCommandWriter,
     joinMembers,
+    createSongPlayer,
     type PlayableSong,
     type PlayDefaults,
-    type SongPlayer,
+    type SongCallbacks,
+    type SongDriver,
     type SoundChip,
 } from '../shared';
 
@@ -43,8 +45,10 @@ export interface HeadlessChipOptions<Song extends PlayableSong, Sound extends ob
      * writer, for one that doesn't.
      */
     readonly writer: Pick<CommandWriter<Sound, PlayOptions>, 'update' | 'play' | 'stop' | 'releaseAll' | 'takePlayId'>;
-    /** The song player that plays the chip's songs on `writer`. */
-    readonly player: SongPlayer<Song>;
+    /** What writes the chip's songs to `writer`. */
+    readonly driver: SongDriver<Song>;
+    /** What the chip calls as its songs reach each row, and end by themselves. */
+    readonly callbacks?: SongCallbacks<Song>;
     /** Cuts every voice at once, as `stop` does while the chip is paused, on a chip that renders. A chip that doesn't has nothing to cut. */
     readonly cut?: () => void;
 }
@@ -55,7 +59,24 @@ export interface HeadlessChipOptions<Song extends PlayableSong, Sound extends ob
 
 /** Creates the members every headless chip has, with its clock at 0, unpaused, and no song playing. */
 export function createHeadlessChip<Song extends PlayableSong, Sound extends object, PlayOptions>(options: HeadlessChipOptions<Song, Sound, PlayOptions>): HeadlessChip<Song, Sound, PlayOptions> {
-    const { writer, player, cut } = options;
+    const { writer, driver, cut, callbacks } = options;
+    const onRow = callbacks?.onRow;
+    const onEnded = callbacks?.onEnded;
+    // The rows and ends the player reached since the last update, held for the callbacks until it ends. An end
+    // is held as a row of -1
+    const heldSongs: Song[] = [];
+    const heldOrderIndexes: number[] = [];
+    const heldRows: number[] = [];
+    const hold = (song: Song, orderIndex: number, row: number): void => {
+        heldSongs.push(song);
+        heldOrderIndexes.push(orderIndex);
+        heldRows.push(row);
+    };
+    const player = createSongPlayer({
+        driver,
+        onRow: onRow === undefined ? undefined : hold,
+        onEnded: onEnded === undefined ? undefined : (song) => hold(song, 0, ENDED),
+    });
     let volume = 1;
     let isMuted = false;
     let isPaused = false;
@@ -97,9 +118,21 @@ export function createHeadlessChip<Song extends PlayableSong, Sound extends obje
             if (isPaused) return;
             writer.update(deltaMs);
             player.update(deltaMs);
+            if (heldSongs.length > 0) callHeld();
         },
         destroy: ignore,
     });
+
+    /** Calls the callbacks for the rows and ends held, in the order they happened, and forgets them. */
+    function callHeld(): void {
+        for (let i = 0; i < heldSongs.length; i++) {
+            if (heldRows[i] === ENDED) onEnded?.(heldSongs[i]);
+            else onRow?.(heldSongs[i], heldOrderIndexes[i], heldRows[i]);
+        }
+        heldSongs.length = 0;
+        heldOrderIndexes.length = 0;
+        heldRows.length = 0;
+    }
 
     /** Stops every voice's note, once the song has stopped: cuts them while paused, as a browser's chip does, or else releases them. */
     function stopVoices(): void {
@@ -131,6 +164,9 @@ export function createSilentWriter<Sound extends { readonly data: PlayDefaults }
 
 /** The sample rate a headless chip renders at unless it is told another, in Hz. */
 export const DEFAULT_SAMPLE_RATE = 48000;
+
+/** The row an end is held as. */
+const ENDED = -1;
 
 /** Does nothing. */
 function ignore(): void {

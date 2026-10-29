@@ -152,6 +152,15 @@ describe('chip runner, running a chip\'s sequencer', () => {
         expect(faster.at(-1)?.tempoScale).toBe(2);
     });
 
+    it('goes back to a song\'s loop only as many more times as its call\'s repeat says, then ends it', () => {
+        const { runner, receive, places, sendSong, call } = setUpAudio90();
+        const looped = createAudio90Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio90Sound() }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'], loop: 0 });
+        sendSong(1, looped);
+        receive(call({ call: 'play', songId: 1, generation: 1, repeat: 1 }));
+        playTicks(runner, new Float32Array(BLOCK), new Float32Array(BLOCK), 30);
+        expect(places.map((place) => [place.songId, place.row])).toEqual([[1, 0], [1, 1], [1, 0], [1, 1], [0, 0]]);
+    });
+
     it('plays a queued song as the one playing ends, without a gap', () => {
         const { runner, receive, places, sendSong, call } = setUpAudio90();
         const once = createAudio90Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio90Sound() }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'] });
@@ -233,7 +242,7 @@ describe('chip runner, running a chip\'s sequencer', () => {
         const { runner, receive, places, soundIds } = setUp();
         const song = createAudio80Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio80Sound({ wave: 'saw' }) }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'], loop: 0 });
         receive({ kind: 'song', id: 1, song: structuredClone(song), soundIds: song.instruments.map(soundIds.soundId) });
-        receive({ kind: 'song-call', generation: 1, call: 'play', songId: 1, value: 0 });
+        receive({ kind: 'song-call', generation: 1, call: 'play', songId: 1, repeat: Infinity, pitch: 0, fadeMs: 0, value: 0 });
         const output = new Float32Array(BLOCK);
         let loudest = 0;
         for (let b = 0; b < 30 * BLOCKS_PER_TICK; b++) {
@@ -274,6 +283,18 @@ describe('chip runner, running an Audio90', () => {
         playTicks(runner, left, right, 6);
         expect(measurePeak(left)).toBeGreaterThan(0.05);
         expect(measurePeak(right)).toBeLessThan(1e-6);
+    });
+
+    it('narrows its mix to the stereo width the page sends, so a sound played hard left plays on both sides at 0', () => {
+        const { runner, receive, play } = setUpAudio90();
+        receive({ kind: 'stereo-width', width: 0 });
+        play(createAudio90Sound(), { pan: -1, lengthMs: Infinity });
+        const left = new Float32Array(BLOCK);
+        const right = new Float32Array(BLOCK);
+        // Long enough for the width to settle at 0
+        playTicks(runner, left, right, 20);
+        expect(measurePeak(right)).toBeGreaterThan(0.02);
+        expect(right).toEqual(left);
     });
 
     it('plays a sample sent before the sound that plays it', () => {
@@ -414,11 +435,14 @@ function setUpAudio90() {
         receive({ kind: 'song', id, song: { ...song, instruments }, soundIds: songSoundIds });
     };
     /** A call to the sequencer. */
-    const call = (options: { call: SongCall; generation: number; songId?: number }): SongCallMessage => ({
+    const call = (options: { call: SongCall; generation: number; songId?: number; repeat?: number; pitch?: number; fadeMs?: number }): SongCallMessage => ({
         kind: 'song-call',
         generation: options.generation,
         call: options.call,
         songId: options.songId ?? 0,
+        repeat: options.repeat ?? Infinity,
+        pitch: options.pitch ?? 0,
+        fadeMs: options.fadeMs ?? 0,
         value: 0,
     });
     return { runner, receive, play, scopes, places, sendSong, call };

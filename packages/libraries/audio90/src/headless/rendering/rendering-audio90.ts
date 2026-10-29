@@ -1,5 +1,5 @@
-import { type Audio90Character, createAudio90SongDriver } from '../../audio90';
-import { createSongPlayer, joinMembers } from '../../shared';
+import { type Audio90Character, type Audio90Song, createAudio90SongDriver } from '../../audio90';
+import { clampVolume, joinMembers, type SongCallbacks } from '../../shared';
 import { createAudio90Renderer } from './audio90-renderer';
 import type { HeadlessAudio90 } from '../headless-audio90';
 import { createHeadlessChip, DEFAULT_SAMPLE_RATE } from '../headless-chip';
@@ -28,7 +28,7 @@ export interface RenderingAudio90 extends HeadlessAudio90 {
 // ---------------------------------------------------------------------------
 
 /** How a rendering Audio90 renders. */
-export interface RenderingAudio90Options {
+export interface RenderingAudio90Options extends SongCallbacks<Audio90Song> {
     /** The sample rate to render at, in Hz. Defaults to 48,000. */
     readonly sampleRate?: number;
     /** How the chip sounds until a song sets it. Defaults to `'studio'`. */
@@ -45,11 +45,21 @@ export function createRenderingAudio90(options: RenderingAudio90Options = {}): R
     const renderer = createAudio90Renderer({ sampleRate, character: options.character });
     const chip = createHeadlessChip({
         writer: renderer.writer,
-        player: createSongPlayer(createAudio90SongDriver(renderer.writer)),
+        driver: createAudio90SongDriver(renderer.writer),
         cut: renderer.cut,
+        callbacks: options,
     });
+    let stereoWidth = 1;
     return joinMembers(chip, {
         sampleRate,
+        get stereoWidth() {
+            return stereoWidth;
+        },
+        set stereoWidth(value: number) {
+            // A width is clamped to 0 to 1, as a volume is
+            stereoWidth = clampVolume(value);
+            renderer.setStereoWidth(stereoWidth);
+        },
         renderInto(left: Float32Array, right: Float32Array) {
             renderer.render(left, right, chip.isMuted ? 0 : chip.volume);
         },

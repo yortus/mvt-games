@@ -18,10 +18,11 @@ import { createWorkletSequencer } from './worklet-sequencer';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** The messages that define what an Audio90's commands use: its sounds and its samples. */
+/** The messages for the Audio90's own part: the sounds and samples its commands use, and its stereo width. */
 export type Audio90PassedMessage =
     | { readonly kind: 'sound'; readonly id: number; readonly data: Audio90SoundData }
-    | { readonly kind: 'sample'; readonly id: number; readonly data: Audio90SampleData };
+    | { readonly kind: 'sample'; readonly id: number; readonly data: Audio90SampleData }
+    | { readonly kind: 'stereo-width'; readonly width: number };
 
 /** The settings the main thread gives the Audio90's processor when it is made. */
 export interface Audio90RunnerSettings {
@@ -63,7 +64,7 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
         sampleRate,
         // Every sound a song plays was defined by the page, so the writer defines nothing of its own
         createWriter: (idOf) => createCommandWriter<Audio90Sound, Audio90PlayOptions>({ soundIds: createAudio90SoundIds({ idOf, onSound: ignore, onSample: ignore }) }),
-        createPlayer: (writer) => createSongPlayer(createAudio90SongDriver(writer)),
+        createPlayer: (writer) => createSongPlayer({ driver: createAudio90SongDriver(writer) }),
         sendPlace: options.sendPlace,
     });
 
@@ -91,6 +92,9 @@ export function createAudio90Runner(options: Audio90RunnerOptions): ChipRunner<A
                     case 'sample':
                         // A sample too big for what is left of sample memory is dropped, and the notes that use it are silent
                         synthesiser.defineSample(message.id, message.data);
+                        break;
+                    case 'stereo-width':
+                        synthesiser.setStereoWidth(message.width);
                         break;
                 }
             },

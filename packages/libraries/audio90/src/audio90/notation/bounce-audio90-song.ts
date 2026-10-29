@@ -50,7 +50,7 @@ export function bounceAudio90Song(options: BounceOptions): Int16Array {
     writer.write(OP90_SET_EFFECT, 0, AUDIO90_EFFECT_INDEX.echo, AUDIO90_EFFECT_SETTING_INDEX.echo.level, 0, 0);
     writer.write(OP90_SET_EFFECT, 0, AUDIO90_EFFECT_INDEX.chorus, AUDIO90_EFFECT_SETTING_INDEX.chorus.level, 0, 0);
     const driver = createAudio90SongDriver(writer);
-    driver.start(song, 0, 1);
+    driver.start(song, 0, 1, 0);
 
     const rowMs = 60000 / (song.bpm * song.rowsPerBeat);
     const swingMs = song.swing * rowMs;

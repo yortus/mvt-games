@@ -5,6 +5,7 @@
 // every chip's synthesiser: its queue of commands, its envelopes, its note
 // driver, its voices' plays, and the maths it shares.
 
+export { type CheckedSongPlay, checkSongPlay, DEFAULT_SONG_PLAY, type SongPlayOptions } from './check-song-play';
 export { type ChipPlayback, type ChipPlaybackOptions, createChipPlayback } from './chip-playback';
 export {
     ASAP_STAMP,
@@ -18,6 +19,7 @@ export {
     type CommandWriterOptions,
     createCommandBuffer,
     createCommandWriter,
+    OP_FADE,
     OP_NOTE_OFF,
     OP_NOTE_ON,
     OP_PLAY,
@@ -69,8 +71,10 @@ export {
     type ScopeTargets,
     toScopeLength,
 } from './scope-source';
-export { createSongPlayer, type PlayableSong, type SongDriver, type SongPlayer, type SongWriter, type SoundIds } from './song-player';
+export type { SongCallbacks } from './song-callbacks';
+export { createSongPlayer, type PlayableSong, type SongDriver, type SongPlayer, type SongPlayerOptions, type SongWriter, type SoundIds } from './song-player';
 export { clampVolume, joinMembers, type SongSequencer, type SoundChip } from './sound-chip';
+export { checkStopFadeMs, type StopOptions } from './stop-options';
 export {
     clamp,
     clearTinyValues,
@@ -80,6 +84,7 @@ export {
     type CommandSchedulerOptions,
     createCommandScheduler,
     createEnvelopes,
+    createFade,
     createNoteDriver,
     createSoundPlays,
     DC_POLE,
@@ -91,6 +96,8 @@ export {
     type Envelopes,
     type EnvelopesOptions,
     type EnvelopeTimes,
+    type Fade,
+    FADE_FLOOR_DB,
     MAX_ARPEGGIO,
     MAX_CUTOFF_SHARE,
     MAX_ECHO_FEEDBACK,

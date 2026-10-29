@@ -12,7 +12,16 @@ import type { Audio90Song, Audio90Sound } from '../notation';
  * `SoundChip` describes. Every play starts as soon as it reaches the chip,
  * as on the Audio80.
  */
-export type Audio90 = SoundChip<Audio90Song, Audio90Sound, Audio90PlayOptions>;
+export interface Audio90 extends SoundChip<Audio90Song, Audio90Sound, Audio90PlayOptions> {
+    /**
+     * How wide its stereo mix is, from 0 (mono, both speakers the same) to 1
+     * (as its songs and sounds place each voice), which it starts at. A
+     * value outside that range is clamped to it. A change settles over about
+     * 30 ms, so it doesn't click. Turn it down for a listener on headphones
+     * who finds hard-panned voices tiring, or play in mono on one speaker.
+     */
+    stereoWidth: number;
+}
 
 /** How one play of a sound differs from the sound's own settings. Each option defaults to the sound's. */
 export interface Audio90PlayOptions {

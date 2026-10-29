@@ -3,8 +3,8 @@
 // tools that render sound in memory for tests: audio test hashes, peaks and
 // loudness, WAV files, and finding the sounds a module exports.
 
-export { createHeadlessAudio80, type HeadlessAudio80 } from './headless-audio80';
-export { createHeadlessAudio90, type HeadlessAudio90 } from './headless-audio90';
+export { createHeadlessAudio80, type HeadlessAudio80, type HeadlessAudio80Options } from './headless-audio80';
+export { createHeadlessAudio90, type HeadlessAudio90, type HeadlessAudio90Options } from './headless-audio90';
 export type { HeadlessChip } from './headless-chip';
 export { findSounds, type ModuleSounds } from './find-sounds';
 export {

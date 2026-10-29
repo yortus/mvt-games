@@ -133,13 +133,14 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Sequen
             return;
         }
         if (call.call === 'stop') {
-            player.stop();
+            player.stop(call.fadeMs);
             return;
         }
         const song = songs.get(call.songId);
         if (song === undefined) return;
-        if (call.call === 'play') player.play(song);
-        else player.queue(song);
+        const play = { repeat: call.repeat, pitch: call.pitch, fadeMs: call.fadeMs };
+        if (call.call === 'play') player.play(song, play);
+        else player.queue(song, play);
     }
 
     /** Sends where the song is, if it has moved to a new row, started or stopped, or taken a call since it was last sent. */
