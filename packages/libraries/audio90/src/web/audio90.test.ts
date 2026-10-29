@@ -182,12 +182,28 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect(fake.listMessages('song-call').at(-1)).toMatchObject({ call: 'play', startMs: 0, startOrderIndex: 1, startRow: 1 });
         const placeMs = song.durationMs * 3 / 4;
         fake.reply(createPlace({ frame: 0, orderIndex: 1, row: 1, positionMs: placeMs }));
-        // A tenth of a second after the place reached the speaker, but no further than the song's end
+        // A tenth of a second after the place reached the speaker
         const lagS = FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S;
         fake.setCurrentTime(0.1 + lagS);
         expect(audio90.positionMs).toBeCloseTo(placeMs + 100, 6);
+        // Past the end of a song that doesn't loop, with no place since, it stays at the place heard
         fake.setCurrentTime(song.durationMs / 1000 + lagS);
-        expect(audio90.positionMs).toBe(song.durationMs);
+        expect(audio90.positionMs).toBe(placeMs);
+    });
+
+    it('takes its place in ms back to the loop as it passes the end before the next place arrives, so it can always be a start', async () => {
+        const fake = installFakeAudioContext('running');
+        const audio90 = createAudio90({ context: fake.context });
+        await audio90.ready;
+        const song = createAudio90Song({ bpm: 120, instruments: { s: createSound() }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p', 'p'], loop: 1 });
+        audio90.play(song);
+        const loopStartMs = song.durationMs / 2;
+        const placeMs = song.durationMs * 3 / 4;
+        fake.reply(createPlace({ frame: 0, orderIndex: 1, row: 1, positionMs: placeMs }));
+        const overMs = 100;
+        fake.setCurrentTime((song.durationMs - placeMs + overMs) / 1000 + FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S);
+        expect(audio90.positionMs).toBeCloseTo(loopStartMs + overMs, 6);
+        expect(() => audio90.play(song, { startMs: audio90.positionMs })).not.toThrow();
     });
 
     it('stops the song with its play\'s id, and leaves a song played since alone', async () => {

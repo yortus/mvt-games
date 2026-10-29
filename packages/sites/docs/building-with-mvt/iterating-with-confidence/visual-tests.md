@@ -149,7 +149,7 @@ another way.
 | --- | --- |
 | How a view looks in a state | A visual test |
 | The exact words and numbers a view shows | An assertion on the bindings, or on the view model |
-| Which sound a view plays | An spy on sound calls, or an assertion on a recording chip |
+| Which sound a view plays | A stand-in that records each sound, or a spy on a headless chip's calls |
 | What the game does | [Model tests](testing-models.md) |
 
 ## Choosing a Tool

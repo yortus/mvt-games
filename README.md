@@ -94,7 +94,7 @@ packages/
 │   ├── pixi/            The view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           The view tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            The view tick API for DOM elements, and its JSX runtime
-│   └── audio90/         The Audio80 and Audio90 sound chips, their tracker notation and music player
+│   └── audio90/         The Audio80 and Audio90 sound chips, their tracker notation and sequencer
 ├── tools/
 │   ├── v-snap/          Visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   This repo's lint rules (private for now)

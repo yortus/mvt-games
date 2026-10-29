@@ -776,8 +776,8 @@ writing is easy to scan, but it's hard for someone new to learn from.
 
 | Avoid | Prefer |
 | --- | --- |
-| The Audio80 is a virtual sound chip in the spirit of the 1980s home computers: eight voices, two filters and an echo, played from views. | The Audio80 is a virtual sound chip in the spirit of the 1980s home computers. It has eight voices, two filters and an echo. |
-| Eight voices, each playing one note at a time. A voice has: | The chip has eight voices. Each voice plays one note at a time. A voice has these parts: |
+| The Audio80 is a virtual sound chip in the spirit of the 1980s home computers: four voices, two filters and an echo, played from views. | The Audio80 is a virtual sound chip in the spirit of the 1980s home computers. It has four voices, two filters and an echo. |
+| Four voices, each playing one note at a time. A voice has: | The chip has four voices. Each voice plays one note at a time. A voice has these parts: |
 | It takes the keys while a game runs. | It handles key events while a game runs. |
 | `notation/`: the notation, parsed | `notation/`: parses the tracker notation |
 
@@ -802,8 +802,8 @@ writing is easy to scan, but it's hard for someone new to learn from.
 ### Describing an API
 
 - **Say what a function returns or does,** not who calls it. Write "Returns
-  a new `MusicPlayer`, which plays one song at a time on a chip", not
-  "Plays one song at a time, for an audio view".
+  a new `Audio80`, which plays songs and sounds in the browser", not
+  "Plays the game's music, for an audio view".
 - **Start a factory's JSDoc with "Creates".** For example: "Creates an
   Audio80 that turns each call into a command for the synthesiser."
 - **In prose, name a member by its owner,** not by a variable from a code

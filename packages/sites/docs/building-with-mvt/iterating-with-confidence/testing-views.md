@@ -188,14 +188,14 @@ shows how.
 
 An audio view plays sounds instead of drawing visuals, so neither a scene
 graph assertion nor a snapshot can see what it does. Its output is the
-sounds it plays, and it plays them on whatever its `sound` binding gives
+sounds it plays, and it plays them on whatever its `sfx` binding gives
 it. So a test passes a stand-in that records each sound in an array, and
 plays nothing. Then the test drives the bindings, refreshes the view and
 checks the array.
 
 This test uses the `ShipAudioView` from
 [Sound and Music](../presenting-the-world/sound.md#audio-views), whose
-`sound` binding asks only for a `play` method:
+`sfx` binding asks only for a `play` method:
 
 ```ts
 import { expect, it } from 'vitest';
@@ -205,10 +205,10 @@ import { SHIP_EXPLODE } from './sounds';
 
 it('plays the crash once, as the ship is lost', () => {
     const played: unknown[] = [];
-    const sound = { play: (effect: unknown) => { played.push(effect); } };
+    const sfx = { play: (sound: unknown) => played.push(sound) };
     let isAlive = true;
     const view = ShipAudioView({
-        sound,
+        sfx,
         shotsFired: () => 0,
         isAlive: () => isAlive,
     });
@@ -231,10 +231,10 @@ Audio tests check the sounds themselves, much as
 sound that changes by accident. How you write one depends on your sound
 library. For this repo's sound chips, the package's
 [Audio Tests](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/src/headless/README.md#audio-tests)
-shows how. Its
-[Testing an Audio View](https://github.com/yortus/mvt-games/blob/main/packages/libraries/audio90/src/headless/README.md#testing-an-audio-view)
-tests a view against a chip that records every note, which suits a view
-that plays music.
+shows how. A view that plays music reads the chip back, such as its
+`song`, so it's tested on a headless chip, with Vitest's spies on its
+calls, as [Sound and Music](../presenting-the-world/sound.md#testing)
+shows.
 
 ## Choosing an Approach
 
@@ -245,7 +245,7 @@ that plays music.
 | Visual correctness of a rendered view | Visual snapshot |
 | Regression safety during refactors | Visual snapshot |
 | Fast feedback during development | Scene graph assertion (faster) |
-| A view that plays sound | Assertion on a recording chip's log ([Sound and Music](../presenting-the-world/sound.md#testing)) |
+| A view that plays sound | Assertion on the sounds it played, recorded by a stand-in or a spy ([Sound and Music](../presenting-the-world/sound.md#testing)) |
 
 Most view testing value comes from visual snapshots. They catch real
 visual regressions, survive refactors, and require no knowledge of the
@@ -261,8 +261,9 @@ complement for coarse structural checks and view model testing.
 - **Visual snapshots** capture the rendered output and compare against a
   baseline image. They verify what the user actually sees, survive
   refactors, and catch regressions that programmatic assertions miss.
-- **Audio views** play on a headless chip that records what it is told to
-  play. Assert the exact sound, so that the wrong one fails. Audio tests
+- **Audio views** play on a stand-in that records each sound, or on a
+  headless chip with spies on its calls. Assert the exact sound, so that
+  the wrong one fails. Audio tests
   check the sounds themselves, much as visual snapshots check what a view
   looks like.
 - Use controlled, deterministic inputs for both approaches. Fixed

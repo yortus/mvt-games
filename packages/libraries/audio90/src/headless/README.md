@@ -1,15 +1,16 @@
 # audio90/headless
 
 This part of the package runs the Audio80 and the Audio90 without a
-speaker. It holds each chip's headless version, which plays sound in memory
-or not at all. It also holds the tools that render songs and sound effects,
-measure them and save them as WAV files. Nothing here uses Web Audio, so it
-all runs in Node as well as in a browser.
+speaker. It holds each chip's headless version, which takes every call a
+chip in a browser takes, but makes no sound. It also holds the tools that
+render songs and sounds in memory, measure them, and save them as WAV
+files. Nothing here uses Web Audio, so it all runs in Node as well as in a
+browser.
 
 Rendered sound is a list of **samples**. Each sample is the level of the
 sound wave at one instant, from -1 to 1. The **sample rate** is how many
 samples make up each second. Everything here renders at 48,000 a second
-unless told otherwise. The Audio80 is mono, so it renders one sample for
+unless you say otherwise. The Audio80 is mono, so it renders one sample for
 each instant, which a browser plays on both speakers. The Audio90 is
 stereo, so it renders two: a `StereoSamples` holds its `left` and `right`
 channels.
@@ -18,114 +19,75 @@ channels.
 
 ## The Headless Chip
 
-`createHeadlessAudio80` makes a chip with no speaker. A game run headless
-plays on one, for thumbnails and benchmarks. Tests and tools use one too.
-Each call a game makes on the chip is a **write**. The options say what the
-chip does with each write:
+`createHeadlessAudio80` and `createHeadlessAudio90` each make a chip with no
+speaker. You'll use one in two places:
 
-| Call | What it does with each write | Use |
-| --- | --- | --- |
-| `createHeadlessAudio80()` | Nothing. It plays nothing and logs nothing, at almost no cost | Running a game headless |
-| `createHeadlessAudio80({ record: true })` | Logs it, on the chip's `log` property | Testing audio views |
-| `createHeadlessAudio80({ render: true })` | Plays it in memory, for `render` to write out as samples | Audio tests, benchmarks and WAV files |
-| `createHeadlessAudio80({ record: true, render: true })` | Logs it and plays it | Tests that check what was written and how it sounds |
+- **Running a game without a page,** such as in Node to make thumbnails or
+  run benchmarks. The game's code plays on it just as it would on a chip in
+  a browser, so it needs no changes.
+- **Testing the code that plays sound.** A test can check what the code
+  asked the chip to play, and where its song has got to (see
+  [Testing the Code That Plays Sound](#testing-the-code-that-plays-sound)).
 
-Like the browser's chip, it returns `{ audio80, controls }`. The first is
-the chip, which views play sounds on. The second is its controls, which
-only the game loop uses. So code written against one chip runs on the
-other. The chip's clock still runs when it plays nothing, and
-`AudioControls.update` advances it.
+A headless chip has everything a browser's chip has: `play`, `queue`,
+`stop`, `song`, `row`, `beat`, `positionMs`, `pause`, `volume` and the
+rest. It checks each play's options, and throws for the same mistakes. Its
+`ready` has already resolved, since it has nothing to load.
 
-It also runs the chip's own sequencer, which plays the songs of the music
-players made on it. A browser's chip runs its sequencer on the sound card's
-clock. A headless chip has no sound card, so it runs the sequencer on its
-own clock: `AudioControls.update` moves each song on, and writes its notes
-as any other writes. So a music player on a recording chip logs the same
-notes, at the same times, every time the same ticks run. A call such as
-`play` takes effect as the music player refreshes, at the chip's time, and
-the player reports where its song is now, since there is no speaker to wait
-for.
+It adds one method, `update(deltaMs)`, which moves its clock on. A browser's
+chip keeps the sound card's time. A headless chip has no sound card, so its
+clock moves only when you call `update`. Call it once a tick, with the same
+`deltaMs` your game's loop advances everything else by. That keeps a test
+exact: the same calls and the same ticks always give the same result.
 
-The types follow the options. The chip has `log` and `clear` only if it was
-made with `record: true`. The object returned has `render` and `sampleRate`
-only if it was made with `render`. So reading the log of a chip that does
-not record is a type error, not an empty log.
-
-### Recording
-
-A chip made with `record: true` keeps every write in its `log` property,
-oldest first, until its `clear` method empties it. Each entry is a
-`Audio80Write`. It says what kind of write it was (`'play'`, `'note-on'`,
-`'set-filter'` and so on), what it was given, and the time it was stamped
-with. A sound effect is stamped `-Infinity`, because it plays as soon as it
-arrives. Every other write is stamped with its `atMs`, or with the chip's
-time if it had none.
-
-### Rendering
-
-A chip made with `render` plays each write exactly at its stamp. It has no
-delay, because nothing here runs in real time. `render` also takes
-`{ sampleRate, character }` in place of `true`. They default to 48,000 and
-`'classic'`. The character sets how gritty the chip sounds, as
-[Using the Audio80](../../docs/using-the-audio80.md#on-your-own-page)
-explains.
-
-`render(output)` fills the `Float32Array` you pass it. It renders the next
-`output.length` samples, from where the last render ended, and plays the
-writes made since. It allocates nothing, so you can render block after
-block into the same buffer. To render part of a longer buffer, pass a view
-of that part, made with `subarray`:
+Its song moves on with its clock. So `song`, `orderIndex`, `row`, `beat`
+and `positionMs` say where the song has got to after each `update`. There's
+no speaker to wait for, so a song played shows in `song` at once, and
+reaches its first row straight away. While the chip is paused, `update`
+does nothing.
 
 ```ts
-const chip = createHeadlessAudio80({ render: true });
-chip.audio80.noteOn(0, LEAD, 60, 1);
-chip.controls.update(250);
+import { createHeadlessAudio80 } from 'audio90/headless';
 
-// A quarter of a second: 12,000 samples at 48,000 a second
-const samples = new Float32Array(chip.sampleRate / 4);
-chip.render(samples.subarray(0, 6000));
-chip.render(samples.subarray(6000));
+const chip = createHeadlessAudio80();
+chip.play(FANFARE);
+for (let i = 0; i < 60; i++) chip.update(1000 / 60);
+console.log(chip.beat); // 2.5 at 150 BPM, a second in
 ```
 
-The two renders above give the same samples as one render of the whole
-buffer. Advance the clock with `AudioControls.update` before rendering
-the samples up to it. A write stamped later than the samples rendered so
-far waits for a later render. The controls' volumes apply to the samples
-`render` writes. Their `flush` method does nothing, since `render` takes
-the writes itself.
+The options a headless chip takes are the callbacks a browser's chip takes:
+`onRow`, called as the song reaches each row, and `onEnded`, called as a
+song ends by itself. A headless chip calls them during `update`, in order,
+for what that update played. So a callback never runs inside your call to
+`play` or `stop`.
 
-### The Headless Audio90
+## Rendering Songs and Sounds
 
-`createHeadlessAudio90` takes the same options, and returns
-`{ audio90, controls }`. Its log's entries are each an `Audio90Write`, with
-the Audio90's writes, such as `'set-effect'` and `'set-tempo'`, and a
-`'play'` keeps the pan it was given, or undefined for the effect's own. Its
-`render` option's `character` defaults to `'studio'`. It renders in stereo,
-so `render(left, right)` fills two buffers of the same length.
+To hear what a song or a sound sounds like, render it. `render(songOrSound,
+options?)` plays it on a chip that renders into memory, and returns its
+samples:
 
-## Rendering Songs and Effects
+- For an Audio80 song or sound, it returns a new `Float32Array`.
+- For an Audio90 song or sound, it returns a new `StereoSamples`.
 
-Most tests and tools need a whole song or effect, not blocks of samples.
-Two functions make a rendering chip, play the sound on it, and return its
-samples as a new `Float32Array`:
+A song is rendered for one pass through its order. A song that loops is
+stopped where it would go back to its loop. The chip and the song are
+moved on a tick at a time, every 60th of a second, as a game loop would
+move them. A sound is played once, with its own note and length, and on
+the Audio90 at its own pan.
 
-- `renderSong(song, options?)` renders one pass through the song. It ticks
-  the chip and the song every 60th of a second, as a game loop would.
-  A looping song is stopped where it would go back to its loop. An Audio90
-  song is rendered in stereo, as a `StereoSamples`.
-- `renderSoundEffect(effect, options?)` renders the effect, played once.
-  An Audio90 effect is played at its own pan, and rendered in stereo, as
-  a `StereoSamples`.
-
-Each renders a little past the end of the sound, so that its release and
-echo can fade. They take these options:
+Each renders a little past the end, so that the release of the last notes,
+and the echo, can fade. They take these options:
 
 | Option | Meaning | Default |
 | --- | --- | --- |
 | `sampleRate` | The sample rate to render at | 48,000 |
-| `character` | How gritty the chip sounds | `'classic'` on the Audio80, `'studio'` on the Audio90 |
+| `character` | How the chip sounds | `'classic'` on the Audio80, `'studio'` on the Audio90 |
 | `tickMs` | How long each tick is, in ms | 1000 / 60 |
-| `durationMs` | How long to render, in ms | The sound's length, and 600 ms more |
+| `durationMs` | How long to render, in ms | One pass through the song, or the sound's length and release, and then 600 ms more |
+
+A sound that holds its note until it is stopped, with a `lengthMs` of
+`Infinity`, never ends by itself. So give it a `durationMs` to render.
 
 ## Measuring
 
@@ -159,18 +121,12 @@ snapshot keeps it. Vitest stores the snapshots beside the test, in
 `__snapshots__/`, one file for each test file, such as
 `__snapshots__/sounds.test.ts.snap`.
 
-Views have the same kind of test for what they look like. A visual test
-produces an image of a view, and compares a hash of its pixels with the
-hash of a reference image. See
-[Visual Tests](../../../../sites/docs/building-with-mvt/iterating-with-confidence/visual-tests.md)
-in the MVT guide.
-
 `hashSamples(samples)` returns that hash, as 8 hex digits. It first rounds
 each sample to 16 bits, as a WAV file holds it. So a difference too small
 to hear in a WAV file does not change the hash.
 
-`findSounds(exports)` returns the songs and sound effects a module exports,
-each with its export name. Pass it the module's namespace, from
+`findSounds(exports)` returns the songs and sounds a module exports, each
+with its export name. Pass it the module's namespace, from
 `import * as sounds from './sounds'`, and a test covers every sound the
 module adds later too. It looks inside exported arrays as well, so a set of
 sounds you make in a loop is found. Each is named for its place in the
@@ -184,22 +140,22 @@ shared loudness:
 import { describe, expect, it } from 'vitest';
 import {
     findSounds, hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness,
-    measurePeak, REFERENCE_LOUDNESS_LUFS, renderSoundEffect, renderSong,
+    measurePeak, REFERENCE_LOUDNESS_LUFS, render,
 } from 'audio90/headless';
 import * as music from './music';
-import * as sounds from './sounds';
+import * as effects from './sounds';
 
 /** Quieter than this, a sound is lost under the music. */
 const AUDIBLE = 0.08;
 /** Louder than this, the output is squashing it. */
 const CLIPPING = 0.9;
 
-const { songs, effects } = findSounds({ ...sounds, ...music });
+const { songs, sounds } = findSounds({ ...effects, ...music });
 
 describe('sounds', () => {
-    for (const [name, effect] of effects) {
+    for (const [name, sound] of sounds) {
         it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = renderSoundEffect(effect);
+            const samples = render(sound);
             expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             expect(hashSamples(samples)).toMatchSnapshot();
@@ -208,7 +164,7 @@ describe('sounds', () => {
 
     for (const [name, song] of songs) {
         it(`${name} sounds as it did, as loud as every other song`, () => {
-            const samples = renderSong(song);
+            const samples = render(song);
             expect(measurePeak(samples)).toBeLessThan(CLIPPING);
             const loudness = measureLoudness(samples);
             const offBy = Math.abs(loudness - REFERENCE_LOUDNESS_LUFS);
@@ -219,86 +175,90 @@ describe('sounds', () => {
 });
 ```
 
+A song's sounds are found too, if the module exports them. A sound made for
+a song, such as a bass drum, may be too quiet on its own for `AUDIBLE`. If
+so, leave it unexported, or check it in a test of its own.
+
 When a change alters a sound, its test fails. Listen to the new sound
 first (see [Listening](#listening)). Then, if it is right, update its
 reference with `vitest -u`.
 
-## Testing an Audio View
+## Testing the Code That Plays Sound
 
-An audio view is a view that plays sounds instead of drawing visuals. Test
-one against a chip that records. Advance the chip's clock and tick the
-view, as a game loop would. Then check the log:
+An audio test checks how a sound sounds. A different test checks that your
+game plays the right sound at the right moment. For that, give your game's
+code a headless chip, and watch the calls it makes. Vitest's `vi.spyOn`
+records each call to a method while still running it:
 
 ```ts
-import { refreshView, updateView } from '@mvtjs/pixi';
+import { expect, it, vi } from 'vitest';
 import { createHeadlessAudio80 } from 'audio90/headless';
+import { BOSS_TUNE, COIN } from './sounds';
 
-const TICK_MS = 1000 / 60;
+it('plays a coin each time the player picks one up', () => {
+    const sfx = createHeadlessAudio80();
+    vi.spyOn(sfx, 'play');
+    const game = createGame({ sfx });
+    game.collectCoin();
+    expect(sfx.play).toHaveBeenCalledWith(COIN);
+});
 
-it('plays a shot each time the ship fires', () => {
-    const { audio80, controls } = createHeadlessAudio80({ record: true });
-    let shots = 0;
-    const view = ShipAudioView({
-        sound: audio80,
-        shotsFired: () => shots,
-        isAlive: () => true,
-    });
-    const tick = (): void => {
-        controls.update(TICK_MS);
-        updateView(view, TICK_MS);
-        refreshView(view);
-    };
-
-    shots++;
-    tick();
-    const shot = expect.objectContaining({ kind: 'play', effect: SHOT });
-    expect(audio80.log).toContainEqual(shot);
+it('fades the boss music out as the boss is beaten', () => {
+    const music = createHeadlessAudio80();
+    vi.spyOn(music, 'stop');
+    const game = createGame({ music });
+    game.spawnBoss();
+    expect(music.song).toBe(BOSS_TUNE);
+    game.defeatBoss();
+    const fade = { fadeMs: 2000 };
+    expect(music.stop).toHaveBeenCalledWith(expect.any(Number), fade);
 });
 ```
 
-Name the exact sound in the check, as `SHOT` is named here. Two sounds
-often share an instrument or a first note, so a check that some note
-sounded still passes when the view plays the wrong sound. For a view that
-plays music, compare the notes it writes with the notes of a music player
-playing the song you expect.
+Name the exact sound in the check, as `COIN` is named here. Two sounds
+often share a first note, so a check that some note played still passes
+when the code plays the wrong sound.
+
+To check something that happens over time, such as music that speeds up as
+a timer runs down, call the chip's `update` as your game's loop does, then
+read `song`, `row` or `tempoScale`.
 
 ## Listening
 
-`encodeWav(samples, sampleRate)` returns the samples as a 16-bit mono WAV
-file, in a `Uint8Array`. Any audio player can play it.
+`encodeWav(samples, sampleRate)` returns rendered samples as a 16-bit WAV
+file, in a `Uint8Array`. Mono samples make a mono file, and stereo samples
+a stereo one. Any audio player can play it. This Node script saves every
+song and sound a module exports, so you can listen without starting your
+game:
 
-To listen to a module's sounds without starting the game, run this from the
-repo's root:
+```ts
+import { writeFileSync } from 'node:fs';
+import { encodeWav, findSounds, render } from 'audio90/headless';
+import * as music from './music';
 
-```sh
-npm run audio:render -- \
-    packages/sites/arcade/src/entries/galaxy-raiders/data/music.ts
+const { songs, sounds } = findSounds(music);
+for (const [name, songOrSound] of [...songs, ...sounds]) {
+    const wav = encodeWav(render(songOrSound), 48000);
+    writeFileSync(`${name}.wav`, wav);
+}
 ```
 
-It renders every song and effect the module exports to WAV files. It writes
-them to `renders/<module path>/`, which git ignores. It prints each one's
-length and peak, and each song's loudness beside the shared loudness. You
-can name several modules. Name the modules that define the sounds, not a
-barrel file. The script runs in Node, and a barrel may import textures,
-which do not load there.
+Import the modules that define the sounds, not a module that also loads
+pictures or other files that only a browser can load.
 
 ## Exports
 
 | Export | Description |
 | --- | --- |
-| `createHeadlessAudio80` (`HeadlessAudio80`, `HeadlessAudio80Options`, `HeadlessAudio80RenderOptions`) | Returns a new Audio80 with no speaker, and its controls. It plays nothing, logs every write (`record: true`), renders to samples (`render`), or does both |
-| `Audio80Log`, `Audio80Write` | The types of the log on an Audio80 made with `record: true`, and of each entry in it |
-| `Audio80Renderer` | The type of what an Audio80 made with `render` adds: `render(output)` and `sampleRate` |
-| `createHeadlessAudio90` (`HeadlessAudio90`, `HeadlessAudio90Options`, `HeadlessAudio90RenderOptions`) | Returns a new Audio90 with no speaker, and its controls, as `createHeadlessAudio80` does |
-| `Audio90Log`, `Audio90Write`, `Audio90EffectWrite` | The types of the log on an Audio90 made with `record: true`, of each entry in it, and of an entry that sets an effect |
-| `Audio90Renderer` | The type of what an Audio90 made with `render` adds: `render(left, right)` and `sampleRate` |
-| `renderSong` (`Audio80RenderOptions`, `Audio90RenderOptions`, `RenderOptions`) | Returns the samples of one pass through a song: a new `Float32Array` for an Audio80 song, and a new `StereoSamples` for an Audio90 song |
-| `renderSoundEffect` (`Audio80RenderOptions`, `Audio90RenderOptions`, `RenderOptions`) | Returns the samples of a sound effect played once: a new `Float32Array` for an Audio80 effect, and a new `StereoSamples` for an Audio90 effect |
+| `createHeadlessAudio80` (`HeadlessAudio80`, `HeadlessAudio80Options`) | Returns a new Audio80 with no speaker, whose clock moves on with its `update` |
+| `createHeadlessAudio90` (`HeadlessAudio90`, `HeadlessAudio90Options`) | Returns a new Audio90 with no speaker, as `createHeadlessAudio80` does |
+| `HeadlessChip` | The type of what every headless chip has: a chip's members, and `update` |
+| `render` (`RenderOptions`, `Audio80RenderOptions`, `Audio90RenderOptions`) | Returns the samples of a song's one pass, or of a sound played once: a new `Float32Array` for the Audio80, and a new `StereoSamples` for the Audio90 |
 | `StereoSamples`, `RenderedSamples` | The types of stereo sound, and of sound in mono or stereo |
 | `measurePeak` | Returns the peak of samples, mono or stereo, which is the level of the loudest one |
 | `measureLoudness` | Returns the loudness of samples, mono or stereo, in LUFS |
 | `REFERENCE_LOUDNESS_LUFS` | The loudness every song is written to: -20 LUFS |
 | `LOUDNESS_TOLERANCE_LU` | How far a song's loudness may stray from `REFERENCE_LOUDNESS_LUFS`: 3 LU |
 | `hashSamples` | Returns a short hash of samples, mono or stereo, as a string of 8 hex digits |
-| `findSounds` (`ModuleSounds`) | Returns the songs and sound effects a module exports, for either chip, with their names |
+| `findSounds` (`ModuleSounds`) | Returns the songs and sounds a module exports, for either chip, with their names |
 | `encodeWav` | Returns samples encoded as a 16-bit WAV file, mono or stereo, as a `Uint8Array` |

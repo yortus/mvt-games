@@ -1,13 +1,11 @@
 # Using the Audio80
 
 > The Audio80 is a virtual sound chip in the spirit of the 1980s home
-> computers. It has eight voices, two filters and an echo. This guide covers
-> getting a chip, designing sound effects and instruments, and playing them
-> from audio views as the game changes. (An audio view is a view that plays
-> sounds instead of drawing visuals.) It also covers music, repeating
-> sounds, the balance of music and effects, and testing.
+> computers. It has four voices, two filters and an echo. This guide covers
+> getting a chip, designing sounds and playing them, and playing songs. It
+> also covers volume, loudness, using a chip with a game loop, and testing.
 
-**Related:** [Writing Tracker Music](writing-tracker-music.md) · [Using the Audio90](using-the-audio90.md) · [The package's README](../README.md) · [Sound, in the MVT guide](../../../sites/docs/building-with-mvt/presenting-the-world/sound.md)
+**Related:** [Writing Tracker Music](writing-tracker-music.md) · [Using the Audio90](using-the-audio90.md) · [The package's README](../README.md) · [Without a speaker](../src/headless/README.md)
 
 ---
 
@@ -15,13 +13,15 @@ The package has a second chip, the **Audio90**, for games in the spirit of
 the 1990s. It has sixteen stereo voices that play FM, analog or samples,
 and a reverb, a stereo echo and a chorus. The Audio80 suits chiptune,
 arcade and 8-bit games. If you're not sure which you need,
-[Using the Audio90](using-the-audio90.md#which-chip) compares the two. Much
-of this guide applies to both chips, including time, audio views, music,
-repeating sounds and testing.
+[Using the Audio90](using-the-audio90.md#which-chip) compares the two.
+
+Both chips work the same way. You get one, play sounds and songs on it, and
+pause it as your game pauses. So much of this guide applies to the Audio90
+too, and its guide links back here for those parts.
 
 ## The Chip
 
-The chip has eight **voices**. Each voice plays one note at a time. A voice
+The chip has four **voices**. Each voice plays one note at a time. A voice
 has these parts:
 
 | Part | What it does |
@@ -29,7 +29,7 @@ has these parts:
 | **Waveform** | The shape of the sound wave, which sets the tone. It is `pulse`, `saw`, `triangle`, `noise` or `wavetable`. A pulse wave jumps between two levels. Its width is the share of each cycle it spends at one of them, and a width of 0.5 is a square wave. Noise is pitched. Higher notes hiss, and lower ones rumble. A wavetable is 32 steps of 16 levels, drawn by you. Triangle, saw and pulse can also be ANDed together for a thin, metallic tone. The combinations are `triangle+saw`, `triangle+pulse`, `saw+pulse` and `triangle+saw+pulse`, named in that order. Noise combines with nothing |
 | **Envelope** | How a note's volume changes over time. It has attack, decay and release times in milliseconds, and a sustain level from 0 to 1. The note rises to full volume over the attack. It then falls over the decay to the sustain level, and stays there while the note is held. When the note is released (stopped), it fades out over the release |
 | **Volume** | Set by each note |
-| **Echo send** | How much of the voice goes to the echo. The instrument's `echo` option sets it as each note starts, and `setVoice(voice, 'echoSend', value)` changes it |
+| **Echo send** | How much of the voice goes to the echo, set by the sound it plays |
 | **Filter route** | Which filter the voice's sound passes through: filter `a`, filter `b`, or neither |
 | **Sync and ring** | Hard sync to another voice, or ring modulation by one, for harsh, bell-like tones. Hard sync restarts this voice's wave each time the other voice's wave starts a cycle. Ring modulation combines this voice's triangle wave with the other voice's wave |
 
@@ -38,7 +38,7 @@ through it. Its cutoff is the frequency where it starts to cut. A low pass
 filter keeps the frequencies below its cutoff, so it makes a sound duller.
 A high pass filter keeps those above it, so it makes a sound thinner. A
 band pass filter keeps only those near it. Each of the two filters can be
-low pass, band pass, high pass, or a combination of them. They are
+low pass, band pass, high pass, notch, or a combination of them. They are
 resonant, which means they can boost the frequencies near the cutoff, for
 a ringing or whistling tone. A filter is shared by every voice routed
 through it.
@@ -49,7 +49,7 @@ removes DC, which is a steady offset in the wave that a speaker cannot
 play. It also soft-clips, which means it rounds off any level too loud for
 the output. So a loud moment sounds thick rather than crackling.
 
-**Instruments** play on the voices. An instrument sets a voice's envelope
+**Sounds** play on the voices. A sound sets a voice's waveform, envelope
 and starting settings. It also sets what changes while a note plays. That
 can be an arpeggio, vibrato, pulse-width and filter sweeps, and a **step
 table**. An arpeggio steps quickly through the notes of a chord. Vibrato
@@ -60,227 +60,144 @@ the arpeggio. By default it takes one step every 60th of a second. The old
 machines' sound drivers worked the same way, updating their chips once a
 frame. Vibrato and the sweeps change smoothly, not in steps.
 
+A sound can be played on its own, as a game plays a coin's chime. A song
+plays its notes on sounds too.
+
 ---
 
 ## Getting a Chip
 
-### In the Arcade
+### A Chip for Music, and One for Sound Effects
 
-A game in the Arcade asks for the Audio80 in its starter, with
-`soundChip: 'audio80'`. The Arcade makes one chip for every game that asks,
-and passes it to each as `sound`, in the game's start options. Pass it on
-to the views that play sounds on it:
+A game usually makes two chips. One plays the music, and the other plays
+the sound effects. There are two reasons:
 
-```ts
-start({ stage, sound }): EntrySession {
-    const model = createGameModel();
-    stage.addChild(GameView({ model, sound }));
-    // ...
-}
-```
+- **A sound may take a song's voice.** A chip has only four voices. When a
+  sound is played and no voice is free, it may take a voice that a song is
+  using. That part of the song goes quiet until its next note takes the
+  voice back. The old consoles did the same, but it's rarely what you want.
+- **A fade fades the whole chip.** When you fade a song out, every voice on
+  its chip fades with it, sounds included. On a chip of their own, the
+  sound effects play on at full volume.
 
-Each tick, the Arcade's game loop advances the chip's clock by the same
-`deltaMs` as the game's models. Each call a view makes on the chip is a
-write, and the game loop sends the tick's writes after the views refresh.
-The Arcade also resets the chip between games, and it applies the
-visitor's volume settings. The game only plays sounds on the chip.
+Two chips also let the listener set the music and the sound effects to
+different volumes, with a slider for each.
 
-### On Your Own Page
+### In a Browser
 
-An `AudioContext` is the browser's object for playing sound. Make a chip
-on one, and drive it from your loop. The chip computes its sound in an
-`AudioWorklet`, which is browser code that runs on its own thread:
+`createAudio80` makes a chip that plays through the browser's Web Audio.
+An `AudioContext` is the browser's object for playing sound. Both chips
+can share one:
 
 ```ts
 import { createAudio80 } from 'audio90';
 
 const context = new AudioContext({ latencyHint: 'interactive' });
-const { audio80, controls } = createAudio80({ context });
-controls.ready.catch(() => {
+const music = createAudio80({ context });
+const sfx = createAudio80({ context });
+
+// A browser starts sound only after the visitor does something
+const start = (): void => void context.resume();
+for (const gesture of ['pointerdown', 'keydown', 'touchend']) {
+    addEventListener(gesture, start, { capture: true });
+}
+
+music.ready.catch(() => {
     console.warn('No sound here: AudioWorklet needs a secure page');
 });
-
-// Browsers start audio only in a gesture's handler, and can stop it later
-const resume = (): void => void context.resume();
-for (const gesture of ['keydown', 'click', 'touchend']) {
-    window.addEventListener(gesture, resume);
-}
-
-const view = GameView({ model, sound: audio80 });
-
-function tick(deltaMs: number): void {
-    model.update(deltaMs);
-    controls.update(deltaMs);    // the chip's clock advances with the models
-    updateView(view, deltaMs);
-    refreshView(view);
-    controls.flush();            // sends this tick's writes to be played
-}
 ```
 
-`createAudio80` returns two separate objects. The first is the chip, which
-views play sounds on. The second is its **controls**, which only your game
-loop uses. The controls are `update`, `flush`, `reset`, the volumes and
-`destroy`. Because the two are separate, a view cannot pause, reset or mute
-the sound by mistake. `AudioControls.reset` silences every voice between
-games. It fades the output over about 3 ms, so that it does not click.
-`AudioControls.destroy` stops the worklet.
+The chip computes its sound in an `AudioWorklet`. That's browser code that
+runs on a thread of its own, so a busy frame on the page doesn't interrupt
+the sound. Only a secure page has one, which means a page served over
+HTTPS, or from `localhost`.
 
-The chip can play only after `AudioControls.ready` resolves and while the
-`AudioContext` is running. A browser starts an `AudioContext` only after the
-player clicks or presses a key. It can also suspend one later, as iOS does
-when a call comes in. The game keeps running meanwhile, and its views keep
-writing to the chip. The chip handles those writes in three ways:
+If you give a chip no `context`, it makes its own. It also starts it at the
+page's first click, tap or key press, so you don't need the listeners
+above. That suits a page with one chip. With two, share a context, as here,
+so the browser doesn't run two.
 
-- It drops notes and sound effects. They are never played late.
-- It keeps settings, such as a filter's cutoff or the echo. It keeps only
-  the latest value of each, and applies them as soon as it can play. A song
-  sets its filters and echo once, when it starts. Without this, a song
-  started during the wait would sound wrong.
-- It keeps the latest call to stop a note (`noteOff`) on each voice, and
-  sends it as soon as it can play. So a note that started before the wait
-  still stops. Without this, the note would keep sounding until the voice
-  played something else.
+`createAudio80` takes these options. Every one is optional:
 
-`createAudio80` also takes two optional settings. `leadMs` is how far
-playback stays behind the newest tick. It is 100 by default, and
-[Time](#time-the-chip-runs-on-game-time) says more about it. `character`
-sets how gritty the chip sounds. A sharp jump in a wave adds a harsh,
-out-of-tune buzz to high notes. This buzz is called aliasing. Band
-limiting is a way of smoothing the jumps so that they do not alias. Each
-voice makes its wave with an oscillator. With `'clean'`, the oscillators
-are band-limited at full resolution. With `'classic'`, the default, they
-are band-limited and reduced to 12 bits, which makes their levels coarser.
-With `'raw'`, they alias freely, and each voice is reduced to 8 bits. Band
-limiting smooths only the jumps in the saw and pulse waves. Combined
-waves, noise, wavetables, ring modulation and hard-synced voices alias in
-every character. The headless chip takes `character` too, when it renders.
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `context` | The `AudioContext` to play in. With one, starting it is your job | a context of its own, started at the first gesture |
+| `pauseWhenHidden` | Whether the chip holds its sound while the page is hidden, as `pause` does. Turn it off for sound that should play on in the background, such as a music player's | `true` |
+| `character` | How gritty the chip sounds, below | `'classic'` |
+| `onRow`, `onEnded` | Functions the chip calls as its songs play, for a page with no game loop. [Being Told as a Song Plays](#being-told-as-a-song-plays) explains them | none |
 
-### A Page's Sound, in Full
+**The character.** A sharp jump in a wave adds a harsh, out-of-tune buzz
+to high notes. This buzz is called aliasing. Band limiting is a way of
+smoothing the jumps so that they don't alias. Each voice makes its wave
+with an oscillator. With `'clean'`, the oscillators are band-limited at
+full resolution. With `'classic'`, they are band-limited and reduced to 12
+bits, which makes their levels coarser. With `'raw'`, they alias freely,
+and each voice is reduced to 8 bits. Band limiting smooths only the jumps
+in the saw and pulse waves. Combined waves, noise, wavetables, ring
+modulation and hard-synced voices alias in every character.
 
-The page above has the least a page needs. The Arcade's page does more, and
-its code is an example you can borrow from:
-[`page-sound.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/runner/page-sound.ts).
-It does seven things that a page of your own may want too:
+### Before the Chip Can Play
 
-- **It loads the chips' code only when it's wanted.** A module of its own
-  re-exports `createAudio80` and `createAudio90` from `audio90`, and
-  the page imports that module with a dynamic `import()`, the first time
-  the visitor clicks or presses a key. So a visitor who never plays
-  downloads none of it, though the page's songs and sound effects, also
-  from `audio90`, load at once.
-- **It makes the `AudioContext` inside that gesture's handler,** before it
-  awaits anything. Safari starts a context only if the page made it, or
-  resumed it, while handling a gesture.
-- **It hands out stand-ins until the chips load.** A game gets a chip and
-  controls at once. Until the real chip is ready, they drop every write and
-  keep the volumes they're given. Then they pass every call on. So no game
-  waits for the download.
-- **It listens for gestures whenever the context isn't running.** A phone
-  can stop a page's audio, as when a call comes in, and the next tap starts
-  it again. The gestures every browser accepts are `keydown`, `click` and
-  `touchend`. On a touch screen, a touch counts only when it ends.
-- **It keeps its own chip apart from the game's.** The page's menus play on
-  an Audio80 of their own, which the page ticks every frame. The game's chip
-  is ticked with the game, so it pauses when the game does. The chips share
-  one `AudioContext`.
-- **It turns a volume slider's position into a gain,** by squaring it, so
-  that equal steps of the slider sound like equal steps in loudness. Then it
-  sets each chip's `musicVolume` and `effectsVolume`.
-- **It checks for `AudioWorklet` first.** Only a secure page has one, which
-  means one served over HTTPS, or from `localhost`. Without it, the page
-  warns in the console and stays silent, and the game plays on.
+The chip's `ready` promise resolves once it can play, or rejects if it
+can't, as on a page with no `AudioWorklet`. The chip also can't play while
+its `AudioContext` isn't running. A browser starts a context only after the
+visitor clicks or presses a key. It can also suspend one later, as a phone
+does when a call comes in. Your game keeps running meanwhile, and keeps
+calling the chip. The chip handles those calls in three ways:
+
+- **It drops sounds.** They are never played late, since a coin's chime a
+  second after the coin would be confusing.
+- **It keeps each `stop`.** So a held sound that started before the wait
+  still stops.
+- **It starts a song played meanwhile from its beginning,** once it can
+  play.
+
+So your game never needs to wait for the chip, or check whether it's
+ready before it plays.
+
+### Loading the Chips Later
+
+Each browser chip carries its worklet's code inside it, so there's no file
+to copy beside your page. The code for both chips is about 55 KB, minified. A page
+that wants to show something before that arrives can load it later, the
+first time the visitor clicks or presses a key.
+
+There's a catch. Your songs and sounds also come from `audio90`, and the
+page needs them at once. A dynamic `import('audio90')` would then bring the
+whole package into the page's first load. So put the chips' factories in a
+module of your own:
+
+```ts
+// browser-chips.ts
+export { createAudio80, createAudio90 } from 'audio90';
+```
+
+Then load that module with `import('./browser-chips')`. A bundler then
+splits the chips' code off into its own file. Until it arrives, hand your
+game stand-ins that drop what they're asked to play, so nothing waits for
+the download.
 
 ### Without a Speaker
 
 `createHeadlessAudio80`, from `audio90/headless`, makes a chip with no
-speaker. It is for running a game headless, testing audio views and
-rendering sound in memory. Rendered sound is a list of samples. Each sample
-is the level of the sound wave at one instant. The sample rate is how many
-samples make up each second:
-
-| Call | What it does with each write | Use |
-| --- | --- | --- |
-| `createHeadlessAudio80()` | Nothing: it plays nothing and logs nothing, at almost no cost | Thumbnails and benchmarks |
-| `createHeadlessAudio80({ record: true })` | Logs it, on the chip's `log` property, which its `clear` method empties | Testing audio views |
-| `createHeadlessAudio80({ render: true })` | Plays it in memory. `render(output)` then fills the `Float32Array` you pass it with the next `output.length` samples | Audio tests, which check that a sound has not changed, and WAV files |
-| `createHeadlessAudio80({ record: true, render: true })` | Logs it and plays it | Tests that check both what was written and how it sounds |
-
-`render` also takes `{ sampleRate, character }` in place of `true`. They
-default to 48,000 Hz and `'classic'`. The chip has `log` and `clear` only
-if it was made with `record: true`. The object returned has `render` and
-`sampleRate`, beside `audio80` and `controls`, only if it was made with
-`render`. Their types say so. Reading the log of a chip that does not
-record is a type error, not an empty log.
-
-Like the browser's chip, it returns `{ audio80, controls }`, an
-`Audio80WithControls`. So code written against one runs on the other. Its
-clock still runs, and `AudioControls.update` advances it.
-
-The [headless README](../src/headless/README.md) covers the headless chip
-in full. It also covers the tools that render songs and effects, measure
-them and save them as WAV files.
+speaker. It takes every call a browser chip takes, and makes no sound. A
+game run without a speaker, as in Node or in a test, plays on one. Its song
+moves on only when you call its `update(deltaMs)`, so a test is exact. The
+[headless README](../src/headless/README.md) covers it, and the tools that
+render sound in memory, measure it and save it as WAV files.
 
 ---
 
-## Time: the Chip Runs on Game Time
+## Sounds
 
-The chip keeps the game's time, not the wall clock's. Its clock advances
-only when the game loop advances it, by the same `deltaMs` as the models.
-Every write is stamped with the chip's current time. The chip applies it at
-exactly that time, to the sample. That has three results:
-
-- **Pausing pauses the sound.** When the ticks stop bringing time, the
-  sound fades out at once, and every voice holds where it is. When the game
-  resumes, the sound fades back in at once, and the notes continue from
-  where they stopped.
-- **Music keeps its tempo** at any frame rate, however uneven the frames.
-- **The same ticks make the same sound.** That makes the sound testable.
-
-**Music** keeps its place in its own way, on the chip's own sequencer. A
-music player opens a slot on it, which plays one song at a time. In a
-browser, the sequencer runs on the audio thread, beside the chip, and moves
-each song on at the sound card's rate. The game loop runs on the page, and a
-frame can come late, but a sound card can't wait for one. A block of sound
-it doesn't get in time is a gap. So the music never waits for the page. A
-frame that comes late, even by most of a second, doesn't hold it up. The
-ticks still decide when it plays. The sequencer stops when the ticks stop
-bringing time, as when the game pauses, or when no tick comes for a second,
-as in a hidden tab. A headless chip runs the same sequencer on its own
-clock, so the same ticks still make the same notes.
-
-**Sound effects** play as soon as they arrive, because a shot should be
-heard when it is seen.
-
-**The notes a game writes itself**, with `noteOn` and the other calls,
-play 100 ms behind the newest tick. This delay is called the lead, and you
-can set it with `leadMs`. It smooths out uneven frames. A busy phone may
-draw at 30 frames a second, and its sound card may ask for 20 ms of sound
-or more at a time, so the lead has to cover both, with room to spare. A
-frame later than even the lead is a stall. The chip then holds its time
-still until the ticks have brought half a lead again, while every voice
-keeps sounding. A held note rings on, and the next note starts a little
-late. The controls count each stall in `stallCount`. Music and effects
-play on through a stall.
-
-Because of the lead, `time` runs ahead of what the listener hears.
-`heardTime` is the chip time of the sound reaching the speaker now, for a
-view that shows the notes it wrote itself as they sound. A music player
-already reports what is heard, so a view that shows a song, as a tracker
-does, reads the player's `row` instead.
-
----
-
-## Sound Effects
-
-A sound effect plays one note on an instrument, for a set length. You make
-it once, when the module loads. Here the effect defines its own instrument,
-with the `stepMs`, `envelope` and `steps` options:
+A sound says how a note sounds. You make it once, when the module loads,
+with `createAudio80Sound`:
 
 ```ts
-import { createAudio80SoundEffect } from 'audio90';
+import { createAudio80Sound } from 'audio90';
 
 /** A coin: a bright blip up a fifth. */
-export const COIN = createAudio80SoundEffect({
+export const COIN = createAudio80Sound({
     note: 'E-6',
     stepMs: 25,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
@@ -293,29 +210,10 @@ export const COIN = createAudio80SoundEffect({
 });
 ```
 
-It is played by passing it to `Audio80.play`.
-
-Several effects can share one instrument instead. Make the instrument with
-`createAudio80Instrument`, and pass it as the `instrument` option:
+Then you play it on a chip, as the coin is collected:
 
 ```ts
-import { createAudio80Instrument, createAudio80SoundEffect } from 'audio90';
-
-const BLIP = createAudio80Instrument({
-    wave: 'pulse',
-    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
-});
-
-export const MENU_UP = createAudio80SoundEffect({
-    instrument: BLIP,
-    note: 'C-6',
-    lengthMs: 40,
-});
-export const MENU_DOWN = createAudio80SoundEffect({
-    instrument: BLIP,
-    note: 'G-5',
-    lengthMs: 40,
-});
+sfx.play(COIN);
 ```
 
 A note is written as a letter, then `-` or `#`, then an octave number. The
@@ -323,37 +221,78 @@ A note is written as a letter, then `-` or `#`, then an octave number. The
 and `C-4` is middle C. A semitone is the step from one piano key to the
 next, and 12 semitones make an octave. A fifth is 7 semitones.
 
+### Sound Options
+
+`createAudio80Sound` takes these options. Every one is optional. A mistake
+throws an error that says what's wrong.
+
 | Option | Meaning | Default |
 | --- | --- | --- |
-| `instrument` | The instrument to play. Leave it out to define the instrument here instead, with instrument options (`wave`, `envelope`, `steps`, ...). Giving both throws an error | |
-| `note` | The note to play | the instrument's |
-| `glideTo` | A note to glide to, moving smoothly in pitch over the effect's length, for a zap down or a rising whine | |
-| `lengthMs` | How long the note is held before its release | the step table's length, or 250 |
-| `volume` | 0 to 1 | 1 |
-| `priority` | When no voice is free, it may take over the voice of an effect with the same or lower priority | 0 |
+| `wave` | The waveform | `pulse` |
+| `pulseWidth` | 0 to 1. For a lone pulse, it is the share of each cycle at one level. `w` sounds the same as `1 - w`, and 0.5 is a square. In a combined wave, the pulse lets the other waves through from `pulseWidth` of the way through each cycle to its end | 0.5 |
+| `wavetable` | 32 hex digits, each a level `0` to `F`. Spaces are ignored | |
+| `envelope` | `{ attackMs, decayMs, sustain, releaseMs }`. `sustain` is a level from 0 to 1. `decayMs` is the time to fall to 60 dB below the peak (a thousandth of its level), or to `sustain` | a 2 ms attack, full sustain, a 60 ms release |
+| `volume` | 0 or more | 1 |
+| `filter` | `'a'` or `'b'` | neither |
+| `echo` | How much of each note goes to the echo, 0 to 1 | 0 |
+| `note` | The note it plays when it's played with no note, or named in a song with no note, as for drums | `C-4` |
+| `glideTo` | A note to glide to, moving smoothly in pitch over the play's length, for a zap down or a rising whine | |
+| `lengthMs` | How long it holds its note when played, before its release | the step table's length, or 250 |
+| `priority` | When no voice is free, it may take the voice of a sound with the same or lower priority | 0 |
 | `maxVoices` | The most voices it plays on at once. Playing it again at that limit restarts its oldest copy | 1 |
+| `stepMs` | How long each step lasts, for the step table and the arpeggio | 1000 / 60 |
+| `steps` | A step table, a string in backticks with one step on each line | |
+| `arpeggio` | Semitone offsets, one per step, repeating (`[0, 4, 7]`) | |
+| `vibrato` | `{ semitones, hz, delayMs }`. How far the pitch wavers, how many times a second, and how long it waits after the note starts | |
+| `pulseSweep` | `{ to, ms, isPingPong }`. Sweeps the width from `pulseWidth` to `to` over `ms`, once or back and forth | |
+| `filterSweep` | `{ fromHz, toHz, ms }`. Sweeps the cutoff of the sound's filter on each note | |
+| `syncSource`, `ringSource` | Another voice's index, for hard sync or ring modulation. A song's channel 0 plays on voice 0, and so on, so these suit sounds in songs | |
+
+A few settings are worth knowing by heart:
+
+- **A pluck**: `envelope: { attackMs: 1, decayMs: 200, sustain: 0, releaseMs: 60 }`.
+- **A held tone**: `sustain` above 0, with `releaseMs` for how it fades after release.
+- **A shifting pulse**: `pulseSweep: { to: 0.6, ms: 900, isPingPong: true }`.
+- **A plucked bass**: a saw through filter `a`, with `filterSweep: { fromHz: 2400, toHz: 450, ms: 180 }`.
+
+**The filters and the echo belong to the chip.** A song sets them as it
+starts, and a filter sweep moves its filter for every voice routed through
+it. On a chip that plays only sounds, nothing sets them. There, each filter
+stays a low pass at 2,000 Hz with no resonance, which a sound's sweep or
+step table can move. The echo stays at a 300 ms delay, with each repeat at
+0.35 of the last and the echo at half volume.
+
+**Wavetables** give the softer, rounder tones of early arcade boards. A
+wavetable drawn from an FM tone sounds closer to the 1990s. FM tones are
+the sound of the FM synthesis chips in many sound cards and consoles of
+that time:
+
+```ts
+const SINE = '89AC DEEF FFEE DCA9 8653 2110 0011 2356';
+const BELL = '7CEF FEDD DFFD A766 7998 5200 2221 0013';
+```
 
 ### Step Tables
 
-Most effects are shaped by a **step table**. A step table is a string in
-backticks. Each line is a row, and each row is one step. Each step lasts
-`stepMs`, which is a 60th of a second by default. A setting that a row
-changes stays until a later row changes it. The last row's settings stay
-in effect until the note ends. A row holds any of these tokens, at most
-one of each kind:
+Most sounds for games are shaped by a **step table**. A step table is a
+string in backticks. Each line is a row, and each row is one step. Each
+step lasts `stepMs`, which is a 60th of a second by default. A setting that
+a row changes stays until a later row changes it. The last row's settings
+stay in effect until the note ends. A row holds any of these tokens, at
+most one of each kind:
 
 | Token | Meaning | Example |
 | --- | --- | --- |
 | A wave | Switch waveform | `noise`, `pulse`, `saw+pulse` |
 | A relative pitch | Semitones from the note | `+12`, `-5` |
-| A note | That exact pitch, ignoring the effect's `note` | `C-6` |
+| A note | That exact pitch, ignoring the note played | `C-6` |
 | `v` and a hex digit | Volume, `0` to `F` | `vA` |
 | `p` and a hex digit | Pulse width, in sixteenths | `p4` |
-| `f` and a hex digit | The cutoff of the instrument's filter (ignored without a `filter`) | `f8` |
+| `f` and a hex digit | The cutoff of the sound's filter (ignored without a `filter`) | `f8` |
 
 ```ts
 /** A rock breaking: a burst of noise, falling. */
-export const BREAK = createAudio80SoundEffect({
+export const BREAK = createAudio80Sound({
     note: 'C-4',
     stepMs: 30,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
@@ -376,6 +315,69 @@ of the note. Comment lines and blank lines are skipped, and neither counts
 as a step. Indentation and extra spaces are ignored, so you can line the
 tokens up.
 
+### Playing a Sound
+
+`Audio80.play` plays a sound now, and returns the play's id. A second
+argument changes this one play. Each option defaults to the sound's own:
+
+| Option | Meaning |
+| --- | --- |
+| `note` | The note to play, as a name such as `'E-5'`, or a note number. Note numbers count semitones, as MIDI (the standard for music hardware) does, and 60 is middle C, `C-4` |
+| `glideTo` | A note to glide to over the play's length |
+| `lengthMs` | How long to hold the note before releasing it, above 0. `Infinity` holds it until you stop it |
+| `volume` | 0 or more, which scales the sound's own volume |
+
+So one sound can make several effects. Here one blip plays a menu's moves
+up and down:
+
+```ts
+const BLIP = createAudio80Sound({
+    envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 60 },
+    lengthMs: 40,
+});
+
+sfx.play(BLIP, { note: 'C-6' }); // up
+sfx.play(BLIP, { note: 'G-5' }); // down
+```
+
+**A sound that lasts as long as something does,** such as an engine while
+it thrusts, is held. Play it with a `lengthMs` of `Infinity`, keep its id,
+and stop it when the thrust ends. `Audio80.stop` releases the note, so it
+fades out as its envelope's release says:
+
+```ts
+const thrust = sfx.play(ENGINE, { lengthMs: Infinity });
+// ...later, when the thrust ends
+sfx.stop(thrust);
+```
+
+`stop` does nothing if the play has already ended, or if another sound has
+taken its voice. So you never need to check first.
+
+**A sound that repeats,** such as an alarm while fuel is low, is played
+again each time it's due. Count the time with your game's own clock, not
+`setTimeout`, so the repeats pause when your game pauses.
+
+### Which Voice a Sound Gets
+
+The chip chooses a voice for each sound you play, in this order:
+
+1. If the sound already plays on `maxVoices` voices, it restarts on the
+   oldest of them. So rapid fire with the default `maxVoices: 1` uses only
+   one voice.
+2. Otherwise it takes a free voice, from the top down, starting at voice 3.
+3. If none is free, it takes the oldest voice that is playing a song's note,
+   or a sound with the same or lower `priority`.
+4. If there's no such voice, the sound doesn't play.
+
+A song takes its voices from the bottom up, so channel 0 plays on voice 0.
+That's why sounds start from the top. But on a chip of their own, sounds
+have all four voices to share.
+
+Give the sounds that must be heard a higher priority than the ones that
+can be lost in a crowd. The player's death and a stage cleared must be
+heard. Shots and ticks can be lost.
+
 ### Recipes
 
 | Sound | How |
@@ -386,363 +388,308 @@ tokens up.
 | A jump | A triangle or pulse with `glideTo` a fifth or an octave up, 100 to 150 ms |
 | A hit | A step of noise, then a low triangle falling |
 | A menu blip | One or two short steps of pulse or a sine wavetable, quiet |
-| An alarm | A short tone, repeated with a metronome (below) |
-| A machine's hum | Noise or a low pulse, repeated with a metronome while it runs |
-
-### Which Voice an Effect Gets
-
-While a song plays, it reserves one voice per channel, from voice 0 up. A
-channel is one part of the song, such as the bass or the drums. An effect
-takes a free voice from the top down, starting at voice 7. So an
-effect and a song that start together do not collide. If no voice is free,
-the effect takes over the voice of the oldest effect with the same or lower
-`priority`. If there is no such effect, the new effect is not played. An
-effect already playing on `maxVoices` voices restarts on its own oldest
-voice instead. So rapid fire with the default `maxVoices: 1` uses only one
-voice.
-
-Give the sounds that must be heard a higher priority than the ones that
-can be lost in a crowd. The player's death and a stage cleared must be
-heard. Shots and ticks can be lost.
+| An alarm | A short tone, played again every half second or so while it lasts |
+| A machine's hum | Noise or a low pulse, held while the machine runs |
 
 ---
 
-## Instruments
-
-An instrument says how a note sounds. It sets the waveform, how the volume
-rises and fades, and what changes while the note plays. A song plays its
-notes on instruments, and so does a sound effect. You make an instrument
-once, when the module loads, with `createAudio80Instrument`:
-
-```ts
-import { createAudio80Instrument } from 'audio90';
-
-/** A soft lead: a pulse wave that wavers a little once the note has started. */
-export const LEAD = createAudio80Instrument({
-    wave: 'pulse',
-    pulseWidth: 0.25,
-    envelope: { attackMs: 5, decayMs: 300, sustain: 0.6, releaseMs: 120 },
-    vibrato: { semitones: 0.2, hz: 5, delayMs: 200 },
-});
-```
-
-A sound effect can also define its own instrument, with the same options.
-[Sound Effects](#sound-effects) shows how.
-
-### Instrument Options
-
-`createAudio80Instrument` takes these options. Every one is optional.
-
-| Option | Meaning | Default |
-| --- | --- | --- |
-| `wave` | The waveform | `pulse` |
-| `pulseWidth` | 0 to 1. For a lone pulse, it is the share of each cycle at one level. `w` sounds the same as `1 - w`, and 0.5 is a square. In a combined wave, the pulse lets the other waves through from `pulseWidth` of the way through each cycle to its end | 0.5 |
-| `wavetable` | 32 hex digits, each a level `0` to `F`. Spaces are ignored | |
-| `envelope` | `{ attackMs, decayMs, sustain, releaseMs }`. `sustain` is a level from 0 to 1. `decayMs` is the time to fall to 60 dB below the peak (a thousandth of its level), or to `sustain` | a 2 ms attack, full sustain, a 60 ms release |
-| `volume` | 0 to 1 | 1 |
-| `filter` | `'a'` or `'b'` | neither |
-| `echo` | How much of each note goes to the echo, 0 to 1 | 0 |
-| `note` | The note it plays when a song names the instrument but no note, as for drums | `C-4` |
-| `stepMs` | How long each step lasts, for the step table and the arpeggio | 1000 / 60 |
-| `steps` | A step table, a string in backticks with one step on each line | |
-| `arpeggio` | Semitone offsets, one per step, repeating (`[0, 4, 7]`) | |
-| `vibrato` | `{ semitones, hz, delayMs }`. How far the pitch wavers, how many times a second, and how long it waits after the note starts | |
-| `pulseSweep` | `{ to, ms, isPingPong }`. Sweeps the width from `pulseWidth` to `to` over `ms`, once or back and forth | |
-| `filterSweep` | `{ fromHz, toHz, ms }`. Sweeps the cutoff of the instrument's filter on each note | |
-| `syncSource`, `ringSource` | Another voice's index, for hard sync or ring modulation | |
-
-A few settings are worth knowing by heart:
-
-- **A pluck**: `envelope: { attackMs: 1, decayMs: 200, sustain: 0, releaseMs: 60 }`.
-- **A held tone**: `sustain` above 0, with `releaseMs` for how it fades after release.
-- **A shifting pulse**: `pulseSweep: { to: 0.6, ms: 900, isPingPong: true }`.
-- **A plucked bass**: a saw through filter `a`, with `filterSweep: { fromHz: 2400, toHz: 450, ms: 180 }`.
-
-**The filters are shared.** A song sets them as it starts. A filter sweep
-moves its filter for every voice routed through it. Give effects no filter,
-or route them through a filter the music does not use.
-
-**Wavetables** give the softer, rounder tones of early arcade boards. A
-wavetable drawn from an FM tone sounds closer to the 1990s. FM tones are
-the sound of the FM synthesis chips in many sound cards and consoles of
-that time:
-
-```ts
-const SINE = '89AC DEEF FFEE DCA9 8653 2110 0011 2356';
-const BELL = '7CEF FEDD DFFD A766 7998 5200 2221 0013';
-```
-
----
-
-## Playing from Audio Views
-
-Sound is presentation, so views play it. An **audio view** is an ordinary
-view that plays sounds instead of drawing visuals. In its refresh step,
-it polls the model through its bindings with `watch`, like any view. It
-plays a sound when it sees a change that calls for one:
-
-```ts
-import { Container } from 'pixi.js';
-import { setRefresh } from '@mvtjs/pixi';
-import type { Audio80 } from 'audio90';
-import { watch } from '@mvtjs/utils';
-
-export interface ShipAudioViewBindings {
-    /** The chip: an output, read once. */
-    readonly sound: Audio80;
-    /** Shots fired this game: each rise is a shot. */
-    readonly shotsFired: () => number;
-    readonly isAlive: () => boolean;
-}
-
-/** The ship's sounds: a shot as it fires, and a crash as it is lost. */
-export function ShipAudioView(bindings: ShipAudioViewBindings): Container {
-    const { sound } = bindings;
-    const view = new Container();
-    const watcher = watch({
-        shots: bindings.shotsFired,
-        isAlive: bindings.isAlive,
-    });
-    // So the first refresh plays only for changes made after the view is made
-    watcher.poll();
-
-    setRefresh(view, () => {
-        const w = watcher.poll();
-        if (w.shots.increased) sound.play(SHOT);
-        if (w.isAlive.changed && !w.isAlive.value) sound.play(SHIP_EXPLODE);
-    });
-    return view;
-}
-```
-
-Here is what to watch for:
-
-| The event | What the model exposes | The view plays when |
-| --- | --- | --- |
-| A state begins: dying, a stage cleared | A phase or a flag | It changes to that value |
-| Something that can happen twice in a row: a shot, a coin | A **count** (`shotsFired`) | It rises |
-| Several at once: rocks breaking in one tick | A count, and the latest one's details (`lastBrokenRockSize`) | It rises; one sound for the whole tick |
-
-A refresh that sees no change plays nothing. So a second refresh in the
-same tick does not play the sound again. A paused game stays quiet too,
-even though its views are still refreshed. A watched number's `increased`
-is true when it changed to a greater number, so it finds each rise. A count
-going back to 0 for a new game is not a rise.
-
-**The first poll.** `watch` reports every value as changed on its first
-poll. So poll once when the view is made, as above. Skip that poll if the
-view should play something for the starting state, such as a fanfare as
-the game begins.
-
-**Views in a list.** A `<List>` makes the view for a slot once, when the
-first item fills the slot. It reuses that view for every later item in the
-slot. A poll at construction covers only that first item. When a later item
-fills the slot, its values show up as changes. So play only on changes that
-a newly arrived item cannot produce. For example, an item arrives
-alive. So `isAlive` going from `true` to `false` is always a real loss:
-
-```ts
-if (w.isAlive.changed && w.isAlive.previous === true) sound.play(EXPLODE);
-```
-
-This needs no poll at construction either, since the first poll has no
-`previous`. Sometimes there is no such change to rely on. Then also watch a
-binding that identifies the item, such as an id. Ignore any poll in which
-it changed.
-
-An item may be removed in the same tick as the event, like a rock that
-breaks and disappears. Then its view never refreshes to see the change.
-Record the event in the model instead, as a count plus the latest one's
-details. Play it from a view outside the list.
-
----
-
-## Music
+## Songs
 
 A song is made of patterns, which are short blocks of music. Its order is
 the list of patterns it plays, one after another. A looping song then goes
 back to the place in the order that its `loop` option names, and repeats.
-
-A song is played by a **music player**, which an audio view owns. The view
-chooses what plays: which song, when it starts and stops, and how fast. That
-choice is the view's presentation state. The song's place is kept by the
-chip's own sequencer, as [Time](#time-the-chip-runs-on-game-time) explains,
-so the view has nothing to advance. It tells the player what to play, and
-calls `refresh` at the end of its refresh step, which sends that to the
-chip:
+A song's `instruments` are the sounds it plays its notes on, each named by
+one letter:
 
 ```ts
-const music = createMusicPlayer({ audio80: sound });
-const watcher = watch({ phase: bindings.phase });
+import { createAudio80Song } from 'audio90';
 
-setRefresh(view, () => {
-    const w = watcher.poll();
-    if (w.phase.changed) {
-        if (w.phase.value === 'playing' && w.phase.previous !== 'dying') {
-            music.play(STAGE_FANFARE);
-            music.queue(STAGE_TUNE);
-        }
-        else if (w.phase.value === 'game-over') music.play(GAME_OVER);
-    }
-    music.refresh();
+export const FANFARE = createAudio80Song({
+    bpm: 150,
+    instruments: { L: LEAD, B: BASS, k: KICK, h: HAT },
+    patterns: {
+        fanfare: `
+            # lead      | bass      | drums
+            | E-5 L v9  | E-2 B     | k
+            | ...       | ...       | h
+            | G-5       | E-3       | h
+            | B-5 ~     | ...       | h
+        `,
+    },
+    order: ['fanfare', 'fanfare+5'],
 });
 ```
 
-| Member | Use |
-| --- | --- |
-| `play(song)` | Starts `song` from the beginning, releasing any song playing |
-| `queue(song)` | Plays `song` when the current song reaches the end of its order, with no gap, as with a fanfare into a loop. A looping song hands over at the end of its order too, instead of going back to its `loop`. If nothing is playing, `song` starts at once |
-| `stop()` | Releases the notes and gives the voices back to effects |
-| `tempoScale` | 1 for the song's own tempo. Above 1 speeds it up, and below 1 slows it down. Slides, which move a note's pitch smoothly, keep pace. 0 pauses the song where it is, while its notes ring out and its slides stop. Use it for music that plays only while something moves. A negative value, or one that is not finite, acts as 0 |
-| `refresh()` | Sends what was played, queued, stopped or changed since the last refresh to the chip |
-| `beat` | Where the song heard has got to, in beats, for views that pulse in time |
-| `orderIndex`, `row` | The row heard now, and the entry in the song's order whose pattern it is in, for views that show the song as a tracker does |
-| `song`, `isPlaying` | What is playing. A song played or stopped shows here at once |
-
-Call `refresh` at the end of the refresh step, after any `play`, `queue`
-or `stop`. Set `tempoScale` just before it, after any new song, so the
-tempo is the one for the song that plays. The player sends the tempo ahead
-of the song, so a song started at a new tempo starts at it. The sequencer
-has already played the tick the view refreshes in, so a change takes effect
-from the next tick.
-
-What the player reports is what the listener hears now. In a browser, that
-trails what the view asked for by a moment, while the sound reaches the
-speaker. A song just started reports its first row until it is heard.
-
-One player plays one song at a time. A game's jingles and its loop usually
-share one player, so they never compete for voices.
 [Writing Tracker Music](writing-tracker-music.md) explains how to write
 songs.
 
----
+### Playing Songs
 
-## Repeating Sounds
+A chip plays one song at a time, on a sequencer of its own. A sequencer is
+the part of a chip that plays a song, row by row. In a browser, it runs on
+the audio thread, on the sound card's clock. So a late frame on the page
+never holds the music up.
 
-Some sounds repeat for as long as a condition holds. Examples are a
-heartbeat that quickens, an alarm while fuel is low, and an engine while
-thrusting. A **metronome** counts the repeats. It comes from `@mvtjs/utils`,
-since it is not only for sound. It counts beats at a tempo you can change,
-and plays nothing itself. It is presentation state. It starts stopped, with
-a `periodMs` of 0. The update step sets its period and then calls its
-`update`. The refresh step plays a sound each time its count rises:
+| Call | What it does |
+| --- | --- |
+| `play(song, options?)` | Starts `song` from its beginning, in place of any song playing, and cancels any song queued. Returns the play's id |
+| `queue(song, options?)` | Plays `song` without a gap when the song playing reaches the end of its order, even if that song loops. If no song is playing, it starts at once. Returns the id of the play it follows, or a new id if it starts at once |
+| `stop(id?, { fadeMs }?)` | Stops the song with that id, and any song queued after it, unless another song has been played since. With no id, it stops everything on the chip, the song and every sound |
+
+A fanfare into a stage's loop is a play then a queue:
 
 ```ts
-import { createMetronome, watch } from '@mvtjs/utils';
+music.play(STAGE_FANFARE);
+music.queue(STAGE_TUNE);
+```
 
-const heartbeat = createMetronome();
-const watcher = watch({ beats: () => heartbeat.count });
-watcher.poll();
+`queue` returns the fanfare's id, so stopping that id stops both.
 
-setUpdate(view, (deltaMs) => {
-    // The period in ms, or 0 to stop. The first beat comes as it starts.
-    const { isPlaying, rocksLeft } = bindings;
-    heartbeat.periodMs = isPlaying() ? periodFor(rocksLeft()) : 0;
-    heartbeat.update(deltaMs);
-});
-setRefresh(view, () => {
-    const { beats } = watcher.poll();
-    if (beats.increased) {
-        sound.play(beats.value % 2 === 0 ? BEAT_HIGH : BEAT_LOW);
-    }
+### Play Options
+
+`play` and `queue` take these options for a song. Each is checked as the
+song is played, and a mistake throws an error that says what's wrong.
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `repeat` | How many more times the song's loop plays before the song ends. 0 plays to the end of its order once. A song with no `loop` ends at the end of its order whatever this says | `Infinity` |
+| `pitch` | Semitones to play every note up, or below 0, down. It may be a fraction: 0.5 is a quarter tone, and a small fraction detunes the song, as a tape running fast would. A sound's own note, as a drum plays, isn't moved. A pitch that takes a note out of the chip's range throws | 0 |
+| `fadeMs` | How long to fade the song in over, from silence | 0 |
+| `startMs` | Where to start, in ms from the song's start, at its own tempo | 0 |
+| `startAt` | Where to start, as `{ orderIndex, row }`: an entry in the song's order, and a row of its pattern, each counted from 0 | the start |
+
+### Fading
+
+A fade changes the chip's volume evenly in decibels, so it sounds even to
+the ear. The chip fades as a whole, sounds included, which is one reason a
+game plays its sound effects on a chip of their own.
+
+- **To fade a song in,** play it with a `fadeMs`.
+- **To fade a song out,** stop it with one: `stop(id, { fadeMs: 1000 })`.
+  The song plays on as the chip fades, and stops as the fade ends. Then the
+  chip cuts every voice, sounds included. Until then, the chip still
+  reports the song, since it's still heard.
+
+A song played during a fade-out starts at full volume. A song queued
+during one starts as the fade ends. So a title tune can fade out into the
+first stage's music:
+
+```ts
+music.stop(titleId, { fadeMs: 800 });
+music.queue(STAGE_TUNE);
+```
+
+### Starting Part Way
+
+A song can start part way through, in either of two ways. Give one or the
+other, never both:
+
+- **`startMs`** is a time, in ms from the song's start at its own tempo.
+  It suits a seek bar, or music timed to a cutscene. It must be less than
+  the song's `durationMs`, the length of one pass through its order. A
+  start that falls inside a row waits for the next row to play.
+- **`startAt`** is a place in the song: an entry in its order, and a row.
+  It suits skipping to a section, such as past an intro. The row plays at
+  once.
+
+The song is heard from there as it would be on reaching it. Each channel
+has the sound and settings the earlier rows left it with. But the notes
+those rows started don't sound, so you hear the song from the first note
+at or after the start.
+
+### What the Chip Reports
+
+The chip reports where its song has got to. It reports what the listener
+hears now, not what was last asked for. In a browser, sound takes a moment
+to reach the speaker, so the two differ a little. A display that shows the
+song, as a tracker does, then shows the row being heard.
+
+| Member | What it is |
+| --- | --- |
+| `song` | The song playing, or `undefined`. A song played, stopped, or queued with none playing shows here at once |
+| `orderIndex` | The entry in the song's order whose row is heard now |
+| `row` | The row heard now, within that entry's pattern |
+| `beat` | How many beats the song has played, for things that pulse in time |
+| `positionMs` | Where the song is in its order, in ms at its own tempo, 0 or more and less than its `durationMs`. It goes back as the song loops. It's what a seek bar shows |
+
+Each is 0 when no song is playing. Playing a song with `positionMs` as its
+`startMs` resumes it from where it was:
+
+```ts
+const at = music.positionMs;
+music.stop();
+// ...later
+music.play(TUNE, { startMs: at });
+```
+
+### Tempo
+
+`Audio80.tempoScale` multiplies the song's tempo. At 1, the song plays at
+its own tempo. Above 1, it speeds up, and below 1, it slows down. Slides,
+which move a note's pitch smoothly, keep pace.
+
+At 0, the song holds where it is. Its notes ring on as their envelopes
+allow, and its slides stop. That suits music that plays only while
+something moves. A negative value, or one that isn't finite, acts as 0.
+
+The chip sends the scale on only when it changes, so you can set it every
+frame. A change made just before or just after `play` applies from the
+song's start, so the tempo can follow the song just chosen.
+
+### Being Told as a Song Plays
+
+A game loop can read the chip's `song` and `row` each frame, and act on a
+change. A page with no loop can have the chip tell it instead. Give these
+functions as you make the chip:
+
+```ts
+const music = createAudio80({
+    context,
+    onRow: (song, orderIndex, row) => highlight(song, orderIndex, row),
+    onEnded: () => showCredits(),
 });
 ```
 
-The update step only counts beats, and the refresh step only plays sounds.
-That follows the rule for views. Update advances presentation state, and
-refresh writes output.
+- **`onRow`** is called as the song reaches each row, the first row
+  included.
+- **`onEnded`** is called when a song ends by itself, at the end of its
+  order, with no repeats left and no song queued. A song stopped with
+  `stop`, or followed by a song queued after it, doesn't end this way.
+
+In a browser, each is called as the audio thread reports the row or the
+end. That's a moment before the listener hears it, by about the time the
+sound takes to reach the speaker.
 
 ---
 
+## Volume and Mute
+
+Each chip has its own volume and mute:
+
+| Member | What it does |
+| --- | --- |
+| `volume` | 0 to 1, where 1 plays songs and sounds as written. A value outside that range is clamped to it |
+| `isMuted` | Silences the chip, whatever `volume` says |
+
+A change settles over about 30 ms, so moving a slider doesn't click. Give
+the listener a slider for each chip, the music and the sound effects. Turn
+a slider's position into a volume by squaring it. Then equal steps of the
+slider sound like equal steps in loudness:
+
+```ts
+music.volume = slider.valueAsNumber ** 2;
+```
+
 ## The Mix and Loudness
 
-The chip has two **buses**. A bus is a group of voices that are mixed
-together and share one volume. Voices playing a sound effect are on the
-effects bus. Every other voice is on the music bus. Each bus has its own
-gain, which is the number its sound is multiplied by. The gains are set
-through `AudioControls.musicVolume` and `AudioControls.effectsVolume`. In
-the Arcade, the visitor's sliders set them. A gain of 1 plays the sound as
-written, and values are clamped to 0 to 2. `AudioControls.volume` sets the
-volume of the whole chip, and is clamped to 0 to 1. `AudioControls.isMuted`
-silences the chip.
-Every chip clamps the same way. Changes ramp over a few ms, so moving a
-slider does not click.
-
-Write each sound at the level it should be heard at:
+Write each song and sound at the level it should be heard at. Then a
+listener's sliders start from a good balance.
 
 - **Songs** should be at the shared loudness, about -20 LUFS. LUFS is the
   standard unit for how loud sound seems to a listener. The values are
   negative, and nearer 0 is louder. The shared loudness is
-  `REFERENCE_LOUDNESS_LUFS`, from `audio90/headless`.
-  `npm run audio:render` prints each song's loudness. Set a song's `volume`
-  to bring it to that level.
-- **Effects** should be loud enough to be heard over the music, and quiet
+  `REFERENCE_LOUDNESS_LUFS`, from `audio90/headless`, and
+  `measureLoudness` measures a song rendered in memory. Set a song's
+  `volume` to bring it to that level.
+- **Sounds** should be loud enough to be heard over the music, and quiet
   enough not to clip. A sound clips when it is too loud for the output.
   The output then rounds off its loudest moments, which distorts it. Aim
   for a peak between about 0.08 and 0.3. The peak is the highest level the
-  sound reaches, and the output holds levels up to 1.
-  `audio:render` prints each effect's peak. Noise through a filter comes
-  out quieter than its settings suggest, so give it more volume.
-- An effect's `volume` is applied once, to its note. It is not also applied
-  to the instrument the effect defines. So an effect at 0.5 peaks at about
-  half the level it has at 1.
+  sound reaches, and the output holds levels up to 1. `measurePeak`
+  measures it. Noise through a filter comes out quieter than its settings
+  suggest, so give it more volume.
+
+[Testing and Listening](#testing-and-listening) shows how to render a song
+or sound in memory, to measure it.
 
 ---
 
-## Direct Chip Calls
+## Using It with a Game Loop
 
-For anything effects and songs do not cover, call the chip directly:
+A browser chip keeps the sound card's time, not your game's. So it plays
+on whatever your game loop does, and a few things are up to you:
 
-| Call | Does |
-| --- | --- |
-| `noteOn(voice, instrument, note, volume, atMs?)` | Starts a note on a voice at `atMs`, by default the chip's current time. `note` is a note number, as MIDI (the standard for music hardware) numbers them. There is one number per semitone, and 60 is middle C, `C-4`. A `volume` of 1 is the instrument's own |
-| `noteOff(voice, atMs?)` | Releases the voice's note, so that its envelope's release begins |
-| `setVoice(voice, setting, value, atMs?)` | Changes one of a voice's settings: `note` (a bend, which changes the pitch without starting a new note), `volume`, `pulseWidth`, `wave` (a name, such as `'saw+pulse'`), `arpeggio`, `vibratoDepth`, `slide`, `glide`, ... |
-| `setFilter(filter, setting, value, atMs?)` | Sets a filter's `mode` (a name, such as `'lowpass'`), `cutoffHz`, `resonance` or `drive`. Drive pushes the filter's input harder, for a slight growl |
-| `setEcho(setting, value, atMs?)` | Sets the echo's `timeMs` (at most 1000), `feedback` (at most 0.95) or `level`. The feedback is how much of each repeat is echoed again, and the level is how loud the echo is |
-| `reserveVoices(count, atMs?)` | Reserves voices 0 to `count` - 1 for music, so effects cannot take them |
-| `releaseAll()` | Releases every voice |
-| `time` | The chip's current time in ms. Calls without `atMs` are stamped with it |
-| `voiceCount` | The number of voices: 8 |
-| `openSongSlot()` | Returns a new slot on the chip's own sequencer, which plays one song at a time. A music player is made on one, so most code calls `createMusicPlayer` instead |
+- **Pause the chip as your game pauses.** Call `Audio80.pause` as the game
+  pauses, and `Audio80.resume` as it resumes. The chip's voices fade out at
+  once and keep their place, and its song stops moving. When it resumes,
+  everything carries on from where it was. A chip you don't pause plays
+  on, so a pause menu can play its clicks on a chip of its own.
+- **The page hidden.** A browser chip holds its sound while the page is
+  hidden, and plays on as it shows again. It does so whether or not you
+  paused it, and it leaves `isPaused` as it is. Make the chip with
+  `pauseWhenHidden: false` for sound that should play on in the background.
+- **Starting over.** `stop()` with no id stops everything on the chip. Call
+  it as a game ends or a new one starts. While the chip is paused, it cuts
+  every voice at once, rather than letting the notes fade out as it
+  resumes.
+- **Play a sound when something happens,** such as a coin being collected,
+  not while a state holds. A sound played every frame while the player is
+  dead is played sixty times a second.
+- **Reading the chip each frame is cheap.** So is setting `tempoScale`
+  every frame, since the chip sends it on only when it changes.
 
-A write stamped earlier than the chip has already played applies at once.
-A write with a value that is NaN or infinite is dropped. The calls take
-their arguments in order, not as an options object. That is because they
-are called from refresh steps, which must not allocate.
+**Without a speaker,** as in a test, your game plays on a headless chip
+from `audio90/headless`. Its clock moves on only when you call its
+`update(deltaMs)`. Call it once each frame with the same `deltaMs` as your
+game, and its song keeps exact time with your game:
+
+```ts
+import { createHeadlessAudio80 } from 'audio90/headless';
+
+const music = createHeadlessAudio80();
+music.play(FANFARE);
+music.update(500);
+// Half a second in, at 150 beats a minute and four rows a beat
+console.log(music.beat, music.orderIndex, music.row); // 1.25 1 1
+```
+
+`FANFARE` is the song in [Songs](#songs). Its pattern is four rows long,
+so half a second in, it's on the second row of its second entry.
+
+The same game, run the same way, reaches the same rows at the same moment
+every time. So a test can check what your game plays.
 
 ---
 
 ## Testing and Listening
 
-**Listen** without starting the game:
+You can render any song or sound in memory, without a speaker or a
+browser. `render`, from `audio90/headless`, returns its samples. A sample
+is the level of the sound wave at one instant. The Audio80's samples come
+as one `Float32Array`, 48,000 a second by default.
 
-```sh
-npm run audio:render -- \
-    packages/sites/arcade/src/entries/galaxy-raiders/data/music.ts
-```
-
-This command renders every song and effect the module exports to WAV
-files, in `renders/<module path>/`. It prints each one's length and peak,
-and each song's loudness. The
-[headless README](../src/headless/README.md#listening) says more.
-
-**Audio tests** catch sounds that change by accident. Render each export,
-and check that it is audible and not clipped. Check that each song is at
-the shared loudness too. Then snapshot a hash of its samples. A change that
-alters the sound then fails the test. It keeps failing until someone has
-listened to it and updated the snapshot with `vitest -u`:
+**Listen** to a sound by saving it as a WAV file, in Node:
 
 ```ts
+import { writeFileSync } from 'node:fs';
+import { encodeWav, measurePeak, render } from 'audio90/headless';
+import { COIN } from './sounds';
+
+const samples = render(COIN);
+console.log('peak', measurePeak(samples));
+writeFileSync('coin.wav', encodeWav(samples, 48000));
+```
+
+**Audio tests** catch sounds that change by accident. Render each song and
+sound, and check that it's audible and not clipped. Check that each song
+is at the shared loudness too. Then snapshot a hash of its samples. A
+change that alters the sound then fails the test. It keeps failing until
+someone has listened to it and updated the snapshot with `vitest -u`.
+`findSounds` finds every song and sound a module exports:
+
+```ts
+import { expect, it } from 'vitest';
 import {
-    findSounds, hashSamples, measurePeak, renderSoundEffect,
+    findSounds, hashSamples, measurePeak, render,
 } from 'audio90/headless';
+import * as sounds from './sounds';
 
-const { songs, effects } = findSounds({ ...sounds, ...music });
+const AUDIBLE = 0.05;
+const CLIPPING = 0.9;
 
-for (const [name, effect] of effects) {
+for (const [name, sound] of findSounds(sounds).sounds) {
     it(`${name} sounds as it did, audible and unclipped`, () => {
-        const samples = renderSoundEffect(effect);
+        const samples = render(sound);
         expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
         expect(measurePeak(samples)).toBeLessThan(CLIPPING);
         expect(hashSamples(samples)).toMatchSnapshot();
@@ -750,31 +697,8 @@ for (const [name, effect] of effects) {
 }
 ```
 
-Views have the same kind of test for what they look like. See
-[Visual Tests](../../../sites/docs/building-with-mvt/iterating-with-confidence/visual-tests.md)
-in the MVT guide.
-
-**Audio views** are tested against a headless chip that records. The test
-advances the chip's clock and ticks the view, as a game loop would:
-
-```ts
-const { audio80, controls } = createHeadlessAudio80({ record: true });
-const view = ShipAudioView({
-    sound: audio80,
-    shotsFired: () => state.shots,
-    isAlive: () => true,
-});
-const tick = (): void => {
-    controls.update(1000 / 60);
-    updateView(view, 1000 / 60);
-    refreshView(view);
-};
-
-state.shots++;
-tick();
-const shot = expect.objectContaining({ kind: 'play', effect: SHOT });
-expect(audio80.log).toContainEqual(shot);
-```
+The [headless README](../src/headless/README.md) covers rendering,
+measuring and testing in full.
 
 ---
 
@@ -782,11 +706,12 @@ expect(audio80.log).toContainEqual(shot);
 
 | Symptom | Likely cause |
 | --- | --- |
-| A sound plays as the game starts, unasked | `watch` reports every value as changed on its first poll. Poll once when the view is instantiated |
-| A sound never plays from a view in a list | The item was removed in the same tick as the event. Record it in the model as a count, and play it from a view outside the list |
-| A list view plays a sound when a new item fills its slot | The view plays on a change that a newly arrived item can cause. Play only on changes it cannot cause (`isAlive` from `true` to `false`), or ignore polls in which the item's id changed |
-| An effect is cut short or never heard | No voice was free and its `priority` was too low, or it reached its `maxVoices` and restarted. The music may be using more channels than it needs |
-| An effect sounds wrong only while music plays | Both use the same filter, and the song set or swept it |
-| Two sounds play for one event | Two values changed in the same tick for one event (a returning ship also refills its fuel). Check them together and play one sound |
-| Nothing plays on a phone | The page is not served over HTTPS, and `AudioWorklet` needs a secure page |
-| Nothing plays at all | The `AudioContext` has not been resumed after a user gesture |
+| Nothing plays at all | The `AudioContext` hasn't been started. A browser starts one only in the handler of a click, tap or key press. If you gave the chip a context, resume it there |
+| Nothing plays on a phone | The page isn't served over HTTPS, and `AudioWorklet` needs a secure page. The chip's `ready` rejects |
+| Sound plays on while the game is paused | The game doesn't call the chip's `pause` as it pauses |
+| A song loses notes while sounds play | The sounds play on the music's chip, and take the song's voices. Play them on a chip of their own |
+| Fading the music out fades the sound effects too | They share a chip. A fade fades the whole chip |
+| A sound is cut short or never heard | No voice was free and its `priority` was too low, or it reached its `maxVoices` and restarted |
+| A sound sounds wrong only after a song has played | The song set its chip's filters or echo, and the sound goes through them |
+| A sound plays over and over, or buzzes | It's played every frame while a state holds, not once as something happens |
+| `play` throws for a song | An option isn't valid, or its `pitch` takes a note out of the chip's range. The error says which |

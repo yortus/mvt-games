@@ -1,216 +1,214 @@
 # audio90
 
-This package holds virtual sound chips for games. A virtual sound chip is a
-sound chip simulated in code. There are two:
+Two little sound chips for games and web pages, simulated in code. Each
+chip plays music and sound effects in the style of its decade. You write
+both in plain text, and the chip plays them in the browser, on its own
+thread, so a slow frame never makes the music stutter.
 
-- The **Audio80** is in the spirit of the 1980s home computers. It has
-  eight voices, and each voice plays one note at a time. It also has two
-  filters, which make a sound duller or thinner by cutting some of its
-  frequencies. They are resonant, so they can also make it ring. The chip
-  also has an echo, and its output is mono, not stereo.
+- The **Audio80** is in the spirit of the 1980s home computers. It has four
+  voices, and each voice plays one note at a time. It has two resonant
+  filters, which make a sound duller or thinner and can make it ring, and
+  an echo. Its output is mono.
 - The **Audio90** is in the spirit of the synthesisers, samplers and game
-  consoles of the 1990s. It has sixteen stereo voices. Each one plays FM,
-  analog oscillators or samples, through a filter of its own. You never
-  record its samples. Each one is a short song that the chip plays and
-  keeps. It also has a reverb, a stereo echo and a chorus, and a pump that
-  makes the mix breathe with the bass drum.
-
-Both chips come with a tracker notation for writing their music and sound
-effects. A tracker writes music as a grid of text, read from top to bottom,
-as the musicians of the 1980s and 1990s did. The package also has a music
-player, which audio views use to play songs on either chip. An audio view is
-a view that plays sounds instead of drawing visuals.
+  consoles of the 1990s. It has sixteen stereo voices, and each one plays
+  FM, analog oscillators or samples through a filter of its own. You never
+  record its samples: the chip plays a short piece of music and keeps what
+  it hears. It has a reverb, a stereo echo, a chorus, and a pump that makes
+  the mix breathe with the bass drum.
 
 ```sh
 npm install audio90
 ```
 
-It has no dependencies. It suits any game loop, though it was made for
-games built with MVT (Model-View-Ticker), which the
-[MVT documentation](https://yortus.com/mvt-games/docs/) explains.
+It has no dependencies, and it works with any framework, or none.
 
-## Guides
+## A Song
 
-- **[Using the Audio80](docs/using-the-audio80.md)** covers getting a chip,
-  what a page needs to play one, designing sound effects and instruments,
-  and playing them from audio views as the game changes. It also covers
-  music, repeating sounds, the balance of music and effects, and testing.
-- **[Using the Audio90](docs/using-the-audio90.md)** helps you choose a
-  chip for your game. It shows you the Audio90's engines, instruments,
-  samples and stereo sound effects, how to mix them, and how to change the
-  way the chip sounds. It ends with recipes for the decade's sounds, from an
-  FM piano to a sliced drum break.
-- **[Writing Tracker Music](docs/writing-tracker-music.md)** builds one
-  tune, from a single note up to a loop with four parts. On the way it
-  covers instruments, patterns of rows, the order they play in, and
-  everything a cell of the grid can hold. It also covers arranging habits
-  that suit the chip, and what a song for the Audio90 adds.
-
-The MVT guide's page
-[Sound and Music](../../sites/docs/building-with-mvt/presenting-the-world/sound.md)
-explains why playing sound is a view's job. It also shows how an audio view
-sits among a game's other views, and is ticked with them.
-
-## A Taste
-
-These examples use the Audio80. You write the Audio90's the same way,
-with a few more options. This sound effect is written as a step table. A step table lists how a
-sound changes, one short step per row. Here each step lasts 25 ms. The
-pitch rises by 0, then 7, then 12 semitones above the note E-6, which is
-the E in octave 6. A semitone is the step from one piano key to the next,
-and 12 semitones make an octave. The envelope sets how the volume rises
-and fades. The effect is created once, when the module loads:
+A song is written as a grid of text. The rows are time, read from top to
+bottom. The columns are channels, and each channel plays one part, here a
+lead and a bass. Each sound is made once, and played as often as you like:
 
 ```ts
-/** A coin: a bright blip up a fifth. */
-export const COIN = createAudio80SoundEffect({
+import { createAudio80, createAudio80Song, createAudio80Sound } from 'audio90';
+
+const LEAD = createAudio80Sound({ wave: 'pulse', volume: 0.6 });
+const BASS = createAudio80Sound({ wave: 'triangle' });
+
+const TUNE = createAudio80Song({
+    bpm: 120,
+    instruments: { L: LEAD, B: BASS },
+    patterns: {
+        intro: `
+            | C-5 L | C-3 B
+            | E-5   | ...
+            | G-5   | G-2
+            | E-5   | ...
+        `,
+    },
+    order: ['intro', 'intro+5'],
+    loop: 0,
+});
+
+const music = createAudio80();
+music.play(TUNE);
+```
+
+`C-5` is the note C in octave 5. The letter after a note names the sound
+that plays it, and `...` lets the note before it ring on. The order plays
+the pattern, then plays it again five semitones higher, and `loop: 0` sends
+it back to the first entry, so it plays until it is stopped. [Writing Tracker Music](docs/writing-tracker-music.md) explains
+everything a row can hold.
+
+A browser lets a page make sound only after the visitor clicks, taps or
+presses a key. So a song played before then starts as soon as they do.
+
+## A Sound Effect
+
+A sound effect is a sound too. This one is a coin: a bright blip that jumps
+up a fifth and then an octave, one step every 25 ms:
+
+```ts
+import { createAudio80, createAudio80Sound } from 'audio90';
+
+const COIN = createAudio80Sound({
     note: 'E-6',
     stepMs: 25,
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 90 },
     steps: `
-        # wave   pitch  width
-        pulse    +0     p3
+        # wave   pitch
+        pulse    +0
         pulse    +7
         pulse    +12
     `,
 });
+
+const sfx = createAudio80();
+button.addEventListener('click', () => sfx.play(COIN));
 ```
 
-This song is written as rows and channels. The rows are time, from top to
-bottom. The channels are voices, from left to right. Each channel plays
-one part of the tune. Here they are the lead (the melody), the bass and
-the drums. Each pattern is a string in backticks, with one row on each
-line:
+The envelope sets how the volume rises and fades. A semitone is the step
+from one piano key to the next, and 12 of them make an octave.
+
+## A Chip for Each
+
+A game makes two chips: one for its music and one for its sound effects.
+Each chip has a few voices, and a sound effect may take a voice the music
+was using, as on the old consoles. With a chip each, the music never loses
+a note to an explosion. It also lets you fade or turn down the music
+without touching the effects. Two chips can share one `AudioContext`, the
+browser's object for playing sound.
+
+## Playing With a Game
+
+A chip keeps the sound card's time, not the game's. So when your game
+pauses, pause its chips too, and resume them as it plays on:
 
 ```ts
-export const FANFARE = createAudio80Song({
-    bpm: 150,
-    instruments: { L: LEAD, B: BASS, k: KICK, h: HAT },
-    patterns: {
-        fanfare: `
-            # lead      | bass      | drums
-            # -----------------------------
-            | E-5 L v9  | E-2 B     | k
-            | ...       | ...       | h
-            | G-5       | E-3       | h
-            | B-5 ~     | ...       | h
-        `,
-    },
-    order: ['fanfare', 'fanfare+5'],
-});
+function setPaused(isPaused: boolean): void {
+    for (const chip of [music, sfx]) {
+        if (isPaused) chip.pause();
+        else chip.resume();
+    }
+}
 ```
 
-An **audio view** is a view that plays sounds instead of drawing visuals.
-In its refresh step it polls its bindings, like any view. It plays a sound
-when it sees the model change:
+A chip also holds its sound by itself while the page is hidden, such as
+in a background tab. A page that should play on in the background, such as
+a music player, makes its chips with `pauseWhenHidden: false`.
 
-```ts
-setRefresh(view, () => {
-    const w = watcher.poll();
-    if (w.coins.increased) sound.play(COIN);
-});
-```
+The music can follow the game, too. `tempoScale` speeds a song up or slows
+it down, `stop(id, { fadeMs: 1000 })` fades it out, and `beat`, `row` and
+`positionMs` say where the music the listener hears has got to, so a game
+can move in time with it.
 
-On the Audio90, your audio view plays its effects the same way. It can
-also place each one in stereo, where it happens on screen:
+## Tests and Tools
 
-```ts
-if (w.coins.increased) sound.play(COIN, toPan(bindings.lastCoinX()));
-```
+`audio90/headless` has each chip without a speaker. A headless chip takes
+every call a browser chip does, and its clock moves on only when you call
+`update(deltaMs)`, so a test of the code that plays sound is exact. It can
+also render songs and sounds in memory, measure them, and save them as WAV
+files. Its [README](src/headless/README.md) covers those tools.
 
-The chip never reads the wall clock. Its clock advances only when the game
-loop advances it, by the same `deltaMs` as the models. So the sound pauses
-when the game pauses, and music keeps its tempo at any frame rate.
+## Guides
+
+- **[Using the Audio80](docs/using-the-audio80.md)** covers what both chips
+  share: getting a chip on a page, designing sounds, playing songs and
+  following them, the mix, and testing.
+- **[Using the Audio90](docs/using-the-audio90.md)** helps you choose a
+  chip. It shows what the Audio90 adds: its engines, samples, stereo, its
+  effects and mix, and recipes for the decade's sounds, from an FM piano to
+  a sliced drum break.
+- **[Writing Tracker Music](docs/writing-tracker-music.md)** builds one
+  tune, from a single note up to a loop with four parts, and covers
+  everything a row can hold.
+
+## Loading the Chips Later
+
+Each browser chip carries the code its audio thread runs, 20 to 35 KB
+minified, so there is no file to copy beside your app. A bundler leaves out
+a chip you never make. If your page must show something before that code
+arrives, you can load the chips later, as
+[Using the Audio80](docs/using-the-audio80.md#loading-the-chips-later)
+explains.
 
 ## Exports
 
-The package has two import paths:
-
-- `audio90` holds what games use, and the chips that play sound in a
-  browser, through Web Audio. Each browser chip loads an `AudioWorklet`, the
-  browser's way to run code that computes sound on its own thread, so it
-  plays only in a browser. Each chip's worklet code is inside that chip's
-  module, so there is no file to copy beside your app, and a bundler leaves
-  out the chip you don't use.
-- `audio90/headless` runs each chip without a speaker. A game run
-  headless, as for thumbnails, plays on a headless chip. Tests and tools use
-  one to render sound in memory, measure it and save it as WAV files, as
-  `npm run audio:render` does. Its [README](src/headless/README.md) covers
-  those tools.
-
-| Import Path | Export | Description |
-| --- | --- | --- |
-| `audio90` | `createAudio80Instrument` | Returns a new `Audio80Instrument`, parsed from its options. A mistake throws an error that says where it is |
-| | `createAudio80SoundEffect` | Returns a new `Audio80SoundEffect`, parsed the same way |
-| | `createAudio80Song` | Returns a new `Audio80Song`, parsed the same way |
-| | `createAudio90Instrument` | Returns a new `Audio90Instrument`, an FM, analog or sample instrument, parsed from its options. A mistake throws an error that names the option, such as `operators[3].ratio` |
-| | `createAudio90Sample` | Returns a new `Audio90Sample`: a song to bounce, which the chip plays and keeps as a sample, and how to keep it |
-| | `prepareAudio90Samples` | Bounces the samples given that are not bounced yet, as an entry loads, and throws if they need more than the chip's sample memory |
-| | `createAudio90SoundEffect` | Returns a new `Audio90SoundEffect`, parsed the same way |
-| | `createAudio90Song` | Returns a new `Audio90Song`, with its mixer, effects, pump and character |
-| | `printAudio90Cell` | Returns the text of one cell of an `Audio90Song`'s pattern, in columns as a tracker shows it, which parses back into the same cell |
-| | `computeSongDurationMs` | Returns how long one pass through either chip's song's order (its list of patterns) lasts, in ms |
-| | `createMusicPlayer` | Returns a new `MusicPlayer`, which plays one song at a time on the sequencer of the chip it is given, `{ audio80 }` or `{ audio90 }`, and reports where the song heard has got to |
-| | `createAudio80` | Returns a new Audio80 that plays on an `AudioContext` you give it, and its controls. An `AudioContext` is the browser's object for playing sound |
-| | `createAudio90` | Returns a new Audio90 that plays in stereo on an `AudioContext`, and its controls. It can share the context with an Audio80 |
-| `audio90/headless` | `createHeadlessAudio80` | Returns a new Audio80 with no speaker, and its controls. It can be silent, log every write, or render sound in memory |
-| | `createHeadlessAudio90` | Returns a new Audio90 with no speaker, and its controls, as `createHeadlessAudio80` does. It renders in stereo |
+| Export | Description |
+| --- | --- |
+| `createAudio80`, `createAudio90` | Return a new chip that plays in the browser, on an `AudioContext` you give it or one of its own |
+| `createAudio80Sound`, `createAudio90Sound` | Return a new sound, checked and parsed from its options. A mistake throws an error that says where it is |
+| `createAudio80Song`, `createAudio90Song` | Return a new song, parsed from its patterns and order, with its length in `durationMs` |
+| `createAudio90Sample` | Returns a new sample: a song for the Audio90 to play and keep as a sample |
+| `prepareAudio90Samples` | Bounces the samples given that are not bounced yet, and throws if they need more than the chip's sample memory |
+| `printAudio90Song`, `parseAudio90Song` | Return a song as text, such as for saving to a file, and the song that text describes |
+| `printAudio90Cell` | Returns the text of one cell of a song's pattern, in columns as a tracker shows it |
+| `createScope` | Returns a scope attached to a chip: what each of its voices is playing, for drawing |
 
 The types in these signatures are exported too, among them `Audio80`,
-`Audio90`, `AudioControls`, `Audio80WithControls`, `Audio90WithControls`,
-`Audio80Song`, `Audio80SoundEffect`, `Audio80Wave`, `Audio90Instrument`,
-`Audio90SoundEffect` and `Audio90Sample`. So are the Audio90's sizes:
-`AUDIO90_VOICE_COUNT` (16 voices), `AUDIO90_SAMPLE_MEMORY` (how many
-samples its samples may hold between them), `AUDIO90_SCOPE_POINTS`,
-`AUDIO90_SCOPE_PANS` and `AUDIO90_SCOPE_LENGTH` (how its `scope` array is
-laid out), and `AUDIO90_CELL_TEXT_WIDTH` (how many characters
-`printAudio90Cell` prints before a cell's effects).
+`Audio90`, `SoundChip`, `SongPlayOptions`, `SongPlace`, `StopOptions` and
+`SongCallbacks`. So are the Audio90's sizes, `AUDIO90_VOICE_COUNT` and
+`AUDIO90_SAMPLE_MEMORY`, and the constants a scope or a tracker display
+lays itself out by.
+
+`audio90/headless` exports `createHeadlessAudio80`,
+`createHeadlessAudio90`, `render`, and the tools that measure rendered
+sound. Its [README](src/headless/README.md) lists them.
 
 ## Layout
 
 ```
 src/
 ├── index.ts            audio90
-├── shared/             What any chip uses: what every chip has, note names,
-│   │                   the song player and the scope's sources
-│   ├── commands/       The commands a chip is sent, and the writer that
-│   │                   fills a buffer with them
-│   ├── notation/       The tracker notation every chip's songs share: cells,
-│   │   │               a song's core, its order, loop and tempo
+├── shared/             What every chip shares: the chip's interface, note
+│   │                   names, play options and the song player
+│   ├── commands/       The commands a chip is sent, and their writer
+│   ├── notation/       The tracker notation every chip's songs share
 │   │   └── tokens/     Rows, cells and tokens, read and printed
 │   └── synthesiser/    The parts of every synthesiser: the command queue,
-│                       envelopes, the note driver, voices for sound
-│                       effects, and the maths they share
+│                       envelopes, fades, and the maths they share
 ├── audio80/            The Audio80
-│   ├── synthesiser/    Its voices, filters and echo, and its commands
-│   ├── notation/       Its sounds and songs (createAudio80Sound,
-│   │                   createAudio80Song), and what a song's rows write
-│   └── chip/           The Audio80 interface, and its command writer
+│   ├── synthesiser/    Its voices, filters and echo
+│   ├── notation/       Its sounds and songs, and what a song's rows write
+│   └── chip/           Its interface
 ├── audio90/            The Audio90
-│   ├── synthesiser/    Its voices, engines, effects and output stage, and
-│   │                   its commands
-│   ├── notation/       Its sounds, samples and bouncing, and songs, and
-│   │   │               what a song's rows write to the chip
+│   ├── synthesiser/    Its voices, engines, effects and output stage
+│   ├── notation/       Its sounds, samples, bouncing and songs
 │   │   ├── song-text/  A song printed as text, and parsed back
-│   │   └── values/     Its names for engines, waves and shapes, and the
-│   │                   checks and conversions options go through
-│   └── chip/           The Audio90 interface, and its command writer
+│   │   └── values/     Its names for engines, waves and shapes
+│   └── chip/           Its interface
 ├── tracker/            What an editor needs: a song's cells as text, and
 │                       a scope attached to a chip
-├── headless/           audio90/headless: each chip without a speaker, and
-│   │                   finding the sounds a module exports
-│   ├── rendering/      Rendering songs and sounds in memory, in mono or
-│   │                   stereo
-│   └── rendered-samples/  What is done with rendered sound: hashes, peaks,
-│                       loudness and WAV files
-└── web/                The browser chips, each with its
-                        own AudioWorklet module, and what they share: the
-                        clock, the held writes and the runner
+├── headless/           audio90/headless: each chip without a speaker
+│   ├── rendering/      Rendering songs and sounds in memory
+│   └── rendered-samples/  Hashes, peaks, loudness and WAV files
+└── web/                The browser chips
+    └── worklet/        What runs on the audio thread: each chip's
+                        processor and its song sequencer
 docs/                   The guides
-scripts/
-└── render-wav.ts       Renders a module's songs and effects to WAV files
+scripts/                Rendering a module's songs and sounds to WAV files
+bench/                  The chips' benchmarks
 ```
 
-Each synthesiser, in `src/audio80/synthesiser/` and `src/audio90/synthesiser/`, is plain TypeScript with no Web Audio in it.
-It reads no clock. So the same writes always render the same samples, in
-the browser's worklet and in Node alike.
+Each synthesiser is plain TypeScript, with no Web Audio in it, and reads
+no clock. So the same calls always render the same samples, in the
+browser's audio thread and in Node alike.

@@ -100,8 +100,9 @@ export interface SoundChip<Song, Sound, PlayOptions> {
     /** Where the song heard has got to, in beats from its start. Views can use it to move in time with the music. 0 when no song is playing. */
     readonly beat: number;
     /**
-     * Where the song heard is in its order, in ms at its own tempo, from 0 to
-     * its `durationMs`: what a seek bar shows. It goes back as the song loops.
+     * Where the song heard is in its order, in ms at its own tempo, 0 or more
+     * and less than its `durationMs`: what a seek bar shows. It goes back as
+     * the song loops.
      * Playing the song with this as `startMs` starts it from here. 0 when no
      * song is playing.
      */

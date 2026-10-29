@@ -22,7 +22,7 @@ packages/
 │   ├── pixi/            @mvtjs/pixi: the view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the view tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            @mvtjs/html: the view tick API for DOM elements, its JSX runtime, and a Perfmon view
-│   └── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and music player; guides in docs/
+│   └── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
 ├── tools/               What people use while developing
 │   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 │   └── eslint-plugin/   @mvtjs/eslint-plugin (private): this repo's lint rules

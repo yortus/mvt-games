@@ -3,10 +3,10 @@
 > The Audio90 is a virtual sound chip in the spirit of the synthesisers,
 > samplers and game consoles of the 1990s. It has sixteen stereo voices, and
 > each voice can play FM, analog or samples. This guide shows you how its
-> engines, instruments, samples and stereo sound effects work, how to mix
-> them, and how to change the way the chip sounds. It ends with recipes for
-> the decade's sounds. A lot works just as it does on the Audio80, so the
-> guide points you to the Audio80's guide for those parts.
+> engines, sounds and samples work, how to place sounds in stereo, how to
+> mix them, and how to change the way the chip sounds. It ends with recipes
+> for the decade's sounds. A lot works just as it does on the Audio80, so
+> the guide points you to the Audio80's guide for those parts.
 
 **Related:** [Using the Audio80](using-the-audio80.md) · [Writing Tracker Music](writing-tracker-music.md) · [The package's README](../README.md)
 
@@ -19,27 +19,25 @@ The package has two chips. Pick the one that matches your game's decade.
 | | Audio80 | Audio90 |
 | --- | --- | --- |
 | Spirit | 1980s home computers | 1990s synthesisers, samplers and consoles |
-| Voices | 8, mono | 16, stereo |
+| Voices | 4, mono | 16, stereo |
 | What a voice plays | Pulse, saw, triangle and noise waves, combined, or a wavetable you draw | FM, analog oscillators, or a sample |
 | Filters | Two, shared by the voices routed through them | One for each voice |
 | Effects | An echo | A reverb, a stereo echo and a chorus, and the pump |
 | Suits | Chiptune, arcade and 8-bit games | Dance music, 16-bit games, and anything you want in stereo |
 
-You play both chips the same way, and both keep your game's time. An audio
-view polls its bindings and plays a sound when something changes. A music
-player plays songs written in tracker notation. Your game loop drives the
-chip through its `AudioControls`. These parts work the same on both chips,
-so [Using the Audio80](using-the-audio80.md) covers them once:
+You use both chips the same way. You make a chip for your music and
+another for your sound effects. You play songs and sounds on them, and you
+pause them when your game pauses. These parts work the same on both chips,
+so [Using the Audio80](using-the-audio80.md) covers them once. Read it for
+these:
 
-- [Time](using-the-audio80.md#time-the-chip-runs-on-game-time) explains why
-  the chip's clock moves only when your game does.
-- [Playing from Audio Views](using-the-audio80.md#playing-from-audio-views)
-  shows what to watch for, and how to handle views in lists.
-- [Music](using-the-audio80.md#music) covers the music player.
-- [Repeating Sounds](using-the-audio80.md#repeating-sounds) covers the
-  metronome.
-- [Testing and Listening](using-the-audio80.md#testing-and-listening) shows
-  you how to write audio tests and render WAV files.
+- **Getting a chip**, starting the sound once the player does something,
+  and pausing the chip with your game.
+- **Songs**: playing, queueing and stopping them, how many times they
+  repeat, transposing them, fading them in and out, and starting them part
+  way.
+- **Which voice a sound gets**, with `priority` and `maxVoices`.
+- **Testing and listening**, with chips that have no speaker.
 
 This guide covers what's new on the Audio90.
 
@@ -56,14 +54,14 @@ voice makes its sound with one of three **engines**:
 | **Analog** | Oscillators that make saw, pulse, triangle and sine waves, through a filter, as synthesisers built from analogue circuits did | Pads, leads, acid basses, stabs and drums |
 | **Sample** | A stored sound, played faster for higher notes and slower for lower ones | Orchestra hits, drum breaks, choirs, and anything you bounce from the other engines |
 
-The instrument a note plays decides which engine runs. So one voice can
-play an FM bass, then a sampled snare straight after.
+The sound a note plays decides which engine runs. So one voice can play an
+FM bass, then a sampled snare straight after.
 
 After its engine, every voice goes through the same stages:
 
 1. A **filter**. A filter cuts some of the frequencies from a sound. A
    low-pass filter makes it duller, and a high-pass filter makes it
-   thinner. It's off unless the instrument has one.
+   thinner. It's off unless the sound has one.
 2. A **volume envelope**, which shapes how each note rises and fades.
 3. A **pan**, from -1 (left) to 1 (right). A sound keeps the same loudness
    as you move it across.
@@ -72,63 +70,79 @@ After its engine, every voice goes through the same stages:
 
 Each voice also has two things that change a note while it plays. A **mod
 envelope** moves the pitch, the filter's cutoff or the brightness. An
-**LFO** is a slow oscillator that wobbles a setting, such as the pitch or
-the pan. Each voice also has the Audio80's driver, which steps through
-arpeggios and step tables, 60 steps a second by default.
+**LFO** (low-frequency oscillator) is a slow wave that wobbles a setting,
+such as the pitch or the pan. Each voice also has the Audio80's driver,
+which steps through arpeggios and step tables, 60 steps a second by
+default.
 
 The chip keeps a few limits. They make it feel like a chip, and they mean
 a busy moment has to make choices:
 
-- **Sixteen voices**, shared by the music and the sound effects.
+- **Sixteen voices** (`AUDIO90_VOICE_COUNT`).
 - **Four operators** for each voice, and up to **seven** copies of an
   analog oscillator.
 - **48 analog oscillators** across the whole chip. If a note would go over
   that budget, it plays with fewer copies instead, so you never lose it.
 - **Sample memory** of 262,144 samples (`AUDIO90_SAMPLE_MEMORY`), which is
   about 8 seconds at 32 kHz.
-- **One of each effect**, shared by every voice.
+- **One of each effect**, shared by every voice on the chip.
+
+The `Audio90` has every member the Audio80 has, and two more things. Its
+`play` takes a `pan` for a sound, which [Sounds in
+Stereo](#sounds-in-stereo) describes. It also has a `stereoWidth`, which
+[The Stereo Width](#the-stereo-width) describes.
 
 ---
 
 ## Getting a Chip
 
-You make and drive the Audio90 the same way as the Audio80. The
-[Audio80's guide](using-the-audio80.md#getting-a-chip) walks through each
-way in full. Here's what's different.
-
-**In the Arcade**, your game asks for the chip with `soundChip: 'audio90'`,
-and gets it as `sound`. If your game plays samples, bounce them as it
-loads, beside its textures. [Samples](#samples) explains why:
+You make the Audio90 the same way as the Audio80, with `createAudio90`
+from `audio90`. Make one for your music and one for your sound effects.
+Give them the same `AudioContext`, the browser's object for playing sound.
+A page needs only one, however many chips it plays, and an Audio80 can
+share it too:
 
 ```ts
-await textures.load();
-prepareAudio90Samples(SAMPLES);
+import { createAudio90 } from 'audio90';
+
+// One audio context for the page, shared by both chips
+const context = new AudioContext({ latencyHint: 'interactive' });
+const music = createAudio90({ context });
+const sfx = createAudio90({ context });
 ```
 
-**On your own page**, call `createAudio90` from `audio90`. You
-give it an `AudioContext`, and it returns `{ audio90, controls }`. It can
-share the context with an Audio80. It also takes `leadMs`, as the Audio80
-does, and a `character`, which [The Character](#the-character) describes.
+When you give the chips a context, starting it is your job. The
+[Audio80's guide](using-the-audio80.md) shows you how, in "Getting a
+Chip". Without a context, each chip makes its own, and starts it at the
+page's first click, tap or key press.
+
+`createAudio90` takes the Audio80's options: `context`, `pauseWhenHidden`,
+`onRow` and `onEnded`. It also takes a `character`, which [The
+Character](#the-character) describes.
 
 **Without a speaker**, call `createHeadlessAudio90` from
-`audio90/headless`. It takes the same options as the Audio80's. If you
-make it with `render`, its `render(left, right)` fills two `Float32Array`s,
-one for each side. The
-[headless README](../src/headless/README.md#the-headless-audio90) covers it.
+`audio90/headless`. A headless chip takes every call a browser's chip
+takes, and makes no sound. Its clock moves only when you call its
+`update(deltaMs)`, so tests are exact. To hear a song or a sound in a test
+or a tool, `render` from `audio90/headless` renders it in memory. For the
+Audio90, it returns two `Float32Array`s, one for each side. The
+[headless README](../src/headless/README.md) covers both.
 
 ---
 
-## Instruments
+## Sounds
 
-An instrument says which engine it uses, and sets that engine's options.
-Every option has a default, so a simple instrument is short. You make each
-one once, when your module loads:
+A sound says which engine it uses, and sets that engine's options. A game
+plays a sound on its own, as a laser or a coin. A song plays sounds too,
+from its `instruments`, each named by a letter. Every option has a
+default, so a simple sound is short. You make each one once, when your
+module loads:
 
 ```ts
-import { createAudio90Instrument } from 'audio90';
+import { createAudio90Sound } from 'audio90';
 
 /** A pad: five slow saws, swelling in, in the chorus. */
-export const PAD = createAudio90Instrument({
+export const PAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 5, detune: 0.25, spread: 0.9 },
     filter: { cutoffHz: 1800, resonance: 0.15 },
     envelope: { attackMs: 500, decayMs: 600, sustain: 0.85, releaseMs: 1200 },
@@ -138,13 +152,12 @@ export const PAD = createAudio90Instrument({
 });
 ```
 
-If you make a mistake, `createAudio90Instrument` throws an error that names
-the option, such as `operators[3].ratio: 0.3 is not a multiple of 0.5`.
-Giving one engine's option to another engine is a mistake too, such as
-`operators` on an analog instrument. So you find out as the module loads,
-not halfway through a game. If you're writing a view that lists
-instruments, an instrument's `engine` property gives you its engine's
-name.
+If you make a mistake, `createAudio90Sound` throws an error that names the
+option, such as `operators[3].ratio: 0.3 is not a multiple of 0.5`. Giving
+one engine's option to another engine is a mistake too, such as
+`operators` on an analog sound. So you find out as the module loads, not
+halfway through a game. If you're writing an editor that lists sounds, a
+sound's `engine` property gives you its engine's name.
 
 ### Options for Every Engine
 
@@ -155,25 +168,36 @@ name.
 | `volume` | 0 or more | 1 |
 | `pan` | -1 (left) to 1 (right) | 0 |
 | `reverb`, `echo`, `chorus` | How much goes to each effect, 0 to 1 | 0 |
-| `filter` | `{ mode, cutoffHz, resonance, drive, keyTrack, accent, envelope }`. The modes are `lowpass24`, `lowpass12`, `bandpass` and `highpass`. `lowpass24` cuts more steeply than `lowpass12`, and rings at its cutoff when its `resonance` is near 1. `drive` pushes the filter harder, for a growl. `keyTrack` makes the cutoff follow the note, so high notes don't sound dull. `accent` is how much further an accented note opens it. To open the filter on each note and let it close, aim a `modEnvelope` at the cutoff | none |
+| `filter` | `{ mode, cutoffHz, resonance, drive, keyTrack, accent }`. The modes are `lowpass24`, `lowpass12`, `bandpass` and `highpass`. `lowpass24` cuts more steeply than `lowpass12`, and rings at its cutoff when its `resonance` is near 1. `drive` pushes the filter harder, for a growl. `keyTrack` makes the cutoff follow the note, so high notes don't sound dull. `accent` is how much further an accented note opens it. To open the filter on each note and let it close, aim a `modEnvelope` at the cutoff | none |
 | `modEnvelope` | `{ to, amount, envelope }`. A second envelope, sent `to` the `'pitch'` (in semitones), the `'cutoff'` (in octaves) or the `'brightness'` (0 to 1) | none |
-| `lfo` | `{ shape, rateHz, rateBeats, delayMs, isRetriggered, pitch, cutoff, brightness, volume, pan }`. The shapes are `sine`, `triangle`, `square`, `saw` and `random`, which jumps to a new level each cycle. `rateBeats` times it to the song, such as `1 / 4` for sixteenths. Each amount says how far it moves that setting. Without `isRetriggered`, it runs on from note to note | none |
-| `note` | The note it plays when a song names it without one, as drums do | `C-4` |
+| `lfo` | `{ shape, rateHz, rateBeats, delayMs, isRetriggered, pitch, cutoff, brightness, volume, pan }`. The shapes are `sine`, `triangle`, `square`, `saw` and `random`, which jumps to a new level each cycle. `rateBeats` times it to the song, such as `1 / 4` for sixteenths. Each amount says how far it moves that setting. With `isRetriggered: false`, it runs on from note to note rather than starting again | a sine at 5 Hz that moves nothing |
+| `note` | The note it plays when it's played with none, or when a song names it without one, as drums do | `C-4` |
 | `stepMs`, `steps`, `arpeggio` | The driver's step length, step table and arpeggio, as on the Audio80 | |
 | `vibrato` | `{ semitones, hz, delayMs }` | none |
 | `glideMs` | Glides into each note from the last one | none |
 | `isLegato` | Glides, over `glideMs`, only into a note that overlaps the last one, and keeps the envelopes running rather than starting them again, the way an acid bass slides | false |
+
+A few options matter only when your game plays the sound on its own. A
+song's patterns say which note plays and for how long, so a song ignores
+these:
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `lengthMs` | How long it holds its note before releasing it | the step table's length, or 250 ms |
+| `glideTo` | A note to glide to over `lengthMs` | none |
+| `priority` | Which sounds it may take a voice from, as on the Audio80 | 0 |
+| `maxVoices` | How many voices it may play on at once | 1 |
 
 **Brightness** is one setting that each engine reads in its own way. On an
 analog or sample voice, it closes the filter. On an FM voice, it softens the
 operators that do the pushing. So a song's `f` token, the mod envelope and
 the LFO can open up any sound, whatever its engine.
 
-A step table works just like the Audio80's
-[Step Tables](using-the-audio80.md#step-tables). Each row can set an analog
-wave (`saw`, `pulse`, `triangle` or `sine`), a pitch, a volume (`v0` to
-`vF`), a pan (`P00` for left, `P80` for the centre, `PFF` for right), a
-brightness (`f0` to `fF`) and a sample's slice (`s00` to `sFF`).
+A step table works just like the Audio80's, which its guide describes in
+"Step Tables". Each row can set an analog wave (`saw`, `pulse`, `triangle`
+or `sine`), a pitch, a volume (`v0` to `vF`), a pan (`P00` for left, `P80`
+for the centre, `PFF` for right), a brightness (`f0` to `fF`) and a
+sample's slice (`s00` to `sFF`).
 
 ### FM
 
@@ -256,6 +280,15 @@ export const ORCHESTRA_HIT = createAudio90Sample({
 });
 ```
 
+To play it, make a sound with the sample engine:
+
+```ts
+export const HIT = createAudio90Sound({
+    engine: 'sample',
+    sample: ORCHESTRA_HIT,
+});
+```
+
 | Option | Meaning | Default |
 | --- | --- | --- |
 | `bounce` | The song to play and keep. It plays once, from its start. Its effects stay silent unless it sets them | |
@@ -280,26 +313,37 @@ goes round. For example, 20 cycles of A-2, which is 110 Hz, last
 
 **Bounce as your game loads.** A sample bounces the first time it's
 needed, and that can take a few frames. So call `prepareAudio90Samples`
-with your samples as the game loads, and none will bounce while it plays.
+with your samples as the game loads, beside its pictures and fonts, and
+none will bounce while it plays:
+
+```ts
+import { prepareAudio90Samples } from 'audio90';
+
+prepareAudio90Samples([ORCHESTRA_HIT, BREAK, CHOIR]);
+```
+
 It bounces each one that isn't bounced yet. If your samples need more than
 the chip's sample memory between them, it throws, and lists each one's
 size. A sample's size is its `length`, which is `lengthMs` times `rate`,
 divided by 1000.
 
+Each chip has its own sample memory. A chip is sent a sample the first
+time it plays a sound that uses it. So a sample that your music and your
+sound effects both play is sent to both chips.
+
 ---
 
-## Sound Effects
+## Sounds in Stereo
 
-You make a sound effect as you would on the Audio80, from an instrument
-and a note, with a length, an optional glide and a step table
-([Sound Effects](using-the-audio80.md#sound-effects)). The Audio90 adds a
-pan and the three sends:
+On the Audio90, `play` takes a `pan` for a sound, from -1 (left) to 1
+(right). If you leave it out, the sound plays at its own pan. That lets you
+place each sound where it happens on screen:
 
 ```ts
-import { createAudio90SoundEffect } from 'audio90';
+import { createAudio90Sound } from 'audio90';
 
 /** An explosion: white noise through a falling low-pass filter. */
-export const EXPLODE = createAudio90SoundEffect({
+export const EXPLODE = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
     filter: { mode: 'lowpass12', cutoffHz: 2400 },
@@ -316,62 +360,58 @@ export const EXPLODE = createAudio90SoundEffect({
     priority: 2,
     reverb: 0.3,
 });
-```
 
-`play(effect, pan)` plays the effect at `pan`, from -1 to 1. If you leave
-the pan out, it plays at the effect's own. That lets you place each sound
-where it happens on screen:
-
-```ts
-// Made once, with the view: the arena's left edge is -0.8, its right 0.8
-const toPan = (x: number): number => (x / arenaWidth * 2 - 1) * 0.8;
-
-// In the refresh step
-if (w.explosions.increased) {
-    sound.play(EXPLODE, toPan(bindings.lastExplosionX()));
+/** The pan for a point `x` across a play area `width` wide. */
+function toPan(x: number, width: number): number {
+    return (x / width * 2 - 1) * 0.8;
 }
+
+// As an explosion starts
+sfx.play(EXPLODE, { pan: toPan(explosion.x, ARENA_WIDTH) });
 ```
 
 Notice that the pan only reaches 0.8 at the edges. A sound in one ear
 alone can feel detached from the game, so it helps to stop a little short.
 
-Effects take voices from the top, starting at voice 15, just as the
-Audio80's start at voice 7. `priority` and `maxVoices` work as they do on
-the Audio80
-([Which Voice an Effect Gets](using-the-audio80.md#which-voice-an-effect-gets)).
+The other play options work as on the Audio80: `note`, `glideTo`,
+`lengthMs` and `volume`. So does the way the chip picks a voice for each
+play, which its guide describes in "Which Voice a Sound Gets". On a chip of
+their own, your sound effects have all sixteen voices between them.
 
 **Make explosions from noise.** A good explosion is white noise through a
 gentle low-pass filter, falling in brightness and volume. If you add a
 sine under it, a resonant filter or a random LFO, it starts to sound like
-a drum or an instrument instead. For a small explosion that plays often,
-try a hiss through a high-pass filter. It sits under the music rather than
+a drum or a melody instead. For a small explosion that plays often, try a
+hiss through a high-pass filter. It sits under the music rather than
 fighting it.
 
 ---
 
 ## The Mix
 
-A song sets up the mix as it starts. You can also change each part of the
-mix yourself.
+Each chip has its own mix: its voices' pans and sends, its three effects
+and its pump. A song sets up its chip's mix as it starts, and its rows
+change it as it plays. The chip has no calls to change the effects
+yourself.
 
 ### Pan and Sends
 
 Each voice has a pan and three sends. Each of them comes from three
 places, and the three add up:
 
-- **The instrument**, with its `pan`, `reverb`, `echo` and `chorus`
-  options.
+- **The sound**, with its `pan`, `reverb`, `echo` and `chorus` options, or
+  the `pan` it's played with.
 - **The channel**. A song's `mixer` gives each channel a starting pan and
   sends, and its `P`, `r` and `e` tokens change them as it plays.
 - **The LFO**, for the pan.
 
-So an instrument panned left, on a channel panned left, sits further left
+So a sound panned left, on a channel panned left, sits further left
 still. The sends add up to at most 1.
 
 ### The Effects
 
-The three effects are shared by every voice. Each voice chooses how much it
-sends to them:
+The three effects are shared by every voice on the chip. Each voice
+chooses how much it sends to them:
 
 | Effect | What it does | Settings |
 | --- | --- | --- |
@@ -379,14 +419,24 @@ sends to them:
 | **Echo** | Repeats the sound, in stereo | `timeMs`, or `timeBeats` to follow the tempo, such as `3 / 4` for a dotted eighth. `feedback` 0 to 0.95 (how much of each repeat repeats again), `toneHz` (a low-pass filter on each repeat, which darkens it, as tape did), `isPingPong` (repeats that alternate sides), `level` |
 | **Chorus** | Widens the sound, with two slowly moving short delays, one on each side | `depth` 0 to 1, `rateHz`, `level` 0 to 1 |
 
-If you time the echo in beats, it keeps time with your song at any tempo.
-You don't have to tell it the tempo, since the music player does that.
+A song sets each effect with its `reverb`, `echo` and `chorus` options. A
+setting it leaves out takes the effect's starting value. If a song doesn't
+set an effect at all, the effect stays as it was.
+
+A chip that plays only sounds never has its effects set. So it keeps their
+starting settings: a medium room that rings for 1.8 seconds, an echo after
+300 ms, and a gentle chorus. Those suit most sound effects. A sound's
+sends decide how much of each it hears.
+
+If you time the echo in beats, it keeps time with your song at any tempo,
+and follows the chip's `tempoScale` too. You don't have to tell it the
+tempo, since the song does that.
 
 ### The Pump
 
-The **pump** ducks every music channel but one, each time that one starts
-a note, and then lets the mix swell back. It's how the decade's club tracks
-breathed with their bass drum:
+The **pump** ducks every channel of a song but one, each time that one
+starts a note, and then lets the mix swell back. It's how the decade's club
+tracks breathed with their bass drum. You set it in the song's options:
 
 ```ts
 pump: { channel: 0, depth: 0.45, releaseMs: 200 },
@@ -395,27 +445,33 @@ pump: { channel: 0, depth: 0.45, releaseMs: 200 },
 Set `channel` to your bass drum's channel. `depth` is how far the other
 channels duck, from 0 to 1, and `releaseMs` is how long they take to come
 back. The pump follows the notes rather than listening to the sound, so it
-costs almost nothing. It never ducks your sound effects. A song with no
-`pump` turns off any pump left by the song before it.
+costs almost nothing. It never ducks sounds played on their own. A song
+with no `pump` turns off any pump left by the song before it.
 
-### Setting the Mix Yourself
+### The Stereo Width
 
-`setVoice` sets one voice's `pan`, `reverbSend`, `echoSend` or
-`chorusSend`, among its other settings. `setEffect` sets one of an effect's
-settings:
+`stereoWidth` sets how wide the chip's whole mix is. At 1, which the chip
+starts at, each voice sits where its sound and song place it. At 0, both
+speakers play the same, which is mono. Values in between narrow the mix:
 
 ```ts
-sound.setEffect('reverb', 'level', 0.5);
-sound.setEffect('pump', 'voice', -1);   // no pump
+music.stereoWidth = 0.5;
 ```
+
+It's a setting for the player, not for the music. Voices panned hard to
+one side can tire a listener on headphones, and a phone held sideways may
+have only one speaker. So offer it in your game's settings. A change
+settles over about 30 ms, so it doesn't click. The chip keeps it as songs
+start and stop.
 
 ---
 
 ## The Character
 
-The **character** sets how much of a machine's grit the chip keeps. A song
-sets it as it starts, so your game can move from a console's sound to a
-club's:
+The **character** sets how much of a machine's grit the chip keeps. You
+can give a chip a character as you make it, with the `character` option. A
+song can set one too, as it starts, so your game can move from a
+console's sound to a club's:
 
 | Character | What changes | Suits |
 | --- | --- | --- |
@@ -428,99 +484,138 @@ harder output reaches it.
 
 ---
 
-## Scopes
-
-A scope draws the wave that a voice is playing. The chip can tell your view
-what each voice is playing and where it's panned, so the view can draw a
-scope for it. Scopes cost a little, so they're off until you turn them on:
-
-```ts
-sound.setScopes(true);
-```
-
-While they're on, the chip fills `sound.scope` about 90 times a second. It
-stays the same `Float32Array` for the chip's whole life, so reading it
-never allocates. It holds `AUDIO90_SCOPE_POINTS` points for each voice,
-starting with voice 0. After those, from `AUDIO90_SCOPE_PANS`, it holds
-each voice's pan. A reset turns the scopes off again, so one game never
-pays for another's.
-
 ## Showing the Music as It Is Heard
 
-The sound the listener hears trails the game a little, by the sound card's
-latency and, for the notes a game writes itself, the chip's lead. For most
-games that never matters. But a view that shows a song as it plays, as a
-tracker does, must show the row being heard, not the row the game is on.
+A browser plays sound a little after it's asked to, by the time the sound
+takes to reach the speaker. For most games that never matters. But a
+display that shows a song as it plays, as a tracker does, must show the
+row being heard, not the row the chip has just played.
 
-A music player does this for you. Its `orderIndex` and `row` are the row
-coming out of the speaker now, so a view can show them as they are:
+The chip does this for you. Its `song`, `orderIndex`, `row`, `beat` and
+`positionMs` all describe what the listener hears now. So you can read
+them every frame and show them as they are:
 
-```ts
-const music = createMusicPlayer({ audio90: sound });
-// In the view that draws the song
-const row = () => music.row;
-```
-
-There is one catch, just after a change of song. The player then reports
-the new song from its start, until the new song is heard. If your view
-chooses what to draw by its own state, such as the tune the visitor
-picked, check that `music.song` is that tune before you read the row.
-Otherwise a row of one song could be read against another's patterns:
-
-```ts
-const row = () => (music.song === chosen() ? music.row : 0);
-```
-
-For notes a view writes itself, with `noteOn`, `sound.heardTime` tells you
-how far the listener has got. It is a chip time, like `sound.time`, but it
-trails behind. Keep a short history of what you wrote, with the chip time
-each part starts at, and show the newest part whose start `heardTime` has
-reached. For example, say one note starts at 4,000 ms and the next at
-4,125 ms. If `heardTime` is 4,060, the listener is hearing the first. Keep
-the history in arrays you make once, so that nothing is allocated as the
-music plays.
-
-A chip with no speaker, such as the headless chip, has nothing to wait
-for. Its music player reports the row it is on, and its `heardTime` is
-always the same as its `time`.
-
----
-
-## Direct Chip Calls
-
-The Audio90 has the Audio80's calls
-([Direct Chip Calls](using-the-audio80.md#direct-chip-calls)), with these
-differences:
-
-| Call | Does |
+| Member | What it tells you |
 | --- | --- |
-| `play(effect, pan?)` | Plays an effect, at `pan` or at its own pan |
-| `setVoice(voice, setting, value, atMs?)` | Its settings include `pan`, `brightness`, the three sends, `chord` (an analog voice's two extra notes, packed as `x * 16 + y`), `slice`, `accent` and `pulseWidth` |
-| `setEffect(effect, setting, value, atMs?)` | Sets one of the `'reverb'`, `'echo'`, `'chorus'` or `'pump'` settings above |
-| `setCharacter(character, atMs?)` | Sets the character |
-| `setTempo(bpm, atMs?)` | Sets the tempo for LFOs and an echo timed in beats. The music player calls it for you |
-| `voiceCount` | 16 |
+| `song` | The song heard playing, or undefined |
+| `orderIndex` | The entry in the song's order being heard |
+| `row` | The row being heard, within that entry's pattern |
+| `beat` | How many beats the song has played, for things that move in time with it |
+| `positionMs` | Where the song is in its order, in ms, 0 or more and less than its `durationMs`, for a seek bar |
 
-You won't find `setFilter` or `setEcho` here. Each voice has its own
-filter, set by its instrument, and the echo is one of the effects.
+Draw the song the chip reports, from its `song`, not the one your game
+last chose. Just after you play a new song, there's a moment before it's
+heard. If you drew your own choice with the chip's `row`, you could read a
+row of one song against another's patterns.
+
+A tracker display also needs the text of each cell. `printAudio90Cell`
+gives you one cell of a pattern, in columns that line up from row to row.
+The text parses back into the same cell. This finds the pattern being
+heard, and prints each of its rows:
+
+```ts
+import { type Audio90, printAudio90Cell } from 'audio90';
+
+/** The text of each row of the pattern the listener is hearing. */
+function printHeardPattern(chip: Audio90): string[] {
+    const song = chip.song;
+    if (song === undefined) return [];
+    const entry = song.order[chip.orderIndex];
+    const pattern = song.patterns[entry.pattern];
+    const lines: string[] = [];
+    for (let row = 0; row < pattern.rowCount; row++) {
+        const cells: string[] = [];
+        for (let channel = 0; channel < song.channelCount; channel++) {
+            cells.push(printAudio90Cell(song, pattern, row, channel));
+        }
+        lines.push(cells.join(' | '));
+    }
+    return lines;
+}
+```
+
+Building strings makes new objects, so call it only when the song or the
+`orderIndex` changes. Each frame, highlight the line at the chip's `row`.
+The cells show the notes as the pattern writes them. An order entry such
+as `'verse+5'` plays them 5 semitones higher, and its `transpose` tells you
+by how much.
+
+If your page has no game loop to read the chip each frame, give the chip
+an `onRow` instead, as you make it. It's called as the song reaches each
+row, a moment before the listener hears it:
+
+```ts
+const music = createAudio90({
+    context,
+    onRow(song, orderIndex, row) {
+        highlightRow(song, orderIndex, row);
+    },
+});
+```
 
 ---
 
-## The Mix and Loudness
+## Scopes
+
+A scope draws the wave that a voice is playing, as an oscilloscope does.
+`createScope` attaches one to a chip, and the chip fills it about 90 times
+a second. A scope costs the chip a little, so it fills one only while one
+is attached. When you're done with it, call its `destroy`:
+
+```ts
+import { createScope, SCOPE_POINTS } from 'audio90';
+
+const scope = createScope(music);
+
+// Each frame, for each voice v
+const from = v * SCOPE_POINTS;
+for (let i = 0; i < SCOPE_POINTS; i++) {
+    drawPoint(i, scope.points[from + i]);
+}
+```
+
+A scope stays the same object, with the same arrays, for its whole life,
+so reading it never allocates. Its `points` hold `SCOPE_POINTS` points
+for each voice, starting with voice 0. A point is about -1 to 1 for a voice
+at full volume. Its `pans` hold each voice's pan, from -1 to 1. A silent
+voice's points and pan are 0. A scope works on the Audio80 too, whose pans
+are all 0. A headless chip's scope stays silent.
+
+---
+
+## Songs as Text
+
+`printAudio90Song` turns a song into text, and `parseAudio90Song` turns
+that text back into the same song. The text holds the options the song was
+made from, never any audio, so it's small. That suits an editor that saves
+songs, or songs kept in files of their own.
+[Writing Tracker Music](writing-tracker-music.md#saving-a-song-as-text)
+shows how.
+
+---
+
+## Loudness
 
 Write each song at the shared loudness, about -20 LUFS, just as on the
-Audio80 ([The Mix and Loudness](using-the-audio80.md#the-mix-and-loudness)).
-`npm run audio:render` prints each song's loudness, and you set a song's
-`volume` to bring it there.
+Audio80. LUFS is a measure of how loud sound seems to the ear, and the
+Audio80's guide explains it in "The Mix and Loudness". You can measure a
+song with `render` and `measureLoudness`, from `audio90/headless`, and
+set the song's `volume` to bring it there:
 
-**Set your effects by loudness, not by peak.** Two effects with the same
-peak can sound very different in loudness. Noise has a high peak for how
-loud it actually sounds, so if you match peaks, your explosions end up too
-quiet. Instead, measure each effect with `measureLoudness` from
-`audio90/headless`, and compare it with the music's -20 LUFS. An LU is
-one step on the LUFS scale. An effect that plays often, such as a shot,
-should sit well below the music, about 18 LU below it, at -38 LUFS. A rare
-effect that matters, such as losing the player's ship, can sit closer.
+```ts
+import { measureLoudness, render } from 'audio90/headless';
+
+console.log(measureLoudness(render(THEME)));
+```
+
+**Set your sound effects by loudness, not by peak.** Two sounds with the
+same peak can sound very different in loudness. Noise has a high peak for
+how loud it actually sounds, so if you match peaks, your explosions end up
+too quiet. Instead, measure each one with `measureLoudness`, and compare it
+with the music's -20 LUFS. An LU is one step on the LUFS scale. A sound
+that plays often, such as a shot, should sit well below the music, about
+18 LU below it, at -38 LUFS. A rare sound that matters, such as losing the
+player's ship, can sit closer.
 
 **Balance a song by its parts.** If one part seems too loud, render a copy
 of the song with only that part's channels, and measure each copy. Then
@@ -546,7 +641,7 @@ const BODY_MOD = { attackMs: 0, decayMs: 900, sustain: 0.1, releaseMs: 200 };
 // The tine: a high modulator, gone in a tenth of a second
 const TINE = { attackMs: 0, decayMs: 120, sustain: 0, releaseMs: 60 };
 
-export const ELECTRIC_PIANO = createAudio90Instrument({
+export const ELECTRIC_PIANO = createAudio90Sound({
     engine: 'fm',
     // 2 modulates 1, the body; 4 modulates 3, the tine's carrier
     algorithm: '2>1 4>3',
@@ -572,10 +667,18 @@ on each note. Notes you mark with `!` in the song open it further, and
 notes that overlap slide into each other:
 
 ```ts
-export const ACID = createAudio90Instrument({
+const SNAP = { attackMs: 0, decayMs: 200, sustain: 0, releaseMs: 40 };
+
+export const ACID = createAudio90Sound({
     oscillator: { wave: 'saw' },
-    filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6 },
-    modEnvelope: { to: 'cutoff', amount: 3.2, envelope: { attackMs: 0, decayMs: 200, sustain: 0, releaseMs: 40 } },
+    filter: {
+        cutoffHz: 280,
+        resonance: 0.88,
+        drive: 0.4,
+        keyTrack: 0.5,
+        accent: 0.6,
+    },
+    modEnvelope: { to: 'cutoff', amount: 3.2, envelope: SNAP },
     envelope: { attackMs: 1, decayMs: 0, sustain: 1, releaseMs: 25 },
     glideMs: 70,
     isLegato: true,
@@ -620,8 +723,8 @@ decayMs: 60, sustain: 0, releaseMs: 0 } }`.
 
 Make every sound in your code. Don't use recordings, sample libraries or
 sound fonts, and don't rebuild a famous drum break hit for hit. Design each
-instrument from its technique, and never copy a synthesiser's factory
-preset. Name each sound for what it is, such as `PAD` or `ACID`, not for a
+sound from its technique, and never copy a synthesiser's factory preset.
+Name each sound for what it is, such as `PAD` or `ACID`, not for a
 machine. And write your own melodies in the decade's styles, as
 [Writing Tracker Music](writing-tracker-music.md#your-own-music) asks.
 
@@ -638,6 +741,8 @@ machine. And write your own melodies in the decade's styles, as
 | A chord sounds sour | Two of its notes, or a note and the tail of the last chord, sit a semitone apart. The echo, the reverb and a pad's long release carry each chord into the next |
 | A sound is too bright or too sharp | An FM modulator is at a high or odd ratio, or there's no filter. Lower the ratio or the modulator's level, or add a gentle low-pass filter |
 | A supersaw chord sounds thinner than you wrote it | It went over the budget of 48 analog oscillators, so some notes played with fewer copies |
-| Your effects are lost under the music | They were set by peak. Set them by loudness |
+| Your sound effects are lost under the music | They were set by peak. Set them by loudness |
 | An explosion sounds like a drum | There's a sine, a resonant filter or a random LFO under the noise. Use noise through a gentle filter |
 | The pump does nothing | Its `channel` isn't the bass drum's, or a later song had no `pump` |
+| A song's sounds cut out when a sound effect plays | They share a chip, and the sound took a voice from the song. Play your sound effects on a chip of their own |
+| A tracker display shows the wrong notes for a moment after a change of song | It drew the song your game chose, with the chip's `row`. Draw the chip's own `song` |

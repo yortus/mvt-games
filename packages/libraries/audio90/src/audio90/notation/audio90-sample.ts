@@ -23,7 +23,7 @@ export interface Audio90Sample {
     readonly chip: 'audio90';
     /**
      * Its sound, and how it plays. The first read bounces the song, which
-     * can take a few frames' time, so an entry calls `prepareAudio90Samples`
+     * can take a few frames' time, so a game calls `prepareAudio90Samples`
      * as it loads to read it then.
      */
     readonly data: Audio90SampleData;
@@ -121,7 +121,7 @@ export function findAudio90SampleOptions(sample: Audio90Sample): Audio90SampleOp
 
 /**
  * Bounces each of `samples` that is not bounced yet, so that none is
- * bounced while a game plays. Call it in an entry's `load`, beside its
+ * bounced while a game plays. Call it as the game loads, beside its
  * textures. Throws if the samples need more than the chip's sample memory
  * between them, `AUDIO90_SAMPLE_MEMORY` samples, listing each one's size.
  */

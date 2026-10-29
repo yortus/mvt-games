@@ -5,7 +5,7 @@
 // every chip's synthesiser: its queue of commands, its envelopes, its note
 // driver, its voices' plays, and the maths it shares.
 
-export { type CheckedSongPlay, checkSongPlay, DEFAULT_SONG_PLAY, type SongPlayOptions } from './check-song-play';
+export { type CheckedSongPlay, checkSongPlay, DEFAULT_SONG_PLAY, type SongPlace, type SongPlayOptions } from './check-song-play';
 export { type ChipPlayback, type ChipPlaybackOptions, createChipPlayback } from './chip-playback';
 export {
     ASAP_STAMP,

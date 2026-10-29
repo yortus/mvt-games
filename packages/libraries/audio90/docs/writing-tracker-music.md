@@ -1,8 +1,8 @@
 # Writing Tracker Music
 
 > This guide shows how to write music for the Audio80 as text. You define
-> instruments, then patterns of rows and channels, then an order to play
-> the patterns in. The guide builds one tune from a single note to a
+> the sounds a song plays, then patterns of rows and channels, then an
+> order to play the patterns in. The guide builds one tune from a single note to a
 > four-channel loop. It covers every token a cell can hold, and ends with
 > arranging habits that suit the chip. The Audio90 reads the same notation,
 > with more tokens and settings, which the last sections cover.
@@ -17,7 +17,7 @@ A tracker is a way of writing music for sound chips. It was used on the
 machines the Audio80 imitates. It is a grid read top to bottom. Each
 **row** is a moment in time. By default a row is a sixteenth note, which is
 a quarter of a beat. Each **channel** is a column, and is one voice of the
-chip. A voice plays one note at a time, and the chip has eight of them. A
+chip. A voice plays one note at a time, and the Audio80 has four of them. A
 **cell** is where a row meets a channel. It says what that voice does at
 that moment. It can start a note, change something about the note
 playing, or do nothing at all.
@@ -59,13 +59,13 @@ progress.
 
 ## A First Tune
 
-Start with one instrument and one channel:
+Start with one sound and one channel:
 
 ```ts
-import { createAudio80Instrument, createAudio80Song } from 'audio90';
+import { createAudio80Song, createAudio80Sound } from 'audio90';
 
 /** A plucked square, ringing a little. */
-const LEAD = createAudio80Instrument({
+const LEAD = createAudio80Sound({
     wave: 'pulse',
     envelope: { attackMs: 2, decayMs: 300, sustain: 0.4, releaseMs: 150 },
 });
@@ -90,9 +90,12 @@ export const HELLO = createAudio80Song({
 });
 ```
 
-- **`wave`** is the shape of the sound wave, which sets the instrument's
-  tone. The waves are `pulse`, `saw`, `triangle`, `noise` and `wavetable`,
-  and [Using the Audio80](using-the-audio80.md#the-chip) describes them.
+- **`createAudio80Sound`** makes a sound: how a voice sounds as it plays a
+  note. You make every sound this way, whether a game plays it on its own,
+  as a laser or a coin, or a song plays it, as one part of the tune.
+- **`wave`** is the shape of the sound wave, which sets the sound's tone.
+  The waves are `pulse`, `saw`, `triangle`, `noise` and `wavetable`, and
+  [Using the Audio80](using-the-audio80.md) describes them.
 - **`envelope`** shapes each note's volume over time. The note rises to
   full volume over the attack. It then falls over the decay to the sustain
   level, and stays there while the note is held. When the note is
@@ -100,10 +103,12 @@ export const HELLO = createAudio80Song({
 - **`bpm`** is beats per minute. By default a row is a sixteenth note, so
   four rows make a beat. `rowsPerBeat` can change that. At 120 BPM a row
   lasts 125 ms.
-- **`instruments`** names each instrument by one letter. A cell can name
-  the instrument for its note. Later notes in that channel use the same
-  instrument until another is named.
-- **`C-5 L`** starts the C an octave above middle C, using instrument `L`.
+- **`instruments`** holds the sounds the song plays, each named by one
+  letter. They're the song's instruments, in the musical sense, but each is
+  an ordinary sound, made with `createAudio80Sound`. A cell can name the
+  sound for its note. Later notes in that channel use the same sound until
+  another is named.
+- **`C-5 L`** starts the C an octave above middle C, using sound `L`.
   A note is a letter, then `-` or `#`, then an octave, such as `C-4`,
   `F#5` or `A-3`. The `#` makes it a sharp, one semitone higher. A
   semitone is the step from one piano key to the next, and 12 semitones
@@ -114,13 +119,13 @@ export const HELLO = createAudio80Song({
   An empty cell means the same.
 - **`===`** releases the note. Its envelope's release begins.
 - **`order`** lists the patterns to play. Without a `loop`, the song plays
-  once. Then it frees its voices for sound effects.
+  once, and then it ends.
 
-Play it with a music player, from an audio view (a view that plays sounds
-instead of drawing visuals), as
-[Using the Audio80](using-the-audio80.md#music) shows. To listen to it
-straight away, run `npm run audio:render -- path/to/music.ts`. It writes a
-WAV file for each song and effect.
+To hear it, play it on a chip with `chip.play(HELLO)`.
+[Using the Audio80](using-the-audio80.md) shows how to get a chip, and the
+options a song's play takes. To listen without a page, render the song to
+a WAV file, as [`audio90/headless`](../src/headless/README.md#listening)
+shows.
 
 ### Adding Channels
 
@@ -134,7 +139,7 @@ headings in line with the rows' `|`s. A second comment underlines them
 with dashes, to the end of the last heading:
 
 ```ts
-const BASS = createAudio80Instrument({
+const BASS = createAudio80Sound({
     wave: 'triangle',
     envelope: { attackMs: 2, decayMs: 200, sustain: 0.6, releaseMs: 80 },
 });
@@ -167,21 +172,23 @@ with too few or too many throws an error.
 
 ### Adding Drums
 
-A drum is an instrument with its own `note`. A cell that names it without a
-note plays that note. Transposition, which plays a pattern higher or lower
-(below), does not change it. So a kick always sounds the same.
+Every sound has a note of its own. It's `C-4` unless the sound's `note`
+option says otherwise. A cell that names a sound without a note plays that
+note, and that's how you write drums. Transposition, which plays a pattern
+higher or lower (below), does not change it. So a kick always sounds the
+same.
 
 A drum's sound usually comes from a step table. A step table is a list of
 changes, with one row per short step. It is written like a pattern, as a
 string in backticks with one row on each line. Blank lines and `#`
-comments are skipped, as in a pattern. Each step lasts the instrument's
+comments are skipped, as in a pattern. Each step lasts the sound's
 `stepMs`, a 60th of a second by default. Each row can switch the wave,
 move the pitch by some semitones, or set the volume (`v` and a hex digit).
 A setting stays until a later row changes it:
 
 ```ts
 /** A kick: a click of noise, then a triangle dropping fast. */
-const KICK = createAudio80Instrument({
+const KICK = createAudio80Sound({
     note: 'C-3',
     envelope: { attackMs: 0, decayMs: 170, sustain: 0, releaseMs: 0 },
     steps: `
@@ -194,7 +201,7 @@ const KICK = createAudio80Instrument({
 });
 
 /** A snare: noise over a short, low body. */
-const SNARE = createAudio80Instrument({
+const SNARE = createAudio80Sound({
     note: 'D-5',
     stepMs: 20,
     envelope: { attackMs: 0, decayMs: 160, sustain: 0, releaseMs: 0 },
@@ -206,7 +213,7 @@ const SNARE = createAudio80Instrument({
 });
 
 /** A closed hat: a tick of high noise. */
-const HAT = createAudio80Instrument({
+const HAT = createAudio80Sound({
     wave: 'noise',
     note: 'C-7',
     envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 0 },
@@ -242,8 +249,8 @@ for drums is only a habit. Any single letter will do.
 
 A row lasts `60000 / (bpm * rowsPerBeat)` ms. Rows are timed in
 milliseconds, not frames, so a song keeps its tempo at 60 Hz and at 144 Hz.
-`computeSongDurationMs(song)` returns how long one pass through the order
-lasts, in ms. Swing does not change it.
+A song's `durationMs` says how long one pass through its order lasts, in
+ms. Swing does not change it.
 
 A little swing, 0.1 to 0.2, makes a rhythm of sixteenths feel looser and
 less mechanical. More makes a shuffle, a bouncing rhythm of long and short
@@ -262,20 +269,20 @@ kind.
 | Note | Starts a note. A letter, `-` or `#`, then an octave | until released or replaced | `C-4`, `F#5` |
 | `...` or nothing | No change | | |
 | `===` | Releases the note | | |
-| One letter | The instrument. Without a note, it plays the instrument's own note. Only a letter on its own is an instrument. A letter with digits after it, such as `v9`, is an effect | in the channel, until another is named | `L`, `k` |
+| One letter | The sound, by its letter in `instruments`. Without a note, it plays the sound's own note. Only a letter on its own names a sound. A letter with digits after it, such as `v9`, is an effect | in the channel, until another is named | `L`, `k` |
 | `v` and a hex digit | Volume, `0` to `F`. With a note, sets that note's volume. On its own, changes the volume of the note already playing | the note | `v9` |
-| `a` and two hex digits | Arpeggio, which steps quickly through the notes of a chord. With the digits x and y, it plays the note, then x semitones up, then y up, one step each, and repeats. `a00` turns arpeggio off, even the instrument's own | the note | `a37` |
+| `a` and two hex digits | Arpeggio, which steps quickly through the notes of a chord. With the digits x and y, it plays the note, then x semitones up, then y up, one step each, and repeats. `a00` turns arpeggio off, even the sound's own | the note | `a37` |
 | `~` | Vibrato, which makes the pitch waver. It wavers by a quarter of a semitone, six times a second | the note | `~` |
 | `~` and two hex digits | Vibrato. Depth in eighths of a semitone, then rate in Hz | the note | `~46` |
 | `>` | Glides from the last note to this one, moving smoothly in pitch over the row | the row | `G-5 >` |
 | `u` and two hex digits | Slides up that many semitones over the row. The pitch stays there until the next note | the row | `u0C` |
 | `d` and two hex digits | Slides down, the same way | the row | `d05` |
 | `p` and a hex digit | Pulse width, in sixteenths. A pulse wave jumps between two levels, and its width is the share of each cycle it spends at one of them. `p8` is a square | the note | `p4` |
-| `f` and a hex digit | Filter cutoff, the frequency where the filter starts to cut the sound. It runs from `0` (80 Hz) to `F` (about 14.5 kHz). Sets the filter the channel's instrument goes through. Ignored if the instrument has no `filter` | until changed | `f8` |
+| `f` and a hex digit | Filter cutoff, the frequency where the filter starts to cut the sound. It runs from `0` (80 Hz) to `F` (about 14.5 kHz). Sets the filter the channel's sound goes through. Ignored if the sound has no `filter` | until changed | `f8` |
 
 In the Lasts column, "the note" means the note in the same cell. If the
 cell has no note, it means the note already playing. The next note starts
-again from its instrument's own settings. So `a37` on a chord's first row
+again from its sound's own settings. So `a37` on a chord's first row
 lasts until the next note. The next chord needs its own `a` token.
 
 Hex digits are `0` to `9` and `A` to `F`, in either case. `vF` is full
@@ -301,15 +308,15 @@ hears them together. It is the sound of the 8-bit era.
 | Diminished | `a36` | C E♭ G♭ |
 | Augmented | `a48` | C E G♯ |
 
-Each step lasts the instrument's `stepMs`, a 60th of a second by default.
+Each step lasts the sound's `stepMs`, a 60th of a second by default.
 A longer `stepMs`, 40 to 60 ms, makes a rippling arpeggio rather than a
-chord. An instrument's own `arpeggio` option, such as `[0, 4, 7, 12]`,
-does the same for every note it plays.
+chord. A sound's own `arpeggio` option, such as `[0, 4, 7, 12]`, does the
+same for every note it plays.
 
 ### Vibrato
 
 `~` on a held note makes it waver. Vibrato suits long notes better than
-short ones. An instrument can also have its own vibrato. It can have a
+short ones. A sound can also have its own vibrato. It can have a
 delay, so that short notes end before it starts:
 `vibrato: { semitones: 0.2, hz: 5.5, delayMs: 180 }`.
 
@@ -331,15 +338,15 @@ band-pass filter keeps only those near it, and a notch filter removes only
 those near it. Resonance boosts the frequencies near the cutoff, for a
 ringing or whistling tone.
 
-`f` sets the cutoff of the filter that the channel's instrument is routed
-through, as in `filter: 'a'`. It does nothing if the instrument has no
+`f` sets the cutoff of the filter that the channel's sound is routed
+through, as in `filter: 'a'`. It does nothing if the sound has no
 filter. For a build-up, write a filter sweep into the music. A sweep is a
 steady move from one value to another. Raise `f` by one each row across a
 bar, which is a group of beats, usually four. The filter belongs to the
 chip, and everything routed through it shares it. So `f` on one channel
 moves it for every channel on that filter.
 
-`p` sets a pulse instrument's width for the note. `p8` is a square. `p2`
+`p` sets a pulse sound's width for the note. `p8` is a square. `p2`
 is thin and nasal, and `pE` sounds the same.
 
 ---
@@ -377,18 +384,18 @@ song longer without making it repetitive.
 
 | Option | Meaning |
 | --- | --- |
-| `instruments` | One letter each, as cells name them |
+| `instruments` | The sounds the song plays, one letter each, as cells name them |
 | `filters` | `{ a, b }`, set as the song starts. Each filter has a `mode`, `cutoffHz`, `resonance` and `drive` (0 to 1). Drive pushes the filter's input harder, for a slight growl. The modes are `lowpass`, `bandpass`, `highpass`, `notch`, `lowpass+bandpass` and `bandpass+highpass` |
 | `echo` | `{ timeMs, feedback, level }`. The chip's echo, set as the song starts. `timeMs` is the delay before each repeat, and is at most 1000. `feedback` is how much of each repeat is echoed again, and is at most 0.95. `level` is how loud the echo is |
 | `volume` | A gain on every note. A gain is a number that the volume is multiplied by. At 1 the song plays as written. Brings a song to the shared loudness (below) |
 
 **Echo in time.** An echo a dotted eighth long sits behind a melody without
 muddying it. A dotted eighth is three rows of sixteenths. At 150 BPM a
-row is 100 ms, so use `timeMs: 300`. Each instrument's `echo` option, such
-as `echo: 0.3`, sets how much of its sound goes to the echo.
+row is 100 ms, so use `timeMs: 300`. Each sound's `echo` option, such as
+`echo: 0.3`, sets how much of it goes to the echo.
 
-**Sharing a band.** Songs in one game usually share their instruments,
-filters and echo. Put them in one object and spread it:
+**Sharing a band.** Songs in one game usually share their sounds, filters
+and echo. Put them in one object and spread it:
 
 ```ts
 const BAND = {
@@ -412,11 +419,15 @@ export const STAGE_TUNE = createAudio80Song({
 
 ## Channels, Voices and Loudness
 
-The chip has eight voices. While a song plays, it reserves one voice per
-channel, from voice 0 up. Sound effects share the rest, from voice 7 down.
-A four-channel song leaves four voices for effects, which suits most
-games. A game with many sounds at once is better served by a
-three-channel song. The Arcade's games use two to four channels.
+The Audio80 has four voices, so a song for it has up to four channels. The
+chip plays channel 0 on voice 0, channel 1 on voice 1, and so on.
+
+A sound played on the same chip as a song takes a voice the chip chooses,
+and that may be one of the song's. The song gets the voice back at that
+channel's next note, as on the old consoles. So a game usually plays its
+music on one chip and its sound effects on another, and then the two never
+take each other's voices.
+[Using the Audio80](using-the-audio80.md) shows how.
 
 **Loudness.** Every song is written to the same loudness, so one game's
 music is not much louder than another's. The target is about -20 LUFS
@@ -424,10 +435,11 @@ music is not much louder than another's. The target is about -20 LUFS
 is the standard unit for how loud sound seems to a listener. The values
 are negative, and nearer 0 is louder. Songs are measured the way
 streaming services measure loudness.
-`npm run audio:render` prints each song's loudness. If a song comes out
-louder or quieter, set its `volume`. It scales every note equally, so the
-balance between channels stays the same. The game's sounds test checks
-each song's loudness.
+`measureLoudness`, from `audio90/headless`, measures a song you've
+rendered. If a song comes out louder or quieter, set its `volume`. It
+scales every note equally, so the balance between channels stays the
+same. An [audio test](../src/headless/README.md#audio-tests) can check
+each song's loudness for you.
 
 ---
 
@@ -449,7 +461,7 @@ A few habits do most of the work:
   snare fade out in under 200 ms.
 - **Choose a sound for the era.**
 
-| Era | Instruments |
+| Era | Sounds |
 | --- | --- |
 | Early 1980s arcade boards | `wavetable` voices (soft, buzzy), short plucks, little echo |
 | 1980s home computers | Pulse leads with a `pulseSweep`, saw basses through a resonant filter, noise drums, arpeggio chords |
@@ -466,8 +478,8 @@ second harmonic is a sine at twice the frequency, an octave higher.
 
 ## When It Goes Wrong
 
-`createAudio80Song`, `createAudio80Instrument` and `createAudio80SoundEffect` throw an error
-when the module loads. The message says where the mistake is. Rows,
+`createAudio80Song` and `createAudio80Sound` throw an error when the module
+loads. The message says where the mistake is. Rows,
 channels, steps and order entries are counted from 0. Blank lines and
 comment lines are not counted as rows or steps. A song's message starts
 with the place:
@@ -483,6 +495,7 @@ The table shows what follows the place:
 | Message | Cause |
 | --- | --- |
 | `unknown instrument 'Q'` | A letter not in `instruments` |
+| `instrument 'kick' needs a one-letter name` | A name in `instruments` that isn't a single letter |
 | `a row starts with \|` | A row with no `\|` before its first cell, or a comment that starts with `//` instead of `#` |
 | `expected 3 cells (one per channel), found 2` | A missing or extra `\|` |
 | `two notes` | Two notes in one cell, or a note and `===`. Often a missing `\|` |
@@ -492,34 +505,36 @@ The table shows what follows the place:
 | `a glide needs a note to glide to` | `>` without a note |
 | `'H-4' is not a note, an instrument or an effect` | A note name outside `A` to `G`, or a misspelt token. Also a `#` with no space before it, as in `E-5#x`, which is part of the token rather than a comment |
 | `'A-9' is above G-9, the highest note` | A note above G-9 (note number 127) |
-| `a note with no instrument named on this channel before it` | A channel's first note in playing order names no instrument |
+| `a note with no instrument named on this channel before it` | A channel's first note in playing order names no sound |
 | `note 120 transposed by 12 is 132, outside the chip's range (0 to 127)` | A transposition in the order takes a note out of range |
 | `order names 'chrous', which is not a pattern` | A typo in the order |
 | `loop 3 is not an index into its order (0 to 2)` | A loop past the end |
 | `bpm must be above 0; got 0` | Likewise `rowsPerBeat` (a whole number, 1 or more), `swing` (0 to 0.5) and `volume` (above 0) |
+| `5 channels is more than the chip's 4 voices` | More channels than the chip has voices: four on the Audio80 |
 
-An instrument's or effect's message names the step or the option instead:
+A sound's message names the step or the option instead:
 
 | Message | Cause |
 | --- | --- |
 | `step 2: two waves` | The same kind of token twice in one row of a step table |
 | `step 0: '//' is not a wave, a pitch (+7, C-5), ...` | A token the step table does not know, such as a comment that starts with `//` instead of `#` |
 | `wavetable: needs 32 hex digits, one level (0-F) each; got '...'` | A wavetable of the wrong length, or a character that is not hex |
-| `instrument: an arpeggio has at most 16 notes; this one has 17` | An `arpeggio` option that is too long |
-| `instrument: a filter sweep's fromHz and toHz must be above 0; got 0 and 450` | A `filterSweep` to or from 0 Hz |
-| `effect note: 'C4' is not a note (write C-4, F#5)` | A misspelt note. Likewise for `instrument note:` and `effect glideTo:` |
-| `effect: lengthMs must be above 0; got 0` | A `lengthMs` of 0 or less |
-| `effect: give either an instrument or the options to make one, not both; found wave with the instrument` | `instrument` given together with instrument options |
+| `sound: an arpeggio has at most 16 notes; this one has 17` | An `arpeggio` option that is too long |
+| `sound: a filter sweep's fromHz and toHz must be above 0; got 0 and 450` | A `filterSweep` to or from 0 Hz |
+| `sound: note: 'C4' is not a note (write C-4, F#5)` | A misspelt note. Likewise for `sound: glideTo:` |
+| `sound: lengthMs must be above 0; got 0` | A `lengthMs` of 0 or less |
 
 A song that parses but sounds wrong is usually one of these:
 
-- **A note goes on and on.** It is never released, and its instrument
-  sustains. Add `===`, or give the instrument a sustain of 0.
+- **A note goes on and on.** It is never released, and its sound
+  sustains. Add `===`, or give the sound a sustain of 0.
 - **A drum is transposed.** Write it without a note (`k`), not with one.
-- **Everything is too quiet or too loud.** Check the loudness that
-  `audio:render` prints, and set the song's `volume`.
-- **A filter does not move.** `f` does nothing on a channel whose
-  instrument has no `filter`.
+- **Everything is too quiet or too loud.** Measure the song's loudness,
+  and set its `volume`.
+- **A filter does not move.** `f` does nothing on a channel whose sound
+  has no `filter`.
+- **A part drops out for a moment.** A sound played on the music's chip
+  took that channel's voice. Play sound effects on a chip of their own.
 
 ---
 
@@ -528,15 +543,15 @@ A song that parses but sounds wrong is usually one of these:
 You write songs for the Audio90 in the same notation, with
 `createAudio90Song`. Every token above means the same thing there, and
 patterns, the order, transposition and `loop` all work the same way.
-[Using the Audio90](using-the-audio90.md) shows you its instruments. This
+You make its sounds with `createAudio90Sound`, and
+[Using the Audio90](using-the-audio90.md) shows you what they can do. This
 section shows you what a song for the Audio90 adds.
 
 ### More Channels
 
 The Audio90 has sixteen voices, so your song can have up to sixteen
-channels. Sound effects take the voices from voice 15 down. If your song
-uses ten channels, that leaves six voices for effects, which suits most
-games.
+channels. As on the Audio80, channel 0 plays on voice 0, and so on. Play
+your sound effects on a second Audio90, and the song keeps every voice.
 
 Each voice plays in stereo, so you can place each part of your song. Try
 spreading the chords and the hats a little to the sides, and keeping the
@@ -546,13 +561,13 @@ bass and the bass drum in the centre.
 
 | Token | Meaning | Lasts | Example |
 | --- | --- | --- | --- |
-| `f` and a hex digit | Brightness, from `0` (dark) to `F` (the instrument as written). It closes an analog or sample voice's filter, and softens an FM voice's modulators | until the next `f` | `f4` |
+| `f` and a hex digit | Brightness, from `0` (dark) to `F` (the sound as written). It closes an analog or sample voice's filter, and softens an FM voice's modulators | until the next `f` | `f4` |
 | `P` and two hex digits | Pan: `P00` is left, `P80` the centre, `PFF` right | until the next `P` | `P40` |
 | `r` and a hex digit | The channel's reverb send | until the next `r` | `r6` |
 | `e` and a hex digit | The channel's echo send | until the next `e` | `e3` |
-| `c` and two hex digits | A chord, on an analog instrument: the note, x semitones up and y up, all at once from one voice | the note | `c47` |
+| `c` and two hex digits | A chord, on an analog sound: the note, x semitones up and y up, all at once from one voice | the note | `c47` |
 | `s` and two hex digits | Plays one slice of a sliced sample, counting from `s00` | the note | `s0C` |
-| `!` | An accent, on an analog instrument: its filter opens further and the note plays louder | the note | `C-2 Q !` |
+| `!` | An accent, on an analog sound: its filter opens further and the note plays louder | the note | `C-2 Q !` |
 
 On the Audio80, `f` sets the cutoff of a filter that several channels
 share. On the Audio90, each voice has its own filter, so `f` changes only
@@ -587,7 +602,8 @@ own. It adds these settings:
 | `pump` | `{ channel, depth, releaseMs }`. Each note on `channel` ducks the other channels, which swell back over `releaseMs` |
 | `character` | `'studio'`, `'console'` or `'sampler'`: how the chip sounds while the song plays |
 
-[The Mix](using-the-audio90.md#the-mix) explains each one in more detail.
+[Using the Audio90](using-the-audio90.md) explains each one in more
+detail.
 
 ```ts
 export const DROP = createAudio90Song({
@@ -624,6 +640,31 @@ export const DROP = createAudio90Song({
 - **Keep the bass in the centre, and mostly dry.** Reverb and echo on a
   bass make the whole mix sound muddy.
 
+### Saving a Song as Text
+
+A song written in code is TypeScript, so only code can read it. To save a
+song to a file, or send it to another program such as an editor, print it
+as text with `printAudio90Song`. `parseAudio90Song` reads the text back into
+the same song:
+
+```ts
+import { parseAudio90Song, printAudio90Song } from 'audio90';
+
+const text = printAudio90Song(DROP);
+const again = parseAudio90Song(text);
+```
+
+The text is JSON. It holds the options the song was made from, its sounds
+as their options, and each sample as the recipe it's bounced from, never as
+audio. Each row of a pattern goes on a line of its own, so a change to a
+song changes only the lines of the rows it touches. That keeps a song's
+history easy to read in version control.
+
+`printAudio90Song` throws for a song that `createAudio90Song` didn't make,
+and for an option JSON can't hold, such as a `lengthMs` of `Infinity`.
+`parseAudio90Song` throws for text that isn't an Audio90 song, and for a
+song that isn't valid, with the error `createAudio90Song` gives.
+
 ### When It Goes Wrong on the Audio90
 
 `createAudio90Song` throws errors the same way `createAudio80Song` does.
@@ -631,9 +672,9 @@ It also has a few of its own:
 
 | Message | Cause |
 | --- | --- |
-| `c37 needs an analog instrument, and 'P' is fm` | A chord on an FM or sample instrument. Use one channel for each note instead |
-| `! needs an analog instrument, ...` | An accent on an FM or sample instrument |
-| `s0C needs a sample instrument, ...` | A slice on an instrument that plays no sample |
+| `c37 needs an analog instrument, and 'P' is fm` | A chord on an FM or sample sound. Use one channel for each note instead |
+| `! needs an analog instrument, ...` | An accent on an FM or sample sound |
+| `s0C needs a sample instrument, ...` | A slice on a sound that plays no sample |
 | `s20 is past the last of the 32 slices of 'b''s sample` | A slice the sample does not have. Slices count from `s00` |
 | `17 channels is more than the chip's 16 voices` | Too many channels |
 | `mixer has 6 entries, more than the song's 5 channels` | A `mixer` entry for a channel the song does not have |
@@ -644,6 +685,7 @@ It also has a few of its own:
 
 ## Your Own Music
 
-The Arcade's games and their music are original. Being inspired by a
-classic is fine, but transcribing one is not. Write your own melodies, in
-the spirit of the era. The chip and these habits will do the rest.
+Being inspired by a classic game's music is fine, but transcribing it is
+not. Its tunes belong to the people who wrote them. Write your own
+melodies, in the spirit of the era. The chip and these habits will do the
+rest.

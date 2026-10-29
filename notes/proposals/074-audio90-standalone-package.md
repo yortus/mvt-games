@@ -13,10 +13,9 @@
 
 **Status:** in progress, on the branch `audio90`. 068, which this builds
 on, was committed there as `0ebacfec` on 2026-10-27, and its last open item
-moved here (step 10). Steps 1 to 5 are done: the move, the renames and one
-clock. Step 6, sounds and a chip each for music and sound effects (section
-5.8), is next. The docs come near the end (step 11), once the design has
-settled, and the Studio last. Section 12 records the progress.
+moved here (step 10). Steps 1 to 11 are done, the phone check and the
+docs included. Publishing (step 12) is next, and the Studio last. Section
+12 records the progress.
 
 **Written:** 2026-10-25, against main at `5cd89d4c`, with proposal 068
 built in its worktree but not yet merged. Name availability checked on npm
@@ -965,14 +964,14 @@ package is finished. The progress log uses these numbers.
    two forms agree for the same place. Then decide whether the chip should
    report where it is in the pass in ms, for a seek bar. Then fractional
    pitch.~~ Done, 2026-10-29 (section 12), with `positionMs`.
-10. Try the full build on a phone, over Bluetooth too, as 068 left to do:
+10. ~~Try the full build on a phone, over Bluetooth too, as 068 left to do:
     every entry's music and sounds, pausing and resuming a game, and what a
     second Audio90 costs (section 5.8). It comes before the docs, since
-    what it finds may change the design.
-11. Rewrite the README and the three guides. Move the MVT material to the
+    what it finds may change the design.~~ Passed, 2026-10-29 (section 12).
+11. ~~Rewrite the README and the three guides. Move the MVT material to the
     docs site's Sound and Music page. Update the glossary, project
     structure and AGENTS.md. Decide open question 8 first, since the README
-    describes the package's layout.
+    describes the package's layout.~~ Done, 2026-10-29 (section 12).
 12. A changeset for the rename, beside 068's. Publish `audio90`'s first
     version by hand, since npm trusts a workflow only with a package that
     exists, then set up trusted publishing for it, as
@@ -1833,3 +1832,54 @@ package is finished. The progress log uses these numbers.
     tone up, which a rendered test measures.
   - Changeset `start-part-way.md`; `song-play-options.md` says a pitch may
     be a fraction.
+- **2026-10-29, step 10 passed** (the user, on desktop and a phone).
+  - Every entry's music and sounds played well, as did pausing and
+    resuming, hiding the page, and quitting to the Arcade and starting
+    another entry at once. The volume settings each changed only their
+    own chip.
+  - The Perfmon showed no performance problems with a second Audio90.
+  - Over Bluetooth, sound effects were heard about 200 to 300 ms late.
+    Through the phone's speaker they were prompt. That delay is the
+    Bluetooth link's own (SBC and AAC buffer about that much), not the
+    chip's: the context asks for `'interactive'` latency, and a play starts
+    as its message arrives. Nothing in the design changes.
+  - The new play and stop options (fades, starting part way, `positionMs`,
+    `stereoWidth`, `onRow` and `onEnded`) aren't used by any entry yet, so
+    this check didn't hear them in a browser; their tests run on a stand-in
+    audio context.
+- **2026-10-29, step 11 done**, unstaged.
+  - **The README** is rewritten for the package as it is: a song, a sound
+    on a button press, a chip for each, pausing with a game, tests and
+    tools, the guides, loading the chips later (open question 2's advice,
+    detailed in the Audio80 guide), the exports and the layout. Its
+    samples were run on a headless chip.
+  - **The three guides and the headless README** are rewritten in neutral
+    words, with no MVT, music player, ticked clock, setters or log. The
+    Audio80 guide is the general one: getting a chip, sounds, songs and
+    their play options, fades, starting part way, what the chip reports,
+    callbacks, volume, the mix, using it with a game loop, testing. The
+    Audio90 guide covers what that chip adds and links back for the rest.
+    The tracker guide gains "Saving a Song as Text", and its error table
+    matches the parser's messages. The headless README gains "Testing the
+    Code That Plays Sound" (a headless chip and `vi.spyOn`). Every code
+    sample was type-checked, and run where it needs no browser.
+  - **The Sound and Music page** takes the MVT material: audio views on
+    `sfx`, a new Music section (play, queue, a fade-out, `tempoScale`),
+    "Sounds That Repeat", and a Time section rewritten for one clock, with
+    the Arcade pausing the chips. Testing a music view uses a headless chip
+    and spies. The glossary drops "Music player", and its chip and
+    sequencer entries, Testing Views, Visual Tests, `llms.txt`, the style
+    guide's examples, the project structure and the root README follow.
+  - **Found while writing:** `positionMs` in a browser could reach
+    `durationMs` when the next place was late, so `play(song, { startMs:
+    chip.positionMs })` could throw at the end of a pass. It now goes back
+    to the loop (or stays at the place heard, for a song that doesn't
+    loop), with a test. `SongPlace` is exported from the root. Doc comments
+    on samples no longer say "an entry".
+  - **Left open** (from writing the guides): a chip that plays only sounds
+    can't change its filters, echo or Audio90 effects, since only a song
+    sets them; a scope's points have no start index, so a drawn wave can
+    show a seam; `render` of a held sound with no `durationMs` throws a
+    `RangeError` rather than a clear message; `printAudio90Song` throws for
+    a sound with `lengthMs: Infinity`; the parser's errors still say
+    "instrument"; two chips made without a `context` make two contexts.

@@ -204,8 +204,10 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
 
     /**
      * Where the song heard is in its order now: the place heard's position,
-     * moved on by the time since it reached the speaker, at its tempo, and no
-     * further than the end of the order.
+     * moved on by the time since it reached the speaker, at its tempo. Moved
+     * past the end of the order, as when the next place is late, a song that
+     * loops goes back to its loop, and one that doesn't stays at the place
+     * heard. So it is always less than `durationMs`, as `startMs` must be.
      */
     function findHeardPositionMs(): number {
         const at = findHeard();
@@ -214,7 +216,12 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
         if (song === undefined) return 0;
         const frame = speakerFrame() ?? places[at * PLACE_FIELDS + PLACE_FRAME];
         const sinceMs = Math.max(0, frame - places[at * PLACE_FIELDS + PLACE_FRAME]) * 1000 / sampleRate();
-        return Math.min(song.durationMs, places[at * PLACE_FIELDS + PLACE_POSITION_MS] + sinceMs * places[at * PLACE_FIELDS + PLACE_TEMPO_SCALE]);
+        const heardMs = places[at * PLACE_FIELDS + PLACE_POSITION_MS];
+        const positionMs = heardMs + sinceMs * places[at * PLACE_FIELDS + PLACE_TEMPO_SCALE];
+        if (positionMs < song.durationMs) return positionMs;
+        if (song.loop < 0) return heardMs;
+        const loopStartMs = computeLoopStartMs(song);
+        return loopStartMs + (positionMs - song.durationMs) % (song.durationMs - loopStartMs);
     }
 
     /** Asks for `song`, or for none: a new generation, with no place of it heard yet. */
@@ -263,3 +270,10 @@ const PLACE_BEAT = 4;
 const PLACE_POSITION_MS = 5;
 const PLACE_TEMPO_SCALE = 6;
 const PLACE_FIELDS = 7;
+
+/** Where `song`'s loop starts, in ms from the start of its order, at its own tempo. Entries start on the grid, so swing doesn't move it. */
+function computeLoopStartMs(song: PlayableSong): number {
+    let rows = 0;
+    for (let i = 0; i < song.loop; i++) rows += song.patterns[song.order[i].pattern].rowCount;
+    return rows * 60000 / (song.bpm * song.rowsPerBeat);
+}
