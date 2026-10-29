@@ -174,41 +174,8 @@ lays itself out by.
 `createHeadlessAudio90`, `render`, and the tools that measure rendered
 sound. Its [README](src/headless/README.md) lists them.
 
-## Layout
+## Contributing
 
-```
-src/
-├── index.ts            audio90
-├── shared/             What every chip shares: the chip's interface, note
-│   │                   names, play options and the song player
-│   ├── commands/       The commands a chip is sent, and their writer
-│   ├── notation/       The tracker notation every chip's songs share
-│   │   └── tokens/     Rows, cells and tokens, read and printed
-│   └── synthesiser/    The parts of every synthesiser: the command queue,
-│                       envelopes, fades, and the maths they share
-├── audio80/            The Audio80
-│   ├── synthesiser/    Its voices, filters and echo
-│   ├── notation/       Its sounds and songs, and what a song's rows write
-│   └── chip/           Its interface
-├── audio90/            The Audio90
-│   ├── synthesiser/    Its voices, engines, effects and output stage
-│   ├── notation/       Its sounds, samples, bouncing and songs
-│   │   ├── song-text/  A song printed as text, and parsed back
-│   │   └── values/     Its names for engines, waves and shapes
-│   └── chip/           Its interface
-├── tracker/            What an editor needs: a song's cells as text, and
-│                       a scope attached to a chip
-├── headless/           audio90/headless: each chip without a speaker
-│   ├── rendering/      Rendering songs and sounds in memory
-│   └── rendered-samples/  Hashes, peaks, loudness and WAV files
-└── web/                The browser chips
-    └── worklet/        What runs on the audio thread: each chip's
-                        processor and its song sequencer
-docs/                   The guides
-scripts/                Rendering a module's songs and sounds to WAV files
-bench/                  The chips' benchmarks
-```
-
-Each synthesiser is plain TypeScript, with no Web Audio in it, and reads
-no clock. So the same calls always render the same samples, in the
-browser's audio thread and in Node alike.
+To work on audio90 itself, see [CONTRIBUTING.md](./CONTRIBUTING.md). It
+explains how its tests run, how the package is laid out, how to keep the
+synthesisers fast, and how the package is built and published.

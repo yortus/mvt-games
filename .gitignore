@@ -17,7 +17,7 @@ dist-ssr
 .wrangler
 
 # WAV files written by `npm run audio:render`, for listening
-/renders
+renders/
 
 # VitePress
 packages/sites/docs/.vitepress/cache

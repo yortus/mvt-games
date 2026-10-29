@@ -118,13 +118,14 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 | `npm run build:playground` | Build the playground alone, into `dist/playground/` |
 | `npm run lint`         | Check lint and formatting     |
 | `npm run lint:fix`     | ESLint auto-fix pass          |
-| `npm test`             | Every test but v-snap's own: the unit tests and the visual tests (downloads the browser on first run) |
-| `npm run test:unit`    | Every workspace's unit tests but v-snap's (Vitest's `unit` project; no browser): the fast check while working |
-| `npm run test:watch`   | Every test but v-snap's own, in watch mode |
+| `npm test`             | Every test but v-snap's and audio90's own: the unit tests and the visual tests (downloads the browser on first run) |
+| `npm run test:unit`    | Every workspace's unit tests but v-snap's and audio90's (Vitest's `unit` project; no browser): the fast check while working |
+| `npm run test:watch`   | Every test but v-snap's and audio90's own, in watch mode |
 | `npm run test:ui`      | The same, with the Vitest UI in a browser: each test's result, and a failed image's reference, actual image and diff side by side (for people; agents use the commands above) |
 | `npm run test:visual`  | Visual tests (the `visual-*` projects, picked by their `visual-tests/` folders, since the vsnap() plugin's projects can't be picked with `-p`): compare each actual image with its reference image, and write a new image as its reference, except in CI (downloads the browser on first run) |
 | `npm run test:visual:update` | Also write changed actual images as reference images, and delete orphaned references; look at each before committing. `npx vitest run <test file> -u` for one file |
 | `npm run test:vsnap`   | All of v-snap's own tests, unit and visual, from its own config |
+| `npm run test:audio90` | All of audio90's own tests, from its own config |
 | `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
 | `npm run build:packages` | Build the five libraries for publishing (tsdown, publint, attw), then check their published types. audio90's publint and attw run as it is packed, as v-snap's do |
 | `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/tests/checks/](packages/tests/checks/README.md)) |

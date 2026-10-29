@@ -48,6 +48,8 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm run test:unit
+            # audio90's own tests, which the root's leave out. The site plays on its chips
+            - run: npm test -w audio90
             - run: npm run build:arcade
               env:
                   # The Worker that keeps the Arcade's highscore tables (deploy-highscores.yml)

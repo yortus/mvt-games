@@ -1883,3 +1883,53 @@ package is finished. The progress log uses these numbers.
     `RangeError` rather than a clear message; `printAudio90Song` throws for
     a sound with `lengthMs: Infinity`; the parser's errors still say
     "instrument"; two chips made without a `context` make two contexts.
+- **2026-10-29, step 12 prepared**, unstaged. The user chose 0.8.0, carrying
+  on from `@mvtjs/chiptune` 0.7.0 (open question 1), and one summary entry
+  for the release notes. The 19 step-by-step changesets, some naming APIs
+  added and removed within this release (`openSongSlot`,
+  `HeadlessControls`), are replaced by `.changeset/audio90.md`: the rename,
+  then what changed since 0.7.0 by topic, describing only what ships.
+  `npm run release` took `audio90` to 0.8.0, wrote the CHANGELOG (its
+  heading now `audio90`), and moved the Arcade, the playground and the
+  benchmarks to `^0.8.0`. Checked: `audio90` is free on npm, and every
+  other public package's version is already published, so `changeset
+  publish` publishes `audio90` alone; `npm run build:packages` (publint and
+  attw clean); `npm publish --dry-run` (235 files, 276 KB); and the packed
+  tarball installed into an empty folder, both entry points imported in
+  plain Node, and a headless chip played a song. Left to the user: the
+  publish by hand, trusted publishing on npmjs.com, deprecating
+  `@mvtjs/chiptune`, and merging to `main` after the publish (a merge
+  before it would have the release workflow try to publish 0.8.0 with no
+  trusted publisher set up).
+  - A `CONTRIBUTING.md`, as v-snap has (the user): running its tests, when
+    a sound changes (the Arcade's snapshots hold the reference hashes), the
+    layout (moved there from the README, which now ends with a Contributing
+    pointer), keeping it fast, and building and publishing.
+  - Its own tests, as v-snap's (the user): `vitest.config.ts` in the
+    package, `npm test` and `npm run test:watch` there, the root's config
+    leaving it out, `npm run test:audio90` at the root, and both workflows
+    running it (the site plays on its chips).
+  - `render-wav` was broken since step 2: a module of sounds imports
+    `audio90`, whose browser chips import `?worker&url`, which Node can't
+    load. The script now answers those imports with an empty URL through a
+    Node module hook, and keeps its output inside `renders/` for a module
+    outside the folder it runs in. The `@mvtjs/source` condition moved to
+    the root's `audio:render`, so the package's own script names nothing
+    of the repository's.
+  - **Effectively standalone** (the user: it should be easy to move to a
+    repository of its own; a few lint and build tweaks then are fine).
+    Tested by copying the package out of the repository, installing, and
+    running every script. Its `tsconfig.json` no longer extends the
+    repository's base, with `bench/` and a new `scripts/` project extending
+    it; `typecheck` checks all three; `typescript` and `@types/node` are
+    its own dev dependencies; it has its own `.gitignore`; the benchmark
+    runner's usage no longer says `-w audio90`. Lint stays the host's, as
+    v-snap's does. A reference set (`src/reference-sounds.test-support.ts`)
+    covers every wave, engine, filter, effect and token of both chips, with
+    hashes in a snapshot, so the package catches a changed sound without
+    the Arcade. Writing it found that an Audio80 `pulseWidth` outside 0 to
+    1 played a full-scale click: it now throws, noted in 0.8.0's Fixes.
+    CONTRIBUTING is rewritten as if the package were the whole repository,
+    with its conventions in its own words. Moving it would still change
+    `package.json`'s repository, homepage and bugs links, and need a
+    Changesets config, a release workflow and, if wanted, lint.

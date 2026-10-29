@@ -1,5 +1,0 @@
----
-"audio90": minor
----
-
-A browser chip now keeps the sound card's time, so nothing needs to tick it. Its writes go to the worklet at the end of the task they are made in, and a write with no `atMs` plays as soon as it arrives. `AudioControls` gains `pause`, `resume` and `isPaused`, which hold the chip where it is, for a game's pause or a hidden page, and loses `update`, `flush` and `stallCount`, with the chip's lead and its stalls. A headless chip's clock still moves with the ticks: its controls are the new `HeadlessControls`, which keep `update`. `MusicPlayer.refresh` is gone too: each call goes to the chip as it is made, and a tempo set in the same moment as `play`, before or after it, applies from the song's start. A song started while audio cannot play starts from its beginning once it can. `context` is now optional on `createAudio80` and `createAudio90`: without one, the chip makes its own audio context, starts it at the page's first click, tap or key press, and closes it when destroyed. `leadMs` is gone from both.

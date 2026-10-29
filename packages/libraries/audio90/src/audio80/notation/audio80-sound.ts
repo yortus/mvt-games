@@ -155,6 +155,10 @@ export function createAudio80Sound(options: Audio80SoundOptions): Audio80Sound {
     const envelope = options.envelope ?? DEFAULT_ENVELOPE;
     const note = options.note === undefined ? DEFAULT_NOTE : parseNote(options.note, 'sound: note');
     const pulseWidth = options.pulseWidth ?? 0.5;
+    // Written so that NaN fails too. A width outside 0 to 1 plays a full-scale click
+    if (!(pulseWidth >= 0 && pulseWidth <= 1)) throw new Error(`sound: pulseWidth must be 0 to 1; got ${pulseWidth}`);
+    const sweepTo = options.pulseSweep?.to ?? pulseWidth;
+    if (!(sweepTo >= 0 && sweepTo <= 1)) throw new Error(`sound: pulseSweep.to must be 0 to 1; got ${sweepTo}`);
     const arpeggio = options.arpeggio ?? [];
     if (arpeggio.length > MAX_ARPEGGIO) {
         throw new Error(`sound: an arpeggio has at most ${MAX_ARPEGGIO} notes; this one has ${arpeggio.length}`);
@@ -190,7 +194,7 @@ export function createAudio80Sound(options: Audio80SoundOptions): Audio80Sound {
         vibratoHz: options.vibrato?.hz ?? 0,
         vibratoDelayMs: options.vibrato?.delayMs ?? 0,
         pulseSweepMs: options.pulseSweep?.ms ?? 0,
-        pulseSweepTo: options.pulseSweep?.to ?? pulseWidth,
+        pulseSweepTo: sweepTo,
         isPulseSweepPingPong: options.pulseSweep?.isPingPong ?? false,
         filterSweepMs: sweep?.ms ?? 0,
         filterSweepFromHz: sweep?.fromHz ?? 0,

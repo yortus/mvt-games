@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tsbuildinfo
+# The renders `npm run render-wav` writes
+renders/
+# Where the repository's package.json waits while the published one is in place
+package.repo.json

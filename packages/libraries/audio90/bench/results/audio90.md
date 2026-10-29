@@ -1,4 +1,4 @@
-<!-- Written by `npm run bench -w audio90 -- audio90 --save`. Don't edit it by hand. -->
+<!-- Written by `npm run bench -- audio90 --save`. Don't edit it by hand. -->
 
 Measured 2026-10-28 on Intel(R) Core(TM) Ultra 9 185H, win32 10.0.26200, Node.js 26.10.0. Each time is the median of 3 runs, each in its own process, and ± marks runs that disagreed by more than 5%. Each count ran once.
 

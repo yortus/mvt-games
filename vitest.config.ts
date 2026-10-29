@@ -17,8 +17,8 @@ const SOURCE_CONDITION = '@mvtjs/source';
 // this config's own tests, which they name "unit". So `-p unit` runs the unit
 // tests alone, and `vitest run visual-tests/` the visual tests, since every
 // visual test file is in a `visual-tests` folder.
-// v-snap is left out, as if it lived in a repo of its own: its own config
-// runs its tests, and the scripts call it.
+// v-snap and audio90 are left out, as if each lived in a repo of its own:
+// each one's own config runs its tests, and the scripts call it.
 export default defineConfig({
     plugins: [
         // The Arcade's visual tests, which build its views with its own Vite config
@@ -53,7 +53,7 @@ export default defineConfig({
         ],
         server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
         // .claude/ holds agent worktrees: separate checkouts, tested on their
-        // own. v-snap's own tests run in its own config.
-        exclude: [...configDefaults.exclude, '.claude/**', 'packages/tools/v-snap/**'],
+        // own. v-snap's and audio90's own tests run in their own configs.
+        exclude: [...configDefaults.exclude, '.claude/**', 'packages/tools/v-snap/**', 'packages/libraries/audio90/**'],
     },
 });

@@ -36,8 +36,9 @@
         "test:visual": "vitest run visual-tests/",
         "test:visual:update": "vitest run visual-tests/ -u",
         "test:vsnap": "npm test -w v-snap",
+        "test:audio90": "npm test -w audio90",
         "generate-textures": "npm run generate-textures -w @mvtjs/arcade",
-        "audio:render": "npm run render-wav -w audio90 --",
+        "audio:render": "tsx --conditions=@mvtjs/source packages/libraries/audio90/scripts/render-wav.ts",
         "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/arcade --",
         "measure-load": "npm run measure-load -w @mvtjs/arcade --"
     },

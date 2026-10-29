@@ -34,7 +34,7 @@
         "@mvtjs/pixi": "^0.7.0",
         "@mvtjs/three": "^0.7.0",
         "@mvtjs/utils": "^0.7.0",
-        "audio90": "^0.7.0",
+        "audio90": "^0.8.0",
         "gsap": "^3.14.2",
         "pixi-solid": "^1.0.0",
         "pixi.js": "^8.16.0",

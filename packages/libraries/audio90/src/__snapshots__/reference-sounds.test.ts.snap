@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the reference set > AUDIO80_ALL_THREE_WAVES sounds as it did, audible and unclipped 1`] = `"0509acc7"`;
+
+exports[`the reference set > AUDIO80_ARPEGGIO_AND_VIBRATO sounds as it did, audible and unclipped 1`] = `"0efcc5e7"`;
+
+exports[`the reference set > AUDIO80_GLIDE_AND_ECHO sounds as it did, audible and unclipped 1`] = `"cfbf0ab4"`;
+
+exports[`the reference set > AUDIO80_NOISE_THROUGH_A_SWEPT_FILTER sounds as it did, audible and unclipped 1`] = `"da2dc965"`;
+
+exports[`the reference set > AUDIO80_PULSE_SWEEP sounds as it did, audible and unclipped 1`] = `"0934122e"`;
+
+exports[`the reference set > AUDIO80_SAW sounds as it did, audible and unclipped 1`] = `"2c2ec49f"`;
+
+exports[`the reference set > AUDIO80_SONG sounds as it did in the classic character 1`] = `"e4315e0f"`;
+
+exports[`the reference set > AUDIO80_SONG sounds as it did in the clean character 1`] = `"f354b4c2"`;
+
+exports[`the reference set > AUDIO80_SONG sounds as it did in the raw character 1`] = `"6025eeb6"`;
+
+exports[`the reference set > AUDIO80_SONG sounds as it did, audible and unclipped 1`] = `"e4315e0f"`;
+
+exports[`the reference set > AUDIO80_STEP_TABLE sounds as it did, audible and unclipped 1`] = `"43a0f941"`;
+
+exports[`the reference set > AUDIO80_TRIANGLE sounds as it did, audible and unclipped 1`] = `"c46a6ee9"`;
+
+exports[`the reference set > AUDIO80_WAVETABLE sounds as it did, audible and unclipped 1`] = `"ba5439bc"`;
+
+exports[`the reference set > AUDIO90_ACID sounds as it did, audible and unclipped 1`] = `"585f146d"`;
+
+exports[`the reference set > AUDIO90_CHORD_AND_ARPEGGIO sounds as it did, audible and unclipped 1`] = `"fcec76d1"`;
+
+exports[`the reference set > AUDIO90_FM_PIANO sounds as it did, audible and unclipped 1`] = `"80b9ea18"`;
+
+exports[`the reference set > AUDIO90_FM_WAVES_AND_FEEDBACK sounds as it did, audible and unclipped 1`] = `"1a234cf5"`;
+
+exports[`the reference set > AUDIO90_GATED sounds as it did, audible and unclipped 1`] = `"c4b51149"`;
+
+exports[`the reference set > AUDIO90_KICK sounds as it did, audible and unclipped 1`] = `"1e3b1005"`;
+
+exports[`the reference set > AUDIO90_NOISE_STEPS sounds as it did, audible and unclipped 1`] = `"ee4f3c32"`;
+
+exports[`the reference set > AUDIO90_RANDOM_LFO_BRIGHTNESS sounds as it did, audible and unclipped 1`] = `"06a1d4c1"`;
+
+exports[`the reference set > AUDIO90_REESE_WITH_SUB_AND_LFO sounds as it did, audible and unclipped 1`] = `"f51cda7d"`;
+
+exports[`the reference set > AUDIO90_REVERSED_STAB sounds as it did, audible and unclipped 1`] = `"a60f5e15"`;
+
+exports[`the reference set > AUDIO90_SAMPLED_STAB sounds as it did, audible and unclipped 1`] = `"25672ce1"`;
+
+exports[`the reference set > AUDIO90_SONG_CONSOLE sounds as it did, audible and unclipped 1`] = `"046e8191"`;
+
+exports[`the reference set > AUDIO90_SONG_SAMPLER sounds as it did, audible and unclipped 1`] = `"1fee343f"`;
+
+exports[`the reference set > AUDIO90_SONG_STUDIO sounds as it did, audible and unclipped 1`] = `"afbb2eb6"`;
+
+exports[`the reference set > AUDIO90_SUPERSAW sounds as it did, audible and unclipped 1`] = `"bae6dbc8"`;
+
+exports[`the reference set > AUDIO90_SYNCED_PULSE sounds as it did, audible and unclipped 1`] = `"8723350d"`;

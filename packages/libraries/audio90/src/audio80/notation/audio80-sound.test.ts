@@ -73,6 +73,14 @@ describe('tracker notation: sounds', () => {
         expect(createAudio80Sound({ filterSweep: { fromHz: 200, toHz: 2000, ms: 100 } }).data.filterSweepToHz).toBe(2000);
     });
 
+    it('rejects a pulse width, or a width to sweep to, outside 0 to 1', () => {
+        for (const width of [-0.1, 2, Number.NaN]) {
+            expect(() => createAudio80Sound({ pulseWidth: width }), `pulseWidth ${width}`).toThrow(`sound: pulseWidth must be 0 to 1; got ${width}`);
+            expect(() => createAudio80Sound({ pulseSweep: { to: width, ms: 100 } }), `pulseSweep.to ${width}`).toThrow(`sound: pulseSweep.to must be 0 to 1; got ${width}`);
+        }
+        expect(createAudio80Sound({ pulseWidth: 0.1, pulseSweep: { to: 0.9, ms: 100 } }).data.pulseSweepTo).toBe(0.9);
+    });
+
     it('lasts as long as its step table by default, or 250 ms with none', () => {
         const stepMs = 20;
         const steps = `

@@ -38,6 +38,8 @@ jobs:
             - run: npm run test:unit
             # v-snap's own unit tests. Its visual tests run in visual.yml.
             - run: npm run test:unit -w v-snap
+            # audio90's own tests, which the root's leave out
+            - run: npm test -w audio90
             - run: npm run build:packages
 
             # Changesets tags each published version with an annotated tag,

@@ -11,11 +11,11 @@
  * the tables show the median. A count, such as the bytes allocated, is the
  * same each time, so it runs once.
  *
- *   npm run bench -w audio90                          every suite
- *   npm run bench -w audio90 -- audio90               one suite
- *   npm run bench -w audio90 -- audio90 engine=fm     only the cases that match
- *   npm run bench -w audio90 -- audio80 --runs=5      each case in five processes
- *   npm run bench -w audio90 -- --save                and write bench/results/<suite>.md
+ *   npm run bench                          every suite
+ *   npm run bench -- audio90               one suite
+ *   npm run bench -- audio90 engine=fm     only the cases that match
+ *   npm run bench -- audio80 --runs=5      each case in five processes
+ *   npm run bench -- --save                and write bench/results/<suite>.md
  *
  * The saved results are kept with the code, so a change's effect on them
  * shows in its diff. A busy machine slows every case by 10% or more, so
@@ -93,7 +93,7 @@ async function runSuite(suite: Suite): Promise<void> {
     if (!values.save) return;
     const environment = `Measured ${new Date().toISOString().slice(0, 10)} on ${cpus()[0]?.model.trim() ?? 'an unknown processor'}, ${platform()} ${release()}, Node.js ${process.versions.node}.`;
     const method = `Each time is the median of ${runCount} runs, each in its own process, and ± marks runs that disagreed by more than ${SPREAD_SHOWN_ABOVE * 100}%. Each count ran once.`;
-    const header = `<!-- Written by \`npm run bench -w audio90 -- ${suite.name} --save\`. Don't edit it by hand. -->`;
+    const header = `<!-- Written by \`npm run bench -- ${suite.name} --save\`. Don't edit it by hand. -->`;
     writeFileSync(join(BENCH_DIR, 'results', `${suite.name}.md`), `${header}\n\n${environment} ${method}\n\n${tables.join('\n\n')}\n`);
 }
 

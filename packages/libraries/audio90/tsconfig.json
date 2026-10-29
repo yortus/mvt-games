@@ -1,4 +1,29 @@
 {
-    "extends": "../../../tsconfig.base.json",
+    // audio90's source, which runs in browsers, in an audio worklet and in
+    // Node. Each browser chip imports its worklet with Vite's `?worker&url`,
+    // which `vite/client` types. The benchmarks and the scripts run in Node,
+    // and extend this with Node's types.
+    "compilerOptions": {
+        "target": "ES2022",
+        "useDefineForClassFields": true,
+        "module": "ESNext",
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
+        "types": ["vite/client"],
+        "skipLibCheck": true,
+
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": true,
+        "moduleDetection": "force",
+        "resolveJsonModule": true,
+        "noEmit": true,
+
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "erasableSyntaxOnly": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true
+    },
     "include": ["src"]
 }

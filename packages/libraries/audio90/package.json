@@ -1,6 +1,6 @@
 {
     "name": "audio90",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "description": "Two virtual sound chips, the Audio80 and the Audio90, in the spirit of the 1980s and 1990s: sound effects and tracker music for pages and games, played through Web Audio, or rendered to WAV in Node",
     "license": "MIT",
     "author": "Troy Gerwien",
@@ -26,20 +26,28 @@
         "#rendering-audio80": "./src/headless/rendering/rendering-audio80.ts",
         "#rendering-audio90": "./src/headless/rendering/rendering-audio90.ts"
     },
-    "files": ["dist", "src", "docs", "!src/**/*.test.ts", "!src/**/*.test-support.ts"],
+    "files": ["dist", "src", "docs", "!src/**/*.test.ts", "!src/**/*.test-support.ts", "!src/**/__snapshots__"],
+    "devEngines": {
+        "runtime": { "name": "node", "version": ">=22.18" }
+    },
     "scripts": {
         "build": "tsdown",
         "prepack": "tsdown && node scripts/publish-manifest.ts apply",
         "postpack": "node scripts/publish-manifest.ts restore",
-        "render-wav": "tsx --conditions=@mvtjs/source scripts/render-wav.ts",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "tsc -b . bench scripts",
+        "render-wav": "tsx scripts/render-wav.ts",
         "bench": "node bench/run.ts"
     },
     "devDependencies": {
         "@arethetypeswrong/core": "^0.18.5",
+        "@types/node": "^26.6.3",
         "publint": "^0.3.25",
         "rolldown": "^1.2.12",
         "tsdown": "^0.23.0",
         "tsx": "^4.21.0",
+        "typescript": "~5.9.3",
         "vite": "^8.3.2",
         "vitest": "^5.0.1"
     }
