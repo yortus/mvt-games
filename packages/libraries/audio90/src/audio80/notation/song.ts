@@ -78,7 +78,7 @@ export const CELL80_STRIDE = 10;
 export const CELL80_FILTER = 9;
 
 /** The tokens an Audio80's cells may hold, in the order a cell is written. */
-export const AUDIO80_CELL_GRAMMAR: CellGrammar = {
+const AUDIO80_CELL_GRAMMAR: CellGrammar = {
     stride: CELL80_STRIDE,
     tokens: [...COMMON_CELL_TOKENS, { kind: 'hex', prefix: 'f', digits: 1, field: CELL80_FILTER, name: 'cutoffs' }],
 };

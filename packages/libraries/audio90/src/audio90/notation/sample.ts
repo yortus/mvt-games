@@ -110,7 +110,13 @@ export function createAudio90Sample(options: Audio90SampleOptions): Audio90Sampl
             return data;
         },
     });
+    SAMPLES.set(sample, options);
     return sample;
+}
+
+/** The options `createAudio90Sample` made `sample` from, as a song's text holds them. Undefined for a sample it did not make. */
+export function findAudio90SampleOptions(sample: Audio90Sample): Audio90SampleOptions | undefined {
+    return SAMPLES.get(sample);
 }
 
 /**
@@ -133,6 +139,9 @@ export function prepareAudio90Samples(samples: readonly Audio90Sample[]): void {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** Every sample made, and the options it was made from, so a song's text can hold its recipe. */
+const SAMPLES = new WeakMap<object, Audio90SampleOptions>();
 
 const DEFAULT_RATE = 32000;
 const MIN_RATE = 8000;

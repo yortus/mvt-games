@@ -20,7 +20,9 @@ export {
     createAudio90Sample,
     createAudio90Song,
     createAudio90Sound,
+    parseAudio90Song,
     prepareAudio90Samples,
+    printAudio90Song,
     type Audio90ChannelMix,
     type Audio90ChorusSettings,
     type Audio90EchoSettings,
@@ -48,5 +50,5 @@ export {
     type Audio90Wave,
 } from './audio90';
 export { SCOPE_POINTS, type SoundChip } from './shared';
-export { AUDIO90_CELL_TEXT_WIDTH, createScope, formatAudio90Cell, type Scope } from './tracker';
+export { AUDIO90_CELL_TEXT_WIDTH, createScope, printAudio90Cell, type Scope } from './tracker';
 export { createAudio80, createAudio90, type Audio80Options, type Audio90Options } from './web';

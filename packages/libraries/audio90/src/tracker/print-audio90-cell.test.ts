@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createAudio90Sample, createAudio90Song, createAudio90Sound } from '../audio90';
-import { AUDIO90_CELL_TEXT_WIDTH, formatAudio90Cell } from './format-cell';
+import { AUDIO90_CELL_TEXT_WIDTH, printAudio90Cell } from './print-audio90-cell';
 
-describe('formatting a cell', () => {
-    it('formats each cell as a tracker shows it, which parses back into the same cell', () => {
+describe('printing a cell', () => {
+    it('prints each cell as a tracker shows it, which parses back into the same cell', () => {
         const sample = createAudio90Sample({ bounce: createToneSong('C-4', 4), slices: 4 });
         const instruments = {
             S: STAB,
@@ -26,18 +26,18 @@ describe('formatting a cell', () => {
         });
         const pattern = song.patterns[0];
         expect(song.instrumentLetters).toEqual(['S', 'K', 'D']);
-        expect(formatAudio90Cell(song, pattern, 0, 0)).toBe('C#4 S v8 a37 f4 P40 c47 r6 e3 !');
-        expect(formatAudio90Cell(song, pattern, 1, 0)).toBe('...     ');
-        expect(formatAudio90Cell(song, pattern, 0, 1)).toBe('... K   ');
-        expect(formatAudio90Cell(song, pattern, 1, 1)).toBe('C-2 K v4');
-        expect(formatAudio90Cell(song, pattern, 2, 0)).toBe('E-4      ~ > u0C p8');
-        expect(formatAudio90Cell(song, pattern, 4, 0)).toBe('A-4      ~46 d03 PFF');
-        expect(formatAudio90Cell(song, pattern, 0, 0).indexOf(' a37')).toBe(AUDIO90_CELL_TEXT_WIDTH);
+        expect(printAudio90Cell(song, pattern, 0, 0)).toBe('C#4 S v8 a37 f4 P40 c47 r6 e3 !');
+        expect(printAudio90Cell(song, pattern, 1, 0)).toBe('...     ');
+        expect(printAudio90Cell(song, pattern, 0, 1)).toBe('... K   ');
+        expect(printAudio90Cell(song, pattern, 1, 1)).toBe('C-2 K v4');
+        expect(printAudio90Cell(song, pattern, 2, 0)).toBe('E-4      ~ > u0C p8');
+        expect(printAudio90Cell(song, pattern, 4, 0)).toBe('A-4      ~46 d03 PFF');
+        expect(printAudio90Cell(song, pattern, 0, 0).indexOf(' a37')).toBe(AUDIO90_CELL_TEXT_WIDTH);
 
         const rows: string[] = [];
         for (let row = 0; row < pattern.rowCount; row++) {
             const texts: string[] = [];
-            for (let channel = 0; channel < song.channelCount; channel++) texts.push(formatAudio90Cell(song, pattern, row, channel));
+            for (let channel = 0; channel < song.channelCount; channel++) texts.push(printAudio90Cell(song, pattern, row, channel));
             rows.push(`| ${texts.join(' | ')}`);
         }
         const parsed = createAudio90Song({ bpm: 120, instruments, patterns: { p: rows.join('\n') }, order: ['p'] });

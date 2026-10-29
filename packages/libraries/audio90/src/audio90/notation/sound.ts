@@ -332,13 +332,18 @@ export function createAudio90Sound(options: Audio90SoundOptions): Audio90Sound {
         ...(engine === ENGINE_SAMPLE ? buildSample(options) : {}),
     };
     const sound: Audio90Sound = Object.freeze({ chip: 'audio90', engine: engineName, data: Object.freeze(data), sample: engine === ENGINE_SAMPLE ? sample : undefined });
-    SOUNDS.add(sound);
+    SOUNDS.set(sound, options);
     return sound;
 }
 
 /** Whether `value` is a sound that `createAudio90Sound` made, such as one found among a module's exports. */
 export function isAudio90Sound(value: unknown): value is Audio90Sound {
     return typeof value === 'object' && value !== null && SOUNDS.has(value);
+}
+
+/** The options `createAudio90Sound` made `sound` from, as a song's text holds them. Undefined for a sound it did not make. */
+export function findAudio90SoundOptions(sound: Audio90Sound): Audio90SoundOptions | undefined {
+    return SOUNDS.get(sound);
 }
 
 /** Returns `value` if it is a number from `min` to `max`, or throws an error that names the option at `path`. */
@@ -358,8 +363,8 @@ const DEFAULT_ENVELOPE: Audio90Envelope = { attackMs: 2, decayMs: 0, sustain: 1,
 const DEFAULT_NOTE = 60;
 const DEFAULT_LENGTH_MS = 250;
 
-/** Every sound made, so `isAudio90Sound` knows one when it sees it. */
-const SOUNDS = new WeakSet<object>();
+/** Every sound made, and the options it was made from, so `isAudio90Sound` knows one when it sees it, and a song's text can hold it. */
+const SOUNDS = new WeakMap<object, Audio90SoundOptions>();
 
 /** An operator's ratio is a multiple of this. */
 const RATIO_STEP = 0.5;

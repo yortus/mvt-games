@@ -1,4 +1,4 @@
-import { type CellGrammar, COMMON_CELL_TOKENS, formatHexToken, MAX_ECHO_FEEDBACK, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
+import { type CellGrammar, COMMON_CELL_TOKENS, printHexToken, MAX_ECHO_FEEDBACK, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
 import { type Audio90Character, AUDIO90_CHARACTERS, AUDIO90_EFFECT_DEFAULTS, AUDIO90_VOICE_COUNT } from '../synthesiser';
 import { type Audio90Sound, checkRange } from './sound';
 
@@ -242,7 +242,7 @@ export function createAudio90Song(options: Audio90SongOptions): Audio90Song {
         pump: buildPump(options.pump, core.channelCount),
         character: checkCharacter(options.character),
     });
-    SONGS.add(song);
+    SONGS.set(song, options);
     return song;
 }
 
@@ -251,12 +251,17 @@ export function isAudio90Song(value: unknown): value is Audio90Song {
     return typeof value === 'object' && value !== null && SONGS.has(value);
 }
 
+/** The options `createAudio90Song` made `song` from, as a song's text holds them. Undefined for a song it did not make. */
+export function findAudio90SongOptions(song: Audio90Song): Audio90SongOptions | undefined {
+    return SONGS.get(song);
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Every song made, so `isAudio90Song` knows one when it sees it. */
-const SONGS = new WeakSet<object>();
+/** Every song made, and the options it was made from, so `isAudio90Song` knows one when it sees it, and its text can be printed. */
+const SONGS = new WeakMap<object, Audio90SongOptions>();
 
 /**
  * Throws if the cell at `at` in `cells` uses a token that its instrument's
@@ -268,13 +273,13 @@ function checkEngineTokens(cells: ArrayLike<number>, at: number, where: string, 
     const { engine } = instrument;
     const named = `'${letter}' is ${engine}`;
     const chord = cells[at + CELL90_CHORD];
-    if (chord >= 0 && engine !== 'analog') throw new Error(`${where}: ${formatHexToken('c', chord, 2)} needs an analog instrument, and ${named}`);
+    if (chord >= 0 && engine !== 'analog') throw new Error(`${where}: ${printHexToken('c', chord, 2)} needs an analog instrument, and ${named}`);
     if (cells[at + CELL90_ACCENT] === 1 && engine !== 'analog') throw new Error(`${where}: ! needs an analog instrument, and ${named}`);
     const slice = cells[at + CELL90_SLICE];
     if (slice < 0) return;
-    if (engine !== 'sample' || instrument.sample === undefined) throw new Error(`${where}: ${formatHexToken('s', slice, 2)} needs a sample instrument, and ${named}`);
+    if (engine !== 'sample' || instrument.sample === undefined) throw new Error(`${where}: ${printHexToken('s', slice, 2)} needs a sample instrument, and ${named}`);
     const slices = instrument.sample.slices;
-    if (slice >= slices) throw new Error(`${where}: ${formatHexToken('s', slice, 2)} is past the last of the ${slices} slices of '${letter}''s sample`);
+    if (slice >= slices) throw new Error(`${where}: ${printHexToken('s', slice, 2)} is past the last of the ${slices} slices of '${letter}''s sample`);
 }
 
 function buildMixer(mixer: readonly Audio90ChannelMix[], channelCount: number): Required<Audio90ChannelMix>[] {

@@ -923,8 +923,8 @@ package is finished. The progress log uses these numbers.
    - **Checks:** lint, unit and visual tests, the build and its budget,
      `build:packages`, and a page test in Playwright's headless shell, as
      in step 5.
-7. Add `formatAudio90Song` and `parseAudio90Song`, with a round-trip test
-   over every tune in the Arcade.
+7. ~~Add `formatAudio90Song` and `parseAudio90Song`, with a round-trip test
+   over every tune in the Arcade.~~ Done, 2026-10-29.
 8. Add to the chip what a music player needs (section 5.7): the `repeat`
    and whole-semitone `pitch` play options, `stereoWidth`, and the
    `onEnded` and `onRow` options. Music fades too (the user, 2026-10-28):
@@ -1607,3 +1607,38 @@ package is finished. The progress log uses these numbers.
   - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (236 files, 2,958
     tests), `npm run build:packages`, and `npm pack --dry-run` lists no test
     or test support file.
+- **2026-10-29, step 7 done**, unstaged: a song's text, printed and
+  parsed (the user chose `print` over `format`, and "text" over "file",
+  since neither function touches a file).
+  - **What the text holds.** `printAudio90Song(song)` prints JSON: a
+    `format` ("audio90 song") and a `version` (1), then the options the song
+    was made from. Each instrument is its sound's options, and a sample its
+    recipe, with the song it bounces nested in it. Each pattern and step
+    table is a list of rows, a row on each line, comment rows kept, and
+    anything else short enough, such as an envelope, on one line, within
+    100 characters. The tunes' texts run from 236 to 690 lines.
+  - **How.** The song, sound and sample factories keep the options each was
+    made from, in the registries `isAudio90Song` and `isAudio90Sound`
+    already used, so the text holds only what was set, never the defaults.
+    A song, sound or sample made by hand, not by a `create` function,
+    cannot be printed, and the error says which.
+  - **Reading.** `parseAudio90Song(text)` builds the song with the `create`
+    functions, so a text gets every check and error a song in code does. A
+    pattern may also be one string. Sounds and samples written the same way
+    in one text become one object, so a shared sample is bounced, and takes
+    sample memory, once.
+  - **Tests:** a round trip over every tune in the Arcade (`toEqual`, which
+    compares each sample's bounced audio too), and the package's own: a song
+    with every engine, a sample, a step table and the mix, the rows written,
+    a shared sample made once, and the errors.
+  - **Left for later:** a song's title and author (section 5.7 asks the
+    format for them), a sound's text on its own (section 5.5 says "the
+    same goes for sounds"), and the Audio80, which has none yet.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (237 files, 2,965
+    tests), `npm run build` (54.4 KB) and `npm run build:packages`. A
+    changeset, `.changeset/song-text.md`.
+  - **`printAudio90Cell`**, renamed from `formatAudio90Cell` (and
+    `tracker/format-cell.ts` to `print-audio90-cell.ts`) to match, and
+    `formatHexToken` to `printHexToken`. `formatCell`, written for either
+    chip, is inlined into it, since only the Audio90's cells are printed,
+    and `AUDIO80_CELL_GRAMMAR` is private to its song's file.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, formatAudio90Cell, prepareAudio90Samples } from 'audio90';
+import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, parseAudio90Song, prepareAudio90Samples, printAudio90Cell, printAudio90Song } from 'audio90';
 import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render } from 'audio90/headless';
 import { INSTRUMENT_NAMES } from './instrument-names';
 import { SAMPLES } from './samples';
@@ -35,13 +35,17 @@ describe('tunes', { timeout: 30_000 }, () => {
                 const rows: string[] = [];
                 for (let row = 0; row < pattern.rowCount; row++) {
                     const texts: string[] = [];
-                    for (let channel = 0; channel < song.channelCount; channel++) texts.push(formatAudio90Cell(song, pattern, row, channel));
+                    for (let channel = 0; channel < song.channelCount; channel++) texts.push(printAudio90Cell(song, pattern, row, channel));
                     rows.push(`| ${texts.join(' | ')}`);
                 }
                 const parsed = createAudio90Song({ bpm: song.bpm, instruments, patterns: { [pattern.name]: rows.join('\n') }, order: [pattern.name] });
                 expect(Array.from(parsed.patterns[0].cells)).toEqual(Array.from(pattern.cells));
             }
         }
+    });
+
+    it('prints each tune as text that parses back into the same song', () => {
+        for (const { song } of TUNES) expect(parseAudio90Song(printAudio90Song(song))).toEqual(song);
     });
 
     it('names every instrument a tune plays, in 15 characters or fewer', () => {

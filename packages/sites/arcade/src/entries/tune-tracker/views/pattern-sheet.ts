@@ -1,4 +1,4 @@
-import { AUDIO90_CELL_TEXT_WIDTH, type Audio90Song, formatAudio90Cell } from 'audio90';
+import { AUDIO90_CELL_TEXT_WIDTH, type Audio90Song, printAudio90Cell } from 'audio90';
 import { DOT_GLYPH, RULE_GLYPH } from './pixel-font';
 
 // ---------------------------------------------------------------------------
@@ -8,7 +8,7 @@ import { DOT_GLYPH, RULE_GLYPH } from './pixel-font';
 /**
  * A song's patterns laid out as a tracker shows them, one line a row: the
  * row's number in hex, then each channel's cell between rules. Each cell is
- * the text `formatAudio90Cell` gives, with a dot for each blank column, so
+ * the text `printAudio90Cell` gives, with a dot for each blank column, so
  * what is drawn is what the chip plays. A line is glyph codes, with an ink
  * for each, so the pattern view draws a row by copying them, and allocates
  * nothing as the song plays.
@@ -68,7 +68,7 @@ export function createPatternSheet(options: PatternSheetOptions): PatternSheet {
         const lines: string[][] = [];
         for (let row = 0; row < pattern.rowCount; row++) {
             const cells: string[] = [];
-            for (let channel = 0; channel < song.channelCount; channel++) cells.push(formatAudio90Cell(song, pattern, row, channel));
+            for (let channel = 0; channel < song.channelCount; channel++) cells.push(printAudio90Cell(song, pattern, row, channel));
             lines.push(cells);
         }
         return lines;

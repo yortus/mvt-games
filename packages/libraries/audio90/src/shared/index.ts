@@ -65,7 +65,7 @@ export {
     type CellToken,
     COMMON_CELL_TOKENS,
     DEFAULT_VIBRATO,
-    formatHexToken,
+    printHexToken,
     NO_NOTE,
     parseHexToken,
     parseNote,

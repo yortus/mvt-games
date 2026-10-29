@@ -37,6 +37,7 @@ export {
     isAudio90Song,
 } from './song';
 export { createAudio90SongDriver } from './song-driver';
+export { parseAudio90Song, printAudio90Song } from './song-text';
 export {
     type Audio90Engine,
     type Audio90FilterMode,

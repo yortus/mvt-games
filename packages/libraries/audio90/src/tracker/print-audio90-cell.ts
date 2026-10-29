@@ -5,11 +5,9 @@ import {
     CELL_NOTE,
     CELL_SLIDE,
     CELL_VOLUME,
-    type CellGrammar,
-    formatHexToken,
     NO_NOTE,
+    printHexToken,
     RELEASE,
-    type SongPattern,
     toNoteName,
 } from '../shared';
 
@@ -18,7 +16,7 @@ import {
 // ---------------------------------------------------------------------------
 
 /**
- * How many characters `formatAudio90Cell` gives a cell's note, instrument and
+ * How many characters `printAudio90Cell` gives a cell's note, instrument and
  * volume, before its effects: `C-4 L v9`.
  */
 export const AUDIO90_CELL_TEXT_WIDTH = 8;
@@ -42,23 +40,8 @@ export const AUDIO90_CELL_TEXT_WIDTH = 8;
  * `e2` and `!`. A cell with none ends after its volume's column, at
  * `AUDIO90_CELL_TEXT_WIDTH` characters.
  */
-export function formatAudio90Cell(song: Audio90Song, pattern: Audio90SongPattern, row: number, channel: number): string {
-    return formatCell(song, pattern, row, channel, AUDIO90_CELL_GRAMMAR);
-}
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-/** A cell's text, as `formatAudio90Cell` describes, for a chip whose cells `grammar` describes. */
-function formatCell(
-    song: { readonly channelCount: number; readonly instrumentLetters: readonly string[] },
-    pattern: SongPattern,
-    row: number,
-    channel: number,
-    grammar: CellGrammar,
-): string {
-    const at = (row * song.channelCount + channel) * grammar.stride;
+export function printAudio90Cell(song: Audio90Song, pattern: Audio90SongPattern, row: number, channel: number): string {
+    const at = (row * song.channelCount + channel) * AUDIO90_CELL_GRAMMAR.stride;
     const { cells } = pattern;
     const note = cells[at + CELL_NOTE];
     const instrument = cells[at + CELL_INSTRUMENT];
@@ -66,12 +49,12 @@ function formatCell(
 
     let text = note === RELEASE ? '===' : note === NO_NOTE || cells[at + CELL_IS_OWN_NOTE] === 1 ? '...' : toNoteName(note);
     text += instrument < 0 ? '  ' : ` ${song.instrumentLetters[instrument]}`;
-    text += volume < 0 ? '   ' : ` ${formatHexToken('v', volume, 1)}`;
+    text += volume < 0 ? '   ' : ` ${printHexToken('v', volume, 1)}`;
 
-    for (const token of grammar.tokens) {
+    for (const token of AUDIO90_CELL_GRAMMAR.tokens) {
         if (token.kind === 'slide') {
             const slide = cells[at + CELL_SLIDE];
-            if (slide !== 0) text += ` ${formatHexToken(slide > 0 ? 'u' : 'd', Math.abs(slide), 2)}`;
+            if (slide !== 0) text += ` ${printHexToken(slide > 0 ? 'u' : 'd', Math.abs(slide), 2)}`;
             continue;
         }
         if (token.field === CELL_VOLUME) continue;
@@ -80,7 +63,7 @@ function formatCell(
             if (value === 1) text += ` ${token.token}`;
         }
         else if (value >= 0) {
-            text += value === token.bare ? ` ${token.prefix}` : ` ${formatHexToken(token.prefix, value, token.digits)}`;
+            text += value === token.bare ? ` ${token.prefix}` : ` ${printHexToken(token.prefix, value, token.digits)}`;
         }
     }
     return text;

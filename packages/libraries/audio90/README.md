@@ -148,7 +148,7 @@ The package has two import paths:
 | | `prepareAudio90Samples` | Bounces the samples given that are not bounced yet, as an entry loads, and throws if they need more than the chip's sample memory |
 | | `createAudio90SoundEffect` | Returns a new `Audio90SoundEffect`, parsed the same way |
 | | `createAudio90Song` | Returns a new `Audio90Song`, with its mixer, effects, pump and character |
-| | `formatAudio90Cell` | Returns the text of one cell of an `Audio90Song`'s pattern, in columns as a tracker shows it, which parses back into the same cell |
+| | `printAudio90Cell` | Returns the text of one cell of an `Audio90Song`'s pattern, in columns as a tracker shows it, which parses back into the same cell |
 | | `computeSongDurationMs` | Returns how long one pass through either chip's song's order (its list of patterns) lasts, in ms |
 | | `createMusicPlayer` | Returns a new `MusicPlayer`, which plays one song at a time on the sequencer of the chip it is given, `{ audio80 }` or `{ audio90 }`, and reports where the song heard has got to |
 | | `createAudio80` | Returns a new Audio80 that plays on an `AudioContext` you give it, and its controls. An `AudioContext` is the browser's object for playing sound |
@@ -164,7 +164,7 @@ The types in these signatures are exported too, among them `Audio80`,
 samples its samples may hold between them), `AUDIO90_SCOPE_POINTS`,
 `AUDIO90_SCOPE_PANS` and `AUDIO90_SCOPE_LENGTH` (how its `scope` array is
 laid out), and `AUDIO90_CELL_TEXT_WIDTH` (how many characters
-`formatAudio90Cell` writes before a cell's effects).
+`printAudio90Cell` prints before a cell's effects).
 
 ## Layout
 
