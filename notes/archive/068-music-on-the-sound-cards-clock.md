@@ -17,7 +17,7 @@ plays on it, and the docs say so. Section 15 says what was built, where it
 differs from the plan, and what was measured. The spike before it was
 confirmed on the user's phone over Bluetooth (section 14.4). The one thing
 left, trying the full build on a phone, moved to
-[074](../proposals/074-audio90-standalone-package.md), before `audio90` is
+[074](074-audio90-standalone-package.md), before `audio90` is
 published.
 
 **Written:** 2026-10-20, against main at `4b0eabb5` plus the unstaged

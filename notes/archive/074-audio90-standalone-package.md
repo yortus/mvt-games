@@ -11,11 +11,13 @@
 > later stage adds Audio90 Studio, an editor for sounds and songs, built
 > with MVT.
 
-**Status:** in progress, on the branch `audio90`. 068, which this builds
-on, was committed there as `0ebacfec` on 2026-10-27, and its last open item
-moved here (step 10). Steps 1 to 11 are done, the phone check and the
-docs included. Publishing (step 12) is next, and the Studio last. Section
-12 records the progress.
+**Status:** complete, and archived on 2026-10-29. `audio90` 0.8.0 is
+published to npm, with trusted publishing set up, and `@mvtjs/chiptune` is
+deprecated in its favour. Every step is done but the Studio, which moved to
+a proposal of its own, [077](../proposals/077-audio90-studio.md). The gaps
+in the API that writing the guides found are task
+[076](../tasks/backlog/076-audio90-api-gaps.md). Section 12 records the
+progress.
 
 **Written:** 2026-10-25, against main at `5cd89d4c`, with proposal 068
 built in its worktree but not yet merged. Name availability checked on npm
@@ -972,12 +974,14 @@ package is finished. The progress log uses these numbers.
     docs site's Sound and Music page. Update the glossary, project
     structure and AGENTS.md. Decide open question 8 first, since the README
     describes the package's layout.~~ Done, 2026-10-29 (section 12).
-12. A changeset for the rename, beside 068's. Publish `audio90`'s first
+12. ~~A changeset for the rename, beside 068's. Publish `audio90`'s first
     version by hand, since npm trusts a workflow only with a package that
     exists, then set up trusted publishing for it, as
     `.changeset/README.md`'s "The first release" says. Deprecate
-    `@mvtjs/chiptune`.
-13. The Studio, stage 1, as its own proposal, once `audio90` is published.
+    `@mvtjs/chiptune`.~~ Done, 2026-10-29 (section 12): 0.8.0 published.
+13. ~~The Studio, stage 1, as its own proposal, once `audio90` is
+    published.~~ Moved to [077](../proposals/077-audio90-studio.md), on
+    2026-10-29.
 
 ## 12. Progress
 
@@ -1933,3 +1937,11 @@ package is finished. The progress log uses these numbers.
     with its conventions in its own words. Moving it would still change
     `package.json`'s repository, homepage and bugs links, and need a
     Changesets config, a release workflow and, if wanted, lint.
+- **2026-10-29, published and archived.** The user published `audio90`
+  0.8.0 by hand from the branch `audio90`, set up trusted publishing on
+  npmjs.com, deprecated `@mvtjs/chiptune` in its favour, and merged the
+  branch into `vnext`. The Studio became proposal
+  [077](../proposals/077-audio90-studio.md), from section 8. The gaps from
+  writing the guides, with open questions 2 and 9, became task
+  [076](../tasks/backlog/076-audio90-api-gaps.md). Open question 7, the
+  Studio's address, moved to 077. Archived as complete.

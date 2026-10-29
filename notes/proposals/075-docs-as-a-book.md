@@ -37,7 +37,7 @@ this was written.
 [Docs site config](../../packages/sites/docs/.vitepress/config.ts) -
 [015, the documentation overhaul](../archive/015-documentation-overhaul/task.md), which made today's shape -
 [070, the principles pages](../archive/070-principles-docs.md), which made the voice this proposal adopts -
-[074](074-audio90-standalone-package.md), whose docs step touches the Sound chapter -
+[074](../archive/074-audio90-standalone-package.md), whose docs step touches the Sound chapter -
 [061, playground embeds for the docs](../archive/061-playground-embeds-for-the-docs.md), folded into section 9 -
 [The playground's runtime](../../packages/sites/playground/src/runtime/), which the embed page reuses
 
