@@ -5,14 +5,17 @@
 > Most core ideas are taught three or four times, on the Architecture
 > pages, the Building with MVT pages and the Reference pages. Many pages
 > depend on chapters that come after them. The voice changes with the age
-> of the page. This proposal turns the docs into one book, in six parts
-> and five appendices, where each idea is taught once, in the order a
-> reader needs it, in the voice of the Principles pages. It also lists
-> about thirty errors found along the way, which can be fixed now, before
-> anything moves.
+> of the page. This proposal turns the docs into one book, where each idea
+> is taught once, in the order a reader needs it, in the voice of the
+> Principles pages. It has five parts, a short chapter on the principles
+> after the core, the principle pages in full as back matter, and five
+> appendices. It also lists about thirty errors found along the way, which
+> can be fixed now, before anything moves.
 
 **Status:** proposed. Nothing is done yet. Section 9's errors can be fixed
-at any time, without waiting for the rest.
+at any time, without waiting for the rest. Where the principles go is
+settled (2026-10-29, section 4.5): a short chapter after the core, and the
+full pages as back matter.
 
 **Written:** 2026-10-28, against the `audio90` branch at `6664758c`. Every
 page in `packages/sites/docs/` was read in full, apart from
@@ -41,8 +44,8 @@ this was written.
 | # | Recommendation | Section |
 | --- | --- | --- |
 | 1 | Write one book, not three parallel tracks. Drop the separate language-neutral Architecture pages, and keep the specification as one appendix | [3](#3-one-book-not-three-tracks) |
-| 2 | Six parts, with appendices: The Idea, The Simulation, The Presentation, Why It Works (the principles), Presentation in Practice, Building with Confidence | [4](#4-the-outline) |
-| 3 | Put the principles after the core and before the practice chapters, so the practice chapters can name them rather than re-argue them | [4.5](#45-part-iv-why-it-works) |
+| 2 | Five parts: The Idea, The Simulation, The Presentation, Presentation in Practice, Building with Confidence. Then the principles in depth, and five appendices | [4](#4-the-outline) |
+| 3 | Sum up the principles in one short chapter after the core, so later chapters can name them. Put the full principle pages at the back, for readers who want the depth. **Settled** | [4.5](#45-the-principles-in-brief-and-in-depth) |
 | 4 | Give each concept one home chapter. Elsewhere, a page states it in a sentence and links to its home | [5](#5-one-home-for-each-concept) |
 | 5 | Adopt the Principles pages' voice everywhere, and a chapter shape adapted from theirs | [6](#6-voice-and-chapter-shape) |
 | 6 | Mark this project's libraries with one kind of aside, "In this project", and move what is about the Arcade and this repo out of the book | [3.3](#33-general-ideas-this-projects-libraries-and-this-repo) |
@@ -295,7 +298,7 @@ aim is chapters of 1,500 to 3,000 words.
 
 | # | Chapter | Sources | About |
 | --- | --- | --- | --- |
-| 1 | **Why MVT** | Architecture overview, docs home | The problem, shown with a tangled bouncing ball. Three jobs, three owners. Two kinds of state. The tick in one picture. What you get, and what it costs. Patterns you may know. The one place the whole frame sequence is drawn |
+| 1 | **Why MVT** | Architecture overview, docs home | The problem, shown with a tangled bouncing ball. Three jobs, three owners, named in passing as Separation of Concerns, with a link to Chapter 13. Two kinds of state. The tick in one picture. What you get, and what it costs. Patterns you may know. The one place the whole frame sequence is drawn |
 | 2 | **A First Game** | Quickstart | The same bouncing ball, untangled, then the playground. Chapter 1's example carries straight into it |
 
 Chapter 1 should use the bouncing ball, not the SoC page's ship, so the
@@ -342,50 +345,72 @@ Change Detection's "Dynamic Child Lists" section, which rebuilds every
 child when a count changes, should go. `<List>` replaced it, and
 Chapter 12 teaches `<List>`.
 
-### 4.5 Part IV: Why It Works
+### 4.5 The principles: in brief, and in depth
+
+The principles appear twice, at two depths, and the two don't overlap.
+
+**In brief, after the core.** One short chapter sits between Part III and
+Part IV, as an interlude:
 
 | # | Chapter | Sources | About |
 | --- | --- | --- | --- |
-| 13 | **The Principles Behind MVT** | Principles overview | Unchanged in substance |
-| 14-21 | **The eight principles** | SoC, SSOT, CQS, DIP, CRP, DbC, MISU, DfT | Unchanged in substance. Their links are updated to the new chapters |
-| 22 | **Why Views Poll** | Why Polling, Events and Signals | One page, about 2,000 words from today's 4,800. Keep the measurements, "When Push Wins" and counts for sound. Drop the restated "Observations" and the duplicate summary table. Fix the advice that contradicts counts (section 9) |
-| 23 | **Where MVT Comes From** | Heritage | Its immediate-mode section shortened to a link to Chapter 6. "Battle-tested" goes |
+| 13 | **The Principles in Brief** | The principles overview | The goal. The eight principles, each with its one line and the question it asks. How they build on one another. The screen-shake case worked through. Using them in a review. When they pull against each other. About 1,500 words, and each principle links to its full page at the back. "Examples Are in TypeScript" goes, since the whole book is in TypeScript |
 
-The principles go after the core and before the practice chapters. That
-placement gets three things right:
+**In depth, at the back.** The full pages become back matter, after Part V
+and before the appendices, as a group called **The Principles in Depth**:
 
-- **Their dependencies are met.** By Chapter 13, the reader has met
-  presentation state, `watch`, composition and phases, which the principle
-  pages lean on.
-- **The practice chapters can point back.** Sound can say "this is CQS at
-  work" and link back, instead of arguing it again.
-- **Testing can rest on DfT.** Today, the Testing page's "Philosophy"
-  restates DfT in a weaker form and doesn't link to it.
+| Page | Sources | About |
+| --- | --- | --- |
+| The eight principles | SoC, SSOT, CQS, DIP, CRP, DbC, MISU, DfT | Unchanged in substance. Their links are updated to the new chapters |
+| **Why Views Poll** | Why Polling, Events and Signals | One page, about 2,000 words from today's 4,800. Keep the measurements, "When Push Wins" and counts for sound. Drop the restated "Observations" and the duplicate summary table. Fix the advice that contradicts counts (section 9) |
+| **Where MVT Comes From** | Heritage | Its immediate-mode section shortened to a link to Chapter 6. "Battle-tested" goes |
 
-The cost is a long run of theory, about 21,000 words, in the middle of
-the book. The part's opening page should say so plainly. A reader keen to
-build can skip to Part V and come back. The alternative, the principles
-as the last part, is open question 1.
+These pages are not numbered chapters, and not lettered appendices
+either. "Appendix" would make 18,000 words of the book's best writing
+sound minor. They are reading for anyone who wants to know why. A reader
+who skips them still has the gist from Chapter 13.
 
-### 4.6 Part V: Presentation in Practice
+This placement does four things well:
+
+- **Every idea comes first.** Chapter 13 names bindings, ticks,
+  presentation state and phases, and by then Parts I to III have taught
+  them all. The full pages come after everything they link to, including
+  testing and hot paths.
+- **The reading keeps moving.** Someone reading straight through meets
+  one chapter of reasons, then goes on to practice. No 18,000-word run of
+  theory sits in the middle of the book.
+- **Later chapters can point back.** Sound can say "this is CQS at work",
+  and Testing can rest on "control, observe, repeat", each in a sentence,
+  with a link to Chapter 13, instead of arguing the case again. Today, the
+  Testing page's "Philosophy" restates DfT in a weaker form.
+- **It matches how the pages are used.** Deciding a case no rule covers,
+  and naming a principle in a review finding, are both look-up uses. Each
+  page's checklist and "Rules It Underpins" table already work that way.
+  Appendix A's **Serves** column links each rule to its full page.
+
+Chapter 13 needs only small edits. The principles overview already does
+this chapter's job, and its screen-shake example leads straight into
+Part IV's practice chapters.
+
+### 4.6 Part IV: Presentation in Practice
 
 | # | Chapter | Sources | About |
 | --- | --- | --- | --- |
-| 24 | **Growing a Complex View** | Taming Complex Views, Complex Sequences | One ladder: inline first, then sub-views, then helpers (tweens, the metronome, easing), then shared sequences and reactions, then a view model. One match-effects story, not two that disagree |
-| 25 | **Lists in Motion** | The second half of Collections | Items that carry presentation state, release delays, `OrderedSlotList`, drag and drop |
-| 26 | **Sound and Music** | Sound and Music | Audio views. Its re-teaching of counts, the first poll and the metronome becomes links. Rewritten for one clock when 074 lands |
-| 27 | **Reading Layout Back** | Reading Layout Back | Unchanged in substance |
-| 28 | **Reduced Motion** | Reduced Motion | Last, since it uses phases, presentation state and sequences |
+| 14 | **Growing a Complex View** | Taming Complex Views, Complex Sequences | One ladder: inline first, then sub-views, then helpers (tweens, the metronome, easing), then shared sequences and reactions, then a view model. One match-effects story, not two that disagree |
+| 15 | **Lists in Motion** | The second half of Collections | Items that carry presentation state, release delays, `OrderedSlotList`, drag and drop |
+| 16 | **Sound and Music** | Sound and Music | Audio views. Its re-teaching of counts, the first poll and the metronome becomes links. Rewritten for one clock when 074 lands |
+| 17 | **Reading Layout Back** | Reading Layout Back | Unchanged in substance |
+| 18 | **Reduced Motion** | Reduced Motion | Last, since it uses phases, presentation state and sequences |
 
-### 4.7 Part VI: Building with Confidence
+### 4.7 Part V: Building with Confidence
 
 | # | Chapter | Sources | About |
 | --- | --- | --- | --- |
-| 29 | **Testing Models** | Testing (opener), Testing Models | The only home for leap safety's testing side and `advanceTime`. It opens from DfT's "control, observe, repeat" and links there for the why |
-| 30 | **Testing Views** | Testing Views | Assertions or images: "the value problem". Audio views get a link to Chapter 26's testing section, not a copy |
-| 31 | **Visual Tests** | Visual Tests, Testing Views' snapshot sections | Posing, advancing time, whole screens, keeping images the same, reviewing a change. One word for one thing: "reference image". "Choosing a Tool" shrinks to an aside that links to v-snap's README |
-| 32 | **Why Performance Matters** | Why Performance Matters | Unchanged in substance |
-| 33 | **Hot Paths** | Hot Paths | Owns the H-* rules, links to Chapter 8 rather than re-teaching `watch`, and quotes figures only from Appendix C's short version |
+| 19 | **Testing Models** | Testing (opener), Testing Models | The only home for leap safety's testing side and `advanceTime`. It opens from "control, observe, repeat" in Chapter 13, and links to the full DfT page for the why |
+| 20 | **Testing Views** | Testing Views | Assertions or images: "the value problem". Audio views get a link to Chapter 16's testing section, not a copy |
+| 21 | **Visual Tests** | Visual Tests, Testing Views' snapshot sections | Posing, advancing time, whole screens, keeping images the same, reviewing a change. One word for one thing: "reference image". "Choosing a Tool" shrinks to an aside that links to v-snap's README |
+| 22 | **Why Performance Matters** | Why Performance Matters | Unchanged in substance |
+| 23 | **Hot Paths** | Hot Paths | Owns the H-* rules, links to Chapter 8 rather than re-teaching `watch`, and quotes figures only from Appendix C's short version |
 
 ### 4.8 Appendices
 
@@ -408,7 +433,7 @@ value: see Chapter 7"). That is open question 4.
 - **Working in This Repo**: a separate sidebar section (section 7.2).
 - **AI Agents**: section 7.3.
 - **The audio90 guides** stay in their package. They belong to `audio90`,
-  which is published on its own. Chapter 26 links to them.
+  which is published on its own. Chapter 16 links to them.
 - **Articles** stay unpublished drafts, as now.
 
 ## 5. One Home for Each Concept
@@ -420,26 +445,27 @@ summary.
 
 | Concept | Home | Pages that keep only a sentence and a link |
 | --- | --- | --- |
-| The frame sequence | Ch. 1 (the picture), Ch. 5 (the detail) | Preface, Ch. 2, Ch. 6, CQS, Ch. 22, App. A |
+| The frame sequence | Ch. 1 (the picture), Ch. 5 (the detail) | Preface, Ch. 2, Ch. 6, CQS, Why Views Poll, App. A |
 | Two kinds of state | Ch. 1 | Ch. 9 |
-| Presentation state, view models | Ch. 9 (view models in Ch. 24) | Ch. 1, Ch. 5, Ch. 6, Ch. 26, SSOT |
+| Presentation state, view models | Ch. 9 (view models in Ch. 14) | Ch. 1, Ch. 5, Ch. 6, Ch. 16, SSOT |
 | The delete-the-view test | Ch. 9 | Ch. 6, SoC |
 | `update(deltaMs)` contract | Ch. 3 | Ch. 4, App. A |
-| Leap safety | Ch. 4 | Ch. 29 |
-| `advanceTime` | Ch. 29 | Ch. 4 |
-| Phases and progress | Ch. 4 | MISU, Ch. 9, Ch. 28 |
-| Counts and `watch()` | Ch. 8 | Ch. 3 (the model's side), CQS, Ch. 26, Ch. 33 |
-| The metronome | Ch. 24 | Ch. 26 |
+| Leap safety | Ch. 4 | Ch. 19 |
+| `advanceTime` | Ch. 19 | Ch. 4 |
+| Phases and progress | Ch. 4 | MISU, Ch. 9, Ch. 18 |
+| Counts and `watch()` | Ch. 8 | Ch. 3 (the model's side), CQS, Ch. 16, Ch. 23 |
+| The metronome | Ch. 14 | Ch. 16 |
 | Access patterns (bindings, model, constants) | Ch. 7 | Ch. 6 |
 | Fixed and changeable values | Ch. 7 | SSOT, App. A |
-| Immediate-mode data, retained-mode output | Ch. 6 | Ch. 10, Ch. 23 |
-| `<List>`, `SlotList` | Ch. 12 (views), Ch. 3 (models) | Ch. 25 |
-| Testing a model | Ch. 29 | Ch. 3 (one sentence, no example) |
-| Testing an audio view | Ch. 26 | Ch. 30 |
-| Reference images and review | Ch. 31 | Ch. 30 |
-| Hot paths | Ch. 33 | Ch. 5, App. A |
+| Immediate-mode data, retained-mode output | Ch. 6 | Ch. 10, Where MVT Comes From |
+| `<List>`, `SlotList` | Ch. 12 (views), Ch. 3 (models) | Ch. 15 |
+| The principles | Their full pages, at the back | Ch. 13 (a paragraph each), Ch. 1 (SoC by name), and any chapter that names one |
+| Testing a model | Ch. 19 | Ch. 3 (one sentence, no example) |
+| Testing an audio view | Ch. 16 | Ch. 20 |
+| Reference images and review | Ch. 21 | Ch. 20 |
+| Hot paths | Ch. 23 | Ch. 5, App. A |
 | Performance figures | App. C, its short version | Every page that quotes a number |
-| Why polling | Ch. 22 | SSOT, CQS, Ch. 23 |
+| Why polling | Why Views Poll, at the back | SSOT, CQS, Where MVT Comes From, Ch. 8 |
 | GSAP timelines | App. E | Ch. 4 |
 | The rules | App. A | Each chapter states its own rules where it teaches them |
 
@@ -620,17 +646,26 @@ is quick to confirm.
 - **Keep Adding Visual Polish and Animating Transitions as chapters.**
   Their line is "simple or complex", which cuts timing in the wrong
   place. Part II takes the model's timing, Chapter 9 takes the view's,
-  and Chapter 24 takes the ladder from simple to complex.
+  and Chapter 14 takes the ladder from simple to complex.
 - **Rewrite the principles.** They are the standard. Only their links
-  change, and their order relative to the rest.
+  change, and their place in the book.
+- **The eight principle pages in the middle of the book.** An earlier draft
+  put them all after the core, as a part of their own. That met every
+  dependency, but it put about 18,000 words of theory between the core and
+  the practice chapters. Section 4.5's short chapter keeps what that
+  placement was for, so later chapters can name the principles, without
+  the long detour. **Settled 2026-10-29. Do not reopen without new
+  information.**
+- **A summary of the principles in Chapter 1.** At Chapter 1, the reader
+  hasn't met bindings, ticks, presentation state or phases, so a summary
+  there would name ideas before they mean anything. Chapter 1 names SoC
+  alone, since its "three jobs, three owners" is SoC. **Settled
+  2026-10-29.**
 
 ## 11. Open Questions
 
-1. **Where the principles go.** This proposal puts them in the middle
-   (Part IV). The alternative is the end, as a capstone. That would satisfy
-   every dependency too, but the practice chapters would then link
-   forward to the reasons, and Testing would repeat DfT's case or point
-   forward to it.
+1. ~~**Where the principles go.**~~ Settled 2026-10-29: a short chapter
+   after the core, and the full pages as back matter (section 4.5).
 2. **Phases in the model part.** Chapter 4 holds model phases and Chapter
    9 view-owned phases. Is splitting "phases" across two parts clear, or
    should a short section in Chapter 9 bring both sides together?
@@ -663,8 +698,10 @@ review sees whole parts of the book.
    links in one scripted pass.
 4. Front matter and Parts I and II: Preface, Chapters 1-5.
 5. Part III: Chapters 6-12.
-6. Part IV: the principles' links, Chapter 22 (the merge), Chapter 23.
-7. Parts V and VI: Chapters 24-33.
+6. The principles: Chapter 13, from the principles overview, and the back
+   matter. That means the principle pages' links, Why Views Poll (the
+   merge) and Where MVT Comes From.
+7. Parts IV and V: Chapters 14-23.
 8. Appendices A-E, the glossary rewrite, and the deletion of the
    reference rules stub and Common Mistakes.
 9. Working in This Repo: the split Style Guide, Project Structure and the
