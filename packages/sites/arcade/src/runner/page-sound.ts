@@ -390,6 +390,9 @@ function createSlot<Song, Sound, PlayOptions>(): ChipSlot<SoundChip<Song, Sound,
         get beat() {
             return read()?.beat ?? 0;
         },
+        get positionMs() {
+            return read()?.positionMs ?? 0;
+        },
         get tempoScale() {
             return read()?.tempoScale ?? tempoScale;
         },

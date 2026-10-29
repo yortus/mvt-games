@@ -50,9 +50,14 @@ export interface SoundChip<Song, Sound, PlayOptions> {
      *
      * A song starts from its beginning, in place of any song playing, and
      * any song queued is cancelled, so nothing queued before plays after it.
-     * Its options say how many more times its loop plays, and how far to
-     * transpose it. It throws if they are not valid, or take a note out of
-     * the chip's range.
+     * Its options say how many more times its loop plays, how far to
+     * transpose it, whether to fade it in, and where in it to start. It
+     * throws if they are not valid, or take a note out of the chip's range.
+     *
+     * A song started part way is heard from there as it would be on reaching
+     * it: each channel's instrument, pan and sends are as the rows before
+     * left them, but the notes those rows started don't sound, so it is heard
+     * from the first note at or after the start.
      */
     play: {
         (sound: Sound, options?: PlayOptions): number;
@@ -94,6 +99,13 @@ export interface SoundChip<Song, Sound, PlayOptions> {
     readonly row: number;
     /** Where the song heard has got to, in beats from its start. Views can use it to move in time with the music. 0 when no song is playing. */
     readonly beat: number;
+    /**
+     * Where the song heard is in its order, in ms at its own tempo, from 0 to
+     * its `durationMs`: what a seek bar shows. It goes back as the song loops.
+     * Playing the song with this as `startMs` starts it from here. 0 when no
+     * song is playing.
+     */
+    readonly positionMs: number;
     /**
      * A multiplier on the song's tempo, where 1 plays it at its own tempo. 0
      * holds the song where it is. Its notes ring on as their envelopes allow,
@@ -154,6 +166,8 @@ export interface SongSequencer<S> {
     readonly row: number;
     /** Where the song heard has got to, in beats from its start. 0 when no song is playing. */
     readonly beat: number;
+    /** Where the song heard is in its order, in ms at its own tempo, going back as it loops. 0 when no song is playing. */
+    readonly positionMs: number;
     /**
      * Starts `song` from its beginning, releasing any song playing, and
      * cancels any song queued. `play` says how it plays, and defaults to

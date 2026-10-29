@@ -50,6 +50,15 @@ export interface SongDriver<S extends PlayableSong> {
     readonly time: number;
     /** Writes `song`'s settings as it starts, to play `pitch` semitones up from its notes. Its first row follows. */
     start: (song: S, stamp: number, tempoScale: number, pitch: number) => void;
+    /**
+     * Takes row `row` of order entry `orderIndex` without playing it, as a
+     * song starts part way: it plays no note, and keeps what the row leaves
+     * on the chip after its notes, such as a channel's pan. `writeSkipped`
+     * writes what it kept.
+     */
+    skipRow: (song: S, orderIndex: number, row: number) => void;
+    /** Writes what the rows skipped since the song started left on the chip, once each, as they would have. */
+    writeSkipped: (song: S, stamp: number) => void;
     /** Writes row `row` of order entry `orderIndex`, which lasts `lengthMs` of song time. */
     playRow: (song: S, orderIndex: number, row: number, stamp: number, lengthMs: number, tempoScale: number) => void;
     /** Writes what a new tempo scale changes, such as the channels' slides. */
@@ -139,6 +148,9 @@ export function createSongPlayer<S extends PlayableSong>(options: SongPlayerOpti
         get beat() {
             return song === undefined ? 0 : times[SONG_MS] * song.bpm / 60000;
         },
+        get positionMs() {
+            return song === undefined ? 0 : times[SONG_MS] - times[PASS_OFFSET_MS];
+        },
         get orderIndex() {
             return song === undefined ? 0 : playingOrderIndex;
         },
@@ -205,8 +217,8 @@ export function createSongPlayer<S extends PlayableSong>(options: SongPlayerOpti
             if (scale > 0 && coveredMs > 0) {
                 let remaining = coveredMs * scale;
                 for (;;) {
-                // The next row's time: its place on the grid, plus the swing's delay on an odd row of its
-                // pattern. Worked out here without a choice between doubles, which would make V8 box one
+                    // The next row's time: its place on the grid, plus the swing's delay on an odd row of its
+                    // pattern. Worked out here without a choice between doubles, which would make V8 box one
                     const at = times[NEXT_ROW_MS] + (isAtEnd ? 0 : row % 2) * song.swing * times[ROW_MS];
                     if (at > times[SONG_MS] + remaining) {
                         times[SONG_MS] += remaining;
@@ -224,8 +236,10 @@ export function createSongPlayer<S extends PlayableSong>(options: SongPlayerOpti
                     }
                     const next = queued;
                     if (next === undefined && song.loop >= 0 && repeatsLeft > 0) {
-                    // Go back to the loop point. Its first row is due now, so the next turn of this loop plays it at once
+                        // Go back to the loop point. Its first row is due now, so the next turn of this loop plays it
+                        // at once. The song's place in its order goes back to where that entry starts
                         repeatsLeft--;
+                        times[PASS_OFFSET_MS] = times[SONG_MS] - computeEntryStartMs(song.loop);
                         orderIndex = song.loop;
                         row = 0;
                         isAtEnd = false;
@@ -266,8 +280,43 @@ export function createSongPlayer<S extends PlayableSong>(options: SongPlayerOpti
         times[NEXT_ROW_MS] = 0;
         isAtEnd = false;
         times[STARTED_AT_MS] = stamp;
+        times[PASS_OFFSET_MS] = 0;
         driver.start(next, stamp, tempoScale, play.pitch);
-        playRow(stamp);
+        if (play.startMs > 0 || play.startOrderIndex > 0 || play.startRow > 0) skipTo(play, stamp);
+        // The first row heard is due at once, unless the song starts inside a row, when it waits for the next
+        if (times[NEXT_ROW_MS] + (row % 2) * next.swing * times[ROW_MS] <= times[SONG_MS]) playRow(stamp);
+    }
+
+    /**
+     * Moves the song to where `play` says it starts, with no sound: the rows
+     * before it are skipped, and what they leave on the chip is written at
+     * `stamp`. A start inside a row leaves that row the one playing.
+     */
+    function skipTo(play: CheckedSongPlay, stamp: number): void {
+        if (song === undefined) return;
+        const isByRow = play.startOrderIndex > 0 || play.startRow > 0;
+        for (;;) {
+            const at = times[NEXT_ROW_MS] + (row % 2) * song.swing * times[ROW_MS];
+            if (isByRow ? orderIndex === play.startOrderIndex && row === play.startRow : at >= play.startMs) {
+                times[SONG_MS] = isByRow ? at : play.startMs;
+                break;
+            }
+            driver.skipRow(song, orderIndex, row);
+            playingOrderIndex = orderIndex;
+            playingRow = row;
+            advanceRow();
+        }
+        driver.writeSkipped(song, stamp);
+        // A start inside a row is heard in that row, so it is reported as it would be on reaching it
+        if (!isByRow && times[NEXT_ROW_MS] + (row % 2) * song.swing * times[ROW_MS] > times[SONG_MS]) onRow?.(song, playingOrderIndex, playingRow);
+    }
+
+    /** Where order entry `index` of the song playing starts, in song ms from the start of its order. Entries start on the grid, so swing doesn't move them. */
+    function computeEntryStartMs(index: number): number {
+        if (song === undefined) return 0;
+        let rows = 0;
+        for (let i = 0; i < index; i++) rows += song.patterns[song.order[i].pattern].rowCount;
+        return rows * times[ROW_MS];
     }
 
     /** Ends a fade-out as the chip reaches silence: cuts every voice, and starts the song queued, if there is one. */
@@ -333,4 +382,6 @@ const SONG_MS = 1;
 const NEXT_ROW_MS = 2;
 const STARTED_AT_MS = 3;
 const FADE_END_MS = 4;
-const TIME_COUNT = 5;
+// The song time the current pass through the order started at, so `positionMs` is the song's place in its order
+const PASS_OFFSET_MS = 5;
+const TIME_COUNT = 6;

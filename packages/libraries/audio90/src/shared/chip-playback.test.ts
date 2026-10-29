@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CheckedSongPlay } from './check-song-play';
+import { type CheckedSongPlay, DEFAULT_SONG_PLAY } from './check-song-play';
 import { createChipPlayback } from './chip-playback';
 import type { SongSequencer } from './sound-chip';
 import type { PlayableSong } from './song-player';
@@ -31,11 +31,11 @@ describe('a chip\'s playback', () => {
     it('checks a song\'s options before it plays or queues it, and passes them on with their defaults', () => {
         const { playback, calls, songPlays } = createPlaybackOnStandIns();
         expect(() => playback.play(SONG_A, { repeat: -1 })).toThrow('play: repeat must be');
-        expect(() => playback.queue(SONG_A, { pitch: 0.5 })).toThrow('play: pitch must be');
+        expect(() => playback.queue(SONG_A, { pitch: Number.NaN })).toThrow('play: pitch must be');
         expect(calls).toEqual([]);
         playback.play(SONG_A, { repeat: 2 });
         playback.queue(SONG_B, { pitch: -1 });
-        expect(songPlays).toEqual([{ repeat: 2, pitch: 0, fadeMs: 0 }, { repeat: Infinity, pitch: -1, fadeMs: 0 }]);
+        expect(songPlays).toEqual([{ ...DEFAULT_SONG_PLAY, repeat: 2 }, { ...DEFAULT_SONG_PLAY, pitch: -1 }]);
     });
 
     it('stops every voice at once with no id, unless the song fades out, whose end cuts them', () => {
@@ -100,7 +100,7 @@ type StandInSound = typeof ZAP;
 
 /** A stand-in song, which has an order of patterns, as every song has. */
 function createSong(name: string): StandInSong {
-    return { name, bpm: 120, rowsPerBeat: 4, swing: 0, loop: -1, channelCount: 1, order: [], patterns: [] };
+    return { name, bpm: 120, rowsPerBeat: 4, swing: 0, loop: -1, channelCount: 1, order: [], patterns: [], durationMs: 1000 };
 }
 interface StandInSong extends PlayableSong {
     readonly name: string;
@@ -119,6 +119,7 @@ function createPlaybackOnStandIns() {
         orderIndex: 0,
         row: 0,
         beat: 0,
+        positionMs: 0,
         play: (song, play) => {
             songPlays.push(play);
             calls.push(`play ${song.name}`);

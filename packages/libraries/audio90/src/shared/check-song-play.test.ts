@@ -10,8 +10,8 @@ describe('checkSongPlay', () => {
     it('loops until stopped, at the song\'s own pitch, unless told otherwise', () => {
         const song = createSong('| C-4 L');
         expect(checkSongPlay(song, undefined)).toBe(DEFAULT_SONG_PLAY);
-        expect(checkSongPlay(song, {})).toEqual({ repeat: Infinity, pitch: 0, fadeMs: 0 });
-        expect(checkSongPlay(song, { repeat: 0, pitch: -3, fadeMs: 500 })).toEqual({ repeat: 0, pitch: -3, fadeMs: 500 });
+        expect(checkSongPlay(song, {})).toEqual(DEFAULT_SONG_PLAY);
+        expect(checkSongPlay(song, { repeat: 0, pitch: -3, fadeMs: 500 })).toEqual({ ...DEFAULT_SONG_PLAY, repeat: 0, pitch: -3, fadeMs: 500 });
     });
 
     it('refuses a repeat that is not a whole number, 0 or more, or Infinity', () => {
@@ -27,8 +27,23 @@ describe('checkSongPlay', () => {
         }
     });
 
-    it('refuses a pitch that is not a whole number of semitones', () => {
-        expect(() => checkSongPlay(createSong('| C-4 L'), { pitch: 0.5 })).toThrow('play: pitch must be a whole number of semitones; got 0.5');
+    it('takes a start in ms within the song, or a place in its order, but not both', () => {
+        const song = createSong('| C-4 L\n| D-4 L', ['p', 'p']);
+        expect(checkSongPlay(song, { startMs: song.durationMs / 2 })).toMatchObject({ startMs: song.durationMs / 2, startOrderIndex: 0, startRow: 0 });
+        expect(checkSongPlay(song, { startAt: { orderIndex: 1, row: 1 } })).toMatchObject({ startMs: 0, startOrderIndex: 1, startRow: 1 });
+        for (const startMs of [-1, song.durationMs, Number.NaN]) {
+            expect(() => checkSongPlay(song, { startMs }), `startMs ${startMs}`).toThrow(`play: startMs must be 0 or more, and less than the song's ${song.durationMs} ms`);
+        }
+        expect(() => checkSongPlay(song, { startAt: { orderIndex: 2, row: 0 } })).toThrow('play: startAt.orderIndex must be an entry of the song\'s order, 0 to 1; got 2');
+        expect(() => checkSongPlay(song, { startAt: { orderIndex: 0, row: 2 } })).toThrow('play: startAt.row must be a row of entry 0\'s pattern, 0 to 1; got 2');
+        expect(() => checkSongPlay(song, { startMs: 0, startAt: { orderIndex: 0, row: 0 } })).toThrow('play: give startMs or startAt, not both');
+    });
+
+    it('takes a pitch that is a fraction of a semitone, and refuses one that is not a finite number', () => {
+        expect(checkSongPlay(createSong('| C-4 L'), { pitch: 0.5 }).pitch).toBe(0.5);
+        for (const pitch of [Number.NaN, Infinity]) {
+            expect(() => checkSongPlay(createSong('| C-4 L'), { pitch }), `pitch ${pitch}`).toThrow(`play: pitch must be a finite number of semitones; got ${pitch}`);
+        }
     });
 
     it('refuses a pitch that takes a note, as its order entry transposes it, out of the chip\'s range', () => {

@@ -73,7 +73,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Sequen
     // The calls waiting for the next block
     const calls: SongCallMessage[] = [];
     // Reused for every place sent. Its fields are written, then it is copied as it is sent
-    const reply = { kind: 'song-place' as const, generation: 0, frame: 0, songId: 0, orderIndex: 0, row: 0, beat: 0, tempoScale: 1 };
+    const reply = { kind: 'song-place' as const, generation: 0, frame: 0, songId: 0, orderIndex: 0, row: 0, beat: 0, positionMs: 0, tempoScale: 1 };
     // The generation of the last call applied, and what was last sent of the place. It starts as the page
     // starts, with no song, so nothing is sent until the first call
     const sent = { generation: 0, isMoved: false, songId: 0, orderIndex: 0, row: 0 };
@@ -138,7 +138,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Sequen
         }
         const song = songs.get(call.songId);
         if (song === undefined) return;
-        const play = { repeat: call.repeat, pitch: call.pitch, fadeMs: call.fadeMs };
+        const play = { repeat: call.repeat, pitch: call.pitch, fadeMs: call.fadeMs, startMs: call.startMs, startOrderIndex: call.startOrderIndex, startRow: call.startRow };
         if (call.call === 'play') player.play(song, play);
         else player.queue(song, play);
     }
@@ -158,6 +158,7 @@ export function createWorkletSequencer<S extends SequencedSong, W extends Sequen
         reply.orderIndex = player.orderIndex;
         reply.row = player.row;
         reply.beat = player.beat;
+        reply.positionMs = player.positionMs;
         reply.tempoScale = player.tempoScale;
         sendPlace(reply);
     }

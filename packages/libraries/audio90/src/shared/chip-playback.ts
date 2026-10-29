@@ -11,7 +11,7 @@ import type { SongSequencer, SoundChip } from './sound-chip';
 /** The members of a chip that play songs and sounds, which every chip makes the same way. */
 export type ChipPlayback<Song, Sound, PlayOptions> = Pick<
     SoundChip<Song, Sound, PlayOptions>,
-    'play' | 'queue' | 'stop' | 'song' | 'orderIndex' | 'row' | 'beat' | 'tempoScale'
+    'play' | 'queue' | 'stop' | 'song' | 'orderIndex' | 'row' | 'beat' | 'positionMs' | 'tempoScale'
 >;
 
 // ---------------------------------------------------------------------------
@@ -61,6 +61,9 @@ export function createChipPlayback<Song extends PlayableSong, Sound extends obje
         },
         get beat() {
             return songs.beat;
+        },
+        get positionMs() {
+            return songs.positionMs;
         },
         get tempoScale() {
             return tempoScale;

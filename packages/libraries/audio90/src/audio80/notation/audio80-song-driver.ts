@@ -48,6 +48,8 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
     const channelSlideRate = new Float64Array(AUDIO80_VOICE_COUNT);
     // The semitones the song playing is played up from its notes
     let pitch = 0;
+    // Each filter's cutoff as the rows skipped as a song starts part way left it, or NaN if they didn't set it
+    const keptCutoffHz = Float64Array.of(Number.NaN, Number.NaN);
 
     return {
         get time() {
@@ -71,6 +73,29 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
                 write(OP80_SET_ECHO, stamp, AUDIO80_ECHO_SETTING_INDEX.feedback, song.echo.feedback ?? AUDIO80_ECHO_DEFAULTS.feedback, 0, 0);
                 write(OP80_SET_ECHO, stamp, AUDIO80_ECHO_SETTING_INDEX.level, song.echo.level ?? AUDIO80_ECHO_DEFAULTS.level, 0, 0);
             }
+        },
+
+        // A skipped row's notes, and the effects that apply to a note, would be gone by the next note, so only the
+        // channel's instrument and the filters' cutoffs, which every note shares, are kept
+        skipRow(song, orderIndex, row) {
+            const cells = song.patterns[song.order[orderIndex].pattern].cells;
+            const channels = song.channelCount;
+            for (let channel = 0; channel < channels; channel++) {
+                const at = (row * channels + channel) * CELL80_STRIDE;
+                const named = cells[at + CELL_INSTRUMENT];
+                if (named >= 0) channelInstrument[channel] = named;
+                const instrument = channelInstrument[channel];
+                const filter = cells[at + CELL80_FILTER];
+                const route = instrument >= 0 ? song.instruments[instrument].data.filter : 0;
+                if (filter >= 0 && route > 0) keptCutoffHz[route - 1] = toCutoff(filter);
+            }
+        },
+
+        writeSkipped(_song, stamp) {
+            for (let f = 0; f < keptCutoffHz.length; f++) {
+                if (!Number.isNaN(keptCutoffHz[f])) write(OP80_SET_FILTER, stamp, f, AUDIO80_FILTER_SETTING_INDEX.cutoffHz, keptCutoffHz[f], 0);
+            }
+            keptCutoffHz.fill(Number.NaN);
         },
 
         playRow(song, orderIndex, row, stamp, lengthMs, scale) {

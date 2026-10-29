@@ -13,7 +13,7 @@ import {
     type Audio80Sound,
 } from '../audio80';
 import { OP_FADE, OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE } from './commands';
-import type { CheckedSongPlay } from './check-song-play';
+import { type CheckedSongPlay, DEFAULT_SONG_PLAY } from './check-song-play';
 import { toNoteNumber } from './notes';
 import { createSongPlayer, type SongPlayer, type SongWriter } from './song-player';
 
@@ -106,17 +106,17 @@ describe('song player', () => {
 
     it('goes back to its loop point only as many more times as its repeat says, then ends', () => {
         const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
-        const once = playThrough(looped, () => 1000 / 60, 4 * 4 * ROW_MS + 1, { repeat: 1, pitch: 0, fadeMs: 0 });
+        const once = playThrough(looped, () => 1000 / 60, 4 * 4 * ROW_MS + 1, { ...DEFAULT_SONG_PLAY, repeat: 1, pitch: 0, fadeMs: 0 });
         expect(listNoteOns(once.log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS, 8 * ROW_MS]);
         expect(once.player.song).toBeUndefined();
-        const never = playThrough(looped, () => 1000 / 60, 3 * 4 * ROW_MS + 1, { repeat: 0, pitch: 0, fadeMs: 0 });
+        const never = playThrough(looped, () => 1000 / 60, 3 * 4 * ROW_MS + 1, { ...DEFAULT_SONG_PLAY, repeat: 0, pitch: 0, fadeMs: 0 });
         expect(listNoteOns(never.log).filter((write) => write.note === requireNoteNumber('G-5')).map((write) => write.time)).toEqual([4 * ROW_MS]);
         expect(never.player.song).toBeUndefined();
     });
 
     it('plays every note but an instrument\'s own note its pitch up, on top of the order\'s transposition', () => {
         const pitch = -5;
-        const { log } = playThrough(TUNE, () => 1000 / 60, TUNE.durationMs + 100, { repeat: 0, pitch, fadeMs: 0 });
+        const { log } = playThrough(TUNE, () => 1000 / 60, TUNE.durationMs + 100, { ...DEFAULT_SONG_PLAY, repeat: 0, pitch, fadeMs: 0 });
         const secondPass = listNoteOns(log).filter((write) => write.time >= 4 * ROW_MS);
         expect(listNoteOns(log)[0].note).toBe(requireNoteNumber('C-5') + pitch);
         expect(secondPass.find((write) => write.voice === 0)?.note).toBe(requireNoteNumber('C-5') + TUNE.order[1].transpose + pitch);
@@ -176,7 +176,7 @@ describe('song player', () => {
         const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
         player.stop(1000);
-        player.play(TUNE, { repeat: 0, pitch: 0, fadeMs: 300 });
+        player.play(TUNE, { ...DEFAULT_SONG_PLAY, repeat: 0, pitch: 0, fadeMs: 300 });
         const fades = chip.log.filter((write) => write.kind === 'fade');
         expect(fades).toEqual([
             { kind: 'fade', isIn: false, ms: 1000, time: 0 },
@@ -199,11 +199,56 @@ describe('song player', () => {
         expect(listNoteOns(chip.log).find((write) => write.note === requireNoteNumber('G-5'))?.time).toBe(ROW_MS / 2);
     });
 
+    it('plays from a place in its order as it would on reaching it, with the instrument and cutoff the rows before left', () => {
+        const options = { ...ONE_CHANNEL, patterns: { a: '| C-4 L f8\n| E-4', b: '| D-4\n| F-4' }, order: ['a', 'b'] };
+        const song = createAudio80Song(options);
+        const startMs = 2 * ROW_MS;
+        const through = playThrough(song, () => 10, song.durationMs);
+        const started = playThrough(song, () => 10, song.durationMs - startMs, { ...DEFAULT_SONG_PLAY, startOrderIndex: 1 });
+        // The same notes, each the same time after the place, though no row of entry 1 names an instrument
+        const after = listNoteOns(through.log).filter((write) => write.time >= startMs).map((write) => ({ ...write, time: write.time - startMs }));
+        expect(listNoteOns(started.log)).toEqual(after);
+        // The cutoff entry 0 set, written once as it starts, and none of entry 0's notes
+        const cutoffs = started.log.filter((write) => write.kind === 'set-filter' && write.setting === AUDIO80_FILTER_SETTING_INDEX.cutoffHz);
+        expect(cutoffs).toEqual([expect.objectContaining({ value: toCutoff(8), time: 0 })]);
+    });
+
+    it('plays the same from a place in its order as from the time in ms that place starts at', () => {
+        const song = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'] });
+        const byPlace = playThrough(song, () => 10, 4 * ROW_MS, { ...DEFAULT_SONG_PLAY, startOrderIndex: 1 });
+        const byTime = playThrough(song, () => 10, 4 * ROW_MS, { ...DEFAULT_SONG_PLAY, startMs: 4 * ROW_MS });
+        expect(byTime.log).toEqual(byPlace.log);
+        expect(byTime.player.positionMs).toBe(byPlace.player.positionMs);
+    });
+
+    it('plays from a time in ms, waiting for the next row if it falls inside one, and reports its place from there', () => {
+        const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: '| C-4 L\n| D-4 L\n| E-4 L\n| F-4 L' } });
+        const startMs = 1.5 * ROW_MS;
+        const chip = createTestWriter();
+        const rows: string[] = [];
+        const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer), onRow: (_song, orderIndex, row) => rows.push(`${orderIndex}:${row}`) });
+        player.play(song, { ...DEFAULT_SONG_PLAY, startMs });
+        // Inside row 1, which doesn't sound, so nothing plays yet
+        expect([player.row, player.positionMs, player.beat]).toEqual([1, startMs, startMs * song.bpm / 60000]);
+        expect(listNoteOns(chip.log)).toEqual([]);
+        tick(chip, player, () => 10, ROW_MS);
+        expect(listNoteOns(chip.log).map((write) => [write.note, write.time])).toEqual([[requireNoteNumber('E-4'), 0.5 * ROW_MS]]);
+        expect(rows).toEqual(['0:1', '0:2']);
+    });
+
+    it('reports its place in its order in ms, going back to where the loop point starts as it loops', () => {
+        const looped = createAudio80Song({ ...TUNE_OPTIONS, order: ['a', 'b'], loop: 1 });
+        const { player } = playThrough(looped, () => ROW_MS / 4, 8 * ROW_MS + ROW_MS / 2);
+        // Half a row into its second pass through entry 1, which starts four rows in
+        expect(player.positionMs).toBeCloseTo(4 * ROW_MS + ROW_MS / 2, 9);
+        expect(player.beat).toBeCloseTo((8 * ROW_MS + ROW_MS / 2) * looped.bpm / 60000, 9);
+    });
+
     it('plays a queued song as the one playing ends, without a gap', () => {
         const chip = createTestWriter();
         const player = createSongPlayer({ driver: createAudio80SongDriver(chip.writer) });
         player.play(TUNE);
-        player.queue(createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] }), { repeat: Infinity, pitch: 2, fadeMs: 0 });
+        player.queue(createAudio80Song({ ...TUNE_OPTIONS, order: ['b'] }), { ...DEFAULT_SONG_PLAY, repeat: Infinity, pitch: 2, fadeMs: 0 });
         tick(chip, player, () => 1000 / 60, TUNE.durationMs + 3 * ROW_MS);
         // The queued song plays at the pitch it was queued with
         const firstOfNext = listNoteOns(chip.log).find((write) => write.note === requireNoteNumber('G-5') + 2);

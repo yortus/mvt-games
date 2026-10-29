@@ -242,7 +242,7 @@ describe('chip runner, running a chip\'s sequencer', () => {
         const { runner, receive, places, soundIds } = setUp();
         const song = createAudio80Song({ bpm: 120, rowsPerBeat: 8, instruments: { s: createAudio80Sound({ wave: 'saw' }) }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p'], loop: 0 });
         receive({ kind: 'song', id: 1, song: structuredClone(song), soundIds: song.instruments.map(soundIds.soundId) });
-        receive({ kind: 'song-call', generation: 1, call: 'play', songId: 1, repeat: Infinity, pitch: 0, fadeMs: 0, value: 0 });
+        receive({ kind: 'song-call', generation: 1, call: 'play', songId: 1, repeat: Infinity, pitch: 0, fadeMs: 0, startMs: 0, startOrderIndex: 0, startRow: 0, value: 0 });
         const output = new Float32Array(BLOCK);
         let loudest = 0;
         for (let b = 0; b < 30 * BLOCKS_PER_TICK; b++) {
@@ -443,6 +443,9 @@ function setUpAudio90() {
         repeat: options.repeat ?? Infinity,
         pitch: options.pitch ?? 0,
         fadeMs: options.fadeMs ?? 0,
+        startMs: 0,
+        startOrderIndex: 0,
+        startRow: 0,
         value: 0,
     });
     return { runner, receive, play, scopes, places, sendSong, call };

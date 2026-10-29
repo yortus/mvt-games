@@ -309,6 +309,7 @@ music.tempoScale = 1.25;
 music.play(song, { repeat: 1 });     // play the loop once more, then end
 music.play(song, { pitch: 2 });      // in semitones
 music.play(song, { startMs: 30_000 });
+music.play(song, { startAt: { orderIndex: 4, row: 0 } });
 music.pause();
 music.resume();
 ```
@@ -322,7 +323,7 @@ class, and properties for settings rather than setters.
 | `stop` | `stop()` | Exists (5.9) |
 | `pause`, `unpause`, `togglePause` | `pause()`, `resume()`, `isPaused` | Exists (5.3). Sounds play on their own chip (5.8), so a paused song leaves a menu's clicks playing |
 | `setRepeatCount` | A `repeat` play option: how many more times the loop plays, `Infinity` by default | New, and small: the sequencer counts its returns to the song's `loop` |
-| `seek`, `setOrderRow` | A `startMs` play option, or a starting order entry and row | New, and the most work (below) |
+| `seek`, `setOrderRow` | A `startMs` play option, and a `startAt` play option for an order entry and row | New, and the most work (below) |
 | `setVol` | `volume` | Exists |
 | `setTempo` | `tempoScale` | Exists |
 | `setPitch` | A `pitch` play option, in semitones | New. Whole semitones are small, since the order already transposes patterns (`'verse+5'`). A fraction of a semitone needs each engine, samples too, to scale its frequency |
@@ -341,6 +342,29 @@ the sends. So a song started part way runs the sequencer from the start to
 that row without making sound, then plays from there, as libopenmpt does.
 The sequencer is deterministic, so this is exact, and after 068 it runs on
 the audio thread, where the jump happens with no gap.
+
+**Two ways to say where** (the user, 2026-10-29). People start a song part
+way for three reasons, and they point to different forms:
+
+1. **A seek bar, or music timed to a cutscene.** These think in time. The
+   bar's length is `durationMs`, and a drag gives a time, so the play
+   option is `startMs`. It is in song time, at the song's own tempo, the
+   same as `durationMs`, so the two always agree; `tempoScale` changes how
+   fast the song plays from there, not where it starts.
+2. **Skipping to a section**, such as past the intro or to a boss phase's
+   part of the theme. Whoever wrote the song thinks in its order ("the
+   chorus is entry 4"), and working out where an entry starts in ms means
+   adding up every row before it, which breaks as the song is edited. So
+   the play option is `startAt: { orderIndex, row }`.
+3. **Resuming where the music left off**, after a menu or another area.
+   The chip reports `orderIndex` and `row`, so a page saves those and hands
+   them back to `startAt`, with nothing to convert.
+
+Both forms run the same silent pass from the start, to a time or to a row,
+so offering both costs little more than one. A seek bar would also want to
+know where the song is in the pass in ms; the chip reports `beat`, which
+keeps counting through loops, and `orderIndex` and `row`, which a page
+can't easily turn into ms. Whether to add that is left to step 9.
 
 **Callbacks.** This repo's views poll and watch for changes, and never
 subscribe. A page that doesn't tick needs to hear when a song ends, so
@@ -933,9 +957,14 @@ package is finished. The progress log uses these numbers.
    `volume` itself, so something like `stop(id, { fadeMs })`.~~ Done,
    2026-10-29, in four chunks (section 12). A chip playing a song becomes
    the README's first example in step 11.
-9. Add the `startMs` play option, and starting at an order entry and row,
-   with a test that a song started at a row sounds the same as one played
-   to it. Then fractional pitch.
+9. ~~Start a song part way, with two play options that share one
+   mechanism (section 5.7, "Two ways to say where"): `startMs`, in song
+   time, as `durationMs` is, and `startAt: { orderIndex, row }`. Giving
+   both, or a place past the song's end, throws. Test that a song started
+   either way sounds the same as one played to that point, and that the
+   two forms agree for the same place. Then decide whether the chip should
+   report where it is in the pass in ms, for a seek bar. Then fractional
+   pitch.~~ Done, 2026-10-29 (section 12), with `positionMs`.
 10. Try the full build on a phone, over Bluetooth too, as 068 left to do:
     every entry's music and sounds, pausing and resuming a game, and what a
     second Audio90 costs (section 5.8). It comes before the docs, since
@@ -1767,3 +1796,40 @@ package is finished. The progress log uses these numbers.
   - **Checked:** lint, `npx tsc -b`, the package's tests (45 files, 357)
     and the Arcade's (149 files, 1,516), and `npm run build:arcade`: the
     home page is 54.8 KB of its 60 KB budget, from 54.6 KB.
+- **2026-10-29, step 9's design.** After asking which units the songs use
+  (rows for a place in the score, beats for the song's own time, song ms
+  for `durationMs`, real ms for fades and sounds), the user kept
+  `durationMs`, which the repo reads about 40 times, and chose to offer
+  both ways of starting part way: `startMs` and `startAt: { orderIndex,
+  row }`, in section 5.7's "Two ways to say where". Step 9 is rewritten to
+  match.
+- **2026-10-29, step 9 done**, unstaged.
+  - **Starting part way.** `startMs` and `startAt: { orderIndex, row }`
+    (`SongPlace`), checked by `checkSongPlay` (both, or a place outside the
+    song, throws) and carried in `CheckedSongPlay` as `startMs`,
+    `startOrderIndex` and `startRow`, and in the `song-call` message. The
+    player's `skipTo` runs the rows before the start through the driver's
+    new `skipRow`, which plays no note and keeps only what a channel holds
+    across notes: the instrument named, and on the Audio90 the pan,
+    brightness and reverb and echo sends, on the Audio80 the filters'
+    cutoffs. Every per-note setting (volume, arpeggio, vibrato, slide,
+    glide, pulse width, accent, chord, slice) is reset by the synthesisers
+    as a note starts, so skipping it changes nothing. `writeSkipped` writes
+    what was kept once, so a long jump writes a few commands, not one for
+    every row, and the chip's queue can't fill. A `startAt` row plays at
+    once; a `startMs` inside a row reports that row (and calls `onRow` for
+    it) but waits for the next row's note. Notes started before the start
+    don't sound. Rendered, a song started part way matches one played
+    there to within 0.000003, the DC filter's tail of the earlier notes:
+    the engines restart their phases with each note.
+  - **`positionMs`**, decided in: where the song heard is in its order, in
+    song ms, from 0 to `durationMs`, going back to the loop entry's start
+    as it loops (the player keeps a pass offset). The worklet sends it with
+    each place, and the page moves it on by the time since, as it does the
+    beat, no further than `durationMs`. `play(song, { startMs:
+    chip.positionMs })` resumes.
+  - **Fractional pitch** needed only the check: every engine turns a note
+    into a frequency with `Math.exp`, so a pitch of 0.5 plays a quarter
+    tone up, which a rendered test measures.
+  - Changeset `start-part-way.md`; `song-play-options.md` says a pitch may
+    be a fraction.

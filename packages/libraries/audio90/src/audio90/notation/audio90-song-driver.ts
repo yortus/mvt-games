@@ -58,6 +58,9 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
     const channelSlideRate = new Float64Array(AUDIO90_VOICE_COUNT);
     // The semitones the song playing is played up from its notes
     let pitch = 0;
+    // What the rows skipped as a song starts part way left on each channel, `KEPT_SETTINGS` a channel, or NaN for
+    // what they didn't set
+    const kept = new Float64Array(AUDIO90_VOICE_COUNT * KEPT_SETTINGS.length).fill(Number.NaN);
 
     return {
         get time() {
@@ -107,6 +110,37 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
                 write(OP_SET_VOICE, stamp, channel, VOICE.chorusSend, mix.chorus, 0);
                 write(OP_SET_VOICE, stamp, channel, VOICE.brightness, 1, 0);
             }
+        },
+
+        // A skipped row's notes, and the effects that apply to a note, would be gone by the next note, so only the
+        // channel's instrument and the settings it keeps across notes are kept
+        skipRow(song, orderIndex, row) {
+            const cells = song.patterns[song.order[orderIndex].pattern].cells;
+            const channels = song.channelCount;
+            for (let channel = 0; channel < channels; channel++) {
+                const at = (row * channels + channel) * CELL90_STRIDE;
+                const named = cells[at + CELL_INSTRUMENT];
+                if (named >= 0) channelInstrument[channel] = named;
+                const from = channel * KEPT_SETTINGS.length;
+                const pan = cells[at + CELL90_PAN];
+                if (pan >= 0) kept[from + KEPT_PAN] = toPan(pan);
+                const brightness = cells[at + CELL90_BRIGHTNESS];
+                if (brightness >= 0) kept[from + KEPT_BRIGHTNESS] = brightness / 15;
+                const reverb = cells[at + CELL90_REVERB];
+                if (reverb >= 0) kept[from + KEPT_REVERB] = reverb / 15;
+                const echo = cells[at + CELL90_ECHO];
+                if (echo >= 0) kept[from + KEPT_ECHO] = echo / 15;
+            }
+        },
+
+        writeSkipped(song, stamp) {
+            for (let channel = 0; channel < song.channelCount; channel++) {
+                for (let k = 0; k < KEPT_SETTINGS.length; k++) {
+                    const value = kept[channel * KEPT_SETTINGS.length + k];
+                    if (!Number.isNaN(value)) write(OP_SET_VOICE, stamp, channel, KEPT_SETTINGS[k], value, 0);
+                }
+            }
+            kept.fill(Number.NaN);
         },
 
         playRow(song, orderIndex, row, stamp, lengthMs, tempoScale) {
@@ -221,3 +255,11 @@ const REVERB = AUDIO90_EFFECT_SETTING_INDEX.reverb;
 const ECHO = AUDIO90_EFFECT_SETTING_INDEX.echo;
 const CHORUS = AUDIO90_EFFECT_SETTING_INDEX.chorus;
 const PUMP = AUDIO90_EFFECT_SETTING_INDEX.pump;
+
+/** The voice settings a channel keeps across notes, which a song started part way takes from the rows it skips. */
+const KEPT_SETTINGS = [VOICE.pan, VOICE.brightness, VOICE.reverbSend, VOICE.echoSend];
+// Each setting's place among a channel's kept settings
+const KEPT_PAN = 0;
+const KEPT_BRIGHTNESS = 1;
+const KEPT_REVERB = 2;
+const KEPT_ECHO = 3;

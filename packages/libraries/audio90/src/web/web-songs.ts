@@ -91,6 +91,9 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
         get beat() {
             return findHeardBeat();
         },
+        get positionMs() {
+            return findHeardPositionMs();
+        },
         play(song, play = DEFAULT_SONG_PLAY) {
             changeSong(song);
             call('play', song, play, 0);
@@ -129,6 +132,7 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
             places[at + PLACE_ORDER_INDEX] = reply.orderIndex;
             places[at + PLACE_ROW] = reply.row;
             places[at + PLACE_BEAT] = reply.beat;
+            places[at + PLACE_POSITION_MS] = reply.positionMs;
             places[at + PLACE_TEMPO_SCALE] = reply.tempoScale;
             tellCallbacks(reply);
         },
@@ -154,7 +158,19 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
                 send({ kind: 'song', id: songId, song: prepared.song, soundIds: prepared.soundIds });
             }
         }
-        send({ kind: 'song-call', generation, call: which, songId, repeat: play.repeat, pitch: play.pitch, fadeMs: play.fadeMs, value });
+        send({
+            kind: 'song-call',
+            generation,
+            call: which,
+            songId,
+            repeat: play.repeat,
+            pitch: play.pitch,
+            fadeMs: play.fadeMs,
+            startMs: play.startMs,
+            startOrderIndex: play.startOrderIndex,
+            startRow: play.startRow,
+            value,
+        });
     }
 
     /**
@@ -184,6 +200,21 @@ export function createWebSongs<S extends PlayableSong>(options: WebSongsOptions<
         const frame = speakerFrame() ?? places[at * PLACE_FIELDS + PLACE_FRAME];
         const sinceMs = Math.max(0, frame - places[at * PLACE_FIELDS + PLACE_FRAME]) * 1000 / sampleRate();
         return places[at * PLACE_FIELDS + PLACE_BEAT] + sinceMs * places[at * PLACE_FIELDS + PLACE_TEMPO_SCALE] * song.bpm / 60000;
+    }
+
+    /**
+     * Where the song heard is in its order now: the place heard's position,
+     * moved on by the time since it reached the speaker, at its tempo, and no
+     * further than the end of the order.
+     */
+    function findHeardPositionMs(): number {
+        const at = findHeard();
+        if (at < 0) return 0;
+        const song = songs.get(places[at * PLACE_FIELDS + PLACE_SONG_ID]);
+        if (song === undefined) return 0;
+        const frame = speakerFrame() ?? places[at * PLACE_FIELDS + PLACE_FRAME];
+        const sinceMs = Math.max(0, frame - places[at * PLACE_FIELDS + PLACE_FRAME]) * 1000 / sampleRate();
+        return Math.min(song.durationMs, places[at * PLACE_FIELDS + PLACE_POSITION_MS] + sinceMs * places[at * PLACE_FIELDS + PLACE_TEMPO_SCALE]);
     }
 
     /** Asks for `song`, or for none: a new generation, with no place of it heard yet. */
@@ -229,5 +260,6 @@ const PLACE_SONG_ID = 1;
 const PLACE_ORDER_INDEX = 2;
 const PLACE_ROW = 3;
 const PLACE_BEAT = 4;
-const PLACE_TEMPO_SCALE = 5;
-const PLACE_FIELDS = 6;
+const PLACE_POSITION_MS = 5;
+const PLACE_TEMPO_SCALE = 6;
+const PLACE_FIELDS = 7;

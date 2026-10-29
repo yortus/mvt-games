@@ -64,6 +64,26 @@ describe('createAudio90SongDriver', () => {
         expect(chip.log[2]).toMatchObject({ a: 0, c: 71 });
         expect(chip.sounds[chip.log[2].b]).toBe(SAW);
     });
+
+    it('keeps the last pan, brightness and sends of the rows it skips, and writes each once, with none of their notes', () => {
+        const chip = createTestWriter();
+        const song = createAudio90Song({ bpm: 120, instruments: { S: SAW }, patterns: { p: '| A-4 S P00 f9 r6\n| B-4 S PFF e3 a37' }, order: ['p'] });
+        const driver = createAudio90SongDriver(chip.writer);
+        driver.skipRow(song, 0, 0);
+        driver.skipRow(song, 0, 1);
+        expect(chip.log).toEqual([]);
+        driver.writeSkipped(song, 7);
+        const settings = AUDIO90_VOICE_SETTING_INDEX;
+        expect(chip.log).toEqual([
+            { op: OP_SET_VOICE, time: 7, a: 0, b: settings.pan, c: toPan(0xFF), d: 0 },
+            { op: OP_SET_VOICE, time: 7, a: 0, b: settings.brightness, c: 9 / 15, d: 0 },
+            { op: OP_SET_VOICE, time: 7, a: 0, b: settings.reverbSend, c: 6 / 15, d: 0 },
+            { op: OP_SET_VOICE, time: 7, a: 0, b: settings.echoSend, c: 3 / 15, d: 0 },
+        ]);
+        // What it kept is written once, and forgotten
+        driver.writeSkipped(song, 8);
+        expect(chip.log).toHaveLength(4);
+    });
 });
 
 describe('song player, on an Audio90', () => {

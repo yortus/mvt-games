@@ -18,9 +18,9 @@ export type SongMessage =
 
 /**
  * A call to a chip's sequencer. `songId` names the song for `play` and
- * `queue`, and `repeat`, `pitch` and `fadeMs` say how it plays, checked on
- * the page. For `stop`, `fadeMs` is how long to fade out over first. `value`
- * is the scale for `tempo`.
+ * `queue`, and `repeat`, `pitch`, `fadeMs` and where it starts say how it
+ * plays, checked on the page. For `stop`, `fadeMs` is how long to fade out
+ * over first. `value` is the scale for `tempo`.
  */
 export interface SongCallMessage {
     readonly kind: 'song-call';
@@ -30,6 +30,9 @@ export interface SongCallMessage {
     readonly repeat: number;
     readonly pitch: number;
     readonly fadeMs: number;
+    readonly startMs: number;
+    readonly startOrderIndex: number;
+    readonly startRow: number;
     readonly value: number;
 }
 
@@ -50,5 +53,6 @@ export interface SongPlaceReply {
     readonly orderIndex: number;
     readonly row: number;
     readonly beat: number;
+    readonly positionMs: number;
     readonly tempoScale: number;
 }

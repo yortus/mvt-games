@@ -72,6 +72,44 @@ describe('rendering Audio90', () => {
         expect(measurePeak(left.subarray(0, tenth / 2))).toBeLessThan(measurePeak(left.subarray(left.length - tenth)) / 100);
     });
 
+    it('sounds the same started part way as played to that place, once what came before has died away', () => {
+        const pluck = createAudio90Sound({ engine: 'fm', operators: [{}, { ratio: 2, level: 0.4 }], algorithm: '2>1', envelope: { attackMs: 0, decayMs: 60, sustain: 0, releaseMs: 10 } });
+        const song = createAudio90Song({
+            bpm: 120,
+            instruments: { s: pluck },
+            patterns: { a: '| C-4 s P20\n| E-4\n| G-4\n| ...', b: '| D-4\n| F-4\n| A-4\n| C-5' },
+            order: ['a', 'b'],
+        });
+        const startMs = 4 * 60000 / (song.bpm * song.rowsPerBeat);
+        const through = createRenderingAudio90();
+        through.play(song);
+        const whole = renderMs(through, song.durationMs);
+        const started = createRenderingAudio90();
+        started.play(song, { startAt: { orderIndex: 1, row: 0 } });
+        const part = renderMs(started, song.durationMs - startMs);
+        const from = startMs / 10 * 480;
+        expect(measurePeak(part)).toBeGreaterThan(0.05);
+        // The same samples, but for what is left of the output's DC filter from the notes before, far below hearing
+        let largest = 0;
+        for (let i = 0; i < part.left.length; i++) {
+            largest = Math.max(largest, Math.abs(part.left[i] - whole.left[from + i]), Math.abs(part.right[i] - whole.right[from + i]));
+        }
+        expect(largest).toBeLessThan(1e-4);
+    });
+
+    it('plays a song a fraction of a semitone up at that fraction\'s frequency', () => {
+        const sine = createAudio90Sound({ engine: 'fm', operators: [{}], envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } });
+        // One row two seconds long, so the note holds through the render
+        const song = createAudio90Song({ bpm: 30, rowsPerBeat: 1, instruments: { s: sine }, patterns: { p: '| A-4 s' }, order: ['p'] });
+        const measure = (pitch: number) => {
+            const chip = createRenderingAudio90();
+            chip.play(song, { pitch });
+            return measureHz(renderMs(chip, 500).left);
+        };
+        const pitch = 0.5;
+        expect(measure(pitch) / measure(0)).toBeCloseTo(Math.exp(pitch / 12 * Math.LN2), 4);
+    });
+
     it('renders nothing when muted, and at its volume, which it keeps as everything is stopped while paused', () => {
         const muted = createRenderingAudio90();
         muted.isMuted = true;
@@ -105,6 +143,22 @@ describe('rendering Audio90', () => {
 function playHeld(chip: RenderingAudio90): StereoSamples {
     chip.play(HELD, { note: 'A-3', lengthMs: Infinity });
     return renderFrames(chip);
+}
+
+/** The frequency of a steady tone at the default 48 kHz, from how often it crosses zero going up, each crossing placed between its two samples. */
+function measureHz(samples: Float32Array): number {
+    let crossings = 0;
+    let first = -1;
+    let last = -1;
+    for (let i = 1; i < samples.length; i++) {
+        if (samples[i - 1] < 0 && samples[i] >= 0) {
+            const at = i - 1 + samples[i - 1] / (samples[i - 1] - samples[i]);
+            if (first < 0) first = at;
+            last = at;
+            crossings++;
+        }
+    }
+    return (crossings - 1) * 48000 / (last - first);
 }
 
 /** Moves the chip's clock on by `ms`, a tick at a time, and renders the samples that time covers, at the default 48 kHz. */

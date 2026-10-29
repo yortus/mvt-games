@@ -66,7 +66,7 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect(fake.messages.map((message) => message.kind)).toEqual(['sample', 'sound', 'song', 'song-call', 'song-call']);
         const sent = fake.messages[2] as SongMessage;
         expect(sent.kind === 'song' && (sent.song as Audio90Song).instruments[0].sample).toBeUndefined();
-        expect(fake.messages[3]).toEqual({ kind: 'song-call', call: 'play', songId: 1, generation: 1, repeat: Infinity, pitch: 0, fadeMs: 0, value: 0 });
+        expect(fake.messages[3]).toEqual({ kind: 'song-call', call: 'play', songId: 1, generation: 1, repeat: Infinity, pitch: 0, fadeMs: 0, startMs: 0, startOrderIndex: 0, startRow: 0, value: 0 });
         expect(fake.messages[4]).toMatchObject({ generation: 2, repeat: 1, pitch: -2 });
         audio90.tempoScale = 0.5;
         expect(fake.messages.at(-1)).toMatchObject({ call: 'tempo', value: 0.5, generation: 2 });
@@ -173,6 +173,23 @@ describe('createAudio90, with a stand-in audio context', () => {
         expect([audio90.song, ended]).toEqual([undefined, []]);
     });
 
+    it('sends where a song starts, and reports its place in ms from the place heard, moved on by the time since', async () => {
+        const fake = installFakeAudioContext('running');
+        const audio90 = createAudio90({ context: fake.context });
+        await audio90.ready;
+        const song = createAudio90Song({ bpm: 120, instruments: { s: createSound() }, patterns: { p: '| C-4 s\n| D-4 s' }, order: ['p', 'p'] });
+        audio90.play(song, { startAt: { orderIndex: 1, row: 1 } });
+        expect(fake.listMessages('song-call').at(-1)).toMatchObject({ call: 'play', startMs: 0, startOrderIndex: 1, startRow: 1 });
+        const placeMs = song.durationMs * 3 / 4;
+        fake.reply(createPlace({ frame: 0, orderIndex: 1, row: 1, positionMs: placeMs }));
+        // A tenth of a second after the place reached the speaker, but no further than the song's end
+        const lagS = FAKE_BASE_LATENCY_S + FAKE_OUTPUT_LATENCY_S;
+        fake.setCurrentTime(0.1 + lagS);
+        expect(audio90.positionMs).toBeCloseTo(placeMs + 100, 6);
+        fake.setCurrentTime(song.durationMs / 1000 + lagS);
+        expect(audio90.positionMs).toBe(song.durationMs);
+    });
+
     it('stops the song with its play\'s id, and leaves a song played since alone', async () => {
         const fake = installFakeAudioContext('running');
         const audio90 = createAudio90({ context: fake.context });
@@ -214,7 +231,7 @@ function createSequencedSong(instrument: Audio90Sound) {
 
 /** A place of the first song, as the worklet sends it: playing, at the start, unless `place` says otherwise. */
 function createPlace(place: Partial<SongPlaceReply>): SongPlaceReply {
-    return { kind: 'song-place', generation: 1, frame: 0, songId: 1, orderIndex: 0, row: 0, beat: 0, tempoScale: 1, ...place };
+    return { kind: 'song-place', generation: 1, frame: 0, songId: 1, orderIndex: 0, row: 0, beat: 0, positionMs: 0, tempoScale: 1, ...place };
 }
 
 /** A sound made by hand: its data, with the sample it plays, if any. */
