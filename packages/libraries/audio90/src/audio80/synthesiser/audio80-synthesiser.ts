@@ -102,6 +102,9 @@ export interface Audio80Synthesiser {
     scope: Float32Array | undefined;
 }
 
+/** The echo's settings as the chip starts, and after a reset. A song that sets the echo starts from these for the settings it leaves out. */
+export const AUDIO80_ECHO_DEFAULTS = Object.freeze({ timeMs: 300, feedback: 0.35, level: 0.5 });
+
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
@@ -687,9 +690,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         updateFilterCoefficients();
         echo.fill(0);
         echoWrite = 0;
-        setEcho(ECHO_SETTING_INDEX.timeMs, DEFAULT_ECHO_MS);
-        echoFeedback = DEFAULT_ECHO_FEEDBACK;
-        echoLevel = DEFAULT_ECHO_LEVEL;
+        setEcho(ECHO_SETTING_INDEX.timeMs, AUDIO80_ECHO_DEFAULTS.timeMs);
+        echoFeedback = AUDIO80_ECHO_DEFAULTS.feedback;
+        echoLevel = AUDIO80_ECHO_DEFAULTS.level;
         mix.fill(0);
         scheduler.clear();
         controlCountdown = 0;
@@ -717,9 +720,6 @@ const LFSR_SEED = 0x7ffff8;
 const FILTER_COUNT = 2;
 const DEFAULT_CUTOFF_HZ = 2000;
 const MAX_ECHO_MS = 1000;
-const DEFAULT_ECHO_MS = 300;
-const DEFAULT_ECHO_FEEDBACK = 0.35;
-const DEFAULT_ECHO_LEVEL = 0.5;
 
 /** The sample rate the per-sample coefficients below were tuned at. */
 const REFERENCE_SAMPLE_RATE = 48000;

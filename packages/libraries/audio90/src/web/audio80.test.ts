@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createAudio80Song, createAudio80Sound, VOICE_COUNT } from '../audio80';
-import { createScope, SCOPE_POINTS, toScopeLength } from '../shared';
+import { SCOPE_POINTS, toScopeLength } from '../shared';
+import { createScope } from '../tracker';
 import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
 import { createAudio80 } from './audio80';
 

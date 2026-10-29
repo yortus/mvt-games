@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio90Song, prepareAudio90Samples } from 'audio90';
-import { AUDIO90_SAMPLE_MEMORY, formatAudio90Cell } from 'audio90/tracker';
+import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, formatAudio90Cell, prepareAudio90Samples } from 'audio90';
 import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render } from 'audio90/headless';
 import { INSTRUMENT_NAMES } from './instrument-names';
 import { SAMPLES } from './samples';

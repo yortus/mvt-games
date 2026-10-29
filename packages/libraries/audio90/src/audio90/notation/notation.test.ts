@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '../../headless';
-import { computeSongDurationMs, toFrequency } from '../../shared';
+import { CELL_INSTRUMENT, CELL_NOTE, CELL_VOLUME, computeSongDurationMs, toFrequency } from '../../shared';
 import {
     AUDIO90_EFFECT_DEFAULTS,
     AUDIO90_SAMPLE_MEMORY,
@@ -12,20 +12,16 @@ import {
 } from '../synthesiser';
 import { type Audio90Sound, createAudio90Sound, isAudio90Sound } from './sound';
 import { createAudio90Sample, prepareAudio90Samples } from './sample';
-import { AUDIO90_CELL_TEXT_WIDTH, formatAudio90Cell } from './format-cell';
 import {
     type Audio90SongOptions,
     CELL90_ACCENT,
     CELL90_BRIGHTNESS,
     CELL90_CHORD,
     CELL90_ECHO,
-    CELL90_INSTRUMENT,
-    CELL90_NOTE,
     CELL90_PAN,
     CELL90_REVERB,
     CELL90_SLICE,
     CELL90_STRIDE,
-    CELL90_VOLUME,
     createAudio90Song,
     isAudio90Song,
 } from './song';
@@ -193,8 +189,8 @@ describe('the Audio90\'s notation', () => {
             });
             const cells = song.patterns[0].cells;
             expect(cells.length).toBe(CELL90_STRIDE);
-            expect([cells[CELL90_NOTE], cells[CELL90_INSTRUMENT], cells[CELL90_CHORD], cells[CELL90_PAN], cells[CELL90_BRIGHTNESS]]).toEqual([69, 0, 0x47, 0x40, 4]);
-            expect([cells[CELL90_REVERB], cells[CELL90_ECHO], cells[CELL90_ACCENT], cells[CELL90_VOLUME]]).toEqual([6, 3, 1, 8]);
+            expect([cells[CELL_NOTE], cells[CELL_INSTRUMENT], cells[CELL90_CHORD], cells[CELL90_PAN], cells[CELL90_BRIGHTNESS]]).toEqual([69, 0, 0x47, 0x40, 4]);
+            expect([cells[CELL90_REVERB], cells[CELL90_ECHO], cells[CELL90_ACCENT], cells[CELL_VOLUME]]).toEqual([6, 3, 1, 8]);
             expect(isAudio90Song(song)).toBe(true);
             expect(song.chip).toBe('audio90');
         });
@@ -235,47 +231,6 @@ describe('the Audio90\'s notation', () => {
             expect(song.echo).toMatchObject({ timeBeats: 0.75, isPingPong: true, feedback: AUDIO90_EFFECT_DEFAULTS.echo.feedback });
             expect(song.pump).toEqual({ channel: 1, depth: AUDIO90_EFFECT_DEFAULTS.pump.depth, releaseMs: AUDIO90_EFFECT_DEFAULTS.pump.releaseMs });
             expect(song.chorus).toBeUndefined();
-        });
-
-        it('format each cell as a tracker shows it, which parses back into the same cell', () => {
-            const sample = createAudio90Sample({ bounce: createToneSong('C-4', 4), slices: 4 });
-            const instruments = {
-                S: STAB,
-                K: createAudio90Sound({ engine: 'fm', operators: [{}], note: 'C-2' }),
-                D: createAudio90Sound({ engine: 'sample', sample }),
-            };
-            const song = createAudio90Song({
-                bpm: 120,
-                instruments,
-                patterns: {
-                    p: `
-                        | C#4 S v8 a37 P40 f4 c47 r6 e3 ! | K          | C-4 D s03
-                        | ...                             | C-2 K v4   | s01
-                        | E-4 ~ > u0C p8                  | ...        | ...
-                        | ===                             | K e2       | ===
-                        | A-4 ~46 d03 PFF                 | G#3        | D vF s02
-                    `,
-                },
-                order: ['p'],
-            });
-            const pattern = song.patterns[0];
-            expect(song.instrumentLetters).toEqual(['S', 'K', 'D']);
-            expect(formatAudio90Cell(song, pattern, 0, 0)).toBe('C#4 S v8 a37 f4 P40 c47 r6 e3 !');
-            expect(formatAudio90Cell(song, pattern, 1, 0)).toBe('...     ');
-            expect(formatAudio90Cell(song, pattern, 0, 1)).toBe('... K   ');
-            expect(formatAudio90Cell(song, pattern, 1, 1)).toBe('C-2 K v4');
-            expect(formatAudio90Cell(song, pattern, 2, 0)).toBe('E-4      ~ > u0C p8');
-            expect(formatAudio90Cell(song, pattern, 4, 0)).toBe('A-4      ~46 d03 PFF');
-            expect(formatAudio90Cell(song, pattern, 0, 0).indexOf(' a37')).toBe(AUDIO90_CELL_TEXT_WIDTH);
-
-            const rows: string[] = [];
-            for (let row = 0; row < pattern.rowCount; row++) {
-                const texts: string[] = [];
-                for (let channel = 0; channel < song.channelCount; channel++) texts.push(formatAudio90Cell(song, pattern, row, channel));
-                rows.push(`| ${texts.join(' | ')}`);
-            }
-            const parsed = createAudio90Song({ bpm: 120, instruments, patterns: { p: rows.join('\n') }, order: ['p'] });
-            expect(Array.from(parsed.patterns[0].cells)).toEqual(Array.from(pattern.cells));
         });
 
         it('check the mixer, the pump, the echo and the channel count', () => {

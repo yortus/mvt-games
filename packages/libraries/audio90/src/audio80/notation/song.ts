@@ -1,24 +1,6 @@
-import {
-    computeSongDurationMs,
-    checkInstrumentLetters,
-    checkLoop,
-    checkTempo,
-    HIGHEST_NOTE,
-    HIGHEST_NOTE_NAME,
-    isNoteInRange,
-    LOWEST_NOTE,
-    parseHexToken,
-    parseOrder,
-    type SongOrderEntry,
-    splitCells,
-    splitRows,
-    splitTokens,
-    toNoteNumber,
-} from '../../shared';
+import { type CellGrammar, COMMON_CELL_TOKENS, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
 import { type Audio80FilterId, type Audio80FilterMode, VOICE_COUNT } from '../synthesiser';
 import type { Audio80Sound } from './sound';
-
-export type { SongOrderEntry } from '../../shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -43,6 +25,8 @@ export interface Audio80Song {
     readonly channelCount: number;
     /** The song's instruments, the sounds it plays, in the order that a cell's `CELL_INSTRUMENT` indexes them. */
     readonly instruments: readonly Audio80Sound[];
+    /** Each instrument's letter, as the patterns name it, in the order of `instruments`. */
+    readonly instrumentLetters: readonly string[];
     /** The song's patterns, in the order that `SongOrderEntry.pattern` indexes them. */
     readonly patterns: readonly SongPattern[];
     /** The patterns in playing order. */
@@ -60,16 +44,6 @@ export interface Audio80Song {
     readonly echo: Audio80EchoSettings | undefined;
     /** A gain on every note. At 1, the notes play as written. */
     readonly volume: number;
-}
-
-/** One pattern of a song: rows of cells, one cell per channel. */
-export interface SongPattern {
-    /** Its name in `Audio80SongOptions.patterns`. */
-    readonly name: string;
-    /** How many rows it has, 1 or more. */
-    readonly rowCount: number;
-    /** The cells, `CELL_STRIDE` numbers each. They run row by row, and within a row, channel by channel. */
-    readonly cells: Float64Array;
 }
 
 /** A filter's settings, as a song sets them as it starts. */
@@ -94,36 +68,20 @@ export interface Audio80EchoSettings {
     readonly level?: number;
 }
 
-/** How many numbers each cell takes in `SongPattern.cells`. The other `CELL_*` constants are offsets within a cell. */
+/**
+ * How many numbers each cell takes in `SongPattern.cells`. A cell starts with
+ * the fields every chip's cells have, `CELL_NOTE` to `CELL_PULSE`, in the
+ * shared folder's tracker, and ends with the Audio80's own.
+ */
 export const CELL_STRIDE = 10;
-/** A note number, or `NO_NOTE` or `RELEASE`. */
-export const CELL_NOTE = 0;
-/** 1 if the note is the instrument's own, which transposition leaves alone. */
-export const CELL_IS_OWN_NOTE = 1;
-/** An index into `instruments`, or -1. */
-export const CELL_INSTRUMENT = 2;
-/** The note's volume, 0 to 15, or -1. */
-export const CELL_VOLUME = 3;
-/** Two semitone offsets packed as `x * 16 + y`, or -1. */
-export const CELL_ARPEGGIO = 4;
-/** The vibrato's depth in eighths of a semitone and rate in Hz, packed as `depth * 16 + rate`, or -1. */
-export const CELL_VIBRATO = 5;
-/** 1 to glide from the last note, or 0. */
-export const CELL_GLIDE = 6;
-/** Semitones to slide by over the row, or 0. */
-export const CELL_SLIDE = 7;
-/** A pulse width in sixteenths, or -1. */
-export const CELL_PULSE = 8;
 /** A cutoff level, 0 to 15, or -1. */
 export const CELL_FILTER = 9;
 
-/** A `CELL_NOTE` for a cell with no note. The channel's note plays on. */
-export const NO_NOTE = -1;
-/** A `CELL_NOTE` for a release, written `===`. The channel's note fades out. */
-export const RELEASE = -2;
-
-/** The vibrato a bare `~` plays, packed as `CELL_VIBRATO` packs it. It is a quarter of a semitone, six times a second. */
-export const DEFAULT_VIBRATO = 2 * 16 + 6;
+/** The tokens an Audio80's cells may hold, in the order a cell is written. */
+export const AUDIO80_CELL_GRAMMAR: CellGrammar = {
+    stride: CELL_STRIDE,
+    tokens: [...COMMON_CELL_TOKENS, { kind: 'hex', prefix: 'f', digits: 1, field: CELL_FILTER, name: 'cutoffs' }],
+};
 
 // ---------------------------------------------------------------------------
 // Options
@@ -182,56 +140,12 @@ export interface Audio80SongOptions {
  * out of the chip's range.
  */
 export function createAudio80Song(options: Audio80SongOptions): Audio80Song {
-    const { bpm } = options;
-    const { rowsPerBeat, swing } = checkTempo(options);
-
-    const letters = Object.keys(options.instruments);
-    checkInstrumentLetters(letters);
-    const instruments = letters.map((letter) => options.instruments[letter]);
-
-    let channelCount = 0;
-    const patternNames = Object.keys(options.patterns);
-    if (patternNames.length === 0) throw new Error('song: no patterns');
-    const patterns = patternNames.map((name) => {
-        const rows = splitRows(options.patterns[name]);
-        if (rows.length === 0) throw new Error(`song: pattern '${name}' has no rows`);
-        const cells: number[] = [];
-        for (let row = 0; row < rows.length; row++) {
-            const texts = splitCells(rows[row], `song: pattern '${name}', row ${row}`);
-            if (channelCount === 0) channelCount = texts.length;
-            if (texts.length !== channelCount) {
-                throw new Error(`song: pattern '${name}', row ${row}: expected ${channelCount} cells (one per channel), found ${texts.length}`);
-            }
-            for (let channel = 0; channel < texts.length; channel++) {
-                const where = `song: pattern '${name}', row ${row}, channel ${channel}`;
-                parseCell(texts[channel], where, letters, instruments, cells);
-            }
-        }
-        return { name, rowCount: rows.length, cells: Float64Array.from(cells) };
-    });
-
-    if (channelCount > VOICE_COUNT) throw new Error(`song: ${channelCount} channels is more than the chip's ${VOICE_COUNT} voices`);
-    const order = parseOrder(options.order, patternNames);
-    checkOrder(options.order, order, patterns, channelCount);
-
-    const loop = checkLoop(options.loop, order.length);
-    const volume = options.volume ?? 1;
-    if (!(volume > 0)) throw new Error(`song: volume must be above 0; got ${volume}`);
-
+    const core = parseSongCore(options, { grammar: AUDIO80_CELL_GRAMMAR, voiceCount: VOICE_COUNT, ownNote: (sound) => sound.data.note });
     const song: Audio80Song = Object.freeze({
         chip: 'audio80',
-        bpm,
-        rowsPerBeat,
-        swing,
-        channelCount,
-        instruments,
-        patterns,
-        order,
-        loop,
-        durationMs: computeSongDurationMs({ bpm, rowsPerBeat, order, patterns }),
+        ...core,
         filters: [options.filters?.a, options.filters?.b],
         echo: options.echo,
-        volume,
     });
     SONGS.add(song);
     return song;
@@ -248,131 +162,3 @@ export function isAudio80Song(value: unknown): value is Audio80Song {
 
 /** Every song made, so `isAudio80Song` knows one when it sees it. */
 const SONGS = new WeakSet<object>();
-
-/** Parses one cell's text, appending its `CELL_STRIDE` numbers to `cells`. */
-function parseCell(
-    text: string,
-    where: string,
-    letters: readonly string[],
-    instruments: readonly Audio80Sound[],
-    cells: number[],
-): void {
-    let note = NO_NOTE;
-    let isOwnNote = 0;
-    let instrument = -1;
-    let volume = -1;
-    let arpeggio = -1;
-    let vibrato = -1;
-    let glide = 0;
-    let slide = 0;
-    let hasSlide = false;
-    let pulse = -1;
-    let filter = -1;
-    let hasNoteToken = false;
-
-    for (const token of splitTokens(text)) {
-        if (token === '...') continue;
-        const asNote = toNoteNumber(token);
-        if (asNote !== undefined || token === '===') {
-            if (hasNoteToken) throw new Error(`${where}: two notes`);
-            if (asNote !== undefined && !isNoteInRange(asNote)) {
-                throw new Error(`${where}: '${token}' is above ${HIGHEST_NOTE_NAME}, the highest note`);
-            }
-            hasNoteToken = true;
-            note = asNote ?? RELEASE;
-            continue;
-        }
-        // A single letter is an instrument. An effect's letter always has digits after it, so `v9` and
-        // `u0C` are effects even in a song with instruments named `v` and `u`
-        if (token.length === 1 && /[A-Za-z]/.test(token)) {
-            if (instrument >= 0) throw new Error(`${where}: two instruments`);
-            instrument = letters.indexOf(token);
-            if (instrument < 0) throw new Error(`${where}: unknown instrument '${token}'`);
-            continue;
-        }
-        if (token === '>') {
-            if (glide === 1) throw new Error(`${where}: two glides`);
-            glide = 1;
-            continue;
-        }
-        const asVibrato = token === '~' ? DEFAULT_VIBRATO : parseHexToken(token, '~', 2);
-        const asVolume = parseHexToken(token, 'v', 1);
-        const asArpeggio = parseHexToken(token, 'a', 2);
-        const asSlideUp = parseHexToken(token, 'u', 2);
-        const asSlideDown = parseHexToken(token, 'd', 2);
-        const asPulse = parseHexToken(token, 'p', 1);
-        const asFilter = parseHexToken(token, 'f', 1);
-        if (asVolume !== undefined) {
-            if (volume >= 0) throw new Error(`${where}: two volumes`);
-            volume = asVolume;
-        }
-        else if (asArpeggio !== undefined) {
-            if (arpeggio >= 0) throw new Error(`${where}: two arpeggios`);
-            arpeggio = asArpeggio;
-        }
-        else if (asVibrato !== undefined) {
-            if (vibrato >= 0) throw new Error(`${where}: two vibratos`);
-            vibrato = asVibrato;
-        }
-        else if (asSlideUp !== undefined || asSlideDown !== undefined) {
-            if (hasSlide) throw new Error(`${where}: two slides`);
-            hasSlide = true;
-            slide = asSlideUp ?? -(asSlideDown ?? 0);
-        }
-        else if (asPulse !== undefined) {
-            if (pulse >= 0) throw new Error(`${where}: two pulse widths`);
-            pulse = asPulse;
-        }
-        else if (asFilter !== undefined) {
-            if (filter >= 0) throw new Error(`${where}: two cutoffs`);
-            filter = asFilter;
-        }
-        else {
-            throw new Error(`${where}: '${token}' is not a note, an instrument or an effect`);
-        }
-    }
-
-    if (note === RELEASE && instrument >= 0) throw new Error(`${where}: a release (===) cannot name an instrument`);
-    if (note === RELEASE && volume >= 0) throw new Error(`${where}: a release (===) cannot take a volume`);
-    if (note === NO_NOTE && instrument >= 0) {
-        // An instrument named alone plays its own note, as drums do
-        note = instruments[instrument].note;
-        isOwnNote = 1;
-    }
-    if (glide === 1 && note < 0) throw new Error(`${where}: a glide needs a note to glide to`);
-
-    cells.push(note, isOwnNote, instrument, volume, arpeggio, vibrato, glide, slide, pulse, filter);
-}
-
-/**
- * Walks the order once, as the player first plays it. Throws at the first
- * note on a channel with no instrument named before it. Also throws at the
- * first note that its order entry's transposition takes out of the chip's
- * range.
- */
-function checkOrder(
-    names: readonly string[],
-    order: readonly SongOrderEntry[],
-    patterns: readonly SongPattern[],
-    channelCount: number,
-): void {
-    const hasInstrument = new Array<boolean>(channelCount).fill(false);
-    for (let i = 0; i < order.length; i++) {
-        const { pattern: index, transpose } = order[i];
-        const { name, rowCount, cells } = patterns[index];
-        for (let row = 0; row < rowCount; row++) {
-            for (let channel = 0; channel < channelCount; channel++) {
-                const at = (row * channelCount + channel) * CELL_STRIDE;
-                if (cells[at + CELL_INSTRUMENT] >= 0) hasInstrument[channel] = true;
-                const note = cells[at + CELL_NOTE];
-                if (note < 0) continue;
-                const where = `song: order entry ${i} ('${names[i]}'), pattern '${name}', row ${row}, channel ${channel}`;
-                if (!hasInstrument[channel]) throw new Error(`${where}: a note with no instrument named on this channel before it`);
-                const played = note + (cells[at + CELL_IS_OWN_NOTE] === 1 ? 0 : transpose);
-                if (!isNoteInRange(played)) {
-                    throw new Error(`${where}: note ${note} transposed by ${transpose} is ${played}, outside the chip's range (${LOWEST_NOTE} to ${HIGHEST_NOTE})`);
-                }
-            }
-        }
-    }
-}

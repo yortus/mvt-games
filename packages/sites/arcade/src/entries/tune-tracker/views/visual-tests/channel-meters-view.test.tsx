@@ -1,4 +1,4 @@
-import { AUDIO90_VOICE_COUNT, type Scope, SCOPE_POINTS } from 'audio90/tracker';
+import { AUDIO90_VOICE_COUNT, type Scope, SCOPE_POINTS } from 'audio90';
 import { advanceTime } from '@mvtjs/pixi';
 import { canvasTest } from 'v-snap';
 import { TUNES } from '#tunes';

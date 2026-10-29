@@ -1,5 +1,5 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import { AUDIO90_VOICE_COUNT, type Scope, SCOPE_POINTS } from 'audio90/tracker';
+import { AUDIO90_VOICE_COUNT, type Scope, SCOPE_POINTS } from 'audio90';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import type { PatternSheet } from './pattern-sheet';
 import { createGlyphRow, GLYPH_HEIGHT, GLYPH_WIDTH, type PixelFont } from './pixel-font';

@@ -20,9 +20,6 @@
         },
         "./headless": {
             "default": "./src/headless/index.ts"
-        },
-        "./tracker": {
-            "default": "./src/tracker/index.ts"
         }
     },
     "imports": {

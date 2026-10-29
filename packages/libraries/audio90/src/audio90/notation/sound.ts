@@ -1,6 +1,5 @@
 import {
-    DEFAULT_STEP_MS, HIGHEST_NOTE_NAME, isNoteInRange, MAX_ARPEGGIO, parseHexToken, parseRelativePitch, splitRows, splitTokens, type StepPitchMode,
-    toNoteNumber,
+    DEFAULT_STEP_MS, MAX_ARPEGGIO, parseHexToken, parseNote, parseNoteToken, parseRelativePitch, splitRows, splitTokens, type StepPitchMode,
 } from '../../shared';
 import {
     type Audio90EnvelopeData,
@@ -25,7 +24,6 @@ import {
     type Audio90OperatorWave,
     type Audio90Wave,
     ENGINE_INDEX,
-    ENGINE_NAMES,
     FILTER90_MODE_INDEX,
     LFO_SHAPE_INDEX,
     lookUpName,
@@ -290,8 +288,9 @@ export interface Audio90OscillatorB {
  * of 0.5`.
  */
 export function createAudio90Sound(options: Audio90SoundOptions): Audio90Sound {
-    const engine = lookUpName(ENGINE_INDEX, options.engine ?? 'analog', 'sound: engine');
-    checkEngineOptions(options, engine);
+    const engineName = options.engine ?? 'analog';
+    const engine = lookUpName(ENGINE_INDEX, engineName, 'sound: engine');
+    checkEngineOptions(options, engineName);
     const envelope = checkEnvelope(options.envelope ?? DEFAULT_ENVELOPE, 'envelope');
     const arpeggio = options.arpeggio ?? [];
     if (arpeggio.length > MAX_ARPEGGIO) {
@@ -336,7 +335,7 @@ export function createAudio90Sound(options: Audio90SoundOptions): Audio90Sound {
         ...(engine === ENGINE_ANALOG ? buildAnalog(options) : {}),
         ...(engine === ENGINE_SAMPLE ? buildSample(options) : {}),
     };
-    const sound: Audio90Sound = Object.freeze({ chip: 'audio90', engine: ENGINE_NAMES[engine], data: Object.freeze(data), sample: engine === ENGINE_SAMPLE ? sample : undefined });
+    const sound: Audio90Sound = Object.freeze({ chip: 'audio90', engine: engineName, data: Object.freeze(data), sample: engine === ENGINE_SAMPLE ? sample : undefined });
     SOUNDS.add(sound);
     return sound;
 }
@@ -344,14 +343,6 @@ export function createAudio90Sound(options: Audio90SoundOptions): Audio90Sound {
 /** Whether `value` is a sound that `createAudio90Sound` made, such as one found among a module's exports. */
 export function isAudio90Sound(value: unknown): value is Audio90Sound {
     return typeof value === 'object' && value !== null && SOUNDS.has(value);
-}
-
-/** The note number of a name such as `C-4`. If the name is not a note in range, throws an error that starts with `where`. */
-export function parseNote(name: string, where: string): number {
-    const note = toNoteNumber(name);
-    if (note === undefined) throw new Error(`${where}: '${name}' is not a note (write C-4, F#5)`);
-    if (!isNoteInRange(note)) throw new Error(`${where}: '${name}' is above ${HIGHEST_NOTE_NAME}, the highest note`);
-    return note;
 }
 
 /** Returns `value` if it is a number from `min` to `max`, or throws an error that names the option at `path`. */
@@ -379,20 +370,18 @@ const RATIO_STEP = 0.5;
 const MAX_RATIO = 32;
 
 /** Each engine's own options, to check that a sound gives only its engine's. */
-const ENGINE_OPTIONS: Readonly<Record<number, readonly (keyof Audio90SoundOptions)[]>> = {
-    [ENGINE_FM]: ['algorithm', 'operators', 'feedback', 'rateScaling'],
-    [ENGINE_ANALOG]: ['oscillator', 'oscillatorB', 'sub', 'noise'],
-    [ENGINE_SAMPLE]: ['sample', 'rootNote', 'isReversed'],
+const ENGINE_OPTIONS: Readonly<Record<Audio90Engine, readonly (keyof Audio90SoundOptions)[]>> = {
+    fm: ['algorithm', 'operators', 'feedback', 'rateScaling'],
+    analog: ['oscillator', 'oscillatorB', 'sub', 'noise'],
+    sample: ['sample', 'rootNote', 'isReversed'],
 };
 
 /** Throws if `options` gives an option that belongs to an engine other than `engine`. */
-function checkEngineOptions(options: Audio90SoundOptions, engine: number): void {
-    for (const other of [ENGINE_FM, ENGINE_ANALOG, ENGINE_SAMPLE]) {
+function checkEngineOptions(options: Audio90SoundOptions, engine: Audio90Engine): void {
+    for (const [other, keys] of Object.entries(ENGINE_OPTIONS)) {
         if (other === engine) continue;
-        for (const key of ENGINE_OPTIONS[other]) {
-            if (options[key] !== undefined) {
-                throw new Error(`sound: ${key} is only for ${ENGINE_NAMES[other]} sounds, and this one is ${ENGINE_NAMES[engine]}`);
-            }
+        for (const key of keys) {
+            if (options[key] !== undefined) throw new Error(`sound: ${key} is only for ${other} sounds, and this one is ${engine}`);
         }
     }
 }
@@ -581,7 +570,7 @@ function parseStep(row: string, index: number): Audio90StepData {
     let slice = -1;
     for (const token of splitTokens(row)) {
         const asRelative = parseRelativePitch(token);
-        const asNote = toNoteNumber(token);
+        const asNote = parseNoteToken(token, where);
         const asVolume = parseHexToken(token, 'v', 1);
         const asPan = parseHexToken(token, 'P', 2);
         const asBrightness = parseHexToken(token, 'f', 1);
@@ -592,7 +581,6 @@ function parseStep(row: string, index: number): Audio90StepData {
         }
         else if (asRelative !== undefined || asNote !== undefined) {
             if (pitchMode !== 'none') throw new Error(`${where}: two pitches`);
-            if (asNote !== undefined && !isNoteInRange(asNote)) throw new Error(`${where}: '${token}' is above ${HIGHEST_NOTE_NAME}, the highest note`);
             pitchMode = asNote !== undefined ? 'absolute' : 'relative';
             pitch = asNote ?? asRelative ?? 0;
         }

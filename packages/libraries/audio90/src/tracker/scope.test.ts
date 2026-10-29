@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createScope, registerScopeSource, SCOPE_POINTS, toScopeLength } from './scope';
+import { registerScopeSource, SCOPE_POINTS, toScopeLength } from '../shared';
+import { createScope } from './scope';
 
 describe('createScope', () => {
     it('attaches to the source its chip registered, and detaches once as it is destroyed, clearing itself', () => {

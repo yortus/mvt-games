@@ -57,9 +57,6 @@ export type Audio90LfoShape = 'sine' | 'triangle' | 'square' | 'saw' | 'random';
 /** Each engine's number in an instrument's data. */
 export const ENGINE_INDEX: Readonly<Record<Audio90Engine, number>> = { fm: ENGINE_FM, analog: ENGINE_ANALOG, sample: ENGINE_SAMPLE };
 
-/** Each engine's name, by its number. */
-export const ENGINE_NAMES: Readonly<Record<number, Audio90Engine>> = { [ENGINE_FM]: 'fm', [ENGINE_ANALOG]: 'analog', [ENGINE_SAMPLE]: 'sample' };
-
 /** Each analog wave's number in an instrument's data. */
 export const WAVE90_INDEX: Readonly<Record<Audio90Wave, number>> = { saw: WAVE90_SAW, pulse: WAVE90_PULSE, triangle: WAVE90_TRIANGLE, sine: WAVE90_SINE };
 

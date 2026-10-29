@@ -1,6 +1,4 @@
-import {
-    DEFAULT_STEP_MS, HIGHEST_NOTE_NAME, isNoteInRange, MAX_ARPEGGIO, parseHexToken, parseRelativePitch, splitRows, splitTokens, toNoteNumber,
-} from '../../shared';
+import { DEFAULT_STEP_MS, MAX_ARPEGGIO, parseHexToken, parseNote, parseNoteToken, parseRelativePitch, splitRows, splitTokens } from '../../shared';
 import {
     toCutoff,
     type Audio80FilterId,
@@ -11,7 +9,6 @@ import {
     WAVETABLE_SIZE,
     toWaveFlags,
 } from '../synthesiser';
-import { parseWaveToken } from './tokens';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -31,12 +28,8 @@ import { parseWaveToken } from './tokens';
 export interface Audio80Sound {
     /** The chip it plays on. */
     readonly chip: 'audio80';
-    /** What the chip is sent. */
+    /** What the chip is sent, such as the note it plays when played with no note, and the filter its notes go through. */
     readonly data: SoundData;
-    /** The filter its notes go through, if any. */
-    readonly filter: Audio80FilterId | undefined;
-    /** The note it plays when played with no note, or named in a song's cell with no note, as drum cells are. */
-    readonly note: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -205,7 +198,7 @@ export function createAudio80Sound(options: Audio80SoundOptions): Audio80Sound {
         syncSource: options.syncSource ?? -1,
         ringSource: options.ringSource ?? -1,
     };
-    const sound: Audio80Sound = Object.freeze({ chip: 'audio80', data, filter: options.filter, note });
+    const sound: Audio80Sound = Object.freeze({ chip: 'audio80', data });
     SOUNDS.add(sound);
     return sound;
 }
@@ -215,14 +208,6 @@ export function isAudio80Sound(value: unknown): value is Audio80Sound {
     return typeof value === 'object' && value !== null && SOUNDS.has(value);
 }
 
-/** The note number of a name such as `C-4`. If the name is not a note in range, throws an error that starts with `where`. */
-export function parseNote(name: string, where: string): number {
-    const note = toNoteNumber(name);
-    if (note === undefined) throw new Error(`${where}: '${name}' is not a note (write C-4, F#5)`);
-    if (!isNoteInRange(note)) throw new Error(`${where}: '${name}' is above ${HIGHEST_NOTE_NAME}, the highest note`);
-    return note;
-}
-
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
@@ -230,6 +215,11 @@ export function parseNote(name: string, where: string): number {
 const DEFAULT_ENVELOPE: Audio80Envelope = { attackMs: 2, decayMs: 0, sustain: 1, releaseMs: 60 };
 const DEFAULT_NOTE = 60;
 const DEFAULT_LENGTH_MS = 250;
+
+/** Every wave a step row may name. */
+const WAVES: readonly Audio80Wave[] = [
+    'triangle', 'saw', 'pulse', 'noise', 'wavetable', 'triangle+saw', 'triangle+pulse', 'saw+pulse', 'triangle+saw+pulse',
+];
 
 /** Every sound made, so `isAudio80Sound` knows one when it sees it. */
 const SOUNDS = new WeakSet<object>();
@@ -248,9 +238,9 @@ function parseStep(row: string, index: number): StepData {
     let pulseWidth = -1;
     let cutoffHz = -1;
     for (const token of splitTokens(row)) {
-        const asWave = parseWaveToken(token);
+        const asWave = (WAVES as readonly string[]).includes(token) ? toWaveFlags(token as Audio80Wave) : undefined;
         const asRelative = parseRelativePitch(token);
-        const asNote = toNoteNumber(token);
+        const asNote = parseNoteToken(token, where);
         const asVolume = parseHexToken(token, 'v', 1);
         const asPulse = parseHexToken(token, 'p', 1);
         const asFilter = parseHexToken(token, 'f', 1);
@@ -260,9 +250,6 @@ function parseStep(row: string, index: number): StepData {
         }
         else if (asRelative !== undefined || asNote !== undefined) {
             if (pitchMode !== 'none') throw new Error(`${where}: two pitches`);
-            if (asNote !== undefined && !isNoteInRange(asNote)) {
-                throw new Error(`${where}: '${token}' is above ${HIGHEST_NOTE_NAME}, the highest note`);
-            }
             pitchMode = asNote !== undefined ? 'absolute' : 'relative';
             pitch = asNote ?? asRelative ?? 0;
         }

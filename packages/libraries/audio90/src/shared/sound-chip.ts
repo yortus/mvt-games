@@ -19,8 +19,7 @@
  * what the listener hears now. In a browser, that trails what was asked by
  * the time the sound takes to reach the speaker. So a view that shows the
  * song, as a tracker does, shows the row being heard. A view that shows what
- * each voice plays attaches a scope with `createScope`, from
- * `audio90/tracker`.
+ * each voice plays attaches a scope with `createScope`.
  */
 export interface SoundChip<Song, Sound, PlayOptions> {
     /**

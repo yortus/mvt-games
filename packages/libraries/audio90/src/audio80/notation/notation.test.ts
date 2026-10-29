@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { computeSongDurationMs, HIGHEST_NOTE, LOWEST_NOTE, MAX_ARPEGGIO, toNoteNumber } from '../../shared';
-import { toCutoff, VOICE_COUNT, toWaveFlags } from '../synthesiser';
-import { createAudio80Sound, isAudio80Sound } from './sound';
 import {
     CELL_ARPEGGIO,
-    CELL_FILTER,
     CELL_GLIDE,
     CELL_INSTRUMENT,
     CELL_IS_OWN_NOTE,
     CELL_NOTE,
     CELL_PULSE,
     CELL_SLIDE,
-    CELL_STRIDE,
     CELL_VIBRATO,
     CELL_VOLUME,
-    createAudio80Song,
+    computeSongDurationMs,
     DEFAULT_VIBRATO,
+    HIGHEST_NOTE,
+    LOWEST_NOTE,
+    MAX_ARPEGGIO,
     NO_NOTE,
     RELEASE,
-    type Audio80Song,
-    type Audio80SongOptions,
-} from './song';
+    toNoteNumber,
+} from '../../shared';
+import { toCutoff, VOICE_COUNT, toWaveFlags } from '../synthesiser';
+import { createAudio80Sound, isAudio80Sound } from './sound';
+import { CELL_FILTER, CELL_STRIDE, createAudio80Song, type Audio80Song, type Audio80SongOptions } from './song';
 
 const LEAD = createAudio80Sound({ wave: 'pulse' });
 const KICK = createAudio80Sound({ wave: 'noise', note: 'C-3' });
@@ -67,7 +67,7 @@ describe('tracker notation: cells', () => {
 
     it('plays an instrument named alone at its own note, untransposed', () => {
         const cell = parseCell('k');
-        expect(cell[CELL_NOTE]).toBe(KICK.note);
+        expect(cell[CELL_NOTE]).toBe(KICK.data.note);
         expect(cell[CELL_IS_OWN_NOTE]).toBe(1);
     });
 
@@ -335,7 +335,7 @@ describe('tracker notation: sounds', () => {
     });
 
     it('plays C-4 when played with no note, unless it names its own', () => {
-        expect(createAudio80Sound({}).note).toBe(toNoteNumber('C-4'));
+        expect(createAudio80Sound({}).data.note).toBe(toNoteNumber('C-4'));
         expect(createAudio80Sound({ note: 'C-2' }).data.note).toBe(toNoteNumber('C-2'));
     });
 

@@ -14,7 +14,8 @@ export {
     type Audio80Vibrato,
 } from './audio80';
 export type { Audio80, Audio80PlayOptions } from './audio80';
-export type { Audio90, Audio90Character, Audio90PlayOptions } from './audio90';
+export type { Audio90, Audio90Character, Audio90PlayOptions, Audio90SongPattern } from './audio90';
+export { AUDIO90_SAMPLE_MEMORY, AUDIO90_VOICE_COUNT } from './audio90';
 export {
     createAudio90Sample,
     createAudio90Song,
@@ -46,5 +47,6 @@ export {
     type Audio90Vibrato,
     type Audio90Wave,
 } from './audio90';
-export type { SoundChip } from './shared';
+export { SCOPE_POINTS, type SoundChip } from './shared';
+export { AUDIO90_CELL_TEXT_WIDTH, createScope, formatAudio90Cell, type Scope } from './tracker';
 export { createAudio80, createAudio90, type Audio80Options, type Audio90Options } from './web';

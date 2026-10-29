@@ -1388,22 +1388,23 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         nextPlayPan = 0;
         hasNextPlayPan = false;
         scheduler.clear();
-        reverbSize = DEFAULT_REVERB_SIZE;
-        reverbDecayMs = DEFAULT_REVERB_DECAY_MS;
-        reverbDamping = DEFAULT_REVERB_DAMPING;
-        reverbLevel = DEFAULT_REVERB_LEVEL;
-        echoMs = DEFAULT_ECHO_MS;
+        const defaults = AUDIO90_EFFECT_DEFAULTS;
+        reverbSize = defaults.reverb.size;
+        reverbDecayMs = defaults.reverb.decayMs;
+        reverbDamping = defaults.reverb.damping;
+        reverbLevel = defaults.reverb.level;
+        echoMs = defaults.echo.timeMs;
         echoBeats = 0;
-        echoFeedback = DEFAULT_ECHO_FEEDBACK;
-        echoTone = toOnePole(DEFAULT_ECHO_TONE_HZ);
+        echoFeedback = defaults.echo.feedback;
+        echoTone = toOnePole(defaults.echo.toneHz);
         isEchoPingPong = false;
-        echoLevel = DEFAULT_ECHO_LEVEL;
-        chorusDepth = DEFAULT_CHORUS_DEPTH;
-        chorusHz = DEFAULT_CHORUS_HZ;
-        chorusLevel = DEFAULT_CHORUS_LEVEL;
+        echoLevel = defaults.echo.level;
+        chorusDepth = defaults.chorus.depth;
+        chorusHz = defaults.chorus.rateHz;
+        chorusLevel = defaults.chorus.level;
         pumpVoice = -1;
-        pumpDepth = DEFAULT_PUMP_DEPTH;
-        pumpCoef = toRecovery(DEFAULT_PUMP_RELEASE_MS);
+        pumpDepth = defaults.pump.depth;
+        pumpCoef = toRecovery(defaults.pump.releaseMs);
         character = defaultCharacter;
         bpm = DEFAULT_BPM;
         lfoBpm = DEFAULT_BPM;
@@ -1477,8 +1478,8 @@ const NOISE_SEED = 0x1234567;
 const LFO_SEED = 0x2468ace;
 const DEFAULT_BPM = 120;
 
-const CHARACTER_CONSOLE = 1;
-const CHARACTER_SAMPLER = 2;
+const CHARACTER_CONSOLE = AUDIO90_CHARACTERS.indexOf('console');
+const CHARACTER_SAMPLER = AUDIO90_CHARACTERS.indexOf('sampler');
 
 const ENVS_PER_VOICE = 2 + MAX_OPERATORS;
 const ENV_MOD = 1;
@@ -1509,20 +1510,6 @@ const DIFFUSION = 0.6;
 const HADAMARD_SCALE = 1 / Math.sqrt(8);
 const MIN_REVERB_DECAY_MS = 50;
 const MAX_REVERB_DECAY_MS = 20000;
-
-const DEFAULT_REVERB_SIZE = AUDIO90_EFFECT_DEFAULTS.reverb.size;
-const DEFAULT_REVERB_DECAY_MS = AUDIO90_EFFECT_DEFAULTS.reverb.decayMs;
-const DEFAULT_REVERB_DAMPING = AUDIO90_EFFECT_DEFAULTS.reverb.damping;
-const DEFAULT_REVERB_LEVEL = AUDIO90_EFFECT_DEFAULTS.reverb.level;
-const DEFAULT_ECHO_MS = AUDIO90_EFFECT_DEFAULTS.echo.timeMs;
-const DEFAULT_ECHO_FEEDBACK = AUDIO90_EFFECT_DEFAULTS.echo.feedback;
-const DEFAULT_ECHO_TONE_HZ = AUDIO90_EFFECT_DEFAULTS.echo.toneHz;
-const DEFAULT_ECHO_LEVEL = AUDIO90_EFFECT_DEFAULTS.echo.level;
-const DEFAULT_CHORUS_DEPTH = AUDIO90_EFFECT_DEFAULTS.chorus.depth;
-const DEFAULT_CHORUS_HZ = AUDIO90_EFFECT_DEFAULTS.chorus.rateHz;
-const DEFAULT_CHORUS_LEVEL = AUDIO90_EFFECT_DEFAULTS.chorus.level;
-const DEFAULT_PUMP_DEPTH = AUDIO90_EFFECT_DEFAULTS.pump.depth;
-const DEFAULT_PUMP_RELEASE_MS = AUDIO90_EFFECT_DEFAULTS.pump.releaseMs;
 
 // The working values of one sample of the effects and the output stage
 const FX_DRY_L = 0;

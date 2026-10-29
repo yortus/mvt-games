@@ -1,4 +1,20 @@
-import { OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE, type SongDriver, type SongWriter } from '../../shared';
+import {
+    CELL_ARPEGGIO,
+    CELL_GLIDE,
+    CELL_INSTRUMENT,
+    CELL_IS_OWN_NOTE,
+    CELL_NOTE,
+    CELL_PULSE,
+    CELL_SLIDE,
+    CELL_VIBRATO,
+    CELL_VOLUME,
+    OP_NOTE_OFF,
+    OP_NOTE_ON,
+    OP_SET_VOICE,
+    RELEASE,
+    type SongDriver,
+    type SongWriter,
+} from '../../shared';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
@@ -13,23 +29,13 @@ import type { Audio90Sound } from './sound';
 import {
     type Audio90Song,
     CELL90_ACCENT,
-    CELL90_ARPEGGIO,
     CELL90_BRIGHTNESS,
     CELL90_CHORD,
     CELL90_ECHO,
-    CELL90_GLIDE,
-    CELL90_INSTRUMENT,
-    CELL90_IS_OWN_NOTE,
-    CELL90_NOTE,
     CELL90_PAN,
-    CELL90_PULSE,
     CELL90_REVERB,
     CELL90_SLICE,
-    CELL90_SLIDE,
     CELL90_STRIDE,
-    CELL90_VIBRATO,
-    CELL90_VOLUME,
-    RELEASE90,
 } from './song';
 import { toPan } from './tokens';
 
@@ -108,12 +114,12 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
             const glideMs = tempoScale > 0 ? lengthMs / tempoScale : lengthMs;
             for (let channel = 0; channel < channels; channel++) {
                 const at = (row * channels + channel) * CELL90_STRIDE;
-                const note = cells[at + CELL90_NOTE];
-                const named = cells[at + CELL90_INSTRUMENT];
+                const note = cells[at + CELL_NOTE];
+                const named = cells[at + CELL_INSTRUMENT];
                 if (named >= 0) channelInstrument[channel] = named;
                 const instrument = channelInstrument[channel];
-                const volume = cells[at + CELL90_VOLUME];
-                const slide = cells[at + CELL90_SLIDE];
+                const volume = cells[at + CELL_VOLUME];
+                const slide = cells[at + CELL_SLIDE];
 
                 // The channel's settings first, so a note on this row starts with them
                 const pan = cells[at + CELL90_PAN];
@@ -130,12 +136,12 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
                     channelSlideRate[channel] = 0;
                 }
                 if (note >= 0 && instrument >= 0) {
-                    const played = note + (cells[at + CELL90_IS_OWN_NOTE] === 1 ? 0 : entry.transpose);
+                    const played = note + (cells[at + CELL_IS_OWN_NOTE] === 1 ? 0 : entry.transpose);
                     const soundId = writer.soundId(song.instruments[instrument]);
                     write(OP_NOTE_ON, stamp, channel, soundId, played, (volume >= 0 ? volume / 15 : 1) * songVolume);
-                    if (cells[at + CELL90_GLIDE] === 1) write(OP_SET_VOICE, stamp, channel, VOICE.glide, glideMs, 0);
+                    if (cells[at + CELL_GLIDE] === 1) write(OP_SET_VOICE, stamp, channel, VOICE.glide, glideMs, 0);
                 }
-                else if (note === RELEASE90) {
+                else if (note === RELEASE) {
                     write(OP_NOTE_OFF, stamp, channel, 0, 0, 0);
                 }
                 else if (volume >= 0) {
@@ -148,9 +154,9 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
                 if (chord >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.chord, chord, 0);
                 const slice = cells[at + CELL90_SLICE];
                 if (slice >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.slice, slice, 0);
-                const arpeggio = cells[at + CELL90_ARPEGGIO];
+                const arpeggio = cells[at + CELL_ARPEGGIO];
                 if (arpeggio >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.arpeggio, arpeggio, 0);
-                const vibrato = cells[at + CELL90_VIBRATO];
+                const vibrato = cells[at + CELL_VIBRATO];
                 if (vibrato >= 0) {
                     write(OP_SET_VOICE, stamp, channel, VOICE.vibratoDepth, Math.floor(vibrato / 16) / 8, 0);
                     write(OP_SET_VOICE, stamp, channel, VOICE.vibratoRate, vibrato % 16, 0);
@@ -161,7 +167,7 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
                     channelSlideRate[channel] = rate;
                     write(OP_SET_VOICE, stamp, channel, VOICE.slide, rate * tempoScale, 0);
                 }
-                const pulse = cells[at + CELL90_PULSE];
+                const pulse = cells[at + CELL_PULSE];
                 if (pulse >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.pulseWidth, pulse / 16, 0);
             }
         },

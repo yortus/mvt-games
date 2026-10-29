@@ -1,5 +1,4 @@
-import { prepareAudio90Samples } from 'audio90';
-import { createScope } from 'audio90/tracker';
+import { createScope, prepareAudio90Samples } from 'audio90';
 import { INSTRUMENT_NAMES, SAMPLES, TUNES } from '#tunes';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { textures } from '../data';

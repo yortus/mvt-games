@@ -1513,3 +1513,52 @@ package is finished. The progress log uses these numbers.
   - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (235 files, 2,965
     tests), `npm run build` (54.0 KB) and `npm run build:packages`; the
     benchmarks saved.
+- **2026-10-29, 6e part 6, second chunk done**, unstaged, after the user
+  committed the first (and heard the moved songs, which sound as before):
+  - **One tracker parser.** Each chip lists its cell tokens in a
+    `CellGrammar` (a prefix and digits, a flag such as `>`, or the slide,
+    each with its field and the name its errors use), and `parseSongCore` in
+    `shared/tracker.ts` makes what every song has: tempo, instruments,
+    patterns, order, loop and volume, with every check and message as
+    before. The Audio90 adds its engine checks through `checkCell`.
+    `formatCell` in `shared/format-cell.ts` writes a cell back out from the
+    same grammar, and `formatAudio90Cell` calls it. It is a module of its
+    own because Vite puts a module shared by several pages into one chunk
+    with everything any of them uses; in `tracker.ts` it rode along on the
+    home page.
+  - **One cell layout.** The fields both chips' cells start with are
+    `CELL_NOTE` to `CELL_PULSE`, `NO_NOTE`, `RELEASE` and `DEFAULT_VIBRATO`
+    in the shared tracker; `CELL90_NOTE` and the rest of those copies went,
+    and `Audio90SongPattern` is the shared `SongPattern`.
+  - **The small repeats.** `parseNote` and `parseNoteToken` (the
+    highest-note check) are shared; the Audio80's `tokens.ts` folded into
+    its sound; `ENGINE_NAMES` went (a sound keeps its engine's name); the
+    Audio80's echo defaults are `AUDIO80_ECHO_DEFAULTS`, read by its
+    synthesiser and its song driver; the Audio90's synthesiser reads
+    `AUDIO90_EFFECT_DEFAULTS` and `AUDIO90_CHARACTERS` in place of 15
+    copies; the song's echo limit is `MAX_ECHO_FEEDBACK`. An Audio80 sound
+    lost `note` and `filter` (its `data` has both), and an Audio80 song
+    gained `instrumentLetters`. A changeset, `.changeset/one-tracker.md`.
+  - **Size:** 519 lines added and 747 removed, plus the formatter's 79.
+    The home page's first load is 54.4 KB, from 54.0: the general parser is
+    a little bigger than the Audio80's own was.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (235 files, 2,965
+    tests, every audio hash unchanged), `npm run build` and
+    `npm run build:packages`. Nothing on a hot path changed, so the
+    benchmarks were not run.
+  - **Then `audio90/tracker`'s code moved into its folder** (the user):
+    `tracker/format-cell.ts` holds `formatAudio90Cell` and its width, and
+    `tracker/scope.ts` holds `createScope` and `Scope`, with their tests.
+    `shared/scope.ts` keeps the chip's side (the layout, the targets, and
+    the registry, which gained `findScopeSource`). The folder is now the
+    entry point, as `headless/` is, so nothing a game imports from the
+    root can bring editor code with it. No public change.
+- **2026-10-29, `audio90/tracker` folded into the root** (the user): with
+  its code in modules of its own, the entry point saved no bytes, and held
+  seven names. The root now exports `createScope`, `Scope`, `SCOPE_POINTS`,
+  `formatAudio90Cell`, `AUDIO90_CELL_TEXT_WIDTH`, `AUDIO90_SAMPLE_MEMORY`,
+  `AUDIO90_VOICE_COUNT` and `Audio90SongPattern`; `src/tracker/` stays as
+  their folder. The `exports` entry and the build entry went, the Tune
+  Tracker imports from `audio90`, and the two unreleased changesets that
+  named `audio90/tracker` no longer do. This overturns point 6 of section
+  5.9. The home page is unchanged, at 54.4 KB.

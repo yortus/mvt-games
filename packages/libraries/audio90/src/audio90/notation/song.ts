@@ -1,23 +1,6 @@
-import {
-    computeSongDurationMs,
-    checkInstrumentLetters,
-    checkLoop,
-    checkTempo,
-    HIGHEST_NOTE,
-    HIGHEST_NOTE_NAME,
-    isNoteInRange,
-    LOWEST_NOTE,
-    parseHexToken,
-    parseOrder,
-    type SongOrderEntry,
-    splitCells,
-    splitRows,
-    splitTokens,
-    toNoteNumber,
-} from '../../shared';
-import { type Audio90Character, AUDIO90_CHARACTERS, AUDIO90_EFFECT_DEFAULTS, AUDIO90_VOICE_COUNT, ENGINE_ANALOG, ENGINE_SAMPLE } from '../synthesiser';
+import { type CellGrammar, COMMON_CELL_TOKENS, formatHexToken, MAX_ECHO_FEEDBACK, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
+import { type Audio90Character, AUDIO90_CHARACTERS, AUDIO90_EFFECT_DEFAULTS, AUDIO90_VOICE_COUNT } from '../synthesiser';
 import { type Audio90Sound, checkRange } from './sound';
-import { ENGINE_NAMES } from './tokens';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -41,12 +24,12 @@ export interface Audio90Song {
     readonly swing: number;
     /** How many cells each row has, one per channel, up to 16. */
     readonly channelCount: number;
-    /** The song's instruments, in the order that a cell's `CELL90_INSTRUMENT` indexes them. */
+    /** The song's instruments, in the order that a cell's `CELL_INSTRUMENT` indexes them. */
     readonly instruments: readonly Audio90Sound[];
     /** Each instrument's letter, as the patterns name it, in the order of `instruments`. */
     readonly instrumentLetters: readonly string[];
     /** The song's patterns, in the order that `SongOrderEntry.pattern` indexes them. */
-    readonly patterns: readonly Audio90SongPattern[];
+    readonly patterns: readonly SongPattern[];
     /** The patterns in playing order. */
     readonly order: readonly SongOrderEntry[];
     /** The index in `order` to go back to at the end, or -1 to play once. */
@@ -72,15 +55,8 @@ export interface Audio90Song {
     readonly character: Audio90Character | undefined;
 }
 
-/** One pattern of an Audio90 song: rows of cells, one cell per channel. */
-export interface Audio90SongPattern {
-    /** Its name in `Audio90SongOptions.patterns`. */
-    readonly name: string;
-    /** How many rows it has, 1 or more. */
-    readonly rowCount: number;
-    /** The cells, `CELL90_STRIDE` numbers each. They run row by row, and within a row, channel by channel. */
-    readonly cells: Float64Array;
-}
+/** One pattern of an Audio90 song: rows of cells, one cell per channel, `CELL90_STRIDE` numbers each. */
+export type Audio90SongPattern = SongPattern;
 
 /** The echo as a song sets it, with every setting given. */
 export interface Audio90SongEcho {
@@ -93,26 +69,13 @@ export interface Audio90SongEcho {
     readonly level: number;
 }
 
-/** How many numbers each cell takes in `Audio90SongPattern.cells`. The other `CELL90_*` constants are offsets within a cell. */
+/**
+ * How many numbers each cell takes in `Audio90SongPattern.cells`. A cell
+ * starts with the fields every chip's cells have, `CELL_NOTE` to
+ * `CELL_PULSE`, in the shared folder's tracker, and ends with the Audio90's
+ * own.
+ */
 export const CELL90_STRIDE = 16;
-/** A note number, or `NO_NOTE90` or `RELEASE90`. */
-export const CELL90_NOTE = 0;
-/** 1 if the note is the instrument's own, which transposition leaves alone. */
-export const CELL90_IS_OWN_NOTE = 1;
-/** An index into `instruments`, or -1. */
-export const CELL90_INSTRUMENT = 2;
-/** The note's volume, 0 to 15, or -1. */
-export const CELL90_VOLUME = 3;
-/** Two semitone offsets packed as `x * 16 + y`, or -1. */
-export const CELL90_ARPEGGIO = 4;
-/** The vibrato's depth in eighths of a semitone and rate in Hz, packed as `depth * 16 + rate`, or -1. */
-export const CELL90_VIBRATO = 5;
-/** 1 to glide from the last note, or 0. */
-export const CELL90_GLIDE = 6;
-/** Semitones to slide by over the row, or 0. */
-export const CELL90_SLIDE = 7;
-/** A pulse width in sixteenths, or -1. */
-export const CELL90_PULSE = 8;
 /** A brightness, 0 to 15, or -1. */
 export const CELL90_BRIGHTNESS = 9;
 /** A pan, 0 (left) to 255 (right), with 128 the centre, or -1. */
@@ -128,13 +91,20 @@ export const CELL90_ECHO = 14;
 /** 1 to accent the note, or 0. */
 export const CELL90_ACCENT = 15;
 
-/** A `CELL90_NOTE` for a cell with no note. The channel's note plays on. */
-export const NO_NOTE90 = -1;
-/** A `CELL90_NOTE` for a release, written `===`. The channel's note fades out. */
-export const RELEASE90 = -2;
-
-/** The vibrato a bare `~` plays, packed as `CELL90_VIBRATO` packs it. It is a quarter of a semitone, six times a second. */
-export const DEFAULT_VIBRATO90 = 2 * 16 + 6;
+/** The tokens an Audio90's cells may hold, in the order a cell is written. */
+export const AUDIO90_CELL_GRAMMAR: CellGrammar = {
+    stride: CELL90_STRIDE,
+    tokens: [
+        ...COMMON_CELL_TOKENS,
+        { kind: 'hex', prefix: 'f', digits: 1, field: CELL90_BRIGHTNESS, name: 'brightnesses' },
+        { kind: 'hex', prefix: 'P', digits: 2, field: CELL90_PAN, name: 'pans' },
+        { kind: 'hex', prefix: 'c', digits: 2, field: CELL90_CHORD, name: 'chords' },
+        { kind: 'hex', prefix: 's', digits: 2, field: CELL90_SLICE, name: 'slices' },
+        { kind: 'hex', prefix: 'r', digits: 1, field: CELL90_REVERB, name: 'reverb sends' },
+        { kind: 'hex', prefix: 'e', digits: 1, field: CELL90_ECHO, name: 'echo sends' },
+        { kind: 'flag', token: '!', field: CELL90_ACCENT, name: 'accents' },
+    ],
+};
 
 // ---------------------------------------------------------------------------
 // Options
@@ -256,59 +226,20 @@ export interface Audio90PumpSettings {
  * row 3, channel 0: c37 needs an analog instrument, and 'S' is fm`.
  */
 export function createAudio90Song(options: Audio90SongOptions): Audio90Song {
-    const { bpm } = options;
-    const { rowsPerBeat, swing } = checkTempo(options);
-
-    const letters = Object.keys(options.instruments);
-    checkInstrumentLetters(letters);
-    const instruments = letters.map((letter) => options.instruments[letter]);
-    const context: SongContext = { letters, instruments };
-
-    let channelCount = 0;
-    const patternNames = Object.keys(options.patterns);
-    if (patternNames.length === 0) throw new Error('song: no patterns');
-    const patterns = patternNames.map((name): Audio90SongPattern => {
-        const rows = splitRows(options.patterns[name]);
-        if (rows.length === 0) throw new Error(`song: pattern '${name}' has no rows`);
-        const cells: number[] = [];
-        for (let row = 0; row < rows.length; row++) {
-            const texts = splitCells(rows[row], `song: pattern '${name}', row ${row}`);
-            if (channelCount === 0) channelCount = texts.length;
-            if (texts.length !== channelCount) {
-                throw new Error(`song: pattern '${name}', row ${row}: expected ${channelCount} cells (one per channel), found ${texts.length}`);
-            }
-            for (let channel = 0; channel < texts.length; channel++) {
-                parseCell(texts[channel], `song: pattern '${name}', row ${row}, channel ${channel}`, context, cells);
-            }
-        }
-        return Object.freeze({ name, rowCount: rows.length, cells: Float64Array.from(cells) });
+    const core = parseSongCore(options, {
+        grammar: AUDIO90_CELL_GRAMMAR,
+        voiceCount: AUDIO90_VOICE_COUNT,
+        ownNote: (sound) => sound.data.note,
+        checkCell: checkEngineTokens,
     });
-
-    if (channelCount > AUDIO90_VOICE_COUNT) throw new Error(`song: ${channelCount} channels is more than the chip's ${AUDIO90_VOICE_COUNT} voices`);
-    const order = parseOrder(options.order, patternNames);
-    checkOrder(options.order, order, patterns, channelCount, context);
-    const loop = checkLoop(options.loop, order.length);
-    const volume = options.volume ?? 1;
-    if (!(volume > 0)) throw new Error(`song: volume must be above 0; got ${volume}`);
-
     const song: Audio90Song = Object.freeze({
         chip: 'audio90',
-        bpm,
-        rowsPerBeat,
-        swing,
-        channelCount,
-        instruments: Object.freeze(instruments),
-        instrumentLetters: Object.freeze(letters),
-        patterns: Object.freeze(patterns),
-        order: Object.freeze(order),
-        loop,
-        durationMs: computeSongDurationMs({ bpm, rowsPerBeat, order, patterns }),
-        volume,
-        mixer: Object.freeze(buildMixer(options.mixer ?? [], channelCount)),
+        ...core,
+        mixer: Object.freeze(buildMixer(options.mixer ?? [], core.channelCount)),
         reverb: buildReverb(options.reverb),
         echo: buildEcho(options.echo),
         chorus: buildChorus(options.chorus),
-        pump: buildPump(options.pump, channelCount),
+        pump: buildPump(options.pump, core.channelCount),
         character: checkCharacter(options.character),
     });
     SONGS.add(song);
@@ -327,95 +258,6 @@ export function isAudio90Song(value: unknown): value is Audio90Song {
 /** Every song made, so `isAudio90Song` knows one when it sees it. */
 const SONGS = new WeakSet<object>();
 
-/** What parsing a song's cells needs to know of it. */
-interface SongContext {
-    readonly letters: readonly string[];
-    readonly instruments: readonly Audio90Sound[];
-}
-
-/** The tokens that set a hex value: each one's prefix, its digits, and where it goes in a cell. */
-const HEX_TOKENS: readonly { readonly prefix: string; readonly digits: number; readonly field: number; readonly name: string }[] = [
-    { prefix: 'v', digits: 1, field: CELL90_VOLUME, name: 'volumes' },
-    { prefix: 'a', digits: 2, field: CELL90_ARPEGGIO, name: 'arpeggios' },
-    { prefix: '~', digits: 2, field: CELL90_VIBRATO, name: 'vibratos' },
-    { prefix: 'p', digits: 1, field: CELL90_PULSE, name: 'pulse widths' },
-    { prefix: 'f', digits: 1, field: CELL90_BRIGHTNESS, name: 'brightnesses' },
-    { prefix: 'P', digits: 2, field: CELL90_PAN, name: 'pans' },
-    { prefix: 'c', digits: 2, field: CELL90_CHORD, name: 'chords' },
-    { prefix: 's', digits: 2, field: CELL90_SLICE, name: 'slices' },
-    { prefix: 'r', digits: 1, field: CELL90_REVERB, name: 'reverb sends' },
-    { prefix: 'e', digits: 1, field: CELL90_ECHO, name: 'echo sends' },
-];
-
-/** Parses one cell's text, appending its `CELL90_STRIDE` numbers to `cells`. */
-function parseCell(text: string, where: string, context: SongContext, cells: number[]): void {
-    const cell = new Array<number>(CELL90_STRIDE).fill(-1);
-    cell[CELL90_NOTE] = NO_NOTE90;
-    cell[CELL90_IS_OWN_NOTE] = 0;
-    cell[CELL90_GLIDE] = 0;
-    cell[CELL90_SLIDE] = 0;
-    cell[CELL90_ACCENT] = 0;
-    let hasNoteToken = false;
-    let hasSlide = false;
-
-    for (const token of splitTokens(text)) {
-        if (token === '...') continue;
-        const asNote = toNoteNumber(token);
-        if (asNote !== undefined || token === '===') {
-            if (hasNoteToken) throw new Error(`${where}: two notes`);
-            if (asNote !== undefined && !isNoteInRange(asNote)) throw new Error(`${where}: '${token}' is above ${HIGHEST_NOTE_NAME}, the highest note`);
-            hasNoteToken = true;
-            cell[CELL90_NOTE] = asNote ?? RELEASE90;
-            continue;
-        }
-        // A single letter is an instrument. Every effect's letter has digits after it, so `c37` and `P40` are
-        // effects even in a song with instruments named `c` and `P`
-        if (token.length === 1 && /[A-Za-z]/.test(token)) {
-            if (cell[CELL90_INSTRUMENT] >= 0) throw new Error(`${where}: two instruments`);
-            const index = context.letters.indexOf(token);
-            if (index < 0) throw new Error(`${where}: unknown instrument '${token}'`);
-            cell[CELL90_INSTRUMENT] = index;
-            continue;
-        }
-        if (token === '>' || token === '!') {
-            const field = token === '>' ? CELL90_GLIDE : CELL90_ACCENT;
-            if (cell[field] === 1) throw new Error(`${where}: two ${token === '>' ? 'glides' : 'accents'}`);
-            cell[field] = 1;
-            continue;
-        }
-        if (token === '~') {
-            if (cell[CELL90_VIBRATO] >= 0) throw new Error(`${where}: two vibratos`);
-            cell[CELL90_VIBRATO] = DEFAULT_VIBRATO90;
-            continue;
-        }
-        const slideUp = parseHexToken(token, 'u', 2);
-        const slideDown = parseHexToken(token, 'd', 2);
-        if (slideUp !== undefined || slideDown !== undefined) {
-            if (hasSlide) throw new Error(`${where}: two slides`);
-            hasSlide = true;
-            cell[CELL90_SLIDE] = slideUp ?? -(slideDown ?? 0);
-            continue;
-        }
-        const hex = HEX_TOKENS.find((kind) => parseHexToken(token, kind.prefix, kind.digits) !== undefined);
-        if (hex === undefined) throw new Error(`${where}: '${token}' is not a note, an instrument or an effect`);
-        if (cell[hex.field] >= 0) throw new Error(`${where}: two ${hex.name}`);
-        cell[hex.field] = parseHexToken(token, hex.prefix, hex.digits) ?? -1;
-    }
-
-    const note = cell[CELL90_NOTE];
-    const instrument = cell[CELL90_INSTRUMENT];
-    if (note === RELEASE90 && instrument >= 0) throw new Error(`${where}: a release (===) cannot name an instrument`);
-    if (note === RELEASE90 && cell[CELL90_VOLUME] >= 0) throw new Error(`${where}: a release (===) cannot take a volume`);
-    if (note === NO_NOTE90 && instrument >= 0) {
-        // An instrument named alone plays its own note, as drums do
-        cell[CELL90_NOTE] = context.instruments[instrument].data.note;
-        cell[CELL90_IS_OWN_NOTE] = 1;
-    }
-    if (cell[CELL90_GLIDE] === 1 && cell[CELL90_NOTE] < 0) throw new Error(`${where}: a glide needs a note to glide to`);
-    if (instrument >= 0) checkEngineTokens(cell, 0, where, context.letters[instrument], context.instruments[instrument]);
-    for (let i = 0; i < CELL90_STRIDE; i++) cells.push(cell[i]);
-}
-
 /**
  * Throws if the cell at `at` in `cells` uses a token that its instrument's
  * engine does not have: a chord or an accent on an instrument that is not
@@ -423,58 +265,16 @@ function parseCell(text: string, where: string, context: SongContext, cells: num
  * slice.
  */
 function checkEngineTokens(cells: ArrayLike<number>, at: number, where: string, letter: string, instrument: Audio90Sound): void {
-    const engine = instrument.data.engine;
-    const named = `'${letter}' is ${ENGINE_NAMES[engine]}`;
+    const { engine } = instrument;
+    const named = `'${letter}' is ${engine}`;
     const chord = cells[at + CELL90_CHORD];
-    if (chord >= 0 && engine !== ENGINE_ANALOG) throw new Error(`${where}: ${formatHex('c', chord)} needs an analog instrument, and ${named}`);
-    if (cells[at + CELL90_ACCENT] === 1 && engine !== ENGINE_ANALOG) throw new Error(`${where}: ! needs an analog instrument, and ${named}`);
+    if (chord >= 0 && engine !== 'analog') throw new Error(`${where}: ${formatHexToken('c', chord, 2)} needs an analog instrument, and ${named}`);
+    if (cells[at + CELL90_ACCENT] === 1 && engine !== 'analog') throw new Error(`${where}: ! needs an analog instrument, and ${named}`);
     const slice = cells[at + CELL90_SLICE];
     if (slice < 0) return;
-    if (engine !== ENGINE_SAMPLE || instrument.sample === undefined) throw new Error(`${where}: ${formatHex('s', slice)} needs a sample instrument, and ${named}`);
+    if (engine !== 'sample' || instrument.sample === undefined) throw new Error(`${where}: ${formatHexToken('s', slice, 2)} needs a sample instrument, and ${named}`);
     const slices = instrument.sample.slices;
-    if (slice >= slices) throw new Error(`${where}: ${formatHex('s', slice)} is past the last of the ${slices} slices of '${letter}''s sample`);
-}
-
-/** A two-digit hex token, as written in a pattern, such as `c37`. */
-function formatHex(prefix: string, value: number): string {
-    return prefix + value.toString(16).toUpperCase().padStart(2, '0');
-}
-
-/**
- * Walks the order once, as a player first plays it. Throws at the first note
- * on a channel with no instrument named before it, at the first note that
- * its order entry's transposition takes out of the chip's range, and at the
- * first token the channel's instrument does not have.
- */
-function checkOrder(
-    names: readonly string[],
-    order: readonly SongOrderEntry[],
-    patterns: readonly Audio90SongPattern[],
-    channelCount: number,
-    context: SongContext,
-): void {
-    const channelInstrument = new Array<number>(channelCount).fill(-1);
-    for (let i = 0; i < order.length; i++) {
-        const { pattern: index, transpose } = order[i];
-        const { name, rowCount, cells } = patterns[index];
-        for (let row = 0; row < rowCount; row++) {
-            for (let channel = 0; channel < channelCount; channel++) {
-                const at = (row * channelCount + channel) * CELL90_STRIDE;
-                const where = `song: order entry ${i} ('${names[i]}'), pattern '${name}', row ${row}, channel ${channel}`;
-                const named = cells[at + CELL90_INSTRUMENT];
-                if (named >= 0) channelInstrument[channel] = named;
-                const instrument = channelInstrument[channel];
-                if (instrument >= 0 && named < 0) checkEngineTokens(cells, at, where, context.letters[instrument], context.instruments[instrument]);
-                const note = cells[at + CELL90_NOTE];
-                if (note < 0) continue;
-                if (instrument < 0) throw new Error(`${where}: a note with no instrument named on this channel before it`);
-                const played = note + (cells[at + CELL90_IS_OWN_NOTE] === 1 ? 0 : transpose);
-                if (!isNoteInRange(played)) {
-                    throw new Error(`${where}: note ${note} transposed by ${transpose} is ${played}, outside the chip's range (${LOWEST_NOTE} to ${HIGHEST_NOTE})`);
-                }
-            }
-        }
-    }
+    if (slice >= slices) throw new Error(`${where}: ${formatHexToken('s', slice, 2)} is past the last of the ${slices} slices of '${letter}''s sample`);
 }
 
 function buildMixer(mixer: readonly Audio90ChannelMix[], channelCount: number): Required<Audio90ChannelMix>[] {
@@ -511,7 +311,7 @@ function buildEcho(echo: Audio90EchoSettings | undefined): Audio90SongEcho | und
     return Object.freeze({
         timeMs: checkRange(echo.timeMs ?? defaults.timeMs, 0, Infinity, 'echo.timeMs', 'song'),
         timeBeats: echo.timeBeats === undefined ? 0 : checkRange(echo.timeBeats, Number.MIN_VALUE, Infinity, 'echo.timeBeats', 'song'),
-        feedback: checkRange(echo.feedback ?? defaults.feedback, 0, 0.95, 'echo.feedback', 'song'),
+        feedback: checkRange(echo.feedback ?? defaults.feedback, 0, MAX_ECHO_FEEDBACK, 'echo.feedback', 'song'),
         toneHz: checkRange(echo.toneHz ?? defaults.toneHz, Number.MIN_VALUE, Infinity, 'echo.toneHz', 'song'),
         isPingPong: echo.isPingPong ?? false,
         level: checkRange(echo.level ?? defaults.level, 0, 1, 'echo.level', 'song'),

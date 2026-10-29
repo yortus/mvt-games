@@ -1,5 +1,22 @@
-import { OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE, type SongDriver, type SongWriter } from '../../shared';
 import {
+    CELL_ARPEGGIO,
+    CELL_GLIDE,
+    CELL_INSTRUMENT,
+    CELL_IS_OWN_NOTE,
+    CELL_NOTE,
+    CELL_PULSE,
+    CELL_SLIDE,
+    CELL_VIBRATO,
+    CELL_VOLUME,
+    OP_NOTE_OFF,
+    OP_NOTE_ON,
+    OP_SET_VOICE,
+    RELEASE,
+    type SongDriver,
+    type SongWriter,
+} from '../../shared';
+import {
+    AUDIO80_ECHO_DEFAULTS,
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
     OP_SET_ECHO,
@@ -10,21 +27,7 @@ import {
     VOICE_SETTING_INDEX,
 } from '../synthesiser';
 import type { Audio80Sound } from './sound';
-import {
-    type Audio80Song,
-    CELL_ARPEGGIO,
-    CELL_FILTER,
-    CELL_GLIDE,
-    CELL_INSTRUMENT,
-    CELL_IS_OWN_NOTE,
-    CELL_NOTE,
-    CELL_PULSE,
-    CELL_SLIDE,
-    CELL_STRIDE,
-    CELL_VIBRATO,
-    CELL_VOLUME,
-    RELEASE,
-} from './song';
+import { type Audio80Song, CELL_FILTER, CELL_STRIDE } from './song';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -61,8 +64,8 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
             }
             if (song.echo !== undefined) {
                 write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.timeMs, song.echo.timeMs, 0, 0);
-                write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.feedback, song.echo.feedback ?? DEFAULT_ECHO_FEEDBACK, 0, 0);
-                write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.level, song.echo.level ?? DEFAULT_ECHO_LEVEL, 0, 0);
+                write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.feedback, song.echo.feedback ?? AUDIO80_ECHO_DEFAULTS.feedback, 0, 0);
+                write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.level, song.echo.level ?? AUDIO80_ECHO_DEFAULTS.level, 0, 0);
             }
         },
 
@@ -116,10 +119,9 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
                 const pulse = cells[at + CELL_PULSE];
                 if (pulse >= 0) write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.pulseWidth, pulse / 16, 0);
                 const filter = cells[at + CELL_FILTER];
-                const filterId = instrument >= 0 ? song.instruments[instrument].filter : undefined;
-                if (filter >= 0 && filterId !== undefined) {
-                    write(OP_SET_FILTER, stamp, filterId === 'a' ? 0 : 1, FILTER_SETTING_INDEX.cutoffHz, toCutoff(filter), 0);
-                }
+                // The filter the instrument's notes go through: route 1 is filter a, and 2 is filter b
+                const route = instrument >= 0 ? song.instruments[instrument].data.filter : 0;
+                if (filter >= 0 && route > 0) write(OP_SET_FILTER, stamp, route - 1, FILTER_SETTING_INDEX.cutoffHz, toCutoff(filter), 0);
             }
         },
 
@@ -136,10 +138,3 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
         },
     };
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-const DEFAULT_ECHO_FEEDBACK = 0.35;
-const DEFAULT_ECHO_LEVEL = 0.5;

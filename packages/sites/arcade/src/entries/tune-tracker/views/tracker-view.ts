@@ -1,6 +1,5 @@
 import { Container, Sprite, Texture } from 'pixi.js';
-import type { Audio90Sound } from 'audio90';
-import type { Scope } from 'audio90/tracker';
+import type { Audio90Sound, Scope } from 'audio90';
 import type { Tune } from '#tunes';
 import type { MusicChip } from '#shared';
 import type { TrackerModel } from '../models';

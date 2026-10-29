@@ -1,5 +1,4 @@
 export { bounceAudio90Song, type BounceOptions } from './bounce';
-export { AUDIO90_CELL_TEXT_WIDTH, formatAudio90Cell } from './format-cell';
 export {
     type Audio90Envelope,
     type Audio90Filter,
@@ -25,28 +24,17 @@ export {
     type Audio90SongEcho,
     type Audio90SongOptions,
     type Audio90SongPattern,
+    AUDIO90_CELL_GRAMMAR,
     CELL90_ACCENT,
-    CELL90_ARPEGGIO,
     CELL90_BRIGHTNESS,
     CELL90_CHORD,
     CELL90_ECHO,
-    CELL90_GLIDE,
-    CELL90_INSTRUMENT,
-    CELL90_IS_OWN_NOTE,
-    CELL90_NOTE,
     CELL90_PAN,
-    CELL90_PULSE,
     CELL90_REVERB,
     CELL90_SLICE,
-    CELL90_SLIDE,
     CELL90_STRIDE,
-    CELL90_VIBRATO,
-    CELL90_VOLUME,
     createAudio90Song,
-    DEFAULT_VIBRATO90,
     isAudio90Song,
-    NO_NOTE90,
-    RELEASE90,
 } from './song';
 export { createAudio90SongDriver } from './song-driver';
 export {

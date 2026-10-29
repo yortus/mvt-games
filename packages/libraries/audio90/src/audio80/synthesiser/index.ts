@@ -1,4 +1,4 @@
-export { createAudio80Synthesiser, type Audio80Synthesiser, type Audio80SynthesiserOptions } from './audio80-synthesiser';
+export { AUDIO80_ECHO_DEFAULTS, createAudio80Synthesiser, type Audio80Synthesiser, type Audio80SynthesiserOptions } from './audio80-synthesiser';
 export {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,

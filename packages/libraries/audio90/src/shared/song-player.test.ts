@@ -75,7 +75,7 @@ describe('song player', () => {
         const notes = listNoteOns(log);
         const secondPass = notes.filter((write) => write.time >= 4 * ROW_MS);
         expect(secondPass.find((write) => write.voice === 0)?.note).toBe(requireNoteNumber('C-5') + TUNE.order[1].transpose);
-        expect(secondPass.find((write) => write.voice === 2)?.note).toBe(DRUM.note);
+        expect(secondPass.find((write) => write.voice === 2)?.note).toBe(DRUM.data.note);
     });
 
     it('releases on ===, and stops at the end', () => {
