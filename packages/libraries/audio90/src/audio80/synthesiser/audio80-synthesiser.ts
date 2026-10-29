@@ -29,20 +29,20 @@ import {
     SVF_STRIDE,
     tuneStateVariableFilter,
 } from '../../shared';
-import { ECHO_SETTING_INDEX, FILTER_SETTING_INDEX, OP_SET_ECHO, OP_SET_FILTER, VOICE_COUNT, VOICE_SETTING_INDEX } from './commands';
+import { AUDIO80_ECHO_SETTING_INDEX, AUDIO80_FILTER_SETTING_INDEX, OP80_SET_ECHO, OP80_SET_FILTER, AUDIO80_VOICE_COUNT, AUDIO80_VOICE_SETTING_INDEX } from './commands';
 import {
     type Audio80Character,
-    FILTER_BANDPASS,
-    FILTER_HIGHPASS,
-    FILTER_LOWPASS,
-    type SoundData,
-    type StepData,
-    WAVE_NOISE,
-    WAVE_PULSE,
-    WAVE_SAW,
-    WAVE_TABLE,
-    WAVE_TRIANGLE,
-    WAVETABLE_SIZE,
+    FILTER80_BANDPASS,
+    FILTER80_HIGHPASS,
+    FILTER80_LOWPASS,
+    type Audio80SoundData,
+    type Audio80StepData,
+    WAVE80_NOISE,
+    WAVE80_PULSE,
+    WAVE80_SAW,
+    WAVE80_TABLE,
+    WAVE80_TRIANGLE,
+    AUDIO80_WAVETABLE_SIZE,
 } from './sound-data';
 
 // ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ export interface Audio80Synthesiser {
     /** The rate it renders at, in samples a second. */
     readonly sampleRate: number;
     /** Makes a sound playable by id. It runs once per sound until the next `reset`, so it is not on a hot path. */
-    defineSound: (id: number, data: SoundData) => void;
+    defineSound: (id: number, data: Audio80SoundData) => void;
     /**
      * Queues `count` commands to apply at their stamps. Each command takes
      * `COMMAND_STRIDE` numbers. A command's stamp is the chip time it applies
@@ -94,7 +94,7 @@ export interface Audio80Synthesiser {
     findSoundOn: (voice: number) => number | undefined;
     /**
      * Where to write each voice's output for a scope, or undefined for none.
-     * It holds `toScopeLength(VOICE_COUNT)` numbers: `SCOPE_POINTS` points a
+     * It holds `toScopeLength(AUDIO80_VOICE_COUNT)` numbers: `SCOPE_POINTS` points a
      * voice, one every `SCOPE_STRIDE` samples, round and round, then each
      * voice's pan, which is 0, since the chip is mono. A silent voice's points
      * are 0.
@@ -132,48 +132,48 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const msPerAudioSample = 1000 / sampleRate;
     const echoDamping = adaptCoefficient(ECHO_DAMPING_AT_48K, sampleRate);
 
-    const sounds = new Map<number, SoundData>();
+    const sounds = new Map<number, Audio80SoundData>();
 
     // ---- Voices: one slot per voice in each array ---------------------------
-    const phase = new Float64Array(VOICE_COUNT);
-    const phaseInc = new Float64Array(VOICE_COUNT);
-    const wave = new Int32Array(VOICE_COUNT);
-    const pulseWidth = new Float64Array(VOICE_COUNT);
-    const wavetable = new Float64Array(VOICE_COUNT * WAVETABLE_SIZE);
-    const lfsr = new Int32Array(VOICE_COUNT);
-    const noisePhase = new Float64Array(VOICE_COUNT);
-    const noiseOut = new Float64Array(VOICE_COUNT);
-    const noise12 = new Int32Array(VOICE_COUNT);
-    const syncSource = new Int32Array(VOICE_COUNT);
-    const ringSource = new Int32Array(VOICE_COUNT);
-    const wrapped = new Uint8Array(VOICE_COUNT);
+    const phase = new Float64Array(AUDIO80_VOICE_COUNT);
+    const phaseInc = new Float64Array(AUDIO80_VOICE_COUNT);
+    const wave = new Int32Array(AUDIO80_VOICE_COUNT);
+    const pulseWidth = new Float64Array(AUDIO80_VOICE_COUNT);
+    const wavetable = new Float64Array(AUDIO80_VOICE_COUNT * AUDIO80_WAVETABLE_SIZE);
+    const lfsr = new Int32Array(AUDIO80_VOICE_COUNT);
+    const noisePhase = new Float64Array(AUDIO80_VOICE_COUNT);
+    const noiseOut = new Float64Array(AUDIO80_VOICE_COUNT);
+    const noise12 = new Int32Array(AUDIO80_VOICE_COUNT);
+    const syncSource = new Int32Array(AUDIO80_VOICE_COUNT);
+    const ringSource = new Int32Array(AUDIO80_VOICE_COUNT);
+    const wrapped = new Uint8Array(AUDIO80_VOICE_COUNT);
 
-    const envelopes = createEnvelopes({ count: VOICE_COUNT, sampleRate });
+    const envelopes = createEnvelopes({ count: AUDIO80_VOICE_COUNT, sampleRate });
     const envStage = envelopes.stage;
     const envLevel = envelopes.level;
 
-    const noteVolume = new Float64Array(VOICE_COUNT);
-    const stepVolume = new Float64Array(VOICE_COUNT);
-    const soundVolume = new Float64Array(VOICE_COUNT);
-    const route = new Int32Array(VOICE_COUNT);
-    const echoSend = new Float64Array(VOICE_COUNT);
+    const noteVolume = new Float64Array(AUDIO80_VOICE_COUNT);
+    const stepVolume = new Float64Array(AUDIO80_VOICE_COUNT);
+    const soundVolume = new Float64Array(AUDIO80_VOICE_COUNT);
+    const route = new Int32Array(AUDIO80_VOICE_COUNT);
+    const echoSend = new Float64Array(AUDIO80_VOICE_COUNT);
 
     // The driver moves each voice's note on: its steps, arpeggio, vibrato,
     // glides, slides and length. What else a step row sets is the Audio80's,
     // in `applyStep`. The sweeps are the Audio80's too
-    const driver = createNoteDriver<StepData>({ voiceCount: VOICE_COUNT, sampleRate, onStep: applyStep, onEnd: release });
+    const driver = createNoteDriver<Audio80StepData>({ voiceCount: AUDIO80_VOICE_COUNT, sampleRate, onStep: applyStep, onEnd: release });
     const currentNote = driver.currentNote;
     const noteSamples = driver.noteSamples;
-    const pulseSweepMs = new Float64Array(VOICE_COUNT);
-    const pulseSweepFrom = new Float64Array(VOICE_COUNT);
-    const pulseSweepTo = new Float64Array(VOICE_COUNT);
-    const isPulseSweepPingPong = new Uint8Array(VOICE_COUNT);
-    const filterSweepMs = new Float64Array(VOICE_COUNT);
-    const filterSweepFrom = new Float64Array(VOICE_COUNT);
-    const filterSweepTo = new Float64Array(VOICE_COUNT);
+    const pulseSweepMs = new Float64Array(AUDIO80_VOICE_COUNT);
+    const pulseSweepFrom = new Float64Array(AUDIO80_VOICE_COUNT);
+    const pulseSweepTo = new Float64Array(AUDIO80_VOICE_COUNT);
+    const isPulseSweepPingPong = new Uint8Array(AUDIO80_VOICE_COUNT);
+    const filterSweepMs = new Float64Array(AUDIO80_VOICE_COUNT);
+    const filterSweepFrom = new Float64Array(AUDIO80_VOICE_COUNT);
+    const filterSweepTo = new Float64Array(AUDIO80_VOICE_COUNT);
 
     // Which sound each voice was played with, and which play it is
-    const plays = createSoundPlays({ voiceCount: VOICE_COUNT, isSounding: envelopes.isSounding, release });
+    const plays = createSoundPlays({ voiceCount: AUDIO80_VOICE_COUNT, isSounding: envelopes.isSounding, release });
     // How the next play plays, as its `OP_PLAY_OPTIONS` said: its length in ms, or -1 to hold, and its glide's note, or -1
     let nextPlayLengthMs = -1;
     let nextPlayGlideTo = -1;
@@ -198,7 +198,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     let echoLevel = 0;
 
     // ---- Each sample's working values ----------------------------------------
-    const voiceOut = new Float64Array(VOICE_COUNT);
+    const voiceOut = new Float64Array(AUDIO80_VOICE_COUNT);
     const bus = new Float64Array(BUS_COUNT);
     // The echo's damping state, and the DC blocker's last input and output
     const mix = new Float64Array(MIX_STATE_COUNT);
@@ -261,10 +261,10 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             case OP_SET_VOICE:
                 if (isVoice(a)) setVoice(a, b, c);
                 break;
-            case OP_SET_FILTER:
+            case OP80_SET_FILTER:
                 if (a === 0 || a === 1) setFilter(a, b, c);
                 break;
-            case OP_SET_ECHO:
+            case OP80_SET_ECHO:
                 setEcho(a, b);
                 break;
             case OP_PLAY_OPTIONS:
@@ -278,16 +278,16 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 plays.stop(a);
                 break;
             case OP_RELEASE_ALL:
-                for (let v = 0; v < VOICE_COUNT; v++) release(v);
+                for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) release(v);
                 break;
         }
     }
 
-    function startNote(v: number, data: SoundData, note: number, volume: number): void {
+    function startNote(v: number, data: Audio80SoundData, note: number, volume: number): void {
         wave[v] = data.wave;
         pulseWidth[v] = data.pulseWidth;
-        for (let i = 0; i < WAVETABLE_SIZE; i++) {
-            wavetable[v * WAVETABLE_SIZE + i] = i < data.wavetable.length ? data.wavetable[i] : 0;
+        for (let i = 0; i < AUDIO80_WAVETABLE_SIZE; i++) {
+            wavetable[v * AUDIO80_WAVETABLE_SIZE + i] = i < data.wavetable.length ? data.wavetable[i] : 0;
         }
         soundVolume[v] = data.volume;
         route[v] = data.filter;
@@ -318,27 +318,27 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     function setVoice(v: number, setting: number, value: number): void {
         switch (setting) {
-            case VOICE_SETTING_INDEX.pulseWidth:
+            case AUDIO80_VOICE_SETTING_INDEX.pulseWidth:
                 pulseWidth[v] = clamp(value, 0, 1);
                 pulseSweepMs[v] = 0;
                 break;
-            case VOICE_SETTING_INDEX.volume:
+            case AUDIO80_VOICE_SETTING_INDEX.volume:
                 // Not capped at 1, so a song can lift a quiet sound
                 noteVolume[v] = Math.max(0, value);
                 break;
-            case VOICE_SETTING_INDEX.arpeggio:
+            case AUDIO80_VOICE_SETTING_INDEX.arpeggio:
                 driver.setArpeggio(v, value);
                 break;
-            case VOICE_SETTING_INDEX.vibratoDepth:
+            case AUDIO80_VOICE_SETTING_INDEX.vibratoDepth:
                 driver.setVibratoDepth(v, value);
                 break;
-            case VOICE_SETTING_INDEX.vibratoRate:
+            case AUDIO80_VOICE_SETTING_INDEX.vibratoRate:
                 driver.setVibratoRate(v, value);
                 break;
-            case VOICE_SETTING_INDEX.slide:
+            case AUDIO80_VOICE_SETTING_INDEX.slide:
                 driver.setSlide(v, value);
                 break;
-            case VOICE_SETTING_INDEX.glide:
+            case AUDIO80_VOICE_SETTING_INDEX.glide:
                 driver.setGlide(v, value);
                 break;
         }
@@ -346,17 +346,17 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     function setFilter(f: number, setting: number, value: number): void {
         switch (setting) {
-            case FILTER_SETTING_INDEX.mode:
-                filterMode[f] = value & (FILTER_LOWPASS | FILTER_BANDPASS | FILTER_HIGHPASS);
+            case AUDIO80_FILTER_SETTING_INDEX.mode:
+                filterMode[f] = value & (FILTER80_LOWPASS | FILTER80_BANDPASS | FILTER80_HIGHPASS);
                 break;
-            case FILTER_SETTING_INDEX.cutoffHz:
+            case AUDIO80_FILTER_SETTING_INDEX.cutoffHz:
                 setCutoff(f, value);
                 break;
-            case FILTER_SETTING_INDEX.resonance:
+            case AUDIO80_FILTER_SETTING_INDEX.resonance:
                 filterResonance[f] = clamp(value, 0, 1);
                 areFiltersDirty = true;
                 break;
-            case FILTER_SETTING_INDEX.drive:
+            case AUDIO80_FILTER_SETTING_INDEX.drive:
                 filterDrive[f] = clamp(value, 0, 1);
                 break;
         }
@@ -364,13 +364,13 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     function setEcho(setting: number, value: number): void {
         switch (setting) {
-            case ECHO_SETTING_INDEX.timeMs:
+            case AUDIO80_ECHO_SETTING_INDEX.timeMs:
                 echoDelay = Math.max(1, Math.min(echoSize - 1, Math.round(value * sampleRate / 1000)));
                 break;
-            case ECHO_SETTING_INDEX.feedback:
+            case AUDIO80_ECHO_SETTING_INDEX.feedback:
                 echoFeedback = Math.min(MAX_ECHO_FEEDBACK, Math.max(0, value));
                 break;
-            case ECHO_SETTING_INDEX.level:
+            case AUDIO80_ECHO_SETTING_INDEX.level:
                 echoLevel = clamp(value, 0, 1);
                 break;
         }
@@ -401,7 +401,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     // ---- The driver, at control rate ----------------------------------------
 
     function controlAll(): void {
-        for (let v = 0; v < VOICE_COUNT; v++) controlVoice(v, CONTROL_SAMPLES);
+        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) controlVoice(v, CONTROL_SAMPLES);
         if (areFiltersDirty) updateFilterCoefficients();
         clearTinyValues(filterState);
         clearTinyValues(mix);
@@ -443,7 +443,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     }
 
     /** Applies what a step row sets besides its pitch, which the driver takes. */
-    function applyStep(v: number, step: StepData): void {
+    function applyStep(v: number, step: Audio80StepData): void {
         if (step.wave >= 0) wave[v] = step.wave;
         if (step.volume >= 0) stepVolume[v] = step.volume;
         if (step.pulseWidth >= 0) {
@@ -469,7 +469,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
             // Advance every phase before applying sync, so a voice synced to a
             // higher-numbered voice sees that voice's wrap in the same sample
-            for (let v = 0; v < VOICE_COUNT; v++) {
+            for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) {
                 let p = phase[v] + phaseInc[v];
                 wrapped[v] = 0;
                 if (p >= 1) {
@@ -477,9 +477,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                     wrapped[v] = 1;
                 }
                 phase[v] = p;
-                if ((wave[v] & WAVE_NOISE) !== 0) clockNoise(v);
+                if ((wave[v] & WAVE80_NOISE) !== 0) clockNoise(v);
             }
-            for (let v = 0; v < VOICE_COUNT; v++) {
+            for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) {
                 const source = syncSource[v];
                 if (source >= 0 && wrapped[source] === 1) phase[v] = 0;
             }
@@ -487,7 +487,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             // The buses are summed in a typed array. V8 would box per-sample
             // doubles kept in closure variables or returned from functions
             for (let i = 0; i < BUS_COUNT; i++) bus[i] = 0;
-            for (let v = 0; v < VOICE_COUNT; v++) {
+            for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) {
                 if (envStage[v] === ENV_IDLE) {
                     if (scopeAt >= 0) scope![v * SCOPE_POINTS + scopeAt] = 0;
                     continue;
@@ -528,11 +528,11 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     function oscillate(v: number): void {
         const w = wave[v];
         const p = phase[v];
-        if (w === WAVE_TABLE) {
-            voiceOut[v] = wavetable[v * WAVETABLE_SIZE + ((p * WAVETABLE_SIZE) | 0)] / 7.5 - 1;
+        if (w === WAVE80_TABLE) {
+            voiceOut[v] = wavetable[v * AUDIO80_WAVETABLE_SIZE + ((p * AUDIO80_WAVETABLE_SIZE) | 0)] / 7.5 - 1;
             return;
         }
-        if (w === WAVE_NOISE) {
+        if (w === WAVE80_NOISE) {
             voiceOut[v] = noiseOut[v];
             return;
         }
@@ -546,9 +546,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         const lower = p * 2 - (p >= 0.5 ? 1 : 0);
         const triangle = isTopBit ? 1 - lower : lower;
 
-        if (!isRaw && (w === WAVE_TRIANGLE || w === WAVE_SAW || w === WAVE_PULSE)) {
+        if (!isRaw && (w === WAVE80_TRIANGLE || w === WAVE80_SAW || w === WAVE80_PULSE)) {
             let x: number;
-            if (w === WAVE_TRIANGLE) {
+            if (w === WAVE80_TRIANGLE) {
                 x = triangle * 2 - 1;
             }
             else {
@@ -556,7 +556,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 // smooths the jump where the phase wraps
                 const dt = phaseInc[v];
                 const atWrap = polyBlep(p, dt);
-                if (w === WAVE_SAW) {
+                if (w === WAVE80_SAW) {
                     // Falls from 1 to -1 at the wrap
                     x = 2 * p - 1 - atWrap;
                 }
@@ -577,10 +577,10 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
         // Combined waveforms, and every waveform in the raw character, are 12-bit values ANDed together
         let bits = 0xfff;
-        if ((w & WAVE_TRIANGLE) !== 0) bits &= (triangle * 4095) | 0;
-        if ((w & WAVE_SAW) !== 0) bits &= (p * 4095) | 0;
-        if ((w & WAVE_PULSE) !== 0) bits &= p >= pulseWidth[v] ? 0xfff : 0;
-        if ((w & WAVE_NOISE) !== 0) bits &= noise12[v];
+        if ((w & WAVE80_TRIANGLE) !== 0) bits &= (triangle * 4095) | 0;
+        if ((w & WAVE80_SAW) !== 0) bits &= (p * 4095) | 0;
+        if ((w & WAVE80_PULSE) !== 0) bits &= p >= pulseWidth[v] ? 0xfff : 0;
+        if ((w & WAVE80_NOISE) !== 0) bits &= noise12[v];
         voiceOut[v] = bits / 2047.5 - 1;
     }
 
@@ -632,9 +632,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         filterState[state + 1] = 2 * v2 - ic2;
         const mode = filterMode[f];
         let out = 0;
-        if ((mode & FILTER_LOWPASS) !== 0) out += v2;
-        if ((mode & FILTER_BANDPASS) !== 0) out += v1;
-        if ((mode & FILTER_HIGHPASS) !== 0) out += x - filterCoefficients[c + SVF_K] * v1 - v2;
+        if ((mode & FILTER80_LOWPASS) !== 0) out += v2;
+        if ((mode & FILTER80_BANDPASS) !== 0) out += v1;
+        if ((mode & FILTER80_HIGHPASS) !== 0) out += x - filterCoefficients[c + SVF_K] * v1 - v2;
         bus[at] = out;
     }
 
@@ -657,10 +657,10 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     function resetAll(): void {
         envelopes.reset();
         plays.reset();
-        for (let v = 0; v < VOICE_COUNT; v++) {
+        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) {
             phase[v] = 0;
             phaseInc[v] = 0;
-            wave[v] = WAVE_PULSE;
+            wave[v] = WAVE80_PULSE;
             pulseWidth[v] = 0.5;
             lfsr[v] = LFSR_SEED;
             noisePhase[v] = 0;
@@ -681,7 +681,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         nextPlayLengthMs = -1;
         nextPlayGlideTo = -1;
         for (let f = 0; f < FILTER_COUNT; f++) {
-            filterMode[f] = FILTER_LOWPASS;
+            filterMode[f] = FILTER80_LOWPASS;
             filterCutoff[f] = DEFAULT_CUTOFF_HZ;
             filterResonance[f] = 0;
             filterDrive[f] = 0;
@@ -690,7 +690,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         updateFilterCoefficients();
         echo.fill(0);
         echoWrite = 0;
-        setEcho(ECHO_SETTING_INDEX.timeMs, AUDIO80_ECHO_DEFAULTS.timeMs);
+        setEcho(AUDIO80_ECHO_SETTING_INDEX.timeMs, AUDIO80_ECHO_DEFAULTS.timeMs);
         echoFeedback = AUDIO80_ECHO_DEFAULTS.feedback;
         echoLevel = AUDIO80_ECHO_DEFAULTS.level;
         mix.fill(0);
@@ -755,10 +755,10 @@ function adaptCoefficient(atReference: number, sampleRate: number): number {
 }
 
 function isVoice(v: number): boolean {
-    return v >= 0 && v < VOICE_COUNT && v === Math.floor(v);
+    return v >= 0 && v < AUDIO80_VOICE_COUNT && v === Math.floor(v);
 }
 
 /** Voice `source` as voice `v`'s sync or ring source, or -1 if it is not another voice on the chip. */
 function toSourceVoice(v: number, source: number): number {
-    return source >= 0 && source < VOICE_COUNT && source !== v ? Math.floor(source) : -1;
+    return source >= 0 && source < AUDIO80_VOICE_COUNT && source !== v ? Math.floor(source) : -1;
 }

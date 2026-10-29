@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render } from '../../headless';
-import { CELL_INSTRUMENT, CELL_NOTE, CELL_VOLUME, computeSongDurationMs, toFrequency } from '../../shared';
+import { CELL_INSTRUMENT, CELL_NOTE, CELL_VOLUME, toFrequency } from '../../shared';
 import {
     AUDIO90_EFFECT_DEFAULTS,
     AUDIO90_SAMPLE_MEMORY,
@@ -63,14 +63,12 @@ describe('the Audio90\'s notation', () => {
             expect(() => createAudio90Sound({ engine: 'sample' })).toThrow('a sample sound needs a sample');
         });
 
-        it('sends the filter\'s envelope shorthand to the cutoff, and refuses it beside a mod envelope', () => {
-            const squelch = createAudio90Sound({ filter: { cutoffHz: 350, resonance: 0.85, envelope: { octaves: 3, decayMs: 180 }, accent: 0.6 } });
-            expect(squelch.data).toMatchObject({ filterMode: FILTER90_LOWPASS_24, cutoffHz: 350, modCutoff: 3, accent: 0.6 });
-            expect(squelch.data.modEnvelope).toEqual({ attackMs: 0, decayMs: 180, sustain: 0, releaseMs: 0 });
-            const envelope = { attackMs: 0, decayMs: 60, sustain: 0, releaseMs: 0 };
-            expect(() => createAudio90Sound({ filter: { cutoffHz: 350, envelope: { octaves: 1 } }, modEnvelope: { to: 'pitch', amount: 24, envelope } }))
-                .toThrow('give filter.envelope or modEnvelope, not both');
-            expect(createAudio90Sound({ modEnvelope: { to: 'pitch', amount: 24, envelope } }).data.modPitch).toBe(24);
+        it('sends a mod envelope to the pitch, the cutoff or the brightness, by the amount it gives', () => {
+            const envelope = { attackMs: 0, decayMs: 180, sustain: 0, releaseMs: 0 };
+            const squelch = createAudio90Sound({ filter: { cutoffHz: 350, resonance: 0.85, accent: 0.6 }, modEnvelope: { to: 'cutoff', amount: 3, envelope } });
+            expect(squelch.data).toMatchObject({ filterMode: FILTER90_LOWPASS_24, cutoffHz: 350, modCutoff: 3, modPitch: 0, accent: 0.6 });
+            expect(squelch.data.modEnvelope).toEqual(envelope);
+            expect(createAudio90Sound({ modEnvelope: { to: 'pitch', amount: 24, envelope } }).data).toMatchObject({ modPitch: 24, modCutoff: 0 });
         });
 
         it('times an LFO in beats or in Hz, not both', () => {
@@ -79,10 +77,9 @@ describe('the Audio90\'s notation', () => {
             expect(() => createAudio90Sound({ lfo: { rateHz: 2, rateBeats: 1 } })).toThrow('give lfo.rateHz or lfo.rateBeats, not both');
         });
 
-        it('makes a legato sound tie its notes, gliding over legato.glideMs', () => {
-            expect(createAudio90Sound({ legato: { glideMs: 60 } }).data).toMatchObject({ isLegato: true, glideMs: 60 });
+        it('makes a legato sound tie its notes, gliding over glideMs', () => {
+            expect(createAudio90Sound({ glideMs: 60, isLegato: true }).data).toMatchObject({ isLegato: true, glideMs: 60 });
             expect(createAudio90Sound({ glideMs: 40 }).data).toMatchObject({ isLegato: false, glideMs: 40 });
-            expect(() => createAudio90Sound({ glideMs: 40, legato: { glideMs: 60 } })).toThrow('give glideMs or legato.glideMs, not both');
         });
 
         it('reads a step table\'s Audio90 columns: wave, pitch, volume, pan, brightness and slice', () => {
@@ -106,7 +103,7 @@ describe('the Audio90\'s notation', () => {
         it('bounce a song at their own rate, with the song\'s pitch, peaking at 90% of full scale', () => {
             const sample = createAudio90Sample({ bounce: createToneSong('A-4', 8), rate: 16000, rootNote: 'A-4' });
             const { data } = sample;
-            expect(data.data.length).toBe(Math.round(computeSongDurationMs(createToneSong('A-4', 8)) * 16000 / 1000));
+            expect(data.data.length).toBe(Math.round(createToneSong('A-4', 8).durationMs * 16000 / 1000));
             expect(sample.length).toBe(data.data.length);
             expect(measureHz(data.data, 16000)).toBeCloseTo(toFrequency(69), -1);
             expect(measureInt16Peak(data.data)).toBeCloseTo(0.9, 2);

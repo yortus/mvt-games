@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio90Song, createAudio90Sound, HELD_ENVELOPE } from '../audio90';
+import { createAudio90Song, createAudio90Sound } from '../audio90';
 import { createHeadlessAudio90 } from './headless-audio90';
 
-const HELD = createAudio90Sound({ oscillator: { wave: 'saw' }, envelope: HELD_ENVELOPE });
+const HELD = createAudio90Sound({ oscillator: { wave: 'saw' }, envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } });
 
 describe('headless Audio90', () => {
     it('takes every play and runs its clock and its song, though it plays nothing', () => {

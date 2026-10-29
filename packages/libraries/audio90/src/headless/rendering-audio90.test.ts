@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { type Audio90SoundOptions, createAudio90Sound, HELD_ENVELOPE } from '../audio90';
+import { type Audio90SoundOptions, createAudio90Sound } from '../audio90';
 import { hashSamples, measurePeak } from './render';
 import { createRenderingAudio90, type RenderingAudio90 } from './rendering-audio90';
 import type { StereoSamples } from './stereo-samples';
+
+/** An envelope that holds its note at full level, and stops quickly once released. */
+const HELD_ENVELOPE = { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 };
 
 /** A tenth of a second at the default 48 kHz. */
 const FRAMES = 4800;

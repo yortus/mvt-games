@@ -64,7 +64,6 @@ export {
     type CellGrammar,
     type CellToken,
     COMMON_CELL_TOKENS,
-    computeSongDurationMs,
     DEFAULT_VIBRATO,
     formatHexToken,
     NO_NOTE,

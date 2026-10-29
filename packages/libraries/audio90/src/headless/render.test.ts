@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { createAudio80Sound } from '../audio80';
-import { createAudio90Sound, HELD_ENVELOPE } from '../audio90';
+import { createAudio90Sound } from '../audio90';
 import { encodeWav, toInt16 } from './encode-wav';
 import { findSounds, hashSamples, measurePeak, render } from './render';
+
+/** An envelope that holds its note at full level, and stops quickly once released. */
+const HELD_ENVELOPE = { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 };
 
 describe('render', () => {
     for (const tickMs of [0, -1, NaN]) {

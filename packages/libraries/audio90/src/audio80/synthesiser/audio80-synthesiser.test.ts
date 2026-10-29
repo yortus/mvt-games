@@ -4,14 +4,14 @@ import { createAudio80Sound, type Audio80Sound, type Audio80SoundOptions } from 
 import { hashSamples, measurePeak } from '../../headless';
 import { type Audio80Synthesiser, createAudio80Synthesiser } from './audio80-synthesiser';
 import {
-    ECHO_SETTING_INDEX,
-    FILTER_SETTING_INDEX,
-    OP_SET_ECHO,
-    OP_SET_FILTER,
-    VOICE_COUNT,
-    VOICE_SETTING_INDEX,
+    AUDIO80_ECHO_SETTING_INDEX,
+    AUDIO80_FILTER_SETTING_INDEX,
+    OP80_SET_ECHO,
+    OP80_SET_FILTER,
+    AUDIO80_VOICE_COUNT,
+    AUDIO80_VOICE_SETTING_INDEX,
 } from './commands';
-import { type Audio80Character, FILTER_LOWPASS } from './sound-data';
+import { type Audio80Character, FILTER80_LOWPASS } from './sound-data';
 import {
     type CommandWriter, createCommandWriter, OP_NOTE_OFF, OP_NOTE_ON, OP_PLAY, OP_PLAY_OPTIONS, OP_SET_VOICE, SCOPE_POINTS, toFrequency, toScopeLength,
 } from '../../shared';
@@ -195,7 +195,7 @@ describe('Audio80 synthesiser: safety', () => {
     it('stays in range, with no NaN, with every voice at full volume', () => {
         const chip = createVoiceRig('raw');
         const loud = createAudio80Sound({ wave: 'saw', echo: 1 });
-        for (let v = 0; v < VOICE_COUNT; v++) noteOn(chip.audio80, v, loud, 40 + v, 1);
+        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) noteOn(chip.audio80, v, loud, 40 + v, 1);
         const samples = render(chip, 500);
         for (let i = 0; i < samples.length; i++) {
             expect(Number.isFinite(samples[i])).toBe(true);
@@ -229,10 +229,10 @@ describe('Audio80 synthesiser: safety', () => {
 describe('Audio80 synthesiser: bad numbers', () => {
     // Each one is written while voice 0 plays, between two of its notes
     const writes: readonly (readonly [string, readonly number[]])[] = [
-        ['volume', [OP_SET_VOICE, 0, VOICE_SETTING_INDEX.volume, Number.NaN, 0]],
-        ['cutoff', [OP_SET_FILTER, 0, FILTER_SETTING_INDEX.cutoffHz, Number.NaN, 0]],
-        ['echo time', [OP_SET_ECHO, ECHO_SETTING_INDEX.timeMs, Number.NaN, 0, 0]],
-        ['echo feedback', [OP_SET_ECHO, ECHO_SETTING_INDEX.feedback, Number.NaN, 0, 0]],
+        ['volume', [OP_SET_VOICE, 0, AUDIO80_VOICE_SETTING_INDEX.volume, Number.NaN, 0]],
+        ['cutoff', [OP80_SET_FILTER, 0, AUDIO80_FILTER_SETTING_INDEX.cutoffHz, Number.NaN, 0]],
+        ['echo time', [OP80_SET_ECHO, AUDIO80_ECHO_SETTING_INDEX.timeMs, Number.NaN, 0, 0]],
+        ['echo feedback', [OP80_SET_ECHO, AUDIO80_ECHO_SETTING_INDEX.feedback, Number.NaN, 0, 0]],
     ];
     for (const [name, [op, ...operands]] of writes) {
         it(`ignores a NaN ${name}, and plays the next note`, () => {
@@ -283,18 +283,18 @@ describe('Audio80 synthesiser: played sounds', () => {
         const tune = createAudio80Sound({ wave: 'pulse' });
         // As when a ship returns: its sound plays, and the music starts again from voice 0
         writer.play(BOOM);
-        for (let v = 0; v < VOICE_COUNT - 1; v++) noteOn(writer, v, tune, 60 + v, 1);
+        for (let v = 0; v < AUDIO80_VOICE_COUNT - 1; v++) noteOn(writer, v, tune, 60 + v, 1);
         step();
         const playing = listSoundsOn(synthesiser);
-        expect(playing[VOICE_COUNT - 1]).toBeDefined();
-        expect(playing.slice(0, VOICE_COUNT - 1).every((id) => id === undefined)).toBe(true);
+        expect(playing[AUDIO80_VOICE_COUNT - 1]).toBeDefined();
+        expect(playing.slice(0, AUDIO80_VOICE_COUNT - 1).every((id) => id === undefined)).toBe(true);
     });
 
     it('with no voice free, takes the oldest voice whose sound has no higher priority', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
         // Every voice but two is held by a sound of the highest priority
-        const held = createAudio80Sound({ wave: 'pulse', note: 'C-3', priority: 3, maxVoices: VOICE_COUNT });
-        for (let v = 0; v < VOICE_COUNT - 2; v++) writer.play(held, { lengthMs: Infinity });
+        const held = createAudio80Sound({ wave: 'pulse', note: 'C-3', priority: 3, maxVoices: AUDIO80_VOICE_COUNT });
+        for (let v = 0; v < AUDIO80_VOICE_COUNT - 2; v++) writer.play(held, { lengthMs: Infinity });
         step();
         writer.play(ZAP);
         step();
@@ -308,13 +308,13 @@ describe('Audio80 synthesiser: played sounds', () => {
         expect(playing).toContain(writer.soundId(BOOM));
         expect(playing).toContain(writer.soundId(BEEP));
         expect(playing).not.toContain(writer.soundId(ZAP));
-        expect(playing.filter((id) => id !== undefined)).toHaveLength(VOICE_COUNT);
+        expect(playing.filter((id) => id !== undefined)).toHaveLength(AUDIO80_VOICE_COUNT);
     });
 
     it('takes a song\'s note when no voice is free', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
         const tune = createAudio80Sound({ wave: 'pulse' });
-        for (let v = 0; v < VOICE_COUNT; v++) noteOn(writer, v, tune, 60 + v, 1);
+        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) noteOn(writer, v, tune, 60 + v, 1);
         step();
         writer.play(ZAP);
         step();
@@ -332,8 +332,8 @@ describe('Audio80 synthesiser: played sounds', () => {
 
     it('never takes a voice from a sound of higher priority', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        const loud = createAudio80Sound({ wave: 'noise', note: 'C-4', priority: 2, maxVoices: VOICE_COUNT });
-        for (let v = 0; v < VOICE_COUNT; v++) writer.play(loud, { lengthMs: Infinity });
+        const loud = createAudio80Sound({ wave: 'noise', note: 'C-4', priority: 2, maxVoices: AUDIO80_VOICE_COUNT });
+        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) writer.play(loud, { lengthMs: Infinity });
         step();
         const before = listSoundsOn(synthesiser);
         writer.play(ZAP);
@@ -380,7 +380,7 @@ describe('Audio80 synthesiser: played sounds', () => {
         step();
         writer.stop(first);
         for (let i = 0; i < Math.ceil(ZAP.data.releaseMs / TICK_MS) + 1; i++) step();
-        expect(listSoundsOn(synthesiser)[VOICE_COUNT - 1]).toBeDefined();
+        expect(listSoundsOn(synthesiser)[AUDIO80_VOICE_COUNT - 1]).toBeDefined();
     });
 
     it('plays at the note and glide a play gives in place of the sound\'s own', () => {
@@ -416,21 +416,21 @@ describe('Audio80 synthesiser: played sounds', () => {
 describe('Audio80 synthesiser: scope', () => {
     it('writes every voice\'s points into its scope, with the voice playing at about full scale and the rest silent', () => {
         const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        const scope = new Float32Array(toScopeLength(VOICE_COUNT)).fill(NaN);
+        const scope = new Float32Array(toScopeLength(AUDIO80_VOICE_COUNT)).fill(NaN);
         synthesiser.scope = scope;
         writer.play(HELD_SAW, { note: 'A-3', lengthMs: Infinity });
         step();
         const peaks: number[] = [];
-        for (let v = 0; v < VOICE_COUNT; v++) peaks.push(measurePeak(scope.subarray(v * SCOPE_POINTS, (v + 1) * SCOPE_POINTS)));
+        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) peaks.push(measurePeak(scope.subarray(v * SCOPE_POINTS, (v + 1) * SCOPE_POINTS)));
         // A point left unwritten would still be NaN, and fail both
         expect(peaks.filter((peak) => peak > 0.5)).toHaveLength(1);
-        expect(peaks.filter((peak) => peak === 0)).toHaveLength(VOICE_COUNT - 1);
+        expect(peaks.filter((peak) => peak === 0)).toHaveLength(AUDIO80_VOICE_COUNT - 1);
     });
 
     it('renders the same samples with a scope as without', () => {
         const renderHeld = (hasScope: boolean): string => {
             const { synthesiser, writer, step, samples } = createSynthesiserWithWriter();
-            if (hasScope) synthesiser.scope = new Float32Array(toScopeLength(VOICE_COUNT));
+            if (hasScope) synthesiser.scope = new Float32Array(toScopeLength(AUDIO80_VOICE_COUNT));
             writer.play(HELD_SAW, { note: 'A-3', lengthMs: Infinity });
             step();
             return hashSamples(samples);
@@ -481,7 +481,7 @@ function renderSynthesiser(synthesiser: Audio80Synthesiser, ms: number): Float32
 /** Lists the sound each voice was played with, by voice: its id, or `undefined` for a voice playing none. */
 function listSoundsOn(synthesiser: Audio80Synthesiser): (number | undefined)[] {
     const ids: (number | undefined)[] = [];
-    for (let v = 0; v < VOICE_COUNT; v++) ids.push(synthesiser.findSoundOn(v));
+    for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) ids.push(synthesiser.findSoundOn(v));
     return ids;
 }
 
@@ -499,9 +499,9 @@ function renderNote(options: Audio80SoundOptions, note: number, ms: number, extr
 function renderFiltered(note: number, cutoffHz: number, resonance: number): Float32Array {
     const chip = createVoiceRig('clean');
     const writer = chip.audio80;
-    writer.write(OP_SET_FILTER, writer.time, 0, FILTER_SETTING_INDEX.mode, FILTER_LOWPASS, 0);
-    writer.write(OP_SET_FILTER, writer.time, 0, FILTER_SETTING_INDEX.cutoffHz, cutoffHz, 0);
-    writer.write(OP_SET_FILTER, writer.time, 0, FILTER_SETTING_INDEX.resonance, resonance, 0);
+    writer.write(OP80_SET_FILTER, writer.time, 0, AUDIO80_FILTER_SETTING_INDEX.mode, FILTER80_LOWPASS, 0);
+    writer.write(OP80_SET_FILTER, writer.time, 0, AUDIO80_FILTER_SETTING_INDEX.cutoffHz, cutoffHz, 0);
+    writer.write(OP80_SET_FILTER, writer.time, 0, AUDIO80_FILTER_SETTING_INDEX.resonance, resonance, 0);
     noteOn(chip.audio80, 0, createAudio80Sound({ wave: 'triangle', filter: 'a' }), note, 1);
     return render(chip, 400);
 }

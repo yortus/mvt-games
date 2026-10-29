@@ -173,7 +173,8 @@ export const CARD_CHORD = createAudio90Sound({
 /** A trance lead: seven saws, spread wide and detuned, through a filter left open. */
 export const SUPERSAW = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 7, detune: 0.3, spread: 0.8 },
-    filter: { cutoffHz: 5000, resonance: 0.1, envelope: { octaves: 0.6, decayMs: 250, releaseMs: 100 } },
+    filter: { cutoffHz: 5000, resonance: 0.1 },
+    modEnvelope: { to: 'cutoff', amount: 0.6, envelope: { attackMs: 0, decayMs: 250, sustain: 0, releaseMs: 100 } },
     envelope: { attackMs: 5, decayMs: 300, sustain: 0.8, releaseMs: 450 },
     lfo: { rateHz: 5.2, pitch: 0.08 },
     volume: 0.3,
@@ -204,9 +205,11 @@ export const GATED_PAD = createAudio90Sound({
 /** A squelching bass: one saw into a resonant filter that snaps shut, with accents and slides. */
 export const ACID = createAudio90Sound({
     oscillator: { wave: 'saw' },
-    filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6, envelope: { octaves: 3.2, decayMs: 200, releaseMs: 40 } },
+    filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6 },
+    modEnvelope: { to: 'cutoff', amount: 3.2, envelope: { attackMs: 0, decayMs: 200, sustain: 0, releaseMs: 40 } },
     envelope: { attackMs: 1, decayMs: 0, sustain: 1, releaseMs: 25 },
-    legato: { glideMs: 70 },
+    glideMs: 70,
+    isLegato: true,
     volume: 0.45,
     echo: 0.15,
 });
@@ -231,7 +234,8 @@ export const SUB_BASS = createAudio90Sound({
 /** A rave stab: three saws through a filter that snaps shut, played as chords with `c`. */
 export const STAB = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 3, detune: 0.2, spread: 0.5 },
-    filter: { cutoffHz: 1200, resonance: 0.3, envelope: { octaves: 2.2, decayMs: 160, releaseMs: 60 } },
+    filter: { cutoffHz: 1200, resonance: 0.3 },
+    modEnvelope: { to: 'cutoff', amount: 2.2, envelope: { attackMs: 0, decayMs: 160, sustain: 0, releaseMs: 60 } },
     envelope: { attackMs: 1, decayMs: 260, sustain: 0.25, releaseMs: 120 },
     volume: 0.3,
     reverb: 0.3,
@@ -241,7 +245,8 @@ export const STAB = createAudio90Sound({
 /** A plucked arpeggio for the trance breakdown: a pulse whose filter closes fast. */
 export const PLUCK = createAudio90Sound({
     oscillator: { wave: 'pulse', pulseWidth: 0.3, unison: 2, detune: 0.1, spread: 0.6 },
-    filter: { cutoffHz: 600, resonance: 0.4, envelope: { octaves: 3, decayMs: 120, releaseMs: 60 } },
+    filter: { cutoffHz: 600, resonance: 0.4 },
+    modEnvelope: { to: 'cutoff', amount: 3, envelope: { attackMs: 0, decayMs: 120, sustain: 0, releaseMs: 60 } },
     envelope: { attackMs: 0, decayMs: 300, sustain: 0, releaseMs: 80 },
     volume: 0.3,
     echo: 0.4,
@@ -423,7 +428,8 @@ export const BOUNCE_BASS = createAudio90Sound({
 /** Eurobeat's lead: three bright saws, their filter flaring on each note, with a quick vibrato. */
 export const EURO_LEAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 3, detune: 0.15, spread: 0.5 },
-    filter: { cutoffHz: 3500, resonance: 0.2, envelope: { octaves: 1.2, decayMs: 200, releaseMs: 120 } },
+    filter: { cutoffHz: 3500, resonance: 0.2 },
+    modEnvelope: { to: 'cutoff', amount: 1.2, envelope: { attackMs: 0, decayMs: 200, sustain: 0, releaseMs: 120 } },
     envelope: { attackMs: 2, decayMs: 300, sustain: 0.75, releaseMs: 120 },
     vibrato: { semitones: 0.15, hz: 6, delayMs: 200 },
     volume: 0.3,
@@ -435,7 +441,8 @@ export const EURO_LEAD = createAudio90Sound({
 export const EURO_BASS = createAudio90Sound({
     oscillator: { wave: 'saw' },
     sub: 0.4,
-    filter: { cutoffHz: 350, resonance: 0.35, envelope: { octaves: 2.5, decayMs: 110, releaseMs: 60 } },
+    filter: { cutoffHz: 350, resonance: 0.35 },
+    modEnvelope: { to: 'cutoff', amount: 2.5, envelope: { attackMs: 0, decayMs: 110, sustain: 0, releaseMs: 60 } },
     envelope: { attackMs: 0, decayMs: 200, sustain: 0.5, releaseMs: 60 },
     volume: 0.55,
 });
@@ -447,7 +454,8 @@ export const EURO_BASS = createAudio90Sound({
 /** A dirty bass riff: two saws driven hard into a resonant filter. */
 export const DIRTY_BASS = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 2, detune: 0.12 },
-    filter: { cutoffHz: 700, resonance: 0.5, drive: 0.9, envelope: { octaves: 2, decayMs: 160, releaseMs: 80 } },
+    filter: { cutoffHz: 700, resonance: 0.5, drive: 0.9 },
+    modEnvelope: { to: 'cutoff', amount: 2, envelope: { attackMs: 0, decayMs: 160, sustain: 0, releaseMs: 80 } },
     envelope: { attackMs: 0, decayMs: 300, sustain: 0.6, releaseMs: 80 },
     volume: 0.4,
 });
@@ -518,7 +526,8 @@ export const DEEP_BASS = createAudio90Sound({
     sub: 0.35,
     filter: { cutoffHz: 420, keyTrack: 0.3 },
     envelope: { attackMs: 8, decayMs: 600, sustain: 0.75, releaseMs: 180 },
-    legato: { glideMs: 90 },
+    glideMs: 90,
+    isLegato: true,
     volume: 0.7,
 });
 
@@ -527,7 +536,8 @@ export const DREAM_LEAD = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 2, detune: 0.05, spread: 0.5 },
     filter: { cutoffHz: 1400, resonance: 0.2, keyTrack: 0.5 },
     envelope: { attackMs: 90, decayMs: 800, sustain: 0.8, releaseMs: 900 },
-    legato: { glideMs: 140 },
+    glideMs: 140,
+    isLegato: true,
     vibrato: { semitones: 0.12, hz: 4.5, delayMs: 500 },
     volume: 0.18,
     echo: 0.5,

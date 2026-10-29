@@ -50,8 +50,8 @@ export type Audio80Character = 'clean' | 'classic' | 'raw';
  * play the sound, and it is all the chip is sent. Make one with
  * `createAudio80Sound()`, never by hand.
  */
-export interface SoundData {
-    /** Waveform flags (`WAVE_TRIANGLE` and the rest). */
+export interface Audio80SoundData {
+    /** Waveform flags (`WAVE80_TRIANGLE` and the rest). */
     readonly wave: number;
     /**
      * The pulse's width, 0 to 1. A lone pulse spends `pulseWidth` of each
@@ -64,7 +64,7 @@ export interface SoundData {
      * Before that, the voice sits at its lowest level.
      */
     readonly pulseWidth: number;
-    /** `WAVETABLE_SIZE` levels from 0 to 15, played once per cycle, or empty for none. */
+    /** `AUDIO80_WAVETABLE_SIZE` levels from 0 to 15, played once per cycle, or empty for none. */
     readonly wavetable: readonly number[];
     /**
      * How long the envelope takes to rise from silence to full, in ms. The
@@ -98,7 +98,7 @@ export interface SoundData {
     /** How long each step of `steps` and `arpeggio` lasts, in ms. 0 or less uses `DEFAULT_STEP_MS`. */
     readonly stepMs: number;
     /** The step table. One row applies per step from the start of the note, and the last row holds. */
-    readonly steps: readonly StepData[];
+    readonly steps: readonly Audio80StepData[];
     /**
      * The arpeggio's semitone offsets from the note. One plays per step, in a
      * cycle, so one voice sounds like a chord. Empty for none. At most
@@ -138,8 +138,8 @@ export interface SoundData {
 }
 
 /** One row of a sound's step table. -1 leaves a setting as it is. */
-export interface StepData {
-    /** Waveform flags (`WAVE_TRIANGLE` and the rest), or -1. */
+export interface Audio80StepData {
+    /** Waveform flags (`WAVE80_TRIANGLE` and the rest), or -1. */
     readonly wave: number;
     /** Whether `pitch` is ignored, added to the note played, or played in its place. */
     readonly pitchMode: StepPitchMode;
@@ -147,34 +147,34 @@ export interface StepData {
     readonly pitch: number;
     /** 0 to 1, multiplied by the note's volume, or -1. */
     readonly volume: number;
-    /** 0 to 1, as in `SoundData.pulseWidth`, or -1. Setting it stops the pulse sweep. */
+    /** 0 to 1, as in `Audio80SoundData.pulseWidth`, or -1. Setting it stops the pulse sweep. */
     readonly pulseWidth: number;
     /** The cutoff of the sound's filter, in Hz, or -1. */
     readonly cutoffHz: number;
 }
 
 /** The waveform flag for the triangle wave. */
-export const WAVE_TRIANGLE = 1;
+export const WAVE80_TRIANGLE = 1;
 /** The waveform flag for the saw wave. */
-export const WAVE_SAW = 2;
+export const WAVE80_SAW = 2;
 /** The waveform flag for the pulse wave. `pulseWidth` sets its width. */
-export const WAVE_PULSE = 4;
+export const WAVE80_PULSE = 4;
 /** The waveform flag for noise, pitched by the note. It combines with no other wave. */
-export const WAVE_NOISE = 8;
+export const WAVE80_NOISE = 8;
 /** The waveform flag for the voice's wavetable. It combines with no other wave. */
-export const WAVE_TABLE = 16;
+export const WAVE80_TABLE = 16;
 
 /** The filter mode flag for low pass. */
-export const FILTER_LOWPASS = 1;
+export const FILTER80_LOWPASS = 1;
 /** The filter mode flag for band pass. */
-export const FILTER_BANDPASS = 2;
+export const FILTER80_BANDPASS = 2;
 /** The filter mode flag for high pass. */
-export const FILTER_HIGHPASS = 4;
+export const FILTER80_HIGHPASS = 4;
 /** Every `Audio80FilterMode`. A mode can be held as a number, which is its index here. */
-export const FILTER_MODES: readonly Audio80FilterMode[] = ['lowpass', 'bandpass', 'highpass', 'notch', 'lowpass+bandpass', 'bandpass+highpass'];
+export const FILTER80_MODES: readonly Audio80FilterMode[] = ['lowpass', 'bandpass', 'highpass', 'notch', 'lowpass+bandpass', 'bandpass+highpass'];
 
 /** How many levels a wavetable has. */
-export const WAVETABLE_SIZE = 32;
+export const AUDIO80_WAVETABLE_SIZE = 32;
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -210,22 +210,22 @@ export function toCutoff(level: number): number {
 // ---------------------------------------------------------------------------
 
 const WAVE_FLAGS: Readonly<Record<Audio80Wave, number>> = {
-    'triangle': WAVE_TRIANGLE,
-    'saw': WAVE_SAW,
-    'pulse': WAVE_PULSE,
-    'noise': WAVE_NOISE,
-    'wavetable': WAVE_TABLE,
-    'triangle+saw': WAVE_TRIANGLE | WAVE_SAW,
-    'triangle+pulse': WAVE_TRIANGLE | WAVE_PULSE,
-    'saw+pulse': WAVE_SAW | WAVE_PULSE,
-    'triangle+saw+pulse': WAVE_TRIANGLE | WAVE_SAW | WAVE_PULSE,
+    'triangle': WAVE80_TRIANGLE,
+    'saw': WAVE80_SAW,
+    'pulse': WAVE80_PULSE,
+    'noise': WAVE80_NOISE,
+    'wavetable': WAVE80_TABLE,
+    'triangle+saw': WAVE80_TRIANGLE | WAVE80_SAW,
+    'triangle+pulse': WAVE80_TRIANGLE | WAVE80_PULSE,
+    'saw+pulse': WAVE80_SAW | WAVE80_PULSE,
+    'triangle+saw+pulse': WAVE80_TRIANGLE | WAVE80_SAW | WAVE80_PULSE,
 };
 
 const FILTER_MODE_FLAGS: Readonly<Record<Audio80FilterMode, number>> = {
-    'lowpass': FILTER_LOWPASS,
-    'bandpass': FILTER_BANDPASS,
-    'highpass': FILTER_HIGHPASS,
-    'notch': FILTER_LOWPASS | FILTER_HIGHPASS,
-    'lowpass+bandpass': FILTER_LOWPASS | FILTER_BANDPASS,
-    'bandpass+highpass': FILTER_BANDPASS | FILTER_HIGHPASS,
+    'lowpass': FILTER80_LOWPASS,
+    'bandpass': FILTER80_BANDPASS,
+    'highpass': FILTER80_HIGHPASS,
+    'notch': FILTER80_LOWPASS | FILTER80_HIGHPASS,
+    'lowpass+bandpass': FILTER80_LOWPASS | FILTER80_BANDPASS,
+    'bandpass+highpass': FILTER80_BANDPASS | FILTER80_HIGHPASS,
 };

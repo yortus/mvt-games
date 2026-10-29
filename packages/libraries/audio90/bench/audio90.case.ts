@@ -76,7 +76,8 @@ const BRASS = createAudio90Sound({
 /** A trance lead: seven saws, spread wide and detuned, through a filter left open. */
 const ANTHEM = createAudio90Sound({
     oscillator: { wave: 'saw', unison: 7, detune: 0.3, spread: 0.8 },
-    filter: { cutoffHz: 5000, resonance: 0.1, envelope: { octaves: 0.6, decayMs: 250, releaseMs: 100 } },
+    filter: { cutoffHz: 5000, resonance: 0.1 },
+    modEnvelope: { to: 'cutoff', amount: 0.6, envelope: { attackMs: 0, decayMs: 250, sustain: 0, releaseMs: 100 } },
     envelope: { attackMs: 5, decayMs: 300, sustain: 0.8, releaseMs: 450 },
     lfo: { rateHz: 5.2, pitch: 0.08 },
     volume: 0.4,
@@ -97,9 +98,11 @@ const PAD = createAudio90Sound({
 /** A squelching bass: one saw into a resonant filter that snaps shut, with accents and slides. */
 const SQUELCH = createAudio90Sound({
     oscillator: { wave: 'saw' },
-    filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6, envelope: { octaves: 3.2, decayMs: 200, releaseMs: 40 } },
+    filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6 },
+    modEnvelope: { to: 'cutoff', amount: 3.2, envelope: { attackMs: 0, decayMs: 200, sustain: 0, releaseMs: 40 } },
     envelope: { attackMs: 1, decayMs: 0, sustain: 1, releaseMs: 25 },
-    legato: { glideMs: 70 },
+    glideMs: 70,
+    isLegato: true,
     volume: 0.6,
     echo: 0.1,
 });

@@ -155,14 +155,14 @@ name.
 | `volume` | 0 or more | 1 |
 | `pan` | -1 (left) to 1 (right) | 0 |
 | `reverb`, `echo`, `chorus` | How much goes to each effect, 0 to 1 | 0 |
-| `filter` | `{ mode, cutoffHz, resonance, drive, keyTrack, accent, envelope }`. The modes are `lowpass24`, `lowpass12`, `bandpass` and `highpass`. `lowpass24` cuts more steeply than `lowpass12`, and rings at its cutoff when its `resonance` is near 1. `drive` pushes the filter harder, for a growl. `keyTrack` makes the cutoff follow the note, so high notes don't sound dull. `accent` is how much further an accented note opens it. `envelope: { octaves, ... }` opens the filter on each note and lets it close | none |
-| `modEnvelope` | `{ to, amount, envelope }`. A second envelope, sent `to` the `'pitch'` (in semitones), the `'cutoff'` (in octaves) or the `'brightness'` (0 to 1). Use this or `filter.envelope`, not both | none |
+| `filter` | `{ mode, cutoffHz, resonance, drive, keyTrack, accent, envelope }`. The modes are `lowpass24`, `lowpass12`, `bandpass` and `highpass`. `lowpass24` cuts more steeply than `lowpass12`, and rings at its cutoff when its `resonance` is near 1. `drive` pushes the filter harder, for a growl. `keyTrack` makes the cutoff follow the note, so high notes don't sound dull. `accent` is how much further an accented note opens it. To open the filter on each note and let it close, aim a `modEnvelope` at the cutoff | none |
+| `modEnvelope` | `{ to, amount, envelope }`. A second envelope, sent `to` the `'pitch'` (in semitones), the `'cutoff'` (in octaves) or the `'brightness'` (0 to 1) | none |
 | `lfo` | `{ shape, rateHz, rateBeats, delayMs, isRetriggered, pitch, cutoff, brightness, volume, pan }`. The shapes are `sine`, `triangle`, `square`, `saw` and `random`, which jumps to a new level each cycle. `rateBeats` times it to the song, such as `1 / 4` for sixteenths. Each amount says how far it moves that setting. Without `isRetriggered`, it runs on from note to note | none |
 | `note` | The note it plays when a song names it without one, as drums do | `C-4` |
 | `stepMs`, `steps`, `arpeggio` | The driver's step length, step table and arpeggio, as on the Audio80 | |
 | `vibrato` | `{ semitones, hz, delayMs }` | none |
 | `glideMs` | Glides into each note from the last one | none |
-| `legato` | `{ glideMs }`. Glides only into a note that overlaps the last one, and keeps the envelopes running rather than starting them again, the way an acid bass slides | none |
+| `isLegato` | Glides, over `glideMs`, only into a note that overlaps the last one, and keeps the envelopes running rather than starting them again, the way an acid bass slides | false |
 
 **Brightness** is one setting that each engine reads in its own way. On an
 analog or sample voice, it closes the filter. On an FM voice, it softens the
@@ -574,12 +574,11 @@ notes that overlap slide into each other:
 ```ts
 export const ACID = createAudio90Instrument({
     oscillator: { wave: 'saw' },
-    filter: {
-        cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5,
-        accent: 0.6, envelope: { octaves: 3.2, decayMs: 200, releaseMs: 40 },
-    },
+    filter: { cutoffHz: 280, resonance: 0.88, drive: 0.4, keyTrack: 0.5, accent: 0.6 },
+    modEnvelope: { to: 'cutoff', amount: 3.2, envelope: { attackMs: 0, decayMs: 200, sustain: 0, releaseMs: 40 } },
     envelope: { attackMs: 1, decayMs: 0, sustain: 1, releaseMs: 25 },
-    legato: { glideMs: 70 },
+    glideMs: 70,
+    isLegato: true,
     volume: 0.45,
 });
 ```

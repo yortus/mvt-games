@@ -1,4 +1,4 @@
-import { type Audio80, type Audio80Character, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createAudio80SoundIds, VOICE_COUNT } from '../audio80';
+import { type Audio80, type Audio80Character, type Audio80PlayOptions, type Audio80Song, type Audio80Sound, createAudio80SoundIds, AUDIO80_VOICE_COUNT } from '../audio80';
 import { createWebChip } from './web-chip';
 import { type Audio80PassedMessage, AUDIO80_PROCESSOR_NAME, type Audio80RunnerSettings } from './worklet';
 import processorUrl from './worklet/audio80-processor?worker&url';
@@ -50,7 +50,7 @@ export function createAudio80(options: Audio80Options = {}): Audio80 {
         processorName: AUDIO80_PROCESSOR_NAME,
         // The chip is mono. The browser plays its one channel on both speakers
         channelCount: 1,
-        voiceCount: VOICE_COUNT,
+        voiceCount: AUDIO80_VOICE_COUNT,
         settings,
         // Its sounds are defined first, under the page's ids
         prepareSong: (song) => ({ song, soundIds: song.instruments.map(sounds.soundId) }),

@@ -9,7 +9,6 @@ import {
     CELL_SLIDE,
     CELL_VIBRATO,
     CELL_VOLUME,
-    computeSongDurationMs,
     DEFAULT_VIBRATO,
     HIGHEST_NOTE,
     LOWEST_NOTE,
@@ -18,9 +17,9 @@ import {
     RELEASE,
     toNoteNumber,
 } from '../../shared';
-import { toCutoff, VOICE_COUNT, toWaveFlags } from '../synthesiser';
+import { toCutoff, AUDIO80_VOICE_COUNT, toWaveFlags } from '../synthesiser';
 import { createAudio80Sound, isAudio80Sound } from './sound';
-import { CELL_FILTER, CELL_STRIDE, createAudio80Song, type Audio80Song, type Audio80SongOptions } from './song';
+import { CELL80_FILTER, CELL80_STRIDE, createAudio80Song, type Audio80Song, type Audio80SongOptions } from './song';
 
 const LEAD = createAudio80Sound({ wave: 'pulse' });
 const KICK = createAudio80Sound({ wave: 'noise', note: 'C-3' });
@@ -36,7 +35,7 @@ describe('tracker notation: cells', () => {
         expect(cell[CELL_GLIDE]).toBe(1);
         expect(cell[CELL_SLIDE]).toBe(12);
         expect(cell[CELL_PULSE]).toBe(8);
-        expect(cell[CELL_FILTER]).toBe(10);
+        expect(cell[CELL80_FILTER]).toBe(10);
     });
 
     it('reads a slide down, and a bare vibrato', () => {
@@ -50,8 +49,8 @@ describe('tracker notation: cells', () => {
         const song = createAudio80Song({ bpm: 120, instruments, patterns: { p: '| C-4 u u0C | C-4 d d05 | C-4 v v9' }, order: ['p'] });
         const { cells } = song.patterns[0];
         expect([cells[CELL_INSTRUMENT], cells[CELL_SLIDE]]).toEqual([0, 12]);
-        expect([cells[CELL_STRIDE + CELL_INSTRUMENT], cells[CELL_STRIDE + CELL_SLIDE]]).toEqual([1, -5]);
-        expect([cells[2 * CELL_STRIDE + CELL_INSTRUMENT], cells[2 * CELL_STRIDE + CELL_VOLUME]]).toEqual([2, 9]);
+        expect([cells[CELL80_STRIDE + CELL_INSTRUMENT], cells[CELL80_STRIDE + CELL_SLIDE]]).toEqual([1, -5]);
+        expect([cells[2 * CELL80_STRIDE + CELL_INSTRUMENT], cells[2 * CELL80_STRIDE + CELL_VOLUME]]).toEqual([2, 9]);
     });
 
     it('does not read a slash or a backslash as a slide', () => {
@@ -60,7 +59,7 @@ describe('tracker notation: cells', () => {
     });
 
     it('reads an empty cell, dots, and a release', () => {
-        expect(createSongFromPattern('| C-4 L |').patterns[0].cells[CELL_STRIDE + CELL_NOTE]).toBe(NO_NOTE);
+        expect(createSongFromPattern('| C-4 L |').patterns[0].cells[CELL80_STRIDE + CELL_NOTE]).toBe(NO_NOTE);
         expect(parseCell('...')[CELL_NOTE]).toBe(NO_NOTE);
         expect(parseCell('===')[CELL_NOTE]).toBe(RELEASE);
     });
@@ -128,9 +127,9 @@ describe('tracker notation: songs', () => {
         const song = createSongFromPattern(pattern);
         const { rowCount, cells } = song.patterns[0];
         expect(rowCount).toBe(3);
-        const notes = [0, 1, 2].map((row) => cells[row * song.channelCount * CELL_STRIDE + CELL_NOTE]);
+        const notes = [0, 1, 2].map((row) => cells[row * song.channelCount * CELL80_STRIDE + CELL_NOTE]);
         expect(notes).toEqual([toNoteNumber('C-4'), toNoteNumber('D-4'), toNoteNumber('E-4')]);
-        expect(cells[2 * song.channelCount * CELL_STRIDE + CELL_VOLUME]).toBe(9);
+        expect(cells[2 * song.channelCount * CELL80_STRIDE + CELL_VOLUME]).toBe(9);
     });
 
     it('rejects a row that does not start with |', () => {
@@ -147,7 +146,7 @@ describe('tracker notation: songs', () => {
         const song = createSongFromPattern(pattern);
         const { rowCount, cells } = song.patterns[0];
         expect(rowCount).toBe(2);
-        const notes = [0, 1].map((row) => cells[row * song.channelCount * CELL_STRIDE + CELL_NOTE]);
+        const notes = [0, 1].map((row) => cells[row * song.channelCount * CELL80_STRIDE + CELL_NOTE]);
         expect(notes).toEqual([toNoteNumber('F#5'), toNoteNumber('G#5')]);
     });
 
@@ -219,8 +218,8 @@ describe('tracker notation: songs', () => {
 
         `;
         expect(() => createAudio80Song({ ...ONE_NOTE, patterns: { p: '| C-4 L', q: onlyComments } })).toThrow("song: pattern 'q' has no rows");
-        const tooWide = ['', 'C-4 L', ...new Array<string>(VOICE_COUNT).fill('...')].join('|');
-        expect(() => createSongFromPattern(tooWide)).toThrow(`song: ${VOICE_COUNT + 1} channels is more than the chip's ${VOICE_COUNT} voices`);
+        const tooWide = ['', 'C-4 L', ...new Array<string>(AUDIO80_VOICE_COUNT).fill('...')].join('|');
+        expect(() => createSongFromPattern(tooWide)).toThrow(`song: ${AUDIO80_VOICE_COUNT + 1} channels is more than the chip's ${AUDIO80_VOICE_COUNT} voices`);
     });
 
     it('rejects a note on a channel with no instrument named before it in the order', () => {
@@ -251,7 +250,7 @@ describe('tracker notation: songs', () => {
             | ...
         `;
         const song = createAudio80Song({ bpm, rowsPerBeat, instruments: { L: LEAD }, patterns: { p }, order: ['p', 'p'] });
-        expect(computeSongDurationMs(song)).toBeCloseTo(6 * 60000 / (bpm * rowsPerBeat), 9);
+        expect(song.durationMs).toBeCloseTo(6 * 60000 / (bpm * rowsPerBeat), 9);
     });
 });
 
@@ -366,5 +365,5 @@ function createSongFromPattern(pattern: string): Audio80Song {
 }
 
 function parseCell(text: string): Float64Array {
-    return createSongFromPattern(`| ${text}`).patterns[0].cells.subarray(0, CELL_STRIDE);
+    return createSongFromPattern(`| ${text}`).patterns[0].cells.subarray(0, CELL80_STRIDE);
 }

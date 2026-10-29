@@ -1562,3 +1562,24 @@ package is finished. The progress log uses these numbers.
   Tracker imports from `audio90`, and the two unreleased changesets that
   named `audio90/tracker` no longer do. This overturns point 6 of section
   5.9. The home page is unchanged, at 54.4 KB.
+- **2026-10-29, 6e part 6, third chunk done, and so part 6**, unstaged:
+  - **One way to say each thing.** An Audio90 sound's `legato: { glideMs }`
+    is `glideMs` with `isLegato: true`, and `filter.envelope: { octaves }`
+    is a `modEnvelope` aimed at the cutoff. The 13 shorthand envelopes and
+    3 legato sounds (Neon Monsoon's sounds, the tunes' instruments, the
+    benchmark) were rewritten by script, every hash unchanged. The guide's
+    rows and its acid line follow. A changeset,
+    `.changeset/one-way-to-say-it.md`.
+  - **The Audio80's names gain the chip's prefix**, as the Audio90's have:
+    `AUDIO80_VOICE_COUNT`, the `AUDIO80_*_SETTING_INDEX` tables, `OP80_*`,
+    `WAVE80_*`, `FILTER80_*`, `AUDIO80_WAVETABLE_SIZE`, `CELL80_*`,
+    `Audio80SoundData` and `Audio80StepData`. All internal.
+  - **Barrel exports used only by tests:** `HELD_ENVELOPE` and
+    `computeSongDurationMs` left their barrels (the tests write their own
+    envelope and read `song.durationMs`). The other names only tests import
+    from another folder, such as `HIGHEST_NOTE` and `DEFAULT_VIBRATO`, are
+    the constants the tests derive from, so they stay.
+  - **The row writers** were already in matching places, each chip's
+    `notation/song-driver.ts`, since parts 1 and 3.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (236 files, 2,965
+    tests), `npm run build` (54.4 KB) and `npm run build:packages`.

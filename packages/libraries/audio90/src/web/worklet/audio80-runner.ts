@@ -1,4 +1,4 @@
-import { type Audio80Character, type Audio80PlayOptions, type Audio80Sound, createAudio80SongDriver, createAudio80SoundIds, createAudio80Synthesiser, type SoundData, VOICE_COUNT } from '../../audio80';
+import { type Audio80Character, type Audio80PlayOptions, type Audio80Sound, createAudio80SongDriver, createAudio80SoundIds, createAudio80Synthesiser, type Audio80SoundData, AUDIO80_VOICE_COUNT } from '../../audio80';
 import { createCommandWriter, createSongPlayer } from '../../shared';
 import { type ChipRunner, createChipRunner, type ScopeReply } from './chip-runner';
 import type { SongPlaceReply } from './song-messages';
@@ -12,7 +12,7 @@ import { createWorkletSequencer } from './worklet-sequencer';
 export interface Audio80PassedMessage {
     readonly kind: 'sound';
     readonly id: number;
-    readonly data: SoundData;
+    readonly data: Audio80SoundData;
 }
 
 /** The settings the main thread gives the Audio80's processor when it is made. */
@@ -51,7 +51,7 @@ export function createAudio80Runner(options: Audio80RunnerOptions): ChipRunner<A
     return createChipRunner<Audio80PassedMessage>({
         sampleRate,
         channelCount: 1,
-        voiceCount: VOICE_COUNT,
+        voiceCount: AUDIO80_VOICE_COUNT,
         currentFrame: options.currentFrame,
         sendScope: options.sendScope,
         sequencer: createWorkletSequencer({

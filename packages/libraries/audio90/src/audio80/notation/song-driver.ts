@@ -17,17 +17,17 @@ import {
 } from '../../shared';
 import {
     AUDIO80_ECHO_DEFAULTS,
-    ECHO_SETTING_INDEX,
-    FILTER_SETTING_INDEX,
-    OP_SET_ECHO,
-    OP_SET_FILTER,
+    AUDIO80_ECHO_SETTING_INDEX,
+    AUDIO80_FILTER_SETTING_INDEX,
+    OP80_SET_ECHO,
+    OP80_SET_FILTER,
     toCutoff,
     toFilterModeFlags,
-    VOICE_COUNT,
-    VOICE_SETTING_INDEX,
+    AUDIO80_VOICE_COUNT,
+    AUDIO80_VOICE_SETTING_INDEX,
 } from '../synthesiser';
 import type { Audio80Sound } from './sound';
-import { type Audio80Song, CELL_FILTER, CELL_STRIDE } from './song';
+import { type Audio80Song, CELL80_FILTER, CELL80_STRIDE } from './song';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -42,9 +42,9 @@ import { type Audio80Song, CELL_FILTER, CELL_STRIDE } from './song';
 export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongDriver<Audio80Song> {
     const write = writer.write;
     // Each channel's instrument, an index into the song's instruments, or -1 before one is named
-    const channelInstrument = new Int32Array(VOICE_COUNT);
+    const channelInstrument = new Int32Array(AUDIO80_VOICE_COUNT);
     // Each channel's slide, in semitones a second at a tempo scale of 1, or 0 if it is not sliding
-    const channelSlideRate = new Float64Array(VOICE_COUNT);
+    const channelSlideRate = new Float64Array(AUDIO80_VOICE_COUNT);
 
     return {
         get time() {
@@ -57,15 +57,15 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
             for (let f = 0; f < 2; f++) {
                 const settings = song.filters[f];
                 if (settings === undefined) continue;
-                write(OP_SET_FILTER, stamp, f, FILTER_SETTING_INDEX.mode, toFilterModeFlags(settings.mode), 0);
-                write(OP_SET_FILTER, stamp, f, FILTER_SETTING_INDEX.cutoffHz, settings.cutoffHz, 0);
-                write(OP_SET_FILTER, stamp, f, FILTER_SETTING_INDEX.resonance, settings.resonance ?? 0, 0);
-                write(OP_SET_FILTER, stamp, f, FILTER_SETTING_INDEX.drive, settings.drive ?? 0, 0);
+                write(OP80_SET_FILTER, stamp, f, AUDIO80_FILTER_SETTING_INDEX.mode, toFilterModeFlags(settings.mode), 0);
+                write(OP80_SET_FILTER, stamp, f, AUDIO80_FILTER_SETTING_INDEX.cutoffHz, settings.cutoffHz, 0);
+                write(OP80_SET_FILTER, stamp, f, AUDIO80_FILTER_SETTING_INDEX.resonance, settings.resonance ?? 0, 0);
+                write(OP80_SET_FILTER, stamp, f, AUDIO80_FILTER_SETTING_INDEX.drive, settings.drive ?? 0, 0);
             }
             if (song.echo !== undefined) {
-                write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.timeMs, song.echo.timeMs, 0, 0);
-                write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.feedback, song.echo.feedback ?? AUDIO80_ECHO_DEFAULTS.feedback, 0, 0);
-                write(OP_SET_ECHO, stamp, ECHO_SETTING_INDEX.level, song.echo.level ?? AUDIO80_ECHO_DEFAULTS.level, 0, 0);
+                write(OP80_SET_ECHO, stamp, AUDIO80_ECHO_SETTING_INDEX.timeMs, song.echo.timeMs, 0, 0);
+                write(OP80_SET_ECHO, stamp, AUDIO80_ECHO_SETTING_INDEX.feedback, song.echo.feedback ?? AUDIO80_ECHO_DEFAULTS.feedback, 0, 0);
+                write(OP80_SET_ECHO, stamp, AUDIO80_ECHO_SETTING_INDEX.level, song.echo.level ?? AUDIO80_ECHO_DEFAULTS.level, 0, 0);
             }
         },
 
@@ -77,7 +77,7 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
             // The row's length in chip time, for glides. While the song is held, use its length in song time
             const glideMs = scale > 0 ? lengthMs / scale : lengthMs;
             for (let channel = 0; channel < channels; channel++) {
-                const at = (row * channels + channel) * CELL_STRIDE;
+                const at = (row * channels + channel) * CELL80_STRIDE;
                 const note = cells[at + CELL_NOTE];
                 const cellInstrument = cells[at + CELL_INSTRUMENT];
                 if (cellInstrument >= 0) channelInstrument[channel] = cellInstrument;
@@ -86,42 +86,42 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
                 const slide = cells[at + CELL_SLIDE];
 
                 if (channelSlideRate[channel] !== 0 && slide === 0) {
-                    write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.slide, 0, 0);
+                    write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.slide, 0, 0);
                     channelSlideRate[channel] = 0;
                 }
                 if (note >= 0 && instrument >= 0) {
                     const played = note + (cells[at + CELL_IS_OWN_NOTE] === 1 ? 0 : entry.transpose);
                     const soundId = writer.soundId(song.instruments[instrument]);
                     write(OP_NOTE_ON, stamp, channel, soundId, played, (volume >= 0 ? volume / 15 : 1) * songVolume);
-                    if (cells[at + CELL_GLIDE] === 1) write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.glide, glideMs, 0);
+                    if (cells[at + CELL_GLIDE] === 1) write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.glide, glideMs, 0);
                 }
                 else if (note === RELEASE) {
                     write(OP_NOTE_OFF, stamp, channel, 0, 0, 0);
                 }
                 else if (volume >= 0) {
-                    write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.volume, volume / 15 * songVolume, 0);
+                    write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.volume, volume / 15 * songVolume, 0);
                 }
 
                 const arpeggio = cells[at + CELL_ARPEGGIO];
-                if (arpeggio >= 0) write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.arpeggio, arpeggio, 0);
+                if (arpeggio >= 0) write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.arpeggio, arpeggio, 0);
                 const vibrato = cells[at + CELL_VIBRATO];
                 if (vibrato >= 0) {
-                    write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.vibratoDepth, Math.floor(vibrato / 16) / 8, 0);
-                    write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.vibratoRate, vibrato % 16, 0);
+                    write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.vibratoDepth, Math.floor(vibrato / 16) / 8, 0);
+                    write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.vibratoRate, vibrato % 16, 0);
                 }
                 if (slide !== 0) {
                     // The rate that covers the slide over the row at a tempo scale of 1. `changeTempoScale`
                     // rescales it if the tempo changes mid-row
                     const rate = slide * 1000 / lengthMs;
                     channelSlideRate[channel] = rate;
-                    write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.slide, rate * scale, 0);
+                    write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.slide, rate * scale, 0);
                 }
                 const pulse = cells[at + CELL_PULSE];
-                if (pulse >= 0) write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.pulseWidth, pulse / 16, 0);
-                const filter = cells[at + CELL_FILTER];
+                if (pulse >= 0) write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.pulseWidth, pulse / 16, 0);
+                const filter = cells[at + CELL80_FILTER];
                 // The filter the instrument's notes go through: route 1 is filter a, and 2 is filter b
                 const route = instrument >= 0 ? song.instruments[instrument].data.filter : 0;
-                if (filter >= 0 && route > 0) write(OP_SET_FILTER, stamp, route - 1, FILTER_SETTING_INDEX.cutoffHz, toCutoff(filter), 0);
+                if (filter >= 0 && route > 0) write(OP80_SET_FILTER, stamp, route - 1, AUDIO80_FILTER_SETTING_INDEX.cutoffHz, toCutoff(filter), 0);
             }
         },
 
@@ -129,7 +129,7 @@ export function createAudio80SongDriver(writer: SongWriter<Audio80Sound>): SongD
             // Each sliding channel's rate at the new scale. A scale of 0 stops a slide while the song is held
             for (let channel = 0; channel < song.channelCount; channel++) {
                 const rate = channelSlideRate[channel];
-                if (rate !== 0) write(OP_SET_VOICE, stamp, channel, VOICE_SETTING_INDEX.slide, rate * scale, 0);
+                if (rate !== 0) write(OP_SET_VOICE, stamp, channel, AUDIO80_VOICE_SETTING_INDEX.slide, rate * scale, 0);
             }
         },
 

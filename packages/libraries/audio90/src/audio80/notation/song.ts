@@ -1,5 +1,5 @@
 import { type CellGrammar, COMMON_CELL_TOKENS, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
-import { type Audio80FilterId, type Audio80FilterMode, VOICE_COUNT } from '../synthesiser';
+import { type Audio80FilterId, type Audio80FilterMode, AUDIO80_VOICE_COUNT } from '../synthesiser';
 import type { Audio80Sound } from './sound';
 
 // ---------------------------------------------------------------------------
@@ -73,14 +73,14 @@ export interface Audio80EchoSettings {
  * the fields every chip's cells have, `CELL_NOTE` to `CELL_PULSE`, in the
  * shared folder's tracker, and ends with the Audio80's own.
  */
-export const CELL_STRIDE = 10;
+export const CELL80_STRIDE = 10;
 /** A cutoff level, 0 to 15, or -1. */
-export const CELL_FILTER = 9;
+export const CELL80_FILTER = 9;
 
 /** The tokens an Audio80's cells may hold, in the order a cell is written. */
 export const AUDIO80_CELL_GRAMMAR: CellGrammar = {
-    stride: CELL_STRIDE,
-    tokens: [...COMMON_CELL_TOKENS, { kind: 'hex', prefix: 'f', digits: 1, field: CELL_FILTER, name: 'cutoffs' }],
+    stride: CELL80_STRIDE,
+    tokens: [...COMMON_CELL_TOKENS, { kind: 'hex', prefix: 'f', digits: 1, field: CELL80_FILTER, name: 'cutoffs' }],
 };
 
 // ---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ export interface Audio80SongOptions {
  * out of the chip's range.
  */
 export function createAudio80Song(options: Audio80SongOptions): Audio80Song {
-    const core = parseSongCore(options, { grammar: AUDIO80_CELL_GRAMMAR, voiceCount: VOICE_COUNT, ownNote: (sound) => sound.data.note });
+    const core = parseSongCore(options, { grammar: AUDIO80_CELL_GRAMMAR, voiceCount: AUDIO80_VOICE_COUNT, ownNote: (sound) => sound.data.note });
     const song: Audio80Song = Object.freeze({
         chip: 'audio80',
         ...core,

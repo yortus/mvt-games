@@ -1,5 +1,5 @@
 import type { SoundIds } from '../../shared';
-import type { SoundData } from '../synthesiser';
+import type { Audio80SoundData } from '../synthesiser';
 import type { Audio80Sound } from '../notation';
 
 // ---------------------------------------------------------------------------
@@ -9,7 +9,7 @@ import type { Audio80Sound } from '../notation';
 /** How to number an Audio80's sounds. */
 export interface Audio80SoundIdsOptions {
     /** Defines a sound for the chip, the first time it is given an id since the last `forget`. */
-    readonly onSound: (id: number, data: SoundData) => void;
+    readonly onSound: (id: number, data: Audio80SoundData) => void;
     /**
      * Gives the id of a sound defined elsewhere, or undefined for one these
      * ids must define. The worklet's song writer uses it for the sounds the

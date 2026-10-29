@@ -3,10 +3,10 @@ import {
     toCutoff,
     type Audio80FilterId,
     toFilterRoute,
-    type SoundData,
-    type StepData,
+    type Audio80SoundData,
+    type Audio80StepData,
     type Audio80Wave,
-    WAVETABLE_SIZE,
+    AUDIO80_WAVETABLE_SIZE,
     toWaveFlags,
 } from '../synthesiser';
 
@@ -29,7 +29,7 @@ export interface Audio80Sound {
     /** The chip it plays on. */
     readonly chip: 'audio80';
     /** What the chip is sent, such as the note it plays when played with no note, and the filter its notes go through. */
-    readonly data: SoundData;
+    readonly data: Audio80SoundData;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +167,7 @@ export function createAudio80Sound(options: Audio80SoundOptions): Audio80Sound {
     const steps = splitRows(options.steps ?? '').map((row, i) => parseStep(row, i));
     const lengthMs = options.lengthMs ?? (steps.length > 0 ? steps.length * stepMs : DEFAULT_LENGTH_MS);
     if (!(lengthMs > 0)) throw new Error(`sound: lengthMs must be above 0; got ${lengthMs}`);
-    const data: SoundData = {
+    const data: Audio80SoundData = {
         wave: toWaveFlags(options.wave ?? 'pulse'),
         pulseWidth,
         wavetable: options.wavetable === undefined ? [] : parseWavetable(options.wavetable),
@@ -229,10 +229,10 @@ const SOUNDS = new WeakSet<object>();
  * (`v`), a pulse width (`p`) or a cutoff (`f`). Each kind may appear at most
  * once.
  */
-function parseStep(row: string, index: number): StepData {
+function parseStep(row: string, index: number): Audio80StepData {
     const where = `step ${index}`;
     let wave = -1;
-    let pitchMode: StepData['pitchMode'] = 'none';
+    let pitchMode: Audio80StepData['pitchMode'] = 'none';
     let pitch = 0;
     let volume = -1;
     let pulseWidth = -1;
@@ -274,8 +274,8 @@ function parseStep(row: string, index: number): StepData {
 
 function parseWavetable(text: string): number[] {
     const digits = text.replace(/\s+/g, '');
-    if (!/^[0-9A-Fa-f]*$/.test(digits) || digits.length !== WAVETABLE_SIZE) {
-        throw new Error(`wavetable: needs ${WAVETABLE_SIZE} hex digits, one level (0-F) each; got '${text}'`);
+    if (!/^[0-9A-Fa-f]*$/.test(digits) || digits.length !== AUDIO80_WAVETABLE_SIZE) {
+        throw new Error(`wavetable: needs ${AUDIO80_WAVETABLE_SIZE} hex digits, one level (0-F) each; got '${text}'`);
     }
     const levels: number[] = [];
     for (let i = 0; i < digits.length; i++) levels.push(parseInt(digits[i], 16));

@@ -125,11 +125,12 @@ export interface Audio90SoundOptions {
     /** A glide into each note that follows another, in ms. Defaults to none. */
     readonly glideMs?: number;
     /**
-     * Makes a note that overlaps the one before tie into it, as an acid bass
-     * slides: it glides, over `glideMs`, and its envelopes run on rather than
-     * starting again. Give `glideMs` here or above, not both.
+     * Whether a note that overlaps the one before ties into it, as an acid
+     * bass slides: it glides, over `glideMs`, and its envelopes run on rather
+     * than starting again. A legato sound glides only into such a note.
+     * Defaults to false.
      */
-    readonly legato?: { readonly glideMs?: number };
+    readonly isLegato?: boolean;
 
     /** FM: which operators modulate which, such as `'2>1 4>3'`. Operators named in no chain are heard. Defaults to every operator heard. */
     readonly algorithm?: string;
@@ -214,14 +215,12 @@ export interface Audio90Filter {
     readonly drive?: number;
     /** How much the cutoff follows the note's pitch, 0 to 1. Defaults to 0. */
     readonly keyTrack?: number;
-    /** How much more an accented note (`!`) opens the filter and lifts the volume, 0 to 1. Defaults to 0. */
-    readonly accent?: number;
     /**
-     * A shorthand for a mod envelope sent to the cutoff: how many octaves it
-     * opens the filter, and the envelope's times. They default to an instant
-     * attack, a sustain of 0 and no release. Give this or `modEnvelope`, not both.
+     * How much more an accented note (`!`) opens the filter and lifts the
+     * volume, 0 to 1. Defaults to 0. To open the filter on every note, and
+     * let it close, aim a `modEnvelope` at the cutoff.
      */
-    readonly envelope?: { readonly octaves: number } & Partial<Audio90Envelope>;
+    readonly accent?: number;
 }
 
 /** A wobble in pitch. */
@@ -296,9 +295,6 @@ export function createAudio90Sound(options: Audio90SoundOptions): Audio90Sound {
     if (arpeggio.length > MAX_ARPEGGIO) {
         throw new Error(`sound: an arpeggio has at most ${MAX_ARPEGGIO} notes; this one has ${arpeggio.length}`);
     }
-    if (options.glideMs !== undefined && options.legato?.glideMs !== undefined) {
-        throw new Error('sound: give glideMs or legato.glideMs, not both');
-    }
     const sample = options.sample;
     if (engine === ENGINE_SAMPLE && sample === undefined) throw new Error('sound: a sample sound needs a sample');
     const stepMs = options.stepMs ?? DEFAULT_STEP_MS;
@@ -329,8 +325,8 @@ export function createAudio90Sound(options: Audio90SoundOptions): Audio90Sound {
         vibratoSemitones: options.vibrato?.semitones ?? 0,
         vibratoHz: options.vibrato?.hz ?? 0,
         vibratoDelayMs: options.vibrato?.delayMs ?? 0,
-        glideMs: checkRange(options.glideMs ?? options.legato?.glideMs ?? 0, 0, Infinity, 'glideMs'),
-        isLegato: options.legato !== undefined,
+        glideMs: checkRange(options.glideMs ?? 0, 0, Infinity, 'glideMs'),
+        isLegato: options.isLegato ?? false,
         ...(engine === ENGINE_FM ? buildFm(options, envelope) : {}),
         ...(engine === ENGINE_ANALOG ? buildAnalog(options) : {}),
         ...(engine === ENGINE_SAMPLE ? buildSample(options) : {}),
@@ -395,20 +391,9 @@ function checkEnvelope(envelope: Audio90Envelope, path: string): Audio90Envelope
     });
 }
 
-/** The mod envelope's fields, from `modEnvelope` or from the filter's envelope shorthand. */
+/** The mod envelope's fields, from `modEnvelope`. */
 function buildModEnvelope(options: Audio90SoundOptions): Partial<Audio90SoundData> {
     const mod = options.modEnvelope;
-    const shorthand = options.filter?.envelope;
-    if (mod !== undefined && shorthand !== undefined) throw new Error('sound: give filter.envelope or modEnvelope, not both');
-    if (shorthand !== undefined) {
-        const envelope = checkEnvelope({
-            attackMs: shorthand.attackMs ?? 0,
-            decayMs: shorthand.decayMs ?? 0,
-            sustain: shorthand.sustain ?? 0,
-            releaseMs: shorthand.releaseMs ?? 0,
-        }, 'filter.envelope');
-        return { modEnvelope: envelope, modCutoff: checkFinite(shorthand.octaves, 'filter.envelope.octaves') };
-    }
     if (mod === undefined) return {};
     const envelope = checkEnvelope(mod.envelope, 'modEnvelope.envelope');
     const amount = checkFinite(mod.amount, 'modEnvelope.amount');

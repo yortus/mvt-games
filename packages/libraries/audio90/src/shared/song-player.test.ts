@@ -3,11 +3,11 @@ import {
     createAudio80Song,
     createAudio80SongDriver,
     createAudio80Sound,
-    FILTER_SETTING_INDEX,
-    OP_SET_ECHO,
-    OP_SET_FILTER,
+    AUDIO80_FILTER_SETTING_INDEX,
+    OP80_SET_ECHO,
+    OP80_SET_FILTER,
     toCutoff,
-    VOICE_SETTING_INDEX,
+    AUDIO80_VOICE_SETTING_INDEX,
     type Audio80Song,
     type Audio80SongOptions,
     type Audio80Sound,
@@ -87,11 +87,11 @@ describe('song player', () => {
     it('sends each cell\'s effects to the chip with its note', () => {
         const song = createAudio80Song({ ...ONE_CHANNEL, patterns: { p: '| C-4 L a37 ~46 p8 fA' } });
         const { log } = playThrough(song, () => 10, ROW_MS / 2);
-        expect(listSettingValues(log, VOICE_SETTING_INDEX.arpeggio)).toEqual([0x37]);
-        expect(listSettingValues(log, VOICE_SETTING_INDEX.vibratoDepth)).toEqual([4 / 8]);
-        expect(listSettingValues(log, VOICE_SETTING_INDEX.vibratoRate)).toEqual([6]);
-        expect(listSettingValues(log, VOICE_SETTING_INDEX.pulseWidth)).toEqual([8 / 16]);
-        const cutoffs = log.filter((write) => write.kind === 'set-filter' && write.setting === FILTER_SETTING_INDEX.cutoffHz);
+        expect(listSettingValues(log, AUDIO80_VOICE_SETTING_INDEX.arpeggio)).toEqual([0x37]);
+        expect(listSettingValues(log, AUDIO80_VOICE_SETTING_INDEX.vibratoDepth)).toEqual([4 / 8]);
+        expect(listSettingValues(log, AUDIO80_VOICE_SETTING_INDEX.vibratoRate)).toEqual([6]);
+        expect(listSettingValues(log, AUDIO80_VOICE_SETTING_INDEX.pulseWidth)).toEqual([8 / 16]);
+        const cutoffs = log.filter((write) => write.kind === 'set-filter' && write.setting === AUDIO80_FILTER_SETTING_INDEX.cutoffHz);
         expect(cutoffs).toEqual([expect.objectContaining({ filter: 0, value: toCutoff(0xA), time: 0 })]);
     });
 
@@ -278,14 +278,14 @@ describe('song player', () => {
         expect(measureSlide(log, 0, rowStarts[0], rowStarts[1])).toBeCloseTo(SLIDE, 9);
         expect(measureSlide(log, 0, rowStarts[1], rowStarts[2])).toBeCloseTo(SLIDE, 9);
         // Row 2 is the last row. The row after it is row 0 of the next pass, which is on the beat
-        expect(listSettingValues(log, VOICE_SETTING_INDEX.glide)).toEqual([ROW_MS]);
+        expect(listSettingValues(log, AUDIO80_VOICE_SETTING_INDEX.glide)).toEqual([ROW_MS]);
         const glide = `
             | C-4 L
             | D-4 >
             | ...
         `;
         const glided = createAudio80Song({ ...ONE_CHANNEL, swing, patterns: { p: glide } });
-        expect(listSettingValues(playThrough(glided, () => 10, glided.durationMs).log, VOICE_SETTING_INDEX.glide)).toEqual([(1 - swing) * ROW_MS]);
+        expect(listSettingValues(playThrough(glided, () => 10, glided.durationMs).log, AUDIO80_VOICE_SETTING_INDEX.glide)).toEqual([(1 - swing) * ROW_MS]);
     });
 
     it('releases its notes and its voices when stopped', () => {
@@ -414,14 +414,14 @@ function measureSlide(log: readonly Write[], voice: number, fromMs: number, toMs
     let at = fromMs;
     let total = 0;
     for (const write of log) {
-        const isSlide = write.kind === 'set-voice' && write.setting === VOICE_SETTING_INDEX.slide;
+        const isSlide = write.kind === 'set-voice' && write.setting === AUDIO80_VOICE_SETTING_INDEX.slide;
         if ((!isSlide && write.kind !== 'note-on') || !('voice' in write) || write.voice !== voice) continue;
         if (write.time >= toMs) break;
         if (write.time > at) {
             total += rate * (write.time - at) / 1000;
             at = write.time;
         }
-        rate = write.kind === 'set-voice' && write.setting === VOICE_SETTING_INDEX.slide ? write.value : 0;
+        rate = write.kind === 'set-voice' && write.setting === AUDIO80_VOICE_SETTING_INDEX.slide ? write.value : 0;
     }
     return total + rate * (toMs - at) / 1000;
 }
@@ -509,9 +509,9 @@ function toWrite(op: number, time: number, a: number, b: number, c: number, d: n
             return { kind: 'note-off', voice: a, time };
         case OP_SET_VOICE:
             return { kind: 'set-voice', voice: a, setting: b, value: c, time };
-        case OP_SET_FILTER:
+        case OP80_SET_FILTER:
             return { kind: 'set-filter', filter: a, setting: b, value: c, time };
-        case OP_SET_ECHO:
+        case OP80_SET_ECHO:
             return { kind: 'set-echo', setting: a, value: b, time };
         default:
             throw new Error(`a song wrote op ${op}, which it never should`);

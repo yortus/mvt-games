@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createAudio80Song, createAudio80Sound, VOICE_COUNT } from '../audio80';
+import { createAudio80Song, createAudio80Sound, AUDIO80_VOICE_COUNT } from '../audio80';
 import { SCOPE_POINTS, toScopeLength } from '../shared';
 import { createScope } from '../tracker';
 import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
@@ -126,8 +126,8 @@ describe('createAudio80, with a stand-in audio context', () => {
         const first = createScope(audio80);
         const second = createScope(audio80);
         expect(fake.messages.map((message) => message.kind)).toEqual(['scopes', 'scope-buffer', 'scope-buffer', 'scope-buffer']);
-        expect([first.voiceCount, first.points.length, first.pans.length]).toEqual([VOICE_COUNT, VOICE_COUNT * SCOPE_POINTS, VOICE_COUNT]);
-        fake.reply({ kind: 'scope', data: new Float32Array(toScopeLength(VOICE_COUNT)).fill(0.25) });
+        expect([first.voiceCount, first.points.length, first.pans.length]).toEqual([AUDIO80_VOICE_COUNT, AUDIO80_VOICE_COUNT * SCOPE_POINTS, AUDIO80_VOICE_COUNT]);
+        fake.reply({ kind: 'scope', data: new Float32Array(toScopeLength(AUDIO80_VOICE_COUNT)).fill(0.25) });
         expect([first.points[0], second.points[0], first.pans[0]]).toEqual([0.25, 0.25, 0.25]);
         // Its buffer goes back, to send the next scope in
         expect(fake.messages.at(-1)?.kind).toBe('scope-buffer');
@@ -144,7 +144,7 @@ describe('createAudio80, with a stand-in audio context', () => {
         second.destroy();
         expect(fake.messages.at(-1)).toEqual({ kind: 'scopes', isOn: false });
         const sent = fake.messages.length;
-        fake.reply({ kind: 'scope', data: new Float32Array(toScopeLength(VOICE_COUNT)).fill(0.5) });
+        fake.reply({ kind: 'scope', data: new Float32Array(toScopeLength(AUDIO80_VOICE_COUNT)).fill(0.5) });
         expect(second.points.every((value) => value === 0)).toBe(true);
         expect(fake.messages).toHaveLength(sent);
     });

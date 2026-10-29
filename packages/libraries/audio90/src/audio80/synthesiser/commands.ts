@@ -8,21 +8,21 @@
 // A voice's settings, for `OP_SET_VOICE`, are numbered here.
 
 /** Voices on the chip, numbered from 0. */
-export const VOICE_COUNT = 4;
+export const AUDIO80_VOICE_COUNT = 4;
 
 /**
  * Sets one of a filter's settings. `a` is the filter (0 or 1), `b` the
- * setting's index in `FILTER_SETTING_INDEX`, and `c` the value. For `mode`,
- * the value is its mode flags (`FILTER_LOWPASS` and the rest).
+ * setting's index in `AUDIO80_FILTER_SETTING_INDEX`, and `c` the value. For `mode`,
+ * the value is its mode flags (`FILTER80_LOWPASS` and the rest).
  */
-export const OP_SET_FILTER = 4;
-/** Sets one of the echo's settings. `a` is the setting's index in `ECHO_SETTING_INDEX`, and `b` the value. */
-export const OP_SET_ECHO = 5;
+export const OP80_SET_FILTER = 4;
+/** Sets one of the echo's settings. `a` is the setting's index in `AUDIO80_ECHO_SETTING_INDEX`, and `b` the value. */
+export const OP80_SET_ECHO = 5;
 
 /** A setting of one voice that can be written directly. */
 export type Audio80VoiceSetting =
     /**
-     * 0 to 1, as in `SoundData.pulseWidth`. For a lone pulse, it is the
+     * 0 to 1, as in `Audio80SoundData.pulseWidth`. For a lone pulse, it is the
      * share of each cycle spent on one level. In a combined wave, it is where
      * in each cycle the pulse starts letting the other waves through. Setting
      * it stops the sound's pulse sweep for the note.
@@ -66,7 +66,7 @@ export type Audio80EchoSetting =
     | 'level';
 
 /** Each voice setting's number in an `OP_SET_VOICE` command. */
-export const VOICE_SETTING_INDEX: Readonly<Record<Audio80VoiceSetting, number>> = {
+export const AUDIO80_VOICE_SETTING_INDEX: Readonly<Record<Audio80VoiceSetting, number>> = {
     pulseWidth: 0,
     volume: 1,
     arpeggio: 2,
@@ -76,16 +76,16 @@ export const VOICE_SETTING_INDEX: Readonly<Record<Audio80VoiceSetting, number>> 
     glide: 6,
 };
 
-/** Each filter setting's number in an `OP_SET_FILTER` command. */
-export const FILTER_SETTING_INDEX: Readonly<Record<Audio80FilterSetting, number>> = {
+/** Each filter setting's number in an `OP80_SET_FILTER` command. */
+export const AUDIO80_FILTER_SETTING_INDEX: Readonly<Record<Audio80FilterSetting, number>> = {
     mode: 0,
     cutoffHz: 1,
     resonance: 2,
     drive: 3,
 };
 
-/** Each echo setting's number in an `OP_SET_ECHO` command. */
-export const ECHO_SETTING_INDEX: Readonly<Record<Audio80EchoSetting, number>> = {
+/** Each echo setting's number in an `OP80_SET_ECHO` command. */
+export const AUDIO80_ECHO_SETTING_INDEX: Readonly<Record<Audio80EchoSetting, number>> = {
     timeMs: 0,
     feedback: 1,
     level: 2,

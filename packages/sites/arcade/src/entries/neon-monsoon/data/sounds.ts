@@ -69,7 +69,8 @@ export const GRAZE = createAudio90Sound({
 export const SHIP_EXPLODE = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
-    filter: { mode: 'lowpass12', cutoffHz: 900, envelope: { octaves: 3, decayMs: 1100, releaseMs: 500 } },
+    filter: { mode: 'lowpass12', cutoffHz: 900 },
+    modEnvelope: { to: 'cutoff', amount: 3, envelope: { attackMs: 0, decayMs: 1100, sustain: 0, releaseMs: 500 } },
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 500 },
     stepMs: 65,
     steps: `
@@ -115,7 +116,8 @@ export const RESPAWN = createAudio90Sound({
 export const BOMB = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
-    filter: { mode: 'lowpass12', cutoffHz: 700, envelope: { octaves: 3.5, attackMs: 250, decayMs: 1100, releaseMs: 500 } },
+    filter: { mode: 'lowpass12', cutoffHz: 700 },
+    modEnvelope: { to: 'cutoff', amount: 3.5, envelope: { attackMs: 250, decayMs: 1100, sustain: 0, releaseMs: 500 } },
     envelope: { attackMs: 60, decayMs: 1800, sustain: 0, releaseMs: 500 },
     lengthMs: 1200,
     priority: 3,
@@ -231,7 +233,8 @@ export const EXPLODE_SMALL = createAudio90Sound({
 export const EXPLODE_LARGE = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
-    filter: { mode: 'lowpass12', cutoffHz: 1200, envelope: { octaves: 2.5, decayMs: 600, releaseMs: 250 } },
+    filter: { mode: 'lowpass12', cutoffHz: 1200 },
+    modEnvelope: { to: 'cutoff', amount: 2.5, envelope: { attackMs: 0, decayMs: 600, sustain: 0, releaseMs: 250 } },
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 250 },
     stepMs: 45,
     steps: `
@@ -261,7 +264,8 @@ export const EXPLODE_LARGE = createAudio90Sound({
 export const EXPLODE_HUGE = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
-    filter: { mode: 'lowpass12', cutoffHz: 800, envelope: { octaves: 3, decayMs: 1200, releaseMs: 500 } },
+    filter: { mode: 'lowpass12', cutoffHz: 800 },
+    modEnvelope: { to: 'cutoff', amount: 3, envelope: { attackMs: 0, decayMs: 1200, sustain: 0, releaseMs: 500 } },
     envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 500 },
     stepMs: 70,
     steps: `
