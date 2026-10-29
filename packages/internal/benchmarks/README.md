@@ -72,7 +72,7 @@ which the docs include).
 ## Layout
 
 ```
-packages/tests/benchmarks/
+packages/internal/benchmarks/
 ├── run.ts              Command line: picks suites and filters, calls the driver
 ├── harness/
 │   ├── suite.ts        Suite, Case and TableSpec types

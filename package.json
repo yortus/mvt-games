@@ -10,7 +10,7 @@
         "packages/*/*"
     ],
     "imports": {
-        "#eslint-plugin": "./packages/tools/eslint-plugin/src/index.ts"
+        "#eslint-plugin": "./packages/internal/eslint-plugin/src/index.ts"
     },
     "scripts": {
         "dev": "tsx packages/sites/arcade/scripts/run-dev-servers.ts",
@@ -28,7 +28,7 @@
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "release": "changeset version && npm install --package-lock-only",
-        "bench": "tsx packages/tests/benchmarks/run.ts",
+        "bench": "tsx packages/internal/benchmarks/run.ts",
         "test": "vitest run",
         "test:unit": "vitest run -p unit",
         "test:watch": "vitest",

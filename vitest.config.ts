@@ -54,6 +54,6 @@ export default defineConfig({
         server: { deps: { inline: ['solid-js', 'pixi-solid'] } },
         // .claude/ holds agent worktrees: separate checkouts, tested on their
         // own. v-snap's and audio90's own tests run in their own configs.
-        exclude: [...configDefaults.exclude, '.claude/**', 'packages/tools/v-snap/**', 'packages/libraries/audio90/**'],
+        exclude: [...configDefaults.exclude, '.claude/**', 'packages/libraries/v-snap/**', 'packages/libraries/audio90/**'],
     },
 });

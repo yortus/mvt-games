@@ -50,7 +50,10 @@ entry types' `src/entries/` became `src/entry-types/`. On 2026-10-16, the
 packages were grouped into `packages/libraries/`, `tools/`, `sites/` and
 `tests/`, and then the website, `packages/sites/website/` (`@mvtjs/website`),
 was renamed `packages/sites/arcade/` (`@mvtjs/arcade`), as the first step of
-052. The paths above are the ones in use after both.
+052. On 2026-10-29, the groups became `libraries/` (everything published),
+`sites/` and `internal/`: `tools/v-snap/` moved to `libraries/v-snap/`, and
+`tools/eslint-plugin/`, `tests/benchmarks/` and `tests/checks/` to
+`internal/`.
 
 A document is a single file (`NNN-short-name.md`), or a folder
 (`NNN-short-name/`) when it needs more than one file; a task folder's main file

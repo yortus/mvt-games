@@ -72,7 +72,7 @@ const DEV_FILES = [
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
     '**/bench/**',
-    'packages/tests/benchmarks/**',
+    'packages/internal/benchmarks/**',
     'packages/sites/docs/**',
     '**/*.config.{ts,js}',
 ];
@@ -171,7 +171,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['packages/tests/benchmarks/**/*.ts'],
+        files: ['packages/internal/benchmarks/**/*.ts'],
         rules: {
             'no-restricted-imports': ['error', { paths: [VIEW_TICK_API_FROM_RENDERER] }],
         },
@@ -215,7 +215,7 @@ export default tseslint.config(
             }],
         },
     },
-    // MVT's own rules (packages/tools/eslint-plugin), for models: no wall-clock time, no module state, no members named for a control
+    // MVT's own rules (packages/internal/eslint-plugin), for models: no wall-clock time, no module state, no members named for a control
     {
         files: [
             'packages/sites/arcade/src/**/models/**/*.{ts,tsx}', 'packages/sites/arcade/src/**/*-model.ts',
@@ -230,7 +230,7 @@ export default tseslint.config(
         files: ['packages/sites/**/views/**/*-model.ts'],
         rules: { '@mvtjs/no-control-names': 'off' },
     },
-    // This repo's own style rules (packages/tools/eslint-plugin): no em-dashes, no
+    // This repo's own style rules (packages/internal/eslint-plugin): no em-dashes, no
     // `null`, no `this`
     {
         files: ['**/*.{ts,tsx,js,mjs,cjs}'],
@@ -248,18 +248,18 @@ export default tseslint.config(
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',
             'packages/libraries/audio90/src/web/worklet/register-chip-processor.ts',
             // v-snap replaces canvas text drawing and patches a Pixi pool.
-            'packages/tools/v-snap/src/browser/canvas-text.ts',
-            'packages/tools/v-snap/src/pixi/pixi-views.ts',
+            'packages/libraries/v-snap/src/browser/canvas-text.ts',
+            'packages/libraries/v-snap/src/pixi/pixi-views.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },
     },
     {
         // .claude/ holds agent worktrees: separate checkouts, linted with their own config.
         // .vitest/ holds Vitest's output, such as an HTML report's scripts, and
-        // packages/tools/v-snap/lib/ its build. .wrangler/ holds Wrangler's local
+        // packages/libraries/v-snap/lib/ its build. .wrangler/ holds Wrangler's local
         // state, and worker-configuration.d.ts the Worker types it generates.
         ignores: [
-            '**/dist/**', 'node_modules/**', 'packages/sites/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/tools/v-snap/lib/**',
+            '**/dist/**', 'node_modules/**', 'packages/sites/docs/.vitepress/**', '.claude/**', '**/.vitest/**', 'packages/libraries/v-snap/lib/**',
             '**/.wrangler/**', '**/worker-configuration.d.ts',
         ],
     },

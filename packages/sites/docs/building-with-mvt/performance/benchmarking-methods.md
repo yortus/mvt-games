@@ -54,7 +54,7 @@ An idea was rejected on that evidence.
 
 **Rule:** run each approach in a fresh process. A small driver script that
 starts one Node process per case and collects the results is enough; that is
-what [`packages/tests/benchmarks/run.ts`](https://github.com/yortus/mvt-games/blob/main/packages/tests/benchmarks/run.ts) does.
+what [`packages/internal/benchmarks/run.ts`](https://github.com/yortus/mvt-games/blob/main/packages/internal/benchmarks/run.ts) does.
 
 ## Bundle First
 
@@ -203,7 +203,7 @@ to be larger than anything measured when values change.
 ## Running the Repo's Benchmarks
 
 The benchmarks live in the repo's
-[`packages/tests/benchmarks/`](https://github.com/yortus/mvt-games/tree/main/packages/tests/benchmarks) directory, one suite per topic. Each suite's cases
+[`packages/internal/benchmarks/`](https://github.com/yortus/mvt-games/tree/main/packages/internal/benchmarks) directory, one suite per topic. Each suite's cases
 run under plain Node, each in its own process: two processes per case, or
 three when the first two disagree by more than 5%. Timed cases run one
 process at a time. Cases that only count (bytes allocated, memory kept
@@ -226,8 +226,8 @@ versions. Some slow cases that answer a settled question are in an extended
 tier, run only with `--extended`; a save without it keeps their previous
 results, marked † with the date they were measured.
 
-`--save` writes `packages/tests/benchmarks/results/<suite>.json` (every run's numbers, the
+`--save` writes `packages/internal/benchmarks/results/<suite>.json` (every run's numbers, the
 machine and versions they were measured on, and a hash of the inputs) and `<suite>.md` (the tables).
 [Performance Measurements](measurements.md) includes those tables directly, so
 re-running with `--save` updates the page. The suites are described in
-[`packages/tests/benchmarks/README.md`](https://github.com/yortus/mvt-games/blob/main/packages/tests/benchmarks/README.md).
+[`packages/internal/benchmarks/README.md`](https://github.com/yortus/mvt-games/blob/main/packages/internal/benchmarks/README.md).

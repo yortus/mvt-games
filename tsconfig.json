@@ -10,12 +10,12 @@
         { "path": "./packages/libraries/audio90" },
         { "path": "./packages/libraries/audio90/bench" },
         { "path": "./packages/libraries/audio90/scripts" },
-        { "path": "./packages/tools/v-snap" },
-        { "path": "./packages/tools/eslint-plugin" },
+        { "path": "./packages/libraries/v-snap" },
+        { "path": "./packages/internal/eslint-plugin" },
         { "path": "./packages/sites/arcade" },
         { "path": "./packages/sites/playground" },
-        { "path": "./packages/tests/benchmarks" },
+        { "path": "./packages/internal/benchmarks" },
         { "path": "./packages/sites/arcade/highscores-worker" },
-        { "path": "./packages/tests/checks" }
+        { "path": "./packages/internal/checks" }
     ]
 }

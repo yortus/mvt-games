@@ -4,11 +4,11 @@
     "description": "Fast, consistent visual snapshot tests for views drawn on a canvas or in HTML, with support for Pixi and three.js: the same images on Windows, Linux and macOS, with no Docker",
     "license": "MIT",
     "keywords": ["visual testing", "visual regression", "snapshot", "screenshot", "vitest", "playwright", "pixi", "pixi.js", "three", "canvas"],
-    "homepage": "https://github.com/yortus/mvt-games/tree/main/packages/tools/v-snap#readme",
+    "homepage": "https://github.com/yortus/mvt-games/tree/main/packages/libraries/v-snap#readme",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/yortus/mvt-games.git",
-        "directory": "packages/tools/v-snap"
+        "directory": "packages/libraries/v-snap"
     },
     "bugs": { "url": "https://github.com/yortus/mvt-games/issues" },
     "type": "module",

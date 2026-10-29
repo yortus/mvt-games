@@ -18,7 +18,7 @@ rule added on the command line, and by scripts over every tracked `.ts`,
 
 **Related:**
 [eslint.config.ts](../../eslint.config.ts),
-[packages/tools/eslint-plugin/](../../packages/tools/eslint-plugin/README.md),
+[packages/internal/eslint-plugin/](../../packages/internal/eslint-plugin/README.md),
 [.editorconfig](../../.editorconfig),
 [.vscode/settings.json](../../.vscode/settings.json),
 [the style guide](../../packages/sites/docs/reference/style-guide.md),
@@ -266,7 +266,7 @@ way.
 ### 4.8 Building it
 
 - The rule lives in
-  `packages/tools/eslint-plugin/src/rules/single-line-imports.ts`, with its
+  `packages/internal/eslint-plugin/src/rules/single-line-imports.ts`, with its
   tests in `single-line-imports.test.ts` beside it, using `RuleTester` as the
   other rules do. It joins the `style` preset.
 - It uses only the plain ESLint rule API and the node types every ESTree

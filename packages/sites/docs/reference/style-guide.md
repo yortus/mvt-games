@@ -237,7 +237,7 @@ pick(params.get('view') ?? undefined, VIEWS, 'sprites');
 function pick(value: string | null, ...): ...
 ```
 
-Enforced by lint: `@mvtjs/no-null`, from this repo's `packages/tools/eslint-plugin`.
+Enforced by lint: `@mvtjs/no-null`, from this repo's `packages/internal/eslint-plugin`.
 It reports `null` as a value, and in a type outside a function body (an
 interface, a type alias, a function's signature, a module-level variable),
 and allows comparisons and local types. A declaration that has to accept

@@ -16,7 +16,7 @@ on:
             - .changeset/**
             - .claude/**
             - packages/libraries/audio90/docs/**
-            - packages/tools/v-snap/docs/**
+            - packages/libraries/v-snap/docs/**
     workflow_dispatch:
 
 permissions:

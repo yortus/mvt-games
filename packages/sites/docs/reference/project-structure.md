@@ -17,27 +17,30 @@ playground, the docs, the benchmarks and the checks.
 
 ```
 packages/
-├── libraries/           What people build with
+├── libraries/           What is published to npm
 │   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the view tick API, watch, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
 │   ├── pixi/            @mvtjs/pixi: the view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the view tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            @mvtjs/html: the view tick API for DOM elements, its JSX runtime, and a Perfmon view
-│   └── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
-├── tools/               What people use while developing
-│   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
-│   └── eslint-plugin/   @mvtjs/eslint-plugin (private): this repo's lint rules
+│   ├── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
+│   └── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 ├── sites/               What gets deployed
 │   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite), and the Cloudflare Worker that keeps the highscore tables
 │   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite)
 │   └── docs/            @mvtjs/docs (private): this documentation (VitePress)
-└── tests/               What tests the other packages, and never ships
+└── internal/            What serves this repo only, and never ships
+    ├── eslint-plugin/   @mvtjs/eslint-plugin (private): this repo's lint rules
     ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games alike
     └── checks/          @mvtjs/checks (private): tests that the packages still fit together as decided
 notes/                   Proposals and tasks
 ```
 
-The packages are grouped by what each one is for, not by whether it is
-published, so that publishing one moves nothing.
+The packages are grouped by whether they ship, since that decides the rules
+a package follows. Each package in `libraries/` is published to npm, so it
+records its changes for its changelog, and its docs are written for its own
+users. Each one in `sites/` is deployed, and each one in `internal/` serves
+only this repo. If a package in `internal/` is ever published, it moves to
+`libraries/`.
 
 Each package's source is in its own `src/`. The site's is laid out by area:
 
@@ -87,13 +90,13 @@ packages/sites/playground/
 are in a `visual-tests/` directory beside the views they test, one
 `<view>.test.tsx` file for each view. Each test file's reference images
 are beside it, named for the file's stem and the image, such as
-`hud-view.at-the-start.png`. The tests come from v-snap, the package in `packages/tools/v-snap/`. The
+`hud-view.at-the-start.png`. The tests come from v-snap, the package in `packages/libraries/v-snap/`. The
 root `vitest.config.ts` lists v-snap's projects beside the unit tests, and
 the Arcade's `vsnap.config.ts` registers the kinds of view that the tests
 pose, which it refreshes and destroys the MVT way. v-snap's
-[README](https://github.com/yortus/mvt-games/blob/main/packages/tools/v-snap/README.md)
+[README](https://github.com/yortus/mvt-games/blob/main/packages/libraries/v-snap/README.md)
 describes the package for its users, and its
-[CONTRIBUTING.md](https://github.com/yortus/mvt-games/blob/main/packages/tools/v-snap/CONTRIBUTING.md)
+[CONTRIBUTING.md](https://github.com/yortus/mvt-games/blob/main/packages/libraries/v-snap/CONTRIBUTING.md)
 describes how it is laid out, tested and published.
 
 Every directory under a package's `src/` is a **module** with a specific

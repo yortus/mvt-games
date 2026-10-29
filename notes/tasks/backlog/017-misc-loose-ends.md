@@ -145,7 +145,7 @@ Settled questions that should not be reopened without new information are in
   step 7.
 
 - **Benchmarks in browsers, with rendering included.** Everything so far is V8
-  under Node with nothing rendered. See `packages/tests/benchmarks/README.md`, "What is
+  under Node with nothing rendered. See `packages/internal/benchmarks/README.md`, "What is
   excluded", and 010 section 8, items 1-2.
 
 - **CI benchmarking.** Timing noise on shared runners makes it hard; 010
@@ -172,7 +172,7 @@ Settled questions that should not be reopened without new information are in
     over each item and a plain `Container`), but goes when the `jsx` approach
     runs the hand-written view code. A tidier standalone copy of the JSX setup
     allocates nothing. Reproduce with
-    [`packages/tests/benchmarks/repro/fractional-boxing.ts`](../../../packages/tests/benchmarks/repro/fractional-boxing.ts)
+    [`packages/internal/benchmarks/repro/fractional-boxing.ts`](../../../packages/internal/benchmarks/repro/fractional-boxing.ts)
     (`jsx` 32 KB per frame, `hand-written` 0, one per process; run both in one
     process and both allocate). Kept out of the suite until explained, so it
     is not read as a JSX cost.

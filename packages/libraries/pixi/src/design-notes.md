@@ -433,8 +433,8 @@ published from it was an artifact, and all of them have been deleted.
 
 The benchmark driver spawns one child process **per arm**, each running exactly
 one implementation against one scenario. The scenes are now the `refresh-view`
-suite in [packages/tests/benchmarks/](../../../tests/benchmarks/README.md)
-(`packages/tests/benchmarks/suites/refresh-view.case.ts`), run with
+suite in [packages/internal/benchmarks/](../../../internal/benchmarks/README.md)
+(`packages/internal/benchmarks/suites/refresh-view.case.ts`), run with
 `npm run bench -- refresh-view`; they were first written as
 `src/pixi-mvt/scene-passes-benchmark.ts` with a driver in `scripts/`, before
 the libraries became packages. Results

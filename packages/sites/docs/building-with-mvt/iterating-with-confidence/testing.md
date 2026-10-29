@@ -21,7 +21,7 @@ should not break unless the observable result changes.
 This project uses [Vitest](https://vitest.dev/) for every test. Tests of
 models, view models and scene graphs run in Node.
 [Visual tests](visual-tests.md) run in a browser, through
-[v-snap](https://github.com/yortus/mvt-games/blob/main/packages/tools/v-snap/README.md),
+[v-snap](https://github.com/yortus/mvt-games/blob/main/packages/libraries/v-snap/README.md),
 which uses Vitest's browser mode.
 
 ## Testing by Layer

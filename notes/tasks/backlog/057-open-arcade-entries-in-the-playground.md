@@ -96,7 +96,7 @@ easier to provide.
 
 ### Offering only the entries that work
 
-- **A check in the repo:** a test, perhaps in `packages/tests/checks/`,
+- **A check in the repo:** a test, perhaps in `packages/internal/checks/`,
   sorts every entry by the measures above, and writes the list of entries
   that open for the playground's build. A new entry's fit then shows up in
   CI, and the playground's menu never offers one that would fail.

@@ -83,7 +83,7 @@ jobs:
                   # The harness fixes everything that could differ between systems, such
                   # as the fonts, the HTML rules and the browser's switches. So a change
                   # to it is checked on every system too. Its Markdown is not part of it.
-                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/tools/v-snap .github/workflows/visual.yml ':!*.md')
+                  harness=$(git diff --name-only FETCH_HEAD HEAD -- packages/libraries/v-snap .github/workflows/visual.yml ':!*.md')
                   echo "Harness changes: ${harness:-none}"
                   if [ "$was" = "$now" ] && [ -z "$harness" ]; then echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
                   else echo "os=$all" >> "$GITHUB_OUTPUT"; fi
@@ -114,7 +114,7 @@ jobs:
               run: |
                   echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
                   echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
-              working-directory: packages/tools/v-snap
+              working-directory: packages/libraries/v-snap
 
             - uses: actions/cache@v4
               with:
@@ -128,7 +128,7 @@ jobs:
             # minutes.
             - name: Playwright's headless shell
               run: npx playwright install chromium-headless-shell
-              working-directory: packages/tools/v-snap
+              working-directory: packages/libraries/v-snap
 
             # Two Vitest runs: the site's visual tests, from the repo's root config,
             # then v-snap's own tests, from its package's config. Weekly and on

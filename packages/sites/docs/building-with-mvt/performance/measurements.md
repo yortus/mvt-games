@@ -4,7 +4,7 @@
 > model, reacting to changes, building and reusing containers, the scene
 > passes, each hot path rule, memory and garbage collection, and the games
 > and demos themselves. The tables come straight from this repo's
-> [benchmark suites](https://github.com/yortus/mvt-games/tree/main/packages/tests/benchmarks), and each section says what the
+> [benchmark suites](https://github.com/yortus/mvt-games/tree/main/packages/internal/benchmarks), and each section says what the
 > numbers mean.
 
 **Related:** [Why Performance Matters](why-performance-matters.md) · [Hot Paths](hot-paths.md) · [Benchmarking Methods](benchmarking-methods.md) ·
@@ -47,11 +47,11 @@ to 3 significant figures. Where the runs disagreed by more than 5% either way,
 the cell also shows half the spread between the fastest and slowest run, as a
 share of the median: `3.8 ±40%` marks a noisy result. A cell without "±" had
 runs within 5% of each other. Every run's numbers are in the
-[saved results](https://github.com/yortus/mvt-games/tree/main/packages/tests/benchmarks/results).
+[saved results](https://github.com/yortus/mvt-games/tree/main/packages/internal/benchmarks/results).
 Times are in microseconds (µs); a frame at 60 frames per second lasts
 16,667 µs.
 
-<!--@include: ../../../../tests/benchmarks/results/reactivity.md#environment-->
+<!--@include: ../../../../internal/benchmarks/results/reactivity.md#environment-->
 
 ::: info About the figures
 Every figure on this page comes from the one machine above, in Node.js's V8
@@ -84,9 +84,9 @@ Re-run the benchmarks on your own machine to get your own numbers; see
 1000 Pixi containers, each following one model record, as the share changed
 per frame goes from nothing to everything.
 
-<!--@include: ../../../../tests/benchmarks/results/reactivity.md#three-dynamic-->
+<!--@include: ../../../../internal/benchmarks/results/reactivity.md#three-dynamic-->
 
-<!--@include: ../../../../tests/benchmarks/results/reactivity.md#one-dynamic-->
+<!--@include: ../../../../internal/benchmarks/results/reactivity.md#one-dynamic-->
 
 - **Polling costs about 4-13 µs per frame for 1000 containers at rest**, under
   0.1% of a frame. It rises to 7-19 µs when everything changes, mostly
@@ -118,9 +118,9 @@ The same scene, with 3 dynamic properties per container, from 100 to 100,000
 containers. These tables divide each frame's time by the number of
 containers, so a flat column means the cost grows in proportion.
 
-<!--@include: ../../../../tests/benchmarks/results/scaling.md#unchanged-->
+<!--@include: ../../../../internal/benchmarks/results/scaling.md#unchanged-->
 
-<!--@include: ../../../../tests/benchmarks/results/scaling.md#all-changed-->
+<!--@include: ../../../../internal/benchmarks/results/scaling.md#all-changed-->
 
 - **The cost per container is flat up to about 1,000 containers, then climbs.**
   Polling a scene at rest costs about 5 ns per container at 1,000, 12 ns at
@@ -135,7 +135,7 @@ containers, so a flat column means the cost grows in proportion.
   costs 255 ns at 1,000 containers and 435 ns at 100,000, which is 44 ms per
   frame: more than two and a half frames' worth.
 
-<!--@include: ../../../../tests/benchmarks/results/scaling.md#frame-time-->
+<!--@include: ../../../../internal/benchmarks/results/scaling.md#frame-time-->
 
 ## Occasional Changes and Derived Values
 
@@ -144,14 +144,14 @@ changes only occasionally, such as a level or a score, and updates two
 properties when it does. Polling here means [change detection](../reacting-to-changes/change-detection.md):
 comparing with last frame's value, either by hand or with the `watch()` helper.
 
-<!--@include: ../../../../tests/benchmarks/results/change-detection.md#discrete-->
+<!--@include: ../../../../internal/benchmarks/results/change-detection.md#discrete-->
 
 In the second, each container shows a value computed from 8 model values,
 such as a total. Polling either recomputes it every frame, or uses `watch()`
 on all 8 values and recomputes only when one changed. Signals use a
 `createMemo`.
 
-<!--@include: ../../../../tests/benchmarks/results/change-detection.md#derived-->
+<!--@include: ../../../../internal/benchmarks/results/change-detection.md#derived-->
 
 - **`watch()` costs about 8 ns per watched value per frame**, nearly three
   times as much as comparing by hand. It allocates nothing (see
@@ -175,7 +175,7 @@ The first table is the whole life of one Pixi container with 3 dynamic propertie
 building it and its model record, bringing it up to date once, and destroying
 it. A bare `new Container()` and `destroy()` is included for scale.
 
-<!--@include: ../../../../tests/benchmarks/results/construction.md#build-->
+<!--@include: ../../../../internal/benchmarks/results/construction.md#build-->
 
 The second is a pool of short-lived items, such as bullets, held in a
 [`SlotList`](https://github.com/yortus/mvt-games/tree/main/packages/libraries/utils/src/slot-list).
@@ -184,7 +184,7 @@ About 500 are alive at once. Either
 every later item, or a hand-written view builds a container for each new item
 and destroys it when the item goes.
 
-<!--@include: ../../../../tests/benchmarks/results/construction.md#pool-->
+<!--@include: ../../../../internal/benchmarks/results/construction.md#pool-->
 
 - **A container costs about 0.1-0.5 µs over its life**, most of it Pixi's own
   `Container`. The JSX runtime and signals cost about 3-4x a bare container.
@@ -203,7 +203,7 @@ with Pixi's own `onRender` callbacks. The last scenario has 100 groups of 100
 containers, 90 of the groups inactive, either only hidden or returning
 `SKIP_DESCENDANTS` from their own refresh method.
 
-<!--@include: ../../../../tests/benchmarks/results/refresh-view.md#passes-->
+<!--@include: ../../../../internal/benchmarks/results/refresh-view.md#passes-->
 
 - **`refreshView` visits only the containers that have a refresh method.** It
   keeps a cached method list of them, so in a large scene where few
@@ -231,9 +231,9 @@ the same result: the pattern the rule warns against, and the one it
 recommends. The work is typical of a game's frame, over 1000 game objects (plain
 objects with a position, a velocity and a few stats).
 
-<!--@include: ../../../../tests/benchmarks/results/hot-path-rules.md#time-->
+<!--@include: ../../../../internal/benchmarks/results/hot-path-rules.md#time-->
 
-<!--@include: ../../../../tests/benchmarks/results/hot-path-rules.md#allocation-->
+<!--@include: ../../../../internal/benchmarks/results/hot-path-rules.md#allocation-->
 
 - **Four rules clearly matter.** `Object.values()` per game object is 32x slower
   than reading the properties and leaves 80 KB of garbage per frame. A
@@ -262,17 +262,17 @@ building a string and an array every frame, as the hot path rules warn
 against. It is there to show that the measurement sees allocation when it
 happens.
 
-<!--@include: ../../../../tests/benchmarks/results/memory.md#allocation-->
+<!--@include: ../../../../internal/benchmarks/results/memory.md#allocation-->
 
-<!--@include: ../../../../tests/benchmarks/results/memory.md#allocation-discrete-->
+<!--@include: ../../../../internal/benchmarks/results/memory.md#allocation-discrete-->
 
-<!--@include: ../../../../tests/benchmarks/results/memory.md#allocation-pool-->
+<!--@include: ../../../../internal/benchmarks/results/memory.md#allocation-pool-->
 
-<!--@include: ../../../../tests/benchmarks/results/memory.md#gc-->
+<!--@include: ../../../../internal/benchmarks/results/memory.md#gc-->
 
-<!--@include: ../../../../tests/benchmarks/results/memory.md#gc-pool-->
+<!--@include: ../../../../internal/benchmarks/results/memory.md#gc-pool-->
 
-<!--@include: ../../../../tests/benchmarks/results/memory.md#retained-->
+<!--@include: ../../../../internal/benchmarks/results/memory.md#retained-->
 
 - **Polling allocates next to nothing.** Hand-written refresh methods and `watch()`
   allocate nothing per frame, and the JSX runtime a constant 8 bytes per
@@ -312,7 +312,7 @@ session's update (its models), then `updateView` and `refreshView` on the
 stage. The first 10 seconds are a warm-up, and times are averaged over the
 minute after.
 
-<!--@include: ../../../../tests/benchmarks/results/games-and-demos.md#time-->
+<!--@include: ../../../../internal/benchmarks/results/games-and-demos.md#time-->
 
 - **Each game takes 4-9 µs per frame**, well under 0.1% of a 60fps frame,
   before drawing. Drawing is not measured here, but is likely to cost far
@@ -325,7 +325,7 @@ minute after.
   sand has a sprite per grain, about 3,800 containers once its opening scene
   settles, and its refresh takes about 160 µs, about 41 ns per container with
   nothing moving. How that grows with the number of grains is in the
-  [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/packages/tests/benchmarks/results/falling-sand-scaling.md):
+  [`falling-sand-scaling` results](https://github.com/yortus/mvt-games/blob/main/packages/internal/benchmarks/results/falling-sand-scaling.md):
   about 2.2 ms at 20,000 grains. Boids takes about 0.5 ms, almost all of it
   in its model, which compares every pair of its 200 boids each frame.
 - **The games allocate a little every frame**, from tens of bytes to about
@@ -348,9 +348,9 @@ minute after.
   It now allocates about 34 bytes per frame, and its frame time fell from
   about 1 ms.
 
-<!--@include: ../../../../tests/benchmarks/results/games-and-demos.md#allocation-->
+<!--@include: ../../../../internal/benchmarks/results/games-and-demos.md#allocation-->
 
-<!--@include: ../../../../tests/benchmarks/results/games-and-demos.md#gc-->
+<!--@include: ../../../../internal/benchmarks/results/games-and-demos.md#gc-->
 
 ## What Is Not Measured
 

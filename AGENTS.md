@@ -23,20 +23,19 @@ its own, and private packages for everything else.
 
 ```
 packages/
-├── libraries/           What people build with
+├── libraries/           What is published to npm
 │   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the view tick API, watch, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
 │   ├── pixi/            @mvtjs/pixi: the view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the view tick API for three.js objects, pointer picker, and its JSX runtime
 │   ├── html/            @mvtjs/html: the view tick API for DOM elements, its JSX runtime, and a Perfmon view
-│   └── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
-├── tools/               What people use while developing
-│   ├── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
-│   └── eslint-plugin/   @mvtjs/eslint-plugin (private): this repo's lint rules, loaded from source by `eslint.config.ts`
+│   ├── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
+│   └── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 ├── sites/               What gets deployed
 │   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite): pages, src/, scripts/ (textures, thumbnails, the pixel font, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
 │   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite): src/, examples/ and starters/ (each a project; starters/ are what New opens), libraries/ (what a project may import)
 │   └── docs/            @mvtjs/docs (private): the documentation (VitePress)
-└── tests/               What tests the other packages, and never ships
+└── internal/            What serves this repo only, and never ships
+    ├── eslint-plugin/   @mvtjs/eslint-plugin (private): this repo's lint rules, loaded from source by `eslint.config.ts`
     ├── benchmarks/      @mvtjs/benchmarks (private): performance benchmarks, for the libraries and the games
     └── checks/          @mvtjs/checks (private): tests that the packages still fit together as decided
 notes/                   Proposals and tasks
@@ -64,7 +63,7 @@ packages/sites/arcade/src/
 
 Visual tests are in a `visual-tests/` folder beside the views they test, one
 `<view file's name>.test.tsx` for each view, and declare `canvasTest` or
-`htmlTest`, from `v-snap` (`packages/tools/v-snap/`).
+`htmlTest`, from `v-snap` (`packages/libraries/v-snap/`).
 A pose returns the view arranged into one state: fixed bindings (for a
 top-level view, a model brought into a state through its actions), and
 `advanceTime` for time. Reference images are
@@ -128,9 +127,9 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 | `npm run test:audio90` | All of audio90's own tests, from its own config |
 | `npm run test:visual:environment -w v-snap` | Rewrite v-snap's environment fingerprint and calibration images, after a deliberate Playwright upgrade |
 | `npm run build:packages` | Build the five libraries for publishing (tsdown, publint, attw), then check their published types. audio90's publint and attw run as it is packed, as v-snap's do |
-| `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/tests/checks/](packages/tests/checks/README.md)) |
+| `npm run check:*`      | A check of built output, such as `check:view-type-registration` ([packages/internal/checks/](packages/internal/checks/README.md)) |
 | `npx changeset` / `npm run release` | Record a change for the changelogs / version a release ([.changeset/](.changeset/README.md)) |
-| `npm run bench`        | Performance benchmarks ([packages/tests/benchmarks/](packages/tests/benchmarks/README.md)) |
+| `npm run bench`        | Performance benchmarks ([packages/internal/benchmarks/](packages/internal/benchmarks/README.md)) |
 | `npm run audio:render -- <modules>` | Render a module's songs and sound effects to WAV files, with their peaks and loudness ([packages/libraries/audio90/](packages/libraries/audio90/README.md)) |
 
 ## Notes: Proposals and Tasks

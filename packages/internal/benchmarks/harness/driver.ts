@@ -124,7 +124,7 @@ export function reportSuite(suite: Suite): void {
     if (saved === undefined) throw new Error(`no saved results for ${suite.name}`);
     const markdown = formatTables(suite, saved.results, saved.runs);
     writeMarkdown(suite, saved.environment, saved.results, markdown);
-    process.stdout.write(`${markdown}\n\nRewrote packages/tests/benchmarks/results/${suite.name}.md\n`);
+    process.stdout.write(`${markdown}\n\nRewrote packages/internal/benchmarks/results/${suite.name}.md\n`);
 }
 
 // ---------------------------------------------------------------------------
@@ -703,7 +703,7 @@ function save(
     const saved: SavedResults & { readonly suite: string } = { suite: suite.name, environment, runs, inputsHash, results };
     writeFileSync(join(dir, `${suite.name}.json`), `${JSON.stringify(saved, undefined, 4)}\n`);
     writeMarkdown(suite, environment, results, markdown);
-    process.stdout.write(`\nSaved packages/tests/benchmarks/results/${suite.name}.json and .md\n`);
+    process.stdout.write(`\nSaved packages/internal/benchmarks/results/${suite.name}.json and .md\n`);
 }
 
 function writeMarkdown(suite: Suite, environment: Record<string, string>, results: readonly CaseResult[], markdown: string): void {

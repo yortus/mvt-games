@@ -241,7 +241,7 @@ directory beside it:
    imports the module that registers the renderer, for its side effect, so
    that a program importing only the JSX runtime has the renderer's nodes
    registered and its view type in `View` (the `view-type-registration` check
-   in `packages/tests/checks/` holds every entry point to this).
+   in `packages/internal/checks/` holds every entry point to this).
 4. **`<List>` and `<Switch>`** (`list.ts`, `switch.ts`): `createList` and
    `createSwitch` over the target.
 5. **The barrel** (`index.ts`), exporting only what views use: `jsx`,

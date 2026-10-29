@@ -41,7 +41,7 @@ and compares it.
 
 ::: info About the examples
 The examples on this page use
-[v-snap](https://github.com/yortus/mvt-games/blob/main/packages/tools/v-snap/README.md),
+[v-snap](https://github.com/yortus/mvt-games/blob/main/packages/libraries/v-snap/README.md),
 a visual testing tool that runs on Vitest. This project uses it by
 convention. Each v-snap test has a name, and a function that returns the posed view. A view drawn on a canvas, such as a
 Pixi or three.js view, is tested with `canvasTest`. An HTML view is tested

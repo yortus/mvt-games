@@ -24,8 +24,8 @@ packages/sites/docs/.vitepress/cache
 packages/sites/docs/.vitepress/dist
 
 # v-snap's build, for publishing, and its package.json while the published one is in place
-packages/tools/v-snap/lib
-packages/tools/v-snap/package.repo.json
+packages/libraries/v-snap/lib
+packages/libraries/v-snap/package.repo.json
 
 # audio90's package.json while the published one is in place
 packages/libraries/audio90/package.repo.json

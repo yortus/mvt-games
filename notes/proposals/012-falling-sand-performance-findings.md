@@ -15,7 +15,7 @@ walk; see 2.4. Sections 3-5 are still proposed. Measured 2026-09-25; written
 
 **Related:** [`src/mvt-utils/scene-passes.ts`](../../packages/libraries/utils/src/scene-passes.ts)
 (the walk, since 022 phase 2),
-[`packages/tests/benchmarks/`](../../packages/tests/benchmarks/README.md),
+[`packages/internal/benchmarks/`](../../packages/internal/benchmarks/README.md),
 [Performance Measurements](../../packages/sites/docs/building-with-mvt/performance/measurements.md),
 [Hot Paths](../../packages/sites/docs/building-with-mvt/performance/hot-paths.md),
 [`src/pixi-mvt/frame-stats.ts`](../../packages/libraries/pixi/src/frame-stats.ts),
