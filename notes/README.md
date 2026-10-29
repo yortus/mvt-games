@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**078**.
+**080**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -87,7 +87,6 @@ Acceptance Criteria checklist and a dated Progress Log. See
 
 | # | Proposal | Status |
 | --- | --- | --- |
-| 008 | [`Watch()` fluent builder](./proposals/008-watch-builder-spike.md) | Spike. One poll-based `Watch()` chain covering change detection, memoised derivation, reactions and uniform lists. The prototype is `src/common/watch-builder.spike.ts`, not exported from the barrel. Recommends promotion; open questions and promotion work are in its "Handover: loose ends" section |
 | 012 | [Performance findings from the falling-sand demo](./proposals/012-falling-sand-performance-findings.md) | Section 2 implemented: each container's method cached in the scene-pass loop (measured 12-27% cheaper refresh on the falling-sand demo, at a small cost on uniform scenes). Still proposed: a mixed-scene variant of the `scaling` benchmark, a docs note on Pixi render-group rebuilds, and a decision on the perfmon's unreliable GPU figure |
 | 013 | [Does the MVT architecture limit game performance?](./proposals/013-mvt-performance-ceiling.md) | Analysis, estimated rather than measured. Concludes the architecture's one inherent cost is re-reading presented state every frame, and that the costs measured in this repo come from the implementation. Proposes two falling-sand experiments to test that (section 8) |
 | 019 | [Boids that scale](./proposals/019-boids-scaling.md) | Proposed, spiked and measured. A dot-product vision test and a uniform grid make the boids model 2.7-3.8x faster with unchanged behaviour; a nearest-first neighbour limit makes it close to linear (67x at 5000 boids) but changes the flock, so it is recommended as an opt-in slider |
@@ -101,9 +100,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
-012's method caching in its generic scene-pass core. 008 concerns
-the `watch()` helper (now in `@mvtjs/utils`), and now also whether `memoiseLast`
-(from 018, archived) should give way to its mapping terminal. 011 is about the
+012's method caching in its generic scene-pass core. 011 is about the
 repo rather than the architecture; its migration moves most of the paths the
 other notes cite. 012 changes 001's pass loop and qualifies the `scaling`
 numbers from 010's harness. 013 builds on 012's measurements. 019 follows
@@ -120,7 +117,7 @@ entry in the Arcade that 036, now archived, built. 042, now archived, reused 036
 thumbnail code to give every entry a visual test, and made true what 015's
 testing docs already describe. 045, now archived, built the sound chip that
 035's music can play on, which 035's section 8 deferred. It gave `watch` its
-`increased` and `decreased`, which 008's builder may want too.
+`increased` and `decreased`, which task 079 keeps.
 046, now archived, added to what a session gives its host, as 045 added
 to what the host gives a session, and built on 036's Arcade.
 051, now archived, added a second chip beside 045's, and changed what 045
@@ -134,7 +131,9 @@ that 045 built, and 051 extended, onto the audio thread. 074 makes the
 package that holds both chips a standalone one, and builds on 068's
 sequencer for one clock, the sound card's. 070, now archived,
 touched only the docs, and its tasks 071 to 073 bring the code in line with
-its pages.
+its pages. Task 079 replaces `watch` and `memoiseLast` (018, archived) with
+`watch`, `createReaction` and `createComputed`, superseding 008 and 078, both
+archived, and the `derive` spike on the `derive-util` branch, now deleted.
 
 ## Tasks
 
@@ -165,6 +164,7 @@ its pages.
 | 072 | [Update and Refresh Method Names](tasks/backlog/072-update-and-refresh-method-names.md) | low | 2026-10-15 |
 | 073 | [Models Take Their Random Source](tasks/backlog/073-models-take-their-random-source.md) | medium | 2026-10-15 |
 | 076 | [audio90: Gaps in the API](tasks/backlog/076-audio90-api-gaps.md) | low | 2026-10-29 |
+| 079 | [`watch`, Reactions and Computed Values](tasks/backlog/079-watch-reactions-and-computed-values/task.md) | medium | 2026-10-25 |
 
 ## Archive
 
@@ -175,6 +175,7 @@ its pages.
 | 004 | [Proposal: index-addressed `<List>`, with `<Switch>`](archive/004-list-proposal.md) | 2026-09-25 |
 | 005 | [Proposal: `SlotList<T>`](archive/005-slot-list-proposal.md) | 2026-09-22 |
 | 007 | [Proposal: authoring-convention bridge](archive/007-authoring-convention-bridge.md) (superseded by 018) | 2026-09-27 |
+| 008 | [Proposal: `Watch()` fluent builder (spike)](archive/008-watch-builder-spike.md) (superseded by task 079) | 2026-10-25 |
 | 010 | [Proposal: performance docs](archive/010-performance-docs-proposal.md) | 2026-09-25 |
 | 011 | [Proposal: multi-package repo](archive/011-multi-package-repo.md) (`@mvtjs/utils`, `pixi`, `three` and `html` published from an npm workspace, beside private `site`, `docs`, `benchmarks` and `checks`; Changesets and trusted publishing; `@mvtjs/eslint-plugin`; Vite+ trialled, not adopted) | 2026-10-04 |
 | 014 | [Review: Kwazy Cactii](archive/014-review-cactii.md) | 2026-04-10 |
@@ -215,6 +216,7 @@ its pages.
 | 068 | [Proposal: music on the sound card's clock](archive/068-music-on-the-sound-cards-clock.md) (each chip has a sequencer in its worklet, which plays songs on the sound card's clock, gated by the ticks, so a late frame no longer stalls the music and pausing still pauses it; `MusicPlayer` lost `update`, and its `row` and `beat` are what is heard; a headless chip runs the same sequencer, so the audio views' tests stay exact; the Perfmon's "Chip stalls". A phone check of the full build moved to 074) | 2026-10-27 |
 | 070 | [Proposal: the principles behind MVT](archive/070-principles-docs.md) (a Principles group in the Architecture docs: an overview and one page per principle, SoC, SSOT, CQS, DIP, CRP, DbC, MISU and DfT, each with its origin, what it means in MVT, its costs, examples, a checklist and the rules it underpins; linked from the rules, glossary, heritage, code review skill and `AGENTS.md`; a broken precondition throws. Code brought in line by tasks 071 to 073) | 2026-10-21 |
 | 074 | [Proposal: audio90, a standalone sound package](archive/074-audio90-standalone-package.md) (`@mvtjs/chiptune` published as `audio90` 0.8.0, versioned on its own like v-snap and easy to move to a repository of its own: one clock, the sound card's, with chips paused by their host; sounds in place of instruments and sound effects; the chip as one object that plays songs itself, with no music player; a chip each for music and sound effects; repeat, pitch, fades, `stereoWidth`, `onRow` and `onEnded`; songs started part way and `positionMs`; song text; neutral docs, with the MVT material on the Sound and Music page; its own tests, reference sounds and CONTRIBUTING. The Studio moved to 077, and the gaps to task 076) | 2026-10-29 |
+| 078 | [Proposal: `watch` without polling](archive/078-watch-without-polling.md) (superseded by task 079, before it was built) | 2026-10-25 |
 
 ## Elsewhere
 
