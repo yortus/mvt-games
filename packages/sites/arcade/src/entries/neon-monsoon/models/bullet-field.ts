@@ -54,11 +54,8 @@ export interface BulletField<K extends string> {
      * own hit radius, or -1 for none. Finds one; it does not remove it.
      */
     findTouching: (x: number, y: number, radius: number) => number;
-    /**
-     * Mark every bullet touching a circle at (x, y) as grazed, and return how
-     * many had not been grazed before. Each bullet counts once.
-     */
-    markGrazed: (x: number, y: number, radius: number) => number;
+    /** The hit radius of the bullet at `index`. */
+    radiusOf: (index: number) => number;
 
     update: (deltaMs: number) => void;
 }
@@ -107,7 +104,6 @@ export function createBulletField<K extends string>(options: BulletFieldOptions<
     const turnMsLeft = new Float64Array(capacity);
     const ages = new Float64Array(capacity);
     const kindCodes = new Uint8Array(capacity);
-    const isGrazed = new Uint8Array(capacity);
 
     const minX = -margin;
     const maxX = width + margin;
@@ -127,6 +123,7 @@ export function createBulletField<K extends string>(options: BulletFieldOptions<
         angleOf: (index) => angles[index],
         kindOf: (index) => kinds[kindCodes[index]],
         ageOf: (index) => ages[index],
+        radiusOf: (index) => radiusOfCode[kindCodes[index]],
 
         fire(x, y, angle, kind, motion, speedScale = 1) {
             if (count === capacity) return false;
@@ -142,7 +139,6 @@ export function createBulletField<K extends string>(options: BulletFieldOptions<
             turnMsLeft[i] = motion.turnMs ?? Infinity;
             ages[i] = 0;
             kindCodes[i] = codeOf.get(kind) ?? 0;
-            isGrazed[i] = 0;
             vxs[i] = Math.cos(angle) * speed;
             vys[i] = Math.sin(angle) * speed;
             return true;
@@ -165,21 +161,6 @@ export function createBulletField<K extends string>(options: BulletFieldOptions<
                 if (dx * dx + dy * dy < reach * reach) return i;
             }
             return -1;
-        },
-
-        markGrazed(x, y, radius) {
-            let grazed = 0;
-            for (let i = 0; i < count; i++) {
-                if (isGrazed[i] === 1) continue;
-                const reach = radius + radiusOfCode[kindCodes[i]];
-                const dx = xs[i] - x;
-                const dy = ys[i] - y;
-                if (dx * dx + dy * dy < reach * reach) {
-                    isGrazed[i] = 1;
-                    grazed++;
-                }
-            }
-            return grazed;
         },
 
         update(deltaMs) {
@@ -229,7 +210,6 @@ export function createBulletField<K extends string>(options: BulletFieldOptions<
         turnMsLeft[index] = turnMsLeft[last];
         ages[index] = ages[last];
         kindCodes[index] = kindCodes[last];
-        isGrazed[index] = isGrazed[last];
     }
 }
 

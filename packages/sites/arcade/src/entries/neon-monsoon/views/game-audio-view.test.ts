@@ -3,11 +3,11 @@ import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio90PlayOptions, Audio90Sound } from 'audio90';
 import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
 import {
-    ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
-    EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, GRAZE, type ItemKind, POWER_UP, RESPAWN, SHIP_EXPLODE, SHOT, STAGE_CLEAR,
-    STAGE_THEME, WARNING,
+    ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, CHARGE_TONES, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
+    EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, type ItemKind, LOCK_TICK, LOCKED, POWER_UP, RESPAWN, RING_UP, SHIELD_HIT,
+    SHIP_EXPLODE, SHOT, STAGE_CLEAR, STAGE_THEME, VOLLEY_BURST, VOLLEY_CHARGED, VOLLEY_LAUNCH, WARNING,
 } from '../data';
-import type { BossPhase, ExplosionSize, GamePhase } from '../models';
+import type { BossPhase, ExplosionSize, GamePhase, VolleyPhase } from '../models';
 import { GameAudioView } from './game-audio-view';
 
 // The view is tested by what it asks of its chips: which songs and sounds it plays, and where. How a chip plays a
@@ -122,7 +122,7 @@ describe('GameAudioView', () => {
         expect(listPlayedOf(sfx, EXTEND)).toHaveLength(2);
     });
 
-    it('plays a sound for each kind of pickup, a gem, a graze and a bomb', () => {
+    it('plays a sound for each kind of pickup, a gem and a bomb', () => {
         const { sfx, state, tick } = setUp();
         const pickUp = (kind: ItemKind): void => {
             state.lastItemKind = kind;
@@ -132,13 +132,11 @@ describe('GameAudioView', () => {
         pickUp('power');
         pickUp('bomb');
         state.gemsCollected += 5;
-        state.grazes++;
         state.isBombing = true;
         tick();
         expect(listPlayedOf(sfx, POWER_UP)).toHaveLength(1);
         expect(listPlayedOf(sfx, BOMB_PICKUP)).toHaveLength(1);
         expect(listPlayedOf(sfx, GEM)).toHaveLength(1);
-        expect(listPlayedOf(sfx, GRAZE)).toHaveLength(1);
         expect(listPlayedOf(sfx, BOMB)).toHaveLength(1);
     });
 
@@ -195,19 +193,101 @@ describe('GameAudioView', () => {
 
     it('plays each sound where it happens: the ship\'s where the ship is, the boss\'s where the boss is, and each explosion where it went off', () => {
         const { sfx, state, tick } = setUp({ shipX: 0, bossX: ARENA / 2, lastExplosionX: ARENA });
-        state.grazes++;
+        state.volleyShieldHits++;
         state.lastExplosionSize = 'small';
         state.explosionsStarted++;
         state.bossPhase = 'breaking';
         state.isBombing = true;
         tick();
         const panOf = (effect: Audio90Sound) => listPlayOptionsOf(sfx, effect)[0]?.pan;
-        expect(panOf(GRAZE)).toBeLessThan(-0.5);
+        expect(panOf(SHIELD_HIT)).toBeLessThan(-0.5);
         expect(panOf(EXPLODE_SMALL)).toBeGreaterThan(0.5);
         expect(panOf(ATTACK_BROKEN)).toBeCloseTo(0, 9);
         // A bomb fills the screen, so it plays in the middle
         expect(listPlayedOf(sfx, BOMB)).toHaveLength(1);
         expect(panOf(BOMB)).toBeUndefined();
+    });
+
+    it('chimes as the volley charges, ticks faster as it locks on, chirps once locked, then rushes out and bursts', () => {
+        const { sfx, state, tick } = setUp({ volleyBurstX: ARENA });
+        state.volleyPhase = 'ready';
+        tick();
+        expect(listPlayedOf(sfx, VOLLEY_CHARGED)).toHaveLength(1);
+
+        state.volleyPhase = 'locking';
+        const tickTimes: number[] = [];
+        for (let i = 0; i < 60; i++) {
+            state.volleyLockProgress = i / 60;
+            const before = listPlayedOf(sfx, LOCK_TICK).length;
+            tick();
+            if (listPlayedOf(sfx, LOCK_TICK).length > before) tickTimes.push(i);
+        }
+        expect(tickTimes.length).toBeGreaterThan(4);
+        const firstGap = tickTimes[1] - tickTimes[0];
+        const lastGap = tickTimes[tickTimes.length - 1] - tickTimes[tickTimes.length - 2];
+        expect(lastGap).toBeLessThan(firstGap);
+
+        state.volleyPhase = 'locked';
+        state.volleyLockProgress = 1;
+        tick();
+        expect(listPlayedOf(sfx, LOCKED)).toHaveLength(1);
+        vi.clearAllMocks();
+        tickFor(tick, 500);
+        expect(listPlayedOf(sfx, LOCK_TICK)).toHaveLength(0);
+
+        state.volleyPhase = 'flying';
+        state.volleysFired++;
+        tick();
+        expect(listPlayedOf(sfx, VOLLEY_LAUNCH)).toHaveLength(1);
+        state.volleyPhase = 'charging';
+        state.volleyBursts++;
+        tick();
+        expect(listPlayOptionsOf(sfx, VOLLEY_BURST)[0]?.pan).toBeGreaterThan(0.5);
+        expect(listPlayedOf(sfx, VOLLEY_CHARGED)).toHaveLength(0);
+    });
+
+    it('sounds a tone on and on while the volley charges, rising as the bar fills, and none while it does not', () => {
+        const { sfx, state, tick } = setUp();
+        state.isVolleyFilling = true;
+        tickFor(tick, 500);
+        const lowTones = listPlayedOf(sfx, CHARGE_TONES[0]).length;
+        expect(lowTones).toBeGreaterThan(5);
+
+        state.volleyCharge = 1;
+        tickFor(tick, 200);
+        expect(listPlayedOf(sfx, CHARGE_TONES[CHARGE_TONES.length - 1]).length).toBeGreaterThan(0);
+
+        state.isVolleyFilling = false;
+        vi.clearAllMocks();
+        tickFor(tick, 500);
+        for (let i = 0; i < CHARGE_TONES.length; i++) expect(listPlayedOf(sfx, CHARGE_TONES[i])).toHaveLength(0);
+    });
+
+    it('sweeps up as the ring forms, and tinks as it stops each bullet', () => {
+        const { sfx, state, tick } = setUp();
+        state.isVolleyRingUp = true;
+        tick();
+        expect(listPlayedOf(sfx, RING_UP)).toHaveLength(1);
+        state.volleyShieldHits++;
+        tick();
+        state.volleyShieldHits++;
+        tick();
+        expect(listPlayedOf(sfx, SHIELD_HIT)).toHaveLength(2);
+        expect(listPlayedOf(sfx, RING_UP)).toHaveLength(1);
+    });
+
+    it('plays no chime for a full bar that a lock let go of', () => {
+        const { sfx, state, tick } = setUp({ volleyPhase: 'locking' });
+        state.volleyPhase = 'ready';
+        tick();
+        expect(listPlayedOf(sfx, VOLLEY_CHARGED)).toHaveLength(0);
+    });
+
+    it('plays nothing for the counts\' starting values', () => {
+        const { sfx } = setUp({
+            volleyShieldHits: 4, explosionsStarted: 12, itemsCollected: 3, gemsCollected: 90, extendsEarned: 1, volleysFired: 2, volleyBursts: 2,
+        });
+        expect(listPlayed(sfx)).toHaveLength(0);
     });
 });
 
@@ -227,12 +307,20 @@ interface State {
     bossMsSinceHit: number;
     isFiring: boolean;
     isFocused: boolean;
-    grazes: number;
     explosionsStarted: number;
     lastExplosionSize: ExplosionSize | undefined;
     itemsCollected: number;
     lastItemKind: ItemKind | undefined;
     gemsCollected: number;
+    isVolleyFilling: boolean;
+    volleyCharge: number;
+    isVolleyRingUp: boolean;
+    volleyShieldHits: number;
+    volleyPhase: VolleyPhase;
+    volleyLockProgress: number;
+    volleysFired: number;
+    volleyBursts: number;
+    volleyBurstX: number;
     shipX: number;
     bossX: number;
     lastExplosionX: number;
@@ -246,8 +334,10 @@ interface State {
 function setUp(initial: Partial<State> = {}) {
     const state: State = {
         phase: 'playing', extendsEarned: 0, isBombing: false, warningElapsedMs: -1, bossPhase: 'absent',
-        bossMsSinceHit: Infinity, isFiring: false, isFocused: false, grazes: 0, explosionsStarted: 0,
+        bossMsSinceHit: Infinity, isFiring: false, isFocused: false, explosionsStarted: 0,
         lastExplosionSize: undefined, itemsCollected: 0, lastItemKind: undefined, gemsCollected: 0,
+        isVolleyFilling: false, volleyCharge: 0, isVolleyRingUp: false, volleyShieldHits: 0,
+        volleyPhase: 'charging', volleyLockProgress: 0, volleysFired: 0, volleyBursts: 0, volleyBurstX: ARENA / 2,
         shipX: ARENA / 2, bossX: ARENA / 2, lastExplosionX: ARENA / 2, ...initial,
     };
     // The chips are spied on before the view is made, since the view starts the stage's theme as it is made
@@ -264,12 +354,20 @@ function setUp(initial: Partial<State> = {}) {
         bossMsSinceHit: () => state.bossMsSinceHit,
         isFiring: () => state.isFiring,
         isFocused: () => state.isFocused,
-        grazes: () => state.grazes,
         explosionsStarted: () => state.explosionsStarted,
         lastExplosionSize: () => state.lastExplosionSize,
         itemsCollected: () => state.itemsCollected,
         lastItemKind: () => state.lastItemKind,
         gemsCollected: () => state.gemsCollected,
+        isVolleyFilling: () => state.isVolleyFilling,
+        volleyCharge: () => state.volleyCharge,
+        isVolleyRingUp: () => state.isVolleyRingUp,
+        volleyShieldHits: () => state.volleyShieldHits,
+        volleyPhase: () => state.volleyPhase,
+        volleyLockProgress: () => state.volleyLockProgress,
+        volleysFired: () => state.volleysFired,
+        volleyBursts: () => state.volleyBursts,
+        volleyBurstX: () => state.volleyBurstX,
         shipX: () => state.shipX,
         bossX: () => state.bossX,
         lastExplosionX: () => state.lastExplosionX,

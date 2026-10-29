@@ -11,4 +11,5 @@ export { createBossModel, type BossModel, type BossModelOptions, type BossPhase,
 export { createStageModel, type StageModel, type StageModelOptions } from './stage-model';
 export { createGameModel, type GameModel, type GameModelOptions, type SavedGame } from './game-model';
 export { createScoreModel, type ScoreModel } from './score-model';
+export { createVolleyModel, type VolleyModel, type VolleyModelOptions, type VolleyPhase } from './volley-model';
 export { STEP_MS } from './model-constants';

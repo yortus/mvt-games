@@ -15,4 +15,7 @@ export { ExplosionView, type ExplosionViewBindings } from './explosion-view';
 export { BombFlashView, type BombFlashViewBindings } from './bomb-flash-view';
 export { BossHealthView, type BossHealthViewBindings } from './boss-health-view';
 export { HudView, type HudViewBindings } from './hud-view';
+export { LockOnView, type LockOnViewBindings } from './lock-on-view';
+export { VolleyRingView, type VolleyRingViewBindings } from './volley-ring-view';
+export { VolleyView, type VolleyViewBindings } from './volley-view';
 export { WarningView, type WarningViewBindings } from './warning-view';

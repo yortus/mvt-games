@@ -4,11 +4,11 @@ import type { Audio90Sound } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import {
-    ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
-    EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, GRAZE, type ItemKind, POWER_UP, RESPAWN, SHIP_EXPLODE, SHOT, STAGE_CLEAR,
-    STAGE_THEME, WARNING,
+    ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, CHARGE_TONES, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
+    EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, type ItemKind, LOCK_TICK, LOCKED, POWER_UP, RESPAWN, RING_UP, SHIELD_HIT,
+    SHIP_EXPLODE, SHOT, STAGE_CLEAR, STAGE_THEME, VOLLEY_BURST, VOLLEY_CHARGED, VOLLEY_LAUNCH, WARNING,
 } from '../data';
-import type { BossPhase, ExplosionSize, GamePhase } from '../models';
+import type { BossPhase, ExplosionSize, GamePhase, VolleyPhase } from '../models';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -40,8 +40,6 @@ export interface GameAudioViewBindings {
     readonly isFiring: () => boolean;
     /** Whether the ship is focused, flying slowly and firing a narrow column. */
     readonly isFocused: () => boolean;
-    /** Bullets grazed this game. The view plays a bell each time the count rises. */
-    readonly grazes: () => number;
     /** Explosions started this game. The view plays an explosion each time the count rises. */
     readonly explosionsStarted: () => number;
     /** The size of the explosion started last. It chooses which explosion the view plays. */
@@ -52,6 +50,24 @@ export interface GameAudioViewBindings {
     readonly lastItemKind: () => ItemKind | undefined;
     /** Gems picked up this game. The view plays a sparkle each time the count rises. */
     readonly gemsCollected: () => number;
+    /** Whether the volley's bar filled in the last step. While it does, the view sounds a tone, again and again. */
+    readonly isVolleyFilling: () => boolean;
+    /** How full the volley's bar is, from 0 to 1. The higher it is, the higher the tone. */
+    readonly volleyCharge: () => number;
+    /** Whether the volley's shots circle the ship. The view sweeps up as the ring forms. */
+    readonly isVolleyRingUp: () => boolean;
+    /** Bullets the volley's ring has stopped this game. The view plays a tink each time the count rises. */
+    readonly volleyShieldHits: () => number;
+    /** The volley's phase. The view chimes as its bar fills, ticks while it locks on, and chirps once it is locked. */
+    readonly volleyPhase: () => VolleyPhase;
+    /** How far the volley's lock has closed, from 0 to 1. The ticks come faster as it closes. */
+    readonly volleyLockProgress: () => number;
+    /** Volleys fired this game. The view plays a rush each time the count rises. */
+    readonly volleysFired: () => number;
+    /** Volleys that have burst this game. The view plays a crackle each time the count rises. */
+    readonly volleyBursts: () => number;
+    /** Where across the arena the last burst was. Bursts play there. */
+    readonly volleyBurstX: () => number;
     /** Where across the arena the ship is, from 0 to `arenaWidth`. The ship's sounds, and the pickups', play there. */
     readonly shipX: () => number;
     /** Where across the arena the boss is. Its ticks and its broken attacks play there. */
@@ -72,20 +88,25 @@ export interface GameAudioViewBindings {
  * brings a faster theme. A jingle plays over each stage's tally, a finale
  * plays when every loop is cleared, and a slow tune plays when the game is
  * over. Over the music, the view plays the guns' soft blips while the ship
- * flies, a bell for each graze, explosions by their size, pickups, bombs,
- * and the ship's loss and return. It also plays a break as each of the
- * boss's attacks ends, and a tick while shots land on the boss. Each sound
- * plays where it happens across the arena: the ship's, the pickups' and the
- * grazes' where the ship is, the boss's where the boss is, and each
- * explosion where it went off.
+ * flies, explosions by their size, pickups, bombs, the volley, and the
+ * ship's loss and return. While the volley's bar fills, a soft tone sounds
+ * on, rising as the bar fills, and the volley chimes once it is full. Its
+ * ring sweeps up as it forms around the ship, and tinks as it stops each
+ * bullet. The lock ticks faster and faster as it closes, and chirps once
+ * it is locked. The volley rushes out when released, and crackles as it
+ * bursts. The view also plays a break as each of the boss's attacks ends,
+ * and a tick while shots land on the boss. Each sound plays where it
+ * happens across the arena: the ship's, the pickups' and the volley's where
+ * the ship is, the volley's burst where it bursts, the boss's where the
+ * boss is, and each explosion where it went off.
  *
- * The metronomes that time the guns' blips and the boss's ticks are the
- * view's presentation state. They advance in the view's update step, so they
- * stop while the game is paused. The chip's own sequencer keeps the song's
- * place, and it pauses with the game too. The warning's repeats follow the
- * model's warning timer instead, so they stop when the game stops. The
- * refresh step plays a sound each time a count rises, the metronomes' and the
- * model's alike.
+ * The metronomes that time the guns' blips, the boss's ticks, the charging
+ * tone and the lock's ticks are the view's presentation state. They advance
+ * in the view's update step, so they stop while the game is paused. The
+ * chip's own sequencer keeps the song's place, and it pauses with the game
+ * too. The warning's repeats follow the model's warning timer instead, so
+ * they stop when the game stops. The refresh step plays a sound each time a
+ * count rises, the metronomes' and the model's alike.
  */
 export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { music, sfx, arenaWidth } = bindings;
@@ -95,6 +116,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     // Presentation state: the repeating sounds. The chip keeps the song's place
     const guns = createMetronome();
     const hullTicks = createMetronome();
+    const lockTicks = createMetronome();
+    const chargeTones = createMetronome();
 
     const watcher = watch({
         phase: bindings.phase,
@@ -104,12 +127,18 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         sirens: () => countSirens(bindings.warningElapsedMs()),
         bossPhase: bindings.bossPhase,
         isFocused: bindings.isFocused,
-        grazes: bindings.grazes,
         explosions: bindings.explosionsStarted,
         items: bindings.itemsCollected,
         gems: bindings.gemsCollected,
         blips: () => guns.count,
         ticks: () => hullTicks.count,
+        volleyPhase: bindings.volleyPhase,
+        volleys: bindings.volleysFired,
+        bursts: bindings.volleyBursts,
+        lockTicks: () => lockTicks.count,
+        chargeTones: () => chargeTones.count,
+        isRingUp: bindings.isVolleyRingUp,
+        shieldHits: bindings.volleyShieldHits,
     });
     // The first poll sees every value as new, not as a change. Polling here
     // makes the first refresh hear the guns' first blip, which the first
@@ -127,6 +156,10 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         guns.update(deltaMs);
         hullTicks.periodMs = bindings.bossMsSinceHit() < HULL_TICK_WINDOW_MS ? HULL_TICK_MS : 0;
         hullTicks.update(deltaMs);
+        lockTicks.periodMs = bindings.volleyPhase() === 'locking' ? computeLockTickMs(bindings.volleyLockProgress()) : 0;
+        lockTicks.update(deltaMs);
+        chargeTones.periodMs = bindings.isVolleyFilling() ? CHARGE_TONE_MS : 0;
+        chargeTones.update(deltaMs);
     }
 
     function refresh(): void {
@@ -147,10 +180,17 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.isFocused.changed && w.isFocused.value && w.phase.value === 'playing') sfx.play(FOCUS, { pan: toPan(bindings.shipX()) });
         if (w.items.increased) sfx.play(bindings.lastItemKind() === 'power' ? POWER_UP : BOMB_PICKUP, { pan: toPan(bindings.shipX()) });
         if (w.gems.increased) sfx.play(GEM, { pan: toPan(bindings.shipX()) });
-        if (w.grazes.increased) sfx.play(GRAZE, { pan: toPan(bindings.shipX()) });
 
         if (w.blips.increased) sfx.play(bindings.isFocused() ? FOCUSED_SHOT : SHOT, { pan: toPan(bindings.shipX()) });
         if (w.ticks.increased) sfx.play(BOSS_HIT, { pan: toPan(bindings.bossX()) });
+
+        if (w.chargeTones.increased && bindings.isVolleyFilling()) sfx.play(chooseChargeTone(bindings.volleyCharge()), { pan: toPan(bindings.shipX()) });
+        if (w.volleyPhase.changed) playVolleyPhase(w.volleyPhase.value, w.volleyPhase.previous);
+        if (w.isRingUp.changed && w.isRingUp.value) sfx.play(RING_UP, { pan: toPan(bindings.shipX()) });
+        if (w.shieldHits.increased) sfx.play(SHIELD_HIT, { pan: toPan(bindings.shipX()) });
+        if (w.lockTicks.increased && w.volleyPhase.value === 'locking') sfx.play(LOCK_TICK, { pan: toPan(bindings.shipX()) });
+        if (w.volleys.increased) sfx.play(VOLLEY_LAUNCH, { pan: toPan(bindings.shipX()) });
+        if (w.bursts.increased) sfx.play(VOLLEY_BURST, { pan: toPan(bindings.volleyBurstX()) });
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {
@@ -195,6 +235,12 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         }
     }
 
+    function playVolleyPhase(phase: VolleyPhase, previous: VolleyPhase | undefined): void {
+        // The bar fills only while it is charging, so a full bar is never heard twice
+        if (phase === 'ready' && previous === 'charging') sfx.play(VOLLEY_CHARGED, { pan: toPan(bindings.shipX()) });
+        else if (phase === 'locked') sfx.play(LOCKED, { pan: toPan(bindings.shipX()) });
+    }
+
     /** The pan of a place `x` across the arena: the edges a little short of hard left and right, so no sound leaves one ear alone. */
     function toPan(x: number): number {
         return Math.max(-1, Math.min(1, (x / arenaWidth) * 2 - 1)) * PAN_SPREAD;
@@ -226,6 +272,24 @@ const HULL_TICK_WINDOW_MS = 100;
  */
 function countSirens(warningElapsedMs: number): number {
     return warningElapsedMs < 0 ? 0 : Math.floor(warningElapsedMs / SIREN_MS) + 1;
+}
+
+/** The time between the charging tone's notes, in ms. Each note lasts as long, so the tone sounds on. */
+const CHARGE_TONE_MS = 50;
+
+/** Returns the charging tone's note for a bar `charge` full, from 0 to 1: the higher the charge, the higher the note. */
+function chooseChargeTone(charge: number): Audio90Sound {
+    const step = Math.round(Math.max(0, Math.min(1, charge)) * (CHARGE_TONES.length - 1));
+    return CHARGE_TONES[step];
+}
+
+/** The time between the lock's ticks, in ms: slow as the lock sets out, and quick as it closes. */
+const LOCK_TICK_SLOW_MS = 160;
+const LOCK_TICK_FAST_MS = 50;
+
+/** Returns the time between the lock's ticks when it has closed `progress` of the way, from 0 to 1. */
+function computeLockTickMs(progress: number): number {
+    return LOCK_TICK_SLOW_MS + (LOCK_TICK_FAST_MS - LOCK_TICK_SLOW_MS) * progress;
 }
 
 /** Returns the sound of an explosion of this size. */

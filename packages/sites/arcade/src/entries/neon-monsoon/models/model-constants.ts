@@ -23,7 +23,10 @@ export const SHIP_SPEED = 150;
 export const SHIP_FOCUSED_SPEED = 60;
 /** The hitbox: a small circle at the cockpit, far smaller than the sprite. */
 export const SHIP_HIT_RADIUS = 2;
-/** A bullet passing within this distance, without hitting, is a graze. */
+/**
+ * A bullet passing within this distance, without hitting, is a graze. Time
+ * spent with any bullet this close charges the volley.
+ */
 export const SHIP_GRAZE_RADIUS = 14;
 /** How close the ship's centre may come to the arena's edges. */
 export const SHIP_EDGE_MARGIN = 8;
@@ -48,6 +51,42 @@ export const SHOT_HIT_RADII: Readonly<Record<ShotKind, number>> = {
     'shot': 3,
     'shot-focused': 3,
 };
+
+// ---------------------------------------------------------------------------
+// Volley
+// ---------------------------------------------------------------------------
+
+/** How long the ship must spend within grazing distance of bullets to fill the volley's bar. */
+export const VOLLEY_CHARGE_MS = 1000;
+/** How long the ship must stay focused, with the bar full, to lock onto a target. */
+export const VOLLEY_LOCK_MS = 1000;
+/** From the volley's release to its burst on the target. */
+export const VOLLEY_FLIGHT_MS = 900;
+/**
+ * The burst's damage to each enemy it reaches, with every shot of the
+ * volley. It kills anything but a gunship, and takes over a third of a
+ * gunship's health: about 1.4 s of the focused shot at full power. A volley
+ * that has lost shots to bullets does a share of it for each shot left.
+ */
+export const VOLLEY_DAMAGE = 200;
+/** The burst's damage to the boss, with every shot. It is less, since the bar fills fastest against the boss. */
+export const VOLLEY_BOSS_DAMAGE = 100;
+/** How many shots a full volley has. */
+export const VOLLEY_SHOTS = 12;
+/**
+ * How far from the ship the volley's shots circle while it is charged and
+ * the ship is focused. There they shield the ship: a shot that touches a
+ * bullet destroys it, and is lost.
+ */
+export const VOLLEY_RING_RADIUS = 16;
+/** How long the ring takes to spread out from the ship to its full radius. */
+export const VOLLEY_RING_FORM_MS = 150;
+/** How fast the ring turns, in radians a second: a little over a turn a second. */
+export const VOLLEY_RING_SPIN = 7;
+/** A ring shot's hit radius. */
+export const VOLLEY_SHOT_RADIUS = 2;
+/** How far the burst reaches past the edge of whatever it hits. */
+export const VOLLEY_BURST_RADIUS = 10;
 
 // ---------------------------------------------------------------------------
 // Bullets and gems
@@ -125,7 +164,6 @@ export const ENEMY_POINTS: Readonly<Record<EnemyKind, number>> = {
 export const CHAIN_WINDOW_MS = 1500;
 /** A kill scores its points times the chain, up to this. */
 export const MAX_CHAIN_MULTIPLIER = 32;
-export const GRAZE_POINTS = 10;
 /** Per gem, times the loop. */
 export const GEM_POINTS = 10;
 /** For an item collected when it can do nothing more, at full power or bombs. */

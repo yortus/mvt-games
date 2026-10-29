@@ -60,6 +60,7 @@ import { createRandom } from './random';
 import { createScoreModel, type ScoreModel } from './score-model';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createStageModel, type StageModel } from './stage-model';
+import { createVolleyModel, type VolleyModel } from './volley-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -67,7 +68,8 @@ import { createStageModel, type StageModel } from './stage-model';
 
 /**
  * The whole game. It owns every other model and the rules between them:
- * what hits what, scoring, bombs, lives, the boss's attacks and the loops.
+ * what hits what, scoring, grazes, bombs, the volley, lives, the boss's
+ * attacks and the loops.
  *
  * **A fixed step.** `update(deltaMs)` collects time and advances the game in
  * whole steps of `STEP_MS` (1/60 s), so every child model always sees the
@@ -111,8 +113,10 @@ export interface GameModel {
     /** Gems picked up this game. */
     readonly gemsCollected: number;
 
-    /** Score, high score, chain and grazes. */
+    /** Score, high score and chain. */
     readonly scoring: ScoreModel;
+    /** The volley's bar, its ring of shots, its lock and its flight. */
+    readonly volley: VolleyModel;
     readonly ship: ShipModel;
     readonly stage: StageModel;
     readonly boss: BossModel;
@@ -129,7 +133,11 @@ export interface GameModel {
     headingX: XDirection;
     /** Which way up or down the arena the player is flying the ship, if either. */
     headingY: YDirection;
-    /** Whether the player is focusing: the ship flies slowly, shows its hitbox, and fires the narrow column. */
+    /**
+     * Whether the player is focusing: the ship flies slowly, shows its
+     * hitbox, and fires the narrow column. With the volley's bar full, it
+     * also raises the volley's ring, and locks the volley on.
+     */
     isFocusing: boolean;
     /**
      * Asks for a bomb. It goes off at the next step, if the game is being
@@ -137,6 +145,12 @@ export interface GameModel {
      * the request is dropped, not kept for later.
      */
     dropBomb: () => void;
+    /**
+     * Asks to release the volley. It flies at the next step, if the game is
+     * being played and the volley is locked on. If not, the request is
+     * dropped, not kept for later.
+     */
+    releaseVolley: () => void;
     /** Asks for a new game. It starts at the next update, if the last game is over. */
     startNewRun: () => void;
 
@@ -144,9 +158,9 @@ export interface GameModel {
     reset: () => void;
     /**
      * Returns the game as a value JSON can hold, for `load` to restore. A
-     * game is saved as of the start of its loop, with the score and grazes
-     * it had then, and no more lives, bombs or power than it has now, so
-     * that leaving and resuming a game never helps it. Nothing won during
+     * game is saved as of the start of its loop, with the score it had
+     * then, and no more lives, bombs or power than it has now, so that
+     * leaving and resuming a game never helps it. Nothing won during
      * the loop is kept, since it is won again. A loop just cleared is saved
      * as the start of the next. A game still on its first loop has nothing
      * worth resuming, so returns undefined, as it does once the last life is
@@ -163,12 +177,11 @@ export interface GameModel {
     update: (deltaMs: number) => void;
 }
 
-/** A game part way through, as `save` returns it: the loop to start, with its score, grazes, lives, bombs and power. */
+/** A game part way through, as `save` returns it: the loop to start, with its score, lives, bombs and power. */
 export interface SavedGame {
     readonly version: typeof SAVED_GAME_VERSION;
     readonly loop: number;
     readonly score: number;
-    readonly grazeCount: number;
     readonly lives: number;
     readonly bombs: number;
     readonly power: number;
@@ -211,6 +224,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     const groundEnemies = createSlotList<EnemyModel>({ maxSlots: MAX_ENEMIES });
     const items = createSlotList<ItemModel>({ maxSlots: MAX_ITEMS });
     const explosions = createSlotList<ExplosionModel>({ maxSlots: MAX_EXPLOSIONS });
+    const volley = createVolleyModel({ airEnemies, groundEnemies, boss, bullets: enemyBullets, ship });
 
     let phase: GamePhase = 'playing';
     let phaseMs = 0;
@@ -236,6 +250,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let isAttackClean = true;
     let isNewRunRequested = false;
     let isBombRequested = false;
+    let isVolleyReleaseRequested = false;
     /** The game as this loop started, which a save keeps. The loop's own points are won again on resuming. */
     let loopStart = checkpoint();
     /** The extra lives given by this loop's start. Those given since are won again on resuming. */
@@ -297,6 +312,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return gemsCollected;
         },
         scoring,
+        volley,
         ship,
         stage,
         boss,
@@ -313,6 +329,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
         dropBomb() {
             isBombRequested = true;
+        },
+
+        releaseVolley() {
+            isVolleyReleaseRequested = true;
         },
 
         startNewRun() {
@@ -332,6 +352,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             itemsCollected = 0;
             lastItemKind = undefined;
             gemsCollected = 0;
+            volley.reset();
             ship.reset();
             startLoop();
         },
@@ -399,9 +420,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- One step ----------------------------------------------------------
 
     function step(): void {
-        // A bomb asked for goes off at this step, if it can, or not at all
+        // A bomb or a volley asked for goes off at this step, if it can, or not at all
         const isBombDue = isBombRequested;
         isBombRequested = false;
+        const isVolleyReleaseDue = isVolleyReleaseRequested;
+        isVolleyReleaseRequested = false;
         if (phase === 'game-over' || phase === 'all-clear') return;
         stepCount++;
         phaseMs += STEP_MS;
@@ -420,6 +443,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
         updateEach(items);
         updateEach(explosions);
         scoring.update(STEP_MS);
+        // The volley's ring stops bullets where they are now, and the volley
+        // locks onto, and bursts on, enemies where they are now
+        if (phase === 'playing' && isVolleyReleaseDue) volley.release();
+        volley.update(STEP_MS);
         advanceTimers();
 
         // Then apply the rules between them.
@@ -591,7 +618,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
         const y = ship.y;
 
         if (!ship.isInvulnerable) {
-            scoring.addGrazes(enemyBullets.markGrazed(x, y, SHIP_GRAZE_RADIUS));
+            // The volley charges for as long as any bullet is within grazing distance
+            if (volley.phase === 'charging' && enemyBullets.findTouching(x, y, SHIP_GRAZE_RADIUS) >= 0) {
+                volley.addGrazeTime(STEP_MS);
+            }
             if (enemyBullets.findTouching(x, y, ship.hitRadius) >= 0 || isRammed(x, y)) {
                 loseLife();
                 return;
@@ -621,6 +651,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         ship.explode();
         lives--;
         scoring.breakChain();
+        volley.empty();
         bombMsLeft = 0;
         isAttackClean = false;
         enemyBullets.clear();
@@ -716,8 +747,10 @@ export function createGameModel(options: GameModelOptions): GameModel {
         gems.clear();
         scoring.breakChain();
         bombMsLeft = 0;
-        // A new game, or a game loaded, starts with no bomb asked for
+        volley.empty();
+        // A new game, or a game loaded, starts with no bomb or volley asked for
         isBombRequested = false;
+        isVolleyReleaseRequested = false;
         warningMsLeft = 0;
         if (!ship.isAlive) ship.respawn(0);
         enterPhase('playing');
@@ -731,7 +764,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
             version: SAVED_GAME_VERSION,
             loop,
             score: scoring.score,
-            grazeCount: scoring.grazeCount,
             lives,
             bombs,
             power: ship.power,
@@ -777,25 +809,28 @@ const BODY_FRACTION = 0.6;
 
 const REVENGE_PATTERNS = [REVENGE_RING];
 
-/** Marks the shape of a saved game. A change to the shape changes it, so older saves are not loaded. */
+/**
+ * Marks the shape of a saved game. A change to the shape that older saves
+ * don't fit changes it, so they are not loaded. Older saves may hold more than
+ * is read now, such as the graze count they once kept.
+ */
 const SAVED_GAME_VERSION = 1;
 
 /** The most lives a game can have: those it starts with, and one for each extend score. */
 const MAX_LIVES = INITIAL_LIVES + EXTEND_SCORES.length;
 
 /**
- * Whether `value` is a saved game: one of the loops, a score and grazes from
- * 0, from 1 life to the most a game can have, and bombs and power within
+ * Whether `value` is a saved game: one of the loops, a score from 0, from 1
+ * life to the most a game can have, and bombs and power within
  * their limits.
  */
 function isSavedGame(value: unknown): value is SavedGame {
     // typeof null is 'object' too
     if (typeof value !== 'object' || value === null) return false;
-    const { version, loop, score, grazeCount, lives, bombs, power } = value as Record<string, unknown>;
+    const { version, loop, score, lives, bombs, power } = value as Record<string, unknown>;
     return version === SAVED_GAME_VERSION
         && isWholeNumber(loop) && loop >= 1 && loop <= LOOP_COUNT
         && isWholeNumber(score)
-        && isWholeNumber(grazeCount)
         && isWholeNumber(lives) && lives >= 1 && lives <= MAX_LIVES
         && isWholeNumber(bombs) && bombs <= MAX_BOMBS
         && isWholeNumber(power) && power >= 1 && power <= MAX_POWER;

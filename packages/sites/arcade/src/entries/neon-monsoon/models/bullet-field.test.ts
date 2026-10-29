@@ -3,10 +3,12 @@ import { createBulletField } from './bullet-field';
 
 type TestKind = 'small' | 'large';
 
+const HIT_RADII = { small: 1, large: 5 };
+
 function makeField(capacity = 8) {
     return createBulletField<TestKind>({
         capacity,
-        hitRadii: { small: 1, large: 5 },
+        hitRadii: HIT_RADII,
         width: 100,
         height: 100,
         margin: 10,
@@ -120,22 +122,13 @@ describe('BulletField', () => {
         });
     });
 
-    describe('markGrazed', () => {
-        it('counts each bullet once, however long it stays close', () => {
+    describe('radiusOf', () => {
+        it('gives each bullet the hit radius of its kind', () => {
             const field = makeField();
-            field.fire(50, 50, DOWN, 'small', { speed: 0 });
-            field.fire(90, 90, DOWN, 'small', { speed: 0 });
-            expect(field.markGrazed(50, 55, 10)).toBe(1);
-            expect(field.markGrazed(50, 55, 10)).toBe(0);
-        });
-
-        it('keeps the grazed mark with the bullet when it moves index', () => {
-            const field = makeField();
-            field.fire(0, 0, DOWN, 'small', { speed: 0 });
-            field.fire(50, 50, DOWN, 'small', { speed: 0 });
-            field.markGrazed(50, 50, 5);
-            field.remove(0);
-            expect(field.markGrazed(50, 50, 5)).toBe(0);
+            field.fire(50, 50, DOWN, 'small', STRAIGHT);
+            field.fire(50, 50, DOWN, 'large', STRAIGHT);
+            expect(field.radiusOf(0)).toBe(HIT_RADII.small);
+            expect(field.radiusOf(1)).toBe(HIT_RADII.large);
         });
     });
 });

@@ -53,7 +53,11 @@ export const load = definePixiLoader(async () => {
                     onXDirectionChanged: (dir) => { gameModel.headingX = dir; },
                     onYDirectionChanged: (dir) => { gameModel.headingY = dir; },
                     onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.dropBomb(); },
-                    onSecondaryButtonChanged: (isDown) => { gameModel.isFocusing = isDown; },
+                    // Letting go of Focus also releases the volley, if it is locked on
+                    onSecondaryButtonChanged: (isDown) => {
+                        gameModel.isFocusing = isDown;
+                        if (!isDown) gameModel.releaseVolley();
+                    },
                     onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };

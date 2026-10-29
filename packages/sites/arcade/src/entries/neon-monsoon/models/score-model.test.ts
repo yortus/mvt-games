@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN_WINDOW_MS, EXTEND_SCORES, GRAZE_POINTS, MAX_CHAIN_MULTIPLIER } from './model-constants';
+import { CHAIN_WINDOW_MS, EXTEND_SCORES, MAX_CHAIN_MULTIPLIER } from './model-constants';
 import { createScoreModel } from './score-model';
 
 describe('ScoreModel', () => {
@@ -30,13 +30,6 @@ describe('ScoreModel', () => {
         expect(scoring.score - before).toBe(MAX_CHAIN_MULTIPLIER);
     });
 
-    it('counts grazes', () => {
-        const scoring = createScoreModel();
-        scoring.addGrazes(3);
-        expect(scoring.grazeCount).toBe(3);
-        expect(scoring.score).toBe(3 * GRAZE_POINTS);
-    });
-
     it('earns an extra life at each extend score, once', () => {
         const scoring = createScoreModel();
         scoring.addPoints(EXTEND_SCORES[0] - 1);
@@ -56,12 +49,11 @@ describe('ScoreModel', () => {
         expect(scoring.extendsEarned).toBe(0);
     });
 
-    it('restores a saved score and graze count, with the extra lives the score has passed', () => {
+    it('restores a saved score, with the extra lives the score has passed', () => {
         const scoring = createScoreModel();
         scoring.addKill(10);
-        scoring.restore({ score: EXTEND_SCORES[0], grazeCount: 7 });
+        scoring.restore({ score: EXTEND_SCORES[0] });
         expect(scoring.score).toBe(EXTEND_SCORES[0]);
-        expect(scoring.grazeCount).toBe(7);
         expect(scoring.chain).toBe(0);
         expect(scoring.extendsEarned).toBe(1);
         expect(scoring.highScore).toBe(EXTEND_SCORES[0]);

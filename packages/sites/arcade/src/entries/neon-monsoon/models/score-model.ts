@@ -1,12 +1,12 @@
-import { CHAIN_WINDOW_MS, EXTEND_SCORES, GRAZE_POINTS, MAX_CHAIN_MULTIPLIER } from './model-constants';
+import { CHAIN_WINDOW_MS, EXTEND_SCORES, MAX_CHAIN_MULTIPLIER } from './model-constants';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * The score and everything that feeds it: the chain of quick kills, grazes,
- * the session's high score, and the extra lives that passing certain scores
+ * The score and everything that feeds it: the chain of quick kills, the
+ * session's high score, and the extra lives that passing certain scores
  * earns. The game model decides what scores; this keeps the arithmetic.
  */
 export interface ScoreModel {
@@ -17,7 +17,6 @@ export interface ScoreModel {
     readonly chain: number;
     /** The time left to extend the chain, from 1 down to 0. */
     readonly chainFraction: number;
-    readonly grazeCount: number;
     /**
      * Extra lives earned by passing `EXTEND_SCORES` this game. Only ever goes
      * up; the game model gives a life each time it does.
@@ -25,8 +24,6 @@ export interface ScoreModel {
     readonly extendsEarned: number;
     /** A kill worth `points`, multiplied by the chain it extends. */
     addKill: (points: number) => void;
-    /** Bullets grazed this step, at `GRAZE_POINTS` each. */
-    addGrazes: (count: number) => void;
     /** Add points as they are, not multiplied by the chain: gems, bonuses, spare items. */
     addPoints: (points: number) => void;
     /** End the chain, as when the ship is destroyed. */
@@ -34,11 +31,11 @@ export interface ScoreModel {
     /** Back to zero for a new game. The high score is kept. */
     reset: () => void;
     /**
-     * Start a game again from a saved score and graze count, with no chain
-     * running. The extra lives that the score has passed count as earned.
-     * The high score is kept, and rises to the score if it is lower.
+     * Start a game again from a saved score, with no chain running. The
+     * extra lives that the score has passed count as earned. The high score
+     * is kept, and rises to the score if it is lower.
      */
-    restore: (saved: { readonly score: number; readonly grazeCount: number }) => void;
+    restore: (saved: { readonly score: number }) => void;
     update: (deltaMs: number) => void;
 }
 
@@ -51,7 +48,6 @@ export function createScoreModel(): ScoreModel {
     let highScore = 0;
     let chain = 0;
     let chainMsLeft = 0;
-    let grazeCount = 0;
     let extendsEarned = 0;
 
     const model: ScoreModel = {
@@ -67,9 +63,6 @@ export function createScoreModel(): ScoreModel {
         get chainFraction() {
             return chainMsLeft / CHAIN_WINDOW_MS;
         },
-        get grazeCount() {
-            return grazeCount;
-        },
         get extendsEarned() {
             return extendsEarned;
         },
@@ -78,11 +71,6 @@ export function createScoreModel(): ScoreModel {
             chain = chainMsLeft > 0 ? chain + 1 : 1;
             chainMsLeft = CHAIN_WINDOW_MS;
             addPoints(points * Math.min(chain, MAX_CHAIN_MULTIPLIER));
-        },
-
-        addGrazes(count) {
-            grazeCount += count;
-            addPoints(count * GRAZE_POINTS);
         },
 
         addPoints,
@@ -94,14 +82,12 @@ export function createScoreModel(): ScoreModel {
 
         reset() {
             score = 0;
-            grazeCount = 0;
             extendsEarned = 0;
             model.breakChain();
         },
 
         restore(saved) {
             model.reset();
-            grazeCount = saved.grazeCount;
             addPoints(saved.score);
         },
 

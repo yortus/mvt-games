@@ -17,10 +17,13 @@ import { GameAudioView } from './game-audio-view';
 import { HitboxView } from './hitbox-view';
 import { HudView } from './hud-view';
 import { ItemView } from './item-view';
+import { LockOnView } from './lock-on-view';
 import { RainView } from './rain-view';
 import { TrafficView } from './traffic-view';
 import { ShipView } from './ship-view';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';
+import { VolleyRingView } from './volley-ring-view';
+import { VolleyView } from './volley-view';
 import { WarningView } from './warning-view';
 
 // ---------------------------------------------------------------------------
@@ -49,15 +52,16 @@ export interface GameViewBindings {
  * The whole game. The top-level view, so it takes the model itself and wires
  * each leaf view's bindings to it.
  *
- * Layered back to front: the city, its traffic and the rain; everything flying; then the
- * enemy bullets above every enemy, so none is ever hidden; then the hitbox,
- * the HUD and the overlays. Each pool of game objects is a `<List>` over the
+ * Layered back to front: the city, its traffic and the rain; everything
+ * flying; the volley, its ring and its crosshairs; then the enemy bullets
+ * above every enemy and the volley, so none is ever hidden; then the
+ * hitbox, the HUD and the overlays. Each pool of game objects is a `<List>` over the
  * model's slot list. The three bullet fields are far larger, so each is one
  * `BulletLayerView`, reading its field by index.
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, music, sfx, bestScore = () => 0 } = bindings;
-    const { scoring, ship, boss, stage, enemyBullets, playerShots, gems } = model;
+    const { scoring, ship, boss, stage, volley, enemyBullets, playerShots, gems } = model;
     const tex = textures.get();
     const arenaMask = new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(0xffffff);
     const overlayText = memoiseLast((phase: GamePhase) => describePhase(phase, model.tallyBonus));
@@ -76,12 +80,20 @@ export function GameView(bindings: GameViewBindings): Container {
                 // The guns fire through the tally too, but their blips stay quiet under its jingle
                 isFiring={() => model.phase === 'playing' && ship.isAlive}
                 isFocused={() => ship.isFocused}
-                grazes={() => scoring.grazeCount}
                 explosionsStarted={() => model.explosionsStarted}
                 lastExplosionSize={() => model.lastExplosionSize}
                 itemsCollected={() => model.itemsCollected}
                 lastItemKind={() => model.lastItemKind}
                 gemsCollected={() => model.gemsCollected}
+                isVolleyFilling={() => volley.isFilling}
+                volleyCharge={() => volley.charge}
+                isVolleyRingUp={() => volley.isRingUp}
+                volleyShieldHits={() => volley.shieldHits}
+                volleyPhase={() => volley.phase}
+                volleyLockProgress={() => volley.lockProgress}
+                volleysFired={() => volley.volleysFired}
+                volleyBursts={() => volley.burstCount}
+                volleyBurstX={() => volley.burstX}
                 shipX={() => ship.x}
                 bossX={() => boss.x}
                 lastExplosionX={() => model.lastExplosionX}
@@ -185,6 +197,43 @@ export function GameView(bindings: GameViewBindings): Container {
                             />
                         )}
                     </List>
+                    <VolleyView
+                        isFlying={() => volley.phase === 'flying'}
+                        progress={() => volley.flightProgress}
+                        launchX={() => volley.launchX}
+                        launchY={() => volley.launchY}
+                        launchAngle={() => volley.launchAngle}
+                        launchRadius={() => volley.launchRadius}
+                        shotCount={volley.shotCount}
+                        hasShotAt={volley.hasShotAt}
+                        targetX={() => volley.targetX}
+                        targetY={() => volley.targetY}
+                        burstX={() => volley.burstX}
+                        burstY={() => volley.burstY}
+                        msSinceBurst={() => volley.msSinceBurst}
+                    />
+                    <VolleyRingView
+                        isShown={() => volley.isRingUp}
+                        x={() => ship.x}
+                        y={() => ship.y}
+                        radius={() => volley.ringRadius}
+                        angle={() => volley.ringAngle}
+                        shotCount={volley.shotCount}
+                        hasShotAt={volley.hasShotAt}
+                        hitX={() => volley.shieldHitX}
+                        hitY={() => volley.shieldHitY}
+                        msSinceHit={() => volley.msSinceShieldHit}
+                    />
+                    <LockOnView
+                        isShown={() => volley.phase === 'locking' || volley.phase === 'locked'}
+                        progress={() => volley.lockProgress}
+                        fromX={() => ship.x}
+                        fromY={() => ship.y}
+                        x={() => volley.targetX}
+                        y={() => volley.targetY}
+                        targetRadius={() => volley.targetRadius}
+                        stepCount={() => model.stepCount}
+                    />
 
                     <BulletLayerView
                         capacity={enemyBullets.capacity}
@@ -229,8 +278,10 @@ export function GameView(bindings: GameViewBindings): Container {
                 bombs={() => model.bombs}
                 chain={() => scoring.chain}
                 chainFraction={() => scoring.chainFraction}
-                grazeCount={() => scoring.grazeCount}
+                volleyCharge={() => volley.charge}
+                isVolleyCharged={() => volley.phase !== 'charging' && volley.phase !== 'flying'}
                 loop={() => model.loop}
+                stepCount={() => model.stepCount}
                 width={SCREEN_WIDTH}
                 height={SCREEN_HEIGHT}
             />

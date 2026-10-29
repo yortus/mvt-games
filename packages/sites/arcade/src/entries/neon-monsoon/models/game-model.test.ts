@@ -6,8 +6,8 @@ import {
     BOSS_ENTER_MS,
     BOSS_EXPLODE_MS,
     DYING_MS,
+    ENEMY_POINTS,
     EXTEND_SCORES,
-    GRAZE_POINTS,
     INITIAL_LIVES,
     MAX_BOMBS,
     MAX_POWER,
@@ -15,6 +15,9 @@ import {
     SHIP_START_Y,
     STEP_MS,
     TALLY_MS,
+    VOLLEY_CHARGE_MS,
+    VOLLEY_FLIGHT_MS,
+    VOLLEY_LOCK_MS,
 } from './model-constants';
 
 // A quiet stage, so a test fires exactly the bullets it means to.
@@ -67,13 +70,30 @@ describe('GameModel', () => {
     });
 
     describe('the ship and the bullets', () => {
-        it('scores a graze once for a bullet passing close by', () => {
+        it('scores nothing for a bullet passing close by, but charges the volley', () => {
             const game = makeGame();
             game.enemyBullets.fire(game.ship.x + 8, game.ship.y - 40, Math.PI / 2, 'pellet-red', { speed: 120 });
             play(game, 1000);
-            expect(game.scoring.grazeCount).toBe(1);
-            expect(game.scoring.score).toBe(GRAZE_POINTS);
+            expect(game.volley.charge).toBeGreaterThan(0);
+            expect(game.scoring.score).toBe(0);
             expect(game.lives).toBe(INITIAL_LIVES);
+        });
+
+        it('charges the volley for as long as a bullet stays within grazing distance', () => {
+            const game = makeGame();
+            bulletAtShip(game, 8);
+            play(game, VOLLEY_CHARGE_MS / 2);
+            expect(game.volley.charge).toBeCloseTo(0.5, 1);
+            play(game, VOLLEY_CHARGE_MS / 2 + STEP_MS);
+            expect(game.volley.phase).toBe('ready');
+            expect(game.lives).toBe(INITIAL_LIVES);
+        });
+
+        it('does not charge the volley with no bullet close by', () => {
+            const game = makeGame();
+            bulletAtShip(game, 60);
+            play(game, 1000);
+            expect(game.volley.charge).toBe(0);
         });
 
         it('loses a life to a bullet on the hitbox, clearing the screen, then respawns invulnerable', () => {
@@ -206,6 +226,65 @@ describe('GameModel', () => {
         });
     });
 
+    describe('the volley', () => {
+        const BARGE_AHEAD: readonly StageEvent[] = [
+            { kind: 'spawn', atMs: 0, enemy: 'barge', x: 60, y: 60, path: { kind: 'straight', speed: 0 }, patterns: [] },
+        ];
+
+        it('locks on while focused, and bursts on its target once released, scoring the kill', () => {
+            const game = makeGame(BARGE_AHEAD);
+            game.volley.addGrazeTime(VOLLEY_CHARGE_MS);
+            game.isFocusing = true;
+            play(game, VOLLEY_LOCK_MS + 2 * STEP_MS);
+            expect(game.volley.phase).toBe('locked');
+
+            game.isFocusing = false;
+            game.releaseVolley();
+            game.update(STEP_MS);
+            expect(game.volley.phase).toBe('flying');
+            play(game, VOLLEY_FLIGHT_MS + STEP_MS);
+            expect(game.airEnemies.liveCount).toBe(0);
+            expect(game.scoring.score).toBe(ENEMY_POINTS.barge);
+        });
+
+        it('fires nothing when Focus is let go before the lock is complete', () => {
+            const game = makeGame(BARGE_AHEAD);
+            game.volley.addGrazeTime(VOLLEY_CHARGE_MS);
+            game.isFocusing = true;
+            play(game, VOLLEY_LOCK_MS / 2);
+            game.isFocusing = false;
+            game.releaseVolley();
+            play(game, VOLLEY_FLIGHT_MS + STEP_MS);
+            expect(game.volley.volleysFired).toBe(0);
+            expect(game.volley.phase).toBe('ready');
+        });
+
+        it('shields the focused ship with its ring, losing a shot for each bullet it stops', () => {
+            const game = makeGame();
+            game.volley.addGrazeTime(VOLLEY_CHARGE_MS);
+            game.isFocusing = true;
+            game.update(STEP_MS);
+            expect(game.volley.isRingUp).toBe(true);
+
+            // Straight down onto the hitbox
+            game.enemyBullets.fire(game.ship.x, game.ship.y - 60, Math.PI / 2, 'pellet-red', { speed: 120 });
+            play(game, 1000);
+            expect(game.lives).toBe(INITIAL_LIVES);
+            expect(game.enemyBullets.count).toBe(0);
+            expect(game.volley.shotsLeft).toBe(game.volley.shotCount - 1);
+            expect(game.volley.shieldHits).toBe(1);
+        });
+
+        it('empties its bar when the ship is lost', () => {
+            const game = makeGame(BARGE_AHEAD);
+            game.volley.addGrazeTime(VOLLEY_CHARGE_MS);
+            bulletAtShip(game);
+            game.update(STEP_MS);
+            expect(game.phase).toBe('dying');
+            expect(game.volley.charge).toBe(0);
+        });
+    });
+
     describe('the boss', () => {
         it('stops the scroll, and once defeated leads to the tally and the next loop', () => {
             const game = makeGame([{ kind: 'boss', atMs: 0 }], ONE_WEAK_ATTACK);
@@ -249,7 +328,7 @@ describe('GameModel', () => {
             return {
                 score: game.scoring.score,
                 lives: game.lives,
-                grazeCount: game.scoring.grazeCount,
+                charge: game.volley.charge,
                 bullets: game.enemyBullets.count,
                 shipX: game.ship.x,
                 shipY: game.ship.y,
@@ -273,7 +352,7 @@ describe('GameModel', () => {
             const game = makeGameOnLoopTwo([
                 { kind: 'spawn', atMs: 0, enemy: 'kite', x: 120, path: { kind: 'straight', speed: 40 }, patterns: [], drop: 'power' },
             ], { bombs: BOMBS_PER_LIFE, power: 1 });
-            const start = { score: game.scoring.score, grazeCount: game.scoring.grazeCount, lives: game.lives };
+            const start = { score: game.scoring.score, lives: game.lives };
             // The bomb shields the ship from the bullets the kite leaves on later loops.
             game.dropBomb();
             for (let i = 0; i < 1200 && game.itemsCollected === 0; i++) game.update(STEP_MS);
@@ -349,18 +428,23 @@ describe('GameModel', () => {
             expect(loaded.save()).toBeUndefined();
         });
 
-        it('loads the score, grazes, lives, bombs and power, without giving again the lives the score has earned', () => {
+        it('loads the score, lives, bombs and power, without giving again the lives the score has earned', () => {
             const game = makeGame();
             const saved = {
-                ...saveAtTally(), score: EXTEND_SCORES[0], grazeCount: 12, lives: INITIAL_LIVES + 1, bombs: MAX_BOMBS, power: MAX_POWER,
+                ...saveAtTally(), score: EXTEND_SCORES[0], lives: INITIAL_LIVES + 1, bombs: MAX_BOMBS, power: MAX_POWER,
             };
             expect(game.load(saved)).toBe(true);
             game.update(STEP_MS);
             expect(game.scoring.score).toBe(EXTEND_SCORES[0]);
-            expect(game.scoring.grazeCount).toBe(12);
             expect(game.lives).toBe(INITIAL_LIVES + 1);
             expect(game.bombs).toBe(MAX_BOMBS);
             expect(game.ship.power).toBe(MAX_POWER);
+        });
+
+        it('loads a save from before the volley, which also kept a graze count', () => {
+            const game = makeGame();
+            expect(game.load({ ...saveAtTally(), grazeCount: 12 })).toBe(true);
+            expect(game.loop).toBe(2);
         });
 
         it('loads nothing that is not a saved game, and plays on as it was', () => {
@@ -377,7 +461,6 @@ describe('GameModel', () => {
                 { ...saved, loop: LOOP_COUNT + 1 },
                 { ...saved, score: 1.5 },
                 { ...saved, score: '0' },
-                { ...saved, grazeCount: -1 },
                 { ...saved, lives: 0 },
                 { ...saved, lives: maxLives + 1 },
                 { ...saved, bombs: MAX_BOMBS + 1 },

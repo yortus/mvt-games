@@ -21,7 +21,8 @@ export interface TrafficViewBindings {
 
 /**
  * Streaks of light running up and down the avenues far below: pale lights
- * heading north, magenta ones heading south.
+ * heading north, magenta ones heading south. They glow at half brightness,
+ * so their movement stays in the background, behind the bullets.
  *
  * Like the rain, it holds no state. Each streak drives along its lane at its
  * own speed, so where it is on the ground is a function of stage time, and
@@ -49,6 +50,7 @@ export function TrafficView(bindings: TrafficViewBindings): Container {
         phases[i] = fraction(i * 0.414214) * span;
         const streak = new Sprite({ texture: Texture.WHITE, width: 1, height: 3, tint: isNorthbound ? NORTHBOUND : SOUTHBOUND });
         streak.blendMode = 'add';
+        streak.alpha = BRIGHTNESS;
         streak.x = laneXs[i];
         streaks.push(streak);
         view.addChild(streak);
@@ -80,6 +82,8 @@ const STREAK_COUNT = 36;
 const MARGIN = 8;
 const NORTHBOUND = 0xd8fbff;
 const SOUTHBOUND = 0xff5ce1;
+/** How brightly the streaks glow, from 0 to 1. Their light is added to the city's, so this is how much of it they add. */
+const BRIGHTNESS = 0.5;
 
 function fraction(value: number): number {
     return value - Math.floor(value);

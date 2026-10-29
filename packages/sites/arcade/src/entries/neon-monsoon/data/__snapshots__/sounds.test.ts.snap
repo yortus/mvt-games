@@ -12,6 +12,56 @@ exports[`neon monsoon sounds > BOSS_HIT sounds as it did, audible and unclipped 
 
 exports[`neon monsoon sounds > BOSS_THEME sounds as it did, audible and unclipped, as loud as every other song 1`] = `"e234d66c"`;
 
+exports[`neon monsoon sounds > CHARGE_TONES[0] sounds as it did, audible and unclipped 1`] = `"db8fb679"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[1] sounds as it did, audible and unclipped 1`] = `"1ab3b025"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[2] sounds as it did, audible and unclipped 1`] = `"75856d6d"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[3] sounds as it did, audible and unclipped 1`] = `"c8075051"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[4] sounds as it did, audible and unclipped 1`] = `"4707c509"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[5] sounds as it did, audible and unclipped 1`] = `"80afbf05"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[6] sounds as it did, audible and unclipped 1`] = `"2f4e14ad"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[7] sounds as it did, audible and unclipped 1`] = `"f496eaf5"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[8] sounds as it did, audible and unclipped 1`] = `"2bc084f9"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[9] sounds as it did, audible and unclipped 1`] = `"eaee1cf9"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[10] sounds as it did, audible and unclipped 1`] = `"054239d9"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[11] sounds as it did, audible and unclipped 1`] = `"35766dd1"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[12] sounds as it did, audible and unclipped 1`] = `"e7d96a6d"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[13] sounds as it did, audible and unclipped 1`] = `"b0cf2909"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[14] sounds as it did, audible and unclipped 1`] = `"462eb435"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[15] sounds as it did, audible and unclipped 1`] = `"bcaa2f09"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[16] sounds as it did, audible and unclipped 1`] = `"d569c665"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[17] sounds as it did, audible and unclipped 1`] = `"95c4b4bd"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[18] sounds as it did, audible and unclipped 1`] = `"8630d341"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[19] sounds as it did, audible and unclipped 1`] = `"58f4023d"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[20] sounds as it did, audible and unclipped 1`] = `"26f4ba95"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[21] sounds as it did, audible and unclipped 1`] = `"8ffbca11"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[22] sounds as it did, audible and unclipped 1`] = `"096f4d41"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[23] sounds as it did, audible and unclipped 1`] = `"a74f0f85"`;
+
+exports[`neon monsoon sounds > CHARGE_TONES[24] sounds as it did, audible and unclipped 1`] = `"8effb9c1"`;
+
 exports[`neon monsoon sounds > EXPLODE_HUGE sounds as it did, audible and unclipped 1`] = `"9c647ff2"`;
 
 exports[`neon monsoon sounds > EXPLODE_LARGE sounds as it did, audible and unclipped 1`] = `"c1aceb6c"`;
@@ -28,11 +78,17 @@ exports[`neon monsoon sounds > GAME_OVER sounds as it did, audible and unclipped
 
 exports[`neon monsoon sounds > GEM sounds as it did, audible and unclipped 1`] = `"47d94d69"`;
 
-exports[`neon monsoon sounds > GRAZE sounds as it did, audible and unclipped 1`] = `"e445b4ff"`;
+exports[`neon monsoon sounds > LOCK_TICK sounds as it did, audible and unclipped 1`] = `"fd480e6d"`;
+
+exports[`neon monsoon sounds > LOCKED sounds as it did, audible and unclipped 1`] = `"e4bab9c5"`;
 
 exports[`neon monsoon sounds > POWER_UP sounds as it did, audible and unclipped 1`] = `"44de5a31"`;
 
 exports[`neon monsoon sounds > RESPAWN sounds as it did, audible and unclipped 1`] = `"179efa59"`;
+
+exports[`neon monsoon sounds > RING_UP sounds as it did, audible and unclipped 1`] = `"bac7f9ad"`;
+
+exports[`neon monsoon sounds > SHIELD_HIT sounds as it did, audible and unclipped 1`] = `"4cf8d689"`;
 
 exports[`neon monsoon sounds > SHIP_EXPLODE sounds as it did, audible and unclipped 1`] = `"d0c1d0b0"`;
 
@@ -41,5 +97,11 @@ exports[`neon monsoon sounds > SHOT sounds as it did, audible and unclipped 1`] 
 exports[`neon monsoon sounds > STAGE_CLEAR sounds as it did, audible and unclipped, as loud as every other song 1`] = `"dbcfe0c4"`;
 
 exports[`neon monsoon sounds > STAGE_THEME sounds as it did, audible and unclipped, as loud as every other song 1`] = `"803e19cf"`;
+
+exports[`neon monsoon sounds > VOLLEY_BURST sounds as it did, audible and unclipped 1`] = `"a3f897e6"`;
+
+exports[`neon monsoon sounds > VOLLEY_CHARGED sounds as it did, audible and unclipped 1`] = `"cc4b0319"`;
+
+exports[`neon monsoon sounds > VOLLEY_LAUNCH sounds as it did, audible and unclipped 1`] = `"26909b15"`;
 
 exports[`neon monsoon sounds > WARNING sounds as it did, audible and unclipped 1`] = `"e7c67c56"`;
