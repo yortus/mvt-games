@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio90Sample } from './audio90-sample';
-import { createAudio90Song } from './audio90-song';
-import { createAudio90Sound } from './audio90-sound';
+import { createAudio90Sample } from '../audio90-sample';
+import { createAudio90Song } from '../audio90-song';
+import { createAudio90Sound } from '../audio90-sound';
 import { parseAudio90Song } from './parse-audio90-song';
 import { printAudio90Song } from './print-audio90-song';
 import { SONG_FORMAT, SONG_VERSION } from './song-json';

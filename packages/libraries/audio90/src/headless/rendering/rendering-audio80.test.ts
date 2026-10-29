@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { type Audio80FilterMode, type Audio80SoundOptions, createAudio80Song, createAudio80Sound } from '../audio80';
-import { DEFAULT_SAMPLE_RATE } from './headless-chip';
-import { measurePeak } from './measure-peak';
+import { type Audio80FilterMode, type Audio80SoundOptions, createAudio80Song, createAudio80Sound } from '../../audio80';
+import { DEFAULT_SAMPLE_RATE } from '../headless-chip';
+import { measurePeak } from '../rendered-samples';
 import { createRenderingAudio80, type RenderingAudio80 } from './rendering-audio80';
 
 const VOLUME = 0.5;

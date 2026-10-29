@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio80Sound } from '../audio80';
-import { createAudio90Sound } from '../audio90';
-import { measurePeak } from './measure-peak';
+import { createAudio80Sound } from '../../audio80';
+import { createAudio90Sound } from '../../audio90';
+import { measurePeak } from '../rendered-samples';
 import { render } from './render';
 
 /** An envelope that holds its note at full level, and stops quickly once released. */

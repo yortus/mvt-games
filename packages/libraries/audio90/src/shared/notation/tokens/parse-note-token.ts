@@ -1,4 +1,4 @@
-import { HIGHEST_NOTE_NAME, isNoteInRange, toNoteNumber } from './notes';
+import { HIGHEST_NOTE_NAME, isNoteInRange, toNoteNumber } from '../../notes';
 
 // ---------------------------------------------------------------------------
 // Functions

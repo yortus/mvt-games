@@ -20,7 +20,7 @@ import {
     WAVE90_SAW,
     WAVE90_SINE,
     WAVE90_TRIANGLE,
-} from '../synthesiser';
+} from '../../synthesiser';
 
 // The Audio90's names for its engines, waves, filter modes and LFO shapes,
 // and the numbers the chip is sent for them. The grammar that every chip's

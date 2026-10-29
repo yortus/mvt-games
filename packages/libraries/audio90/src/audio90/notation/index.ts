@@ -27,12 +27,11 @@ export {
     isAudio90Song,
 } from './audio90-song';
 export { createAudio90SongDriver } from './audio90-song-driver';
-export { parseAudio90Song } from './parse-audio90-song';
-export { printAudio90Song } from './print-audio90-song';
+export { parseAudio90Song, printAudio90Song } from './song-text';
 export {
     type Audio90Engine,
     type Audio90FilterMode,
     type Audio90LfoShape,
     type Audio90OperatorWave,
     type Audio90Wave,
-} from './audio90-tokens';
+} from './values';

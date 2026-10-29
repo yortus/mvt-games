@@ -1,5 +1,5 @@
 import { ASAP_STAMP, OP_PLAY, OP_PLAY_OPTIONS } from './commands';
-import { HIGHEST_NOTE, LOWEST_NOTE, toNoteNumber } from './notes';
+import { HIGHEST_NOTE, LOWEST_NOTE, toNoteNumber } from '../notes';
 
 // ---------------------------------------------------------------------------
 // Interface

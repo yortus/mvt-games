@@ -1678,3 +1678,11 @@ package is finished. The progress log uses these numbers.
   - **Checked:** lint, `npx tsc -b`, the package's and the tunes' tests
     (46 files, 357 tests) and `npm run build`. The home page is 54.6 KB of
     its 60 KB budget, from 54.4 KB.
+- **2026-10-29, folders**, unstaged. The longest folders gained
+  subfolders, each with its own `index.ts`: `shared/` (46 files) gained
+  `commands/`, `notation/` (with `tokens/`) and `synthesiser/`;
+  `headless/` (27) gained `rendering/` and `rendered-samples/`; and
+  `audio90/notation/` (22) gained `song-text/` and `values/`. The
+  `#rendering-audio80` and `#rendering-audio90` imports, and the README's
+  layout, follow. `web/worklet/` (12 files, 9 of them code) stays flat: its
+  only split is by chip, which would make two folders of two files.

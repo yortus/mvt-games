@@ -1,8 +1,8 @@
-import { type Audio80Character, createAudio80SongDriver } from '../audio80';
-import { createSongPlayer, joinMembers } from '../shared';
+import { type Audio80Character, createAudio80SongDriver } from '../../audio80';
+import { createSongPlayer, joinMembers } from '../../shared';
 import { createAudio80Renderer } from './audio80-renderer';
-import type { HeadlessAudio80 } from './headless-audio80';
-import { createHeadlessChip, DEFAULT_SAMPLE_RATE } from './headless-chip';
+import type { HeadlessAudio80 } from '../headless-audio80';
+import { createHeadlessChip, DEFAULT_SAMPLE_RATE } from '../headless-chip';
 
 // ---------------------------------------------------------------------------
 // Interface

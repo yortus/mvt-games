@@ -1,6 +1,6 @@
-import type { Audio90SampleOptions } from './audio90-sample';
-import type { Audio90SongOptions } from './audio90-song';
-import type { Audio90SoundOptions } from './audio90-sound';
+import type { Audio90SampleOptions } from '../audio90-sample';
+import type { Audio90SongOptions } from '../audio90-song';
+import type { Audio90SoundOptions } from '../audio90-sound';
 
 // What a song's text holds, which `printAudio90Song` prints and
 // `parseAudio90Song` reads: JSON, with a format and a version first.

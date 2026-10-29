@@ -1,7 +1,7 @@
 import { type CommandBuffer, createCommandBuffer } from './command-buffer';
 import { ASAP_STAMP, OP_RELEASE_ALL, OP_STOP } from './commands';
 import { type AnyPlayOptions, checkPlay, type PlayDefaults, writePlay } from './play-options';
-import type { SongWriter, SoundIds } from './song-player';
+import type { SongWriter, SoundIds } from '../song-player';
 
 // ---------------------------------------------------------------------------
 // Interface

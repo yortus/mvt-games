@@ -23,8 +23,8 @@
         }
     },
     "imports": {
-        "#rendering-audio80": "./src/headless/rendering-audio80.ts",
-        "#rendering-audio90": "./src/headless/rendering-audio90.ts"
+        "#rendering-audio80": "./src/headless/rendering/rendering-audio80.ts",
+        "#rendering-audio90": "./src/headless/rendering/rendering-audio90.ts"
     },
     "files": ["dist", "src", "docs", "!src/**/*.test.ts", "!src/**/*.test-support.ts"],
     "scripts": {

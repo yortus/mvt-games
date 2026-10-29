@@ -2,14 +2,10 @@ import { CELL_GLIDE, CELL_INSTRUMENT, CELL_IS_OWN_NOTE, CELL_NOTE, CELL_SLIDE, C
 import { checkLoop } from './check-loop';
 import { checkTempo } from './check-tempo';
 import { computeSongDurationMs } from './compute-song-duration-ms';
-import { HIGHEST_NOTE, isNoteInRange, LOWEST_NOTE } from './notes';
-import { parseHexToken } from './parse-hex-token';
-import { parseNoteToken } from './parse-note-token';
+import { HIGHEST_NOTE, isNoteInRange, LOWEST_NOTE } from '../notes';
+import { parseHexToken, parseNoteToken, splitCells, splitRows, splitTokens } from './tokens';
 import { parseOrder } from './parse-order';
 import type { SongCore, SongCoreOptions, SongOrderEntry, SongPattern } from './song-core';
-import { splitCells } from './split-cells';
-import { splitRows } from './split-rows';
-import { splitTokens } from './split-tokens';
 
 // ---------------------------------------------------------------------------
 // Interface

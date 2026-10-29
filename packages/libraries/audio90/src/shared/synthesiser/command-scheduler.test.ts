@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { type CommandScheduler, createCommandScheduler } from './command-scheduler';
-import { COMMAND_STRIDE } from './commands';
+import { COMMAND_STRIDE } from '../commands';
 
 describe('command scheduler', () => {
     it('applies each command at the first sample at or after its stamp, rendering the runs between', () => {

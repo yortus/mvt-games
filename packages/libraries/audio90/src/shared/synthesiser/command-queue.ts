@@ -1,4 +1,4 @@
-import { COMMAND_STRIDE } from './commands';
+import { COMMAND_STRIDE } from '../commands';
 
 // ---------------------------------------------------------------------------
 // Interface

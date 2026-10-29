@@ -13,7 +13,7 @@ import {
 import { type Audio90Sound, createAudio90Sound } from './audio90-sound';
 import { type Audio90Song, createAudio90Song } from './audio90-song';
 import { createAudio90SongDriver } from './audio90-song-driver';
-import { toPan } from './to-pan';
+import { toPan } from './values';
 
 const BPM = 150;
 const ROW_MS = 60000 / (BPM * 4);

@@ -1,5 +1,5 @@
 import type { SongSequencer, SoundChip } from './sound-chip';
-import type { SongTiming } from './compute-song-duration-ms';
+import type { SongTiming } from './notation';
 
 // ---------------------------------------------------------------------------
 // Interface

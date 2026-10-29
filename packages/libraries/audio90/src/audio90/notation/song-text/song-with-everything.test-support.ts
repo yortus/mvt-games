@@ -1,6 +1,6 @@
-import { createAudio90Sample } from './audio90-sample';
-import { createAudio90Song } from './audio90-song';
-import { createAudio90Sound } from './audio90-sound';
+import { createAudio90Sample } from '../audio90-sample';
+import { createAudio90Song } from '../audio90-song';
+import { createAudio90Sound } from '../audio90-sound';
 
 /** A song for a sample to bounce: one FM note. */
 export const FM_NOTE_SONG = createAudio90Song({

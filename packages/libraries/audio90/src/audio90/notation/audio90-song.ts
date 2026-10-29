@@ -1,6 +1,6 @@
 import { type CellGrammar, COMMON_CELL_TOKENS, printHexToken, MAX_ECHO_FEEDBACK, parseSongCore, type SongOrderEntry, type SongPattern } from '../../shared';
 import { type Audio90Character, AUDIO90_CHARACTERS, AUDIO90_EFFECT_DEFAULTS, AUDIO90_VOICE_COUNT } from '../synthesiser';
-import { checkRange } from './check-range';
+import { checkRange } from './values';
 import type { Audio90Sound } from './audio90-sound';
 
 // ---------------------------------------------------------------------------

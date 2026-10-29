@@ -171,26 +171,38 @@ laid out), and `AUDIO90_CELL_TEXT_WIDTH` (how many characters
 ```
 src/
 ├── index.ts            audio90
-├── shared/             What any chip uses: the controls interface, the
-│                       command buffer and queue, note names, the note
-│                       driver, the voice allocator for sound effects, and
-│                       the tracker notation's grammar
+├── shared/             What any chip uses: what every chip has, note names,
+│   │                   the song player and the scope's sources
+│   ├── commands/       The commands a chip is sent, and the writer that
+│   │                   fills a buffer with them
+│   ├── notation/       The tracker notation every chip's songs share: cells,
+│   │   │               a song's core, its order, loop and tempo
+│   │   └── tokens/     Rows, cells and tokens, read and printed
+│   └── synthesiser/    The parts of every synthesiser: the command queue,
+│                       envelopes, the note driver, voices for sound
+│                       effects, and the maths they share
 ├── audio80/            The Audio80
 │   ├── synthesiser/    Its voices, filters and echo, and its commands
-│   ├── notation/       Its instruments, sound effects and songs
-│   │                   (createAudio80Instrument, createAudio80SoundEffect, createAudio80Song)
-│   └── chip/           The Audio80 interface, and an implementation that
-│                       writes commands to a buffer
+│   ├── notation/       Its sounds and songs (createAudio80Sound,
+│   │                   createAudio80Song), and what a song's rows write
+│   └── chip/           The Audio80 interface, and its command writer
 ├── audio90/            The Audio90
 │   ├── synthesiser/    Its voices, engines, effects and output stage, and
 │   │                   its commands
-│   ├── notation/       Its instruments, samples and bouncing, sound effects
-│   │                   and songs, and what a song's rows write to the chip
+│   ├── notation/       Its sounds, samples and bouncing, and songs, and
+│   │   │               what a song's rows write to the chip
+│   │   ├── song-text/  A song printed as text, and parsed back
+│   │   └── values/     Its names for engines, waves and shapes, and the
+│   │                   checks and conversions options go through
 │   └── chip/           The Audio90 interface, and its command writer
-├── music-player/       The music player
-├── headless/           audio90/headless: each chip without a speaker,
-│                       and tools that render, measure and save sound, in
-│                       mono or stereo
+├── tracker/            What an editor needs: a song's cells as text, and
+│                       a scope attached to a chip
+├── headless/           audio90/headless: each chip without a speaker, and
+│   │                   finding the sounds a module exports
+│   ├── rendering/      Rendering songs and sounds in memory, in mono or
+│   │                   stereo
+│   └── rendered-samples/  What is done with rendered sound: hashes, peaks,
+│                       loudness and WAV files
 └── web/                The browser chips, each with its
                         own AudioWorklet module, and what they share: the
                         clock, the held writes and the runner

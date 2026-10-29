@@ -1,8 +1,8 @@
-import { type Audio90Character, createAudio90SongDriver } from '../audio90';
-import { createSongPlayer, joinMembers } from '../shared';
+import { type Audio90Character, createAudio90SongDriver } from '../../audio90';
+import { createSongPlayer, joinMembers } from '../../shared';
 import { createAudio90Renderer } from './audio90-renderer';
-import type { HeadlessAudio90 } from './headless-audio90';
-import { createHeadlessChip, DEFAULT_SAMPLE_RATE } from './headless-chip';
+import type { HeadlessAudio90 } from '../headless-audio90';
+import { createHeadlessChip, DEFAULT_SAMPLE_RATE } from '../headless-chip';
 
 // ---------------------------------------------------------------------------
 // Interface

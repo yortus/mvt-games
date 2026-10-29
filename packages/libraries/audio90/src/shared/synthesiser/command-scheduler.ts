@@ -1,5 +1,5 @@
 import { createCommandQueue } from './command-queue';
-import { COMMAND_STRIDE } from './commands';
+import { COMMAND_STRIDE } from '../commands';
 
 // ---------------------------------------------------------------------------
 // Interface

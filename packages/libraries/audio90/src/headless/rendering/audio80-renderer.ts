@@ -1,5 +1,5 @@
-import { type Audio80Character, type Audio80PlayOptions, type Audio80Sound, createAudio80SoundIds, createAudio80Synthesiser } from '../audio80';
-import { type CommandWriter, createCommandWriter } from '../shared';
+import { type Audio80Character, type Audio80PlayOptions, type Audio80Sound, createAudio80SoundIds, createAudio80Synthesiser } from '../../audio80';
+import { type CommandWriter, createCommandWriter } from '../../shared';
 
 // ---------------------------------------------------------------------------
 // Interface

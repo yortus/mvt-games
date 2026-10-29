@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { type Audio90SoundOptions, createAudio90Sound } from '../audio90';
-import { hashSamples } from './hash-samples';
-import { measurePeak } from './measure-peak';
+import { type Audio90SoundOptions, createAudio90Sound } from '../../audio90';
+import { hashSamples, measurePeak, type StereoSamples } from '../rendered-samples';
 import { createRenderingAudio90, type RenderingAudio90 } from './rendering-audio90';
-import type { StereoSamples } from './stereo-samples';
 
 /** An envelope that holds its note at full level, and stops quickly once released. */
 const HELD_ENVELOPE = { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 };

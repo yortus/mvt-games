@@ -1,10 +1,10 @@
-import { type Audio80Character, createAudio80SongDriver, isAudio80Sound, type Audio80Song, type Audio80Sound } from '../audio80';
-import { type Audio90Character, type Audio90Song, type Audio90Sound, createAudio90SongDriver, isAudio90Sound } from '../audio90';
-import { createSongPlayer } from '../shared';
+import { type Audio80Character, createAudio80SongDriver, isAudio80Sound, type Audio80Song, type Audio80Sound } from '../../audio80';
+import { type Audio90Character, type Audio90Song, type Audio90Sound, createAudio90SongDriver, isAudio90Sound } from '../../audio90';
+import { createSongPlayer } from '../../shared';
 import { type Audio80Renderer, createAudio80Renderer } from './audio80-renderer';
 import { type Audio90Renderer, createAudio90Renderer } from './audio90-renderer';
-import { DEFAULT_SAMPLE_RATE } from './headless-chip';
-import { type RenderedSamples, type StereoSamples } from './stereo-samples';
+import { DEFAULT_SAMPLE_RATE } from '../headless-chip';
+import { type RenderedSamples, type StereoSamples } from '../rendered-samples';
 
 // ---------------------------------------------------------------------------
 // Options

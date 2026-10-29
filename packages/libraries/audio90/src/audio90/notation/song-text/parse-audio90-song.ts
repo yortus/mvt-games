@@ -1,6 +1,6 @@
-import { type Audio90Sample, createAudio90Sample } from './audio90-sample';
-import { type Audio90Song, createAudio90Song } from './audio90-song';
-import { type Audio90Sound, createAudio90Sound } from './audio90-sound';
+import { type Audio90Sample, createAudio90Sample } from '../audio90-sample';
+import { type Audio90Song, createAudio90Song } from '../audio90-song';
+import { type Audio90Sound, createAudio90Sound } from '../audio90-sound';
 import { mapValues } from './map-values';
 import { type Rows, type SampleJson, SONG_FORMAT, SONG_VERSION, type SongJson, type SoundJson } from './song-json';
 

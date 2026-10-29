@@ -1,5 +1,5 @@
-import { type Audio90Character, type Audio90PlayOptions, type Audio90Sound, createAudio90SoundIds, createAudio90Synthesiser } from '../audio90';
-import { type CommandWriter, createCommandWriter } from '../shared';
+import { type Audio90Character, type Audio90PlayOptions, type Audio90Sound, createAudio90SoundIds, createAudio90Synthesiser } from '../../audio90';
+import { type CommandWriter, createCommandWriter } from '../../shared';
 
 // ---------------------------------------------------------------------------
 // Interface

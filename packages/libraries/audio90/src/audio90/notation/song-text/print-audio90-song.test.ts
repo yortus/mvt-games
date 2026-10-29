@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createAudio90Song } from './audio90-song';
-import { createAudio90Sound } from './audio90-sound';
+import { createAudio90Song } from '../audio90-song';
+import { createAudio90Sound } from '../audio90-sound';
 import { printAudio90Song } from './print-audio90-song';
 import { SONG_FORMAT, SONG_VERSION } from './song-json';
 import { SONG_WITH_EVERYTHING } from './song-with-everything.test-support';

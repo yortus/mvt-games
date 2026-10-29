@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createCommandQueue, type CommandQueue } from './command-queue';
-import { COMMAND_STRIDE } from './commands';
+import { COMMAND_STRIDE } from '../commands';
 
 describe('command queue', () => {
     it('returns commands in stamp order, earliest first', () => {

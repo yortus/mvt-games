@@ -37,7 +37,7 @@ import {
     CELL90_SLICE,
     CELL90_STRIDE,
 } from './audio90-song';
-import { toPan } from './to-pan';
+import { toPan } from './values';
 
 // ---------------------------------------------------------------------------
 // Factory

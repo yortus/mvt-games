@@ -16,22 +16,8 @@ import {
     MAX_OPERATORS,
     MAX_UNISON,
 } from '../synthesiser';
-import { checkRange } from './check-range';
+import { type Audio90Engine, type Audio90FilterMode, type Audio90LfoShape, type Audio90OperatorWave, type Audio90Wave, checkRange, ENGINE_INDEX, FILTER90_MODE_INDEX, LFO_SHAPE_INDEX, lookUpName, OPERATOR_WAVE_INDEX, toPan, WAVE90_INDEX } from './values';
 import type { Audio90Sample } from './audio90-sample';
-import {
-    type Audio90Engine,
-    type Audio90FilterMode,
-    type Audio90LfoShape,
-    type Audio90OperatorWave,
-    type Audio90Wave,
-    ENGINE_INDEX,
-    FILTER90_MODE_INDEX,
-    LFO_SHAPE_INDEX,
-    OPERATOR_WAVE_INDEX,
-    WAVE90_INDEX,
-} from './audio90-tokens';
-import { lookUpName } from './look-up-name';
-import { toPan } from './to-pan';
 
 // ---------------------------------------------------------------------------
 // Interface
