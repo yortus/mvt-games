@@ -11,7 +11,7 @@ import {
     ENGINE_SAMPLE,
     WAVE90_SAW,
 } from '../../audio90';
-import { measurePeak } from '../../headless';
+import { hashSamples, measurePeak, render } from '../../headless';
 import { checkPlay, SCOPE_POINTS, toScopeLength } from '../../shared';
 import { type Audio80PassedMessage, createAudio80Runner } from './audio80-runner';
 import { type Audio90PassedMessage, createAudio90Runner } from './audio90-runner';
@@ -88,22 +88,6 @@ describe('chip runner, running an Audio80', () => {
         runner.process([output]);
         runner.process([output]);
         expect(measurePeak(output)).toBeGreaterThan(0.01);
-    });
-
-    it('fades out over one block after a reset, rather than cutting to 0, which would click, and is silent after', () => {
-        const { runner, play, receive } = setUp();
-        play(createAudio80Sound({ wave: 'saw' }), { lengthMs: Infinity });
-        const output = new Float32Array(BLOCK);
-        for (let b = 0; b < 10 * BLOCKS_PER_TICK; b++) runner.process([output]);
-        const last = output[BLOCK - 1];
-        expect(Math.abs(last)).toBeGreaterThan(0.01);
-        receive({ kind: 'reset' });
-        runner.process([output]);
-        // It steps down by at most one block's share
-        expect(Math.abs(output[0] - last)).toBeLessThanOrEqual(Math.abs(last) / BLOCK + 1e-6);
-        expect(output[BLOCK - 1]).toBe(0);
-        runner.process([output]);
-        expect(measurePeak(output)).toBe(0);
     });
 
     it('renders silence once destroyed, and says so, so the processor can end', () => {
@@ -259,6 +243,26 @@ describe('chip runner, running a chip\'s sequencer', () => {
         expect(loudest).toBeGreaterThan(0.05);
         expect(places.filter((place) => place.songId === 1).length).toBeGreaterThan(2);
     });
+
+    it('plays a song to the same samples as `render`, which plays it on a headless chip, tick by tick', () => {
+        const { runner, receive, sendSong, call } = setUpAudio90();
+        const song = createAudio90Song({
+            bpm: 133,
+            swing: 0.2,
+            instruments: { s: createAudio90Sound({ glideMs: 30 }), k: createAudio90Sound({ note: 36 }) },
+            patterns: { p: ['| C-4 s v9 | k', '| E-4 s > | ...', '| ===     | k', '| G-3 s u04 | ...', '| ...     | k'].join('\n') },
+            order: ['p', 'p+5'],
+        });
+        sendSong(1, song);
+        receive(call({ call: 'play', songId: 1, generation: 1 }));
+        const rendered = render(song, { sampleRate: SAMPLE_RATE, durationMs: song.durationMs });
+        const frames = rendered.left.length - (rendered.left.length % BLOCK);
+        const left = new Float32Array(frames);
+        const right = new Float32Array(frames);
+        for (let at = 0; at < frames; at += BLOCK) runner.process([left.subarray(at, at + BLOCK), right.subarray(at, at + BLOCK)]);
+        expect(measurePeak(left)).toBeGreaterThan(0.05);
+        expect(hashSamples({ left, right })).toBe(hashSamples({ left: rendered.left.subarray(0, frames), right: rendered.right.subarray(0, frames) }));
+    });
 });
 
 describe('chip runner, running an Audio90', () => {
@@ -336,7 +340,7 @@ describe('chip runner, running an Audio90', () => {
         expect(scopes).toHaveLength(0);
     });
 
-    it('fades both channels out over one block after a reset', () => {
+    it('fades each channel out over one block after a reset, rather than cutting to 0, which would click, and is silent after', () => {
         const { runner, play, receive } = setUpAudio90();
         play(createAudio90Sound(), { lengthMs: Infinity });
         const left = new Float32Array(BLOCK);
@@ -346,9 +350,12 @@ describe('chip runner, running an Audio90', () => {
         expect(Math.min(Math.abs(lasts[0]), Math.abs(lasts[1]))).toBeGreaterThan(0.01);
         receive({ kind: 'reset' });
         runner.process([left, right]);
+        // Each steps down by at most one block's share
         expect(Math.abs(left[0] - lasts[0])).toBeLessThanOrEqual(Math.abs(lasts[0]) / BLOCK + 1e-6);
         expect(Math.abs(right[0] - lasts[1])).toBeLessThanOrEqual(Math.abs(lasts[1]) / BLOCK + 1e-6);
         expect([left[BLOCK - 1], right[BLOCK - 1]]).toEqual([0, 0]);
+        runner.process([left, right]);
+        expect(Math.max(measurePeak(left), measurePeak(right))).toBe(0);
     });
 });
 

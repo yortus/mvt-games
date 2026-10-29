@@ -326,14 +326,6 @@ describe('the Audio90 synthesiser', () => {
     });
 
     describe('as a whole', () => {
-        it('starts a note at the sample its stamp falls on', () => {
-            const rig = createRig();
-            rig.noteOn(0, rig.instrument(FM_SINE), 69, 1, 10);
-            const { left } = rig.render(20);
-            const first = left.findIndex((x) => x !== 0);
-            expect(first).toBe(toFrames(10));
-        });
-
         it('renders the same samples from the same commands', () => {
             const make = (): Float32Array => {
                 const rig = createRig();

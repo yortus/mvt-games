@@ -8,7 +8,7 @@ import {
     DEFAULT_AUDIO90_SOUND,
     ENGINE_SAMPLE,
 } from '../audio90';
-import { createFakeAudioContext, FAKE_BASE_LATENCY_S, FAKE_OUTPUT_LATENCY_S, FAKE_SAMPLE_RATE, type FakeAudioContext } from './fake-audio-context';
+import { installFakeAudioContext, FAKE_BASE_LATENCY_S, FAKE_OUTPUT_LATENCY_S, FAKE_SAMPLE_RATE } from './fake-audio-context.test-support';
 import { AUDIO90_PROCESSOR_NAME, type SongMessage, type SongPlaceReply } from './worklet';
 import { createAudio90 } from './audio90';
 
@@ -154,13 +154,6 @@ describe('createAudio90, with a stand-in audio context', () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Creates a stand-in audio context in `state`, and puts its `AudioWorkletNode` in place of the browser's. */
-function installFakeAudioContext(state: AudioContextState, loadError?: Error): FakeAudioContext {
-    const fake = createFakeAudioContext(state, loadError);
-    vi.stubGlobal('AudioWorkletNode', fake.AudioWorkletNode);
-    return fake;
-}
 
 const SAMPLE_LENGTH = 256;
 

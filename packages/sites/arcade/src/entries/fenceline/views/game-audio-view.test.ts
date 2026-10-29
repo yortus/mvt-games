@@ -4,7 +4,7 @@ import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, SNAP, SNAPPED_TUNE, STRING_TICK, TIE_OFF } from '../data';
 import type { GamePhase } from '../models';
-import { CREAK_PERIOD_MS, GameAudioView } from './game-audio-view';
+import { CREAK_PERIOD_MS, FULL_FIELD_TEMPO, GameAudioView } from './game-audio-view';
 
 const STEP_MS = 1000 / 60;
 
@@ -24,6 +24,8 @@ describe('GameAudioView', () => {
         beetlesHatched: number;
         extraLivesEarned: number;
         isSlackRunning: boolean;
+        share: number;
+        targetShare: number;
     };
     let music: HeadlessAudio80;
     let sfx: HeadlessAudio80;
@@ -39,6 +41,8 @@ describe('GameAudioView', () => {
             beetlesHatched: 0,
             extraLivesEarned: 0,
             isSlackRunning: false,
+            share: 0.2,
+            targetShare: 0.7,
         };
         music = createSpiedChip();
         sfx = createSpiedChip();
@@ -53,8 +57,8 @@ describe('GameAudioView', () => {
             beetlesHatched: () => state.beetlesHatched,
             extraLivesEarned: () => state.extraLivesEarned,
             isSlackRunning: () => state.isSlackRunning,
-            share: () => 0.2,
-            targetShare: () => 0.7,
+            share: () => state.share,
+            targetShare: () => state.targetShare,
         });
         tick();
         vi.clearAllMocks();
@@ -84,6 +88,19 @@ describe('GameAudioView', () => {
         tick();
         expect(listPlayed(sfx)).toEqual([SNAP]);
         expect(listPlayed(music)).toEqual([SNAPPED_TUNE]);
+    });
+
+    it('quickens the meadow tune as the share fenced nears the target, up to its full tempo there, and plays the next song at its own', () => {
+        expect(music.tempoScale).toBeCloseTo(1 + (FULL_FIELD_TEMPO - 1) * state.share / state.targetShare, 9);
+        state.share = state.targetShare;
+        tick();
+        expect(music.tempoScale).toBe(FULL_FIELD_TEMPO);
+        state.share = 1;
+        tick();
+        expect(music.tempoScale).toBe(FULL_FIELD_TEMPO);
+        state.phase = 'round-clear';
+        tick();
+        expect(music.tempoScale).toBe(1);
     });
 
     it('creaks again and again while slack runs, and stops when it stops', () => {

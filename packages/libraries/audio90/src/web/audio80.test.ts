@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createAudio80Song, createAudio80Sound, AUDIO80_VOICE_COUNT } from '../audio80';
 import { SCOPE_POINTS, toScopeLength } from '../shared';
 import { createScope } from '../tracker';
-import { createFakeAudioContext, type FakeAudioContext } from './fake-audio-context';
+import { installFakeAudioContext } from './fake-audio-context.test-support';
 import { createAudio80 } from './audio80';
 
 // What every browser chip does, tested on the Audio80. The Audio90's own tests
@@ -252,13 +252,6 @@ describe('createAudio80, with a stand-in audio context', () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Creates a stand-in audio context in `state`, and puts its `AudioWorkletNode` in place of the browser's. */
-function installFakeAudioContext(state: AudioContextState, loadError?: Error): FakeAudioContext {
-    const fake = createFakeAudioContext(state, loadError);
-    vi.stubGlobal('AudioWorkletNode', fake.AudioWorkletNode);
-    return fake;
-}
 
 /**
  * Puts a stand-in page in place of the browser's `document`, which says

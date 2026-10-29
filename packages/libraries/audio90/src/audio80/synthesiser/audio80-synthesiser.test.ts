@@ -248,33 +248,6 @@ describe('Audio80 synthesiser: bad numbers', () => {
             expect(measureRmsBetween(samples, 200, 300)).toBeGreaterThan(0.01);
         });
     }
-
-    it('ignores a command stamped NaN or +Infinity, and applies the ones after it', () => {
-        const synthesiser = createAudio80Synthesiser({ sampleRate: SAMPLE_RATE });
-        synthesiser.defineSound(1, createAudio80Sound({ wave: 'saw' }).data);
-        synthesiser.enqueue(new Float64Array([
-            OP_NOTE_ON, Number.NaN, 0, 1, 60, 1,
-            OP_NOTE_ON, Infinity, 1, 1, 60, 1,
-            OP_NOTE_ON, 10, 2, 1, 64, 1,
-        ]), 3);
-        renderSynthesiser(synthesiser, 100);
-        expect(synthesiser.isSounding(0)).toBe(false);
-        expect(synthesiser.isSounding(1)).toBe(false);
-        expect(synthesiser.isSounding(2)).toBe(true);
-    });
-});
-
-describe('Audio80 synthesiser: stamps', () => {
-    for (const stampMs of [10, 10.01]) {
-        it(`starts a note stamped ${stampMs} ms on the first sample at or after that time`, () => {
-            const chip = createVoiceRig('clean');
-            noteOn(chip.audio80, 0, createAudio80Sound({ wave: 'pulse', envelope: { attackMs: 0, decayMs: 0, sustain: 1, releaseMs: 10 } }), A4, 1, stampMs);
-            const samples = render(chip, 20);
-            const start = Math.ceil(stampMs * SAMPLE_RATE / 1000);
-            expect(measurePeak(samples.subarray(0, start))).toBe(0);
-            expect(Math.abs(samples[start])).toBeGreaterThan(0);
-        });
-    }
 });
 
 describe('Audio80 synthesiser: played sounds', () => {
@@ -309,36 +282,6 @@ describe('Audio80 synthesiser: played sounds', () => {
         expect(playing).toContain(writer.soundId(BEEP));
         expect(playing).not.toContain(writer.soundId(ZAP));
         expect(playing.filter((id) => id !== undefined)).toHaveLength(AUDIO80_VOICE_COUNT);
-    });
-
-    it('takes a song\'s note when no voice is free', () => {
-        const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        const tune = createAudio80Sound({ wave: 'pulse' });
-        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) noteOn(writer, v, tune, 60 + v, 1);
-        step();
-        writer.play(ZAP);
-        step();
-        expect(listSoundsOn(synthesiser).filter((id) => id !== undefined)).toHaveLength(1);
-    });
-
-    it('restarts a sound\'s oldest voice when it already plays on its maximum, rather than taking another', () => {
-        const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        for (let i = 0; i <= ZAP.data.maxVoices; i++) {
-            writer.play(ZAP);
-            step();
-        }
-        expect(listSoundsOn(synthesiser).filter((id) => id !== undefined)).toHaveLength(ZAP.data.maxVoices);
-    });
-
-    it('never takes a voice from a sound of higher priority', () => {
-        const { synthesiser, writer, step } = createSynthesiserWithWriter();
-        const loud = createAudio80Sound({ wave: 'noise', note: 'C-4', priority: 2, maxVoices: AUDIO80_VOICE_COUNT });
-        for (let v = 0; v < AUDIO80_VOICE_COUNT; v++) writer.play(loud, { lengthMs: Infinity });
-        step();
-        const before = listSoundsOn(synthesiser);
-        writer.play(ZAP);
-        step();
-        expect(listSoundsOn(synthesiser)).toEqual(before);
     });
 
     it('frees a voice once its sound has died away', () => {
@@ -397,14 +340,6 @@ describe('Audio80 synthesiser: played sounds', () => {
             step();
             return hashSamples(samples);
         }
-    });
-
-    it('rejects a play\'s length of 0 or less, a bad note and a negative volume', () => {
-        const { writer } = createSynthesiserWithWriter();
-        expect(() => writer.play(ZAP, { lengthMs: 0 })).toThrow('play: lengthMs must be above 0, or Infinity to hold the note; got 0');
-        expect(() => writer.play(ZAP, { note: 'H-4' })).toThrow("play: note: 'H-4' is not a note");
-        expect(() => writer.play(ZAP, { note: 200 })).toThrow('play: note: 200 is not a note from 0 to 127');
-        expect(() => writer.play(ZAP, { volume: -1 })).toThrow('play: volume must be 0 or more; got -1');
     });
 
     it('numbers its plays from 1', () => {

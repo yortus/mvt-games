@@ -1,7 +1,9 @@
+import { vi } from 'vitest';
 import type { RunnerMessage } from './worklet';
 
 // A stand-in for a browser's audio context, for the browser chips' tests in
-// Node. It has just what a chip uses.
+// Node. It has just what a chip uses. Like every `.test-support.ts` file, it
+// is for tests only, and the published package leaves it out.
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -38,8 +40,19 @@ export interface FakeAudioContext {
 // Factory
 // ---------------------------------------------------------------------------
 
+/**
+ * Creates a stand-in audio context in `state`, and puts its
+ * `AudioWorkletNode` in place of the browser's. A test undoes it with
+ * `vi.unstubAllGlobals`. Its worklet fails to load with `loadError`, if given.
+ */
+export function installFakeAudioContext(state: AudioContextState, loadError?: Error): FakeAudioContext {
+    const fake = createFakeAudioContext(state, loadError);
+    vi.stubGlobal('AudioWorkletNode', fake.AudioWorkletNode);
+    return fake;
+}
+
 /** Creates a stand-in audio context in `state`. Its worklet fails to load with `loadError`, if given. */
-export function createFakeAudioContext(state: AudioContextState, loadError?: Error): FakeAudioContext {
+function createFakeAudioContext(state: AudioContextState, loadError?: Error): FakeAudioContext {
     let current = state;
     let currentTime = 0;
     const messages: RunnerMessage[] = [];

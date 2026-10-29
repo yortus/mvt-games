@@ -1583,3 +1583,27 @@ package is finished. The progress log uses these numbers.
     `notation/song-driver.ts`, since parts 1 and 3.
   - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (236 files, 2,965
     tests), `npm run build` (54.4 KB) and `npm run build:packages`.
+- **2026-10-29, 6e part 7 done, and so 6e**, unstaged. The review's list,
+  checked against the code as it now is:
+  - **Duplicates gone:** the Audio80 synthesiser's tests of choosing a
+    voice that `sound-plays.test.ts` covers (a song's note, a sound at its
+    maximum, a higher priority), its NaN and `+Infinity` stamps
+    (`command-queue.test.ts`), its play-option checks
+    (`command-writer.test.ts`), and both synthesisers' stamp tests
+    (`command-scheduler.test.ts`); the worklet runner's two reset fades are
+    one, on both channels. Already gone in earlier parts: the volume clamp
+    five times (now once a chip kind), "refuses to render", and the copied
+    browser tests (each file now tests its own chip).
+  - **Shared helpers:** `installFakeAudioContext` lives in the stand-in
+    context's module, which is now `fake-audio-context.test-support.ts`. A
+    `*.test-support.ts` file is the repo's new name for test support: lint
+    treats it as a dev file, and the package's `files` leave it out.
+  - **Gaps:** the worklet's tempo and queue calls, the browser chip's volume
+    and mute, and an Audio80 song through a browser chip were filled in
+    parts 2 and 5. New: the worklet runner plays a song to the same samples
+    as `render` (swing, a glide, a slide, a release, a drum, a transposed
+    pattern), which fails if the worklet stamps notes a sample late; and
+    Fenceline's tempo, which follows the share fenced up to the target.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (236 files, 2,958
+    tests), `npm run build:packages`, and `npm pack --dry-run` lists no test
+    or test support file.

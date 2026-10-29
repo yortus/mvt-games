@@ -68,6 +68,7 @@ const VIEW_TICK_API_FROM_RENDERER = {
 // peer dependencies.
 const DEV_FILES = [
     '**/*.test.{ts,tsx}',
+    '**/*.test-support.ts',
     '**/*.spike.{ts,tsx}',
     '**/scripts/**',
     '**/bench/**',
