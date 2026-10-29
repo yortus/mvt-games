@@ -1,12 +1,9 @@
-import type { SongDriver, SongWriter } from '../../shared';
+import { OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE, type SongDriver, type SongWriter } from '../../shared';
 import {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
-    OP_NOTE_OFF,
-    OP_NOTE_ON,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_VOICE,
     toCutoff,
     toFilterModeFlags,
     VOICE_COUNT,

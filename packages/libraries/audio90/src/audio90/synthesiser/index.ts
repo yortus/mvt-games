@@ -17,12 +17,9 @@ export {
     type Audio90EffectSetting,
     type Audio90EffectSettings,
     type Audio90VoiceSetting,
-    OP90_NOTE_OFF,
-    OP90_NOTE_ON,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-    OP90_SET_VOICE,
 } from './commands';
 export {
     type Audio90EnvelopeData,

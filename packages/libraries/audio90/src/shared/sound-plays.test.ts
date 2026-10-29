@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chooseSoundVoice, type SoundVoices } from './choose-sound-voice';
+import { chooseSoundVoice, type SoundVoices } from './sound-plays';
 
 describe('choosing a voice for a sound', () => {
     it('takes the highest free voice', () => {

@@ -1,17 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createSongPlayer, type SongPlayer, type SongWriter } from '../../shared';
+import { createSongPlayer, OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE, type SongPlayer, type SongWriter } from '../../shared';
 import { measurePeak, render } from '../../headless';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
     AUDIO90_EFFECT_SETTING_INDEX,
     AUDIO90_VOICE_SETTING_INDEX,
-    OP90_NOTE_OFF,
-    OP90_NOTE_ON,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-    OP90_SET_VOICE,
 } from '../synthesiser';
 import { type Audio90Sound, createAudio90Sound } from './sound';
 import { type Audio90Song, createAudio90Song } from './song';
@@ -51,8 +48,8 @@ describe('createAudio90SongDriver', () => {
         expect(chip.log).toContainEqual({ op: OP90_SET_EFFECT, time: 10, a: AUDIO90_EFFECT_INDEX.chorus, b: AUDIO90_EFFECT_SETTING_INDEX.chorus.level, c: 0.2, d: 0 });
         // A song with no pump turns off one a song before may have left on
         expect(chip.log).toContainEqual({ op: OP90_SET_EFFECT, time: 10, a: AUDIO90_EFFECT_INDEX.pump, b: AUDIO90_EFFECT_SETTING_INDEX.pump.voice, c: -1, d: 0 });
-        expect(chip.log).toContainEqual({ op: OP90_SET_VOICE, time: 10, a: 0, b: AUDIO90_VOICE_SETTING_INDEX.pan, c: -1, d: 0 });
-        expect(chip.log).toContainEqual({ op: OP90_SET_VOICE, time: 10, a: 1, b: AUDIO90_VOICE_SETTING_INDEX.pan, c: 0, d: 0 });
+        expect(chip.log).toContainEqual({ op: OP_SET_VOICE, time: 10, a: 0, b: AUDIO90_VOICE_SETTING_INDEX.pan, c: -1, d: 0 });
+        expect(chip.log).toContainEqual({ op: OP_SET_VOICE, time: 10, a: 1, b: AUDIO90_VOICE_SETTING_INDEX.pan, c: 0, d: 0 });
         expect(chip.log.some((write) => write.op === OP90_SET_EFFECT && write.a === AUDIO90_EFFECT_INDEX.reverb)).toBe(false);
     });
 
@@ -62,7 +59,7 @@ describe('createAudio90SongDriver', () => {
         createAudio90SongDriver(chip.writer).playRow(song, 0, 0, 5, 125, 1);
         const settings = AUDIO90_VOICE_SETTING_INDEX;
         // Each write, as its op, and the setting for a voice's settings
-        expect(chip.log.map((write) => (write.op === OP90_SET_VOICE ? write.b : write.op))).toEqual([settings.pan, settings.reverbSend, OP90_NOTE_ON, settings.accent, settings.chord]);
+        expect(chip.log.map((write) => (write.op === OP_SET_VOICE ? write.b : write.op))).toEqual([settings.pan, settings.reverbSend, OP_NOTE_ON, settings.accent, settings.chord]);
         expect(chip.log[0]).toMatchObject({ c: toPan(0x40), time: 5 });
         expect(chip.log[2]).toMatchObject({ a: 0, c: 71 });
         expect(chip.sounds[chip.log[2].b]).toBe(SAW);
@@ -78,10 +75,10 @@ describe('song player, on an Audio90', () => {
         player.update(ROW_MS * 2.5);
         expect(chip.log[0]).toEqual({ op: OP90_SET_TEMPO, time: 0, a: BPM, b: 0, c: 0, d: 0 });
         expect(chip.log).toContainEqual({ op: OP90_SET_EFFECT, time: 0, a: AUDIO90_EFFECT_INDEX.pump, b: AUDIO90_EFFECT_SETTING_INDEX.pump.voice, c: 1, d: 0 });
-        expect(chip.log).toContainEqual({ op: OP90_SET_VOICE, time: 0, a: 0, b: AUDIO90_VOICE_SETTING_INDEX.pan, c: -0.5, d: 0 });
+        expect(chip.log).toContainEqual({ op: OP_SET_VOICE, time: 0, a: 0, b: AUDIO90_VOICE_SETTING_INDEX.pan, c: -0.5, d: 0 });
         // Each note on, as its voice, its note and its time
         expect(listNoteOns(chip.log).map((write) => [write.a, write.c, write.time])).toEqual([[0, 57, 0], [1, 36, 0], [0, 60, 2 * ROW_MS], [1, 36, 2 * ROW_MS]]);
-        expect(chip.log).toContainEqual({ op: OP90_SET_VOICE, time: 2 * ROW_MS, a: 0, b: AUDIO90_VOICE_SETTING_INDEX.chord, c: 0x47, d: 0 });
+        expect(chip.log).toContainEqual({ op: OP_SET_VOICE, time: 2 * ROW_MS, a: 0, b: AUDIO90_VOICE_SETTING_INDEX.chord, c: 0x47, d: 0 });
     });
 
     it('stamps every note at the same chip time, whatever the length of the ticks', () => {
@@ -123,7 +120,7 @@ describe('song player, on an Audio90', () => {
         // The queued song sets its tempo as it starts, at the end of the first
         expect(chip.log).toContainEqual({ op: OP90_SET_TEMPO, time: GROOVE.durationMs, a: next.bpm, b: 0, c: 0, d: 0 });
         player.stop();
-        expect(chip.log.at(-1)).toMatchObject({ op: OP90_NOTE_OFF, a: 0 });
+        expect(chip.log.at(-1)).toMatchObject({ op: OP_NOTE_OFF, a: 0 });
         expect(player.song).toBeUndefined();
     });
 
@@ -170,7 +167,7 @@ interface Command {
 }
 
 function listNoteOns(log: readonly Command[]): Command[] {
-    return log.filter((write) => write.op === OP90_NOTE_ON);
+    return log.filter((write) => write.op === OP_NOTE_ON);
 }
 
 /**

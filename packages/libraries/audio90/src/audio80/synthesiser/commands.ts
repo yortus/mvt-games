@@ -2,22 +2,14 @@
 // Interface
 // ---------------------------------------------------------------------------
 
-// The Audio80's commands. Each is laid out as `COMMAND_STRIDE`, in the
-// shared folder, describes: an opcode, a stamp, and four operands.
+// The Audio80's own commands. Each is laid out as `COMMAND_STRIDE`, in the
+// shared folder, describes: an opcode, a stamp, and four operands. The
+// commands every chip has, such as `OP_NOTE_ON`, are in the shared folder.
+// A voice's settings, for `OP_SET_VOICE`, are numbered here.
 
 /** Voices on the chip, numbered from 0. */
 export const VOICE_COUNT = 4;
 
-/** Starts a note. `a` is the voice, `b` the sound's id, `c` the note and `d` the volume. */
-export const OP_NOTE_ON = 1;
-/** Releases a voice's note. `a` is the voice. */
-export const OP_NOTE_OFF = 2;
-/**
- * Sets one of a voice's settings. `a` is the voice, `b` the setting's index
- * in `VOICE_SETTING_INDEX`, and `c` the value. For `wave`, the value is its
- * waveform flags (`WAVE_TRIANGLE` and the rest).
- */
-export const OP_SET_VOICE = 3;
 /**
  * Sets one of a filter's settings. `a` is the filter (0 or 1), `b` the
  * setting's index in `FILTER_SETTING_INDEX`, and `c` the value. For `mode`,

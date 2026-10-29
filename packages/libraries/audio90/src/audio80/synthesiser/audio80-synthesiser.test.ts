@@ -6,16 +6,15 @@ import { type Audio80Synthesiser, createAudio80Synthesiser } from './audio80-syn
 import {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
-    OP_NOTE_OFF,
-    OP_NOTE_ON,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_VOICE,
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
 } from './commands';
 import { type Audio80Character, FILTER_LOWPASS } from './sound-data';
-import { type CommandWriter, createCommandWriter, OP_PLAY, OP_PLAY_OPTIONS, SCOPE_POINTS, toFrequency, toScopeLength } from '../../shared';
+import {
+    type CommandWriter, createCommandWriter, OP_NOTE_OFF, OP_NOTE_ON, OP_PLAY, OP_PLAY_OPTIONS, OP_SET_VOICE, SCOPE_POINTS, toFrequency, toScopeLength,
+} from '../../shared';
 
 const SAMPLE_RATE = 48000;
 const A4 = 69;

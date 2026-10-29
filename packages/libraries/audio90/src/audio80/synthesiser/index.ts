@@ -2,11 +2,8 @@ export { createAudio80Synthesiser, type Audio80Synthesiser, type Audio80Synthesi
 export {
     ECHO_SETTING_INDEX,
     FILTER_SETTING_INDEX,
-    OP_NOTE_OFF,
-    OP_NOTE_ON,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_VOICE,
     VOICE_COUNT,
     VOICE_SETTING_INDEX,
 } from './commands';

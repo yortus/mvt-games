@@ -2,18 +2,14 @@
 // Interface
 // ---------------------------------------------------------------------------
 
-// The Audio90's commands. Each is laid out as `COMMAND_STRIDE`, in the
-// shared folder, describes: an opcode, a stamp, and four operands.
+// The Audio90's own commands. Each is laid out as `COMMAND_STRIDE`, in the
+// shared folder, describes: an opcode, a stamp, and four operands. The
+// commands every chip has, such as `OP_NOTE_ON`, are in the shared folder.
+// A voice's settings, for `OP_SET_VOICE`, are numbered here.
 
 /** Voices on the chip, numbered from 0. */
 export const AUDIO90_VOICE_COUNT = 16;
 
-/** Starts a note. `a` is the voice, `b` the sound's id, `c` the note and `d` the volume. */
-export const OP90_NOTE_ON = 1;
-/** Releases a voice's note. `a` is the voice. */
-export const OP90_NOTE_OFF = 2;
-/** Sets one of a voice's settings. `a` is the voice, `b` the setting's index in `AUDIO90_VOICE_SETTING_INDEX`, and `c` the value. */
-export const OP90_SET_VOICE = 3;
 /**
  * Sets one of an effect's settings. `a` is the effect's index in
  * `AUDIO90_EFFECT_INDEX`, `b` the setting's index in that effect's
@@ -102,7 +98,7 @@ export type Audio90EffectSetting<E extends Audio90EffectId> = Audio90EffectSetti
  */
 export type Audio90Character = 'studio' | 'console' | 'sampler';
 
-/** Each voice setting's number in an `OP90_SET_VOICE` command. */
+/** Each voice setting's number in an `OP_SET_VOICE` command. */
 export const AUDIO90_VOICE_SETTING_INDEX: Readonly<Record<Audio90VoiceSetting, number>> = {
     volume: 0,
     pan: 1,

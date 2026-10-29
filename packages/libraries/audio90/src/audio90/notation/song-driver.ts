@@ -1,16 +1,13 @@
-import type { SongDriver, SongWriter } from '../../shared';
+import { OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE, type SongDriver, type SongWriter } from '../../shared';
 import {
     AUDIO90_CHARACTERS,
     AUDIO90_EFFECT_INDEX,
     AUDIO90_EFFECT_SETTING_INDEX,
     AUDIO90_VOICE_COUNT,
     AUDIO90_VOICE_SETTING_INDEX,
-    OP90_NOTE_OFF,
-    OP90_NOTE_ON,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-    OP90_SET_VOICE,
 } from '../synthesiser';
 import type { Audio90Sound } from './sound';
 import {
@@ -94,11 +91,11 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
             }
             for (let channel = 0; channel < song.channelCount; channel++) {
                 const mix = song.mixer[channel];
-                write(OP90_SET_VOICE, stamp, channel, VOICE.pan, mix.pan, 0);
-                write(OP90_SET_VOICE, stamp, channel, VOICE.reverbSend, mix.reverb, 0);
-                write(OP90_SET_VOICE, stamp, channel, VOICE.echoSend, mix.echo, 0);
-                write(OP90_SET_VOICE, stamp, channel, VOICE.chorusSend, mix.chorus, 0);
-                write(OP90_SET_VOICE, stamp, channel, VOICE.brightness, 1, 0);
+                write(OP_SET_VOICE, stamp, channel, VOICE.pan, mix.pan, 0);
+                write(OP_SET_VOICE, stamp, channel, VOICE.reverbSend, mix.reverb, 0);
+                write(OP_SET_VOICE, stamp, channel, VOICE.echoSend, mix.echo, 0);
+                write(OP_SET_VOICE, stamp, channel, VOICE.chorusSend, mix.chorus, 0);
+                write(OP_SET_VOICE, stamp, channel, VOICE.brightness, 1, 0);
             }
         },
 
@@ -120,52 +117,52 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
 
                 // The channel's settings first, so a note on this row starts with them
                 const pan = cells[at + CELL90_PAN];
-                if (pan >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.pan, toPan(pan), 0);
+                if (pan >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.pan, toPan(pan), 0);
                 const brightness = cells[at + CELL90_BRIGHTNESS];
-                if (brightness >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.brightness, brightness / 15, 0);
+                if (brightness >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.brightness, brightness / 15, 0);
                 const reverb = cells[at + CELL90_REVERB];
-                if (reverb >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.reverbSend, reverb / 15, 0);
+                if (reverb >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.reverbSend, reverb / 15, 0);
                 const echo = cells[at + CELL90_ECHO];
-                if (echo >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.echoSend, echo / 15, 0);
+                if (echo >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.echoSend, echo / 15, 0);
 
                 if (channelSlideRate[channel] !== 0 && slide === 0) {
-                    write(OP90_SET_VOICE, stamp, channel, VOICE.slide, 0, 0);
+                    write(OP_SET_VOICE, stamp, channel, VOICE.slide, 0, 0);
                     channelSlideRate[channel] = 0;
                 }
                 if (note >= 0 && instrument >= 0) {
                     const played = note + (cells[at + CELL90_IS_OWN_NOTE] === 1 ? 0 : entry.transpose);
                     const soundId = writer.soundId(song.instruments[instrument]);
-                    write(OP90_NOTE_ON, stamp, channel, soundId, played, (volume >= 0 ? volume / 15 : 1) * songVolume);
-                    if (cells[at + CELL90_GLIDE] === 1) write(OP90_SET_VOICE, stamp, channel, VOICE.glide, glideMs, 0);
+                    write(OP_NOTE_ON, stamp, channel, soundId, played, (volume >= 0 ? volume / 15 : 1) * songVolume);
+                    if (cells[at + CELL90_GLIDE] === 1) write(OP_SET_VOICE, stamp, channel, VOICE.glide, glideMs, 0);
                 }
                 else if (note === RELEASE90) {
-                    write(OP90_NOTE_OFF, stamp, channel, 0, 0, 0);
+                    write(OP_NOTE_OFF, stamp, channel, 0, 0, 0);
                 }
                 else if (volume >= 0) {
-                    write(OP90_SET_VOICE, stamp, channel, VOICE.volume, volume / 15 * songVolume, 0);
+                    write(OP_SET_VOICE, stamp, channel, VOICE.volume, volume / 15 * songVolume, 0);
                 }
 
                 // These apply to the note playing, so they follow the note on
-                if (cells[at + CELL90_ACCENT] === 1) write(OP90_SET_VOICE, stamp, channel, VOICE.accent, 1, 0);
+                if (cells[at + CELL90_ACCENT] === 1) write(OP_SET_VOICE, stamp, channel, VOICE.accent, 1, 0);
                 const chord = cells[at + CELL90_CHORD];
-                if (chord >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.chord, chord, 0);
+                if (chord >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.chord, chord, 0);
                 const slice = cells[at + CELL90_SLICE];
-                if (slice >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.slice, slice, 0);
+                if (slice >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.slice, slice, 0);
                 const arpeggio = cells[at + CELL90_ARPEGGIO];
-                if (arpeggio >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.arpeggio, arpeggio, 0);
+                if (arpeggio >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.arpeggio, arpeggio, 0);
                 const vibrato = cells[at + CELL90_VIBRATO];
                 if (vibrato >= 0) {
-                    write(OP90_SET_VOICE, stamp, channel, VOICE.vibratoDepth, Math.floor(vibrato / 16) / 8, 0);
-                    write(OP90_SET_VOICE, stamp, channel, VOICE.vibratoRate, vibrato % 16, 0);
+                    write(OP_SET_VOICE, stamp, channel, VOICE.vibratoDepth, Math.floor(vibrato / 16) / 8, 0);
+                    write(OP_SET_VOICE, stamp, channel, VOICE.vibratoRate, vibrato % 16, 0);
                 }
                 if (slide !== 0) {
                     // The rate that covers the slide over the row at a tempo scale of 1
                     const rate = slide * 1000 / lengthMs;
                     channelSlideRate[channel] = rate;
-                    write(OP90_SET_VOICE, stamp, channel, VOICE.slide, rate * tempoScale, 0);
+                    write(OP_SET_VOICE, stamp, channel, VOICE.slide, rate * tempoScale, 0);
                 }
                 const pulse = cells[at + CELL90_PULSE];
-                if (pulse >= 0) write(OP90_SET_VOICE, stamp, channel, VOICE.pulseWidth, pulse / 16, 0);
+                if (pulse >= 0) write(OP_SET_VOICE, stamp, channel, VOICE.pulseWidth, pulse / 16, 0);
             }
         },
 
@@ -175,12 +172,12 @@ export function createAudio90SongDriver(writer: SongWriter<Audio90Sound>): SongD
             write(OP90_SET_TEMPO, stamp, song.bpm * tempoScale, 0, 0, 0);
             for (let channel = 0; channel < song.channelCount; channel++) {
                 const rate = channelSlideRate[channel];
-                if (rate !== 0) write(OP90_SET_VOICE, stamp, channel, VOICE.slide, rate * tempoScale, 0);
+                if (rate !== 0) write(OP_SET_VOICE, stamp, channel, VOICE.slide, rate * tempoScale, 0);
             }
         },
 
         release(song, stamp) {
-            for (let channel = 0; channel < song.channelCount; channel++) write(OP90_NOTE_OFF, stamp, channel, 0, 0, 0);
+            for (let channel = 0; channel < song.channelCount; channel++) write(OP_NOTE_OFF, stamp, channel, 0, 0, 0);
         },
     };
 

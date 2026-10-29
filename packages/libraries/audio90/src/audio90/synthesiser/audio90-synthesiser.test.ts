@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMMAND_STRIDE, OP_PLAY, OP_PLAY_OPTIONS, OP_STOP } from '../../shared';
+import { COMMAND_STRIDE, OP_NOTE_OFF, OP_NOTE_ON, OP_PLAY, OP_PLAY_OPTIONS, OP_SET_VOICE, OP_STOP } from '../../shared';
 import {
     AUDIO90_OSCILLATOR_BUDGET,
     AUDIO90_SAMPLE_MEMORY,
@@ -17,12 +17,9 @@ import {
     type Audio90EffectId,
     type Audio90EffectSetting,
     type Audio90VoiceSetting,
-    OP90_NOTE_OFF,
-    OP90_NOTE_ON,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-    OP90_SET_VOICE,
 } from './commands';
 import {
     type Audio90SoundData,
@@ -433,13 +430,13 @@ function createRig(options: Partial<Audio90SynthesiserOptions> = {}) {
             expect(synth.defineSample(id, data)).toBe(true);
         },
         noteOn(voice: number, instrument: number, note: number, volume = 1, atMs = nowMs): void {
-            write(OP90_NOTE_ON, atMs, voice, instrument, note, volume);
+            write(OP_NOTE_ON, atMs, voice, instrument, note, volume);
         },
         noteOff(voice: number): void {
-            write(OP90_NOTE_OFF, nowMs, voice);
+            write(OP_NOTE_OFF, nowMs, voice);
         },
         setVoice(voice: number, setting: Audio90VoiceSetting, value: number): void {
-            write(OP90_SET_VOICE, nowMs, voice, AUDIO90_VOICE_SETTING_INDEX[setting], value);
+            write(OP_SET_VOICE, nowMs, voice, AUDIO90_VOICE_SETTING_INDEX[setting], value);
         },
         setEffect<E extends Audio90EffectId>(effect: E, setting: Audio90EffectSetting<E>, value: number): void {
             const settings: Readonly<Record<string, number>> = AUDIO90_EFFECT_SETTING_INDEX[effect];

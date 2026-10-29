@@ -1476,3 +1476,40 @@ package is finished. The progress log uses these numbers.
     tests), `npm run test:visual` (50 files), `npm run build` (54.0 KB) and
     `npm run build:packages`. The package's docs still describe the old
     headless options and the log; step 11 rewrites them.
+- **2026-10-29, 6e part 6, first chunk done**, unstaged: the synthesisers'
+  shared parts. Part 6 goes in three chunks, each handed over on its own:
+  this one, then the tracker parser and the small repeats, then the names
+  and `glideMs`/`modEnvelope`.
+  - **The allocation question first.** The sampling heap profiler, on the
+    bundle as the benchmark builds it, puts the sample engine's 13 B a block
+    on one boxed number: the block's start time, `fromMs`, passed to the
+    synthesiser's `render`. Passing a constant brings it to 0. The other
+    engines inline differently and show under 1 B. It is about 4.5 KB a
+    second, one quick young-generation collection every few minutes, and the
+    worklet passes its time the same way, so it was left.
+  - **Shared now**, in `src/shared/`: `createCommandScheduler` (the queue,
+    `enqueue`, the render loop in runs between commands, and
+    `toSampleIndex`), `createEnvelopes` (start, step, release, sounding),
+    `createSoundPlays` (each voice's sound and play, choosing a voice,
+    stopping a play; `chooseSoundVoice` moved into it), and `synthesis.ts`
+    (`CONTROL_SAMPLES`, the cutoff limits, `DC_POLE`, `MAX_ECHO_FEEDBACK`,
+    `computeFall`, `tuneStateVariableFilter`, `polyBlep`, `clearTinyValues`,
+    `clamp`). `OP_NOTE_ON`, `OP_NOTE_OFF` and `OP_SET_VOICE` are in the
+    shared commands, and `OP90_NOTE_ON` and the rest went. Each
+    synthesiser keeps its own per-sample filter, its `render` signature, and
+    the next play's options.
+  - **The `toSampleIndex` fix** moved 14 of the 19 Audio90 songs' hashes
+    (the tunes and Neon Monsoon), and nothing else: with the fix taken out,
+    every hash matched. Renders before and after are in the session's
+    scratchpad for the user to hear; the samples differ through phase, as
+    some notes start a sample earlier. An Audio80 envelope that decays to a
+    sustain of 0 now ends, as the Audio90's did; no Audio80 hash moved. A
+    changeset, `.changeset/notes-on-time.md`.
+  - **Benchmarks**, interleaved before and after from bundles of each: every
+    time within ±1.5% on a quiet machine, the Audio90 a little faster;
+    allocation unchanged. A first try passed the envelope's scaled times to
+    the shared envelopes, which boxed two numbers per FM operator per note
+    (43 to 53 B a song tick); the envelopes now take the times and the scale.
+  - **Checked:** lint, `npx tsc -b`, `npm run test:unit` (235 files, 2,965
+    tests), `npm run build` (54.0 KB) and `npm run build:packages`; the
+    benchmarks saved.

@@ -6,9 +6,9 @@
  * How many numbers each command takes. Writes to a chip's synthesiser travel
  * as commands in a `Float64Array`, so writing one allocates nothing. Each
  * command is `[opcode, stampMs, a, b, c, d]`. The opcode says what the
- * command does. The opcodes that play and stop sounds, below, are the same
- * on every chip, and each chip numbers its others from 1. The stamp is the
- * chip time the command applies at, in ms. A stamp of `-Infinity` means as
+ * command does. The opcodes below are the same on every chip, and each chip
+ * numbers its own others from 4. The stamp is the chip time the command
+ * applies at, in ms. A stamp of `-Infinity` means as
  * soon as possible.
  *
  * A chip's synthesiser drops a command whose stamp is NaN or `+Infinity`. It
@@ -18,6 +18,13 @@ export const COMMAND_STRIDE = 6;
 
 /** The stamp of a write played as soon as it arrives, such as a sound played on its own. */
 export const ASAP_STAMP = -Infinity;
+
+/** Starts a note. `a` is the voice, `b` the sound's id, `c` the note and `d` the volume. */
+export const OP_NOTE_ON = 1;
+/** Releases a voice's note. `a` is the voice. */
+export const OP_NOTE_OFF = 2;
+/** Sets one of a voice's settings. `a` is the voice, `b` the setting's number in the chip's voice settings, and `c` the value. */
+export const OP_SET_VOICE = 3;
 
 /**
  * Says how the next `OP_PLAY` plays. `a` is how long it holds its note

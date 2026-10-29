@@ -1,16 +1,36 @@
 import {
-    chooseSoundVoice,
-    COMMAND_STRIDE,
-    createCommandQueue,
+    clamp,
+    clearTinyValues,
+    computeFall,
+    CONTROL_SAMPLES,
+    createCommandScheduler,
+    createEnvelopes,
     createNoteDriver,
+    createSoundPlays,
+    DC_POLE,
+    ENV_IDLE,
+    ENV_RELEASE,
     LN_SEMITONE,
+    MAX_CUTOFF_SHARE,
+    MAX_ECHO_FEEDBACK,
+    MIN_CUTOFF_HZ,
+    OP_NOTE_OFF,
+    OP_NOTE_ON,
     OP_PLAY,
     OP_PLAY_OPTIONS,
     OP_RELEASE_ALL,
+    OP_SET_VOICE,
     OP_STOP,
+    polyBlep,
     SCOPE_POINTS,
     SCOPE_STRIDE,
-    type SoundVoices,
+    SVF_A1,
+    SVF_A2,
+    SVF_A3,
+    SVF_K,
+    SVF_STRIDE,
+    TINY,
+    tuneStateVariableFilter,
 } from '../../shared';
 import {
     AUDIO90_CHARACTERS,
@@ -21,15 +41,11 @@ import {
     type Audio90Character,
     type Audio90EffectId,
     type Audio90EffectSetting,
-    OP90_NOTE_OFF,
-    OP90_NOTE_ON,
     OP90_SET_CHARACTER,
     OP90_SET_EFFECT,
     OP90_SET_TEMPO,
-    OP90_SET_VOICE,
 } from './commands';
 import {
-    type Audio90EnvelopeData,
     type Audio90SoundData,
     type Audio90SampleData,
     type Audio90StepData,
@@ -174,13 +190,9 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     let sampleMemoryUsed = 0;
 
     // ---- Envelopes: per voice, the volume, the mod, and one per operator ----
-    const envCount = V * ENVS_PER_VOICE;
-    const envStage = new Int32Array(envCount);
-    const envLevel = new Float64Array(envCount);
-    const envAttackInc = new Float64Array(envCount);
-    const envDecayCoef = new Float64Array(envCount);
-    const envSustain = new Float64Array(envCount);
-    const envReleaseCoef = new Float64Array(envCount);
+    const envelopes = createEnvelopes({ count: V * ENVS_PER_VOICE, sampleRate });
+    const envStage = envelopes.stage;
+    const envLevel = envelopes.level;
 
     // ---- Voices ------------------------------------------------------------------
     const voiceData: (Audio90SoundData | undefined)[] = [];
@@ -227,11 +239,10 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const resonance = new Float64Array(V);
     const drive = new Float64Array(V);
     const keyTrack = new Float64Array(V);
+    // The ladder's tuning, and the state-variable filter's coefficients
     const filterG = new Float64Array(V);
-    const filterK = new Float64Array(V);
-    const filterA1 = new Float64Array(V);
-    const filterA2 = new Float64Array(V);
-    const filterA3 = new Float64Array(V);
+    const ladderFeedback = new Float64Array(V);
+    const filterCoefficients = new Float64Array(V * SVF_STRIDE);
     const filterState = new Float64Array(V * 8);
 
     // FM
@@ -292,12 +303,9 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     const sliceCount = new Int32Array(V);
     const sampleSmooth = new Float64Array(V);
 
-    // Which sound each voice was played with, and which play it is. The voice chooser reads these
-    const soundId = new Int32Array(V);
-    const soundPriority = new Float64Array(V);
-    const startedAt = new Float64Array(V);
-    const soundVoices: SoundVoices = { soundId, soundPriority, startedAt, isSounding: isVoiceSounding };
-    const playId = new Float64Array(V);
+    // Which sound each voice was played with, and which play it is
+    const plays = createSoundPlays({ voiceCount: V, isSounding: isVoiceSounding, release });
+    const soundId = plays.soundId;
     // How the next play plays, as its `OP_PLAY_OPTIONS` said: its length in ms, or -1 to hold, its glide's note, or
     // -1, and its pan, if it has one of its own
     let nextPlayLengthMs = -1;
@@ -354,8 +362,10 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     // The tempo the LFOs follow. It is 0 while a song is held, which holds them. The echo keeps `bpm`, the last tempo above 0
     let lfoBpm = DEFAULT_BPM;
 
-    const queue = createCommandQueue({ capacity: options.queueCapacity ?? DEFAULT_QUEUE_CAPACITY });
-    const queued = queue.buffer;
+    const scheduler = createCommandScheduler({ capacity: options.queueCapacity, apply, renderRun: renderSamples });
+    // The two sides being rendered into
+    let left: Float32Array = new Float32Array(0);
+    let right = left;
 
     resetAll();
 
@@ -377,27 +387,12 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             return true;
         },
 
-        enqueue(commands, count) {
-            for (let i = 0; i < count; i++) queue.insert(commands, i * COMMAND_STRIDE);
-        },
+        enqueue: scheduler.enqueue,
 
-        render(left, right, offset, frames, fromMs, msPerSample) {
-            let done = 0;
-            for (;;) {
-                let next = frames;
-                for (let at = queue.head; at >= 0; at = queue.head) {
-                    const due = toSampleIndex(queued[at + 1], fromMs, msPerSample);
-                    if (due > done) {
-                        if (due < next) next = due;
-                        break;
-                    }
-                    apply(at);
-                    queue.removeHead();
-                }
-                renderSamples(left, right, offset + done, next - done);
-                done = next;
-                if (done >= frames) break;
-            }
+        render(intoLeft, intoRight, offset, frames, fromMs, msPerSample) {
+            left = intoLeft;
+            right = intoRight;
+            scheduler.render(offset, frames, fromMs, msPerSample);
         },
 
         reset() {
@@ -407,9 +402,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             resetAll();
         },
 
-        isSounding(voice) {
-            return isVoiceSounding(voice);
-        },
+        isSounding: isVoiceSounding,
 
         get oscillatorCount() {
             let count = 0;
@@ -419,32 +412,29 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             return count;
         },
 
-        findSoundOn(voice) {
-            if (!isVoiceSounding(voice) || soundId[voice] < 0) return undefined;
-            return soundId[voice];
-        },
+        findSoundOn: plays.findSoundOn,
     };
 
     return synthesiser;
 
     // ---- Commands ----------------------------------------------------------------
 
-    function apply(at: number): void {
-        const op = queued[at];
-        const a = queued[at + 2];
-        const b = queued[at + 3];
-        const c = queued[at + 4];
-        const d = queued[at + 5];
+    function apply(commands: Float64Array, at: number): void {
+        const op = commands[at];
+        const a = commands[at + 2];
+        const b = commands[at + 3];
+        const c = commands[at + 4];
+        const d = commands[at + 5];
         switch (op) {
-            case OP90_NOTE_ON: {
+            case OP_NOTE_ON: {
                 const data = sounds.get(b);
                 if (data !== undefined && isVoice(a)) startNote(a, data, c, d);
                 break;
             }
-            case OP90_NOTE_OFF:
+            case OP_NOTE_OFF:
                 if (isVoice(a)) release(a);
                 break;
-            case OP90_SET_VOICE:
+            case OP_SET_VOICE:
                 if (isVoice(a)) setVoice(a, b, c);
                 break;
             case OP90_SET_EFFECT:
@@ -460,7 +450,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 playSound(a, b, c, d);
                 break;
             case OP_STOP:
-                stop(a);
+                plays.stop(a);
                 break;
             case OP_RELEASE_ALL:
                 for (let v = 0; v < V; v++) release(v);
@@ -529,18 +519,15 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         isStereo[v] = 0;
 
         if (!isTied) {
-            setEnvelope(amp, data.envelope, 1);
-            setEnvelope(amp + ENV_MOD, data.modEnvelope, 1);
+            envelopes.start(amp, data.envelope, 1);
+            envelopes.start(amp + ENV_MOD, data.modEnvelope, 1);
             if (isNew) for (let i = 0; i < 8; i++) filterState[v * 8 + i] = 0;
         }
         if (data.engine === ENGINE_FM) startFm(v, data, note, isTied);
         else if (data.engine === ENGINE_ANALOG) startAnalog(v, data, isNew);
         else startSample(v, data);
 
-        soundId[v] = -1;
-        soundPriority[v] = 0;
-        playId[v] = -1;
-        startedAt[v] = counters[COUNTER_SAMPLES];
+        plays.startNote(v, counters[COUNTER_SAMPLES]);
         // The pump ducks the music on each note of its voice
         if (v === pumpVoice) fx[FX_PUMP] = 1 - pumpDepth;
         controlVoice(v, 0);
@@ -570,7 +557,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             if (!isTied) {
                 opPhase[i] = 0;
                 opOut[i] = 0;
-                setEnvelope(v * ENVS_PER_VOICE + ENV_OP + o, op.envelope, rateScale);
+                envelopes.start(v * ENVS_PER_VOICE + ENV_OP + o, op.envelope, rateScale);
             }
         }
         if (!isTied) {
@@ -675,9 +662,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
 
     function release(v: number): void {
         const base = v * ENVS_PER_VOICE;
-        for (let e = 0; e < ENVS_PER_VOICE; e++) {
-            if (envStage[base + e] !== ENV_IDLE) envStage[base + e] = ENV_RELEASE;
-        }
+        for (let e = 0; e < ENVS_PER_VOICE; e++) envelopes.release(base + e);
     }
 
     function setVoice(v: number, setting: number, value: number): void {
@@ -824,7 +809,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         hasNextPlayPan = false;
         const data = sounds.get(id);
         if (data === undefined) return;
-        const v = chooseSoundVoice(soundVoices, id, data.priority, data.maxVoices);
+        const v = plays.choose(id, data.priority, data.maxVoices);
         if (v < 0) return;
         // The voice takes none of the channel settings a song left on it. A pan of the play's own moves the
         // sound from its own pan to there
@@ -832,9 +817,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         channelBrightness[v] = 1;
         for (let i = 0; i < SEND_COUNT; i++) channelSends[v * SEND_COUNT + i] = 0;
         startNote(v, data, note, volume);
-        soundId[v] = id;
-        soundPriority[v] = data.priority;
-        playId[v] = play;
+        plays.claim(v, id, data.priority, play);
         // A held note has no set length, so it plays until it is stopped
         if (lengthMs < 0) return;
         // At least one sample. A length of 0 means the note has no set length, so it would never be released
@@ -842,16 +825,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         if (glideTo >= 0) {
             driver.glideBetween(v, note, glideTo, lengthMs);
             controlVoice(v, 0);
-        }
-    }
-
-    /** Releases the note of play `play`, if a voice still plays it. */
-    function stop(play: number): void {
-        for (let v = 0; v < V; v++) {
-            if (playId[v] === play) {
-                release(v);
-                playId[v] = -1;
-            }
         }
     }
 
@@ -873,20 +846,11 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         for (let v = 0; v < V; v++) {
             if (envStage[v * ENVS_PER_VOICE] !== ENV_IDLE) controlVoice(v, CONTROL_SAMPLES);
         }
-        // With no input, the filters', the effects' and the DC blocker's
-        // states shrink towards 0 without reaching it. Numbers that small are
-        // subnormal, and make the processor's arithmetic many times slower.
-        // Values this small are far too quiet to hear, so they are set to 0.
-        // The test is written so that a NaN fails it too, and is cleared.
-        for (let i = 0; i < filterState.length; i++) {
-            if (!(Math.abs(filterState[i]) >= TINY)) filterState[i] = 0;
-        }
-        for (let i = 0; i < FX_COUNT; i++) {
-            if (i !== FX_PUMP && i !== FX_CHORUS_PHASE && !(Math.abs(fx[i]) >= TINY)) fx[i] = 0;
-        }
-        for (let i = 0; i < sampleSmooth.length; i++) {
-            if (!(Math.abs(sampleSmooth[i]) >= TINY)) sampleSmooth[i] = 0;
-        }
+        // Every state but the pump's level and the chorus's phase, which are not states that fade
+        clearTinyValues(filterState);
+        clearTinyValues(fx, 0, FX_PUMP);
+        clearTinyValues(fx, FX_REVERB_DAMP);
+        clearTinyValues(sampleSmooth);
     }
 
     /** Sets voice `v`'s pitches, LFO, brightness, filter, pan and sends for the next `CONTROL_SAMPLES` samples. */
@@ -956,15 +920,10 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             const g = Math.tan(Math.PI * cutoff / sampleRate);
             if (mode === FILTER90_LOWPASS_24) {
                 filterG[v] = g / (1 + g);
-                filterK[v] = resonance[v] * LADDER_MAX_FEEDBACK;
+                ladderFeedback[v] = resonance[v] * LADDER_MAX_FEEDBACK;
             }
             else {
-                const k = 2 - 1.98 * resonance[v];
-                const a1 = 1 / (1 + g * (g + k));
-                filterK[v] = k;
-                filterA1[v] = a1;
-                filterA2[v] = g * a1;
-                filterA3[v] = g * g * a1;
+                tuneStateVariableFilter(filterCoefficients, v * SVF_STRIDE, g, resonance[v]);
             }
         }
 
@@ -980,7 +939,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
 
     // ---- Samples ---------------------------------------------------------------------
 
-    function renderSamples(left: Float32Array, right: Float32Array, start: number, count: number): void {
+    function renderSamples(start: number, count: number): void {
         const end = start + count;
         const isConsole = character === CHARACTER_CONSOLE;
         const isSampler = character === CHARACTER_SAMPLER;
@@ -1015,8 +974,8 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 else if (kind === ENGINE_ANALOG) renderAnalog(v);
                 else renderSample(v, isConsole, isSampler);
                 if (filterMode[v] !== FILTER90_NONE) filterVoice(v);
-                stepEnvelope(amp);
-                stepEnvelope(amp + ENV_MOD);
+                envelopes.step(amp);
+                envelopes.step(amp + ENV_MOD);
                 const isEffect = soundId[v] >= 0;
                 const accent = isAccented[v] === 1 ? 1 + ACCENT_GAIN * accentAmount[v] : 1;
                 let g = envLevel[amp] * noteVolume[v] * soundVolume[v] * stepVolume[v] * accent * lfoGain[v] * VOICE_GAIN;
@@ -1079,7 +1038,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         let out = 0;
         for (let o = count - 1; o >= 0; o--) {
             const i = base + o;
-            stepEnvelope(envBase + o);
+            envelopes.step(envBase + o);
             const mask = opModMask[i];
             let mod = 0;
             if ((mask & 2) !== 0) mod += opOut[base + 1];
@@ -1233,7 +1192,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 // Four one-pole stages, the last fed back for resonance, and the
                 // input driven into gentle distortion: a ladder filter
                 const g = filterG[v];
-                const k = filterK[v];
+                const k = ladderFeedback[v];
                 const gainIn = 1 + drive[v] * 3;
                 let u = softClip((input - k * filterState[st + 3]) * gainIn) * (1 + k * 0.25);
                 for (let stage = 0; stage < 4; stage++) {
@@ -1246,15 +1205,16 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
                 y = u / gainIn * (1 + drive[v]);
             }
             else {
-                // A state-variable filter, as each of the Audio80's is
+                // A state-variable filter, as `tuneStateVariableFilter` describes
+                const c = v * SVF_STRIDE;
                 const ic1 = filterState[st];
                 const ic2 = filterState[st + 1];
                 const v3 = input - ic2;
-                const v1 = filterA1[v] * ic1 + filterA2[v] * v3;
-                const v2 = ic2 + filterA2[v] * ic1 + filterA3[v] * v3;
+                const v1 = filterCoefficients[c + SVF_A1] * ic1 + filterCoefficients[c + SVF_A2] * v3;
+                const v2 = ic2 + filterCoefficients[c + SVF_A2] * ic1 + filterCoefficients[c + SVF_A3] * v3;
                 filterState[st] = 2 * v1 - ic1;
                 filterState[st + 1] = 2 * v2 - ic2;
-                y = mode === FILTER90_LOWPASS_12 ? v2 : mode === FILTER90_BANDPASS ? v1 : input - filterK[v] * v1 - v2;
+                y = mode === FILTER90_LOWPASS_12 ? v2 : mode === FILTER90_BANDPASS ? v1 : input - filterCoefficients[c + SVF_K] * v1 - v2;
             }
             if (side === 0) voiceL[v] = y;
             else voiceR[v] = y;
@@ -1373,62 +1333,14 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
 
     // ---- Envelopes -------------------------------------------------------------------
 
-    /** Starts envelope `e` from its level now, so a note played over another does not drop to silence first. */
-    function setEnvelope(e: number, envelope: Audio90EnvelopeData, rateScale: number): void {
-        envStage[e] = ENV_ATTACK;
-        const attackSamples = envelope.attackMs / msPerAudioSample;
-        envAttackInc[e] = attackSamples <= 0 ? 1 : 1 / attackSamples;
-        envDecayCoef[e] = toFall(envelope.decayMs * rateScale);
-        envSustain[e] = clamp(envelope.sustain, 0, 1);
-        envReleaseCoef[e] = toFall(envelope.releaseMs * rateScale);
-    }
-
-    function stepEnvelope(e: number): void {
-        let level = envLevel[e];
-        switch (envStage[e]) {
-            case ENV_ATTACK:
-                level += envAttackInc[e];
-                if (level >= 1) {
-                    level = 1;
-                    envStage[e] = ENV_DECAY;
-                }
-                break;
-            case ENV_DECAY: {
-                const sustain = envSustain[e];
-                level = sustain + (level - sustain) * envDecayCoef[e];
-                if (level - sustain < ENV_FLOOR) {
-                    level = sustain;
-                    // A sound that decays to nothing, such as a drum, is over, and frees its voice
-                    envStage[e] = sustain > 0 ? ENV_SUSTAIN : ENV_IDLE;
-                }
-                break;
-            }
-            case ENV_RELEASE:
-                level *= envReleaseCoef[e];
-                if (level < ENV_FLOOR) {
-                    level = 0;
-                    envStage[e] = ENV_IDLE;
-                }
-                break;
-        }
-        envLevel[e] = level;
-    }
-
+    /** Whether voice `v` is making a sound: whether its volume envelope is. */
     function isVoiceSounding(v: number): boolean {
-        const amp = v * ENVS_PER_VOICE;
-        const stage = envStage[amp];
-        if (stage === ENV_IDLE) return false;
-        return stage === ENV_ATTACK || envLevel[amp] > SILENT_LEVEL;
-    }
-
-    /** The per-sample factor that makes a level fall 60 dB over `ms`, or 0 for an instant fall. */
-    function toFall(ms: number): number {
-        return ms <= 0 ? 0 : Math.exp(LN_FALL / (ms / msPerAudioSample));
+        return envelopes.isSounding(v * ENVS_PER_VOICE);
     }
 
     /** The share of what is left that a level recovers each sample, so that it gets back within 60 dB of where it was going over `ms`. */
     function toRecovery(ms: number): number {
-        return 1 - toFall(ms);
+        return 1 - computeFall(ms, msPerAudioSample);
     }
 
     /** The per-sample coefficient of a one-pole low-pass filter with its cutoff at `hz`. */
@@ -1437,10 +1349,8 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
     }
 
     function resetAll(): void {
-        for (let e = 0; e < envCount; e++) {
-            envStage[e] = ENV_IDLE;
-            envLevel[e] = 0;
-        }
+        envelopes.reset();
+        plays.reset();
         for (let v = 0; v < V; v++) {
             voiceData[v] = undefined;
             engine[v] = ENGINE_ANALOG;
@@ -1458,10 +1368,6 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
             lfoGain[v] = 1;
             lfoSeed[v] = LFO_SEED + v * 104729;
             noiseState[v] = NOISE_SEED + v * 7919;
-            soundId[v] = -1;
-            soundPriority[v] = 0;
-            playId[v] = -1;
-            startedAt[v] = 0;
             panL[v] = Math.SQRT1_2;
             panR[v] = Math.SQRT1_2;
         }
@@ -1481,7 +1387,7 @@ export function createAudio90Synthesiser(options: Audio90SynthesiserOptions): Au
         nextPlayGlideTo = -1;
         nextPlayPan = 0;
         hasNextPlayPan = false;
-        queue.clear();
+        scheduler.clear();
         reverbSize = DEFAULT_REVERB_SIZE;
         reverbDecayMs = DEFAULT_REVERB_DECAY_MS;
         reverbDamping = DEFAULT_REVERB_DAMPING;
@@ -1522,16 +1428,6 @@ function isVoice(v: number): boolean {
     return Number.isInteger(v) && v >= 0 && v < AUDIO90_VOICE_COUNT;
 }
 
-function clamp(x: number, low: number, high: number): number {
-    return x < low ? low : x > high ? high : x;
-}
-
-/** The sample at or after which a stamp falls. A stamp of `-Infinity` falls at 0. */
-function toSampleIndex(stampMs: number, fromMs: number, msPerSample: number): number {
-    if (stampMs <= fromMs) return 0;
-    return Math.ceil((stampMs - fromMs) / msPerSample);
-}
-
 /** One sample of a band-limited oscillator at phase `p`, moving `dt` a sample. */
 function oscillate(wave: number, p: number, dt: number, width: number): number {
     if (wave === WAVE90_SAW) return 2 * p - 1 - polyBlep(p, dt);
@@ -1542,19 +1438,6 @@ function oscillate(wave: number, p: number, dt: number, width: number): number {
     }
     if (wave === WAVE90_TRIANGLE) return p < 0.5 ? 4 * p - 1 : 3 - 4 * p;
     return SINE[(p * TABLE_SIZE) | 0];
-}
-
-/** The correction for a jump in a wave at phase 0, smoothed over a sample either side (polyBLEP). */
-function polyBlep(p: number, dt: number): number {
-    if (p < dt) {
-        const t = p / dt;
-        return t + t - t * t - 1;
-    }
-    if (p > 1 - dt) {
-        const t = (p - 1) / dt;
-        return t * t + t + t + 1;
-    }
-    return 0;
 }
 
 /** A cheap curve that follows tanh closely up to about 3, then holds at 1. */
@@ -1571,8 +1454,6 @@ function computeReverbTotal(sampleRate: number): number {
     return total + 1;
 }
 
-const CONTROL_SAMPLES = 32;
-const DEFAULT_QUEUE_CAPACITY = 4096;
 const VOICE_GAIN = 0.25;
 const MAX_DETUNE_SEMITONES = 0.5;
 const GOLDEN = 0.6180339887;
@@ -1586,16 +1467,12 @@ const BRIGHTNESS_OCTAVES = 6;
 const ACCENT_GAIN = 0.3;
 /** The ladder's feedback at full resonance, where it rings at its cutoff. */
 const LADDER_MAX_FEEDBACK = 4;
-const MIN_CUTOFF_HZ = 20;
-const MAX_CUTOFF_SHARE = 0.45;
 /** The console character's smoothing of samples, as a cutoff in Hz. */
 const CONSOLE_SAMPLE_HZ = 9000;
 const SAMPLER_DRIVE = 1.4;
 const SCOPE_GAIN = 2;
 /** Where a scope's pans start: voice v's pan is at `SCOPE_PANS + v`. */
 const SCOPE_PANS = AUDIO90_VOICE_COUNT * SCOPE_POINTS;
-const DC_POLE = 0.9995;
-const TINY = 1e-20;
 const NOISE_SEED = 0x1234567;
 const LFO_SEED = 0x2468ace;
 const DEFAULT_BPM = 120;
@@ -1606,17 +1483,6 @@ const CHARACTER_SAMPLER = 2;
 const ENVS_PER_VOICE = 2 + MAX_OPERATORS;
 const ENV_MOD = 1;
 const ENV_OP = 2;
-const ENV_IDLE = 0;
-const ENV_ATTACK = 1;
-const ENV_DECAY = 2;
-const ENV_SUSTAIN = 3;
-const ENV_RELEASE = 4;
-/** The envelope ends its decay this close to the sustain level, and its release this close to 0 (80 dB down). */
-const ENV_FLOOR = 1e-4;
-/** Below this envelope level, a voice counts as silent and is free for a sound to play on. */
-const SILENT_LEVEL = 1e-3;
-/** Decay and release fall 60 dB over their time. */
-const LN_FALL = Math.log(1e-3);
 
 const SEND_COUNT = 3;
 const SEND_REVERB = 0;
@@ -1635,7 +1501,6 @@ const CHORUS_BASE_MS = 12;
 const CHORUS_SWING_MS = 6;
 const MAX_CHORUS_HZ = 10;
 const MAX_ECHO_MS = 2000;
-const MAX_ECHO_FEEDBACK = 0.95;
 const REVERB_LINES = 8;
 const REVERB_LENGTHS_48K = [1031, 1327, 1523, 1871, 2053, 2311, 2647, 2887];
 const DIFFUSER_LENGTHS_48K = [142, 379];

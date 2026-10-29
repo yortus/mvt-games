@@ -1,28 +1,35 @@
 import {
-    chooseSoundVoice,
-    COMMAND_STRIDE,
-    createCommandQueue,
+    clamp,
+    clearTinyValues,
+    CONTROL_SAMPLES,
+    createCommandScheduler,
+    createEnvelopes,
     createNoteDriver,
+    createSoundPlays,
+    DC_POLE,
+    ENV_IDLE,
     LN_SEMITONE,
+    MAX_CUTOFF_SHARE,
+    MAX_ECHO_FEEDBACK,
+    MIN_CUTOFF_HZ,
+    OP_NOTE_OFF,
+    OP_NOTE_ON,
     OP_PLAY,
     OP_PLAY_OPTIONS,
     OP_RELEASE_ALL,
+    OP_SET_VOICE,
     OP_STOP,
+    polyBlep,
     SCOPE_POINTS,
     SCOPE_STRIDE,
-    type SoundVoices,
+    SVF_A1,
+    SVF_A2,
+    SVF_A3,
+    SVF_K,
+    SVF_STRIDE,
+    tuneStateVariableFilter,
 } from '../../shared';
-import {
-    ECHO_SETTING_INDEX,
-    FILTER_SETTING_INDEX,
-    OP_NOTE_OFF,
-    OP_NOTE_ON,
-    OP_SET_ECHO,
-    OP_SET_FILTER,
-    OP_SET_VOICE,
-    VOICE_COUNT,
-    VOICE_SETTING_INDEX,
-} from './commands';
+import { ECHO_SETTING_INDEX, FILTER_SETTING_INDEX, OP_SET_ECHO, OP_SET_FILTER, VOICE_COUNT, VOICE_SETTING_INDEX } from './commands';
 import {
     type Audio80Character,
     FILTER_BANDPASS,
@@ -138,12 +145,9 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const ringSource = new Int32Array(VOICE_COUNT);
     const wrapped = new Uint8Array(VOICE_COUNT);
 
-    const envStage = new Int32Array(VOICE_COUNT);
-    const envLevel = new Float64Array(VOICE_COUNT);
-    const attackInc = new Float64Array(VOICE_COUNT);
-    const decayCoef = new Float64Array(VOICE_COUNT);
-    const sustainLevel = new Float64Array(VOICE_COUNT);
-    const releaseCoef = new Float64Array(VOICE_COUNT);
+    const envelopes = createEnvelopes({ count: VOICE_COUNT, sampleRate });
+    const envStage = envelopes.stage;
+    const envLevel = envelopes.level;
 
     const noteVolume = new Float64Array(VOICE_COUNT);
     const stepVolume = new Float64Array(VOICE_COUNT);
@@ -165,12 +169,8 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const filterSweepFrom = new Float64Array(VOICE_COUNT);
     const filterSweepTo = new Float64Array(VOICE_COUNT);
 
-    // Which sound each voice was played with, and which play it is. The voice chooser reads these
-    const soundId = new Int32Array(VOICE_COUNT);
-    const soundPriority = new Float64Array(VOICE_COUNT);
-    const startedAt = new Float64Array(VOICE_COUNT);
-    const soundVoices: SoundVoices = { soundId, soundPriority, startedAt, isSounding: isVoiceSounding };
-    const playId = new Float64Array(VOICE_COUNT);
+    // Which sound each voice was played with, and which play it is
+    const plays = createSoundPlays({ voiceCount: VOICE_COUNT, isSounding: envelopes.isSounding, release });
     // How the next play plays, as its `OP_PLAY_OPTIONS` said: its length in ms, or -1 to hold, and its glide's note, or -1
     let nextPlayLengthMs = -1;
     let nextPlayGlideTo = -1;
@@ -180,10 +180,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     const filterCutoff = new Float64Array(FILTER_COUNT);
     const filterResonance = new Float64Array(FILTER_COUNT);
     const filterDrive = new Float64Array(FILTER_COUNT);
-    const filterK = new Float64Array(FILTER_COUNT);
-    const filterA1 = new Float64Array(FILTER_COUNT);
-    const filterA2 = new Float64Array(FILTER_COUNT);
-    const filterA3 = new Float64Array(FILTER_COUNT);
+    const filterCoefficients = new Float64Array(FILTER_COUNT * SVF_STRIDE);
     // Each filter's two integrator states (ic1, ic2): the values it carries
     // from one sample to the next
     const filterState = new Float64Array(FILTER_COUNT * 2);
@@ -200,14 +197,13 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
     // ---- Each sample's working values ----------------------------------------
     const voiceOut = new Float64Array(VOICE_COUNT);
     const bus = new Float64Array(BUS_COUNT);
-    // The echo's damping state, and the DC blocker's last input and output.
-    // The DC blocker removes any steady offset from zero in the output
-    // (DC, short for direct current)
+    // The echo's damping state, and the DC blocker's last input and output
     const mix = new Float64Array(MIX_STATE_COUNT);
 
     // ---- The queue -----------------------------------------------------------
-    const queue = createCommandQueue({ capacity: options.queueCapacity ?? DEFAULT_QUEUE_CAPACITY });
-    const queued = queue.buffer;
+    const scheduler = createCommandScheduler({ capacity: options.queueCapacity, apply, renderRun: renderSamples });
+    // The output being rendered into
+    let output: Float32Array = new Float32Array(0);
 
     let controlCountdown = 0;
     let sampleClock = 0;
@@ -224,28 +220,11 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             sounds.set(id, data);
         },
 
-        enqueue(commands, count) {
-            for (let i = 0; i < count; i++) queue.insert(commands, i * COMMAND_STRIDE);
-        },
+        enqueue: scheduler.enqueue,
 
-        render(output, offset, frames, fromMs, msPerSample) {
-            let done = 0;
-            for (;;) {
-                // Apply every command due by sample `done`, and find when the next one is due
-                let next = frames;
-                for (let at = queue.head; at >= 0; at = queue.head) {
-                    const due = toSampleIndex(queued[at + 1], fromMs, msPerSample);
-                    if (due > done) {
-                        if (due < next) next = due;
-                        break;
-                    }
-                    apply(at);
-                    queue.removeHead();
-                }
-                renderSamples(output, offset + done, next - done);
-                done = next;
-                if (done >= frames) break;
-            }
+        render(into, offset, frames, fromMs, msPerSample) {
+            output = into;
+            scheduler.render(offset, frames, fromMs, msPerSample);
         },
 
         reset() {
@@ -253,26 +232,20 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             resetAll();
         },
 
-        isSounding(voice) {
-            return isVoiceSounding(voice);
-        },
-
-        findSoundOn(voice) {
-            if (!isVoiceSounding(voice) || soundId[voice] < 0) return undefined;
-            return soundId[voice];
-        },
+        isSounding: envelopes.isSounding,
+        findSoundOn: plays.findSoundOn,
     };
 
     return synthesiser;
 
     // ---- Commands -----------------------------------------------------------
 
-    function apply(at: number): void {
-        const op = queued[at];
-        const a = queued[at + 2];
-        const b = queued[at + 3];
-        const c = queued[at + 4];
-        const d = queued[at + 5];
+    function apply(commands: Float64Array, at: number): void {
+        const op = commands[at];
+        const a = commands[at + 2];
+        const b = commands[at + 3];
+        const c = commands[at + 4];
+        const d = commands[at + 5];
         switch (op) {
             case OP_NOTE_ON: {
                 const data = sounds.get(b);
@@ -299,7 +272,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 playSound(a, b, c, d);
                 break;
             case OP_STOP:
-                stop(a);
+                plays.stop(a);
                 break;
             case OP_RELEASE_ALL:
                 for (let v = 0; v < VOICE_COUNT; v++) release(v);
@@ -313,10 +286,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         for (let i = 0; i < WAVETABLE_SIZE; i++) {
             wavetable[v * WAVETABLE_SIZE + i] = i < data.wavetable.length ? data.wavetable[i] : 0;
         }
-        attackInc[v] = data.attackMs <= 0 ? 1 : msPerAudioSample / data.attackMs;
-        decayCoef[v] = computeFallCoefficient(data.decayMs);
-        sustainLevel[v] = data.sustain;
-        releaseCoef[v] = computeFallCoefficient(data.releaseMs);
         soundVolume[v] = data.volume;
         route[v] = data.filter;
         echoSend[v] = data.echo;
@@ -335,24 +304,19 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         driver.start(v, data, note);
         noteVolume[v] = volume;
         stepVolume[v] = 1;
-        // The attack starts from the envelope's current level, so a note played
-        // over another does not drop to silence first
-        envStage[v] = ENV_ATTACK;
-        soundId[v] = -1;
-        soundPriority[v] = 0;
-        playId[v] = -1;
-        startedAt[v] = sampleClock;
+        envelopes.start(v, data, 1);
+        plays.startNote(v, sampleClock);
         controlVoice(v, 0);
     }
 
     function release(v: number): void {
-        if (envStage[v] !== ENV_IDLE) envStage[v] = ENV_RELEASE;
+        envelopes.release(v);
     }
 
     function setVoice(v: number, setting: number, value: number): void {
         switch (setting) {
             case VOICE_SETTING_INDEX.pulseWidth:
-                pulseWidth[v] = clamp01(value);
+                pulseWidth[v] = clamp(value, 0, 1);
                 pulseSweepMs[v] = 0;
                 break;
             case VOICE_SETTING_INDEX.volume:
@@ -386,11 +350,11 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 setCutoff(f, value);
                 break;
             case FILTER_SETTING_INDEX.resonance:
-                filterResonance[f] = clamp01(value);
+                filterResonance[f] = clamp(value, 0, 1);
                 areFiltersDirty = true;
                 break;
             case FILTER_SETTING_INDEX.drive:
-                filterDrive[f] = clamp01(value);
+                filterDrive[f] = clamp(value, 0, 1);
                 break;
         }
     }
@@ -404,7 +368,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 echoFeedback = Math.min(MAX_ECHO_FEEDBACK, Math.max(0, value));
                 break;
             case ECHO_SETTING_INDEX.level:
-                echoLevel = clamp01(value);
+                echoLevel = clamp(value, 0, 1);
                 break;
         }
     }
@@ -417,12 +381,10 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         nextPlayGlideTo = -1;
         const data = sounds.get(id);
         if (data === undefined) return;
-        const v = chooseSoundVoice(soundVoices, id, data.priority, data.maxVoices);
+        const v = plays.choose(id, data.priority, data.maxVoices);
         if (v < 0) return;
         startNote(v, data, note, volume);
-        soundId[v] = id;
-        soundPriority[v] = data.priority;
-        playId[v] = play;
+        plays.claim(v, id, data.priority, play);
         // A held note has no set length, so it plays until it is stopped
         if (lengthMs < 0) return;
         // At least one sample. A length of 0 means the note has no set length, so it would never be released
@@ -433,33 +395,13 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         }
     }
 
-    /** Releases the note of play `play`, if a voice still plays it. */
-    function stop(play: number): void {
-        for (let v = 0; v < VOICE_COUNT; v++) {
-            if (playId[v] === play) {
-                release(v);
-                playId[v] = -1;
-            }
-        }
-    }
-
     // ---- The driver, at control rate ----------------------------------------
 
     function controlAll(): void {
         for (let v = 0; v < VOICE_COUNT; v++) controlVoice(v, CONTROL_SAMPLES);
         if (areFiltersDirty) updateFilterCoefficients();
-        // With no input, the states of the filters, the echo and the DC
-        // blocker shrink towards 0 without ever reaching it. Numbers that
-        // small are called subnormal, and they make the processor's arithmetic
-        // many times slower. Values this small are far too quiet to hear, so
-        // set them to 0. The test is written so that a NaN fails it too, and
-        // is cleared.
-        for (let i = 0; i < filterState.length; i++) {
-            if (!(Math.abs(filterState[i]) >= TINY)) filterState[i] = 0;
-        }
-        for (let i = 0; i < mix.length; i++) {
-            if (!(Math.abs(mix[i]) >= TINY)) mix[i] = 0;
-        }
+        clearTinyValues(filterState);
+        clearTinyValues(mix);
     }
 
     /**
@@ -511,7 +453,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     // ---- Samples --------------------------------------------------------------
 
-    function renderSamples(output: Float32Array, start: number, count: number): void {
+    function renderSamples(start: number, count: number): void {
         const end = start + count;
         const scope = synthesiser.scope;
         for (let s = start; s < end; s++) {
@@ -547,7 +489,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                     if (scopeAt >= 0) scope![v * SCOPE_POINTS + scopeAt] = 0;
                     continue;
                 }
-                stepEnvelope(v);
+                envelopes.step(v);
                 oscillate(v);
                 let x = voiceOut[v] * envLevel[v] * noteVolume[v] * stepVolume[v] * soundVolume[v] * VOICE_GAIN;
                 if (scopeAt >= 0) scope![v * SCOPE_POINTS + scopeAt] = x * SCOPE_GAIN;
@@ -579,36 +521,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         sampleClock += count;
     }
 
-    function stepEnvelope(v: number): void {
-        let level = envLevel[v];
-        switch (envStage[v]) {
-            case ENV_ATTACK:
-                level += attackInc[v];
-                if (level >= 1) {
-                    level = 1;
-                    envStage[v] = ENV_DECAY;
-                }
-                break;
-            case ENV_DECAY: {
-                const sustain = sustainLevel[v];
-                level = sustain + (level - sustain) * decayCoef[v];
-                if (level - sustain < ENV_FLOOR) {
-                    level = sustain;
-                    envStage[v] = ENV_SUSTAIN;
-                }
-                break;
-            }
-            case ENV_RELEASE:
-                level *= releaseCoef[v];
-                if (level < ENV_FLOOR) {
-                    level = 0;
-                    envStage[v] = ENV_IDLE;
-                }
-                break;
-        }
-        envLevel[v] = level;
-    }
-
     /** Writes one sample of voice `v`'s oscillator, from -1 to 1, into `voiceOut[v]`. */
     function oscillate(v: number): void {
         const w = wave[v];
@@ -637,21 +549,10 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                 x = triangle * 2 - 1;
             }
             else {
-                // Band limited, so the wave's sharp jumps do not alias (add
-                // harsh false tones). Each jump is smoothed over a sample either
-                // side by a polynomial, a method called polyBLEP. `atWrap`
-                // smooths the jump where the phase wraps. `atWidth` smooths the
-                // pulse's jump at its width
+                // Band limited, so the wave's sharp jumps do not alias. `atWrap`
+                // smooths the jump where the phase wraps
                 const dt = phaseInc[v];
-                let atWrap = 0;
-                if (p < dt) {
-                    const t = p / dt;
-                    atWrap = t + t - t * t - 1;
-                }
-                else if (p > 1 - dt) {
-                    const t = (p - 1) / dt;
-                    atWrap = t * t + t + t + 1;
-                }
+                const atWrap = polyBlep(p, dt);
                 if (w === WAVE_SAW) {
                     // Falls from 1 to -1 at the wrap
                     x = 2 * p - 1 - atWrap;
@@ -664,16 +565,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
                     const width = pulseWidth[v];
                     let sinceWidth = p - width;
                     if (sinceWidth < 0) sinceWidth += 1;
-                    let atWidth = 0;
-                    if (sinceWidth < dt) {
-                        const t = sinceWidth / dt;
-                        atWidth = t + t - t * t - 1;
-                    }
-                    else if (sinceWidth > 1 - dt) {
-                        const t = (sinceWidth - 1) / dt;
-                        atWidth = t * t + t + t + 1;
-                    }
-                    x = (p < width ? 1 : -1) + atWrap - atWidth;
+                    x = (p < width ? 1 : -1) + atWrap - polyBlep(sinceWidth, dt);
                 }
             }
             voiceOut[v] = isQuantised ? Math.round(x * 2047) / 2047 : x;
@@ -719,26 +611,27 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     /**
      * Runs filter `f` for one sample, in place on bus `at`. It is a
-     * state-variable filter. Its input is driven (pushed into gentle
-     * distortion) for a little growl.
+     * state-variable filter, as `tuneStateVariableFilter` describes. Its input
+     * is driven (pushed into gentle distortion) for a little growl.
      */
     function filterBus(f: number, at: number): void {
         const input = bus[at];
         const drive = filterDrive[f];
         const x = drive > 0 ? Math.tanh(input * (1 + 4 * drive)) / (1 + 2 * drive) : input;
         const state = f * 2;
+        const c = f * SVF_STRIDE;
         const ic1 = filterState[state];
         const ic2 = filterState[state + 1];
         const v3 = x - ic2;
-        const v1 = filterA1[f] * ic1 + filterA2[f] * v3;
-        const v2 = ic2 + filterA2[f] * ic1 + filterA3[f] * v3;
+        const v1 = filterCoefficients[c + SVF_A1] * ic1 + filterCoefficients[c + SVF_A2] * v3;
+        const v2 = ic2 + filterCoefficients[c + SVF_A2] * ic1 + filterCoefficients[c + SVF_A3] * v3;
         filterState[state] = 2 * v1 - ic1;
         filterState[state + 1] = 2 * v2 - ic2;
         const mode = filterMode[f];
         let out = 0;
         if ((mode & FILTER_LOWPASS) !== 0) out += v2;
         if ((mode & FILTER_BANDPASS) !== 0) out += v1;
-        if ((mode & FILTER_HIGHPASS) !== 0) out += x - filterK[f] * v1 - v2;
+        if ((mode & FILTER_HIGHPASS) !== 0) out += x - filterCoefficients[c + SVF_K] * v1 - v2;
         bus[at] = out;
     }
 
@@ -753,29 +646,14 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 
     function updateFilterCoefficients(): void {
         for (let f = 0; f < FILTER_COUNT; f++) {
-            const g = Math.tan(Math.PI * filterCutoff[f] / sampleRate);
-            const k = 2 - 1.98 * filterResonance[f];
-            const a1 = 1 / (1 + g * (g + k));
-            filterK[f] = k;
-            filterA1[f] = a1;
-            filterA2[f] = g * a1;
-            filterA3[f] = g * g * a1;
+            tuneStateVariableFilter(filterCoefficients, f * SVF_STRIDE, Math.tan(Math.PI * filterCutoff[f] / sampleRate), filterResonance[f]);
         }
         areFiltersDirty = false;
     }
 
-    function isVoiceSounding(v: number): boolean {
-        const stage = envStage[v];
-        if (stage === ENV_IDLE) return false;
-        return stage === ENV_ATTACK || envLevel[v] > SILENT_LEVEL;
-    }
-
-    /** The per-sample factor that makes a level fall 60 dB over `ms`, or 0 for an instant fall. */
-    function computeFallCoefficient(ms: number): number {
-        return ms <= 0 ? 0 : Math.exp(LN_FALL / (ms / msPerAudioSample));
-    }
-
     function resetAll(): void {
+        envelopes.reset();
+        plays.reset();
         for (let v = 0; v < VOICE_COUNT; v++) {
             phase[v] = 0;
             phaseInc[v] = 0;
@@ -787,12 +665,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             noise12[v] = 0;
             syncSource[v] = -1;
             ringSource[v] = -1;
-            envStage[v] = ENV_IDLE;
-            envLevel[v] = 0;
-            attackInc[v] = 1;
-            decayCoef[v] = 0;
-            sustainLevel[v] = 1;
-            releaseCoef[v] = 0;
             noteVolume[v] = 1;
             stepVolume[v] = 1;
             soundVolume[v] = 1;
@@ -801,10 +673,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
             driver.reset(v);
             pulseSweepMs[v] = 0;
             filterSweepMs[v] = 0;
-            soundId[v] = -1;
-            soundPriority[v] = 0;
-            playId[v] = -1;
-            startedAt[v] = 0;
         }
         wavetable.fill(0);
         nextPlayLengthMs = -1;
@@ -823,7 +691,7 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
         echoFeedback = DEFAULT_ECHO_FEEDBACK;
         echoLevel = DEFAULT_ECHO_LEVEL;
         mix.fill(0);
-        queue.clear();
+        scheduler.clear();
         controlCountdown = 0;
     }
 }
@@ -832,8 +700,6 @@ export function createAudio80Synthesiser(options: Audio80SynthesiserOptions): Au
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Samples between the driver's updates of pitch, sweeps and steps: about 0.7 ms at 48 kHz. */
-const CONTROL_SAMPLES = 32;
 /** Each voice's share of full scale, before `MIX_LEVEL`. */
 const VOICE_GAIN = 0.3;
 /**
@@ -847,33 +713,13 @@ const MIX_LEVEL = Math.SQRT1_2;
 const SCOPE_GAIN = 1 / VOICE_GAIN;
 const NOISE_CLOCKS_PER_CYCLE = 16;
 const LFSR_SEED = 0x7ffff8;
-const DEFAULT_QUEUE_CAPACITY = 4096;
-
-const ENV_IDLE = 0;
-const ENV_ATTACK = 1;
-const ENV_DECAY = 2;
-const ENV_SUSTAIN = 3;
-const ENV_RELEASE = 4;
-/** The envelope ends its decay this close to the sustain level, and its release this close to 0 (80 dB down). */
-const ENV_FLOOR = 1e-4;
-/** Below this envelope level, a voice counts as silent and is free for a sound to play on. */
-const SILENT_LEVEL = 1e-3;
-/** Decay and release fall 60 dB over their time. */
-const LN_FALL = Math.log(1e-3);
 
 const FILTER_COUNT = 2;
-const MIN_CUTOFF_HZ = 20;
-/** The highest cutoff, as a share of the sample rate. It is kept below half, where the filter stops working. */
-const MAX_CUTOFF_SHARE = 0.45;
 const DEFAULT_CUTOFF_HZ = 2000;
 const MAX_ECHO_MS = 1000;
-const MAX_ECHO_FEEDBACK = 0.95;
 const DEFAULT_ECHO_MS = 300;
 const DEFAULT_ECHO_FEEDBACK = 0.35;
 const DEFAULT_ECHO_LEVEL = 0.5;
-const DC_POLE = 0.9995;
-/** Below this size, a filter, echo or DC blocker state is set to 0, before it can become subnormal. */
-const TINY = 1e-20;
 
 /** The sample rate the per-sample coefficients below were tuned at. */
 const REFERENCE_SAMPLE_RATE = 48000;
@@ -897,12 +743,6 @@ const DC_IN = 1;
 const DC_OUT = 2;
 const MIX_STATE_COUNT = 3;
 
-/** The index of the sample in the block at which a command stamped `stamp` applies. */
-function toSampleIndex(stamp: number, fromMs: number, msPerSample: number): number {
-    if (stamp <= fromMs) return 0;
-    return Math.ceil((stamp - fromMs) / msPerSample - 1e-9);
-}
-
 /**
  * Converts a smoothing coefficient tuned at 48 kHz to one for `sampleRate`.
  * The result moves as fast in time as `atReference` does at 48 kHz. At
@@ -921,8 +761,4 @@ function isVoice(v: number): boolean {
 /** Voice `source` as voice `v`'s sync or ring source, or -1 if it is not another voice on the chip. */
 function toSourceVoice(v: number, source: number): number {
     return source >= 0 && source < VOICE_COUNT && source !== v ? Math.floor(source) : -1;
-}
-
-function clamp01(value: number): number {
-    return value < 0 ? 0 : value > 1 ? 1 : value;
 }

@@ -4,17 +4,15 @@ import {
     createAudio80SongDriver,
     createAudio80Sound,
     FILTER_SETTING_INDEX,
-    OP_NOTE_OFF,
-    OP_NOTE_ON,
     OP_SET_ECHO,
     OP_SET_FILTER,
-    OP_SET_VOICE,
     toCutoff,
     VOICE_SETTING_INDEX,
     type Audio80Song,
     type Audio80SongOptions,
     type Audio80Sound,
 } from '../audio80';
+import { OP_NOTE_OFF, OP_NOTE_ON, OP_SET_VOICE } from './commands';
 import { toNoteNumber } from './notes';
 import { createSongPlayer, type SongPlayer, type SongWriter } from './song-player';
 
