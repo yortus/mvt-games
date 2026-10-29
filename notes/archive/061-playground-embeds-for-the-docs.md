@@ -4,7 +4,11 @@
 | -------- | ---------- |
 | Priority | low        |
 | Created  | 2026-10-17 |
-| Updated  | 2026-10-17 |
+| Updated  | 2026-10-29 |
+
+**Folded into [075](../proposals/075-docs-as-a-book.md), section 9, on
+2026-10-29.** Its four questions are answered in 075 section 9.4, and its
+work is 075's implementation steps 12 and 13.
 
 ## Description
 
@@ -41,3 +45,13 @@ opens an example in a new page.
 ### 2026-10-17
 
 Created from 052's section 10.4, when 052 was archived.
+
+### 2026-10-29
+
+Folded into 075, which plans the docs as a book, with examples that run
+inline online and print as stills. 075 section 9.4 answers the four
+questions above: the page names the file, edits last only while the page
+is open, no language service, and the docs' theme is passed in. A trial
+build measured the playground's parts: its language service worker is
+1,019 KB gzipped, its page 310 KB, Pixi 77 KB. Archived, not done: the
+work continues under 075.

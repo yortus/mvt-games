@@ -1667,7 +1667,7 @@ Each step ends with the site working and deployable.
    rules as live diagnostics (10.3) are
    [060](../tasks/backlog/060-architecture-rules-as-live-diagnostics.md),
    and embeds for the docs (10.4) are
-   [061](../tasks/backlog/061-playground-embeds-for-the-docs.md). Remixing
+   [061](061-playground-embeds-for-the-docs.md). Remixing
    an entry (10.5) became step 12, and is 057.
 12. ~~**Investigate: open an Arcade entry in the playground, from GitHub.**~~
     Investigated on 2026-10-17, and moved to

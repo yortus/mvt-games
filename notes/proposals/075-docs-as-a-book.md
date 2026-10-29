@@ -12,11 +12,12 @@
 > hold the principle pages in full. It also lists about thirty errors found along
 > the way, which can be fixed now, before anything moves.
 
-**Status:** proposed. Nothing is done yet. Section 9's errors can be fixed
+**Status:** proposed. Nothing is done yet. Section 10's errors can be fixed
 at any time, without waiting for the rest. Where the principles go is
 settled (2026-10-29): one summary chapter in Part IV (section 4.5), and
 the full pages as appendices, one for each principle, named by its
-acronym (section 4.8).
+acronym (section 4.8). Interactive examples were added on 2026-10-29
+(section 9), folding in task 061.
 
 **Written:** 2026-10-28, against the `audio90` branch at `6664758c`. Every
 page in `packages/sites/docs/` was read in full, apart from
@@ -25,7 +26,7 @@ page in `packages/sites/docs/` was read in full, apart from
 readers took one share each, against the same brief: for each page, what
 it introduces, what it uses before it is introduced, what it repeats, and
 how its voice compares with the Principles pages. Their claims marked
-"checked" in section 9 were confirmed against the code or the text before
+"checked" in section 10 were confirmed against the code or the text before
 this was written.
 
 **Related:**
@@ -36,7 +37,9 @@ this was written.
 [Docs site config](../../packages/sites/docs/.vitepress/config.ts) -
 [015, the documentation overhaul](../archive/015-documentation-overhaul/task.md), which made today's shape -
 [070, the principles pages](../archive/070-principles-docs.md), which made the voice this proposal adopts -
-[074](074-audio90-standalone-package.md), whose docs step touches the Sound chapter
+[074](074-audio90-standalone-package.md), whose docs step touches the Sound chapter -
+[061, playground embeds for the docs](../archive/061-playground-embeds-for-the-docs.md), folded into section 9 -
+[The playground's runtime](../../packages/sites/playground/src/runtime/), which the embed page reuses
 
 ---
 
@@ -53,7 +56,8 @@ this was written.
 | 7 | Move contributor material (code style, project structure, writing guide) into a separate "Working in This Repo" section, outside the book | [7.2](#72-working-in-this-repo) |
 | 8 | Make the agent files point to the book rather than copy it | [7.3](#73-the-agent-files) |
 | 9 | Let VitePress write Previous and Next from the sidebar, and keep old URLs working with a redirect map | [8](#8-links-urls-and-navigation) |
-| 10 | Fix the errors in section 9 now. They don't depend on the restructure | [9](#9-errors-to-fix-now) |
+| 10 | Fix the errors in section 10 now. They don't depend on the restructure | [10](#10-errors-to-fix-now) |
+| 11 | Run examples inline online, from a compact embed page built on the playground's runtime, and print a still in their place. Stay on VitePress, and make the print version with a print page, Paged.js and Playwright. Folds in task 061 | [9](#9-interactive-examples-online-and-in-print) |
 
 ## 1. Why a Book
 
@@ -208,7 +212,7 @@ When an idea lives in four places, a change reaches some of them. The
 copies already disagree on facts. For example, `Object.values()` costs
 "44x" on Hot Paths, "32x" on Measurements and "over 40 times" on Why
 Performance Matters. One fix in Common Mistakes ("Always read bindings
-inside `refresh()`") now contradicts the fixed-binding rule. Section 9
+inside `refresh()`") now contradicts the fixed-binding rule. Section 10
 lists all of these, with where each is.
 
 ### 2.7 The agent files are a second copy of the book
@@ -316,7 +320,7 @@ showed broken.
 
 Phases move here because they are domain state machines. The MISU
 principle already points here for them. Chapter 4 must settle the conflict
-in section 9: Time Management calls a hand-written phase machine "Bad",
+in section 10: Time Management calls a hand-written phase machine "Bad",
 and Phase-Based Transitions recommends one.
 
 The tick comes after the models. Time Management ends with "time comes
@@ -351,7 +355,7 @@ Chapter 12 teaches `<List>`.
 | # | Chapter | Sources | About |
 | --- | --- | --- | --- |
 | 13 | **The Principles Behind MVT** | The principles overview | The goal. The eight principles, each with its one line and the question it asks. How they build on one another. The screen-shake case worked through. Using them in a review. When they pull against each other. About 1,500 words. Each principle is named in full with its acronym, which later chapters use, and links to its full page. "Examples Are in TypeScript" goes, since the whole book is in TypeScript |
-| 14 | **Why Views Poll** | Why Polling, Events and Signals | One page, about 2,000 words from today's 4,800. Keep the measurements, "When Push Wins" and counts for sound. Drop the restated "Observations" and the duplicate summary table. Fix the advice that contradicts counts (section 9) |
+| 14 | **Why Views Poll** | Why Polling, Events and Signals | One page, about 2,000 words from today's 4,800. Keep the measurements, "When Push Wins" and counts for sound. Drop the restated "Observations" and the duplicate summary table. Fix the advice that contradicts counts (section 10) |
 | 15 | **Where MVT Comes From** | Heritage | Its immediate-mode section shortened to a link to Chapter 6. "Battle-tested" goes |
 
 The principles appear at two depths that don't overlap. Chapter 13 gives
@@ -521,6 +525,10 @@ about how to do something needs a looser version of it:
 8. **A checklist or summary**, short, at the end.
 9. **Further reading**, where there are real sources.
 
+Online, a chapter may also hold "Try it" examples, each placed after the
+listing it runs. They are extras that the text never depends on, and the
+print version leaves them out (section 9.1).
+
 Not every chapter needs every section. Reading Layout Back and Reduced
 Motion are already close to this shape, and are good models for the
 practice chapters. Benchmarking Methods' "a concrete failure, then
@@ -597,7 +605,141 @@ book's own SSOT principle applied to its own docs.
   the build already catches broken links within the docs. Keep it that
   way through the moves.
 
-## 9. Errors to Fix Now
+## 9. Interactive Examples, Online and in Print
+
+Some print books have a website of extras. This book can have the same
+thing, inline: online, a chapter can run its examples beside the text that
+explains them, and the reader can change them and watch what happens. A
+printed copy, or a PDF, leaves the extras out, or shows a still in their
+place, and reads just as well.
+
+This section folds in task
+[061](../archive/061-playground-embeds-for-the-docs.md), which asked for a
+compact playground page to embed in the docs. 061 is archived, and its
+questions are answered in section 9.4.
+
+### 9.1 Writing for both layouts
+
+Two rules keep the flow intact when the extras are removed:
+
+- **An interactive example is always an extra.** The text around it makes
+  sense without it. The text never says "as you saw above" about an
+  example, and an example is never the only place a fact appears.
+- **The code the text explains stays as an ordinary listing.** The listing
+  prints. The example runs that same code, beside it or just after it.
+
+The listing and the example share one source. VitePress can import a code
+listing from a file, or from a marked region of one, with `<<<`. A
+chapter's listing comes from the example's own files in
+`packages/sites/playground/examples/<id>/`, so the printed code is always
+the code that runs. Whether `<<<` takes a path relative to the page,
+outside the docs folder, needs checking. If it doesn't, a short Vite alias
+will do.
+
+A chapter adds an example with one component, `<TryIt example="<id>" />`,
+registered in the theme the way `PlaygroundLink` is today. Online, it
+renders the embed (section 9.4). In print, it renders the example's still
+and a short link to the page online, or nothing at all (open question 7).
+Section 6.2's chapter shape gains one optional item: a "Try it" example,
+placed after the listing it runs.
+
+### 9.2 The platform: stay on VitePress
+
+VitePress has no print output of its own. The alternatives were weighed
+against adding one:
+
+| Option | Web and print from one source | Fit |
+| --- | --- | --- |
+| **VitePress, with a print build** | Through a separate build (section 9.5) | The best fit. It keeps Vue components, Vite, the dev server the Arcade shares, and the look the docs share with the Arcade and the playground |
+| Quarto | Built in, with HTML, PDF and EPUB outputs, and content marked for one output only | It does exactly this split, but it is a separate toolchain built on Pandoc rather than npm, and it gives up the Vite integration and the shared site |
+| mdBook | In part. It writes a single "print" page of the whole book | A Rust tool, and weaker for interactive content |
+| Pandoc, beside VitePress, for print only | PDF and EPUB from the same Markdown, with a filter that strips the extras | Real book typesetting, but VitePress's containers, components and diagrams would each need converting |
+
+Quarto would justify a move only if print became the main output. For a
+book that is read online first, VitePress plus a print build is the
+smaller change.
+
+### 9.3 What the playground already has
+
+The playground's runtime is already separate from its interface:
+
+- `prepare-project.ts` turns a project's files into runnable modules. It
+  transpiles them with sucrase, guards their loops and rewrites their
+  imports.
+- `buildSandboxDocument` (in `sandbox-document.ts`) wraps those modules in
+  the HTML of a sandbox iframe.
+- `run-sandbox.ts` runs the project inside it: the project's `update`,
+  then `updateView` and `refreshView`, then a draw, every frame.
+
+An embed page can reuse all three as they are. What it should leave out is
+the language service, which is most of the playground's weight. A
+production build of the playground on 2026-10-29 (the `audio90` branch at
+`6664758c`) measured:
+
+| Part | Gzipped |
+| --- | --- |
+| Language service worker | 1,019 KB, plus about 7 MB of type files (unzipped) that it loads |
+| The playground page: CodeMirror and its themes, sucrase, the interface | 310 KB |
+| Pixi | 77 KB |
+| three.js | 184 KB |
+
+### 9.4 The embed page
+
+A compact page, `/playground/embed.html`, shows one example, sized for an
+iframe. The docs component points an iframe at it. An iframe keeps the
+docs build free of the playground's code, and the docs and the playground
+already share one origin and one dev server.
+
+It comes at two levels:
+
+- **Run.** The preview, with pause, step and restart. It loads the sandbox
+  runtime and the example's renderer only, roughly 100 KB gzipped for a
+  Pixi example. That is an estimate from the chunks above, to be measured.
+- **Edit and run.** It adds a CodeMirror editor on one file, with no type
+  checking, and a link that opens the example in the full playground.
+
+061 left four questions open. This proposal answers them:
+
+| 061's question | Answer |
+| --- | --- |
+| Which file the embed shows, and whether the reader can switch | The page names the file, the one its listing shows, with `file=<path>`. A small list switches between the example's other files |
+| Whether changes in an embed are kept | Only while the page is open. An embed never adds to the reader's project list. "Open in the playground" carries the edited project across as a share link, which the playground already reads (`share-links.ts`) |
+| How much of the playground an embed loads | No language service. Each level loads what is listed above, and the load size is measured and agreed before it ships |
+| How it looks in the docs' light and dark themes | The component passes the docs' theme as a parameter, and sends a message when the reader changes it |
+
+A chapter may hold several examples, so:
+
+- **Each embed loads when it scrolls into view, and runs after a click.**
+  Browsers keep only around sixteen WebGL contexts at once and drop the
+  oldest, so several running examples on one page would break each other.
+  A click is also what a browser needs before it plays sound.
+- **One example runs at a time.** Starting one pauses the others.
+- **The still shows until the click.** The same still the print build uses
+  (section 9.5) is the embed's poster, so the page doesn't jump when an
+  example loads.
+
+### 9.5 The print build
+
+- **A print page.** One VitePress page strings every chapter together in
+  sidebar order. A print stylesheet hides the online extras and shows each
+  example's still.
+- **Book layout.** Paged.js, an npm library, lays the print page out as a
+  book. It adds page numbers, running headers, a contents page with page
+  numbers, and chapters that start on a new page.
+- **The PDF.** Playwright prints the laid-out page with `page.pdf()`. It
+  uses Playwright's own headless shell, which the visual tests already
+  install, rather than an installed Chrome. Tools such as
+  `vitepress-export-pdf` drive a full Chrome through Puppeteer, which this
+  repo avoids.
+- **Stills.** Each playground example gets a visual test, as every Arcade
+  entry has, posed at a moment that shows what the example does. Its
+  reference image is the still, for print and for the embed's poster, so
+  no one takes a screenshot by hand and no still goes out of date. The
+  examples have no visual tests yet; only the playground's own interface
+  does.
+- **EPUB** can follow from the same print page, if it is wanted.
+
+## 10. Errors to Fix Now
 
 These don't depend on the restructure, and some are wrong today. "Checked"
 means confirmed against the code or the text while writing this proposal.
@@ -637,7 +779,7 @@ is quick to confirm.
 | 29 | `skill-documentation.md` | Says MVT is "documented in the guide pages under Building with MVT", ignoring Architecture. Its list of files to keep in step leaves out the rules, the principles, `llms.txt` and contributing.md | |
 | 30 | `AGENTS.md`, `skill-code-style.md` | Show the file-section banner as `// --- Interface ---`. The Style Guide and all 109 model files in the entries use the long banner | |
 
-## 10. Considered and Not Recommended
+## 11. Considered and Not Recommended
 
 - **Keep the language-neutral Architecture section beside the guide.**
   It is the main source of the repetition, and the principles already
@@ -677,8 +819,20 @@ is quick to confirm.
   there would name ideas before they mean anything. Chapter 1 names SoC
   alone, since its "three jobs, three owners" is SoC. **Settled
   2026-10-29.**
+- **Moving the docs to Quarto, mdBook or Pandoc for print.** Section 9.2
+  weighs them. Only Quarto does the web and print split out of the box,
+  and it would cost the Vite integration and the shared site. Reopen if
+  print becomes the main output.
+- **Running examples inside the docs page itself, without an iframe.**
+  The docs build would then bundle the playground's runtime and its
+  libraries, and an example's errors and loops would share the reader's
+  page. The sandbox iframe already isolates both.
+- **A hosted sandbox such as StackBlitz or CodeSandbox.** It would load
+  far more than the embed page, depend on a third party, and need the
+  libraries from npm rather than from the repo. The playground already
+  does the job.
 
-## 11. Open Questions
+## 12. Open Questions
 
 1. ~~**Where the principles go.**~~ Settled 2026-10-29: one summary
    chapter in Part IV (section 4.5), and the full pages as appendices,
@@ -698,13 +852,24 @@ is quick to confirm.
 6. **The book's title.** The site is titled "MVT Games", but the book
    would be about MVT. Something like *Building Games with MVT* would say
    what it is. This affects the Preface and the site title, nothing else.
+7. **What print shows in place of an example.** A still and a short link,
+   a still and a QR code, or nothing? A still helps where the example
+   shows motion the text describes. A QR code suits paper but means little
+   in a PDF.
+8. **Whether to make a print version now.** The embeds are useful online
+   whether or not a PDF exists. The print build could wait until there is
+   a reason for a PDF, as long as section 9.1's rules are followed from
+   the start, so the extras can be stripped later.
+9. **Which level an embed opens at.** Run is lighter. Edit and run
+   invites the reader to change the code, which is the point of an
+   example. A chapter could choose for each example.
 
-## 12. Implementation Steps
+## 13. Implementation Steps
 
 Each step from 3 on is one reviewable chunk, in reading order, so each
 review sees whole parts of the book.
 
-1. Fix section 9's errors (except row 22, which goes with 074). No pages
+1. Fix section 10's errors (except row 22, which goes with 074). No pages
    move.
 2. Settle the open questions, and write the Writing Guide (section 7.2)
    with the chapter shape and the outline, so every rewrite follows the
@@ -726,3 +891,17 @@ review sees whole parts of the book.
 10. The agent files: `AGENTS.md`, the skills as checklists, `llms.txt`.
 11. A final read straight through, start to finish, checking that no page
     uses an idea before its chapter.
+
+The interactive examples (section 9) don't wait for the restructure. Steps
+12 and 13 can run beside steps 4 to 7, and step 14 waits for the chapters
+to settle.
+
+12. The embed page (section 9.4). Run first, then Edit and run. Measure
+    each level's load size and agree it before it ships, as 061 asked.
+    Lint, type checks, tests and the docs build pass.
+13. `<TryIt>` and the stills. Give each playground example a visual test
+    posed for its still, add the component to the docs theme, and use it
+    on at least one page, starting with Chapter 2's bouncing ball. Its
+    listing comes from the example's files with `<<<`.
+14. The print build (section 9.5): the print page, Paged.js, the PDF from
+    Playwright's headless shell. Only if open question 8 says now.
