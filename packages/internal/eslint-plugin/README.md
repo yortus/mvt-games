@@ -14,12 +14,18 @@ rest are this repo's own conventions.
 | `@mvtjs/no-null` | `style` | `null` that our own code or APIs introduce: as a value, or in a type outside a function body. Comparisons and local types, which handle third-party values, are allowed |
 | `@mvtjs/no-this` | `style` | `this` |
 | `@mvtjs/no-deep-imports` | none | Imports that reach past a folder's `index.ts` (`../models/ship-model`), or into a package that has no `exports` field (`lz-string/libs/lz-string.js`). A package's `exports` field is left to TypeScript, which already refuses paths it doesn't list. The `allowIndexFile` option allows a folder's index file by its full name (`./scripts/index.ts`), for files that Node loads itself |
+| `@mvtjs/no-unused-watch` | none | A watcher made with `watch` from `@mvtjs/utils` whose `poll()` is never called, a reaction made with `createReaction` that's never called or passed on, and either one made and thrown away. Each fails silently |
+| `@mvtjs/no-inline-watch` | none | A `watch`, `createReaction` or `createComputed` made and used in one expression, such as `watch(x).poll()`. It's made again each time it runs, so it never sees a change, or never caches |
+| `@mvtjs/no-repeated-poll` | none | A watcher polled twice in one function body. The second poll always reports that nothing changed |
+| `@mvtjs/no-conditional-poll` | none | A poll, or a call of a reaction made in the file, inside an `if`, a `switch`, a ternary, `&&`, `\|\|` or `??`, or after an early `return` in its function. Skipped on some steps, it compares with an older read and can miss a change. A gap someone intends takes an `eslint-disable` comment saying why |
 | `@mvtjs/no-relative-imports-into-src` | none | Relative imports into a package's `src/` folder from a file outside it, such as `'../src/highscores'` from a worker or a script beside `src/`. Import by the package's name, or through an `imports` mapping in its `package.json` (`#highscores`) |
 
 The repo's `eslint.config.ts` applies `style` to all code and `architecture`
 to model files, and exempts the few files that need `this`. It applies
 `no-deep-imports` to each package's code, scripts and config files, and
-`no-relative-imports-into-src` to every file in a package.
+`no-relative-imports-into-src` to every file in a package. It applies the four
+watch rules to all TypeScript, except that a test may poll a watcher more than
+once, and between checks, since one test stands in for several steps.
 
 ## Working on the rules
 

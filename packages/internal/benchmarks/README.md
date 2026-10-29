@@ -60,7 +60,7 @@ which the docs include).
 | `reactivity` | Keeping 1000 Pixi containers in step with a changing model: polling (hand-written refresh methods and the JSX runtime), events, and Solid signals, as the share of the model changing each frame varies |
 | `scaling` | The same, from 100 to 100,000 containers |
 | `jsx-refresh` | Refreshing JSX bindings against hand-written methods, from 1,000 to 50,000 elements: uniform, over every write kind, and one shape on all eight kinds of Pixi element |
-| `change-detection` | Reacting to a value that changes occasionally (comparing by hand, `watch()`, events, signals), and a property computed from 8 model values |
+| `change-detection` | Reacting to a value that changes occasionally (comparing by hand, `watch()`, `createReaction`, events, signals), and a property computed from 8 model values (`watch()`, `createComputed`) |
 | `construction` | The cost of a container from construction to destruction, and a pool of short-lived items: reusing containers with `<List>` over a `SlotList`, against building and destroying them |
 | `refresh-view` | `refreshView` against a plain recursive walk and Pixi's `onRender`, and skipping inactive subtrees with `SKIP_DESCENDANTS` |
 | `html-refresh-view` | In headless Chrome: `refreshView` on the DOM against a naive walk, steady and with the tree changing every frame, and a JSX list on one renderer (HTML or three.js) alone and after one on the other has run in the same page |

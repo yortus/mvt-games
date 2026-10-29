@@ -58,6 +58,8 @@ export function WireView(bindings: WireViewBindings): Container {
     return view;
 
     function refresh(): void {
+        // Polled while the wire is hidden too. Its length always changes as it shows again, so the slack is drawn then
+        const watched = watcher.poll();
         const length = bindings.wireLength();
         view.visible = length > 0;
         if (length < drawnLength) {
@@ -71,7 +73,6 @@ export function WireView(bindings: WireViewBindings): Container {
         if (length === 0) return;
 
         placeTail(length);
-        const watched = watcher.poll();
         if (watched.slack.changed || watched.length.changed) drawSlack(length, watched.slack.value);
 
         const isSnapped = bindings.isSnapped();

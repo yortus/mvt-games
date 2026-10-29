@@ -46,12 +46,12 @@ of 2026-10-29: its opening note lists where it differs from the design below.
 
 ## The Design
 
-### Sources
+### Getters
 
-A source is what a watch reads: a getter, which must give a primitive, compared with `===`. A computed primitive is a
-getter like any other. A computed object is not a source: watch its version, `() => cells.version`, and read the
-object itself when that changes (see [`createComputed`](#createcomputed)). The three tools take the same kinds of
-source, but each takes only the shapes that fit what it does with them:
+A watch reads getters, each of which must give a primitive, compared with `===`. A computed primitive is a getter
+like any other. A computed object is not: watch its version, `() => cells.version`, and read the object itself when
+that changes (see [`createComputed`](#createcomputed)). The three tools take the same getters, but each takes only
+the shapes that fit what it does with them:
 
 | Shape | `watch` | `createComputed` | `createReaction` |
 | --- | --- | --- | --- |
@@ -59,13 +59,13 @@ source, but each takes only the shapes that fit what it does with them:
 | A record (`{ cols: bindings.cols, rows: bindings.rows }`) | A `Watched` for each key, and `anyChanged` | Together: one `compute(record)` when any value changed | Refused |
 | A fixed array (`reels.map((reel) => () => reel.phase)`) | A `Watched` for each element, and `anyChanged`. Types may differ, typed by position | Refused: use a record | Each: `when` and `react` for each element that changed. Every element gives the same type |
 
-`watch` hands back a reading for every source, and the caller treats them together (`anyChanged`) or one at a time.
-`createComputed` treats its sources together, so it takes a record, whose names read better than positions.
-`createReaction` treats each source separately, so it takes an array, whose index says which one changed. No shape
+`watch` hands back a reading for every getter, and the caller treats them together (`anyChanged`) or one at a time.
+`createComputed` treats its getters together, so it takes a record, whose names read better than positions.
+`createReaction` treats each getter separately, so it takes an array, whose index says which one changed. No shape
 means "together" in one tool and "each" in another.
 
 - **Primitives only,** all of them: `Watchable` is `string | number | bigint | boolean | symbol | null | undefined`. A
-  getter that returns an object or an array throws, saying to watch a primitive, such as a count or a revision, or to
+  getter that returns an object or an array throws, saying to watch a primitive, such as a count or a version, or to
   compute the value and watch that. Objects compared by reference are out of scope, frozen ones included (see
   [Settled Questions](#settled-questions)). The check is always on, in production too, and runs on the first read
   and on each change: a read equal to the last one is a value that already passed it, so steady reads cost nothing.
@@ -74,16 +74,16 @@ means "together" in one tool and "each" in another.
 - **Records and arrays are fixed at construction.** An array made with `map` over model objects keeps reading those
   objects, even if the model replaces them; `(_, i) => () => model.reels[i].phase` follows replacements. Neither sees
   a change of length: lists whose items come and go are out of scope (see [List Handling](#list-handling)).
-- **Empty sources.** An empty literal (`watch: []`, `watch: {}`) is a type error. An empty record also throws. An
-  array that is empty at run time is allowed and does nothing: a reaction never runs, and a watcher's reading is
-  empty, with `anyChanged` false. An array made from data can be empty legitimately, such as one reaction per extra
+- **Empty records and arrays.** An empty literal (`watch: []`, `watch: {}`) is a type error. An empty record also
+  throws. An array that is empty at run time is allowed and does nothing: a reaction never runs, and a watcher's reading
+  is empty, with `anyChanged` false. An array made from data can be empty legitimately, such as one reaction per extra
   life in a mode that has none, and throwing would make every such author special-case it.
 
 ### `watch`: the core
 
-`watch(source)` returns a watcher whose `poll()` reads every source and returns a reading:
+`watch(getters)` returns a watcher whose `poll()` reads every getter and returns a reading:
 
-- One source: its `Watched`. A record or array: a `Watched` for each, plus `anyChanged`. An array's elements may give
+- One getter: its `Watched`. A record or array: a `Watched` for each, plus `anyChanged`. An array's elements may give
   different types, each typed by its position, since nothing is shared between them.
 - `Watched<T>` has `current`, `previous`, `changed`, `changedTo(value)` and `changedFrom(value)`. A number or a
   `bigint` also has `increased` and `decreased`. `previous` equals `current` when nothing changed.
@@ -103,9 +103,9 @@ means "together" in one tool and "each" in another.
 
 ### `createReaction`
 
-`createReaction({ watch, when?, react })` returns a `Reaction`, `() => void`, to call on every step,
-unconditionally. Each call reads the source, and runs `react` for each change that `when` accepts. Calling it twice in
-a step is harmless: the second call sees no change.
+`createReaction({ watch, when?, react })` returns a function, `() => void`, to call on every step, unconditionally.
+Each call reads the getter, or each getter of an array, and runs `react` for each change that `when` accepts. Calling it
+twice in a step is harmless: the second call sees no change.
 
 - **`watch`** is one getter, or a fixed array of getters that all give the same type. An array works as one reaction
   per element, sharing `when` and `react`: each element has its own memory and its own baseline. Several `react` calls
@@ -122,7 +122,7 @@ a step is harmless: the second call sees no change.
   `(current, previous) => current < previous && current <= TICKING_SECONDS`, or
   `(current) => current === 'dying' || current === 'game-over'`. `increased` and `decreased` are generic over
   `number | bigint` (`<T extends number | bigint>`), so they accept either and still refuse other types, with the
-  error on `when`. A value is checked against the source's type. `when: undefined` throws, because it would silently
+  error on `when`. A value is checked against the getter's type. `when: undefined` throws, because it would silently
   mean any change; a change to `undefined` is written `when: (current) => current === undefined`.
 - **Overlapping sounds are not the API's concern.** When an early stop lands every reel in one tick, several stop
   sounds play together. Whether that's wanted, and spacing sounds out, belong to the reaction (which can keep its own
@@ -134,11 +134,11 @@ a step is harmless: the second call sees no change.
 `createComputed({ watch, compute })` returns a `Computed<R>`: call it to read the value, as often as you like.
 
 - **`watch`** is one value or a record. An array is a type error and a runtime error, saying to use a record.
-- **It is lazy.** It reads its sources on its first read, not at construction, and computes then. On a later read it
+- **It is lazy.** It reads its getters on its first read, not at construction, and computes then. On a later read it
   recomputes only if something it watches changed since the last read. A computed value that's never read costs
   nothing, and its getters needn't be readable when it's made. Lazy, cached computed values are the usual design
   (Vue, MobX), and the docs say so. Watching a computed value ends its laziness: a reaction or watcher reads its
-  sources when it's made (invariant 1), so a computed value it watches computes then, and its getters must be readable
+  getters when it's made (invariant 1), so a computed value it watches computes then, and its getters must be readable
   by that time.
 - **Maintaining an object:** give `compute` a second parameter with a default. The default makes the object on the
   first compute, and every later compute is given the last result, to update in place and return:
@@ -146,18 +146,18 @@ a step is harmless: the second call sees no change.
   default is a type error.
 - **`version`:** a number that rises whenever the value may have changed: when a primitive value changes, and on
   every recompute of an object, since an object maintained in place can't be compared with what it was. Reading it
-  brings the value up to date. It's how a computed object is watched, since the object itself isn't a source:
+  brings the value up to date. It's how a computed object is watched, since the object itself can't be watched:
   `createReaction({ watch: () => cells.version, react: () => relayout(cells()) })`, or, for one computed object built
   from another, `createComputed({ watch: () => grid.version, compute: () => grid().length })` (inputs and triggers,
   below). A computed primitive needs no version to be watched: it's a getter.
 - **Inputs and triggers.** `compute` may read state that it doesn't watch, provided something it does watch changes
-  whenever that state does. The usual case is a revision counter: watch `model.gridRevision`, and read the entities
+  whenever that state does. The usual case is a version from the model: watch `model.gridVersion`, and read the entities
   inside `compute`. Watching `list.length` instead would miss an entity changing kind. (The prototype's doc comment
   says `compute` "must depend only on what it's given"; that is too strict and must change.)
 - **Aggregates over a fixed array**, such as how many reels have stopped, are a getter that loops, watched directly
   or fed to a computed value. A computed value over N getters would read all N on every read anyway, to know whether to
   recompute, so for a cheap aggregate it saves nothing. An expensive `compute` that needs each of N values (not just
-  how many) is triggered by a revision from the model.
+  how many) is triggered by a version from the model.
 - A computed value is a getter, so it goes straight into a JSX prop: `<text text={scoreText} />`.
 - Reading itself while computing throws.
 - **It replaces `memoiseLast` entirely.** Every call site in the 32 files passes a primitive worked out from bindings,
@@ -185,7 +185,7 @@ The reaction's signature, as sketched (`when` also gets the index, which the ske
 
 ```ts
 type Getter = () => Watchable;
-type Source = Getter | readonly Getter[];
+type ReactionGetters = Getter | readonly Getter[];
 type ValueIn<W> = W extends readonly (() => infer T)[] ? T : W extends () => infer T ? T : never;
 type IsAllSame<W> = W extends readonly [() => infer F, ...(readonly unknown[])]
     ? { [I in keyof W]: W[I] extends () => infer R ? Equal<R, F> : false }[number] extends true
@@ -204,7 +204,7 @@ type Checked<W> = W extends readonly []
       ? W
       : 'Every getter in the array must give the same type, since they share `when`';
 
-declare function createReaction<const W extends Source>(options: {
+declare function createReaction<const W extends ReactionGetters>(options: {
     readonly watch: W & Checked<W>;
     readonly when?: When<NoInfer<ValueIn<W>>>;
     readonly react: (
@@ -232,7 +232,7 @@ variable, `[scoreText, bindings.label]`, an array from `map` whose getter gives 
 `watch` follows the same pattern, sketched and checked the same way on 2026-10-29:
 
 ```ts
-type Source = Getter | { readonly [name: string]: Getter } | readonly Getter[];
+type WatchGetters = Getter | { readonly [name: string]: Getter } | readonly Getter[];
 type Checked<S> = S extends readonly []
     ? 'An empty array never changes: give watch at least one getter'
     : S extends Getter | readonly Getter[]
@@ -240,10 +240,10 @@ type Checked<S> = S extends readonly []
       : [keyof S] extends [never]
         ? 'An empty record never changes: give watch at least one getter'
         : 'anyChanged' extends keyof S
-          ? "A source can't be called anyChanged: the reading uses that name"
+          ? "A getter can't be called anyChanged: the reading uses that name"
           : S;
 
-declare function watch<const S extends Source>(sources: S & Checked<S>): Watcher<S>;
+declare function watch<const S extends WatchGetters>(getters: S & Checked<S>): Watcher<S>;
 ```
 
 - One getter's reading is its `Watched`, with no `anyChanged`, since `changed` already says it (the prototype adds
@@ -285,11 +285,11 @@ change, reported once, by the later read. A watch knows only what it reads.
   the [guidance for collections](#decided-collections-in-views). `NaN` differs from itself under `===`, so it reads as a
   change every time.
 
-**2. A computed value is always current.** Reading it gives what `compute` would give from its sources' values now.
+**2. A computed value is always current.** Reading it gives what `compute` would give from its getters' values now.
 
-- *How the API keeps it.* The library recomputes on a read if any source changed since the last read. The author's
-  share is inputs and triggers: `compute` reads only what it watches, or state that a watched trigger changes along
-  with.
+- *How the API keeps it.* The library recomputes on a read if any getter's value changed since the last read. The
+  author's share is inputs and triggers: `compute` reads only what it watches, or state that a watched trigger changes
+  along with.
 - *What follows.* A computed value can be read at any time, any number of times, conditionally, or never. Laziness is
   how the library keeps it current at the least cost.
 
@@ -297,8 +297,8 @@ change, reported once, by the later read. A watch knows only what it reads.
 
 - *How the API keeps it.* Getters must give primitives, so equal means unchanged: an object changed in place would
   stay equal to itself, which is why a getter of an object throws, and why frozen objects were rejected (the freeze
-  would be shallow, and invisible to the types). No source is an exception, computed values included.
-- *What follows.* To watch a structure, watch a primitive that changes with it, such as a count or a revision. For a
+  would be shallow, and invisible to the types). No getter is an exception, computed values included.
+- *What follows.* To watch a structure, watch a primitive that changes with it, such as a count or a version. For a
   computed structure, that primitive is its version.
 
 **4. What a watch reads is fixed when it's made.** The set of getters never changes after construction.
@@ -328,7 +328,7 @@ the views.
 | A sound or effect for each of a fixed set, such as the reels | `createReaction`, with an array |
 | Sounds for a collection whose items come and go | One audio view, reacting to counts the model keeps |
 | A value that's costly, or a label for a JSX prop | `createComputed` |
-| A structure maintained from other state | `createComputed`, with a default for `last`, triggered by a revision |
+| A structure maintained from other state | `createComputed`, with a default for `last`, triggered by a version |
 | An aggregate over a fixed array (how many, any, all) | A getter that loops, watched or fed to a computed value |
 | Logic inside a step that interleaves checks with other work and early returns | `watch` |
 | A structure rebuilt only on an explicit transition, which code already handles | Rebuild it in that handler, not with a computed value |
@@ -365,7 +365,7 @@ when items are removed or reordered, arrivals and departures, and watching such 
 
 A fixed array is what the reels are: set at construction, never growing or shrinking. Reactions take one, with every
 element of the same type, and handle each element separately; `watch` takes one, with types by position; computed
-values don't (see [Sources](#sources)). Aggregates over one are getters that loop (see
+values don't (see [Getters](#getters)). Aggregates over one are getters that loop (see
 [`createComputed`](#createcomputed)). The Fruit Machine's reel stops become an array reaction, one sound per reel,
 chosen by index; how stops that land together should sound is the reaction's or the chip's business.
 
@@ -413,7 +413,7 @@ Guidance for the docs (Sound and Music, and Presenting Collections), not API:
   versions in the result, and consumers watch those with a getter.
 - **A computed object is watched through its version,** so a computed object built from another one is given the
   version, not the object, and reads the object inside `compute`. No call site does this today.
-- **An expensive `compute` over each of N values needs a revision from the model,** since computed values don't take
+- **An expensive `compute` over each of N values needs a version from the model,** since computed values don't take
   arrays. No call site needs one.
 - **The signatures are conditional types.** Hovers show `W & Checked<W>`, and giving one getter's `react` an `index`
   reports "Target signature provides too few arguments" with the conditional in the message.
@@ -436,11 +436,11 @@ Decided in the design sessions. Do not reopen without new information.
   to the tick API, and it changed how JSX views must be written.
 - **No generators.** A generator is `poll()` spelled `next()`, with new footguns: `for...of` hangs, destructuring
   closes it, and each call allocates.
-- **The fluent chain** (`watch(source).changesTo(...).react(...)`) formats well only at two calls and splits two arrow
+- **The fluent chain** (`watch(getter).changesTo(...).react(...)`) formats well only at two calls and splits two arrow
   arguments; an options object holds several lambdas on one line, and the writer chooses the layout by putting a
   newline after `{`. Measured with Prettier 3.9.10.
 - **Memory belongs to each instance,** not to one watcher per view, so two readers can't interfere.
-- **Reactions and watchers read their sources at construction** (invariant 1), replacing 008's and 078's "the first
+- **Reactions and watchers read their getters at construction** (invariant 1), replacing 008's and 078's "the first
   poll is a change from nothing".
 - **Effects and computations are separate factories.** A single output key can't serve both, because their first
   calls differ: an effect must not run until it sees a change, and a computation must have a value from its first
@@ -450,7 +450,7 @@ Decided in the design sessions. Do not reopen without new information.
   arrays are aggregates". In a reaction, a record would distribute (one `react` per key) where in a computed value it
   aggregates: the same shape with opposite meanings, so a record reaction written to rebuild once would run twice when
   two keys changed together. Records would also bring back mixed types under one shared `when`. So reactions take
-  arrays of one type, computed values take records, and `watch`, which hands back a reading for each source and
+  arrays of one type, computed values take records, and `watch`, which hands back a reading for each getter and
   decides nothing, takes both.
 - **`when` takes values or conditions;** there are no `to` and `from` keys, and no `changedTo` helper. A value reads
   best (`when: 'dying'`).
@@ -468,8 +468,8 @@ Decided in the design sessions. Do not reopen without new information.
   of primitives. `memoiseLast` already accepted both; the prototype's `Watchable` didn't. A `bigint` also gets
   `increased` and `decreased`, as a number does.
 - **Computed values are lazy** (2026-10-29): see [`createComputed`](#createcomputed).
-- **Empty sources** (2026-10-29): see [Sources](#sources). An array empty at run time is allowed, because one made
-  from data can be empty legitimately.
+- **Empty records and arrays** (2026-10-29): see [Getters](#getters). An array empty at run time is allowed, because one
+  made from data can be empty legitimately.
 - **Primitives only; frozen objects rejected** (2026-10-29). Accepting an object only if `Object.isFrozen` (for
   objects a model replaces rather than changes, as `lastFor` handles) was considered. Rejected: TypeScript can't tell
   a frozen object from any other, and a freeze is shallow, so the footguns remain at type-check time and at run time.
@@ -500,16 +500,16 @@ Decided in the design sessions. Do not reopen without new information.
   [List Handling](#decided-lists-whose-items-come-and-go-are-out-of-scope).
 - **Versions are the library's,** not the author's: they can't be forgotten, and they make every computed object
   watchable the same way. Authors can still add their own for finer signals.
-- **A computed object is not a source; its version is** (2026-10-29). The first design accepted any computed value as
-  a source, compared by its version but reported as its value. That broke "primitives only" in the design's own API,
+- **A computed object can't be watched; its version can** (2026-10-29). The first design accepted any computed value
+  as a getter, compared by its version but reported as its value. That broke "primitives only" in the design's own API,
   and for an object maintained in place it reported the same object as `current` and `previous`, so `previous` was
   meaningless and `when` could only be a condition. Nothing needed it: no call site watches what `memoiseLast`
   returns, and the only consumer found, in the `derive-util` spike, is its demo counting its own recomputes. Now a
   getter must give a primitive, with no exception: a computed primitive is a getter, and a computed object is watched
   with `() => cells.version`. The core loses its special path for computed values.
-- **No `all` and `any` helpers** (2026-10-29). They combined conditions on one source. Today's combined conditions
-  mix different sources (paused with phase, points with a round ending), which they can't express, and the one
-  single-source case, seconds that fell within a range, is as short written by hand. The names were poor too: `any` is
+- **No `all` and `any` helpers** (2026-10-29). They combined conditions on one getter. Today's combined conditions
+  mix different getters (paused with phase, points with a round ending), which they can't express, and the one
+  single-getter case, seconds that fell within a range, is as short written by hand. The names were poor too: `any` is
   TypeScript's top type, both are as generic as names get in a broad utilities package, and neither starts with a
   verb. Adding a helper later is a minor release, and removing one a breaking change, so they wait for real uses.
 - **`createSequenceReaction` is renamed, with its behaviour kept** (2026-10-29); the name is open question 2. It
@@ -557,7 +557,7 @@ Decided in the design sessions. Do not reopen without new information.
   errors throughout, never warnings, with `eslint-disable` comments for intended exceptions, as `no-null` does.
 - **No version on readings** (2026-10-29). A count of the changes one watch has seen would undercount (invariant 1),
   differ between two watches of one getter, and invite the view to count what the model should. `changed` says all one
-  read can know. A computed value's version is different: it belongs to the source, the same for every reader.
+  read can know. A computed value's version is different: it belongs to the computed value, the same for every reader.
 
 ## Coverage of Earlier Designs
 
@@ -620,20 +620,22 @@ Every use case and question raised in 008, 078 and the `derive-util` spike, and 
 
 - [x] **First:** the list design finalised, approved by the maintainer, and written into
       [List Handling](#list-handling), with the design and these criteria updated to match (2026-10-29)
-- [ ] `watch`, `createReaction`, `createComputed` and the conditions in `@mvtjs/utils`, from the prototype brought up
-      to the design (the differences are listed at the top of [prototype.md](prototype.md)), following the repo's
-      conventions (single quotes, `null` handled by the lint rule's escape, checks through `assert`, and dev-only
-      ones under `if (DEV)`), with `compute`'s doc comment corrected for inputs and triggers
-- [ ] The prototype's tests ported to Vitest, and its type checks to type tests, including every case in
+- [x] `watch`, `createReaction`, `createComputed` and the conditions in `@mvtjs/utils`, in a directory of their own,
+      `packages/libraries/utils/src/watch-api/`, with its own `index.ts` that the package's barrel re-exports, as
+      `slot-list/` and `view-tick-api/` are, and their tests beside them, from the prototype brought up to the design
+      (the differences are listed at the top of [prototype.md](prototype.md)), following the repo's conventions
+      (single quotes, `null` handled by the lint rule's escape, checks through `assert`, and dev-only ones under
+      `if (DEV)`), with `compute`'s doc comment corrected for inputs and triggers
+- [x] The prototype's tests ported to Vitest, and its type checks to type tests, including every case in
       [Typing](#typing)
-- [ ] A dev-only check that throws when a reading is used after the next poll (see
+- [x] A dev-only check that throws when a reading is used after the next poll (see
       [`watch`: the core](#watch-the-core)), with tests that it throws in development and that production returns
       the reading itself
-- [ ] Lint: the four rules in [Settled Questions](#settled-questions) ("Lint checks local shapes"), as errors on
+- [x] Lint: the four rules in [Settled Questions](#settled-questions) ("Lint checks local shapes"), as errors on
       every source file, in `packages/internal/eslint-plugin` with tests, and each call site that intends a gap given
       an `eslint-disable` comment saying why
-- [ ] A case in the change-detection benchmark, compared with today's `watch` and with comparing by hand, before
-      the migration
+- [x] A case in the change-detection benchmark, compared with today's `watch` and with comparing by hand, before
+      the migration (2026-10-29; not saved, see the Progress Log)
 - [ ] Every call site migrated: about 70 files import `watch`, 74 call `poll()`, and 32 use `memoiseLast`, across the
       Arcade, the playground's examples and starters, and the benchmarks (`change-detection`, `memory`). Views that
       relied on the first poll reporting a change now draw their first state at construction; audio views drop their
@@ -712,3 +714,57 @@ maintainer (reasons in Settled Questions):
   removed from `@mvtjs/utils`.
 
 With that, the task is ready to implement. Open question 1 waits for the migration, and open question 2 is a name.
+
+The task moved to `vnext` from the `watch` branch, renumbered from 075 to 079 (and its proposal from 074 to 078),
+since `vnext` had used both numbers. The maintainer placed the implementation in
+`packages/libraries/utils/src/watch-api/`.
+
+The implementation began the same day, with the library as the first checkpoint for review, before the migration:
+
+- **`packages/libraries/utils/src/watch-api/`:** `watched.ts` (the shared types, and the prototype's slot as
+  `MutableWatched`, one plain object per watched getter, read again by one shared function, `rereadWatched`; "slot" was
+  dropped because the package's `SlotList` means something else), `watched-getters.ts` (a getter, a record or an array
+  of them, shared by `watch` and `createComputed`), `watch.ts`, `reaction.ts`, `computed.ts` and `when-conditions.ts`;
+  `error-checks/getter-checks.ts` holds the type-level checks that give the readable errors, and
+  `error-checks/reading-guard.ts` the development-only check for kept readings. A README in the folder explains the API
+  with examples, so the JSDoc stays short. At the maintainer's review, the exports were cut to the values and two types,
+  `Watcher` and `Computed`: the others are inlined into the signatures (the options, `() => void` for a reaction) or
+  stay unexported. The package's barrel exports everything but `watch` and `Watcher`, whose names today's `watch` keeps
+  until the migration swaps them. The design's "source" became "getters", in the code and in this task, the word the
+  rest of the repo uses for them.
+- **Changes from the prototype,** beyond the list at the top of [prototype.md](prototype.md): the "must be a getter"
+  check moved into the slot, so every tool gives the same message; only `watch` refuses a key named `anyChanged`,
+  since only its reading uses that name; and a computed value checks its shape (an array, an empty record) when it's
+  made, though it reads its getters only on its first read.
+- **Tests:** 58, with the type cases from [Typing](#typing) as `expectTypeOf` and `@ts-expect-error` checks in each
+  test file. The production path of the kept-reading check is tested with `vi.stubEnv('DEV', false)` and a fresh
+  import.
+- **Lint:** `no-unused-watch`, `no-inline-watch`, `no-repeated-poll` and `no-conditional-poll`, applied to all
+  TypeScript. They find the three factories by their imports from `@mvtjs/utils` (or a relative path, in the
+  library), so Node's `watch` is left alone, and treat any `.poll()` with no arguments as a watcher's, which every
+  one in the repo is. Test files are exempt from the last two, since a test stands in for several steps in one
+  function. Today's code had four polls after an early `return`, in Burrow Bust's rock view, Fenceline's
+  farm-fenced and wire views, and Galaxy Raiders' enemy view; each now polls before the `return`, and handles a
+  change while hidden.
+- **Benchmark:** `change-detection` gained `createReaction` (the discrete scenario, as each view's refresh method)
+  and `createComputed` (the derived one, a record of all 8 inputs, read every frame). Not saved: a save wants a quiet
+  machine. The prototype's slot, with a `sync` closure, a slot object and `changedTo` and `changedFrom` closures for
+  every value, measured 8.8 µs and 130 µs per frame for 1000 views. Making each slot one plain object synced by one
+  shared function, giving `changedTo` and `changedFrom` only to a watcher's states, and writing nothing on a steady
+  read that follows a steady read, brought them to the numbers below (median of 2 runs, µs per frame):
+
+  | Changed per frame | compare by hand | today's `watch()` | `createReaction` |
+  | --- | --- | --- | --- |
+  | 0% | 4.22 | 12.8 | 6.31 |
+  | 1% | 4.27 | 13.1 | 6.52 |
+  | 10% | 4.89 | 14.2 | 7.33 |
+
+  | Changed per frame | recompute every frame | today's `watch()` | `createComputed` |
+  | --- | --- | --- | --- |
+  | 0% | 8.91 | 86.9 | 95.2 |
+  | 10% | 8.07 | 83.7 | 94.2 |
+  | 100% | 11.3 | 86.7 | 105 |
+
+  A reaction costs half of today's `watch`. A computed value over 8 getters costs about 10% more than today's `watch`
+  of 8, for the values record it keeps for `compute`, its guard against reading itself, and its laziness. A `try`
+  around each read measured nothing. For a sum this cheap, recomputing every frame stays fastest, as before.

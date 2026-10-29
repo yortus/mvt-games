@@ -17,3 +17,4 @@ export type { PerformanceMetrics, PerformanceSample } from './performance-histor
 export { createPerformanceMeter, type PerformanceMeter, type PerformanceMeterOptions } from './performance-meter';
 export type { DeepReadonly } from './type-utils';
 export { watch } from './watch';
+export { changedFrom, createComputed, createReaction, decreased, increased, type Computed } from './watch-api';

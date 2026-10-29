@@ -1,6 +1,7 @@
 import type { ESLint, Linter } from 'eslint';
 import { version } from '../package.json';
-import { noControlNames, noDeepImports, noEmDash, noModuleState, noNull, noRelativeImportsIntoSrc, noThis, noWallClock } from './rules';
+import { noConditionalPoll, noControlNames, noDeepImports, noEmDash, noInlineWatch, noModuleState, noNull } from './rules';
+import { noRelativeImportsIntoSrc, noRepeatedPoll, noThis, noUnusedWatch, noWallClock } from './rules';
 
 // ---------------------------------------------------------------------------
 // Plugin
@@ -22,13 +23,17 @@ import { noControlNames, noDeepImports, noEmDash, noModuleState, noNull, noRelat
 const plugin = {
     meta: { name: '@mvtjs/eslint-plugin', version },
     rules: {
+        'no-conditional-poll': noConditionalPoll,
         'no-control-names': noControlNames,
         'no-deep-imports': noDeepImports,
         'no-em-dash': noEmDash,
+        'no-inline-watch': noInlineWatch,
         'no-module-state': noModuleState,
         'no-null': noNull,
         'no-relative-imports-into-src': noRelativeImportsIntoSrc,
+        'no-repeated-poll': noRepeatedPoll,
         'no-this': noThis,
+        'no-unused-watch': noUnusedWatch,
         'no-wall-clock': noWallClock,
     },
     configs: {} as Record<string, Linter.Config>,

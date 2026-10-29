@@ -42,6 +42,12 @@ export function RockView(bindings: RockViewBindings): Container {
     }
 
     function refresh(): void {
+        // Polled while hidden too, so a change then is drawn, and not missed
+        const watched = watcher.poll();
+        if (watched.phase.changed) {
+            sprite.texture = watched.phase.value === 'shattered' ? rockTextures.shattered : rockTextures.normal;
+        }
+
         view.visible = bindings.isAlive();
         if (!bindings.isAlive()) return;
 
@@ -50,11 +56,6 @@ export function RockView(bindings: RockViewBindings): Container {
         const y = bindings.row() * ts + ts / 2;
         view.position.set(x, y);
         sprite.scale.set(ts / 20);
-
-        const watched = watcher.poll();
-        if (watched.phase.changed) {
-            sprite.texture = watched.phase.value === 'shattered' ? rockTextures.shattered : rockTextures.normal;
-        }
 
         // Wobble (presentation-only state)
         if (watched.phase.value === 'wobbling') {

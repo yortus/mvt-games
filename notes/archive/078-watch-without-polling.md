@@ -13,7 +13,7 @@
 > sound for the reel that settled, by its index.
 
 **Status:** superseded on 2026-10-25, before anything was built, by task
-[079](../tasks/backlog/079-watch-reactions-and-computed-values/task.md). Its clock was
+[079](../tasks/active/079-watch-reactions-and-computed-values/task.md). Its clock was
 rejected (079's "Settled Questions"), and its first-tick rule was replaced by
 reading sources at construction. Kept for the record.
 

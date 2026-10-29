@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { batch, createMemo, createRenderEffect, createRoot, createSignal } from 'solid-js';
-import { watch } from '@mvtjs/utils';
+import { createComputed, createReaction, watch } from '@mvtjs/utils';
 import { refreshView, setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
@@ -12,11 +12,13 @@ import { refreshView, setRefresh } from '@mvtjs/pixi';
  *
  * scenario `discrete`: each model record has a `level`. When it changes, the
  *   view updates two properties from it. Approaches: `manual` (compare with the
- *   previous value by hand), `watch` (the repo's `watch()` helper), `events`,
+ *   previous value by hand), `watch` (the repo's `watch()` helper),
+ *   `reaction` (`createReaction`, as the view's refresh method), `events`,
  *   `solid`.
  * scenario `derived`: each view shows the sum of 8 model values. Approaches:
  *   `recompute` (sum all 8 every frame), `watch` (watch all 8, and sum only
- *   when one changed), `events`, `solid` (8 signals and a `createMemo`).
+ *   when one changed), `computed` (`createComputed` over a record of all 8,
+ *   read every frame), `events`, `solid` (8 signals and a `createMemo`).
  *
  * Returns one frame: the model changes, then the view catches up.
  */
@@ -83,6 +85,9 @@ function createDiscrete(approach: string, changedCount: number): () => void {
                 const w = watcher.poll();
                 if (w.level.changed) applyLevel(view, w.level.value);
             });
+        }
+        else if (approach === 'reaction') {
+            setRefresh(view, createReaction({ watch: () => item.level, react: (level) => applyLevel(view, level) }));
         }
         else if (approach === 'manual') {
             let previous = item.level;
@@ -192,6 +197,24 @@ function createDerived(approach: string, changedCount: number): () => void {
                     || w.i4.changed || w.i5.changed || w.i6.changed || w.i7.changed) {
                     view.x = sum(inputs);
                 }
+            });
+        }
+        else if (approach === 'computed') {
+            const total = createComputed({
+                watch: {
+                    i0: () => inputs[0],
+                    i1: () => inputs[1],
+                    i2: () => inputs[2],
+                    i3: () => inputs[3],
+                    i4: () => inputs[4],
+                    i5: () => inputs[5],
+                    i6: () => inputs[6],
+                    i7: () => inputs[7],
+                },
+                compute: (v) => v.i0 + v.i1 + v.i2 + v.i3 + v.i4 + v.i5 + v.i6 + v.i7,
+            });
+            setRefresh(view, () => {
+                view.x = total();
             });
         }
         else {

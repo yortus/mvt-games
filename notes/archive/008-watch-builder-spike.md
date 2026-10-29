@@ -1,7 +1,7 @@
 # 008 - `Watch()` fluent builder (spike)
 
 > **Superseded on 2026-10-25 by task
-> [079](../tasks/backlog/079-watch-reactions-and-computed-values/task.md)**, which
+> [079](../tasks/active/079-watch-reactions-and-computed-values/task.md)**, which
 > answers this spike's open questions or defers them to its list design (its
 > "Coverage of Earlier Designs" table maps each one), and removes the spike's files. Kept for the record.
 

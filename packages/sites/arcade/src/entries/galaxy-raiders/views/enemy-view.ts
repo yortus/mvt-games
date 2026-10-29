@@ -40,15 +40,17 @@ export function EnemyView(bindings: EnemyViewBindings): Container {
     }
 
     function refresh(): void {
+        // Polled while hidden too, so a change of kind then is drawn, and not missed
+        const watched = watcher.poll();
+        if (watched.phase.changed || watched.kind.changed) {
+            sprite.texture = enemyTextures[bindings.kind()];
+        }
+
         const phase = bindings.phase();
         const visible = phase !== 'dead' && phase !== 'entering';
         view.visible = visible;
         if (!visible) return;
 
-        const watched = watcher.poll();
         view.position.set(bindings.x(), bindings.y());
-        if (watched.phase.changed || watched.kind.changed) {
-            sprite.texture = enemyTextures[bindings.kind()];
-        }
     }
 }

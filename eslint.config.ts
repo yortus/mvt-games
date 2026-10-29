@@ -230,6 +230,26 @@ export default tseslint.config(
         files: ['packages/sites/**/views/**/*-model.ts'],
         rules: { '@mvtjs/no-control-names': 'off' },
     },
+    // Using `watch`, `createReaction` and `createComputed` from @mvtjs/utils: each made one is used, none is
+    // made and used in one expression, and each watcher is polled once, unconditionally, in each step. A test
+    // stands in for several steps in one function, so it may poll a watcher more than once, and between checks.
+    {
+        files: ['**/*.{ts,tsx}'],
+        plugins: { '@mvtjs': mvt },
+        rules: {
+            '@mvtjs/no-unused-watch': 'error',
+            '@mvtjs/no-inline-watch': 'error',
+            '@mvtjs/no-repeated-poll': 'error',
+            '@mvtjs/no-conditional-poll': 'error',
+        },
+    },
+    {
+        files: ['**/*.test.{ts,tsx}'],
+        rules: {
+            '@mvtjs/no-repeated-poll': 'off',
+            '@mvtjs/no-conditional-poll': 'off',
+        },
+    },
     // This repo's own style rules (packages/internal/eslint-plugin): no em-dashes, no
     // `null`, no `this`
     {

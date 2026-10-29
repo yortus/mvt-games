@@ -139,10 +139,11 @@ export function FarmFencedView(bindings: FarmFencedViewBindings): Container {
     return view;
 
     function refresh(): typeof SKIP_DESCENDANTS | undefined {
-        view.visible = bindings.isShown();
-        if (!view.visible) return SKIP_DESCENDANTS;
+        // Polled while hidden too, so the story is the right one when the scene shows
         const w = watcher.poll();
         if (w.farm.changed) writeStory(w.farm.value);
+        view.visible = bindings.isShown();
+        if (!view.visible) return SKIP_DESCENDANTS;
 
         const ms = bindings.elapsedMs();
         clouds.x = Math.round(ms * CLOUD_SPEED);

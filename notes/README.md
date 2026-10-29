@@ -141,6 +141,7 @@ archived, and the `derive` spike on the `derive-util` branch, now deleted.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
+| 079 | [`watch`, Reactions and Computed Values](tasks/active/079-watch-reactions-and-computed-values/task.md) | medium | 2026-10-25 |
 
 ### Backlog
 
@@ -164,7 +165,6 @@ archived, and the `derive` spike on the `derive-util` branch, now deleted.
 | 072 | [Update and Refresh Method Names](tasks/backlog/072-update-and-refresh-method-names.md) | low | 2026-10-15 |
 | 073 | [Models Take Their Random Source](tasks/backlog/073-models-take-their-random-source.md) | medium | 2026-10-15 |
 | 076 | [audio90: Gaps in the API](tasks/backlog/076-audio90-api-gaps.md) | low | 2026-10-29 |
-| 079 | [`watch`, Reactions and Computed Values](tasks/backlog/079-watch-reactions-and-computed-values/task.md) | medium | 2026-10-25 |
 
 ## Archive
 

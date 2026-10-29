@@ -10,12 +10,12 @@ export const changeDetectionSuite: Suite = {
         ...combinations({
             scenario: ['discrete'],
             changedPercent: [0, 1, 10],
-            approach: ['manual', 'watch', 'events', 'solid'],
+            approach: ['manual', 'watch', 'reaction', 'events', 'solid'],
         }),
         ...combinations({
             scenario: ['derived'],
             changedPercent: [0, 10, 100],
-            approach: ['recompute', 'watch', 'events', 'solid'],
+            approach: ['recompute', 'watch', 'computed', 'events', 'solid'],
         }),
     ].map((params) => ({ params })),
     tables: [
@@ -40,6 +40,13 @@ export const changeDetectionSuite: Suite = {
     ],
     labels: {
         changedPercent: { 0: '0%', 1: '1%', 10: '10%', 100: '100%' },
-        approach: { ...APPROACH_LABELS, manual: 'compare by hand', watch: '`watch()`', recompute: 'recompute every frame' },
+        approach: {
+            ...APPROACH_LABELS,
+            manual: 'compare by hand',
+            watch: '`watch()`',
+            reaction: '`createReaction`',
+            computed: '`createComputed`',
+            recompute: 'recompute every frame',
+        },
     },
 };

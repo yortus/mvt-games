@@ -1,8 +1,12 @@
+export { noConditionalPoll } from './no-conditional-poll';
 export { noControlNames } from './no-control-names';
 export { noDeepImports } from './no-deep-imports';
 export { noEmDash } from './no-em-dash';
+export { noInlineWatch } from './no-inline-watch';
 export { noModuleState } from './no-module-state';
 export { noNull } from './no-null';
 export { noRelativeImportsIntoSrc } from './no-relative-imports-into-src';
+export { noRepeatedPoll } from './no-repeated-poll';
 export { noThis } from './no-this';
+export { noUnusedWatch } from './no-unused-watch';
 export { noWallClock } from './no-wall-clock';
