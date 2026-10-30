@@ -118,7 +118,7 @@ entry in the Arcade that 036, now archived, built. 042, now archived, reused 036
 thumbnail code to give every entry a visual test, and made true what 015's
 testing docs already describe. 045, now archived, built the sound chip that
 035's music can play on, which 035's section 8 deferred. It gave `watch` its
-`increased` and `decreased`, which task 079 keeps.
+`increased` and `decreased`, which task 079 kept.
 046, now archived, added to what a session gives its host, as 045 added
 to what the host gives a session, and built on 036's Arcade.
 051, now archived, added a second chip beside 045's, and changed what 045
@@ -132,9 +132,10 @@ that 045 built, and 051 extended, onto the audio thread. 074 makes the
 package that holds both chips a standalone one, and builds on 068's
 sequencer for one clock, the sound card's. 070, now archived,
 touched only the docs, and its tasks 071 to 073 bring the code in line with
-its pages. Task 079 replaces `watch` and `memoiseLast` (018, archived) with
-`watch`, `createReaction` and `createComputed`, superseding 008 and 078, both
-archived, and the `derive` spike on the `derive-util` branch, now deleted.
+its pages. Task 079, now archived, replaced `watch` and `memoiseLast` (018,
+archived) with `watch`, `createReaction` and `createComputed`, superseding 008
+and 078, both archived, and the `derive` spike on the `derive-util` branch, now
+deleted.
 
 ## Tasks
 
@@ -142,7 +143,6 @@ archived, and the `derive` spike on the `derive-util` branch, now deleted.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
-| 079 | [`watch`, Reactions and Computed Values](tasks/active/079-watch-reactions-and-computed-values/task.md) | medium | 2026-10-25 |
 
 ### Backlog
 
@@ -218,6 +218,7 @@ archived, and the `derive` spike on the `derive-util` branch, now deleted.
 | 070 | [Proposal: the principles behind MVT](archive/070-principles-docs.md) (a Principles group in the Architecture docs: an overview and one page per principle, SoC, SSOT, CQS, DIP, CRP, DbC, MISU and DfT, each with its origin, what it means in MVT, its costs, examples, a checklist and the rules it underpins; linked from the rules, glossary, heritage, code review skill and `AGENTS.md`; a broken precondition throws. Code brought in line by tasks 071 to 073) | 2026-10-21 |
 | 074 | [Proposal: audio90, a standalone sound package](archive/074-audio90-standalone-package.md) (`@mvtjs/chiptune` published as `audio90` 0.8.0, versioned on its own like v-snap and easy to move to a repository of its own: one clock, the sound card's, with chips paused by their host; sounds in place of instruments and sound effects; the chip as one object that plays songs itself, with no music player; a chip each for music and sound effects; repeat, pitch, fades, `stereoWidth`, `onRow` and `onEnded`; songs started part way and `positionMs`; song text; neutral docs, with the MVT material on the Sound and Music page; its own tests, reference sounds and CONTRIBUTING. The Studio moved to 077, and the gaps to task 076) | 2026-10-29 |
 | 078 | [Proposal: `watch` without polling](archive/078-watch-without-polling.md) (superseded by task 079, before it was built) | 2026-10-25 |
+| 079 | [`watch`, Reactions and Computed Values](archive/079-watch-reactions-and-computed-values/task.md) (`watch` rebuilt, with `createReaction` and `createComputed` beside it, in `packages/libraries/utils/src/watch-api/`; `memoiseLast` removed and `createSequenceReaction` renamed `createSequenceTracker`; every call site migrated, with reactions named for their effect and trigger; four lint rules; a record watch as fast as before; the docs rewritten, with a new Computed Values page; changesets for a breaking release) | 2026-10-30 |
 
 ## Elsewhere
 

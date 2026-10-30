@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-10-25 |
-| Updated  | 2026-10-29 |
+| Updated  | 2026-10-30 |
 
 ## Description
 
@@ -37,8 +37,8 @@ const w = watcher.poll();
 if (w.phase.changedTo('dying')) sound.play(SHIP_EXPLODE);
 ```
 
-This task supersedes [008](../../../archive/008-watch-builder-spike.md) (the `Watch()` builder spike) and
-[078](../../../archive/078-watch-without-polling.md) (a watch read without polling), both archived, and the `derive`
+This task supersedes [008](../008-watch-builder-spike.md) (the `Watch()` builder spike) and
+[078](../078-watch-without-polling.md) (a watch read without polling), both archived, and the `derive`
 spike on the `derive-util` branch (deleted on 2026-10-29, after its coverage was checked). The design came out of one
 long session on 2026-10-23 to 2026-10-25 that compared many alternatives, and a second on 2026-10-29 that settled
 list handling and the shapes each tool takes; section [Settled Questions](#settled-questions) records what was ruled
