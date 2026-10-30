@@ -35,14 +35,14 @@ A reaction is a function that you call on every step. Each call reads what it
 watches, and runs `react` if the value changed in a way that `when` accepts.
 
 ```ts
-const playDeath = createReaction({
+const playExplosionSoundWhenDying = createReaction({
     watch: bindings.phase,
     when: 'dying',
     react: () => sfx.play(SHIP_EXPLODE),
 });
 
 // In refresh, on every step:
-playDeath();
+playExplosionSoundWhenDying();
 ```
 
 `when` is a value, meaning "changed to this value", or a condition. Leave it
@@ -50,12 +50,12 @@ out to react to every change. The conditions are `increased`, `decreased` and
 `changedFrom(value)`. For anything else, write your own:
 
 ```ts
-const playLever = createReaction({
+const playLeverSoundOnEachSpin = createReaction({
     watch: bindings.spins,
     when: increased,
     react: () => sfx.play(LEVER),
 });
-const playTick = createReaction({
+const playTickSoundInLastTenSeconds = createReaction({
     watch: bindings.seconds,
     when: (seconds, previous) => seconds < previous && seconds <= 10,
     react: () => sfx.play(TICK),
@@ -66,7 +66,7 @@ const playTick = createReaction({
 happened between two reads:
 
 ```ts
-const playShots = createReaction({
+const playShotSoundForEachShot = createReaction({
     watch: () => model.shotsFired,
     when: increased,
     react: (shots, previous) => {
@@ -81,7 +81,7 @@ index. Every getter in the array must return the same type, since they share
 `when`.
 
 ```ts
-const playStops = createReaction({
+const playStopSoundWhenEachReelSettles = createReaction({
     watch: model.reels.map((reel) => () => reel.phase),
     when: 'settling',
     react: (_phase, _previous, index) => sfx.play(REEL_STOPS[index]),
@@ -154,7 +154,7 @@ in place and still be `===` to itself. Watch its `version` instead, a number
 that rises whenever the object may have changed:
 
 ```ts
-const relayout = createReaction({
+const layOutWhenCellsChange = createReaction({
     watch: () => cells.version,
     react: () => layOut(cells()),
 });
@@ -199,7 +199,7 @@ few consequences:
   went in between.
 - **Two rises between reads are one `increased`.** When every occurrence
   matters, have the model count them, and react from `previous` to
-  `current`, as `playShots` does above.
+  `current`, as `playShotSoundForEachShot` does above.
 - **Calling a reaction twice in a step is harmless.** The second call sees no
   change.
 

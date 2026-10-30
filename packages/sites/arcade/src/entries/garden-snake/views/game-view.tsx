@@ -2,7 +2,7 @@
 
 import type { Container, Graphics } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice, OverlayView, SwipeInputView } from '#shared';
 import { COLS, ROWS } from '../data';
 import type { GameModel } from '../models';
@@ -28,7 +28,7 @@ export const SCREEN_HEIGHT = ROWS * CELL + HUD_HEIGHT;
 /** The whole game: the score bar, the garden, the berry, the snake, and the game-over panel. */
 export function GameView(bindings: GameViewBindings): Container {
     const { model } = bindings;
-    const scoreText = memoiseLast((score: number) => `SCORE ${score}`);
+    const scoreText = createComputed({ watch: () => model.score, compute: (score) => `SCORE ${score}` });
     const isTouch = isTouchDevice();
     const gameOverText = `GAME OVER\n\n${isTouch ? 'Tap' : 'Press Enter'} to play again`;
 
@@ -44,7 +44,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 swipeDistance={SWIPE_DISTANCE}
                 onSwiped={(direction) => { model.direction = direction; }}
             />
-            <text text={() => scoreText(model.score)} x={8} y={5} style={HUD_STYLE} />
+            <text text={scoreText} x={8} y={5} style={HUD_STYLE} />
             <container y={HUD_HEIGHT}>
                 <graphics ref={drawGarden} />
                 <graphics x={() => (model.berry.col + 0.5) * CELL} y={() => (model.berry.row + 0.5) * CELL} ref={drawBerry} />

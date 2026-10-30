@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction, increased } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import { GAME_OVER, RESPAWN, SHIP_HIT, SHOT, STAGE_CLEAR, STAGE_FANFARE, STAGE_TUNE } from '../data';
 import type { GamePhase } from '../models';
@@ -51,17 +51,22 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const watcher = watch({ phase: bindings.phase, shots: bindings.shotsFired });
+    const playSoundsWhenPhaseChanges = createReaction({ watch: bindings.phase, react: playPhase });
+    // A rise in the count is a shot. A reset to 0 on a restart is not a rise
+    const playShotSoundOnEachShot = createReaction({
+        watch: bindings.shotsFired,
+        when: increased,
+        react: () => sfx.play(SHOT),
+    });
+    // The view is made as the game starts, so the game opens with the fanfare
+    playPhase(bindings.phase(), undefined);
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
-        const w = watcher.poll();
-        // The first poll sees the starting phase as a change, so the game opens with the fanfare
-        if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
-        // A rise in the count is a shot. The first poll and a reset to 0 on a restart are not rises
-        if (w.shots.increased) sfx.play(SHOT);
+        playSoundsWhenPhaseChanges();
+        playShotSoundOnEachShot();
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = music.song === STAGE_TUNE && bindings.enemiesLeft() <= HURRY_AT_MOST ? HURRY_TEMPO : 1;
     }

@@ -1,6 +1,6 @@
 import { Container, Graphics, Rectangle, Text } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import type { FrenzyModel, Target } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -47,15 +47,15 @@ export function FrenzyView({ model, width, height }: FrenzyViewBindings): Contai
     view.on('pointerdown', (e) => model.hit(e.globalX, e.globalY));
 
     // The text is made again only when the number changes, not every frame
-    const scoreLabel = memoiseLast((score: number) => String(score));
-    const comboLabel = memoiseLast((combo: number) => (combo > 1 ? `${combo}x COMBO` : ''));
+    const scoreLabel = createComputed({ watch: () => model.score, compute: String });
+    const comboLabel = createComputed({ watch: () => model.combo, compute: (combo) => (combo > 1 ? `${combo}x COMBO` : '') });
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
-        scoreText.text = scoreLabel(model.score);
-        comboText.text = comboLabel(model.combo);
+        scoreText.text = scoreLabel();
+        comboText.text = comboLabel();
 
         const targets = model.targets;
         while (targetLayer.children.length > targets.length) {

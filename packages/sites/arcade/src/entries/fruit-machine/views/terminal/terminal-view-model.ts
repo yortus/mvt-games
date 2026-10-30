@@ -68,8 +68,6 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
 
     print(drawBanner());
     print('Type help for commands. Enter on an empty line repeats the last one.');
-    // Start the watcher from the model as it is, so the first update logs only changes
-    watcher.poll();
 
     const viewModel: TerminalViewModel = {
         get transcript() {
@@ -117,13 +115,13 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
         update(_deltaMs) {
             const changes = watcher.poll();
             if (changes.spinCount.changed) logSpinStart();
-            if (changes.isStopping.changed && changes.isStopping.value) print('Stopping...');
+            if (changes.isStopping.changed && changes.isStopping.current) print('Stopping...');
             if (changes.phase.changed) {
-                const { previous, value } = changes.phase;
+                const { previous, current } = changes.phase;
                 if (previous === 'spinning') logLanding();
                 // The last step's index is the number of ways: anything less was cut short
                 if (previous === 'celebrating') print(changes.step.previous === model.outcome!.wins.length ? 'Celebration over.' : 'Celebration skipped.');
-                if (value === 'gameOver') print('Out of credits. GAME OVER. Reload the page to play again.');
+                if (current === 'gameOver') print('Out of credits. GAME OVER. Reload the page to play again.');
             }
             if (changes.step.changed && celebration.win !== undefined) logWay();
         },

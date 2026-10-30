@@ -55,6 +55,15 @@ export function EnemyView(bindings: EnemyViewBindings): Container {
         view.addChild(sprite);
         view.addChild(telegraphGfx);
         view.addChild(fireGfx);
+        // The watcher sees only changes from here on, so the first pose and fire are drawn now
+        if (bindings.phase() === 'ghosting') {
+            drawGhost();
+        }
+        else {
+            drawBody();
+            drawFire();
+            drawTelegraph();
+        }
     }
 
     function refresh(): void {
@@ -71,21 +80,13 @@ export function EnemyView(bindings: EnemyViewBindings): Container {
         if (phase === 'popped') return;
 
         if (phase === 'ghosting') {
-            if (watched.phase.changed || watched.tileSize.changed) {
-                sprite.texture = tx.ghostEyes;
-                updateScale(0);
-            }
+            if (watched.phase.changed || watched.tileSize.changed) drawGhost();
             view.scale.x = bindings.direction() === 'left' ? -1 : 1;
-            fireGfx.clear();
-            telegraphGfx.clear();
             return;
         }
 
         if (watched.phase.changed || watched.inflation.changed || watched.kind.changed || watched.tileSize.changed) {
-            const kind = bindings.kind();
-            const inflation = bindings.inflationStage();
-            sprite.texture = pickTexture(kind, phase, inflation);
-            updateScale(inflation);
+            drawBody();
         }
 
         // Walk cycle: alternate two frames by the distance from the nearest
@@ -99,27 +100,46 @@ export function EnemyView(bindings: EnemyViewBindings): Container {
         // Direction flip
         view.scale.x = bindings.direction() === 'left' ? -1 : 1;
 
-        // Salamander fire (stays procedural - variable shape)
-        if (watched.fire.changed || watched.direction.changed || watched.tileSize.changed) {
-            fireGfx.clear();
-            if (bindings.isFireActive() && bindings.kind() === 'salamander') {
-                const dir = bindings.direction();
-                if (dir === 'left' || dir === 'right') {
-                    const fireLen = 3 * ts;
-                    fireGfx.rect(ts * (MOUTH_X - 0.05), ts * (MOUTH_Y - 0.2), fireLen, ts * 0.4).fill(0xff6600);
-                    fireGfx.rect(ts * (MOUTH_X + 0.05), ts * (MOUTH_Y - 0.15), fireLen * 0.7, ts * 0.3).fill(0xff3300);
-                }
+        if (watched.fire.changed || watched.direction.changed || watched.tileSize.changed) drawFire();
+        if (watched.telegraph.changed || watched.direction.changed || watched.tileSize.changed) drawTelegraph();
+    }
+
+    /** A ghost is only its eyes, with no fire. */
+    function drawGhost(): void {
+        sprite.texture = tx.ghostEyes;
+        updateScale(0);
+        fireGfx.clear();
+        telegraphGfx.clear();
+    }
+
+    function drawBody(): void {
+        const inflation = bindings.inflationStage();
+        sprite.texture = pickTexture(bindings.kind(), bindings.phase(), inflation);
+        updateScale(inflation);
+    }
+
+    /** Salamander fire (stays procedural - variable shape). */
+    function drawFire(): void {
+        const ts = bindings.tileSize();
+        fireGfx.clear();
+        if (bindings.isFireActive() && bindings.kind() === 'salamander') {
+            const dir = bindings.direction();
+            if (dir === 'left' || dir === 'right') {
+                const fireLen = 3 * ts;
+                fireGfx.rect(ts * (MOUTH_X - 0.05), ts * (MOUTH_Y - 0.2), fireLen, ts * 0.4).fill(0xff6600);
+                fireGfx.rect(ts * (MOUTH_X + 0.05), ts * (MOUTH_Y - 0.15), fireLen * 0.7, ts * 0.3).fill(0xff3300);
             }
         }
+    }
 
-        // Salamander fire telegraph
-        if (watched.telegraph.changed || watched.direction.changed || watched.tileSize.changed) {
-            telegraphGfx.clear();
-            if (bindings.isFireTelegraph() && bindings.kind() === 'salamander') {
-                const mr = ts * 0.4;
-                telegraphGfx.circle(ts * MOUTH_X, ts * MOUTH_Y, mr * 0.2).fill({ color: 0xff4400, alpha: 0.7 });
-                telegraphGfx.circle(ts * MOUTH_X, ts * MOUTH_Y, mr * 0.3).fill({ color: 0xff6600, alpha: 0.3 });
-            }
+    /** The glow at a salamander's mouth that warns of its fire. */
+    function drawTelegraph(): void {
+        const ts = bindings.tileSize();
+        telegraphGfx.clear();
+        if (bindings.isFireTelegraph() && bindings.kind() === 'salamander') {
+            const mr = ts * 0.4;
+            telegraphGfx.circle(ts * MOUTH_X, ts * MOUTH_Y, mr * 0.2).fill({ color: 0xff4400, alpha: 0.7 });
+            telegraphGfx.circle(ts * MOUTH_X, ts * MOUTH_Y, mr * 0.3).fill({ color: 0xff6600, alpha: 0.3 });
         }
     }
 

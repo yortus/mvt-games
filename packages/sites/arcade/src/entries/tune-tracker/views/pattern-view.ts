@@ -87,11 +87,11 @@ export function PatternView(bindings: PatternViewBindings): Container {
         const sheet = bindings.sheet();
         if (sheet === shown && !w.orderIndex.changed && !w.row.changed) return;
         if (sheet !== shown) layOut(sheet);
-        const playing = w.orderIndex.value;
+        const playing = w.orderIndex.current;
 
         // The row playing and those before it, back to the song's start
         let orderIndex = playing;
-        let row = w.row.value;
+        let row = w.row.current;
         for (let i = middle; i >= 0; i--) {
             writeLine(i, sheet, orderIndex, row, playing);
             row--;
@@ -102,7 +102,7 @@ export function PatternView(bindings: PatternViewBindings): Container {
         }
         // The rows after it, as the song plays them, round its loop
         orderIndex = playing;
-        row = w.row.value;
+        row = w.row.current;
         for (let i = middle + 1; i < lineCount; i++) {
             row++;
             if (orderIndex >= 0 && row >= sheet.song.patterns[sheet.song.order[orderIndex].pattern].rowCount) {

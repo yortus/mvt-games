@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -27,14 +27,19 @@ export interface QuickOpenViewBindings {
  * press outside the dialog, closes it.
  */
 export function QuickOpenView(bindings: QuickOpenViewBindings): Element {
-    const watcher = watch({ isOpen: bindings.isOpen });
-    watcher.poll();
     /** Whether the dialog has opened since its field last took the focus. */
     let isFocusDue = false;
+    const queueFocusWhenOpened = createReaction({
+        watch: bindings.isOpen,
+        when: true,
+        react: () => {
+            isFocusDue = true;
+        },
+    });
 
     return (
         // The wrapper is never hidden, so it sees the dialog close and open again
-        <div class="quick-open-layer" onRefresh={noteOpening}>
+        <div class="quick-open-layer" onRefresh={queueFocusWhenOpened}>
             <div class="quick-open" visible={bindings.isOpen} onPointerDown={onBackdropPressed}>
                 <div class="quick-open-panel" role="dialog" aria-modal="true" aria-label="Open a file">
                     <input
@@ -57,11 +62,6 @@ export function QuickOpenView(bindings: QuickOpenViewBindings): Element {
             </div>
         </div>
     );
-
-    function noteOpening(): void {
-        const { isOpen } = watcher.poll();
-        if (isOpen.changed && isOpen.value) isFocusDue = true;
-    }
 
     /** Focuses the field once the dialog shows. It runs after the wrapper's step, and after the dialog is shown, since a hidden field cannot take the focus. */
     function focusIfDue(input: Element): void {

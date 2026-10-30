@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import type { SfxChip } from '#shared';
 import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
@@ -46,20 +46,22 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    // The view does not poll here. Its first poll sees the game's first phase as a change, and plays a new game's notes.
-    const watcher = watch({ gamePhase: bindings.gamePhase, boardPhase: bindings.boardPhase });
+    const playSoundWhenGameStartsOrEnds = createReaction({ watch: bindings.gamePhase, react: playGamePhase });
+    const playSoundsWhenBoardPhaseChanges = createReaction({ watch: bindings.boardPhase, react: playBoardPhase });
+    // The view is made as the game starts, so it plays a new game's notes now. The board starts idle, so nothing has
+    // happened on it yet
+    playGamePhase(bindings.gamePhase());
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
-        const w = watcher.poll();
-        if (w.gamePhase.changed) {
-            if (w.gamePhase.value === 'playing') sfx.play(NEW_GAME);
-            else sfx.play(GAME_OVER);
-        }
-        // The first poll has no previous board phase. The board starts idle, so nothing has happened on it yet.
-        if (w.boardPhase.changed && w.boardPhase.previous !== undefined) playBoardPhase(w.boardPhase.value, w.boardPhase.previous);
+        playSoundWhenGameStartsOrEnds();
+        playSoundsWhenBoardPhaseChanges();
+    }
+
+    function playGamePhase(phase: GamePhase): void {
+        sfx.play(phase === 'playing' ? NEW_GAME : GAME_OVER);
     }
 
     function playBoardPhase(phase: BoardPhase, previous: BoardPhase): void {

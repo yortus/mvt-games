@@ -16,7 +16,7 @@ const IMPORTS = "import { createComputed, createReaction, watch } from '@mvtjs/u
 ruleTester.run('no-inline-watch', noInlineWatch, {
     valid: [
         IMPORTS + 'const watcher = watch(bindings.phase);\nconst w = watcher.poll();',
-        IMPORTS + 'const playDeath = createReaction({ watch: bindings.phase, react: play });\nplayDeath();',
+        IMPORTS + 'const playExplosionSoundWhenDying = createReaction({ watch: bindings.phase, react: play });\nplayDeath();',
         IMPORTS + 'const scoreText = createComputed({ watch: bindings.score, compute: format });\nscoreText();',
         // Passed on, as a JSX prop or into an array, to be read later
         IMPORTS + 'const view = <text text={createComputed({ watch: bindings.score, compute: format })} />;',

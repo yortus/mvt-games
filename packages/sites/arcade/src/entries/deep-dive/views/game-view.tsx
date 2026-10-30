@@ -2,7 +2,7 @@
 
 import type { Container, Graphics } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice, OverlayView } from '#shared';
 import { CAVE_HEIGHT, SUB_X, VIEW_WIDTH } from '../data';
 import type { GameModel } from '../models';
@@ -27,8 +27,8 @@ export const SCREEN_HEIGHT = CAVE_HEIGHT * SCALE;
 /** The whole game: the water, the cave scrolling by, the submarine and its bubbles, the distance, and the crash panel. */
 export function GameView(bindings: GameViewBindings): Container {
     const { model } = bindings;
-    const distanceText = memoiseLast((metres: number) => `${metres} m`);
-    const bestText = memoiseLast((metres: number) => `BEST ${metres} m`);
+    const distanceText = createComputed({ watch: () => Math.floor(model.distance), compute: (metres) => `${metres} m` });
+    const bestText = createComputed({ watch: () => Math.floor(model.best), compute: (metres) => `BEST ${metres} m` });
     const hint = isTouchDevice() ? 'Hold Rise to go up' : 'Hold Space to rise';
     const crashText = `CRASHED\n\n${isTouchDevice() ? 'Tap' : 'Press Enter'} to dive again`;
 
@@ -55,8 +55,8 @@ export function GameView(bindings: GameViewBindings): Container {
             </List>
             <graphics onRefresh={drawCave} />
             <graphics x={SUB_X * SCALE} y={() => model.y * SCALE} rotation={() => model.ySpeed * 0.04} ref={drawSub} />
-            <text text={() => distanceText(Math.floor(model.distance))} x={8} y={6} style={HUD_STYLE} />
-            <text text={() => bestText(Math.floor(model.best))} x={SCREEN_WIDTH - 8} y={6} anchorX={1} style={HUD_STYLE} />
+            <text text={distanceText} x={8} y={6} style={HUD_STYLE} />
+            <text text={bestText} x={SCREEN_WIDTH - 8} y={6} anchorX={1} style={HUD_STYLE} />
             <text text={hint} visible={() => model.phase === 'ready'} x={SCREEN_WIDTH / 2} y={SCREEN_HEIGHT / 2 + 40} anchor={0.5} style={HUD_STYLE} />
             <OverlayView
                 width={SCREEN_WIDTH}

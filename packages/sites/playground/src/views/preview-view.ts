@@ -53,6 +53,11 @@ export function PreviewView(bindings: PreviewViewBindings): Element {
         background: bindings.background,
         placeholder: bindings.placeholder,
     });
+    // The watcher sees only changes from here on, so the first sandbox, or the placeholder, shows now
+    placeholder.textContent = bindings.placeholder();
+    const firstDocument = bindings.sandboxDocument();
+    if (firstDocument !== undefined) startFrame(firstDocument);
+    placeholder.hidden = frame !== undefined;
 
     window.addEventListener('message', onMessage);
     setRefresh(element, refresh);
@@ -61,18 +66,18 @@ export function PreviewView(bindings: PreviewViewBindings): Element {
 
     function refresh(): void {
         const w = watcher.poll();
-        if (w.sandboxes.changed || !w.hasDocument.value) {
+        if (w.sandboxes.changed || !w.hasDocument.current) {
             const document = bindings.sandboxDocument();
             if (document === undefined) removeFrame();
             else if (w.sandboxes.changed) startFrame(document);
         }
         if (frame !== undefined) {
-            if (w.isPaused.changed) send({ kind: w.isPaused.value ? 'pause' : 'resume' });
+            if (w.isPaused.changed) send({ kind: w.isPaused.current ? 'pause' : 'resume' });
             if (w.steps.increased) send({ kind: 'step', deltaMs: STEP_MS });
-            if (w.speed.changed) send({ kind: 'set-speed', speed: w.speed.value });
-            if (w.background.changed) send({ kind: 'set-background', colour: w.background.value });
+            if (w.speed.changed) send({ kind: 'set-speed', speed: w.speed.current });
+            if (w.background.changed) send({ kind: 'set-background', colour: w.background.current });
         }
-        if (w.placeholder.changed) placeholder.textContent = w.placeholder.value;
+        if (w.placeholder.changed) placeholder.textContent = w.placeholder.current;
         placeholder.hidden = frame !== undefined;
     }
 

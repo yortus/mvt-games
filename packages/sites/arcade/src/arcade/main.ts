@@ -186,6 +186,8 @@ const ABOUT_STEP = 'arcade-about';
 /** How many times the page has stepped back in history itself, whose arrival it has not yet seen. */
 let ownStepsBack = 0;
 
+// An info panel's step, reloaded, opens its panel again. The watcher is made after it, so its baseline has the panel open
+followPanelStep();
 const watcher = watch({
     phase: () => model.phase,
     isEntryStarted: () => model.isEntryStarted,
@@ -196,9 +198,6 @@ const watcher = watch({
     initials: () => model.highscores.lastInitials,
     isPerfmonOpen: () => model.isPerfmonOpen,
 });
-// An info panel's step, reloaded, opens its panel again
-followPanelStep();
-watcher.poll();
 
 /** The sound settings last given to the host and saved. */
 let keptSoundSettings = model.soundSettings;
@@ -268,7 +267,7 @@ function followModel(): void {
     if (isEntryStarted.changed) {
         // The session starts as the entry is revealed, and draws its first
         // frame, standing still, before the Arcade's views next draw
-        if (isEntryStarted.value) {
+        if (isEntryStarted.current) {
             exitFrame = undefined;
             const { starter, activeEntry } = model;
             assert(starter !== undefined && activeEntry !== undefined, 'arcade: an entry starts only once it has loaded');
@@ -287,12 +286,12 @@ function followModel(): void {
         if (model.activeEntry !== undefined) store.remove(SAVED_GAME_KEY + model.activeEntry.id);
     }
     // A run has ended, and its score may place
-    if (isRunOver.changed && isRunOver.value) model.runEnded(host.session?.scoring?.score() ?? 0);
+    if (isRunOver.changed && isRunOver.current) model.runEnded(host.session?.scoring?.score() ?? 0);
     // The host stays paused while the entry is frozen: standing still as it is revealed, paused by the visitor, or waiting while a score places.
     host.isPaused = model.isEntryFrozen;
     host.isTurned = isRunnerTurned();
     // Blocked storage means the initials are offered for the rest of this visit only
-    if (initials.changed && initials.value !== undefined) store.write(INITIALS_KEY, initials.value);
+    if (initials.changed && initials.current !== undefined) store.write(INITIALS_KEY, initials.current);
     if (model.favouriteIds !== keptFavouriteIds) {
         keptFavouriteIds = model.favouriteIds;
         store.writeJson(FAVOURITES_KEY, keptFavouriteIds);
@@ -304,9 +303,9 @@ function followModel(): void {
         // Blocked or full storage means the settings hold for this visit only
         store.write(SOUND_SETTINGS_KEY, formatSoundSettings(keptSoundSettings));
     }
-    if (isPerfmonOpen.changed) measurePerformance(isPerfmonOpen.value);
+    if (isPerfmonOpen.changed) measurePerformance(isPerfmonOpen.current);
     if (phase.changed && phase.previous === 'browsing') writeUrl('enter');
-    else if (phase.changed && phase.value === 'browsing') writeUrl('leave');
+    else if (phase.changed && phase.current === 'browsing') writeUrl('leave');
     else if (panel.changed) writePanelStep();
     else if (phase.changed || query.changed) writeUrl('replace');
 }

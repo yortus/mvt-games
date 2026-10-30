@@ -56,22 +56,23 @@ export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
     const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'match-audio';
-    // The first poll sees the starting phase as a change, so the game opens with the gong
     const watcher = watch({
         phase: bindings.phase,
         playerPoints: bindings.playerPoints,
         opponentPoints: bindings.opponentPoints,
         secondsLeft: bindings.secondsLeft,
     });
+    // The view is made as the game starts, so the game opens with the gong
+    playPhase(bindings.phase(), undefined);
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
         const w = watcher.poll();
-        const phase = w.phase.value;
+        const phase = w.phase.current;
         if (w.phase.changed) playPhase(phase, w.phase.previous);
-        // A rise in a count is a point. The first poll and a reset to 0 are not
+        // A rise in a count is a point. A reset to 0 is not
         // rises. When the clock runs out, the side ahead is given the points
         // that end the round. Those points change in the same tick as the
         // phase, and the round's jingle marks them, so they get no notes of
@@ -80,7 +81,7 @@ export function MatchAudioView(bindings: MatchAudioViewBindings): Container {
         if (w.playerPoints.increased && !isRoundEnding) sfx.play(POINT_WON);
         if (w.opponentPoints.increased && !isRoundEnding) sfx.play(POINT_LOST);
         const seconds = w.secondsLeft;
-        if (phase === 'fighting' && seconds.decreased && seconds.value > 0 && seconds.value <= TICKING_SECONDS) {
+        if (phase === 'fighting' && seconds.decreased && seconds.current > 0 && seconds.current <= TICKING_SECONDS) {
             sfx.play(TICK);
         }
     }

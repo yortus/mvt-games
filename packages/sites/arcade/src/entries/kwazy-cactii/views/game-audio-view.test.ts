@@ -19,9 +19,10 @@ afterEach(() => {
 });
 
 describe('GameAudioView', () => {
-    it('plays a new game\'s notes on its first tick', () => {
-        const { tick } = setUp();
-        expect(tick()).toEqual([NEW_GAME]);
+    it('plays a new game\'s notes as it is made, and nothing on its first tick', () => {
+        const { chip, tick } = setUp();
+        expect(listPlayed(chip)).toEqual([NEW_GAME]);
+        expect(tick()).toEqual([]);
     });
 
     it('blips as a swap that makes a line starts, says nothing for one that makes none until it knocks as it is undone', () => {
@@ -139,7 +140,7 @@ function setUp() {
         refreshView(view);
         return listPlayed(chip);
     };
-    return { state, tick };
+    return { state, chip, tick };
 }
 
 /** Creates a headless chip whose `play`, `queue` and `stop` are spied on, so a test can read what a view asked of it. */

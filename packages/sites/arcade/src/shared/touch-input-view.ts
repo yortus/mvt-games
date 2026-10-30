@@ -63,6 +63,8 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         primaryLabel: bindings.primaryLabel,
         secondaryLabel: bindings.secondaryLabel,
     });
+    // The watcher sees only changes from here on, so the first controls are built now
+    rebuild();
 
     setRefresh(view, refresh);
     return view;

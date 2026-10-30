@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import type { LightPhase, TrafficLightModel } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -17,8 +17,8 @@ export interface TrafficLightViewBindings {
 
 /**
  * The housing and its three lights, with the light for the model's phase
- * lit. The lights are redrawn only when the phase changes, which `watch`
- * finds.
+ * lit. The lights are drawn as the view is made, and again only when the
+ * phase changes, which a reaction notices.
  */
 export function TrafficLightView({ model }: TrafficLightViewBindings): Container {
     const view = new Container();
@@ -34,16 +34,11 @@ export function TrafficLightView({ model }: TrafficLightViewBindings): Container
         lightGraphics.push(g);
     }
 
-    const watcher = watch({ phase: () => model.phase });
+    const drawLightsWhenPhaseChanges = createReaction({ watch: () => model.phase, react: drawLights });
 
     drawLights(model.phase);
-    setRefresh(view, refresh);
+    setRefresh(view, drawLightsWhenPhaseChanges);
     return view;
-
-    function refresh(): void {
-        const w = watcher.poll();
-        if (w.phase.changed) drawLights(w.phase.value);
-    }
 
     function drawLights(litPhase: LightPhase): void {
         for (let i = 0; i < LIGHTS.length; i++) {

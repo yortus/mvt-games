@@ -1,5 +1,4 @@
 import { Container, Sprite } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import type { Direction } from '../models';
 import { setRefresh } from '@mvtjs/pixi';
@@ -22,12 +21,6 @@ export interface CatViewBindings {
 // ---------------------------------------------------------------------------
 
 export function CatView(bindings: CatViewBindings): Container {
-    const watcher = watch({
-        color: bindings.color,
-        direction: bindings.direction,
-        tileSize: bindings.tileSize,
-    });
-
     let bodySprite: Sprite;
     let faceSprite: Sprite;
 
@@ -45,22 +38,12 @@ export function CatView(bindings: CatViewBindings): Container {
     }
 
     function refresh(): void {
-        const watched = watcher.poll();
-
         const ts = bindings.tileSize();
         view.position.set(bindings.col() * ts + ts / 2, bindings.row() * ts + ts / 2);
-
-        if (watched.color.changed) {
-            bodySprite.tint = watched.color.value;
-        }
-
-        if (watched.direction.changed) {
-            view.rotation = directionToRotation(watched.direction.value);
-        }
-
-        if (watched.tileSize.changed) {
-            view.scale.set(ts / 20);
-        }
+        // Pixi skips each of these when the value hasn't changed
+        bodySprite.tint = bindings.color();
+        view.rotation = directionToRotation(bindings.direction());
+        view.scale.set(ts / 20);
     }
 }
 

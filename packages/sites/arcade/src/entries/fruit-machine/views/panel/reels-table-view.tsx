@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import type { ReelPhase } from '../../models';
 
 // ---------------------------------------------------------------------------
@@ -50,16 +50,17 @@ export function ReelsTableView(bindings: ReelsTableViewBindings): Element {
 
 /** One reel's row of the table. */
 function reelRow(bindings: ReelsTableViewBindings, reel: number): Element {
+    const { positionAt, stopIndexAt } = bindings;
     // Text made only when what it shows changes: hundredths for the position
-    const positionText = memoiseLast((hundredths: number) => (hundredths / 100).toFixed(2));
-    const stopText = memoiseLast((stop: number) => String(stop));
+    const positionText = createComputed({ watch: () => Math.round(positionAt(reel) * 100), compute: formatHundredths });
+    const stopText = createComputed({ watch: () => stopIndexAt(reel), compute: String });
 
     return (
         <tr class={() => PHASE_CLASSES[bindings.phaseAt(reel)]}>
             <td text={String(reel + 1)} />
             <td text={() => bindings.phaseAt(reel)} />
-            <td class="number" text={() => positionText(Math.round(bindings.positionAt(reel) * 100))} />
-            <td class="number" text={() => stopText(bindings.stopIndexAt(reel))} />
+            <td class="number" text={positionText} />
+            <td class="number" text={stopText} />
             <td>
                 <progress max={1} value={() => bindings.progressAt(reel)} />
             </td>
@@ -72,3 +73,7 @@ const PHASE_CLASSES: { readonly [P in ReelPhase]: string } = {
     spinning: 'reel-spinning',
     settling: 'reel-settling',
 };
+
+function formatHundredths(hundredths: number): string {
+    return (hundredths / 100).toFixed(2);
+}

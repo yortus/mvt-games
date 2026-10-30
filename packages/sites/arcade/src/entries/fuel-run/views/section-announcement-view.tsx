@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
-import { createSequence, watch } from '@mvtjs/utils';
+import { createReaction, createSequence } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 
 // ---------------------------------------------------------------------------
@@ -29,9 +29,11 @@ export function SectionAnnouncementView(bindings: SectionAnnouncementViewBinding
         { name: 'display', startMs: 0, durationMs: DISPLAY_DURATION_MS },
         { name: 'fade', startMs: DISPLAY_DURATION_MS, durationMs: FADE_DURATION_MS },
     ]);
-    const watcher = watch({ sectionIndex: bindings.sectionIndex });
     // Presentation state: the name being announced.
     let text = '';
+    const showAnnouncementWhenSectionChanges = createReaction({ watch: bindings.sectionIndex, react: announce });
+    // The view is made as the run starts, so the first section is announced now
+    announce(bindings.sectionIndex());
 
     return (
         <container alpha={getAlpha} onUpdate={update}>
@@ -42,12 +44,13 @@ export function SectionAnnouncementView(bindings: SectionAnnouncementViewBinding
     );
 
     function update(deltaMs: number): void {
-        const { sectionIndex } = watcher.poll();
-        if (sectionIndex.changed) {
-            text = SECTION_NAMES[sectionIndex.value] ?? '';
-            sequence.start();
-        }
+        showAnnouncementWhenSectionChanges();
         sequence.update(deltaMs);
+    }
+
+    function announce(sectionIndex: number): void {
+        text = SECTION_NAMES[sectionIndex] ?? '';
+        sequence.start();
     }
 
     function getAlpha(): number {

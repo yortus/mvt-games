@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -23,11 +23,14 @@ export interface StopwatchViewBindings {
  * any other, so none moves as the time changes.
  */
 export function StopwatchView(bindings: StopwatchViewBindings): Element {
+    // The time's text is made again only when the hundredths shown change, not every frame
+    const timeText = createComputed({ watch: () => Math.floor(bindings.elapsedMs() / 10), compute: formatTime });
+
     return (
         <div style="display: grid; justify-items: center; gap: 12px; padding: 24px;">
             <output
                 style="font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 64px; font-variant-numeric: tabular-nums;"
-                text={() => timeText(Math.floor(bindings.elapsedMs() / 10))}
+                text={timeText}
             />
             <div style="display: flex; gap: 8px;">
                 <button
@@ -45,8 +48,10 @@ export function StopwatchView(bindings: StopwatchViewBindings): Element {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** A time in hundredths of a second, as the stopwatch shows it: 742 is 07:42. Made only when the time shown changes. */
-const timeText = memoiseLast((hundredths: number) => `${pad(Math.floor(hundredths / 100))}:${pad(hundredths % 100)}`);
+/** Returns a time in hundredths of a second as the stopwatch shows it: 742 is 07:42. */
+function formatTime(hundredths: number): string {
+    return `${pad(Math.floor(hundredths / 100))}:${pad(hundredths % 100)}`;
+}
 
 /** A number with at least two digits: 7 is 07. */
 function pad(value: number): string {

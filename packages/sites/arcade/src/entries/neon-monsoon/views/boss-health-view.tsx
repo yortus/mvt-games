@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, Texture } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
 import { PixelTextView } from '#shared';
 import { NEON } from './view-constants';
@@ -34,9 +34,9 @@ export interface BossHealthViewBindings {
  * view: the model only knows the true health.
  */
 export function BossHealthView(bindings: BossHealthViewBindings): Container {
-    const { width } = bindings;
+    const { width, timeLeftMs } = bindings;
     const barWidth = width - BAR_X * 2 - TIMER_WIDTH;
-    const secondsText = memoiseLast((seconds: number) => String(seconds).padStart(2, '0'));
+    const secondsText = createComputed({ watch: () => Math.ceil(timeLeftMs() / 1000), compute: (s) => String(s).padStart(2, '0') });
 
     // Start valid: showing the true health.
     let shownFraction = bindings.healthFraction();
@@ -57,7 +57,7 @@ export function BossHealthView(bindings: BossHealthViewBindings): Container {
                 </List>
             </container>
             <container x={width - BAR_X} y={-2}>
-                <PixelTextView text={() => secondsText(Math.ceil(bindings.timeLeftMs() / 1000))} color={TIMER_COLOR} anchorX={1} />
+                <PixelTextView text={secondsText} color={TIMER_COLOR} anchorX={1} />
             </container>
         </container>
     );

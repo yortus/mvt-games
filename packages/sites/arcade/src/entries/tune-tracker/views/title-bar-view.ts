@@ -71,6 +71,11 @@ export function TitleBarView(bindings: TitleBarViewBindings): Container {
     place.write(PLACE, DIM_TEXT_COLOR, 0);
     place.container.position.set(width - 4 - PLACE.length * GLYPH_WIDTH, textY);
     view.addChild(place.container);
+    // The watcher sees only changes from here on, so the first state is written now, before the first cached render
+    writeButton(bindings.isPlaying());
+    writeOrderIndex(bindings.orderIndex());
+    writeRow(bindings.row());
+    writeTime(Math.floor(bindings.playedMs() / 1000));
 
     cacheAsPixels(view);
     setRefresh(view, refresh);
@@ -78,19 +83,30 @@ export function TitleBarView(bindings: TitleBarViewBindings): Container {
 
     function refresh(): void {
         const w = watcher.poll();
-        if (!w.isPlaying.changed && !w.orderIndex.changed && !w.row.changed && !w.seconds.changed) return;
-        if (w.isPlaying.changed) {
-            const isPlaying = w.isPlaying.value;
-            label.writeGlyph(isPlaying ? STOP_GLYPH : PLAY_GLYPH, isPlaying ? HIGHLIGHT_COLOR : MUSIC_COLOR, 0);
-            label.write(isPlaying ? 'STOP' : 'PLAY', TEXT_COLOR, 2);
-        }
-        if (w.orderIndex.changed) place.writeNumber(w.orderIndex.value, 2, 16, HIGHLIGHT_COLOR, ORDER_AT);
-        if (w.row.changed) place.writeNumber(w.row.value, 2, 16, HIGHLIGHT_COLOR, ROW_AT);
-        if (w.seconds.changed) {
-            place.writeNumber(Math.floor(w.seconds.value / 60), 2, 10, TEXT_COLOR, MINUTES_AT);
-            place.writeNumber(w.seconds.value % 60, 2, 10, TEXT_COLOR, MINUTES_AT + 3);
-        }
+        if (!w.anyChanged) return;
+        if (w.isPlaying.changed) writeButton(w.isPlaying.current);
+        if (w.orderIndex.changed) writeOrderIndex(w.orderIndex.current);
+        if (w.row.changed) writeRow(w.row.current);
+        if (w.seconds.changed) writeTime(w.seconds.current);
         view.updateCacheTexture();
+    }
+
+    function writeButton(isPlaying: boolean): void {
+        label.writeGlyph(isPlaying ? STOP_GLYPH : PLAY_GLYPH, isPlaying ? HIGHLIGHT_COLOR : MUSIC_COLOR, 0);
+        label.write(isPlaying ? 'STOP' : 'PLAY', TEXT_COLOR, 2);
+    }
+
+    function writeOrderIndex(orderIndex: number): void {
+        place.writeNumber(orderIndex, 2, 16, HIGHLIGHT_COLOR, ORDER_AT);
+    }
+
+    function writeRow(row: number): void {
+        place.writeNumber(row, 2, 16, HIGHLIGHT_COLOR, ROW_AT);
+    }
+
+    function writeTime(seconds: number): void {
+        place.writeNumber(Math.floor(seconds / 60), 2, 10, TEXT_COLOR, MINUTES_AT);
+        place.writeNumber(seconds % 60, 2, 10, TEXT_COLOR, MINUTES_AT + 3);
     }
 }
 

@@ -44,6 +44,7 @@ export function FieldView(bindings: FieldViewBindings): Container {
     function initialiseView(): void {
         gfx = new Graphics();
         view.addChild(gfx);
+        buildField();
     }
 
     function refresh(): void {
@@ -52,7 +53,7 @@ export function FieldView(bindings: FieldViewBindings): Container {
 
         if (
             dimsChanged
-            || (watched.phase.changed && watched.phase.value === 'playing')
+            || (watched.phase.changed && watched.phase.current === 'playing')
             || watched.tunnelCount.changed
         ) {
             buildField();

@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
-import { watch } from '@mvtjs/utils';
+import { createReaction, increased } from '@mvtjs/utils';
 import type { SfxChip } from '#shared';
 import { FIRE, FIRE_WARNING, GHOST, POP, PUMP_1, PUMP_2, PUMP_3, PUMP_4, SQUASH } from '../data';
 import type { EnemyPhase, InflationStage } from '../models';
@@ -37,37 +37,46 @@ export interface EnemyAudioViewBindings {
  * A creature that gets away makes no sound.
  *
  * A `<List>` reuses this view's slot when a level brings new creatures. So
- * the view polls once as it is made, and after that plays only on a change
- * that a new creature cannot cause: a stage rising, or a phase or fire
- * starting. A new creature arrives at stage 0, on patrol, with no fire.
+ * the view plays only on a change that a new creature cannot cause: a stage
+ * rising, or a phase or fire starting. A new creature arrives at stage 0, on
+ * patrol, with no fire.
  */
 export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
     const { sfx } = bindings;
     const view = new Container();
     view.label = 'enemy-audio';
-    const watcher = watch({
-        phase: bindings.phase,
-        inflationStage: bindings.inflationStage,
-        isFireTelegraph: bindings.isFireTelegraph,
-        isFireActive: bindings.isFireActive,
+    const playPumpSoundWhenInflationRises = createReaction({
+        watch: bindings.inflationStage,
+        when: increased,
+        react: (stage) => play(PUMPS[stage]),
     });
-    // The first refresh hears only what changes after the view is made
-    watcher.poll();
+    const playEnemySoundWhenPhaseChanges = createReaction({
+        watch: bindings.phase,
+        react: (phase) => {
+            if (phase === 'popped' && !bindings.hasEscaped()) play(POP);
+            else if (phase === 'crushed') play(SQUASH);
+            else if (phase === 'ghosting') play(GHOST);
+        },
+    });
+    const playFireWarningSoundWhenTelegraphStarts = createReaction({
+        watch: bindings.isFireTelegraph,
+        when: true,
+        react: () => play(FIRE_WARNING),
+    });
+    const playFireSoundWhenFireStarts = createReaction({
+        watch: bindings.isFireActive,
+        when: true,
+        react: () => play(FIRE),
+    });
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
-        const w = watcher.poll();
-        const stage = w.inflationStage;
-        if (stage.increased) play(PUMPS[stage.value]);
-        if (w.phase.changed) {
-            if (w.phase.value === 'popped' && !bindings.hasEscaped()) play(POP);
-            else if (w.phase.value === 'crushed') play(SQUASH);
-            else if (w.phase.value === 'ghosting') play(GHOST);
-        }
-        if (w.isFireTelegraph.changed && w.isFireTelegraph.value) play(FIRE_WARNING);
-        if (w.isFireActive.changed && w.isFireActive.value) play(FIRE);
+        playPumpSoundWhenInflationRises();
+        playEnemySoundWhenPhaseChanges();
+        playFireWarningSoundWhenTelegraphStarts();
+        playFireSoundWhenFireStarts();
     }
 
     function play(effect: Audio80Sound | undefined): void {

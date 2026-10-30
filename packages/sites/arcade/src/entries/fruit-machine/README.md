@@ -90,7 +90,7 @@ terminal's transcript, history and running command are its own too, kept in
 a view model (`terminal-view-model.ts`) with tests of its own.
 
 **Change detection for costly writes.** Text is made only when the value
-it shows changes (`memoiseLast`, and `lastFor` for replaced objects); the 3D
+it shows changes (`createComputed`, and `lastFor` for replaced objects); the 3D
 credit display and sign repaint their canvases only on change; the terminal
 rebuilds its ASCII reels only when a reel moves a whole symbol; the cells a
 celebration lights are worked out once per step (`createLitCells`).

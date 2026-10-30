@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { FRACTAL_KINDS, type FractalKind, type ScopeSetting } from '../data';
 import type { PaletteName } from './palette-name';
 import type { EscapeGrid } from './picture';
@@ -55,11 +55,12 @@ export interface SidePanelViewBindings {
  * changes, so a still view builds no strings at all.
  */
 export function SidePanelView(bindings: SidePanelViewBindings): Element {
+    const { progress } = bindings;
     const realText = createFixedText();
     const imaginaryText = createFixedText();
-    const zoomText = memoiseLast(formatZoom);
-    const iterationsText = memoiseLast((iterations: number) => String(iterations));
-    const progressText = memoiseLast((percent: number) => (percent >= 100 ? 'Sharp' : `Sharpening ${percent}%`));
+    const zoomText = createComputed({ watch: bindings.magnification, compute: formatZoom });
+    const iterationsText = createComputed({ watch: bindings.maxIterations, compute: String });
+    const progressText = createComputed({ watch: () => Math.round(progress() * 100), compute: describeProgress });
 
     return (
         <aside class="scope-panel" aria-label="Explorer panel">
@@ -83,13 +84,13 @@ export function SidePanelView(bindings: SidePanelViewBindings): Element {
                 <ReadingView label="Real" value={() => realText(bindings.setting().centreRe, places())} />
                 <ReadingView label="Imaginary" value={() => imaginaryText(bindings.setting().centreIm, places())} />
                 {/* The panel speaks the visitor's words, so the scope's magnification is its zoom */}
-                <ReadingView label="Zoom" value={() => zoomText(bindings.magnification())} />
-                <ReadingView label="Detail" value={() => iterationsText(bindings.maxIterations())} />
+                <ReadingView label="Zoom" value={zoomText} />
+                <ReadingView label="Detail" value={iterationsText} />
             </dl>
 
             <div class="scope-sharpness">
-                <progress class="scope-progress" value={bindings.progress} max={1} />
-                <span class="scope-sharpness-text" text={() => progressText(Math.round(bindings.progress() * 100))} />
+                <progress class="scope-progress" value={progress} max={1} />
+                <span class="scope-sharpness-text" text={progressText} />
             </div>
 
             <section class="scope-group" aria-label="Palette">
@@ -157,4 +158,9 @@ function ReadingView(bindings: ReadingViewBindings): Element {
             <dd class="scope-reading-value" text={bindings.value} />
         </div>
     );
+}
+
+/** How far the picture has sharpened, from a percentage. */
+function describeProgress(percent: number): string {
+    return percent >= 100 ? 'Sharp' : `Sharpening ${percent}%`;
 }

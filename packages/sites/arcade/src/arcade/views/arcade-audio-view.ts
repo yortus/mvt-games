@@ -58,8 +58,8 @@ export interface ArcadeAudioViewBindings {
  * as an entry pauses and resumes, and buzzes when an entry cannot load.
  *
  * The view has no visuals. It is an empty element that is never hidden, so
- * it is always ticked. It polls its bindings once as it is made, so the page's
- * state at that moment plays nothing.
+ * it is always ticked. Its watcher reads its bindings as it is made, so the
+ * page's state at that moment plays nothing.
  */
 export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement {
     const { sfx } = bindings;
@@ -77,7 +77,6 @@ export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement 
         wallEffect: bindings.wallEffect,
         cardMoves: bindings.cardKeyMoves,
     });
-    watcher.poll();
 
     setRefresh(view, refresh);
     return view;
@@ -86,21 +85,21 @@ export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement 
         const w = watcher.poll();
         if (w.phase.changed && w.phase.previous === 'browsing') sfx.play(LAUNCH);
         // A pause or resume chimes only while the entry keeps playing. Leaving the entry also clears the pause, and that plays nothing.
-        if (w.isPaused.changed && !w.phase.changed && (w.phase.value === 'revealing' || w.phase.value === 'playing')) sfx.play(w.isPaused.value ? PAUSE : RESUME);
-        if (w.isPanelOpen.changed) sfx.play(w.isPanelOpen.value ? PANEL_OPEN : PANEL_CLOSE);
+        if (w.isPaused.changed && !w.phase.changed && (w.phase.current === 'revealing' || w.phase.current === 'playing')) sfx.play(w.isPaused.current ? PAUSE : RESUME);
+        if (w.isPanelOpen.changed) sfx.play(w.isPanelOpen.current ? PANEL_OPEN : PANEL_CLOSE);
 
         // Choosing or removing a tag can change the search's text too. Only the tag's sound plays for that one action.
         if (w.tags.changed) sfx.play(w.tags.increased ? TAG_ADD : TAG_REMOVE);
-        else if (w.searchText.changed) sfx.play(w.searchText.value.length % 2 === 0 ? KEY_TICK_LOW : KEY_TICK_HIGH);
-        if (w.shown.changed && w.shown.value === 0) sfx.play(NO_RESULTS);
+        else if (w.searchText.changed) sfx.play(w.searchText.current.length % 2 === 0 ? KEY_TICK_LOW : KEY_TICK_HIGH);
+        if (w.shown.changed && w.shown.current === 0) sfx.play(NO_RESULTS);
 
-        if (w.loadFailure.changed && w.loadFailure.value !== undefined) sfx.play(LOAD_FAILED);
+        if (w.loadFailure.changed && w.loadFailure.current !== undefined) sfx.play(LOAD_FAILED);
         if (w.wallEffect.changed) {
-            if (w.wallEffect.value === 'burn') sfx.play(BURN);
-            else if (w.wallEffect.value === 'develop') sfx.play(DEVELOP);
+            if (w.wallEffect.current === 'burn') sfx.play(BURN);
+            else if (w.wallEffect.current === 'develop') sfx.play(DEVELOP);
         }
         // The static starts as the beam comes on. Each burst lasts as long as the beam does.
-        if (w.isBeamOn.changed && w.isBeamOn.value) sfx.play(bindings.transitionPhase() === 'powering-on' ? POWER_ON : POWER_OFF);
+        if (w.isBeamOn.changed && w.isBeamOn.current) sfx.play(bindings.transitionPhase() === 'powering-on' ? POWER_ON : POWER_OFF);
         if (w.cardMoves.changed) sfx.play(CARD_TICK);
     }
 }

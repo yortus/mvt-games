@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, type Graphics, Texture } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
 import { measurePixelText, PixelTextView } from '#shared';
 import { textures } from '../data';
@@ -46,26 +46,26 @@ export function HudView(bindings: HudViewBindings): Container {
     const { ship, bombIcon } = textures.get();
 
     // Text is rebuilt only when its number changes.
-    const scoreText = memoiseLast((score: number) => String(score).padStart(8, '0'));
-    const highScoreText = memoiseLast((score: number) => `HI ${String(score).padStart(8, '0')}`);
-    const chainText = memoiseLast((chain: number) => `${chain} CHAIN`);
-    const loopText = memoiseLast((loop: number) => `LOOP ${loop}`);
+    const scoreText = createComputed({ watch: bindings.score, compute: formatScore });
+    const highScoreText = createComputed({ watch: bindings.highScore, compute: (score) => `HI ${formatScore(score)}` });
+    const chainText = createComputed({ watch: bindings.chain, compute: (chain) => `${chain} CHAIN` });
+    const loopText = createComputed({ watch: bindings.loop, compute: (loop) => `LOOP ${loop}` });
 
     return (
         <container>
             <container x={EDGE} y={EDGE}>
-                <PixelTextView text={() => scoreText(bindings.score())} color={SCORE_COLOR} />
+                <PixelTextView text={scoreText} color={SCORE_COLOR} />
             </container>
             <container x={width - EDGE} y={EDGE}>
-                <PixelTextView text={() => highScoreText(bindings.highScore())} color={LABEL_COLOR} anchorX={1} />
+                <PixelTextView text={highScoreText} color={LABEL_COLOR} anchorX={1} />
             </container>
             <container x={width / 2} y={EDGE} visible={() => bindings.loop() > 1}>
-                <PixelTextView text={() => loopText(bindings.loop())} color={LABEL_COLOR} anchorX={0.5} />
+                <PixelTextView text={loopText} color={LABEL_COLOR} anchorX={0.5} />
             </container>
 
             {/* The chain, and how long is left to extend it */}
             <container x={EDGE} y={EDGE + 12} visible={() => bindings.chain() > 1}>
-                <PixelTextView text={() => chainText(bindings.chain())} color={NEON.cyan} />
+                <PixelTextView text={chainText} color={NEON.cyan} />
                 <sprite
                     texture={Texture.WHITE}
                     y={9}
@@ -132,6 +132,11 @@ const SCORE_COLOR = 0xffffff;
 const LABEL_COLOR = 0xb7b3d9;
 
 /** The bar's frame: a one-pixel outline, inside the bar's outside size, around a dark inside, so the rain never shows through. */
+/** A score as the HUD shows it, padded with zeros to eight digits. */
+function formatScore(score: number): string {
+    return String(score).padStart(8, '0');
+}
+
 function drawVolleyFrame(g: Graphics): void {
     g.rect(1, 1, VOLLEY_BAR_WIDTH - 2, VOLLEY_BAR_HEIGHT - 2).fill(0x000000);
     g.rect(0, 0, VOLLEY_BAR_WIDTH, 1).fill(LABEL_COLOR);

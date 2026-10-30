@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMetronome, watch } from '@mvtjs/utils';
+import { createMetronome, createReaction, increased } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import {
     BAA,
@@ -80,16 +80,25 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const view = new Container();
     view.label = 'game-audio';
     const creaks = createMetronome();
-    const watcher = watch({
-        phase: bindings.phase,
-        wireSteps: bindings.wireSteps,
-        closures: bindings.closures,
-        sheepPenned: bindings.sheepPenned,
-        devilsBlownOut: bindings.devilsBlownOut,
-        beetlesHatched: bindings.beetlesHatched,
-        extraLives: bindings.extraLivesEarned,
-        creaks: () => creaks.count,
+    const playSoundsWhenPhaseChanges = createReaction({ watch: bindings.phase, react: (phase) => playPhase(phase) });
+    // Each count plays its own sound as it rises, the sound at its index in `sounds`
+    const counts = [
+        { count: bindings.wireSteps, sound: STRING_TICK },
+        { count: bindings.closures, sound: TIE_OFF },
+        { count: bindings.sheepPenned, sound: BAA },
+        { count: bindings.devilsBlownOut, sound: BLOW_OUT },
+        { count: bindings.beetlesHatched, sound: HATCH },
+        { count: bindings.extraLivesEarned, sound: EXTRA_LIFE },
+        { count: () => creaks.count, sound: CREAK },
+    ];
+    const playEachCountsSoundWhenItRises = createReaction({
+        watch: counts.map((entry) => entry.count),
+        when: increased,
+        react: (_count, _previous, index) => sfx.play(counts[index].sound),
     });
+    // The view is made as the game starts, with no phase before it, so it plays the round's jingle now
+    playPhase(bindings.phase());
+    music.tempoScale = computeTempo();
 
     setUpdate(view, (deltaMs) => {
         creaks.periodMs = bindings.phase() === 'playing' && bindings.isSlackRunning() ? CREAK_PERIOD_MS : 0;
@@ -99,16 +108,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     return view;
 
     function refresh(): void {
-        const w = watcher.poll();
-        // The first poll sees the game start, with no phase before it, so it plays the round's jingle
-        if (w.phase.changed) playPhase(w.phase.value);
-        if (w.wireSteps.increased) sfx.play(STRING_TICK);
-        if (w.closures.increased) sfx.play(TIE_OFF);
-        if (w.sheepPenned.increased) sfx.play(BAA);
-        if (w.devilsBlownOut.increased) sfx.play(BLOW_OUT);
-        if (w.beetlesHatched.increased) sfx.play(HATCH);
-        if (w.extraLives.increased) sfx.play(EXTRA_LIFE);
-        if (w.creaks.increased) sfx.play(CREAK);
+        playSoundsWhenPhaseChanges();
+        playEachCountsSoundWhenItRises();
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = computeTempo();
     }

@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { watch } from '@mvtjs/utils';
+import { createReaction, increased } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -28,9 +28,14 @@ export interface HeaderViewBindings {
  * moment.
  */
 export function HeaderView(bindings: HeaderViewBindings): Element {
-    const watcher = watch({ saves: bindings.saves });
-    watcher.poll();
     let savedNoteMs = 0;
+    const showSavedNoteOnEachSave = createReaction({
+        watch: bindings.saves,
+        when: increased,
+        react: () => {
+            savedNoteMs = SAVED_NOTE_MS;
+        },
+    });
 
     return (
         <header class="header" onUpdate={update}>
@@ -44,8 +49,8 @@ export function HeaderView(bindings: HeaderViewBindings): Element {
     );
 
     function update(deltaMs: number): void {
-        if (watcher.poll().saves.increased) savedNoteMs = SAVED_NOTE_MS;
-        else savedNoteMs = Math.max(0, savedNoteMs - deltaMs);
+        savedNoteMs = Math.max(0, savedNoteMs - deltaMs);
+        showSavedNoteOnEachSave();
     }
 }
 

@@ -63,7 +63,7 @@ export function OrderListView(bindings: OrderListViewBindings): Container {
         if (song === shown && !w.orderIndex.changed && !w.isPlaying.changed) return;
         if (song !== shown) names = song.order.map(({ pattern, transpose }) => song.patterns[pattern].name + formatTranspose(transpose));
         shown = song;
-        const playing = w.orderIndex.value;
+        const playing = w.orderIndex.current;
         const start = computeListStart(playing, names.length, PANEL_LINES);
         for (let i = 0; i < PANEL_LINES; i++) {
             const line = lines[i];
@@ -71,7 +71,7 @@ export function OrderListView(bindings: OrderListViewBindings): Container {
             line.clearFrom(0);
             if (index >= names.length) continue;
             const isPlaying = index === playing;
-            if (isPlaying && w.isPlaying.value) line.writeGlyph(PLAY_GLYPH, MUSIC_COLOR, 0);
+            if (isPlaying && w.isPlaying.current) line.writeGlyph(PLAY_GLYPH, MUSIC_COLOR, 0);
             if (index === song.loop) line.writeGlyph(LOOP_GLYPH, HIGHLIGHT_COLOR, 1);
             line.writeNumber(index, 2, 16, isPlaying ? HIGHLIGHT_COLOR : DIM_TEXT_COLOR, 3);
             line.write(names[index], isPlaying ? BRIGHT_COLOR : TEXT_COLOR, 6);

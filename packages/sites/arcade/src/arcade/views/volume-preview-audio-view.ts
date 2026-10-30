@@ -41,20 +41,19 @@ export function VolumePreviewAudioView(bindings: VolumePreviewAudioViewBindings)
     const { music, sfx } = bindings;
     const view = document.createElement('div');
     view.className = 'volume-preview-audio';
+    // The watcher reads the bindings as it's made, so the first refresh hears only what changes after that
     const watcher = watch({ isOpen: bindings.isOpen, musicVolume: bindings.musicVolume, sfxVolume: bindings.sfxVolume });
-    // The first refresh hears only what changes after the view is made.
-    watcher.poll();
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
         const w = watcher.poll();
-        if (w.isOpen.changed && !w.isOpen.value) music.stop();
+        if (w.isOpen.changed && !w.isOpen.current) music.stop();
         // A volume that changes in the frame the menu opens was not chosen in the menu. Only a change while the menu is already open plays.
-        if (w.isOpen.value && !w.isOpen.changed) {
-            if (w.musicVolume.changed && w.musicVolume.value > 0) music.play(MUSIC_PREVIEW);
-            if (w.sfxVolume.changed && w.sfxVolume.value > 0) sfx.play(SFX_PREVIEW);
+        if (w.isOpen.current && !w.isOpen.changed) {
+            if (w.musicVolume.changed && w.musicVolume.current > 0) music.play(MUSIC_PREVIEW);
+            if (w.sfxVolume.changed && w.sfxVolume.current > 0) sfx.play(SFX_PREVIEW);
         }
     }
 }

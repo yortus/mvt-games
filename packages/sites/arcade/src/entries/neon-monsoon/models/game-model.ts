@@ -569,7 +569,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     /** Respond to the boss changing phase, and keep its explosions going. */
     function reactToBoss(): void {
         const changed = bossWatcher.poll().phase;
-        if (changed.changed) onBossPhase(changed.value);
+        if (changed.changed) onBossPhase(changed.current);
 
         if (boss.phase === 'exploding') {
             untilBossExplosionMs -= STEP_MS;

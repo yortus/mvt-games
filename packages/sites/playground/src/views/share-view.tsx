@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import type { ShareStatus } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -29,14 +29,19 @@ export interface ShareViewBindings {
 export function ShareView(bindings: ShareViewBindings): Element {
     const isOpen = (): boolean => bindings.status() !== 'idle';
     const isTooLarge = (): boolean => bindings.status() === 'too-large';
-    const watcher = watch({ isOpen });
-    watcher.poll();
     /** Whether the dialog has opened since it last took the focus. */
     let isFocusDue = false;
+    const queueFocusWhenOpened = createReaction({
+        watch: isOpen,
+        when: true,
+        react: () => {
+            isFocusDue = true;
+        },
+    });
 
     return (
         // The wrapper is never hidden, so it sees the dialog close and open again
-        <div class="share-layer" onRefresh={noteOpening}>
+        <div class="share-layer" onRefresh={queueFocusWhenOpened}>
             <div class="share" visible={isOpen} onPointerDown={onBackdropPressed} onKeyDown={onKeyDown}>
                 <div class="share-panel" role="dialog" aria-modal="true" aria-label="Share" tabIndex={-1} onRefresh={focusIfDue}>
                     <div class="share-head">
@@ -77,11 +82,6 @@ export function ShareView(bindings: ShareViewBindings): Element {
             </div>
         </div>
     );
-
-    function noteOpening(): void {
-        const { isOpen: open } = watcher.poll();
-        if (open.changed && open.value) isFocusDue = true;
-    }
 
     /**
      * Focuses the dialog once it shows, so Escape closes it, and Tab goes to

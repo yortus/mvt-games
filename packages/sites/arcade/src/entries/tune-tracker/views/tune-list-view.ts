@@ -53,6 +53,8 @@ export function TuneListView(bindings: TuneListViewBindings): Container {
         lines.push(line);
         view.addChild(line.container);
     }
+    // The watcher sees only changes from here on, so the first list is written now, before the first cached render
+    writeList(bindings.tuneIndex(), bindings.isPlaying());
 
     cacheAsPixels(view);
     setRefresh(view, refresh);
@@ -60,8 +62,12 @@ export function TuneListView(bindings: TuneListViewBindings): Container {
 
     function refresh(): void {
         const w = watcher.poll();
-        if (!w.tuneIndex.changed && !w.isPlaying.changed) return;
-        const chosen = w.tuneIndex.value;
+        if (!w.anyChanged) return;
+        writeList(w.tuneIndex.current, w.isPlaying.current);
+        view.updateCacheTexture();
+    }
+
+    function writeList(chosen: number, isPlaying: boolean): void {
         start = computeListStart(chosen, names.length, PANEL_LINES);
         for (let i = 0; i < PANEL_LINES; i++) {
             const line = lines[i];
@@ -69,11 +75,10 @@ export function TuneListView(bindings: TuneListViewBindings): Container {
             line.clearFrom(0);
             if (index >= names.length) continue;
             const isChosen = index === chosen;
-            if (isChosen && w.isPlaying.value) line.writeGlyph(PLAY_GLYPH, MUSIC_COLOR, 0);
+            if (isChosen && isPlaying) line.writeGlyph(PLAY_GLYPH, MUSIC_COLOR, 0);
             line.writeNumber(index + 1, 2, 10, isChosen ? HIGHLIGHT_COLOR : TEXT_COLOR, 2);
             line.write(names[index], isChosen ? BRIGHT_COLOR : TEXT_COLOR, 5);
         }
         bar.y = PANEL_LINE_Y + (chosen - start) * GLYPH_HEIGHT;
-        view.updateCacheTexture();
     }
 }

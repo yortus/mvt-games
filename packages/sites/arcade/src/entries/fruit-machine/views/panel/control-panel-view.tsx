@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { PAYTABLE, ROW_COUNT } from '../../data';
 import type { FruitMachineModel, MachinePhase } from '../../models';
 import { SYMBOL_NAMES, type SymbolArt } from '../art';
@@ -31,21 +31,21 @@ export function ControlPanelView(bindings: ControlPanelViewBindings): Element {
     const { model, art } = bindings;
     const { reels, celebration } = model;
     const litCells = createLitCells({ celebration });
-    const balanceText = memoiseLast(formatCredits);
-    const lastWinText = memoiseLast(formatCredits);
-    const spinCountText = memoiseLast((count: number) => String(count));
+    const balanceText = createComputed({ watch: () => model.balance, compute: formatCredits });
+    const lastWinText = createComputed({ watch: () => model.lastWin, compute: formatCredits });
+    const spinCountText = createComputed({ watch: () => model.spinCount, compute: String });
     const betText = formatCredits(model.bet);
     // The result is decided as a spin starts, so it changes only with the spin count
-    const peekText = memoiseLast(describeResult);
+    const peekText = createComputed({ watch: () => model.spinCount, compute: describeResult });
     const nameFor = (kind: keyof typeof SYMBOL_NAMES) => SYMBOL_NAMES[kind];
 
     return (
         <section class="panel" aria-label="Control panel">
             <div class="panel-meters">
-                <MeterView label="Balance" value={() => balanceText(model.balance)} />
+                <MeterView label="Balance" value={balanceText} />
                 <MeterView label="Bet" value={() => betText} />
-                <MeterView label="Last win" value={() => lastWinText(model.lastWin)} />
-                <MeterView label="Spins" value={() => spinCountText(model.spinCount)} />
+                <MeterView label="Last win" value={lastWinText} />
+                <MeterView label="Spins" value={spinCountText} />
             </div>
             <div class="panel-status">
                 <span class={() => PHASE_CLASSES[model.phase]} text={() => model.phase} />
@@ -81,7 +81,7 @@ export function ControlPanelView(bindings: ControlPanelViewBindings): Element {
             </div>
             <details class="panel-peek" visible={() => model.phase === 'spinning'}>
                 <summary text="Peek: the result, decided as the spin started" />
-                <p text={() => peekText(model.spinCount)} />
+                <p text={peekText} />
             </details>
             <div visible={() => model.phase !== 'spinning' && model.lastWin > 0}>
                 <WinsListView

@@ -85,8 +85,6 @@ const settingsWatcher = watch({
     consoleHeight: () => model.layout.consoleHeight,
     isFilesFolded: () => model.layout.isFilesFolded,
 });
-watcher.poll();
-settingsWatcher.poll();
 
 // The language service starts once the page has drawn, since loading
 // TypeScript takes a while, and the editor works as plain text until it is ready
@@ -151,7 +149,7 @@ function followModel(workspace: WorkspaceModel): void {
         // An example is named in the URL. A project of the visitor's own is
         // not, since it is saved, and a link it came from would reopen the
         // project as it was.
-        const hash = exampleId.value === undefined ? '' : toExampleHash(exampleId.value);
+        const hash = exampleId.current === undefined ? '' : toExampleHash(exampleId.current);
         history.replaceState(undefined, '', `${location.pathname}${location.search}${hash}`);
     }
 }
@@ -277,8 +275,8 @@ function toSandboxDocument(workspace: WorkspaceModel, prepared: PreparedProject,
 /** Saves the workspace's settings as any of them changes. */
 function saveChangedSettings(workspace: WorkspaceModel): void {
     const w = settingsWatcher.poll();
-    if (w.projectId.value !== undefined) lastProjectId = w.projectId.value;
-    if (!(w.projectId.changed || w.isRunOnChange.changed || w.theme.changed || w.filesWidth.changed || w.runWidth.changed || w.consoleHeight.changed || w.isFilesFolded.changed)) return;
+    if (w.projectId.current !== undefined) lastProjectId = w.projectId.current;
+    if (!w.anyChanged) return;
     const { layout } = workspace;
     saveSettings({
         lastProjectId,

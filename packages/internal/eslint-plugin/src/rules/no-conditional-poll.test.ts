@@ -10,7 +10,7 @@ RuleTester.itOnly = it.only;
 const ruleTester = new RuleTester({ languageOptions: { parser: tseslint.parser } });
 
 const REACTION = "import { createReaction } from '@mvtjs/utils';\n"
-    + 'const playDeath = createReaction({ watch: bindings.phase, react: play });\n';
+    + 'const playExplosionSoundWhenDying = createReaction({ watch: bindings.phase, react: play });\n';
 
 ruleTester.run('no-conditional-poll', noConditionalPoll, {
     valid: [
@@ -22,11 +22,11 @@ ruleTester.run('no-conditional-poll', noConditionalPoll, {
         'function refresh() { items.forEach((item) => { if (!item) return; }); watcher.poll(); }',
         // A poll in a nested function is judged within that function
         'function refresh() { if (isOpen) { setRefresh(view, () => { watcher.poll(); }); } }',
-        REACTION + 'function refresh() { playDeath(); if (isPaused) return; }',
-        REACTION + 'setRefresh(view, playDeath);',
+        REACTION + 'function refresh() { playExplosionSoundWhenDying(); if (isPaused) return; }',
+        REACTION + 'setRefresh(view, playExplosionSoundWhenDying);',
         // Reactions called above where they're made are found too
-        "import { createReaction } from '@mvtjs/utils';\nfunction refresh() { playDeath(); }\n"
-        + 'const playDeath = createReaction({ watch: bindings.phase, react: play });',
+        "import { createReaction } from '@mvtjs/utils';\nfunction refresh() { playExplosionSoundWhenDying(); }\n"
+        + 'const playExplosionSoundWhenDying = createReaction({ watch: bindings.phase, react: play });',
         // A function that isn't a reaction is left alone
         'function refresh() { if (isOpen) draw(); }',
     ],
@@ -60,11 +60,11 @@ ruleTester.run('no-conditional-poll', noConditionalPoll, {
             errors: [{ messageId: 'afterReturn' }],
         },
         {
-            code: REACTION + 'function refresh() { if (isOpen) playDeath(); }',
+            code: REACTION + 'function refresh() { if (isOpen) playExplosionSoundWhenDying(); }',
             errors: [{ messageId: 'conditional', data: { what: 'reaction call' } }],
         },
         {
-            code: REACTION + 'function refresh() { if (isPaused) return; playDeath(); }',
+            code: REACTION + 'function refresh() { if (isPaused) return; playExplosionSoundWhenDying(); }',
             errors: [{ messageId: 'afterReturn', data: { what: 'reaction call' } }],
         },
     ],

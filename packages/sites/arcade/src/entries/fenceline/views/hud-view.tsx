@@ -2,7 +2,7 @@
 
 import { type Container, type Graphics, Texture } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 import { drawPixels, type PixelRects } from './drawing';
 import { COLOURS, HUD_HEIGHT } from './view-constants';
@@ -37,21 +37,21 @@ export interface HudViewBindings {
  * shows with the count beside it.
  */
 export function HudView(bindings: HudViewBindings): Container {
-    const { width } = bindings;
-    const scoreText = memoiseLast((score: number) => String(score).padStart(7, '0'));
-    const roundText = memoiseLast((round: number) => `ROUND ${round}`);
-    const shareText = memoiseLast((percent: number) => `${percent}%`);
-    const targetText = memoiseLast((percent: number) => `/${percent}%`);
-    const livesText = memoiseLast((lives: number) => `x${lives}`);
+    const { width, share, targetShare } = bindings;
+    const scoreText = createComputed({ watch: bindings.score, compute: (score) => String(score).padStart(7, '0') });
+    const roundText = createComputed({ watch: bindings.round, compute: (round) => `ROUND ${round}` });
+    const shareText = createComputed({ watch: () => Math.floor(share() * 100), compute: (percent) => `${percent}%` });
+    const targetText = createComputed({ watch: () => Math.round(targetShare() * 100), compute: (percent) => `/${percent}%` });
+    const livesText = createComputed({ watch: bindings.lives, compute: (lives) => `x${lives}` });
 
     return (
         <container>
             <graphics ref={(g) => g.rect(0, 0, width, HUD_HEIGHT).fill(COLOURS.hud)} />
             <container x={8} y={TEXT_Y}>
-                <PixelTextView text={() => scoreText(bindings.score())} color={COLOURS.hudText} />
+                <PixelTextView text={scoreText} color={COLOURS.hudText} />
             </container>
             <container x={74} y={TEXT_Y}>
-                <PixelTextView text={() => roundText(bindings.round())} color={COLOURS.hudDim} />
+                <PixelTextView text={roundText} color={COLOURS.hudDim} />
             </container>
 
             {/* How much is fenced off, against the target */}
@@ -60,12 +60,12 @@ export function HudView(bindings: HudViewBindings): Container {
                 <sprite
                     texture={Texture.WHITE}
                     height={8}
-                    width={() => Math.round(BAR_WIDTH * Math.min(1, bindings.share()))}
-                    tint={() => (bindings.share() >= bindings.targetShare() ? COLOURS.flowerYellow : COLOURS.grass)}
+                    width={() => Math.round(BAR_WIDTH * Math.min(1, share()))}
+                    tint={() => (share() >= targetShare() ? COLOURS.flowerYellow : COLOURS.grass)}
                 />
                 <sprite
                     texture={Texture.WHITE}
-                    x={() => Math.round(BAR_WIDTH * bindings.targetShare())}
+                    x={() => Math.round(BAR_WIDTH * targetShare())}
                     y={-3}
                     width={1}
                     height={14}
@@ -73,10 +73,10 @@ export function HudView(bindings: HudViewBindings): Container {
                 />
             </container>
             <container x={BAR_X + BAR_WIDTH + 6} y={TEXT_Y}>
-                <PixelTextView text={() => shareText(Math.floor(bindings.share() * 100))} color={COLOURS.hudText} />
+                <PixelTextView text={shareText} color={COLOURS.hudText} />
             </container>
             <container x={BAR_X + BAR_WIDTH + 30} y={TEXT_Y}>
-                <PixelTextView text={() => targetText(Math.round(bindings.targetShare() * 100))} color={COLOURS.hudDim} />
+                <PixelTextView text={targetText} color={COLOURS.hudDim} />
             </container>
 
             {/* A sheep for each in the round: white once penned */}
@@ -97,7 +97,7 @@ export function HudView(bindings: HudViewBindings): Container {
                     {(_, i) => <graphics x={i * 12} ref={drawHat} />}
                 </List>
                 <container x={7} y={TEXT_Y - 16} visible={() => bindings.lives() > MAX_HATS}>
-                    <PixelTextView text={() => livesText(bindings.lives())} color={COLOURS.hudText} />
+                    <PixelTextView text={livesText} color={COLOURS.hudText} />
                 </container>
             </container>
         </container>

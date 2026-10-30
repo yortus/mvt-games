@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import { MAX_DESCRIPTION_LENGTH } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -32,17 +32,25 @@ export interface ProjectOptionsViewBindings {
  * kept as it is typed. Escape, or a press outside the dialog, closes it.
  */
 export function ProjectOptionsView(bindings: ProjectOptionsViewBindings): Element {
-    const watcher = watch({ isOpen: bindings.isOpen });
-    watcher.poll();
     /** Whether the dialog has opened since its field last took the focus. */
     let isFocusDue = false;
     /** Why the name last given could not be had, until the dialog opens again. Presentation state: the model keeps no failed names. */
     let renameProblem = '';
     let field: HTMLInputElement | undefined;
+    // Fills the field with the project's name as the dialog opens, and forgets a problem from before
+    const resetFormWhenOpened = createReaction({
+        watch: bindings.isOpen,
+        when: true,
+        react: () => {
+            if (field !== undefined) field.value = bindings.name();
+            renameProblem = '';
+            isFocusDue = true;
+        },
+    });
 
     return (
         // The wrapper is never hidden, so it sees the dialog close and open again
-        <div class="options-layer" onRefresh={noteOpening}>
+        <div class="options-layer" onRefresh={resetFormWhenOpened}>
             <div class="options" visible={bindings.isOpen} onPointerDown={onBackdropPressed} onKeyDown={onKeyDown}>
                 <div class="options-panel" role="dialog" aria-modal="true" aria-label="Project options">
                     <div class="options-head">
@@ -90,15 +98,6 @@ export function ProjectOptionsView(bindings: ProjectOptionsViewBindings): Elemen
             </div>
         </div>
     );
-
-    /** Fills the field with the project's name as the dialog opens, and forgets a problem from before. */
-    function noteOpening(): void {
-        const { isOpen } = watcher.poll();
-        if (!isOpen.changed || !isOpen.value) return;
-        if (field !== undefined) field.value = bindings.name();
-        renameProblem = '';
-        isFocusDue = true;
-    }
 
     /** Focuses the name, chosen, in its own step, once the dialog shows it. */
     function focusIfDue(input: Element): void {

@@ -6,7 +6,6 @@ export { createDestroyRegistry, type DestroyRegistry, type DestroyRegistryOption
 export { assert } from './assert';
 export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from './boolean-tween';
 export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';
-export { memoiseLast } from './memoise-last';
 export { createMetronome, type Metronome } from './metronome';
 export { createSequence, type Sequence, type StepDef } from './sequence';
 export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
@@ -16,5 +15,4 @@ export { createPerformanceHistory, METRIC_KINDS, type MetricKind, type Performan
 export type { PerformanceMetrics, PerformanceSample } from './performance-history';
 export { createPerformanceMeter, type PerformanceMeter, type PerformanceMeterOptions } from './performance-meter';
 export type { DeepReadonly } from './type-utils';
-export { watch } from './watch';
-export { changedFrom, createComputed, createReaction, decreased, increased, type Computed } from './watch-api';
+export { changedFrom, createComputed, createReaction, decreased, increased, watch, type Computed, type Watcher } from './watch-api';

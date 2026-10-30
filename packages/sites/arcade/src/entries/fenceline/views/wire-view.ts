@@ -50,6 +50,7 @@ export function WireView(bindings: WireViewBindings): Container {
     // Presentation state: time, for the snapped wire's flicker
     let flickerMs = 0;
     const watcher = watch({ slack: bindings.slackDistance, length: bindings.wireLength });
+    drawSlack(bindings.wireLength(), bindings.slackDistance());
 
     setUpdate(view, (deltaMs) => {
         flickerMs = bindings.isSnapped() ? flickerMs + deltaMs : 0;
@@ -73,7 +74,7 @@ export function WireView(bindings: WireViewBindings): Container {
         if (length === 0) return;
 
         placeTail(length);
-        if (watched.slack.changed || watched.length.changed) drawSlack(length, watched.slack.value);
+        if (watched.anyChanged) drawSlack(length, watched.slack.current);
 
         const isSnapped = bindings.isSnapped();
         const isLit = !isSnapped || Math.floor(flickerMs / FLICKER_MS) % 2 === 0;

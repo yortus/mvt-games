@@ -14,8 +14,8 @@ const IMPORTS = "import { createComputed, createReaction, watch } from '@mvtjs/u
 ruleTester.run('no-unused-watch', noUnusedWatch, {
     valid: [
         IMPORTS + 'const watcher = watch(bindings.phase);\nfunction refresh() { const w = watcher.poll(); }',
-        IMPORTS + 'const playDeath = createReaction({ watch: bindings.phase, react: play });\nsetRefresh(view, playDeath);',
-        IMPORTS + 'const playDeath = createReaction({ watch: bindings.phase, react: play });\nfunction refresh() { playDeath(); }',
+        IMPORTS + 'const playExplosionSoundWhenDying = createReaction({ watch: bindings.phase, react: play });\nsetRefresh(view, playExplosionSoundWhenDying);',
+        IMPORTS + 'const playExplosionSoundWhenDying = createReaction({ watch: bindings.phase, react: play });\nfunction refresh() { playExplosionSoundWhenDying(); }',
         IMPORTS + 'const reactions = [createReaction({ watch: bindings.phase, react: play })];',
         IMPORTS + 'const watcher = watch(bindings.phase);\nreturn { watcher };',
         IMPORTS + 'const watcher = watch(bindings.phase);\nusePoller(watcher);',
@@ -38,7 +38,7 @@ ruleTester.run('no-unused-watch', noUnusedWatch, {
             errors: [{ messageId: 'neverPolled' }],
         },
         {
-            code: IMPORTS + 'const playDeath = createReaction({ watch: bindings.phase, react: play });',
+            code: IMPORTS + 'const playExplosionSoundWhenDying = createReaction({ watch: bindings.phase, react: play });',
             errors: [{ messageId: 'neverCalled' }],
         },
         {

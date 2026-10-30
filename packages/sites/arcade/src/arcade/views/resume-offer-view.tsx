@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { focusOnOpen } from './focus-on-open';
 
 // ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ export function ResumeOfferView(bindings: ResumeOfferViewBindings): Element {
         isOpen: bindings.isOpen,
         target: (layer) => layer.querySelector<HTMLElement>('.resume-offer-resume') ?? undefined,
     });
-    const offerText = memoiseLast((title: string) => `Your last game of ${title} was saved as you left it.`);
+    const offerText = createComputed({ watch: bindings.title, compute: describeOffer });
     window.addEventListener('keydown', onKeyDown);
 
     return (
@@ -42,7 +42,7 @@ export function ResumeOfferView(bindings: ResumeOfferViewBindings): Element {
             <div class="resume-offer" visible={bindings.isOpen}>
                 <section class="resume-offer-panel" role="dialog" aria-modal="true" aria-labelledby="resume-offer-title">
                     <h2 id="resume-offer-title" class="resume-offer-title" text="Welcome back" />
-                    <p class="resume-offer-text" text={() => offerText(bindings.title())} />
+                    <p class="resume-offer-text" text={offerText} />
                     <button type="button" class="resume-offer-resume" aria-keyshortcuts="Escape" onClick={() => bindings.onResumePressed?.()}>
                         <span text="Resume" />
                         <kbd class="pause-key" aria-hidden="true" text="Esc" />
@@ -63,4 +63,12 @@ export function ResumeOfferView(bindings: ResumeOfferViewBindings): Element {
         else return;
         e.preventDefault();
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+function describeOffer(title: string): string {
+    return `Your last game of ${title} was saved as you left it.`;
 }

@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate, SKIP_DESCENDANTS } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 import { FARM_FENCED_HORN_MS } from '../data';
 import type { Direction } from '../models';
@@ -131,7 +131,8 @@ export function FarmFencedView(bindings: FarmFencedViewBindings): Container {
     view.label = 'farm-fenced';
     view.addChild(mask, scene);
 
-    const watcher = watch({ farm: bindings.farm });
+    const writeStoryWhenFarmChanges = createReaction({ watch: bindings.farm, react: (farm) => writeStory(farm) });
+    writeStory(bindings.farm());
 
     // Hidden, the scene's own views neither update nor refresh
     setUpdate(view, () => (bindings.isShown() ? undefined : SKIP_DESCENDANTS));
@@ -139,9 +140,8 @@ export function FarmFencedView(bindings: FarmFencedViewBindings): Container {
     return view;
 
     function refresh(): typeof SKIP_DESCENDANTS | undefined {
-        // Polled while hidden too, so the story is the right one when the scene shows
-        const w = watcher.poll();
-        if (w.farm.changed) writeStory(w.farm.value);
+        // Called while hidden too, so the story is the right one when the scene shows
+        writeStoryWhenFarmChanges();
         view.visible = bindings.isShown();
         if (!view.visible) return SKIP_DESCENDANTS;
 

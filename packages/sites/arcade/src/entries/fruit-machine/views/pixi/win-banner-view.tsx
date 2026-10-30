@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/pixi */
 import type { Container, Graphics } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { formatCredits } from '../shared';
 import { BACKDROP, FONT_FAMILY, FRAME_SHADE, METER_VALUE, SCREEN_WIDTH, SHADOW, WHITE } from './pixi-layout';
 
@@ -27,12 +27,12 @@ export interface WinBannerViewBindings {
  */
 export function WinBannerView(bindings: WinBannerViewBindings): Container {
     let shownAmount = bindings.amount();
-    const amountText = memoiseLast((amount: number) => `WIN ${formatCredits(amount)}`);
+    const amountText = createComputed({ watch: () => Math.round(shownAmount), compute: formatWin });
 
     return (
         <container x={SCREEN_WIDTH / 2} y={BANNER_Y} visible={bindings.isShown} onUpdate={countUp}>
             <graphics ref={drawBanner} />
-            <text text={() => amountText(Math.round(shownAmount))} y={-9} anchor={0.5} style={AMOUNT_STYLE} />
+            <text text={amountText} y={-9} anchor={0.5} style={AMOUNT_STYLE} />
             <text text={bindings.caption} y={17} anchor={0.5} style={CAPTION_STYLE} />
         </container>
     );
@@ -59,6 +59,10 @@ const BANNER_Y = 40;
 
 const AMOUNT_STYLE = { fontFamily: FONT_FAMILY, fontSize: 28, fontWeight: '900', letterSpacing: 2, fill: METER_VALUE };
 const CAPTION_STYLE = { fontFamily: FONT_FAMILY, fontSize: 13, fontWeight: '800', letterSpacing: 1, fill: WHITE };
+
+function formatWin(amount: number): string {
+    return `WIN ${formatCredits(amount)}`;
+}
 
 function drawBanner(g: Graphics): void {
     const x = -BANNER_WIDTH / 2;

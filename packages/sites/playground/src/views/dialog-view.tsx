@@ -23,7 +23,6 @@ export interface DialogViewBindings {
 export function DialogView(bindings: DialogViewBindings): Element {
     const { dialogs } = bindings;
     const watcher = watch({ shown: dialogs.shown });
-    watcher.poll();
     /** Whether a new dialog has shown since it last took the focus. */
     let isFocusDue = false;
     let field: HTMLInputElement | undefined;

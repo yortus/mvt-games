@@ -48,7 +48,7 @@ export function EnemyAudioView(bindings: EnemyAudioViewBindings): Container {
         if (w.isAlive.changed && w.isAlive.previous === true) {
             sfx.play(chooseHit(bindings.kind()));
         }
-        else if (w.phase.changed && w.phase.value === 'diving' && w.phase.previous !== undefined) {
+        else if (w.phase.changed && w.phase.current === 'diving') {
             sfx.play(DIVE);
         }
     }

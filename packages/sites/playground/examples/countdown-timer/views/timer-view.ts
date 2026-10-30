@@ -1,6 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import type { TimerModel } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ export function TimerView({ model, width }: TimerViewBindings): Container {
     view.addChild(barBack, barFill, timeText, statusText);
 
     // The text is made again only when the tenths of a second change, not every frame
-    const timeLabel = memoiseLast((tenths: number) => (tenths / 10).toFixed(1));
+    const timeLabel = createComputed({ watch: () => Math.round(model.remainingMs / 100), compute: formatTenths });
     // Changing a Text's colour draws it again, so it is changed only when it differs
     let textColor = -1;
 
@@ -54,7 +54,7 @@ export function TimerView({ model, width }: TimerViewBindings): Container {
     return view;
 
     function refresh(): void {
-        timeText.text = timeLabel(Math.round(model.remainingMs / 100));
+        timeText.text = timeLabel();
 
         // Green at the start, red at the end
         const progress = model.progress;
@@ -83,3 +83,8 @@ const BAR_X = 30;
 const BAR_Y = 100;
 const BAR_HEIGHT = 24;
 const BAR_CORNER = 6;
+
+/** Tenths of a second as seconds, such as `4.2`. */
+function formatTenths(tenths: number): string {
+    return (tenths / 10).toFixed(1);
+}

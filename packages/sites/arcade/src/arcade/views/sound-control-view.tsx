@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -37,11 +37,11 @@ export interface SoundControlViewBindings {
  * on the slider is reported as a press of the icon.
  */
 export function SoundControlView(bindings: SoundControlViewBindings): Element {
-    const { label, icon, id } = bindings;
+    const { label, icon, id, volume } = bindings;
     const name = label.toLowerCase();
     const turnOffText = `Turn the ${name} off`;
     const turnOnText = `Turn the ${name} on`;
-    const toSpokenText = memoiseLast((step: number) => (step === 0 ? 'Off' : `${step} of ${STEPS}`));
+    const spokenText = createComputed({ watch: () => toStep(volume()), compute: describeStep });
     let shownStep = -1;
 
     return (
@@ -63,8 +63,8 @@ export function SoundControlView(bindings: SoundControlViewBindings): Element {
                 min="0"
                 max={String(STEPS)}
                 step="1"
-                valueAsNumber={() => toStep(bindings.volume())}
-                aria-valuetext={() => toSpokenText(toStep(bindings.volume()))}
+                valueAsNumber={() => toStep(volume())}
+                aria-valuetext={spokenText}
                 onRefresh={showFill}
                 onInput={(event) => {
                     bindings.onVolumeChanged?.((event.currentTarget as HTMLInputElement).valueAsNumber / STEPS);
@@ -80,12 +80,12 @@ export function SoundControlView(bindings: SoundControlViewBindings): Element {
     );
 
     function isOff(): boolean {
-        return toStep(bindings.volume()) === 0;
+        return toStep(volume()) === 0;
     }
 
     /** Sets `--fill` to the thumb's place, which the stylesheet colours the track up to. */
     function showFill(slider: HTMLInputElement): void {
-        const step = toStep(bindings.volume());
+        const step = toStep(volume());
         if (step === shownStep) return;
         shownStep = step;
         slider.style.setProperty('--fill', FILLS[step]);
@@ -105,4 +105,9 @@ const FILLS: readonly string[] = Array.from({ length: STEPS + 1 }, (_, step) => 
 /** Converts a volume to the slider's step. A volume saved between steps shows at the nearest step. */
 function toStep(volume: number): number {
     return Math.round(volume * STEPS);
+}
+
+/** What a screen reader says for a step. */
+function describeStep(step: number): string {
+    return step === 0 ? 'Off' : `${step} of ${STEPS}`;
 }

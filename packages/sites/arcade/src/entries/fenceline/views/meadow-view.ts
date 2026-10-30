@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction, increased, watch } from '@mvtjs/utils';
 import type { CellKind } from '../data';
 import { hashCell } from './drawing';
 import { COLOURS, type StrawColours } from './view-constants';
@@ -56,9 +56,17 @@ export function MeadowView(bindings: MeadowViewBindings): Container {
     // the latest wire was tied off, for its flash
     let windMs = 0;
     let flashMs = FLASH_MS;
-    const flashWatcher = watch({ closures: bindings.closureCount });
-    flashWatcher.poll();
+    // A flash starts as each wire is tied off
+    const startFlashWhenFenceCloses = createReaction({
+        watch: bindings.closureCount,
+        when: increased,
+        react: () => {
+            flashMs = 0;
+        },
+    });
     const drawWatcher = watch({ closures: bindings.closureCount, round: bindings.round });
+    drawPasture();
+    drawFlash(bindings.closureCount());
     // The colours the wild grass was last drawn in
     let drawnGrass: StrawColours | undefined;
 
@@ -68,7 +76,8 @@ export function MeadowView(bindings: MeadowViewBindings): Container {
 
     function update(deltaMs: number): void {
         windMs += deltaMs;
-        flashMs = flashWatcher.poll().closures.increased ? 0 : flashMs + deltaMs;
+        flashMs += deltaMs;
+        startFlashWhenFenceCloses();
     }
 
     function refresh(): void {
@@ -79,9 +88,9 @@ export function MeadowView(bindings: MeadowViewBindings): Container {
             drawWind(grass);
         }
         const watched = drawWatcher.poll();
-        if (watched.closures.changed || watched.round.changed) {
+        if (watched.anyChanged) {
             drawPasture();
-            drawFlash(watched.closures.value);
+            drawFlash(watched.closures.current);
         }
         wind.x = Math.round((windMs * WIND_SPEED) % WIND_PERIOD) - WIND_PERIOD;
         flash.alpha = Math.max(0, 1 - flashMs / FLASH_MS) * 0.7;

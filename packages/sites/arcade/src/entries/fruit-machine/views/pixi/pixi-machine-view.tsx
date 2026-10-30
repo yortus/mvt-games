@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/pixi */
 import type { Container } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { PAYTABLE } from '../../data';
 import type { FruitMachineModel, WayWin } from '../../models';
 import { SYMBOL_COLORS, SYMBOL_NAMES, type SymbolArt } from '../art';
@@ -45,7 +45,7 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
     const litCells = createLitCells({ celebration });
     const strips = reels.map((reel) => reel.strip);
     const wayCaption = lastFor((win: WayWin) => `${SYMBOL_NAMES[win.symbol].toUpperCase()} x${win.rows.length}   +${formatCredits(win.payout)}`);
-    const openerCaption = memoiseLast((ways: number) => (ways === 1 ? '1 WINNING WAY' : `${ways} WINNING WAYS`));
+    const openerCaption = createComputed({ watch: () => celebration.wins.length, compute: describeWinningWays });
 
     return (
         <container onDestroyed={textures.release}>
@@ -103,7 +103,7 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
 
     function caption(): string {
         const win = celebration.win;
-        return win === undefined ? openerCaption(celebration.wins.length) : wayCaption(win);
+        return win === undefined ? openerCaption() : wayCaption(win);
     }
 
     /** A way's juice is its fruit's; the opener splashes each cell's own. */
@@ -111,4 +111,12 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
         const symbol = celebration.win?.symbol ?? model.outcome?.window[reel][row] ?? 'wild';
         return SYMBOL_COLORS[symbol];
     }
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+function describeWinningWays(ways: number): string {
+    return ways === 1 ? '1 WINNING WAY' : `${ways} WINNING WAYS`;
 }

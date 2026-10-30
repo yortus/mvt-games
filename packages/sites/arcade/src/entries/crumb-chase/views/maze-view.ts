@@ -39,6 +39,7 @@ export function MazeView(bindings: MazeViewBindings): Container {
     function initialiseView(): void {
         wallGfx = new Graphics();
         view.addChild(wallGfx);
+        updateLayout();
     }
 
     function refresh(): void {
@@ -47,7 +48,7 @@ export function MazeView(bindings: MazeViewBindings): Container {
         const dimsChanged = watched.rows.changed || watched.cols.changed || watched.tileSize.changed;
 
         // Full rebuild on dimension change or game reset (phase → playing)
-        if (dimsChanged || (watched.phase.changed && watched.phase.value === 'playing')) {
+        if (dimsChanged || (watched.phase.changed && watched.phase.current === 'playing')) {
             updateLayout();
             return;
         }

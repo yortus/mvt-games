@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import type { RunPhase } from '../models';
 
 // ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ export interface RunControlsViewBindings {
 /** Run, Stop, Pause or Resume, Step, the speed, whether a change runs it again, and where the run is. */
 export function RunControlsView(bindings: RunControlsViewBindings): Element {
     const isLive = (): boolean => bindings.phase() === 'starting' || bindings.phase() === 'running';
-    const speedValue = memoiseLast((speed: number) => String(speed));
+    const speedValue = createComputed({ watch: bindings.speed, compute: String });
 
     return (
         <div class="run-controls">
@@ -55,7 +55,7 @@ export function RunControlsView(bindings: RunControlsViewBindings): Element {
                 disabled={() => !isLive() || !bindings.isPaused()}
                 onClick={() => bindings.onStepPressed?.()}
             />
-            <select class="run-speed" aria-label="Speed" value={() => speedValue(bindings.speed())} onChange={onSpeedChanged}>
+            <select class="run-speed" aria-label="Speed" value={speedValue} onChange={onSpeedChanged}>
                 {SPEEDS.map((speed) => <option value={String(speed)} text={`${speed}x`} />)}
             </select>
             <label class="run-on-change" title="Run again half a second after the files stop changing, if they have no problems">

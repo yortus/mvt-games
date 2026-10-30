@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { createMetronome, watch } from '@mvtjs/utils';
+import { createMetronome, createReaction, increased } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import {
     BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
@@ -65,22 +65,28 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const fuelAlarm = createMetronome();
     const saucers = createMetronome();
     const siren = createMetronome();
-    // The first poll sees the starting phase as a change, so the game opens with the march
-    const phaseWatcher = watch({ phase: bindings.phase });
-    const counts = watch({
-        shots: bindings.shotsFired,
-        bombs: bindings.bombsDropped,
-        launches: bindings.rocketsLaunched,
-        enemies: bindings.enemiesDestroyed,
-        fuelTanks: bindings.fuelTanksDestroyed,
-        bases: bindings.basesDestroyed,
-        alarms: () => fuelAlarm.count,
-        warbles: () => saucers.count,
-        sirens: () => siren.count,
+    const playSoundsWhenPhaseChanges = createReaction({ watch: bindings.phase, react: playPhase });
+    // A rise in a count is one event, which plays the sound beside it. A count going back to 0 for a new game is
+    // not a rise. Each reads its count as it's made, so the first refresh hears a rise from the first tick, such as a
+    // rocket that launches at once
+    const counts = [
+        { count: bindings.shotsFired, sound: SHOT },
+        { count: bindings.bombsDropped, sound: BOMB_DROP },
+        { count: bindings.rocketsLaunched, sound: ROCKET_LAUNCH },
+        { count: bindings.enemiesDestroyed, sound: EXPLOSION },
+        { count: bindings.fuelTanksDestroyed, sound: REFUEL },
+        { count: bindings.basesDestroyed, sound: BASE_DESTROYED },
+        { count: () => fuelAlarm.count, sound: FUEL_ALARM },
+        { count: () => saucers.count, sound: SAUCER },
+        { count: () => siren.count, sound: BASE_SIREN },
+    ];
+    const playEachCountsSoundWhenItRises = createReaction({
+        watch: counts.map((entry) => entry.count),
+        when: increased,
+        react: (_count, _previous, index) => sfx.play(counts[index].sound),
     });
-    // The first poll sees every count as new, not as a rise. Polling here makes the
-    // first refresh hear a rise from the first tick, such as a rocket that launches at once.
-    counts.poll();
+    // The view is made as the game starts, so the game opens with the march
+    playPhase(bindings.phase(), undefined);
 
     setUpdate(view, update);
     setRefresh(view, refresh);
@@ -97,19 +103,8 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     }
 
     function refresh(): void {
-        const { phase } = phaseWatcher.poll();
-        if (phase.changed) playPhase(phase.value, phase.previous);
-        // A rise in a count is one event. A count going back to 0 for a new game is not a rise
-        const w = counts.poll();
-        if (w.shots.increased) sfx.play(SHOT);
-        if (w.bombs.increased) sfx.play(BOMB_DROP);
-        if (w.launches.increased) sfx.play(ROCKET_LAUNCH);
-        if (w.enemies.increased) sfx.play(EXPLOSION);
-        if (w.fuelTanks.increased) sfx.play(REFUEL);
-        if (w.bases.increased) sfx.play(BASE_DESTROYED);
-        if (w.alarms.increased) sfx.play(FUEL_ALARM);
-        if (w.warbles.increased) sfx.play(SAUCER);
-        if (w.sirens.increased) sfx.play(BASE_SIREN);
+        playSoundsWhenPhaseChanges();
+        playEachCountsSoundWhenItRises();
     }
 
     function playPhase(phase: GamePhase, previous: GamePhase | undefined): void {

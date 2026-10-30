@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createSequence, type DeepReadonly, watch } from '@mvtjs/utils';
+import { createReaction, createSequence, type DeepReadonly } from '@mvtjs/utils';
 import type { BoardPhase, CactusCell } from '../../models';
 import { BackgroundView } from './background-view';
 import { BannerView } from './banner-view';
@@ -37,7 +37,11 @@ export function BoardView(bindings: BoardViewBindings): Container {
     // distributed as structural subsets via bindings to the child layers that
     // need it. No child holds a reference to another child.
     const matchSequence = createSequence(MATCH_EFFECT_STEPS);
-    const phaseWatcher = watch({ phase: bindings.phase });
+    const startMatchAnimationWhenMatching = createReaction({
+        watch: bindings.phase,
+        when: 'matching',
+        react: () => matchSequence.start(),
+    });
 
     // Shake container wraps background and pieces so they displace together.
     const shakeContainer = ShakeContainerView({
@@ -98,8 +102,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
     return view;
 
     function update(deltaMs: number): void {
-        const { phase } = phaseWatcher.poll();
-        if (phase.changed && phase.value === 'matching') matchSequence.start();
+        startMatchAnimationWhenMatching();
         matchSequence.update(deltaMs);
     }
 }

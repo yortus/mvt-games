@@ -7,64 +7,68 @@ describe('createReaction', () => {
     it('never reacts because it was made, only when it sees a change', () => {
         let phase = 'dying';
         const played: string[] = [];
-        const playDeath = createReaction({ watch: () => phase, when: 'dying', react: () => played.push('explode') });
-        playDeath();
+        const playExplosionSoundWhenDying = createReaction({
+            watch: () => phase,
+            when: 'dying',
+            react: () => played.push('explode'),
+        });
+        playExplosionSoundWhenDying();
         expect(played).toEqual([]);
 
         phase = 'respawning';
-        playDeath();
+        playExplosionSoundWhenDying();
         phase = 'dying';
-        playDeath();
+        playExplosionSoundWhenDying();
         expect(played).toEqual(['explode']);
     });
 
     it('sees a change made between construction and the first call', () => {
         let beats = 0;
         let heard = 0;
-        const playBeat = createReaction({ watch: () => beats, when: increased, react: () => heard++ });
+        const playBeatSoundOnEachBeat = createReaction({ watch: () => beats, when: increased, react: () => heard++ });
         beats = 1;
-        playBeat();
+        playBeatSoundOnEachBeat();
         expect(heard).toBe(1);
     });
 
     it("reacts to every change when there's no `when`, with the value before", () => {
         let phase = 'a';
         const seen: string[] = [];
-        const follow = createReaction({
+        const recordEachPhaseChange = createReaction({
             watch: () => phase,
             react: (current, previous) => seen.push(`${previous}>${current}`),
         });
         phase = 'b';
-        follow();
+        recordEachPhaseChange();
         phase = 'c';
-        follow();
+        recordEachPhaseChange();
         expect(seen).toEqual(['a>b', 'b>c']);
     });
 
     it('sees nothing on a second call in the same step', () => {
         let spins = 0;
         let count = 0;
-        const playLever = createReaction({ watch: () => spins, when: increased, react: () => count++ });
+        const playLeverSoundOnEachSpin = createReaction({ watch: () => spins, when: increased, react: () => count++ });
         spins = 1;
-        playLever();
-        playLever();
+        playLeverSoundOnEachSpin();
+        playLeverSoundOnEachSpin();
         expect(count).toBe(1);
     });
 
     it('misses a change that reverts between two calls', () => {
         let lives = 3;
         let flashes = 0;
-        const flashLives = createReaction({ watch: () => lives, react: () => flashes++ });
+        const flashLivesWhenLivesChange = createReaction({ watch: () => lives, react: () => flashes++ });
         lives = 2;
         lives = 3;
-        flashLives();
+        flashLivesWhenLivesChange();
         expect(flashes).toBe(0);
     });
 
     it('can play once for each shot it missed, from previous to current', () => {
         let shots = 0;
         let fired = 0;
-        const playShots = createReaction({
+        const playShotSoundForEachShot = createReaction({
             watch: () => shots,
             when: increased,
             react: (current, previous) => {
@@ -72,7 +76,7 @@ describe('createReaction', () => {
             },
         });
         shots = 3;
-        playShots();
+        playShotSoundForEachShot();
         expect(fired).toBe(3);
     });
 
@@ -101,72 +105,76 @@ describe('createReaction', () => {
     it('combines conditions by hand', () => {
         let phase = 'playing';
         const heard: string[] = [];
-        const playLoss = createReaction({
+        const playLossSoundWhenDyingOrGameOver = createReaction({
             watch: () => phase,
             when: (current) => current === 'dying' || current === 'game-over',
             react: () => heard.push('loss'),
         });
         for (const next of ['respawning', 'dying', 'respawning', 'game-over']) {
             phase = next;
-            playLoss();
+            playLossSoundWhenDyingOrGameOver();
         }
         expect(heard).toEqual(['loss', 'loss']);
     });
 
     it('compares with ===, so a watched NaN reacts on every call', () => {
         let reacted = 0;
-        const follow = createReaction({ watch: () => Number.NaN, react: () => reacted++ });
-        follow();
-        follow();
+        const countEachChange = createReaction({ watch: () => Number.NaN, react: () => reacted++ });
+        countEachChange();
+        countEachChange();
         expect(reacted).toBe(2);
     });
 
     it('watches a bigint, and knows which way it moved', () => {
         let total = 10n;
         let rises = 0;
-        const playRise = createReaction({ watch: () => total, when: increased, react: () => rises++ });
+        const playRiseSoundWhenTotalRises = createReaction({
+            watch: () => total,
+            when: increased,
+            react: () => rises++,
+        });
         total = 11n;
-        playRise();
+        playRiseSoundWhenTotalRises();
         total = 9n;
-        playRise();
+        playRiseSoundWhenTotalRises();
         expect(rises).toBe(1);
     });
 
     it('reacts to each getter of an array separately, in index order, with its index', () => {
         const phases = ['spinning', 'spinning', 'spinning'];
         const stops: number[] = [];
-        const playStops = createReaction({
+        const playStopSoundWhenEachReelSettles = createReaction({
             watch: phases.map((_, i) => () => phases[i]),
             when: 'settling',
             react: (_current, _previous, index) => stops.push(index),
         });
         phases[1] = 'settling';
-        playStops();
+        playStopSoundWhenEachReelSettles();
         phases[2] = 'settling';
         phases[0] = 'settling';
-        playStops();
+        playStopSoundWhenEachReelSettles();
         expect(stops).toEqual([1, 0, 2]);
     });
 
     it("gives an array's `when` the index too", () => {
         const counts = [0, 0];
         const heard: number[] = [];
-        const playSecond = createReaction({
+        const recordChangesToSecondCount = createReaction({
             watch: counts.map((_, i) => () => counts[i]),
             when: (_current, _previous, index) => index === 1,
             react: (_current, _previous, index) => heard.push(index),
         });
         counts[0] = 1;
         counts[1] = 1;
-        playSecond();
+        recordChangesToSecondCount();
         expect(heard).toEqual([1]);
     });
 
     it('does nothing for an array that is empty at run time', () => {
         const getters: (() => number)[] = [];
         let reacted = 0;
-        const reaction = createReaction({ watch: getters, react: () => reacted++ });
-        reaction();
+        const countEachChange = createReaction({ watch: getters, react: () => reacted++ });
+        countEachChange();
         expect(reacted).toBe(0);
     });
 
@@ -178,13 +186,13 @@ describe('createReaction', () => {
             watch: { isActive: () => isActive, level: () => level },
             compute: (v) => v.isActive && v.level > 3,
         });
-        const playAlarm = createReaction({ watch: isInDanger, when: true, react: () => alarms++ });
+        const playAlarmSoundWhenInDanger = createReaction({ watch: isInDanger, when: true, react: () => alarms++ });
         isActive = true;
-        playAlarm();
+        playAlarmSoundWhenInDanger();
         level = 5;
-        playAlarm();
+        playAlarmSoundWhenInDanger();
         level = 6;
-        playAlarm();
+        playAlarmSoundWhenInDanger();
         expect(alarms).toBe(1);
     });
 
@@ -198,10 +206,10 @@ describe('createReaction', () => {
                 return array;
             },
         });
-        const relayout = createReaction({ watch: () => cells.version, react: () => layouts++ });
+        const layOutWhenCellsChange = createReaction({ watch: () => cells.version, react: () => layouts++ });
         size = 2;
-        relayout();
-        relayout();
+        layOutWhenCellsChange();
+        layOutWhenCellsChange();
         expect(layouts).toBe(1);
     });
 

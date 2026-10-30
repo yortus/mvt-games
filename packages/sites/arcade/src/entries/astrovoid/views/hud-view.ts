@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
+import { createComputed, createReaction } from '@mvtjs/utils';
 import { setRefresh } from '@mvtjs/pixi';
 import { PixelTextView } from '#shared';
 
@@ -19,14 +19,9 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function HudView(bindings: HudViewBindings): Container {
-    const watcher = watch({
-        score: bindings.score,
-        lives: bindings.lives,
-        wave: bindings.wave,
-    });
-    // The text each line shows, written when its number changes
-    let scoreText = 'SCORE: 0';
-    let waveText = 'WAVE 1';
+    const scoreText = createComputed({ watch: bindings.score, compute: (score) => `SCORE: ${score}` });
+    const waveText = createComputed({ watch: bindings.wave, compute: (wave) => `WAVE ${wave}` });
+    const drawLivesWhenLivesChange = createReaction({ watch: bindings.lives, react: drawLives });
     let waveLine: Container;
     let livesContainer: Container;
 
@@ -37,41 +32,32 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function initialiseView(): void {
         // Score - left
-        const scoreLine = PixelTextView({ text: () => scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
+        const scoreLine = PixelTextView({ text: scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
         scoreLine.position.set(8, 6);
         view.addChild(scoreLine);
 
         // Wave - right
-        waveLine = PixelTextView({ text: () => waveText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
+        waveLine = PixelTextView({ text: waveText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
         view.addChild(waveLine);
 
         // Lives - centre (ship icons)
         livesContainer = new Container();
         view.addChild(livesContainer);
+        drawLives();
     }
 
     function refresh(): void {
-        const watched = watcher.poll();
-
-        if (watched.score.changed) {
-            scoreText = `SCORE: ${watched.score.value}`;
-        }
-        if (watched.wave.changed) {
-            waveText = `WAVE ${watched.wave.value}`;
-            updateWaveLayout();
-        }
-        if (watched.lives.changed) {
-            updateLives();
-        }
+        layOut();
+        drawLivesWhenLivesChange();
     }
 
-    function updateWaveLayout(): void {
+    function layOut(): void {
         const width = bindings.screenWidth();
         waveLine.position.set(width - 8, 6);
         livesContainer.position.set(width / 2 - 20, 6);
     }
 
-    function updateLives(): void {
+    function drawLives(): void {
         livesContainer.removeChildren();
         const lives = bindings.lives();
         for (let i = 0; i < lives; i++) {

@@ -69,7 +69,7 @@ export function MinimapView(bindings: MinimapViewBindings): Element {
             resizePicture(paper, overview.cols, overview.rows);
             isStale = true;
         }
-        if (changes.palette.changed) colors = buildPaletteColors(changes.palette.value);
+        if (changes.palette.changed) colors = buildPaletteColors(changes.palette.current);
 
         // The overview is a few thousand samples, so it is coloured whole
         // rather than row by row.

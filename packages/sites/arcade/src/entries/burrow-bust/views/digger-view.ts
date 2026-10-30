@@ -23,12 +23,7 @@ export interface DiggerViewBindings {
 // ---------------------------------------------------------------------------
 
 export function DiggerView(bindings: DiggerViewBindings): Container {
-    const watcher = watch({
-        direction: bindings.direction,
-        tileSize: bindings.tileSize,
-        alive: bindings.isAlive,
-        harpoon: bindings.isHarpoonExtended,
-    });
+    const watcher = watch({ tileSize: bindings.tileSize });
 
     const digger = textures.get().digger;
     let sprite: Sprite;
@@ -44,6 +39,7 @@ export function DiggerView(bindings: DiggerViewBindings): Container {
         harpoonGfx = new Graphics();
         view.addChild(sprite);
         view.addChild(harpoonGfx);
+        sprite.scale.set(bindings.tileSize() / 20);
     }
 
     function refresh(): void {
@@ -57,9 +53,7 @@ export function DiggerView(bindings: DiggerViewBindings): Container {
         const y = row * ts + ts / 2;
         view.position.set(x, y);
 
-        if (watched.alive.changed) {
-            view.visible = watched.alive.value;
-        }
+        view.visible = bindings.isAlive();
         if (!bindings.isAlive()) return;
 
         if (watched.tileSize.changed) {

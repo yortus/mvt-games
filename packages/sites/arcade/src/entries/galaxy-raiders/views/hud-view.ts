@@ -1,5 +1,5 @@
 import { Container, Sprite } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
+import { createComputed, createReaction } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 import { textures } from '../data';
 import { setRefresh } from '@mvtjs/pixi';
@@ -20,15 +20,9 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function HudView(bindings: HudViewBindings): Container {
-    const watcher = watch({
-        score: bindings.score,
-        lives: bindings.lives,
-        stage: bindings.stage,
-    });
-
-    // The text each line shows, written when its number changes
-    let scoreText = 'SCORE: 0';
-    let stageText = 'STAGE 1';
+    const scoreText = createComputed({ watch: bindings.score, compute: (score) => `SCORE: ${score}` });
+    const stageText = createComputed({ watch: bindings.stage, compute: (stage) => `STAGE ${stage}` });
+    const drawLivesWhenLivesChange = createReaction({ watch: bindings.lives, react: drawLives });
     let stageLine: Container;
     let livesContainer: Container;
 
@@ -39,41 +33,32 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function initialiseView(): void {
         // Score - left
-        const scoreLine = PixelTextView({ text: () => scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
+        const scoreLine = PixelTextView({ text: scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
         scoreLine.position.set(8, 8);
         view.addChild(scoreLine);
 
         // Stage - right
-        stageLine = PixelTextView({ text: () => stageText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
+        stageLine = PixelTextView({ text: stageText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
         view.addChild(stageLine);
 
         // Lives - centre (ship icons)
         livesContainer = new Container();
         view.addChild(livesContainer);
+        drawLives();
     }
 
     function refresh(): void {
-        const watched = watcher.poll();
-
-        if (watched.score.changed) {
-            scoreText = `SCORE: ${watched.score.value}`;
-        }
-        if (watched.stage.changed) {
-            stageText = `STAGE ${watched.stage.value}`;
-            updateStageLayout();
-        }
-        if (watched.lives.changed) {
-            updateLives();
-        }
+        layOut();
+        drawLivesWhenLivesChange();
     }
 
-    function updateStageLayout(): void {
+    function layOut(): void {
         const width = bindings.screenWidth();
         stageLine.position.set(width - 8, 8);
         livesContainer.position.set(width / 2 - 20, 6);
     }
 
-    function updateLives(): void {
+    function drawLives(): void {
         livesContainer.removeChildren();
         const lives = bindings.lives();
         for (let i = 0; i < lives; i++) {

@@ -2,7 +2,7 @@
 
 import type { Container } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '#shared';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
 import type { GameModel, GamePhase } from '../models';
@@ -52,7 +52,7 @@ export interface GameViewBindings {
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, music, sfx } = bindings;
-    const overlayText = memoiseLast((phase: GamePhase) => describePhase(phase, model));
+    const overlayText = createComputed({ watch: () => model.phase, compute: (phase) => describePhase(phase, model) });
 
     return (
         <container>
@@ -174,7 +174,7 @@ export function GameView(bindings: GameViewBindings): Container {
                     width={FIELD_WIDTH}
                     height={FIELD_HEIGHT}
                     isVisible={() => model.phase === 'ready' || model.phase === 'round-clear' || model.phase === 'game-over'}
-                    text={() => overlayText(model.phase)}
+                    text={overlayText}
                     onPressed={model.startNewRun}
                 />
                 <FarmFencedView

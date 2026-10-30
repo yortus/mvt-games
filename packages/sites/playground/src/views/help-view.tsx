@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -29,14 +29,19 @@ export interface HelpLibrary {
  * exporting. Escape, or a click outside the dialog, closes it.
  */
 export function HelpView(bindings: HelpViewBindings): Element {
-    const watcher = watch({ isOpen: bindings.isOpen });
-    watcher.poll();
     /** Whether the dialog has opened since it last took the focus. */
     let isFocusDue = false;
+    const queueFocusWhenOpened = createReaction({
+        watch: bindings.isOpen,
+        when: true,
+        react: () => {
+            isFocusDue = true;
+        },
+    });
 
     return (
         // The wrapper is never hidden, so it sees the dialog close and open again
-        <div class="help-layer" onRefresh={noteOpening}>
+        <div class="help-layer" onRefresh={queueFocusWhenOpened}>
             <div class="help" visible={bindings.isOpen} onPointerDown={onBackdropPressed} onKeyDown={onKeyDown}>
                 <div class="help-panel" role="dialog" aria-modal="true" aria-label="Help" tabIndex={-1} onRefresh={focusIfDue}>
                     <div class="help-head">
@@ -48,11 +53,6 @@ export function HelpView(bindings: HelpViewBindings): Element {
             </div>
         </div>
     );
-
-    function noteOpening(): void {
-        const { isOpen } = watcher.poll();
-        if (isOpen.changed && isOpen.value) isFocusDue = true;
-    }
 
     /** Focuses the dialog once it shows, so Escape closes it, and the keys scroll it. */
     function focusIfDue(panel: Element): void {

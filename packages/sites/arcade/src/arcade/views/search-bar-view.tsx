@@ -1,5 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { searchWordsOf, TAG_GROUPS, type TagChip } from '../models';
 import { GROUP_LABELS, tagLabel } from './labels';
 import { labelMatches, stepSuggestion } from './search-suggestions';
@@ -47,13 +47,13 @@ export interface SearchBarViewBindings {
  * leaves the box.
  */
 export function SearchBarView(bindings: SearchBarViewBindings): Element {
-    const { chips } = bindings;
+    const { chips, chipCountAt } = bindings;
     const labels = chips.map((chip) => tagLabel(chip));
     const labelWords = labels.map((label) => searchWordsOf(label));
     const removeLabels = labels.map((label) => `Remove ${label}`);
     const optionIds = chips.map((_chip, index) => `search-tag-${index}`);
-    const countTexts = chips.map(() => memoiseLast((count: number) => String(count)));
-    const typedWords = memoiseLast((text: string) => searchWordsOf(text));
+    const countTexts = chips.map((_chip, index) => createComputed({ watch: () => chipCountAt(index), compute: String }));
+    const typedWords = createComputed({ watch: bindings.text, compute: searchWordsOf });
     const groups = TAG_GROUPS.filter((group) => chips.some((chip) => chip.group === group));
 
     // Presentation state: whether the box has focus, whether the list was
@@ -141,7 +141,7 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
                                                     onClick={() => choose(index)}
                                                 >
                                                     <span class="chip-label" text={labels[index]} />
-                                                    <span class="chip-count" text={() => countTexts[index](bindings.chipCountAt(index))} />
+                                                    <span class="chip-count" text={countTexts[index]} />
                                                 </div>
                                             )))}
                                 </div>
@@ -159,7 +159,7 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
      * which suggestion is highlighted.
      */
     function settle(): void {
-        const words = typedWords(bindings.text());
+        const words = typedWords();
         let isAnySuggested = false;
         hasSuggestionIn.fill(false);
         for (let i = 0; i < chips.length; i++) {
@@ -180,7 +180,7 @@ export function SearchBarView(bindings: SearchBarViewBindings): Element {
     /** The suggestion the arrow keys moved to, or, once something is typed, the first: what Enter chooses. */
     function highlightedSuggestion(): number {
         if (highlighted >= 0 && isSuggested(highlighted)) return highlighted;
-        if (typedWords(bindings.text()).length === 0) return -1;
+        if (typedWords().length === 0) return -1;
         return stepSuggestion({ from: -1, step: 1, count: chips.length, isSuggested });
     }
 

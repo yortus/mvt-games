@@ -82,7 +82,6 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
         typeChecks: bindings.typeChecks,
         theme: bindings.theme,
     });
-    watcher.poll();
     showProblems();
 
     setRefresh(element, refresh);
@@ -92,19 +91,19 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
     function refresh(): void {
         const { projects, path, places, externalEdits, typeChecks, theme } = watcher.poll();
         if (theme.changed) {
-            shownTheme = theme.value;
+            shownTheme = theme.current;
             const effects = themeCompartment.reconfigure(THEMES[shownTheme].editor);
             editor.dispatch({ effects });
             for (const [statePath, state] of states) states.set(statePath, state.update({ effects }).state);
         }
         if (projects.changed) {
             states.clear();
-            shownPath = path.value;
+            shownPath = path.current;
             editor.setState(createState(shownPath));
         }
         else if (path.changed) {
             states.set(shownPath, editor.state);
-            shownPath = path.value;
+            shownPath = path.current;
             editor.setState(states.get(shownPath) ?? createState(shownPath));
         }
         if (externalEdits.changed) takeExternalEdits();

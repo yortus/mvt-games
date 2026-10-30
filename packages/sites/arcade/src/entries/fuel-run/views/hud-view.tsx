@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, Texture } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
 import { PixelTextView } from '#shared';
 import { textures } from '../data';
@@ -31,8 +31,7 @@ export function HudView(bindings: HudViewBindings): Container {
     const fuelBarX = screenWidth - FUEL_BAR_WIDTH - FUEL_BAR_X_OFFSET;
     const lifeIcon = textures.get().ship.icon;
 
-    // Rebuilt only when the score changes.
-    const scoreText = memoiseLast((score: number) => String(score));
+    const scoreText = createComputed({ watch: bindings.score, compute: String });
     // The section text last shown, rebuilt only when the section or loop changes.
     let shownSection = NaN;
     let shownLoop = NaN;
@@ -41,7 +40,7 @@ export function HudView(bindings: HudViewBindings): Container {
     return (
         <container>
             <container x={8} y={GLYPHS_Y}>
-                <PixelTextView text={() => scoreText(bindings.score())} color={SCORE_COLOR} />
+                <PixelTextView text={scoreText} color={SCORE_COLOR} />
             </container>
             <container x={80} y={GLYPHS_Y}>
                 <PixelTextView text={getSectionText} color={LABEL_COLOR} />

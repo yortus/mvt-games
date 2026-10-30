@@ -36,16 +36,19 @@ export function TrackerAudioView(bindings: TrackerAudioViewBindings): Container 
     const { music } = bindings;
     const view = new Container();
     const watcher = watch({ isPlaying: bindings.isPlaying, starts: bindings.starts });
+    // A tune already playing as the view is made starts now
+    if (bindings.isPlaying()) music.play(bindings.songAt(bindings.tuneIndex()));
 
     setUpdate(view, update);
     return view;
 
     function update(): void {
         const w = watcher.poll();
-        if (!w.isPlaying.value) {
+        if (!w.isPlaying.current) {
             if (w.isPlaying.changed) music.stop();
         }
-        // A start before the view's first poll counts too, so `changed`, not `increased`: the count only rises
-        else if (w.starts.changed) music.play(bindings.songAt(bindings.tuneIndex()));
+        else if (w.starts.increased) {
+            music.play(bindings.songAt(bindings.tuneIndex()));
+        }
     }
 }

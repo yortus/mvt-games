@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -61,16 +61,16 @@ export function FileListView(bindings: FileListViewBindings): Element {
             <ul class="files-list">
                 <List items={treeRows}>
                     {(row) => {
-                        const countLabel = memoiseLast((count: number) => String(count));
                         // A folder's errors are counted under its path and a slash
-                        const folderKey = memoiseLast((path: string) => `${path}/`);
+                        const folderKey = createComputed({ watch: () => row().path, compute: (path) => `${path}/` });
                         const isFolder = (): boolean => row().kind === 'folder';
                         const isFolded = (): boolean => isFolder() && bindings.foldedFolders().has(row().path);
                         const isFixed = (): boolean => row().path === bindings.fixedPath || bindings.isKeptBarrel(row().path);
                         const problemCount = (): number => {
                             if (!isFolder()) return bindings.problemCountOf(row().path);
-                            return isFolded() ? bindings.problemCountOf(folderKey(row().path)) : 0;
+                            return isFolded() ? bindings.problemCountOf(folderKey()) : 0;
                         };
+                        const countLabel = createComputed({ watch: problemCount, compute: String });
                         return (
                             <li class={() => rowClassOf(row(), !isFolder() && row().path === bindings.activePath(), bindings.isKeptBarrel(row().path))}>
                                 <button type="button" class="file-name" onClick={() => choose(row())}>
@@ -81,7 +81,7 @@ export function FileListView(bindings: FileListViewBindings): Element {
                                     class="file-problems"
                                     title={() => (isFolder() ? 'Errors in this folder' : 'Errors in this file')}
                                     visible={() => problemCount() > 0}
-                                    text={() => countLabel(problemCount())}
+                                    text={countLabel}
                                 />
                                 <button
                                     type="button"

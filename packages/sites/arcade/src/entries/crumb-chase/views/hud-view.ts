@@ -1,6 +1,5 @@
 import { Container } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
-import { setRefresh } from '@mvtjs/pixi';
+import { createComputed } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 
 // ---------------------------------------------------------------------------
@@ -21,17 +20,14 @@ export interface HudViewBindings {
 
 /** The strip below the maze: the score at the left, and a hint on how to play at the right. */
 export function HudView(bindings: HudViewBindings): Container {
-    const watcher = watch({ score: bindings.score });
-    // The score's text, written when the score changes
-    let scoreText = 'SCORE: 0';
+    const scoreText = createComputed({ watch: bindings.score, compute: (score) => `SCORE: ${score}` });
 
     const view = new Container();
     initialiseView();
-    setRefresh(view, refresh);
     return view;
 
     function initialiseView(): void {
-        const scoreLine = PixelTextView({ text: () => scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
+        const scoreLine = PixelTextView({ text: scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
         scoreLine.position.set(8, TEXT_Y);
         view.addChild(scoreLine);
 
@@ -39,14 +35,6 @@ export function HudView(bindings: HudViewBindings): Container {
         const hintLine = PixelTextView({ text: bindings.hint, color: HINT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
         hintLine.position.set(bindings.width - 8, TEXT_Y);
         view.addChild(hintLine);
-    }
-
-    function refresh(): void {
-        const watched = watcher.poll();
-
-        if (watched.score.changed) {
-            scoreText = `SCORE: ${watched.score.value}`;
-        }
     }
 }
 

@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 import type { SheepPhase } from '../models';
 import { drawOutlinedPixels, drawPixels, type PixelRects } from './drawing';
@@ -63,14 +63,19 @@ export function SheepView(bindings: SheepViewBindings): Container {
     let lostMs = 0;
     let pennedMs = CHEER_MS;
     // A sheep in a list's slot arrives grazing, so only a sheep of its own becomes penned
-    const watcher = watch({ phase: bindings.phase });
-    watcher.poll();
+    const startCheerAnimationWhenPenned = createReaction({
+        watch: bindings.phase,
+        when: 'penned',
+        react: () => {
+            pennedMs = 0;
+        },
+    });
 
     setUpdate(view, (deltaMs) => {
         ageMs += deltaMs;
         lostMs = bindings.phase() === 'lost' ? lostMs + deltaMs : 0;
-        const { phase } = watcher.poll();
-        pennedMs = phase.changed && phase.value === 'penned' ? 0 : pennedMs + deltaMs;
+        pennedMs += deltaMs;
+        startCheerAnimationWhenPenned();
     });
     setRefresh(view, refresh);
     return view;

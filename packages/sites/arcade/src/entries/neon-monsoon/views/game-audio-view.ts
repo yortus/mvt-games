@@ -140,10 +140,9 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         isRingUp: bindings.isVolleyRingUp,
         shieldHits: bindings.volleyShieldHits,
     });
-    // The first poll sees every value as new, not as a change. Polling here
-    // makes the first refresh hear the guns' first blip, which the first
-    // update makes, and anything the model does before it.
-    watcher.poll();
+    // The watcher reads every value as it's made, so the first refresh hears the
+    // guns' first blip, which the first update makes, and anything the model
+    // does before it.
     // A game starts in play, so the stage's theme starts with the view
     music.play(STAGE_THEME);
 
@@ -164,20 +163,20 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
 
     function refresh(): void {
         const w = watcher.poll();
-        if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
-        if (w.bossPhase.changed) playBossPhase(w.bossPhase.value);
+        if (w.phase.changed) playPhase(w.phase.current, w.phase.previous);
+        if (w.bossPhase.changed) playBossPhase(w.bossPhase.current);
         // The warning silences the stage's theme. The boss brings its own
-        if (w.isWarning.changed && w.isWarning.value) music.stop();
+        if (w.isWarning.changed && w.isWarning.current) music.stop();
         if (w.sirens.increased) sfx.play(WARNING);
 
         // The ship's own explosion starts as it is lost. Its loss has a sound of its own
-        if (w.explosions.increased && !(w.phase.changed && w.phase.value === 'dying')) {
+        if (w.explosions.increased && !(w.phase.changed && w.phase.current === 'dying')) {
             sfx.play(chooseExplosion(bindings.lastExplosionSize()), { pan: toPan(bindings.lastExplosionX()) });
         }
         if (w.extraLives.increased) sfx.play(EXTEND);
-        if (w.isBombing.changed && w.isBombing.value) sfx.play(BOMB);
+        if (w.isBombing.changed && w.isBombing.current) sfx.play(BOMB);
         // The focus follows its key even after the game ends. So the sweep plays only in play, like the guns' blips
-        if (w.isFocused.changed && w.isFocused.value && w.phase.value === 'playing') sfx.play(FOCUS, { pan: toPan(bindings.shipX()) });
+        if (w.isFocused.changed && w.isFocused.current && w.phase.current === 'playing') sfx.play(FOCUS, { pan: toPan(bindings.shipX()) });
         if (w.items.increased) sfx.play(bindings.lastItemKind() === 'power' ? POWER_UP : BOMB_PICKUP, { pan: toPan(bindings.shipX()) });
         if (w.gems.increased) sfx.play(GEM, { pan: toPan(bindings.shipX()) });
 
@@ -185,10 +184,10 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
         if (w.ticks.increased) sfx.play(BOSS_HIT, { pan: toPan(bindings.bossX()) });
 
         if (w.chargeTones.increased && bindings.isVolleyFilling()) sfx.play(chooseChargeTone(bindings.volleyCharge()), { pan: toPan(bindings.shipX()) });
-        if (w.volleyPhase.changed) playVolleyPhase(w.volleyPhase.value, w.volleyPhase.previous);
-        if (w.isRingUp.changed && w.isRingUp.value) sfx.play(RING_UP, { pan: toPan(bindings.shipX()) });
+        if (w.volleyPhase.changed) playVolleyPhase(w.volleyPhase.current, w.volleyPhase.previous);
+        if (w.isRingUp.changed && w.isRingUp.current) sfx.play(RING_UP, { pan: toPan(bindings.shipX()) });
         if (w.shieldHits.increased) sfx.play(SHIELD_HIT, { pan: toPan(bindings.shipX()) });
-        if (w.lockTicks.increased && w.volleyPhase.value === 'locking') sfx.play(LOCK_TICK, { pan: toPan(bindings.shipX()) });
+        if (w.lockTicks.increased && w.volleyPhase.current === 'locking') sfx.play(LOCK_TICK, { pan: toPan(bindings.shipX()) });
         if (w.volleys.increased) sfx.play(VOLLEY_LAUNCH, { pan: toPan(bindings.shipX()) });
         if (w.bursts.increased) sfx.play(VOLLEY_BURST, { pan: toPan(bindings.volleyBurstX()) });
     }

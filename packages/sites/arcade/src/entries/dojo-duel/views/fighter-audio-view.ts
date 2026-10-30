@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import type { SfxChip } from '#shared';
 import { BLOCK, type FighterPhase, HIT, KICK_SWISH, LEAP_SWISH, type MoveKind, PUNCH_SWISH } from '../data';
 
@@ -35,21 +35,27 @@ export function FighterAudioView(bindings: FighterAudioViewBindings): Container 
     const { sfx } = bindings;
     const view = new Container();
     view.label = 'fighter-audio';
-    const watcher = watch({ phase: bindings.phase, move: bindings.move });
-    // Poll once now, so that the first refresh plays only for changes made
-    // after the view is made. A fighter already in a move then makes no sound
-    watcher.poll();
+    // Each reads its value as it's made, so a fighter already in a move then makes no sound
+    const playSwishSoundWhenMoveStarts = createReaction({
+        watch: bindings.move,
+        react: (move) => {
+            if (move !== undefined) sfx.play(chooseSwish(move));
+        },
+    });
+    const playBlockOrHitSoundWhenPhaseChanges = createReaction({
+        watch: bindings.phase,
+        react: (phase) => {
+            if (phase === 'blocking') sfx.play(BLOCK);
+            else if (phase === 'defeated') sfx.play(HIT);
+        },
+    });
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
-        const w = watcher.poll();
-        const move = w.move.value;
-        if (w.move.changed && move !== undefined) sfx.play(chooseSwish(move));
-        if (!w.phase.changed) return;
-        if (w.phase.value === 'blocking') sfx.play(BLOCK);
-        else if (w.phase.value === 'defeated') sfx.play(HIT);
+        playSwishSoundWhenMoveStarts();
+        playBlockOrHitSoundWhenPhaseChanges();
     }
 }
 

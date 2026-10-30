@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, Graphics } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
 import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { ARENA_WIDTH, textures } from '../data';
@@ -64,7 +64,7 @@ export function GameView(bindings: GameViewBindings): Container {
     const { scoring, ship, boss, stage, volley, enemyBullets, playerShots, gems } = model;
     const tex = textures.get();
     const arenaMask = new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(0xffffff);
-    const overlayText = memoiseLast((phase: GamePhase) => describePhase(phase, model.tallyBonus));
+    const overlayText = createComputed({ watch: () => model.phase, compute: (phase) => describePhase(phase, model.tallyBonus) });
 
     return (
         <container>
@@ -291,7 +291,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 width={SCREEN_WIDTH}
                 height={SCREEN_HEIGHT}
                 isVisible={() => model.phase === 'tally' || model.phase === 'game-over' || model.phase === 'all-clear'}
-                text={() => overlayText(model.phase)}
+                text={overlayText}
                 onPressed={model.startNewRun}
             />
         </container>

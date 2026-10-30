@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
+import { createComputed, createReaction } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 import type { GamePhase } from '../data';
 import { POINTS_TO_WIN_ROUND } from '../data';
@@ -82,66 +82,39 @@ export function HudView(bindings: HudViewBindings): Container {
         opponentRoundPips.push(pip);
     }
 
-    // Timer text (centre), at twice the glyphs' size, written when the time or the phase changes
-    let timerText = '';
-    const timerLine = PixelTextView({ text: () => timerText, color: 0xffffff, scale: 2, anchorX: 0.5, anchorY: 0.5 });
+    // Timer text (centre), at twice the glyphs' size
+    const timerText = createComputed({ watch: timerNumber, compute: (n) => String(n ?? '') });
+    const timerLine = PixelTextView({ text: timerText, color: 0xffffff, scale: 2, anchorX: 0.5, anchorY: 0.5 });
     timerLine.position.set(SCREEN_WIDTH / 2, pipY);
     view.addChild(timerLine);
 
-    // Watcher for change detection
-    const watcher = watch({
-        playerPoints: bindings.playerPoints,
-        opponentPoints: bindings.opponentPoints,
-        playerRounds: bindings.playerRounds,
-        opponentRounds: bindings.opponentRounds,
-        timeSeconds: () => Math.ceil(bindings.roundTimeRemainingMs() / 1000),
-        phase: bindings.gamePhase,
+    // Each row of pips is drawn now, and again when its count changes
+    const pipRows = [
+        { pips: playerPips, count: bindings.playerPoints, colour: PLAYER_ACCENT_COLOR, radius: pipRadius },
+        { pips: opponentPips, count: bindings.opponentPoints, colour: OPPONENT_ACCENT_COLOR, radius: pipRadius },
+        { pips: playerRoundPips, count: bindings.playerRounds, colour: 0x00ff00, radius: roundPipRadius },
+        { pips: opponentRoundPips, count: bindings.opponentRounds, colour: 0xff4444, radius: roundPipRadius },
+    ];
+    for (let i = 0; i < pipRows.length; i++) drawPipRow(i, pipRows[i].count());
+    const drawPipRowWhenItsCountChanges = createReaction({
+        watch: pipRows.map((row) => row.count),
+        react: (count, _previous, index) => drawPipRow(index, count),
     });
 
-    // Cached values for pip colour updates
-    let lastPlayerPoints = -1;
-    let lastOpponentPoints = -1;
-    let lastPlayerRounds = -1;
-    let lastOpponentRounds = -1;
-
-    setRefresh(view, refresh);
+    setRefresh(view, drawPipRowWhenItsCountChanges);
     return view;
 
-    function refresh(): void {
-        const watched = watcher.poll();
+    /** The number the timer shows, if any: the seconds left in a fight, and a fixed number in a round's intro. */
+    function timerNumber(): number | undefined {
+        const phase = bindings.gamePhase();
+        if (phase === 'fighting') return Math.max(0, Math.ceil(bindings.roundTimeRemainingMs() / 1000));
+        if (phase === 'round-intro') return Math.ceil(POINTS_TO_WIN_ROUND);
+        return undefined;
+    }
 
-        if (watched.playerPoints.changed) {
-            lastPlayerPoints = watched.playerPoints.value;
-            updatePips(playerPips, lastPlayerPoints, PLAYER_ACCENT_COLOR, pipRadius);
-        }
-
-        if (watched.opponentPoints.changed) {
-            lastOpponentPoints = watched.opponentPoints.value;
-            updatePips(opponentPips, lastOpponentPoints, OPPONENT_ACCENT_COLOR, pipRadius);
-        }
-
-        if (watched.playerRounds.changed) {
-            lastPlayerRounds = watched.playerRounds.value;
-            updatePips(playerRoundPips, lastPlayerRounds, 0x00ff00, roundPipRadius);
-        }
-
-        if (watched.opponentRounds.changed) {
-            lastOpponentRounds = watched.opponentRounds.value;
-            updatePips(opponentRoundPips, lastOpponentRounds, 0xff4444, roundPipRadius);
-        }
-
-        if (watched.timeSeconds.changed || watched.phase.changed) {
-            const phase = watched.phase.value;
-            if (phase === 'fighting') {
-                timerText = String(Math.max(0, watched.timeSeconds.value));
-            }
-            else if (phase === 'round-intro') {
-                timerText = String(Math.ceil(POINTS_TO_WIN_ROUND));
-            }
-            else {
-                timerText = '';
-            }
-        }
+    function drawPipRow(index: number, filledCount: number): void {
+        const { pips, colour, radius } = pipRows[index];
+        updatePips(pips, filledCount, colour, radius);
     }
 
     function updatePips(pips: Graphics[], filledCount: number, activeColour: number, radius: number): void {

@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction } from '@mvtjs/utils';
 import type { SfxChip } from '#shared';
 import { ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE } from '../data';
 import type { RockPhase } from '../models';
@@ -33,16 +33,15 @@ export function RockAudioView(bindings: RockAudioViewBindings): Container {
     const { sfx } = bindings;
     const view = new Container();
     view.label = 'rock-audio';
-    const watcher = watch({ phase: bindings.phase });
-    // The first refresh hears only what changes after the view is made
-    watcher.poll();
-
-    setRefresh(view, () => {
-        const { phase } = watcher.poll();
-        if (!phase.changed) return;
-        if (phase.value === 'wobbling') sfx.play(ROCK_WOBBLE);
-        else if (phase.value === 'falling') sfx.play(ROCK_FALL);
-        else if (phase.value === 'shattered') sfx.play(ROCK_CRASH);
+    const playRockSoundWhenPhaseChanges = createReaction({
+        watch: bindings.phase,
+        react: (phase) => {
+            if (phase === 'wobbling') sfx.play(ROCK_WOBBLE);
+            else if (phase === 'falling') sfx.play(ROCK_FALL);
+            else if (phase === 'shattered') sfx.play(ROCK_CRASH);
+        },
     });
+
+    setRefresh(view, playRockSoundWhenPhaseChanges);
     return view;
 }

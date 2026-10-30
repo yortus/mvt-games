@@ -1,6 +1,6 @@
 import { setRefresh, setUpdate } from '@mvtjs/html';
 import type { Audio80Sound } from 'audio90';
-import { createMetronome, watch } from '@mvtjs/utils';
+import { createMetronome, createReaction, increased } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import {
     BIG_WIN, COIN, GAME_OVER, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5, WIN,
@@ -47,16 +47,40 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
     const clicks = createMetronome();
     const coins = createMetronome();
 
-    const watcher = watch({
-        phase: () => model.phase,
-        spins: () => model.spinCount,
-        landings: countLandingReels,
-        step: () => model.celebration.stepIndex,
-        clicks: () => clicks.count,
-        coins: () => coins.count,
+    const playLeverSoundOnEachSpin = createReaction({
+        watch: () => model.spinCount,
+        when: increased,
+        react: () => {
+            // A jingle still ringing gives way to the new spin
+            music.stop();
+            sfx.play(LEVER);
+        },
     });
-    // The first refresh hears only what changes after the view is made
-    watcher.poll();
+    // One thunk however many reels land in the tick, as when a stop lands them all at once
+    const playStopSoundOnEachReelLanding = createReaction({
+        watch: countLandingReels,
+        when: increased,
+        react: () => sfx.play(REEL_STOP),
+    });
+    const playSoundsWhenPhaseChanges = createReaction({ watch: () => model.phase, react: playPhase });
+    const playWinWaySoundOnEachStep = createReaction({
+        watch: () => model.celebration.stepIndex,
+        when: (step) => step > 0,
+        react: () => {
+            const win = model.celebration.win;
+            if (win !== undefined) sfx.play(chooseWay(win.rows.length));
+        },
+    });
+    const playClickSoundOnEachReelClick = createReaction({
+        watch: () => clicks.count,
+        when: increased,
+        react: () => sfx.play(REEL_CLICK),
+    });
+    const playCoinSoundOnEachCoin = createReaction({
+        watch: () => coins.count,
+        when: increased,
+        react: () => sfx.play(COIN),
+    });
 
     setUpdate(view, update);
     setRefresh(view, refresh);
@@ -70,21 +94,12 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
     }
 
     function refresh(): void {
-        const w = watcher.poll();
-        if (w.spins.increased) {
-            // A jingle still ringing gives way to the new spin
-            music.stop();
-            sfx.play(LEVER);
-        }
-        // One thunk however many reels land in the tick, as when a stop lands them all at once
-        if (w.landings.increased) sfx.play(REEL_STOP);
-        if (w.phase.changed && w.phase.previous !== undefined) playPhase(w.phase.value, w.phase.previous);
-        if (w.step.changed && w.step.value > 0) {
-            const win = model.celebration.win;
-            if (win !== undefined) sfx.play(chooseWay(win.rows.length));
-        }
-        if (w.clicks.increased) sfx.play(REEL_CLICK);
-        if (w.coins.increased) sfx.play(COIN);
+        playLeverSoundOnEachSpin();
+        playStopSoundOnEachReelLanding();
+        playSoundsWhenPhaseChanges();
+        playWinWaySoundOnEachStep();
+        playClickSoundOnEachReelClick();
+        playCoinSoundOnEachCoin();
     }
 
     function playPhase(phase: MachinePhase, previous: MachinePhase): void {

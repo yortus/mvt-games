@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction, increased } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import { DEATH, GAME_OVER, HARPOON, LEVEL_CLEAR, LEVEL_START, WALK_TUNE } from '../data';
 import type { GamePhase } from '../models';
@@ -49,17 +49,23 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { music, sfx } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const watcher = watch({ phase: bindings.phase, harpoonShots: bindings.harpoonShots });
+    const playSoundsWhenPhaseChanges = createReaction({ watch: bindings.phase, react: playPhase });
+    // Each rise in the count is a shot
+    const playHarpoonSoundOnEachShot = createReaction({
+        watch: bindings.harpoonShots,
+        when: increased,
+        react: () => sfx.play(HARPOON),
+    });
+    // The view is made as the game starts, with no phase before it, so it plays the level's jingle now
+    playPhase(bindings.phase(), undefined);
+    music.tempoScale = computeTempo();
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
-        const w = watcher.poll();
-        // The first poll sees the game start, with no phase before it, so it plays the level's jingle
-        if (w.phase.changed) playPhase(w.phase.value, w.phase.previous);
-        // Each rise in the count is a shot. The count's first value is not a rise
-        if (w.harpoonShots.increased) sfx.play(HARPOON);
+        playSoundsWhenPhaseChanges();
+        playHarpoonSoundOnEachShot();
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = computeTempo();
     }

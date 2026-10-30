@@ -43,10 +43,10 @@ export function CactusView(bindings: CactusViewBindings): Container {
 
         const watched = watcher.poll();
         if (watched.kind.changed) {
-            sprite.texture = textureForKind(watched.kind.value);
+            sprite.texture = textureForKind(watched.kind.current);
             panel.clear()
                 .rect(-CELL_WIDTH_PX / 2, -CELL_HEIGHT_PX / 2, CELL_WIDTH_PX, CELL_HEIGHT_PX)
-                .fill(PANEL_COLOURS[watched.kind.value]);
+                .fill(PANEL_COLOURS[watched.kind.current]);
         }
     }
 }

@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import type { HighscoreRow } from '../../highscores';
 import type { ArcadeEntry, EntryDetails, EntryFacts, Inspiration } from '../../entry-types';
 import { type HighscoresStatus, TAG_GROUPS, tagValuesOf } from '../models';
@@ -53,23 +53,22 @@ export interface EntryInfoViewBindings {
  * as the tabs change.
  */
 export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
+    const { details, entry, factsFor, isOverEntry, onClosePressed, highscoreRowsFor, highscoresStatus } = bindings;
     // Each is worked out once per entry shown, keyed by the entry's id
-    const paragraphsOf = memoiseLast((description: string | undefined) => description?.split('\n\n') ?? NONE);
-    const implementationParagraphsOf = memoiseLast((implementation: string | undefined) => implementation?.split('\n\n') ?? NONE);
-    const tagsFor = memoiseLast((_id: string | undefined) => describeTags(bindings.entry(), bindings.factsFor));
-    const sizeFor = memoiseLast((id: string | undefined) => describeSize(id === undefined ? undefined : bindings.factsFor(id)));
-    const inspirationFor = memoiseLast((_id: string | undefined) => describeInspiration(bindings.entry()?.inspiredBy));
-    const sourceFor = memoiseLast((id: string | undefined) => {
-        const facts = id === undefined ? undefined : bindings.factsFor(id);
-        return facts === undefined ? SOURCE_ROOT : SOURCE_ROOT + facts.sourcePath;
-    });
-    const techniques = (): readonly string[] => bindings.details()?.techniques ?? NONE;
+    const entryId = (): string | undefined => bindings.entry()?.id;
+    const descParagraphs = createComputed({ watch: () => details()?.description, compute: splitParagraphs });
+    const implParagraphs = createComputed({ watch: () => details()?.implementation, compute: splitParagraphs });
+    const tagsText = createComputed({ watch: entryId, compute: () => describeTags(entry(), factsFor) });
+    const sizeText = createComputed({ watch: entryId, compute: (id) => describeSize(factsFor(id ?? '')) });
+    const inspirationText = createComputed({ watch: entryId, compute: () => describeInspiration(entry()?.inspiredBy) });
+    const sourceHref = createComputed({ watch: entryId, compute: (id) => SOURCE_ROOT + (factsFor(id ?? '')?.sourcePath ?? '') });
+    const techniques = (): readonly string[] => details()?.techniques ?? [];
     // Presentation state: the tab that shows, and the entry it was chosen for, to start afresh for another
     let tab: InfoTab = 'description';
     let tabFor: ArcadeEntry | undefined;
     // The keyboard starts on Play
     const focusPlay = focusOnOpen({
-        isOpen: () => bindings.entry() !== undefined,
+        isOpen: () => entry() !== undefined,
         target: (layer) => layer.querySelector<HTMLElement>('.info-play') ?? undefined,
     });
 
@@ -77,18 +76,18 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
         // The focus step is on a wrapper that is never hidden, so it sees the panel close
         <div class="info-layer" onUpdate={startOnFirstTab} onRefresh={focusPlay}>
             <div
-                class={() => (bindings.isOverEntry() ? 'info-backdrop is-over-entry' : 'info-backdrop')}
-                visible={() => bindings.entry() !== undefined}
-                onClick={(e) => { if (e.target === e.currentTarget) bindings.onClosePressed?.(); }}
+                class={() => (isOverEntry() ? 'info-backdrop is-over-entry' : 'info-backdrop')}
+                visible={() => entry() !== undefined}
+                onClick={(e) => { if (e.target === e.currentTarget) onClosePressed?.(); }}
             >
                 <section class="info-panel" role="dialog" aria-modal="true" aria-labelledby="info-name">
-                    <button type="button" class="info-close" aria-label="Close" text="×" onClick={() => bindings.onClosePressed?.()} />
-                    <h2 id="info-name" text={() => bindings.entry()?.name ?? ''} />
-                    <p class="info-tags" text={() => tagsFor(bindings.entry()?.id)} />
+                    <button type="button" class="info-close" aria-label="Close" text="×" onClick={() => onClosePressed?.()} />
+                    <h2 id="info-name" text={() => entry()?.name ?? ''} />
+                    <p class="info-tags" text={tagsText} />
                     <p
                         class="info-inspired"
-                        visible={() => bindings.entry()?.inspiredBy !== undefined}
-                        text={() => inspirationFor(bindings.entry()?.id)}
+                        visible={() => entry()?.inspiredBy !== undefined}
+                        text={inspirationText}
                     />
                     {/* The tabs show only where there is more than one */}
                     <div class="info-tabs" role="tablist" aria-label="Info pages" visible={() => isTabShown('how-to-play') || isTabShown('highscores')}>
@@ -98,13 +97,13 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                     </div>
                     <div class="info-pages">
                         <div class={() => pageClass('description')} id="info-page-description" role="tabpanel">
-                            <p class="info-summary" text={() => bindings.entry()?.summary ?? ''} />
-                            <List items={() => paragraphsOf(bindings.details()?.description)}>
+                            <p class="info-summary" text={() => entry()?.summary ?? ''} />
+                            <List items={descParagraphs}>
                                 {(paragraph) => <p class="info-description" text={paragraph} />}
                             </List>
-                            <div class="info-section" visible={() => bindings.details()?.implementation !== undefined}>
+                            <div class="info-section" visible={() => details()?.implementation !== undefined}>
                                 <h3 text="How It's Made" />
-                                <List items={() => implementationParagraphsOf(bindings.details()?.implementation)}>
+                                <List items={implParagraphs}>
                                     {(paragraph) => <p class="info-description" text={paragraph} />}
                                 </List>
                             </div>
@@ -116,7 +115,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                                     </List>
                                 </ul>
                             </div>
-                            <p class="info-size" text={() => sizeFor(bindings.entry()?.id)} />
+                            <p class="info-size" text={sizeText} />
                         </div>
                         <div
                             class={() => pageClass('how-to-play')}
@@ -124,7 +123,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                             role="tabpanel"
                             visible={() => isTabShown('how-to-play')}
                         >
-                            {HowToPlayView({ howToPlay: () => bindings.details()?.howToPlay })}
+                            {HowToPlayView({ howToPlay: () => details()?.howToPlay })}
                         </div>
                         <div
                             class={() => pageClass('highscores')}
@@ -133,14 +132,14 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                             visible={() => isTabShown('highscores')}
                         >
                             <HighscoreTableView
-                                rows={() => bindings.highscoreRowsFor(bindings.entry()?.id ?? '')}
-                                status={bindings.highscoresStatus}
+                                rows={() => highscoreRowsFor(entry()?.id ?? '')}
+                                status={highscoresStatus}
                             />
                         </div>
                     </div>
                     <div class="info-actions">
-                        <button type="button" class="info-play" text={() => (bindings.isOverEntry() ? 'Resume' : 'Play')} onClick={play} />
-                        <a class="info-source" href={() => sourceFor(bindings.entry()?.id)} target="_blank" text="View source" />
+                        <button type="button" class="info-play" text={() => (isOverEntry() ? 'Resume' : 'Play')} onClick={play} />
+                        <a class="info-source" href={sourceHref} target="_blank" text="View source" />
                     </div>
                 </section>
             </div>
@@ -185,10 +184,9 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
 
     /** Shows the first tab as the panel opens on an entry: How to Play, over the entry, where it has some. */
     function startOnFirstTab(): void {
-        const entry = bindings.entry();
-        if (entry === tabFor) return;
-        tabFor = entry;
-        tab = bindings.isOverEntry() && isTabShown('how-to-play') ? 'how-to-play' : 'description';
+        if (entry() === tabFor) return;
+        tabFor = entry();
+        tab = isOverEntry() && isTabShown('how-to-play') ? 'how-to-play' : 'description';
     }
 
     /** A page's classes: shown, or not. */
@@ -203,8 +201,8 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
 
     /** Whether the entry has a tab: Description always, How to Play where it says, and Highscores where it keeps a table. */
     function isTabShown(kind: InfoTab): boolean {
-        if (kind === 'how-to-play') return bindings.details()?.howToPlay !== undefined;
-        if (kind === 'highscores') return bindings.entry()?.hasHighscores === true;
+        if (kind === 'how-to-play') return details()?.howToPlay !== undefined;
+        if (kind === 'highscores') return entry()?.hasHighscores === true;
         return true;
     }
 
@@ -217,8 +215,6 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-const NONE: readonly string[] = [];
 
 /** The panel's tabs. */
 type InfoTab = 'description' | 'how-to-play' | 'highscores';
@@ -239,6 +235,11 @@ interface TabViewBindings {
     readonly kind: InfoTab;
     /** The button's text. */
     readonly label: string;
+}
+
+/** Splits a block of text into paragraphs, separated by double newlines. Returns an empty array if the text is undefined. */
+function splitParagraphs(text: string | undefined): string[] {
+    return text?.split('\n\n') ?? [];
 }
 
 /** "Type: Game · Era: 1980s · ..." for every group the entry has a tag in. */

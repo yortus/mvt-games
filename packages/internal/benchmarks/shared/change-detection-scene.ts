@@ -83,7 +83,7 @@ function createDiscrete(approach: string, changedCount: number): () => void {
             const watcher = watch({ level: () => item.level });
             setRefresh(view, () => {
                 const w = watcher.poll();
-                if (w.level.changed) applyLevel(view, w.level.value);
+                if (w.level.changed) applyLevel(view, w.level.current);
             });
         }
         else if (approach === 'reaction') {
@@ -193,8 +193,7 @@ function createDerived(approach: string, changedCount: number): () => void {
             });
             setRefresh(view, () => {
                 const w = watcher.poll();
-                if (w.i0.changed || w.i1.changed || w.i2.changed || w.i3.changed
-                    || w.i4.changed || w.i5.changed || w.i6.changed || w.i7.changed) {
+                if (w.anyChanged) {
                     view.x = sum(inputs);
                 }
             });

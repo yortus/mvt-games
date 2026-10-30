@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 
 import { destroyElement, Match, Switch } from '@mvtjs/html';
-import { assert, memoiseLast, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
+import { assert, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';
 import type { ArcadeModel } from '../models';
@@ -166,7 +166,6 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         isMotionReduced: bindings.isMotionReduced,
     });
     const phaseWatcher = watch({ phase: () => model.phase });
-    phaseWatcher.poll();
     // A link straight to an entry launches it before there is a wall to leave
     if (model.phase !== 'browsing') transition.holdGrown();
     /** The picture on the card launched, for the way in to start from as the launch begins. */
@@ -196,7 +195,6 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         onFavouritePressed: (index) => model.toggleFavourite(entries[index].id),
         onCardKeyedTo: () => { cardKeyMoves++; },
     });
-    const failureText = memoiseLast((failure: string | undefined) => failure ?? '');
 
     // Presentation state: whether the visitor has opened the search box, and
     // how many times the caret has been asked for in it. The box also shows
@@ -258,7 +256,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 cardProgressAt={transition.cardProgressAt}
             />
             <div class="toast" role="status" visible={() => model.loadFailure !== undefined}>
-                <span text={() => failureText(model.loadFailure)} />
+                <span text={() => model.loadFailure ?? ''} />
                 <button type="button" aria-label="Dismiss" text="×" onClick={model.dismissLoadFailure} />
             </div>
             <EntryInfoView
@@ -408,7 +406,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 else transition.enterFrom(launchedFrom, cardRects());
                 launchedFrom = undefined;
             }
-            else if (phase.value === 'browsing') {
+            else if (phase.current === 'browsing') {
                 transition.leaveTo(cardPictureAt(activeIndex()), cardRects());
             }
         }

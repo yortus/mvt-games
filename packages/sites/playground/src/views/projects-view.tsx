@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
-import { memoiseLast, watch } from '@mvtjs/utils';
+import { createComputed, createReaction } from '@mvtjs/utils';
 import type { ProjectSummary } from '../models';
 import type { RendererKind } from '../project-api';
 
@@ -39,14 +39,19 @@ export interface ProjectsViewBindings {
  * press outside the dialog, closes it.
  */
 export function ProjectsView(bindings: ProjectsViewBindings): Element {
-    const watcher = watch({ isOpen: bindings.isOpen });
-    watcher.poll();
     /** Whether the dialog has opened since it last took the focus. */
     let isFocusDue = false;
+    const queueFocusWhenOpened = createReaction({
+        watch: bindings.isOpen,
+        when: true,
+        react: () => {
+            isFocusDue = true;
+        },
+    });
 
     return (
         // The wrapper is never hidden, so it sees the dialog close and open again
-        <div class="projects-layer" onRefresh={noteOpening}>
+        <div class="projects-layer" onRefresh={queueFocusWhenOpened}>
             <div class="projects" visible={bindings.isOpen} onPointerDown={onBackdropPressed} onKeyDown={onKeyDown}>
                 <div class="projects-panel" role="dialog" aria-modal="true" aria-label="Projects" onRefresh={focusIfDue}>
                     <div class="projects-head">
@@ -73,13 +78,16 @@ export function ProjectsView(bindings: ProjectsViewBindings): Element {
                         <List items={bindings.projects}>
                             {(project) => {
                                 const isOpen = (): boolean => project().id === bindings.openId();
-                                const details = memoiseLast((savedAt: number) => describe(project().fileCount, savedAt));
+                                const details = createComputed({
+                                    watch: () => project().savedAt,
+                                    compute: (savedAt) => describe(project().fileCount, savedAt),
+                                });
                                 return (
                                     <li class={() => (isOpen() ? 'project project-current' : 'project')}>
                                         <button type="button" class="project-open" onClick={() => bindings.onOpenPressed?.(project().id)}>
                                             <span class="project-name" text={() => project().name} />
                                             <span class="project-description" visible={() => project().description !== ''} text={() => project().description} />
-                                            <span class="project-details" text={() => details(project().savedAt)} />
+                                            <span class="project-details" text={details} />
                                         </button>
                                         <button type="button" class="project-action" text="Duplicate" onClick={() => bindings.onDuplicatePressed?.(project().id)} />
                                         <button
@@ -99,11 +107,6 @@ export function ProjectsView(bindings: ProjectsViewBindings): Element {
             </div>
         </div>
     );
-
-    function noteOpening(): void {
-        const { isOpen } = watcher.poll();
-        if (isOpen.changed && isOpen.value) isFocusDue = true;
-    }
 
     /** Focuses the dialog once it shows, so Escape closes it. A hidden element cannot take the focus. */
     function focusIfDue(panel: Element): void {

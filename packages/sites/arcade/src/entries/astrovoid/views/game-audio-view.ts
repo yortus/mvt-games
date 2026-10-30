@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
-import { createMetronome, watch } from '@mvtjs/utils';
+import { createMetronome, createReaction, increased } from '@mvtjs/utils';
 import type { SfxChip } from '#shared';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
@@ -57,16 +57,28 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const heartbeat = createMetronome();
     const engine = createMetronome();
 
-    const watcher = watch({
-        phase: bindings.phase,
-        shots: bindings.shotsFired,
-        rocks: bindings.rocksBroken,
-        beats: () => heartbeat.count,
-        thrustBursts: () => engine.count,
+    // Each reads its count as it's made, so the first refresh hears the heartbeat's first beat, which the first update makes
+    const playSoundsWhenPhaseChanges = createReaction({ watch: bindings.phase, react: (phase) => playPhase(phase) });
+    const playFireSoundOnEachShot = createReaction({
+        watch: bindings.shotsFired,
+        when: increased,
+        react: () => sfx.play(FIRE),
     });
-    // The first poll sees every value as new, not as a rise. Polling here makes
-    // the first refresh hear the heartbeat's first beat, which the first update makes.
-    watcher.poll();
+    const playBreakSoundOnEachRockBroken = createReaction({
+        watch: bindings.rocksBroken,
+        when: increased,
+        react: () => sfx.play(chooseBreak(bindings.lastBrokenRockSize())),
+    });
+    const playHeartbeatSoundOnEachBeat = createReaction({
+        watch: () => heartbeat.count,
+        when: increased,
+        react: (beats) => sfx.play(beats % 2 === 0 ? BEAT_HIGH : BEAT_LOW),
+    });
+    const playThrustSoundOnEachBurst = createReaction({
+        watch: () => engine.count,
+        when: increased,
+        react: () => sfx.play(THRUST),
+    });
 
     setUpdate(view, update);
     setRefresh(view, refresh);
@@ -82,12 +94,11 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     }
 
     function refresh(): void {
-        const w = watcher.poll();
-        if (w.phase.changed) playPhase(w.phase.value);
-        if (w.shots.increased) sfx.play(FIRE);
-        if (w.rocks.increased) sfx.play(chooseBreak(bindings.lastBrokenRockSize()));
-        if (w.beats.increased) sfx.play(w.beats.value % 2 === 0 ? BEAT_HIGH : BEAT_LOW);
-        if (w.thrustBursts.increased) sfx.play(THRUST);
+        playSoundsWhenPhaseChanges();
+        playFireSoundOnEachShot();
+        playBreakSoundOnEachRockBroken();
+        playHeartbeatSoundOnEachBeat();
+        playThrustSoundOnEachBurst();
     }
 
     function playPhase(phase: GamePhase): void {

@@ -1,9 +1,9 @@
 /** @jsxImportSource @mvtjs/html */
 import { PerfmonView } from '@mvtjs/html';
-import { memoiseLast, watch } from '@mvtjs/utils';
+import { createComputed, createReaction, watch } from '@mvtjs/utils';
 import { LIBRARIES, LIBRARY_SUMMARIES } from '../../libraries';
 import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
-import type { PanelKind, WorkspaceModel } from '../models';
+import type { PanelKind, ThemeKind, WorkspaceModel } from '../models';
 import type { RendererKind } from '../project-api';
 import { MAIN_PATH } from '../runtime';
 import { CodeEditorView } from './code-editor-view';
@@ -61,13 +61,15 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
         runWidth: () => layout.runWidth,
         consoleHeight: () => layout.consoleHeight,
     });
-    const themeWatcher = watch({ theme: () => model.theme });
+    const writeThemeWhenThemeChanges = createReaction({ watch: () => model.theme, react: writeTheme });
+    writeTheme(model.theme);
+    const keptBarrelNote = createComputed({ watch: () => model.activePath, compute: describeKeptBarrel });
     // The page's dialogs, in place of the browser's, so they take the theme
     const dialogs = createDialogs();
     window.addEventListener('keydown', onKeyDown);
 
     return (
-        <div class={() => PANEL_CLASSES[layout.narrowPanel]} onRefresh={writeTheme} onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}>
+        <div class={() => PANEL_CLASSES[layout.narrowPanel]} onRefresh={writeThemeWhenThemeChanges} onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}>
             <HeaderView
                 projectName={() => model.projectName}
                 saves={() => model.savesRequested}
@@ -86,7 +88,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                     />
                 ))}
             </nav>
-            <div class={() => (layout.isFilesFolded ? 'workspace workspace-files-folded' : 'workspace')} onRefresh={writeSizes}>
+            <div class={() => (layout.isFilesFolded ? 'workspace workspace-files-folded' : 'workspace')} ref={writeAllSizes} onRefresh={writeSizes}>
                 <FileListView
                     paths={() => model.paths}
                     activePath={() => model.activePath}
@@ -109,7 +111,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         <span class="editor-banner-note" text="Read-only: a library's declarations" />
                     </div>
                     <div class="editor-banner" visible={() => model.isKeptBarrel(model.activePath)}>
-                        <span class="editor-banner-note" text={() => keptBarrelNote(model.activePath)} />
+                        <span class="editor-banner-note" text={keptBarrelNote} />
                         <button type="button" class="editor-banner-button" text="Manage files myself" onClick={() => void stopAutoBarrels()} />
                     </div>
                     {CodeEditorView({
@@ -292,18 +294,25 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
      * document's root, since the editor's menu opens in the page's body,
      * outside this view.
      */
-    function writeTheme(): void {
-        const { theme } = themeWatcher.poll();
-        if (theme.changed) writePalette(document.documentElement, THEMES[theme.value]);
+    function writeTheme(theme: ThemeKind): void {
+        writePalette(document.documentElement, THEMES[theme]);
     }
 
     /** Writes the panes' sizes to the CSS, as each changes. */
     function writeSizes(workspace: Element): void {
         const { filesWidth, runWidth, consoleHeight } = sizes.poll();
         const style = (workspace as HTMLElement).style;
-        if (filesWidth.changed) style.setProperty('--files-width', `${filesWidth.value}px`);
-        if (runWidth.changed) style.setProperty('--run-width', `${runWidth.value}px`);
-        if (consoleHeight.changed) style.setProperty('--console-height', `${consoleHeight.value}px`);
+        if (filesWidth.changed) style.setProperty('--files-width', `${filesWidth.current}px`);
+        if (runWidth.changed) style.setProperty('--run-width', `${runWidth.current}px`);
+        if (consoleHeight.changed) style.setProperty('--console-height', `${consoleHeight.current}px`);
+    }
+
+    /** Writes the panes' first sizes to the CSS, as the workspace is made. */
+    function writeAllSizes(workspace: Element): void {
+        const style = (workspace as HTMLElement).style;
+        style.setProperty('--files-width', `${layout.filesWidth}px`);
+        style.setProperty('--run-width', `${layout.runWidth}px`);
+        style.setProperty('--console-height', `${layout.consoleHeight}px`);
     }
 
     function onKeyDown(event: KeyboardEvent): void {
@@ -379,13 +388,15 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
 
 const NO_PROBLEMS: readonly TypeProblem[] = [];
 
+/** The banner over a barrel the playground writes itself, at `path`. */
+function describeKeptBarrel(path: string): string {
+    return `Auto-generated. Exports everything in ${path.slice(0, path.lastIndexOf('/'))}/.`;
+}
+
 /** The libraries the help names: those a project imports by hand. A view's JSX runtime comes from its pragma. */
 const HELP_LIBRARIES: readonly HelpLibrary[] = LIBRARIES
     .filter((library) => !library.endsWith('/jsx-runtime'))
     .map((library) => ({ name: library, summary: LIBRARY_SUMMARIES[library] }));
-
-/** What the banner over a kept barrel says, for the barrel's path. Made only as the barrel shown changes. */
-const keptBarrelNote = memoiseLast((path: string) => `Auto-generated. Exports everything in ${path.slice(0, path.lastIndexOf('/'))}/.`);
 
 /** The panels a narrow screen shows one at a time, in the order of their tabs. */
 const PANELS: readonly { readonly kind: PanelKind; readonly label: string }[] = [

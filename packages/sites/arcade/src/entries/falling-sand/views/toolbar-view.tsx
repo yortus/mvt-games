@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { type GrainStorageKind, TANK_SIZES, type TankSizeKind, type ToolKind } from '../models';
 import { lookUpShade } from './grain-colors';
 import type { GrainsViewKind } from './tank-view';
@@ -54,8 +54,8 @@ export interface ToolbarViewBindings {
  */
 export function ToolbarView(bindings: ToolbarViewBindings): Container {
     // Formatted only when the count changes, not every frame.
-    const grainText = memoiseLast(formatCount);
-    const movingText = memoiseLast(formatCount);
+    const grainText = createComputed({ watch: bindings.grainCount, compute: formatCount });
+    const movingText = createComputed({ watch: bindings.movingCount, compute: formatCount });
 
     // Flip, Reset and Clear share the width the palette leaves.
     const actionsX = TOOLS.length * (BUTTON_SIZE + BUTTON_GAP);
@@ -116,9 +116,9 @@ export function ToolbarView(bindings: ToolbarViewBindings): Container {
 
             <container y={STATS_Y}>
                 <text text="GRAINS" y={8} style={LABEL_STYLE} />
-                <text text={() => grainText(bindings.grainCount())} x={COUNT_X} y={3} style={COUNT_STYLE} />
+                <text text={grainText} x={COUNT_X} y={3} style={COUNT_STYLE} />
                 <text text="MOVING" x={MOVING_X} y={8} style={LABEL_STYLE} />
-                <text text={() => movingText(bindings.movingCount())} x={MOVING_X + COUNT_X} y={3} style={COUNT_STYLE} />
+                <text text={movingText} x={MOVING_X + COUNT_X} y={3} style={COUNT_STYLE} />
                 <text text="Tap, hold and drag to pour" x={TOOLBAR_WIDTH} y={1} anchorX={1} style={HINT_STYLE} />
                 <text text="Switches restart the demo" x={TOOLBAR_WIDTH} y={15} anchorX={1} style={HINT_STYLE} />
             </container>

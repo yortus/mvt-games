@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { type HighscoreRow, INITIALS_LENGTH } from '../../highscores';
-import { memoiseLast, watch } from '@mvtjs/utils';
+import { createComputed, watch } from '@mvtjs/utils';
 import type { PlacingPhase, PlacingProblem } from '../models';
 import { focusOnOpen } from './focus-on-open';
 import { HighscoreTableView } from './highscore-table-view';
@@ -46,9 +46,8 @@ export interface PlacingViewBindings {
 export function PlacingView(bindings: PlacingViewBindings): Element {
     const initials = createInitialsViewModel();
     const watcher = watch({ placing: bindings.placing });
-    watcher.poll();
-    const scoreText = memoiseLast((score: number) => String(score));
-    const placeText = memoiseLast((rank: number | undefined) => (rank === undefined ? '' : `${formatRank(rank)} PLACE`));
+    const scoreText = createComputed({ watch: bindings.score, compute: (score) => String(score) });
+    const placeText = createComputed({ watch: bindings.rank, compute: (rank) => `${formatRank(rank ?? 999)} PLACE` });
     const focusPanel = focusOnOpen({
         isOpen: () => bindings.placing() !== 'none',
         target: (layer) => layer.querySelector<HTMLElement>('.placing-panel') ?? undefined,
@@ -64,8 +63,8 @@ export function PlacingView(bindings: PlacingViewBindings): Element {
                 <section class="placing-panel" role="dialog" aria-modal="true" aria-label="New highscore" tabIndex={-1}>
                     <div class="placing-ask" visible={isAsking}>
                         <h2 class="placing-title">{PixelTextView({ text: 'NEW HIGHSCORE' })}</h2>
-                        <p class="placing-score">{PixelTextView({ text: () => scoreText(bindings.score()) })}</p>
-                        <p class="placing-place">{PixelTextView({ text: () => placeText(bindings.rank()) })}</p>
+                        <p class="placing-score">{PixelTextView({ text: scoreText })}</p>
+                        <p class="placing-place">{PixelTextView({ text: placeText })}</p>
                         <div class="initials" role="group" aria-label="Your initials">
                             {cells}
                             <button type="button" class={okClass} aria-label="OK: enter these initials" onClick={pressOk}>
@@ -89,21 +88,24 @@ export function PlacingView(bindings: PlacingViewBindings): Element {
     /** Opens the prompt afresh as a score starts asking (not when one sent is asked for again), and blinks its cursor. */
     function update(deltaMs: number): void {
         const { placing } = watcher.poll();
-        if (placing.changed && placing.value === 'asking' && placing.previous !== 'sending') {
+        if (placing.changed && placing.current === 'asking' && placing.previous !== 'sending') {
             initials.open(bindings.rememberedInitials());
         }
         initials.update(deltaMs);
     }
 
     function cellAt(index: number): Element {
-        const labelFor = memoiseLast((char: string) => `Initial ${index + 1}: ${describeLetter(char)}`);
+        const label = createComputed({
+            watch: () => initials.letterAt(index),
+            compute: (char) => `Initial ${index + 1}: ${describeLetter(char)}`,
+        });
         return (
             <div class="initials-cell">
                 <button type="button" class="initials-step" aria-label="Previous character" text="▲" disabled={isSending} onClick={() => stepAt(index, -1)} />
                 <button
                     type="button"
                     class={() => letterClass(index)}
-                    aria-label={() => labelFor(initials.letterAt(index))}
+                    aria-label={label}
                     disabled={isSending}
                     onClick={() => initials.moveTo(index)}
                 >

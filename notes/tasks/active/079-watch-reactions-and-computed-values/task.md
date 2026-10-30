@@ -15,9 +15,13 @@ Replace `watch(...).poll()` and `memoiseLast` in `@mvtjs/utils` with three tools
 - **`createComputed`**: a value that computes on its first read, and again only when what it watches has changed.
 
 ```ts
-const playDeath = createReaction({ watch: bindings.phase, when: 'dying', react: () => sound.play(SHIP_EXPLODE) });
-const playLever = createReaction({ watch: bindings.spins, when: increased, react: () => sound.play(LEVER) });
-const playStops = createReaction({
+const playExplosionSoundWhenDying = createReaction({
+    watch: bindings.phase,
+    when: 'dying',
+    react: () => sound.play(SHIP_EXPLODE),
+});
+const playLeverSoundOnEachSpin = createReaction({ watch: bindings.spins, when: increased, react: () => sound.play(LEVER) });
+const playStopSoundWhenEachReelSettles = createReaction({
     watch: model.reels.map((reel) => () => reel.phase),
     when: 'settling',
     react: (_phase, _previous, index) => sound.play(chooseReelStop(index)),
@@ -124,6 +128,11 @@ twice in a step is harmless: the second call sees no change.
   `number | bigint` (`<T extends number | bigint>`), so they accept either and still refuse other types, with the
   error on `when`. A value is checked against the getter's type. `when: undefined` throws, because it would silently
   mean any change; a change to `undefined` is written `when: (current) => current === undefined`.
+- **A reaction is named for what it does and when,** effect first, then trigger: `updateTextureWhenPhaseChanges`,
+  `playPumpSoundWhenInflationRises`. `...When...` suits a value that changes or reaches a state, and `...OnEach...` a
+  count, where each rise is one event (`playShotSoundOnEachShot`). A sound says `Sound`, and a visual names what it
+  is (a texture, a popup, an animation), so a name never leaves the reader guessing which one it is. A short name
+  such as `playPump` or `showPhase` names the value watched, not what happens to it.
 - **Overlapping sounds are not the API's concern.** When an early stop lands every reel in one tick, several stop
   sounds play together. Whether that's wanted, and spacing sounds out, belong to the reaction (which can keep its own
   state, such as when it last played, timed by the view's update step) or to the sound chip's handling of overlapping
@@ -636,13 +645,13 @@ Every use case and question raised in 008, 078 and the `derive-util` spike, and 
       an `eslint-disable` comment saying why
 - [x] A case in the change-detection benchmark, compared with today's `watch` and with comparing by hand, before
       the migration (2026-10-29; not saved, see the Progress Log)
-- [ ] Every call site migrated: about 70 files import `watch`, 74 call `poll()`, and 32 use `memoiseLast`, across the
+- [x] Every call site migrated: about 70 files import `watch`, 74 call `poll()`, and 32 use `memoiseLast`, across the
       Arcade, the playground's examples and starters, and the benchmarks (`change-detection`, `memory`). Views that
       relied on the first poll reporting a change now draw their first state at construction; audio views drop their
       priming polls. The Fruit Machine's reel stops become an array reaction, one sound per reel. The Arcade's
       `main.ts` drops its priming poll, and keeps comparing `favouriteIds` and `soundSettings` by hand (objects the
       model replaces); Neon Monsoon's game model keeps its watcher, polled where it is
-- [ ] Today's `watch` and `memoiseLast` removed
+- [x] Today's `watch` and `memoiseLast` removed
 - [x] 008's `watch-builder.spike.ts` and its test removed (2026-10-29)
 - [ ] `createSequenceReaction` renamed (open question 2), with its behaviour unchanged: its file, test, barrel export,
       the five Kwazy Cactii board views, the `@mvtjs/utils` README, and the docs page Complex Sequences (its term
@@ -768,3 +777,43 @@ The implementation began the same day, with the library as the first checkpoint 
   A reaction costs half of today's `watch`. A computed value over 8 getters costs about 10% more than today's `watch`
   of 8, for the values record it keeps for `compute`, its guard against reading itself, and its laziness. A `try`
   around each read measured nothing. For a sum this cheap, recomputing every frame stays fastest, as before.
+
+The migration followed, one file at a time, across the Arcade (its own views and `main.ts`, the shared touch
+controls, and every entry), the playground (its app, three examples and the HTML starter) and the
+`change-detection` benchmark. Today's `watch.ts` and `memoise-last.ts` and their tests were deleted, and the
+package's barrel now exports the new `watch` and `Watcher`. Every test passes, with every reference image identical,
+and lint, the four new rules included, is clean. What it settled:
+
+- **First state, drawn when made.** Views that drew their first state on the old first poll now draw it as they're
+  made: the touch controls build their buttons, HUDs draw their lives, Burrow Bust's field and enemy, Fenceline's
+  fence, wire, meadow and story, Fuel Run's first section banner, Tune Tracker's title bar and tune list, and the
+  playground's theme, pane sizes and preview. Priming polls went everywhere.
+- **Audio views play their first state themselves.** A start jingle (Burrow Bust, Crumb Chase, Dojo Duel, Fenceline,
+  Fuel Run, Galaxy Raiders, Kwazy Cactii) played on the old first poll, a change from nothing. A view made as the game
+  starts now plays it as it's made, as a drawing view draws its first state. Kwazy Cactii's audio test, which looked
+  for it on the first tick, now looks for it as the view is made. `AGENTS.md`'s "never on a state alone" needs this
+  case in the docs step.
+- **Which tool, in practice.** A sound for an independent moment became a reaction. Views whose checks depend on each
+  other kept `watch`: the Arcade's and Neon Monsoon's audio, Galaxy Raiders' enemy audio (a hit takes priority over a
+  dive), Dojo Duel's match audio, the Fruit Machine's terminal, and views that redraw once for several values
+  (`anyChanged`). Every `memoiseLast` became a computed value passed straight to its prop, except one trivial
+  `failure ?? ''` in the Arcade view, now read directly. A cheap value set on change became a plain read each frame,
+  since Pixi's setters skip an unchanged value: Astrovoid's and Galaxy Raiders' ship visibility, Burrow Bust's digger,
+  Crumb Chase's cat and mouse. Two module-level `memoiseLast`s (the playground's barrel note, the HTML starter's time)
+  became computed values inside their views.
+- **Open question 1, calling many reactions.** No helper is needed. Several counts that each play a sound became one
+  array reaction with a table of sounds by index (Fenceline, Fuel Run), as did Dojo Duel's four rows of pips. The most
+  calls left in one step is six, in the Fruit Machine's audio view, and they read plainly.
+- **The Fruit Machine's reel stops were not made an array reaction.** The view plays one thunk however many reels land
+  in a tick, by counting the landed reels, which is the "aggregate over a fixed array" case in this design. An array
+  reaction would play one thunk per reel, several at once on an early stop. Left for the maintainer to decide.
+- **Fixes found on the way:** Astrovoid's and Burrow Bust's HUDs laid themselves out only as the wave or level
+  changed, though the layout follows the screen or tile size; both lay out every frame now (two `position.set`s).
+- **Benchmark, after the swap:** the new `watch` of one getter measures 10.5 µs per frame for 1000 views, faster
+  than today's 12.8, but a record of one getter measures 17.5. Building the record's reading as today's does
+  changed nothing, and nor did dropping the call that hands the reading out; the cost is in the record's path, not
+  yet found. The derived scenario's `watch` of 8 measures 92, against today's 87.
+- **Reactions renamed for what they do and when** (see [`createReaction`](#createreaction)), in every view, the
+  library's tests and README, and the lint rules' tests: `showPhase` became `updateTextureWhenPhaseChanges`,
+  `playPump` became `playPumpSoundWhenInflationRises`, and so on. A one-line reaction longer than 120 characters
+  now takes one line per option, so its `when` and `react` stay visible.

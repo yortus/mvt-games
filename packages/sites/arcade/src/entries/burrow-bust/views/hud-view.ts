@@ -1,5 +1,5 @@
 import { Container, Sprite } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
+import { createComputed, createReaction } from '@mvtjs/utils';
 import { PixelTextView } from '#shared';
 import { textures } from '../data';
 import { setRefresh } from '@mvtjs/pixi';
@@ -21,15 +21,9 @@ export interface HudViewBindings {
 // ---------------------------------------------------------------------------
 
 export function HudView(bindings: HudViewBindings): Container {
-    const watcher = watch({
-        score: bindings.score,
-        lives: bindings.lives,
-        level: bindings.level,
-    });
-
-    // The text each line shows, written when its number changes
-    let scoreText = 'SCORE: 0';
-    let levelText = 'LV 1';
+    const scoreText = createComputed({ watch: bindings.score, compute: (score) => `SCORE: ${score}` });
+    const levelText = createComputed({ watch: bindings.level, compute: (level) => `LV ${level}` });
+    const drawLivesWhenLivesChange = createReaction({ watch: bindings.lives, react: drawLives });
     let levelLine: Container;
     let livesContainer: Container;
 
@@ -40,41 +34,34 @@ export function HudView(bindings: HudViewBindings): Container {
 
     function initialiseView(): void {
         // Score - left
-        const scoreLine = PixelTextView({ text: () => scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
+        const scoreLine = PixelTextView({ text: scoreText, color: TEXT_COLOR, scale: TEXT_SCALE });
         scoreLine.position.set(8, 8);
         view.addChild(scoreLine);
 
         // Level - right
-        levelLine = PixelTextView({ text: () => levelText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
+        levelLine = PixelTextView({ text: levelText, color: TEXT_COLOR, scale: TEXT_SCALE, anchorX: 1 });
         view.addChild(levelLine);
 
         // Lives - center (small icons)
         livesContainer = new Container();
         view.addChild(livesContainer);
+        layOut();
+        drawLives();
     }
 
     function refresh(): void {
-        const watched = watcher.poll();
-
-        if (watched.score.changed) {
-            scoreText = `SCORE: ${watched.score.value}`;
-        }
-        if (watched.level.changed) {
-            levelText = `LV ${watched.level.value}`;
-            updateLevelLayout();
-        }
-        if (watched.lives.changed) {
-            updateLives();
-        }
+        layOut();
+        drawLivesWhenLivesChange();
     }
 
-    function updateLevelLayout(): void {
+    /** Lays the lines out across the field, which grows with the tile size. */
+    function layOut(): void {
         const width = bindings.cols() * bindings.tileSize();
         levelLine.position.set(width - 8, 8);
         livesContainer.position.set(width / 2 - 20, 4);
     }
 
-    function updateLives(): void {
+    function drawLives(): void {
         livesContainer.removeChildren();
         const lives = bindings.lives();
         for (let i = 0; i < lives; i++) {

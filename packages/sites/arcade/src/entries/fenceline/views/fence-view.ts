@@ -42,13 +42,14 @@ export function FenceView(bindings: FenceViewBindings): Container {
     const view = new Container();
     view.addChild(oldFences, fences);
     const watcher = watch({ closures: bindings.closureCount, round: bindings.round });
+    draw();
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
         const watched = watcher.poll();
-        if (watched.closures.changed || watched.round.changed) draw();
+        if (watched.anyChanged) draw();
     }
 
     function draw(): void {

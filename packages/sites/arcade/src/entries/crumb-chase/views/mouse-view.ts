@@ -1,5 +1,4 @@
 import { Container, Sprite } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import type { Direction } from '../models';
 import { setRefresh } from '@mvtjs/pixi';
@@ -20,8 +19,6 @@ export interface MouseViewBindings {
 // ---------------------------------------------------------------------------
 
 export function MouseView(bindings: MouseViewBindings): Container {
-    const watcher = watch({ direction: bindings.direction });
-
     const mouseTextures = textures.get().mouse;
     let sprite: Sprite;
 
@@ -36,8 +33,6 @@ export function MouseView(bindings: MouseViewBindings): Container {
     }
 
     function refresh(): void {
-        const watched = watcher.poll();
-
         const ts = bindings.tileSize();
         const col = bindings.col();
         const row = bindings.row();
@@ -51,9 +46,7 @@ export function MouseView(bindings: MouseViewBindings): Container {
             ? mouseTextures.tailUp
             : swish > 0.33 ? mouseTextures.tailDown : mouseTextures.tailMid;
 
-        if (watched.direction.changed) {
-            view.rotation = directionToRotation(watched.direction.value);
-        }
+        view.rotation = directionToRotation(bindings.direction());
     }
 
     function directionToRotation(dir: Direction): number {

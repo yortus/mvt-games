@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/pixi */
 import type { Container, Graphics } from 'pixi.js';
-import { memoiseLast } from '@mvtjs/utils';
+import { createComputed } from '@mvtjs/utils';
 import { formatCredits } from '../shared';
 import { FONT_FAMILY, METER_FACE, METER_HEIGHT, METER_LABEL, METER_VALUE, METERS_Y, WINDOW_WIDTH, WINDOW_X } from './pixi-layout';
 
@@ -21,15 +21,15 @@ export interface MetersViewBindings {
 
 /** Balance, bet and win, on three plates under the window. */
 export function MetersView(bindings: MetersViewBindings): Container {
-    const balanceText = memoiseLast(formatCredits);
-    const winText = memoiseLast(formatCredits);
+    const balanceText = createComputed({ watch: bindings.balance, compute: formatCredits });
+    const winText = createComputed({ watch: bindings.win, compute: formatCredits });
     const betText = formatCredits(bindings.bet);
 
     return (
         <container y={METERS_Y}>
-            <PlateView index={0} label="BALANCE" value={() => balanceText(bindings.balance())} />
+            <PlateView index={0} label="BALANCE" value={balanceText} />
             <PlateView index={1} label="BET" value={() => betText} />
-            <PlateView index={2} label="WIN" value={() => winText(bindings.win())} />
+            <PlateView index={2} label="WIN" value={winText} />
         </container>
     );
 }

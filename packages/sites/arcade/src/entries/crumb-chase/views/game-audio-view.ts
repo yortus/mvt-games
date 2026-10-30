@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
-import { watch } from '@mvtjs/utils';
+import { createReaction, decreased } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
 import type { GamePhase } from '../models';
@@ -51,18 +51,23 @@ export function GameAudioView(bindings: GameAudioViewBindings): Container {
     const { music, sfx, totalCrumbs } = bindings;
     const view = new Container();
     view.label = 'game-audio';
-    const watcher = watch({ phase: bindings.phase, remainingCrumbs: bindings.remainingCrumbs });
+    const playSoundsWhenPhaseChanges = createReaction({ watch: bindings.phase, react: (phase) => playPhase(phase) });
+    // A fall is a crumb eaten. The rise as a new game starts is not a fall
+    const playNibbleSoundOnEachCrumbEaten = createReaction({
+        watch: bindings.remainingCrumbs,
+        when: decreased,
+        react: (crumbs) => sfx.play(crumbs % 2 === 0 ? NIBBLE_LOW : NIBBLE_HIGH),
+    });
+    // The view is made as the game starts, so it opens with the start's tune
+    playPhase(bindings.phase());
+    music.tempoScale = computeTempoScale();
 
     setRefresh(view, refresh);
     return view;
 
     function refresh(): void {
-        const w = watcher.poll();
-        // The first poll sees the starting phase as a change, so the game opens with the start's tune
-        if (w.phase.changed) playPhase(w.phase.value);
-        // A fall is a crumb eaten. The first poll and the rise as a new game starts are not falls
-        const crumbs = w.remainingCrumbs;
-        if (crumbs.decreased) sfx.play(crumbs.value % 2 === 0 ? NIBBLE_LOW : NIBBLE_HIGH);
+        playSoundsWhenPhaseChanges();
+        playNibbleSoundOnEachCrumbEaten();
         // After any new song, so the tempo is the one for the song that plays. It is sent ahead of the song
         music.tempoScale = computeTempoScale();
     }

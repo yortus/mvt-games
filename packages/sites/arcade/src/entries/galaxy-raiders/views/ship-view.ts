@@ -1,5 +1,4 @@
 import { Container, Sprite } from 'pixi.js';
-import { watch } from '@mvtjs/utils';
 import { textures } from '../data';
 import { setRefresh } from '@mvtjs/pixi';
 
@@ -18,8 +17,6 @@ export interface ShipViewBindings {
 // ---------------------------------------------------------------------------
 
 export function ShipView(bindings: ShipViewBindings): Container {
-    const watcher = watch({ alive: bindings.isAlive });
-
     let sprite: Sprite;
 
     const view = new Container();
@@ -35,9 +32,6 @@ export function ShipView(bindings: ShipViewBindings): Container {
     function refresh(): void {
         view.position.set(bindings.x(), bindings.y());
 
-        const watched = watcher.poll();
-        if (watched.alive.changed) {
-            view.visible = watched.alive.value;
-        }
+        view.visible = bindings.isAlive();
     }
 }
