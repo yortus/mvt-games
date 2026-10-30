@@ -113,8 +113,8 @@ twice in a step is harmless: the second call sees no change.
 
 - **`watch`** is one getter, or a fixed array of getters that all give the same type. An array works as one reaction
   per element, sharing `when` and `react`: each element has its own memory and its own baseline. Several `react` calls
-  in one step are normal, in index order. The Fruit Machine's reels are the motivating case: a stop sound for each
-  reel, chosen by its index (see the example above).
+  in one step are normal, in index order. The Fruit Machine's reels were the motivating example: a stop sound for
+  each reel, chosen by its index (see the example above), though the game itself keeps one thunk per tick.
 - A record is a type error and a runtime error: react to each value with its own reaction, or compute one value from
   them and react to that. An array whose getters give different types is a type error on `watch`, even for two
   different string unions, because they share `when`.
@@ -375,8 +375,9 @@ when items are removed or reordered, arrivals and departures, and watching such 
 A fixed array is what the reels are: set at construction, never growing or shrinking. Reactions take one, with every
 element of the same type, and handle each element separately; `watch` takes one, with types by position; computed
 values don't (see [Getters](#getters)). Aggregates over one are getters that loop (see
-[`createComputed`](#createcomputed)). The Fruit Machine's reel stops become an array reaction, one sound per reel,
-chosen by index; how stops that land together should sound is the reaction's or the chip's business.
+[`createComputed`](#createcomputed)). The Fruit Machine's reel stops show what an array reaction is for, one sound per
+reel, chosen by index; how stops that land together should sound is the reaction's or the chip's business. The game
+keeps its one thunk per tick, which counts the landed reels instead.
 
 ### Decided: collections in views
 
@@ -594,7 +595,7 @@ Every use case and question raised in 008, 078 and the `derive-util` spike, and 
 | 078 | `previous` undefined on the first tick, transitions false | Replaced by invariant 1: `previous` is always defined |
 | 078 | The metronome's first beat, which needed a baseline at construction (its open question 2) | Invariant 1 |
 | 078 | Named triggers (its open question 3) | Each reaction is a named constant |
-| 078 | The Fruit Machine's thunks: one per tick, or one per reel (its open question 4) | One per reel, by index; overlap is the reaction's or the chip's business |
+| 078 | The Fruit Machine's thunks: one per tick, or one per reel (its open question 4) | An array reaction can play one per reel, by index; the game keeps one per tick (2026-10-30) |
 | 078 | What becomes of 008 (its open question 5) | Archived as superseded |
 | 078 | Watching each item of a list (`eachOf`) | A fixed array (its section 7.1): `createReaction` with an array. A list whose items come and go: out of scope |
 | 078 | Code outside views: the Arcade's `main.ts`, Neon Monsoon's model | `watch` polls explicitly anywhere, models included (Settled Questions) |
@@ -648,11 +649,11 @@ Every use case and question raised in 008, 078 and the `derive-util` spike, and 
       every source file, in `packages/internal/eslint-plugin` with tests, and each call site that intends a gap given
       an `eslint-disable` comment saying why
 - [x] A case in the change-detection benchmark, compared with today's `watch` and with comparing by hand, before
-      the migration (2026-10-29; not saved, see the Progress Log)
+      the migration (2026-10-29), and saved after the migration (2026-10-30)
 - [x] Every call site migrated: about 70 files import `watch`, 74 call `poll()`, and 32 use `memoiseLast`, across the
       Arcade, the playground's examples and starters, and the benchmarks (`change-detection`, `memory`). Views that
       relied on the first poll reporting a change now draw their first state at construction; audio views drop their
-      priming polls. The Fruit Machine's reel stops become an array reaction, one sound per reel. The Arcade's
+      priming polls. The Fruit Machine keeps one reel-stop thunk per tick, counting the landed reels. The Arcade's
       `main.ts` drops its priming poll, and keeps comparing `favouriteIds` and `soundSettings` by hand (objects the
       model replaces); Neon Monsoon's game model keeps its watcher, polled where it is
 - [x] Today's `watch` and `memoiseLast` removed
@@ -810,7 +811,8 @@ and lint, the four new rules included, is clean. What it settled:
   calls left in one step is six, in the Fruit Machine's audio view, and they read plainly.
 - **The Fruit Machine's reel stops were not made an array reaction.** The view plays one thunk however many reels land
   in a tick, by counting the landed reels, which is the "aggregate over a fixed array" case in this design. An array
-  reaction would play one thunk per reel, several at once on an early stop. Left for the maintainer to decide.
+  reaction would play one thunk per reel, several at once on an early stop. The maintainer kept it as it is
+  (2026-10-30): the reels were an example of what array reactions are for, not a change the game needed.
 - **Fixes found on the way:** Astrovoid's and Burrow Bust's HUDs laid themselves out only as the wave or level
   changed, though the layout follows the screen or tile size; both lay out every frame now (two `position.set`s).
 - **Benchmark, after the swap:** the new `watch` of one getter measures 10.5 µs per frame for 1000 views, faster
@@ -824,3 +826,25 @@ and lint, the four new rules included, is clean. What it settled:
 - **`createSequenceReaction` renamed `createSequenceTracker`** (open question 2): its file and test, the barrel, the
   five Kwazy Cactii board views, the `@mvtjs/utils` README and Complex Sequences, whose heading is now "Tracking a
   Sequence's Steps". Behaviour unchanged.
+- **The Fruit Machine keeps one reel-stop thunk per tick** (the maintainer's call): the reels were an example of what
+  array reactions are for, not a change the game needed. The design text and criterion now say so.
+- **The record `watch` gap, found and fixed.** A standalone micro-benchmark (no Pixi, built for production) took the
+  record's path apart. Two costs added up: each poll read three parallel arrays (getters, names, `Watched`s), and
+  went through two closures made for each watcher (`reread`, then the reading's guard, an identity function in
+  production), which V8 doesn't inline the way it does one shared function. Now each `MutableWatched` keeps its own
+  getter and name, so `rereadWatched` takes the `Watched` alone and the arrays are gone; `watch` makes one poll for
+  each shape, with the record's loop inside it, and wraps it in the guard only in development. Writing the loop inline
+  in `createComputed` too gained nothing, so it keeps the shared `rereadEvery`. The change-detection benchmark, after
+  (µs per frame for 1000 views; median of 2 runs):
+
+  | Changed per frame | today's `watch()` (before) | new `watch()`, before the fix | new `watch()`, after |
+  | --- | --- | --- | --- |
+  | discrete 0% | 12.8 | 17.5 | 11.5 |
+  | discrete 10% | 14.2 | not measured | 12.5 |
+  | derived 0% (8 getters) | 87 | 92 | 65.9 |
+
+  `createComputed` in the derived scenario measures 79, 85 and 109 at 0, 10 and 100%, from about 95 and 131.
+- **Benchmarks saved** (2026-10-30): `change-detection` and `memory`, on a quiet machine. The new `watch()` allocates
+  nothing per frame, as today's did. Performance Measurements now describes reactions and computed values beside
+  `watch()`, with the new numbers: a reaction costs about 6 ns per frame, half of `watch()`, and a computed value of 8
+  getters 76 µs per frame for 1000 views against `watch()`'s 67.

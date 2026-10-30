@@ -32,9 +32,13 @@ export type WatchedOf<T> = [T] extends [number | bigint] ? WatchedNumber<T & (nu
 /**
  * The library's own, writable `Watched`, one for each watched getter, which
  * all three tools are built from. A watcher hands it out as its reading. It
- * has every member of a `WatchedNumber`, so every one has the same shape.
+ * has every member of a `WatchedNumber`, so every one has the same shape. It
+ * keeps its getter and name too, so a poll reads one object for each getter.
  */
 export interface MutableWatched {
+    readonly getter: Getter;
+    /** For error messages, such as `watch.phase`. */
+    readonly name: string;
     current: unknown;
     previous: unknown;
     changed: boolean;
@@ -66,6 +70,8 @@ export function createWatched(options: WatchedOptions): MutableWatched {
     assert(typeof getter === 'function', () => `${name} must be a getter, a function that returns the value to watch.`);
     const first = checkWatchable(getter(), name);
     const watched: MutableWatched = {
+        getter,
+        name,
         current: first,
         previous: first,
         changed: false,
@@ -78,12 +84,12 @@ export function createWatched(options: WatchedOptions): MutableWatched {
 }
 
 /**
- * Reads `getter` again, and returns whether its value changed. It's one
+ * Reads the getter again, and returns whether its value changed. It's one
  * function for every watched getter, rather than a closure each, since there
  * may be thousands.
  */
-export function rereadWatched(watched: MutableWatched, getter: Getter, name: string): boolean {
-    const next = getter();
+export function rereadWatched(watched: MutableWatched): boolean {
+    const next = watched.getter();
     const last = watched.current;
     if (next === last) {
         // A steady value is the common case, and nothing needs writing unless the last read was a change
@@ -96,7 +102,7 @@ export function rereadWatched(watched: MutableWatched, getter: Getter, name: str
         return false;
     }
     // A value equal to the last one already passed this check, so steady reads skip it
-    checkWatchable(next, name);
+    checkWatchable(next, watched.name);
     watched.previous = last;
     watched.current = next;
     watched.changed = true;

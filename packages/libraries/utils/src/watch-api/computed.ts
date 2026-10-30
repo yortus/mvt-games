@@ -1,7 +1,7 @@
 import { assert } from '../assert';
 import type { CheckedComputedGetters } from './error-checks';
 import type { Getter } from './watched';
-import { createWatchedGetters, type WatchedGetters } from './watched-getters';
+import { createWatchedGetters, rereadEvery, type WatchedGetters } from './watched-getters';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -71,7 +71,7 @@ export function createComputed<const S extends Getter | { readonly [name: string
                 hasChanged = true;
             }
             else {
-                hasChanged = watchedGetters.reread();
+                hasChanged = rereadEvery(watchedGetters.watched);
             }
             if (hasChanged || !hasResult) recompute(watchedGetters);
         }

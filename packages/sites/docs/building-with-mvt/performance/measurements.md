@@ -142,32 +142,43 @@ containers, so a flat column means the cost grows in proportion.
 1000 Pixi containers again. In the first table, each follows a value that
 changes only occasionally, such as a level or a score, and updates two
 properties when it does. Polling here means [change detection](../reacting-to-changes/change-detection.md):
-comparing with last frame's value, either by hand or with the `watch()` helper.
+comparing with last frame's value, by hand, with a `watch()` helper, or with a
+reaction made by `createReaction`.
 
 <!--@include: ../../../../internal/benchmarks/results/change-detection.md#discrete-->
 
 In the second, each container shows a value computed from 8 model values,
-such as a total. Polling either recomputes it every frame, or uses `watch()`
-on all 8 values and recomputes only when one changed. Signals use a
+such as a total. Polling either recomputes it every frame, uses `watch()`
+on all 8 values and recomputes only when one changed, or reads a computed
+value made by `createComputed`, which does the same for you. Signals use a
 `createMemo`.
 
 <!--@include: ../../../../internal/benchmarks/results/change-detection.md#derived-->
 
-- **`watch()` costs about 8 ns per watched value per frame**, nearly three
-  times as much as comparing by hand. It allocates nothing (see
-  [Memory](#memory-and-garbage-collection)), so the cost is in the calls. The
-  likely cause, not yet confirmed with a profile, is that every watcher calls
-  its getters from the same line of `poll()`, which the engine cannot inline
-  when it sees thousands of different getters there. At game scale this is
-  still small: 1000 watched values cost about 12 µs per frame.
+- **`watch()` costs about 8 ns per watched value per frame**, and a watcher of
+  one value nearly three times as much as comparing by hand. It allocates
+  nothing (see [Memory](#memory-and-garbage-collection)), so the cost is in the
+  calls. The likely cause, not yet confirmed with a profile, is that every
+  watcher calls its getters from the same line of the library, which the engine
+  cannot inline when it sees thousands of different getters there. At game
+  scale this is still small: 1000 watchers of one value cost about 12 µs per
+  frame.
+- **A reaction costs about half as much as `watch()`**, about 6 ns per frame.
+  It hands out no reading, so all it does on a quiet frame is call its getter
+  and compare the value with the last one.
+- **A computed value costs a little more than `watch()` over the same values**,
+  76 µs per frame against 67 here. Each time it's read, it makes the same checks
+  as `watch()`, with a little more work around them: it guards against a
+  computed value that reads itself, and gathers the values into a record for
+  `compute` when one changed.
 - **Recomputing a cheap derived value every frame is cheaper than detecting
   whether it needs recomputing.** Summing 8 numbers costs less than checking 8
   numbers for changes. Change detection pays when the work it skips is
   expensive, such as rebuilding text or restructuring the scene, not when the
   work is a little arithmetic.
 - **A memo per container is expensive when its inputs change often.** With
-  every input changed each frame, Solid's memos cost about 590 ns per container per
-  frame, against about 10 ns to recompute by polling.
+  every input changed each frame, Solid's memos cost about 630 ns per container per
+  frame, against about 12 ns to recompute by polling.
 
 ## Building, Destroying and Reusing Containers
 
@@ -281,7 +292,7 @@ happens.
 - **Signals allocate on every change.** Solid's effects left about 630
   bytes of garbage per changed container per frame (330-380 with solid-js
   1.9.11 under Node 22), and about 100 bytes per frame even at rest. With
-  everything changed each frame, that is 272 collections a minute, about 32 ms
+  everything changed each frame, that is 271 collections a minute, about 37 ms
   of pauses: six times the garbage of the deliberately wasteful refresh
   methods.
 - **Events allocate nothing** in this benchmark, because each record's

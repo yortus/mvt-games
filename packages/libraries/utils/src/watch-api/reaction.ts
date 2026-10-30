@@ -28,10 +28,9 @@ export function createReaction<const W extends Getter | readonly Getter[]>(optio
     );
 
     if (typeof watch === 'function') {
-        const name = 'createReaction: watch';
-        const watched = createWatched({ getter: watch, name, isWatcher: false });
+        const watched = createWatched({ getter: watch, name: 'createReaction: watch', isWatcher: false });
         return () => {
-            if (!rereadWatched(watched, watch, name)) return;
+            if (!rereadWatched(watched)) return;
             if (!hasWhen || matchesWhen(when, watched.current, watched.previous, undefined)) {
                 react(watched.current, watched.previous);
             }
@@ -43,20 +42,14 @@ export function createReaction<const W extends Getter | readonly Getter[]>(optio
         'createReaction watches one getter, or an array of getters. '
         + 'To react to several values together, compute one value from them with createComputed, and react to that.',
     );
-    const getters: Getter[] = [];
-    const names: string[] = [];
     const watched: MutableWatched[] = [];
     for (let i = 0; i < watch.length; i++) {
-        const getter = watch[i] as Getter;
-        const name = `createReaction: watch[${i}]`;
-        getters.push(getter);
-        names.push(name);
-        watched.push(createWatched({ getter, name, isWatcher: false }));
+        watched.push(createWatched({ getter: watch[i] as Getter, name: `createReaction: watch[${i}]`, isWatcher: false }));
     }
     return () => {
         for (let i = 0; i < watched.length; i++) {
             const w = watched[i];
-            if (!rereadWatched(w, getters[i], names[i])) continue;
+            if (!rereadWatched(w)) continue;
             if (!hasWhen || matchesWhen(when, w.current, w.previous, i)) {
                 react(w.current, w.previous, i);
             }

@@ -7,11 +7,9 @@ import { createWatched, rereadWatched, type Getter, type MutableWatched } from '
 
 /** A `MutableWatched` for each getter that `watch` or `createComputed` was given. */
 export interface WatchedGetters {
-    /** What a watcher's `poll()` returns. */
+    /** What a watcher's `poll()` returns: the one getter's `Watched`, or a record or array of them, with `anyChanged`. */
     readonly reading: unknown;
     readonly watched: readonly MutableWatched[];
-    /** Reads every getter, and returns whether any value changed. */
-    readonly reread: () => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -33,7 +31,10 @@ export interface WatchedGettersOptions {
 /** Creates a `MutableWatched` for each getter, which reads it now, as its baseline. */
 export function createWatchedGetters(options: WatchedGettersOptions): WatchedGetters {
     const { getters, name, isWatcher } = options;
-    if (typeof getters === 'function') return watchOneGetter(getters as Getter, name, isWatcher);
+    if (typeof getters === 'function') {
+        const watched = createWatched({ getter: getters as Getter, name, isWatcher });
+        return { reading: watched, watched: [watched] };
+    }
     if (Array.isArray(getters)) return watchArray(getters, name, isWatcher);
     assert(
         typeof getters === 'object' && getters !== null,
@@ -42,37 +43,28 @@ export function createWatchedGetters(options: WatchedGettersOptions): WatchedGet
     return watchRecord(getters as Readonly<Record<string, unknown>>, name, isWatcher);
 }
 
+/**
+ * Reads every getter again, and returns whether any value changed. Like
+ * `rereadWatched`, it's one function for every computed value, not a closure each.
+ */
+export function rereadEvery(watched: readonly MutableWatched[]): boolean {
+    let anyChanged = false;
+    for (let i = 0; i < watched.length; i++) {
+        if (rereadWatched(watched[i])) anyChanged = true;
+    }
+    return anyChanged;
+}
+
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
 
-function watchOneGetter(getter: Getter, name: string, isWatcher: boolean): WatchedGetters {
-    const watched = createWatched({ getter, name, isWatcher });
-    return { reading: watched, watched: [watched], reread: () => rereadWatched(watched, getter, name) };
-}
-
 function watchArray(given: readonly unknown[], name: string, isWatcher: boolean): WatchedGetters {
-    const getters: Getter[] = [];
-    const names: string[] = [];
     const watched: MutableWatched[] = [];
     for (let i = 0; i < given.length; i++) {
-        const getter = given[i] as Getter;
-        const getterName = `${name}[${i}]`;
-        getters.push(getter);
-        names.push(getterName);
-        watched.push(createWatched({ getter, name: getterName, isWatcher }));
+        watched.push(createWatched({ getter: given[i] as Getter, name: `${name}[${i}]`, isWatcher }));
     }
-    const reading = Object.assign(watched.slice(), { anyChanged: false });
-    return { reading, watched, reread };
-
-    function reread(): boolean {
-        let anyChanged = false;
-        for (let i = 0; i < watched.length; i++) {
-            if (rereadWatched(watched[i], getters[i], names[i])) anyChanged = true;
-        }
-        reading.anyChanged = anyChanged;
-        return anyChanged;
-    }
+    return { reading: Object.assign(watched.slice(), { anyChanged: false }), watched };
 }
 
 function watchRecord(given: Readonly<Record<string, unknown>>, name: string, isWatcher: boolean): WatchedGetters {
@@ -81,27 +73,12 @@ function watchRecord(given: Readonly<Record<string, unknown>>, name: string, isW
         keys.length > 0,
         () => `${name} was given an empty record, which never changes. Give it at least one getter.`,
     );
-    const getters: Getter[] = [];
-    const names: string[] = [];
     const watched: MutableWatched[] = [];
-    const reading: Record<string, unknown> & { anyChanged: boolean } = { anyChanged: false };
+    const reading: Record<string, unknown> = { anyChanged: false };
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        const getter = given[key] as Getter;
-        const getterName = `${name}.${key}`;
-        getters.push(getter);
-        names.push(getterName);
-        watched.push(createWatched({ getter, name: getterName, isWatcher }));
+        watched.push(createWatched({ getter: given[key] as Getter, name: `${name}.${key}`, isWatcher }));
         reading[key] = watched[i];
     }
-    return { reading, watched, reread };
-
-    function reread(): boolean {
-        let anyChanged = false;
-        for (let i = 0; i < watched.length; i++) {
-            if (rereadWatched(watched[i], getters[i], names[i])) anyChanged = true;
-        }
-        reading.anyChanged = anyChanged;
-        return anyChanged;
-    }
+    return { reading, watched };
 }

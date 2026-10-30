@@ -1,6 +1,6 @@
 import { assert } from '../assert';
 import { createReadingGuard, type CheckedWatchGetters } from './error-checks';
-import type { Getter, WatchedOf } from './watched';
+import { rereadWatched, type Getter, type WatchedOf } from './watched';
 import { createWatchedGetters } from './watched-getters';
 
 // ---------------------------------------------------------------------------
@@ -31,15 +31,33 @@ export function watch<const S extends Getter | { readonly [name: string]: Getter
         typeof getters !== 'object' || Array.isArray(getters) || !('anyChanged' in getters),
         'watch was given a getter called anyChanged. The reading uses that name, so give it another.',
     );
-    const { reading, watched, reread } = createWatchedGetters({ getters, name: 'watch', isWatcher: true });
+    const { reading, watched } = createWatchedGetters({ getters, name: 'watch', isWatcher: true });
+    // Each shape gets its own poll, with nothing between it and the shared functions it calls, since there may
+    // be thousands of watchers, polled on every step
+    const poll = typeof getters === 'function' ? pollOne : pollEvery;
+    if (!DEV) return { poll };
     // In development, each poll wraps the reading so that using it after the next poll throws
-    const guardedReading = DEV ? createReadingGuard({ reading, watched }) : () => reading;
+    const guardedReading = createReadingGuard({ reading, watched });
     return {
         poll: () => {
-            reread();
+            poll();
             return guardedReading() as Reading<S>;
         },
     };
+
+    function pollOne(): Reading<S> {
+        rereadWatched(watched[0]);
+        return reading as Reading<S>;
+    }
+
+    function pollEvery(): Reading<S> {
+        let anyChanged = false;
+        for (let i = 0; i < watched.length; i++) {
+            if (rereadWatched(watched[i])) anyChanged = true;
+        }
+        (reading as { anyChanged: boolean }).anyChanged = anyChanged;
+        return reading as Reading<S>;
+    }
 }
 
 // ---------------------------------------------------------------------------
