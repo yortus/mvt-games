@@ -663,14 +663,14 @@ Every use case and question raised in 008, 078 and the `derive-util` spike, and 
       "sequence reaction" and its heading "Reacting to Step Lifecycle Events") (2026-10-30)
 - [x] `derive-util` deleted, locally and on `origin`, superseded by `createComputed` with nothing ported: see
       [Coverage of Earlier Designs](#coverage-of-earlier-designs) (2026-10-29)
-- [ ] Docs: Change Detection rewritten for the three tools, the shapes each takes, and the invariants (with what
+- [x] Docs: Change Detection rewritten for the three tools, the shapes each takes, and the invariants (with what
       follows from each, as guidance), and a section on watching in models (poll right after the changes you watch);
       a page for computed values, written from this task, saying they're lazy, and that watching one ends its
       laziness; Sound and Music and Presenting Collections updated with
       [the guidance for collections](#decided-collections-in-views); Why Polling and Events and Signals checked;
       `AGENTS.md` (its sound bullet names `watch` and `increased`), the view and model skills, the glossary and
       `llms.txt`
-- [ ] A changeset for `@mvtjs/utils`: a breaking change
+- [x] A changeset for `@mvtjs/utils`: a breaking change (2026-10-30; and one for the `createSequenceTracker` rename)
 
 ## Progress Log
 
@@ -848,3 +848,16 @@ and lint, the four new rules included, is clean. What it settled:
   nothing per frame, as today's did. Performance Measurements now describes reactions and computed values beside
   `watch()`, with the new numbers: a reaction costs about 6 ns per frame, half of `watch()`, and a computed value of 8
   getters 76 µs per frame for 1000 views against `watch()`'s 67.
+- **Docs** (2026-10-30). Change Detection rewritten: the three tools, which shapes each takes, the four rules with
+  what follows from each, where to read (views and models), consumer-defined events and counts. A new page,
+  Computed Values, between it and Events and Signals in the sidebar. Sound and Music moved to reactions; its list
+  section is now "Sound for a Collection", with the guidance for collections, and links to it were updated. Also
+  updated: Why Polling, Events and Signals, Presenting Collections, Views, View Composition, Hot Paths, Complex
+  Sequences, Taming Complex Views, Command-Query Separation, the style guide (computed values, and how to name a
+  reaction), Project Structure, the glossary (Computed value, Getter, Reaction, Version and Watcher; `memoiseLast`
+  removed), the view, model and code-review skills (the model skill gained "Watching in a Model"), `AGENTS.md` (the
+  sound bullet, and reaction names), `llms.txt`, the `@mvtjs/utils` README, and the traffic light example's
+  description. The docs build, and every `page.md#anchor` link resolves except `glossary.md#tick` in The Game Loop,
+  which was already broken (a glossary entry is a table row, with no anchor).
+- **Changesets:** `watch-reactions-and-computed-values.md` and `sequence-tracker.md`, both minor (breaking, before
+  1.0).

@@ -102,10 +102,15 @@ is a natural home for that store when its logic deserves its own tests, but
 the rule is about the key, not where the store lives. See
 [Lists whose items carry presentation state](#lists-whose-items-carry-presentation-state).
 
-A `watch()` in a slot's view is state of this kind. When a new item arrives,
-the next poll compares the new item's values with the old item's, and reports
-each difference as a change. A view that plays a sound on a change has to
-allow for that. [Sound and Music](sound.md#audio-views-in-a-list) shows how.
+A [reaction or a watcher](../reacting-to-changes/change-detection.md) in a
+slot's view is state of this kind. When a new item arrives, the next call
+compares the new item's values with the old item's, and sees each
+difference as a change. And while a slot is empty, its view's refresh is
+skipped, so its reactions aren't called. For sounds, it's often simplest
+not to play them from the item views at all. Instead, the model counts each
+kind of moment, and one audio view outside the list reacts to the counts.
+[Sound and Music](sound.md#sound-for-a-collection) shows that, and how a
+slot's view can play its own sounds safely.
 
 ## Which Kind of Collection Is It?
 

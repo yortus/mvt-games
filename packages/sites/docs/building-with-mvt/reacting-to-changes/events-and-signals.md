@@ -4,8 +4,10 @@
 > constraints that change the cost-benefit calculation. This page examines
 > where each approach helps, and where it creates friction.
 
+**Previous:** [Computed Values](computed-values.md)
 **Related:** [Reactivity: Why MVT Uses Polling](why-polling.md) -
 [Change Detection](change-detection.md) -
+[Computed Values](computed-values.md) -
 [The Game Loop](../the-game-loop.md)
 
 ---
@@ -135,8 +137,9 @@ function refresh(): void {
   same concern.
 - If watchers (change-detection) are introduced for these cases, you maintain
   both an event subscription system and a polling system side by side.
-- Polling handles both cases uniformly. A single `watch()` can express any
-  derived condition from any combination of readable state.
+- Polling handles both cases uniformly. A computed value can express any
+  derived condition from any combination of readable state, and a reaction
+  can act when it changes.
 
 ---
 
@@ -415,9 +418,9 @@ simpler.
 
 Some ECS-style architectures snapshot model state and diff it automatically.
 This is structurally similar to polling but automated at the framework level.
-The `watch()` helper is a lightweight, manual version of the same idea -
-applied selectively where the developer chooses, rather than applied globally
-by a framework.
+This project's change-detection tools are a lightweight, manual version of
+the same idea. They're applied only where the developer chooses, rather than
+everywhere by a framework.
 
 ---
 

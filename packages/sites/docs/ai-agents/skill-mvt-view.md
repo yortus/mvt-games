@@ -226,9 +226,9 @@ attributes behave:
 - **`text`, `texture`, `tint`, `width`, `height`, `style` and `label` are
   written only when their value changes.** The function is still called every
   frame, so it must not build a new string each time: map a number to text
-  only when the number changes, with `memoiseLast` from `@mvtjs/utils`, created once:
-  `const scoreText = memoiseLast((n: number) => String(n))`, then
-  `text={() => scoreText(bindings.score())}`.
+  only when the number changes, with a computed value from `@mvtjs/utils`,
+  created once: `const scoreText = createComputed({ watch: bindings.score,
+  compute: String })`, then `text={scoreText}`.
 - **`ref`** receives the element once it is built, e.g. to draw a `Graphics`
   once: `<graphics ref={(g) => drawPanel(g)} />`.
 - **`onUpdate`** sets the element's `update(deltaMs)` step, for presentation
@@ -382,42 +382,72 @@ view.on('destroyed', () => window.removeEventListener('keydown', onKeyDown));
   (a session's `destroy()`) passes `{ children: true }`. Dev builds warn when
   a destroy without it would skip a `'destroyed'` listener below it.
 
-## Change Detection (Watch)
+## Change Detection
 
-**[project convention]** For query bindings that change rarely but trigger
-expensive work (rebuilding a grid, recreating child views), use the `watch()`
-helper:
+**[project convention]** Three tools from `@mvtjs/utils` act only on a
+change. Each watches **getters** (`bindings.phase`, `() => model.score`),
+which must return primitives, compared with `===`. Full guide:
+[Change Detection](../building-with-mvt/reacting-to-changes/change-detection.md)
+and [Computed Values](../building-with-mvt/reacting-to-changes/computed-values.md).
+
+| Tool | Returns | Use for |
+| --- | --- | --- |
+| `createReaction({ watch, when?, react })` | A function to call in refresh, every step | Sounds, one-off effects, rebuilds on a change |
+| `createComputed({ watch, compute })` | A getter, read any time; lazy | Text for a prop, costly derived values |
+| `watch(getters)` | A watcher; `poll()` once per step | Logic that mixes checks with other work and early returns |
 
 ```ts
-import { watch } from '@mvtjs/utils';
+import { createComputed, createReaction } from '@mvtjs/utils';
 
-const watcher = watch({
-    rows: bindings.rows,
-    cols: bindings.cols,
+const scoreText = createComputed({ watch: bindings.score, compute: String });
+const rebuildGridWhenSizeChanges = createReaction({
+    watch: bindings.size,
+    react: (size) => rebuildGrid(size),
 });
+// A reaction never reacts to its first read, so draw the first state now
+rebuildGrid(bindings.size());
 
 function refresh(): void {
-    const w = watcher.poll();
-    if (w.rows.changed || w.cols.changed) {
-        rebuildGrid(w.rows.value, w.cols.value);
-    }
-    // Always update positions, etc.
+    rebuildGridWhenSizeChanges();
+    label.text = scoreText();
+    // Cheap per-frame updates read directly
     view.position.set(bindings.x(), bindings.y());
 }
 ```
 
-Each watched property has `changed`, `value` and `previous`. A numeric one
-also has `increased` and `decreased`, which are true only when it changed to
-a greater or a lesser number. Both are false on the first poll.
-
-Use change detection for infrequent, expensive updates. For cheap per-frame
-updates (position, alpha, visibility), read directly without watching.
+- **Reactions:** `when` is a value ("changed to it"), `increased`,
+  `decreased`, `changedFrom(value)`, or a condition
+  `(current, previous) => boolean`. Leave it out for every change. `react`
+  gets `(current, previous)`. An array of getters of one type reacts to each
+  separately, with its `index`; a record is refused (compute one value
+  instead).
+- **Name a reaction for its effect, then its trigger:**
+  `updateTextureWhenPhaseChanges`, `playPumpSoundWhenInflationRises`,
+  `playShotSoundOnEachShot` (`OnEach` for a count). A sound says `Sound`; a
+  visual names what it is. Never `playPump` or `showPhase`.
+- **Computed values:** one getter or a record (`compute` gets the values by
+  name). A computed value is a getter, so pass it straight to a JSX prop.
+  To keep an object up to date, give `compute` a second parameter with a
+  default: `compute: (size, cells = createCells()) => resize(cells, size)`.
+  Watch a computed object through `cells.version`.
+- **Watchers:** a reading has `current`, `previous`, `changed`,
+  `changedTo(v)`, `changedFrom(v)`, and for numbers `increased` and
+  `decreased`. A record's or an array's adds `anyChanged`. The reading is
+  reused on every poll: never keep it (dev builds throw).
+- **The first read is the starting point, never a change.** Nothing reacts
+  because it was made, so a view draws its first state at construction.
+  There are no priming polls.
+- **Call reactions and poll watchers on every step, unconditionally.** Lint
+  (`no-conditional-poll`) reports one behind an `if` or an early `return`.
+- **A getter of an object throws.** Watch a count, a length or a version.
+- **What a tool watches is fixed when it's made.** Lists whose items come and
+  go are out of scope: use `<List>`, or counts the model keeps.
 
 ## Audio Views
 
 Sound is presentation, so views play it, never models. An **audio view** is
-a view that plays sounds instead of drawing visuals. It polls its bindings
-with `watch()`, and plays a sound when a value **changes**. It never plays
+a view that plays sounds instead of drawing visuals. It calls reactions in
+its refresh step, and plays a sound when a value **changes**. It never plays
 from a state alone, which would play the sound every frame.
 
 - **[project convention]** It plays on virtual sound chips from
@@ -436,27 +466,25 @@ from a state alone, which would play the sound every frame.
   `load`, with `prepareAudio90Samples`.
 - **A phase or a flag** finds most moments. Play when it changes to a value.
 - **A count** (`shotsFired`) finds moments that repeat with no change of
-  state. Play when it rises (`if (w.shots.increased)`). When the sound
+  state. Play when it rises (`when: increased`). When the sound
   depends on which one, the model also keeps the last one's details
   (`lastBrokenRockSize`).
-- **Poll once at construction** (`watcher.poll()` before returning). Then
-  the first refresh plays nothing for the starting state. Skip the poll
-  only when the starting state should sound, such as a fanfare.
-- **Also poll at construction when the view's own first update can cause a
-  change.** A metronome's first beat comes in the first update. Without the
-  poll, the first refresh takes the count of 1 as its starting value, and
-  the beat is silent.
-- **In a `<List>`**, a slot's view is made once and reused for later items.
-  So a poll at construction covers only the slot's first item. Play only on
-  changes that a newly arrived item cannot cause, such as `isAlive` going
-  from `true` to `false`. Otherwise, also watch the item's id, and play
-  nothing in a poll where it changed.
+- **The starting state:** a reaction never reacts to its first read, so the
+  first refresh plays nothing for the state the view is made in. Play a
+  starting sound, such as a fanfare as the game begins, as the view is made.
+  A metronome's first beat, which the first update makes, is heard: the
+  reaction read a count of 0 when it was made.
+- **For a collection,** prefer one audio view outside it, reacting to counts
+  the model keeps (an array reaction for a count of each kind). A `<List>`
+  reuses a slot's view and its reactions for later items, so the next call
+  compares the new item with the old one. A slot's view uses a `when` that an
+  arriving item can't trigger, such as `changedFrom(true)` on `isAlive`.
 - **An item removed in the tick it finishes** (a rock that breaks and leaves
   its `SlotList`) never shows its `<List>` view the change. Count it in the
   model, and play it from a view outside the list.
 - **One moment, two changes.** When one moment changes two watched values in
   the same tick (a ship comes back and its fuel fills), play one sound. Best
-  is a model count of the moment itself. Otherwise, read the values
+  is a model count of the moment itself. Otherwise, watch the values
   together.
 - **Repeating sounds are presentation state; music is the chip's.** A
   metronome (`createMetronome`, from `@mvtjs/utils`) advances in the update
@@ -567,7 +595,7 @@ that is only correct once `update()` has run.
 | `for...of` on arrays                    | `for (let i = 0; i < arr.length; i++)`         |
 | Template-string keys                    | Arithmetic encoding (`r * cols + c`)           |
 | Inline closures                         | Hoisted functions or pre-bound references      |
-| `String()` conversion every frame       | `memoiseLast`, or change detection, to update text only on change |
+| `String()` conversion every frame       | A computed value (`createComputed`), to make text only on change |
 | Spread (`[...arr]`)                     | Direct index access                            |
 
 Closures written in JSX attributes and `<List>` item callbacks are created

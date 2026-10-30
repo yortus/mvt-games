@@ -113,18 +113,19 @@ Key principles:
   [Bindings](bindings.md)).
 
 ```ts
-// Created once: formats a score only when it differs from last frame's
-const scoreText = memoiseLast((score: number) => String(score));
+// Created once: makes the text only when the score changes
+const scoreText = createComputed({ watch: bindings.score, compute: String });
 
 function refresh(): void {
     // Re-read bindings every frame - never cache these values
-    label.text = scoreText(bindings.score());
+    label.text = scoreText();
     container.alpha = bindings.opacity?.() ?? 1;
 }
 ```
 
-`memoiseLast` (from `@mvtjs/utils`) keeps `refresh()` from building a new
-string every frame: it runs `String(score)` only when the score changes.
+A [computed value](../reacting-to-changes/computed-values.md), made with
+`createComputed` from `@mvtjs/utils`, keeps `refresh()` from building a new
+string every frame. It runs `String(score)` only when the score changes.
 
 ## Scene Graphs in Pixi.js
 

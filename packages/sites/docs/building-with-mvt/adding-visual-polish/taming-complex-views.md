@@ -160,16 +160,18 @@ Setting it to 0 stops the metronome again. The view acts each time the
 
 ```ts
 const alarm = createMetronome();
-const watcher = watch({ beats: () => alarm.count });
-// So the first refresh sees the first beat, which the first update makes
-watcher.poll();
+const playAlarmSoundOnEachBeat = createReaction({
+    watch: () => alarm.count,
+    when: increased,
+    react: () => sound.play(ALARM),
+});
 
 // In update():
 alarm.periodMs = bindings.isFuelLow() ? 500 : 0;
 alarm.update(deltaMs);
 
 // In refresh():
-if (watcher.poll().beats.increased) sound.play(ALARM);
+playAlarmSoundOnEachBeat();
 ```
 
 The first beat comes as soon as the metronome starts, not a period later.

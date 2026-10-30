@@ -109,13 +109,13 @@ changed:
 
 ```ts
 // Good - redraw the maze only when the level changes
-const watcher = watch({
-    level: () => bindings.level(),
+const redrawMazeWhenLevelChanges = createReaction({
+    watch: bindings.level,
+    react: (level) => drawMaze(mazeGraphics, level),
 });
 
 function refresh(): void {
-    const w = watcher.poll();
-    if (w.level.changed) drawMaze(mazeGraphics, w.level.value);
+    redrawMazeWhenLevelChanges();
 }
 ```
 
@@ -126,26 +126,20 @@ function refresh(): void {
 }
 ```
 
-`watch()` reports a change on its first poll, so the maze is drawn on the first
-frame too. See [Change Detection](../reacting-to-changes/change-detection.md).
-
 ### Text updates in `refresh()`
 
 String assignment (`label.text = String(score)`) allocates a string on every
 call. For continuous state (text that changes every frame), this is
 unavoidable. For discrete state (text that changes rarely), use change
-detection to skip the update:
+detection to skip the update. A computed value makes the text only when the
+score changes:
 
 ```ts
-let prevScore = -1;
+const scoreText = createComputed({ watch: bindings.score, compute: String });
 
 function refresh(): void {
-    const score = bindings.score();
-    if (score !== prevScore) {
-        prevScore = score;
-        label.text = String(score);
-    }
+    label.text = scoreText();
 }
 ```
 
-See [Change Detection](../reacting-to-changes/change-detection.md) for more on this pattern.
+See [Computed Values](../reacting-to-changes/computed-values.md) for more.

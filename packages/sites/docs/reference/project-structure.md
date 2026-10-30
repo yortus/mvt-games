@@ -108,7 +108,7 @@ public API.
 | `data/`   | Constants, configuration, static datasets                 | Data objects, lookup tables                               |
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
-| `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `memoiseLast`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
+| `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `createReaction`, `createComputed`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
 | `packages/sites/arcade/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView`, `KeyboardInputView`, `SwipeInputView` |
 | `packages/sites/arcade/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 

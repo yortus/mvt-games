@@ -125,15 +125,15 @@ just the same, or manage its child views by hand, using change detection to
 rebuild them only when the count changes:
 
 ```ts
-const watcher = watch({
-    asteroidCount: () => model.asteroids.length,
+const rebuildAsteroidViewsWhenCountChanges = createReaction({
+    watch: () => model.asteroids.length,
+    react: () => rebuildAsteroidViews(),
 });
+// A reaction never reacts to its first read, so build the first views now
+rebuildAsteroidViews();
 
 function refresh(): void {
-    const w = watcher.poll();
-    if (w.asteroidCount.changed) {
-        rebuildAsteroidViews();
-    }
+    rebuildAsteroidViewsWhenCountChanges();
 }
 ```
 

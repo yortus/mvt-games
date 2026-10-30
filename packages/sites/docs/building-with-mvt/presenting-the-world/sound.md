@@ -49,9 +49,10 @@ sounds instead of drawing visuals. Like any other view, it reads model state
 through its bindings. It also needs something to play its sounds on, such
 as a sound chip. That is passed in as a binding too, named `sfx` in the
 example below. The chip stays the same for the view's whole life, so the
-view reads that binding only once. In its refresh step, the view polls its
-other bindings. It plays a sound when some sound-triggering change has
-occurred.
+view reads that binding only once. In its refresh step, the view calls its
+[reactions](../reacting-to-changes/change-detection.md#reactions-do-something-when-a-value-changes).
+A reaction reads a binding, and plays a sound when the value changes in a
+way worth hearing.
 
 The view's `sfx` binding asks only for the one method it calls, `play`.
 That's the whole of the view's output. So a test can pass a stand-in that
@@ -64,7 +65,7 @@ the ship is lost:
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Audio80 } from 'audio90';
-import { watch } from '@mvtjs/utils';
+import { createReaction, increased } from '@mvtjs/utils';
 import { SHIP_EXPLODE, SHOT } from './sounds';
 
 export interface ShipAudioViewBindings {
@@ -78,17 +79,20 @@ export interface ShipAudioViewBindings {
 export function ShipAudioView(bindings: ShipAudioViewBindings): Container {
     const { sfx } = bindings;
     const view = new Container();
-    const watcher = watch({
-        shots: bindings.shotsFired,
-        isAlive: bindings.isAlive,
+    const playShotSoundOnEachShot = createReaction({
+        watch: bindings.shotsFired,
+        when: increased,
+        react: () => sfx.play(SHOT),
     });
-    // The first refresh hears only what changes after the view is made
-    watcher.poll();
+    const playExplosionSoundWhenShipIsLost = createReaction({
+        watch: bindings.isAlive,
+        when: false,
+        react: () => sfx.play(SHIP_EXPLODE),
+    });
 
     setRefresh(view, () => {
-        const w = watcher.poll();
-        if (w.shots.increased) sfx.play(SHOT);
-        if (w.isAlive.changed && !w.isAlive.value) sfx.play(SHIP_EXPLODE);
+        playShotSoundOnEachShot();
+        playExplosionSoundWhenShipIsLost();
     });
     return view;
 }
@@ -159,9 +163,16 @@ count rises. A count going back to 0 for a new game is not a rise.
 [Change Detection](../reacting-to-changes/change-detection.md#counts-moments-that-repeat)
 covers counts in full.
 
-**The first poll.** `watch()` reports every value as changed on its first
-poll. So poll once as the view is made, as above. Skip that poll only when
-the starting state should sound, such as a fanfare as the game begins.
+**The starting state.** A reaction reads its value when it's made, as its
+starting point, and never reacts to that. So a view made in the middle of a
+game plays nothing for the state it finds. When the starting state should
+sound, such as a fanfare as a game begins, the view plays it itself, as it's
+made:
+
+```ts
+// The view is made as the game starts, so it opens with the fanfare
+if (bindings.phase() === 'playing') music.play(STAGE_FANFARE);
+```
 
 **Two changes, one moment.** Sometimes one moment changes two values in the
 same tick. Suppose a ship that comes back also gets a full tank, in the
@@ -169,7 +180,9 @@ tick its phase returns to playing. A view that played a respawn for the
 phase and a refuel for the fuel would play two sounds for one moment. The
 surest fix is for the model to count the moment itself, such as
 `fuelTanksDestroyed`, so that the view plays the refuel only when that
-count rises. Otherwise, read the two values together, and play one sound.
+count rises. Otherwise, watch the two values together with a
+[watcher](../reacting-to-changes/change-detection.md#watchers-what-changed-for-logic-in-a-step),
+and play one sound.
 
 ## What the Model Needs to Expose
 
@@ -188,27 +201,65 @@ rock's view in the `<List>` never sees the break, because the slot is
 already empty at the next refresh. So the model counts the breaks, and a
 view outside the list watches the count.
 
-## Audio Views in a List
+## Sound for a Collection
 
-A `<List>` makes the view for a slot once, when an item first fills the
-slot. It then reuses that view for every later item in the slot. The
-view's watcher stays with the slot too. So when a new item arrives, the
-next poll compares the new item's values with the old item's, and reports
-any difference as a change.
+Some sounds belong to the items of a collection, such as enemies that dive
+and get hit. There are two ways to play them. Start with the first.
 
-A poll at construction is not enough here, because it covers only the
-slot's first item. Instead, play only on changes that a newly arrived item
-cannot cause. For example, a new item always arrives alive. So `isAlive`
-going from `true` to `false` is always a real loss:
+**One audio view for the whole collection.** The model counts each kind of
+moment, and one audio view, outside the collection, reacts to the counts.
+An array reaction suits a count for each kind of enemy:
 
 ```ts
-if (w.isAlive.changed && w.isAlive.previous === true) sfx.play(EXPLODE);
+const playDiveSoundOnEachDive = createReaction({
+    watch: () => model.divesStarted,
+    when: increased,
+    react: () => sfx.play(DIVE),
+});
+const playHitSoundOnEachHit = createReaction({
+    watch: ENEMY_KINDS.map((kind) => () => model.hitsOf(kind)),
+    when: increased,
+    react: (_hits, _previous, index) => sfx.play(HIT_SOUNDS[index]),
+});
 ```
 
-If there is no such change to rely on, also watch a binding that
-identifies the item, such as an id. Play nothing in a poll where the id
-changed. [Presenting Collections](collections.md#two-rules-for-item-views)
-explains why a slot's view must not rely on what it saw at construction.
+This has nothing to go wrong when items come and go. A count rises in the
+tick of the moment, so a sound plays even for an item removed in that same
+tick. The cost is that the model keeps the counts. When a sound needs an
+item's details, such as where it was, to pan the sound, the model keeps the
+last one's details too (`lastHitX`).
+
+**An audio view for each item,** when each item's sound depends on the item,
+such as panning by its position, or a sound that lasts as long as the item
+does. How its reactions behave depends on how the item views are made:
+
+- **A view made for each item** makes new reactions with it. Each reads the
+  item when it's made, as its starting point, so an item arriving is never a
+  change. A game view that builds a new enemy layer for each wave works like
+  this. It suits items that arrive in groups, rather than pools that change
+  every frame, such as bullets.
+- **A view reused by a [`<List>`](collections.md)** keeps its reactions when
+  a new item takes over its slot. The next call compares the new item with
+  the slot's last one, and sees any difference as a change. So each
+  reaction needs a `when` that an arriving item can't trigger. For example,
+  a new item always arrives alive, so `isAlive` changing from `true` is
+  always a real loss:
+
+  ```ts
+  const playExplosionSoundWhenLost = createReaction({
+      watch: bindings.isAlive,
+      when: changedFrom(true),
+      react: () => sfx.play(EXPLODE),
+  });
+  ```
+
+  An empty slot skips its views, so their reactions aren't called until the
+  slot fills again. [Presenting Collections](collections.md#two-rules-for-item-views)
+  explains why a slot's view must not rely on what it saw when it was made.
+
+Whichever you choose, an item's view can't hear a moment in the tick its item
+is removed, since the slot is already empty at the next refresh. The model
+counts that moment, and a view outside the collection plays it.
 
 ## Music
 
@@ -220,19 +271,21 @@ song when a phase begins, as it plays any sound on a change:
 
 ```ts
 const { music } = bindings;
-const watcher = watch({ phase: bindings.phase });
-
-setRefresh(view, () => {
-    const w = watcher.poll();
-    if (w.phase.changed) {
-        if (w.phase.value === 'playing') {
+const playMusicWhenPhaseChanges = createReaction({
+    watch: bindings.phase,
+    react: (phase) => {
+        if (phase === 'playing') {
             music.play(STAGE_FANFARE);
             music.queue(STAGE_TUNE);
         }
-        else if (w.phase.value === 'game-over') {
+        else if (phase === 'game-over') {
             music.stop(undefined, { fadeMs: 1500 });
         }
-    }
+    },
+});
+
+setRefresh(view, () => {
+    playMusicWhenPhaseChanges();
     // After any new song, so the tempo suits the song that plays
     music.tempoScale = bindings.isHurrying() ? 1.3 : 1;
 });
@@ -273,28 +326,25 @@ it to 0 to stop it. The refresh step plays a sound each time the
 metronome's `count` rises:
 
 ```ts
-import { createMetronome, watch } from '@mvtjs/utils';
+import { createMetronome, createReaction, increased } from '@mvtjs/utils';
 
 const heartbeat = createMetronome();
-const watcher = watch({ beats: () => heartbeat.count });
-// Without this poll, the first refresh would miss the first beat
-watcher.poll();
+const playHeartbeatSoundOnEachBeat = createReaction({
+    watch: () => heartbeat.count,
+    when: increased,
+    react: () => sfx.play(BEAT),
+});
 
 setUpdate(view, (deltaMs) => {
     heartbeat.periodMs = computeBeatPeriodMs(bindings.rocksLeft());
     heartbeat.update(deltaMs);
 });
-setRefresh(view, () => {
-    if (watcher.poll().beats.increased) sfx.play(BEAT);
-});
+setRefresh(view, playHeartbeatSoundOnEachBeat);
 ```
 
 A metronome beats as soon as it starts, which is in the view's first
-update step. The poll at construction records a count of 0, so the first
-refresh sees the rise to 1. Without that poll, the first refresh's poll
-would take 1 as the starting count, and the first beat would be silent. So
-poll at construction whenever the view's own first update can cause a
-change.
+update step. The reaction read a count of 0 when it was made, so the first
+refresh sees the rise to 1, and the first beat sounds.
 
 Only the update step moves the heartbeat on. A paused game's views sit out
 the update step, so the heartbeat stops while the game is paused, and
@@ -391,11 +441,12 @@ shows them for this repo's chips.
 | Playing sound from the model | The model is tied to one presentation, and its tests and thumbnails make noise | Expose state, and let an audio view play it |
 | Playing on a state, not a change (`if (isDying) play()`) | The sound plays every frame | Play when the value changes to that state |
 | Playing a sound in the update step | The update step advances state and writes no output | Advance state there, and play in the refresh step |
-| Forgetting the poll at construction | A sound plays as the view is made, or the first beat is silent | Poll once at construction |
+| Calling a reaction only on some refreshes | A change that comes and goes between calls is missed | Call every reaction on every refresh |
+| Waiting for a reaction to play the starting state | Nothing plays as the game begins, since a reaction never reacts to its first read | Play the starting state's sound as the view is made |
 | Using an event emitter for sounds | Events are missed while a view is made or a game is paused, and the model gains an API | Keep a count that the view watches |
 | Watching for a list item's removal | The removed item's view never sees it | Keep a count in the model, and play it from a view outside the list |
 | Playing a list view's sound on any change | A sound plays when a new item fills the slot | Play only on changes a new item cannot cause |
-| Playing a sound for each of two values that change together | Two sounds play for one moment | Count the moment in the model, or read the values together |
+| Playing a sound for each of two values that change together | Two sounds play for one moment | Count the moment in the model, or watch the values together |
 | A jingle in a phase shorter than the jingle | The next phase's song cuts it short | Shorten the jingle, or lengthen the phase |
 | A wall-clock timer for a repeating sound | It ignores pausing, and drifts from the game | Use presentation state advanced in the update step, such as a metronome |
 | Expecting a paused game to silence its sound | Sounds already playing carry on, the music among them | Pause the sound where the game is paused, in the code that runs it |

@@ -238,16 +238,17 @@ subscriptions, no events, just polling.
 ## Triggering Sequences
 
 A sequence is typically triggered by a model state change. The view (or
-parent view) watches for the change and calls `start()`:
+parent view) reacts to the change and calls `start()`:
 
 ```ts
-const phaseWatcher = watch({ phase: bindings.phase });
+const startMatchAnimationWhenMatching = createReaction({
+    watch: bindings.phase,
+    when: 'matching',
+    react: () => matchSequence.start(),
+});
 
 function update(deltaMs: number) {
-    const { phase } = phaseWatcher.poll();
-    if (phase.changed && phase.value === 'matching') {
-        matchSequence.start();
-    }
+    startMatchAnimationWhenMatching();
     matchSequence.update(deltaMs);
 }
 ```

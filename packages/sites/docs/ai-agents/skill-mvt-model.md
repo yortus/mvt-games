@@ -130,6 +130,27 @@ update(deltaMs) {
 multi-step state machines). That work belongs in `schedule*()` helpers that
 build timeline sequences declaratively.
 
+## Watching in a Model
+
+A model rarely needs to watch anything: its own code makes its changes, so it
+knows when they happen. When it does watch, such as a sub-model's phase,
+nothing is final while `update` runs. So poll right after the changes you
+watch, at a point you choose on purpose, and use `watch` from `@mvtjs/utils`
+(logic in a step):
+
+```ts
+function update(deltaMs: number): void {
+    boss.update(deltaMs);
+    hitBossWithShots();
+    // Everything that can change the boss's phase has run
+    const w = bossWatcher.poll();
+    if (w.changedTo('defeated')) turnBulletsIntoGems();
+}
+```
+
+Neon Monsoon's game model does this. See
+[Change Detection: Where to Read](../building-with-mvt/reacting-to-changes/change-detection.md#where-to-read).
+
 ## Time Leap Safety
 
 Models differ in whether they tolerate large `update()` calls:

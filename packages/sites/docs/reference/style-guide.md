@@ -590,14 +590,20 @@ object directly through a `ref` or an `onRefresh` attribute.
 compares the two in depth, with JSX's strengths and limitations.
 
 In either body, derive text (or anything else costly) from a changing value
-only when the value changes. `memoiseLast` from `@mvtjs/utils` wraps a one-argument
-function to do that; create it once, and call it every frame:
+only when the value changes. A
+[computed value](../building-with-mvt/reacting-to-changes/computed-values.md),
+made with `createComputed` from `@mvtjs/utils`, does that. Create it once,
+and read it every frame. It's a getter, so it goes straight into a prop:
 
 ```tsx
-const scoreText = memoiseLast((score: number) => String(score));
+const scoreText = createComputed({ watch: bindings.score, compute: String });
 
-<text text={() => scoreText(bindings.score())} />
+<text text={scoreText} />
 ```
+
+Name a [reaction](../building-with-mvt/reacting-to-changes/change-detection.md#reactions-do-something-when-a-value-changes)
+for what it does and when, the effect first: `playPumpSoundWhenInflationRises`,
+not `playPump`.
 
 And before writing a per-frame redraw, check whether drawing once and then
 scaling, tinting or resizing would do. The

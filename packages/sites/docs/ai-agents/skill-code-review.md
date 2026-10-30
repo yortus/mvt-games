@@ -175,8 +175,11 @@ Beyond the hard rules, review for good use of established patterns.
 - **Bindings usage:** Reusable leaf views use a bindings interface. Query
   bindings declared as functions are read inside `refresh()`, never cached at
   construction time; a value read only once is declared as a plain `T`.
-- **Change detection:** Expensive, infrequent updates use `watch()`.
-  Cheap per-frame updates (position, alpha) read directly.
+- **Change detection:** Expensive, infrequent updates use a reaction, a
+  computed value or `watch()`; text from a number is a computed value.
+  Reactions are called on every step, unconditionally, and named for their
+  effect, then their trigger. Cheap per-frame updates (position, alpha) read
+  directly.
 - **Presentation state:** Used only when purely cosmetic and the model does
   not need to know. Views with presentation state receive time through
   `update(deltaMs)`. Complex logic should be extracted into a view model.

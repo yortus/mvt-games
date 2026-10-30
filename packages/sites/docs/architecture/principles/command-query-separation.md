@@ -88,9 +88,10 @@ The same pattern elsewhere in a game shows up as three symptoms:
 
 The fix is to keep a trace that reading doesn't consume. The real fruit
 machine keeps a [count](../../reference/glossary.md) of its spins, and each
-reader notices the count rise. `watch()` remembers the last value it saw,
-and its `increased` flag says whether the count went up since the last
-poll:
+reader notices the count rise. A
+[reaction](../../building-with-mvt/reacting-to-changes/change-detection.md#reactions-do-something-when-a-value-changes)
+remembers the last value it read, and with `when: increased`, it acts only
+when the count went up since then:
 
 ```ts
 // In the spin model
@@ -101,22 +102,26 @@ const model = {
 };
 
 // In the lever view
-const watcher = watch({ spins: bindings.spinCount });
+const startSwingOnEachSpin = createReaction({
+    watch: bindings.spinCount,
+    when: increased,
+    react: () => startSwing(),
+});
 
 function update(deltaMs: number) {
-    if (watcher.poll().spins.increased) startSwing();
+    startSwingOnEachSpin();
     updateSwing(deltaMs);
 }
 ```
 
 The fruit machine has four readers of that one count. Its
 [audio view](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/views/audio/machine-audio-view.ts)
-watches it exactly this way, to play the lever's sound. The
+reacts to it exactly this way, to play the lever's sound. The
 [lever view](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/views/three/lever-view.tsx)
 does the same comparison by hand, to swing the lever. The terminal watches
 the count to log each spin, and even notes when a spin was started from
 another view, and the panel shows it as a number. None of them affects the
-others, because reading `spinCount` changes nothing. What each watcher
+others, because reading `spinCount` changes nothing. What each reader
 remembers belongs to its view alone; the
 [SSOT page](single-source-of-truth.md#common-misreadings) explains why such
 a value is not a copy. [Counts: Moments That Repeat](../../building-with-mvt/reacting-to-changes/change-detection.md#counts-moments-that-repeat)
@@ -183,8 +188,8 @@ and every frame still shows one consistent world.
 - **Every event needs a trace.** A flag that answers once is the easy way
   to report that something happened, and it is ruled out. Instead the
   model keeps something readable, such as a count, and each interested view
-  watches it rise. It is a little more code than a flag, though `watch()`
-  keeps it to a line or two per view.
+  watches it rise. It is a little more code than a flag, though a reaction
+  keeps it to a few lines per view.
 - **Some commands are handier with an answer.** In strict CQS, a command returns
   nothing, and a caller who wants to know what happened asks a query
   afterwards. This repo relaxes that half: a command may report what it

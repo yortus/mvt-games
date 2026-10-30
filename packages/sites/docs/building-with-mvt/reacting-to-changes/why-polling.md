@@ -83,9 +83,9 @@ Signals need a scheduler and batching semantics to avoid glitch states.
 ### No subscriptions, no leaks
 
 Poll-based views have no subscriptions to manage. When a view is removed from
-the scene graph, its `refresh()` stops being called. The watcher and its
-closure become unreachable and are garbage-collected. There is nothing to
-dispose.
+the scene graph, its `refresh()` stops being called. Its reactions and
+watchers become unreachable with it, and are garbage-collected. There is
+nothing to dispose.
 
 Events and signals both require explicit cleanup - `off()` or `dispose()` -
 at every lifecycle boundary. Forgetting cleanup is a silent leak: the handler
@@ -134,7 +134,7 @@ the right reading strategy:
 | Category | Changes... | Examples | Strategy |
 |----------|-----------|----------|----------|
 | **Continuous** | Most frames | position, velocity, animation progress | Read directly - no change detection needed |
-| **Discrete** | Occasionally | score, phase, lives, wave number | `watch()` for change detection |
+| **Discrete** | Occasionally | score, phase, lives, wave number | [Change detection](change-detection.md): a reaction, a watcher or a computed value |
 | **Static** | Never at runtime | tile size, grid dimensions, screen size | Import from data module or pass as parameter |
 
 Continuous state is read every frame with no overhead. Static state is resolved
@@ -143,19 +143,20 @@ change infrequently but may trigger expensive view work (rebuilding text,
 restructuring the scene). Polling these with `===` comparison is cheap, and
 skipping the expensive work when nothing changed is valuable.
 
-The `watch()` helper encapsulates this:
+This project's change-detection tools do the comparing for you. A reaction
+acts when a value changes, and a computed value works out text again only
+when its number changes:
 
 ```ts
-const watcher = watch({
-    phase: () => model.phase,
-    score: () => model.score,
+const updateAppearanceWhenPhaseChanges = createReaction({
+    watch: () => model.phase,
+    react: (phase) => updateAppearance(phase),
 });
+const scoreText = createComputed({ watch: () => model.score, compute: String });
 
 function refresh(): void {
-    const w = watcher.poll();
-
-    if (w.phase.changed) rebuildAppearance(w.phase.value);
-    if (w.score.changed) scoreLabel.text = String(w.score.value);
+    updateAppearanceWhenPhaseChanges();
+    scoreLabel.text = scoreText();
 
     // Continuous state - just read directly
     sprite.x = model.col * TILE_SIZE;
@@ -251,9 +252,14 @@ sound when the count rises.
 
 ```ts
 // The model counts the kills. The view plays a boom when the count rises.
+const playBoomSoundOnEachKill = createReaction({
+    watch: () => model.kills,
+    when: increased,
+    react: () => sound.play(BOOM),
+});
+
 function refresh(): void {
-    const w = watcher.poll();
-    if (w.kills.increased) sound.play(BOOM);
+    playBoomSoundOnEachKill();
 }
 ```
 
@@ -300,5 +306,5 @@ correctly by default.
 
 ---
 
-**Next:** [Change Detection](change-detection.md) - the `watch()` helper and
-practical patterns for poll-based reactivity.
+**Next:** [Change Detection](change-detection.md) - reactions, watchers and
+computed values, and the rules they follow.

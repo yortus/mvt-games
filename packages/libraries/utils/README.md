@@ -5,9 +5,12 @@ a way of structuring games and interactive scenes so that state, presentation
 and time stay apart. MVT is a pattern and needs no library. These helpers
 make common parts of it shorter, and none of them needs a renderer:
 
-- **Change detection:** `watch` polls values and reports which changed since
-  the last poll, and whether each number went up or down; `memoiseLast`
-  recomputes only when its argument changes.
+- **Change detection:** `createReaction` does something when a value
+  changes, `createComputed` works a value out again only when what it
+  watches changes, and `watch` reports what changed since the last poll, for
+  logic in a step.
+  [Watching for Changes](https://github.com/yortus/mvt-games/blob/main/packages/libraries/utils/src/watch-api/README.md)
+  shows all three.
 - **Time-driven state:** tweens (`createBooleanTween`, `createEdgeTween`),
   sequences (`createSequence`, `createSequenceTracker`) and a metronome
   (`createMetronome`), all advanced by an `update(deltaMs)` call rather than
