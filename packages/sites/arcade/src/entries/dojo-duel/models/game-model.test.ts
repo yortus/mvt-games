@@ -111,6 +111,14 @@ describe('GameModel', () => {
             // Still in round-intro, timer shouldn't have decremented
             expect(game.roundTimeRemainingMs).toBe(initial);
         });
+
+        it('is full again as a later round is introduced, so the HUD can show the time to come', () => {
+            const game = makeGameInFighting();
+            // A draw on time goes straight to the next round's intro
+            advance(game, ROUND_TIMER_MS + 1);
+            expect(game.phase).toBe('round-intro');
+            expect(game.roundTimeRemainingMs).toBe(ROUND_TIMER_MS);
+        });
     });
 
     describe('collision detection', () => {

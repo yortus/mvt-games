@@ -302,11 +302,12 @@ export function createGameModel(): GameModel {
 
     function scheduleRoundIntro(): void {
         gamePhase = 'round-intro';
+        // The clock is full while the round is introduced, so it shows the time the round will have
+        roundTimeRemainingMs = ROUND_TIMER_MS;
         phaseTimeline.clear().time(0);
         phaseTimeline.call(
             () => {
                 gamePhase = 'fighting';
-                roundTimeRemainingMs = ROUND_TIMER_MS;
                 resetInputSettle();
             },
             undefined,

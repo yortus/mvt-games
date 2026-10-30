@@ -104,12 +104,11 @@ export function HudView(bindings: HudViewBindings): Container {
     setRefresh(view, drawPipRowWhenItsCountChanges);
     return view;
 
-    /** The number the timer shows, if any: the seconds left in a fight, and a fixed number in a round's intro. */
+    /** The seconds the timer shows, if any: those left in a fight, or the round's whole time as it's introduced. */
     function timerNumber(): number | undefined {
         const phase = bindings.gamePhase();
-        if (phase === 'fighting') return Math.max(0, Math.ceil(bindings.roundTimeRemainingMs() / 1000));
-        if (phase === 'round-intro') return Math.ceil(POINTS_TO_WIN_ROUND);
-        return undefined;
+        if (phase !== 'fighting' && phase !== 'round-intro') return undefined;
+        return Math.max(0, Math.ceil(bindings.roundTimeRemainingMs() / 1000));
     }
 
     function drawPipRow(index: number, filledCount: number): void {
