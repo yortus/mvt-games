@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**080**.
+**081**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -97,6 +97,7 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 069 | [A line length of 120, and single-line imports](./proposals/069-line-length-and-single-line-imports.md) | Proposed. Four stages: write down 120, enforce it with `@stylistic/max-len` (1,045 lines to fix by hand, a package at a time), add `@mvtjs/single-line-imports`, which writes each import and re-export on one line by a cascade of merge, split values from types, then split by length, and turn it on with `lint:fix` (about 180 files) |
 | 075 | [The docs as a book](./proposals/075-docs-as-a-book.md) | Proposed. A review of every docs page found most core ideas taught three or four times (the frame sequence eight times), pages that depend on later chapters, and a voice that changes with a page's age. Recommends one book in six parts: the language-neutral Architecture pages merged into the chapters and kept as a one-page specification, a Why MVT Works part that sums up the principles in one chapter with their full pages as appendices named by acronym (settled), each concept given one home, the Principles pages' voice throughout, contributor material and the agent files moved out of the book and pointed into it. Examples run inline online, from an embed page on the playground's runtime, and print as stills; folds in task 061. Lists 30 errors to fix now |
 | 077 | [Audio90 Studio](./proposals/077-audio90-studio.md) | Proposed. An editor for `audio90`'s sounds and songs, built with MVT, as a private site at `/studio/` beside the playground, depending on `audio90` by its npm name. Four stages, each worth shipping: a sound designer for either chip (presets, sliders, randomise, mutate, export as code), an engine editor for the Audio90's engines with a scope and the keyboard as a piano, a tracker made from the Tune Tracker's views, and sharing (a song in a link, Open in Playground, WAV). Grown from 074 section 8 |
+| 080 | [The Audio80's voices inside the Audio90](./proposals/080-audio80-voices-in-the-audio90.md) | Proposed. One chip kind: the Audio90's voices 0-3 become the Audio80, run unchanged with its own output stage so its sounds stay byte-identical, and voices 4-15 stay Audio90 voices (4 + 12, since no song uses more than 10). Two stages first, each worth doing on its own: chips that rest while silent, and one meaning for each tracker token (`f` keeps brightness). Then songs of one kind, the Arcade's nine Audio80 entries moved, and the `Audio80` chip deprecated; mixed songs later |
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
