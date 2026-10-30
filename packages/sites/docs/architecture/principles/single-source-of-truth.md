@@ -214,7 +214,7 @@ reads in it never change anything.
   not `() => T`), so every caller can see the view won't follow a change.
   The bug is a binding declared as a function but read only once: the
   declaration says the view follows changes, and the view doesn't. See
-  [Fixed and Changeable Binding Values](../bindings.md#fixed-and-changeable-binding-values).
+  [Fixed Values and Getters](../bindings.md#fixed-values-and-getters).
 
 ## Checklist
 

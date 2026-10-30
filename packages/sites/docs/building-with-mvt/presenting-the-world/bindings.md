@@ -80,9 +80,12 @@ hidden coupling, no guessing about dependencies.
 
 The two kinds of bindings serve opposite directions:
 
-**Query bindings** are read every frame in `refresh()`. Each one returns the
-current value of some state the view presents, typically read from a model.
-The view uses it to update the presentation output.
+**Query bindings** are usually functions, which the view calls every frame
+in `refresh()`. Most take no arguments, like `x()`, and are called
+[getters](../../reference/glossary.md). Some take arguments that pick a
+value, like `tileKindAt(row, col)`. Each one returns the current value of
+some state the view presents, typically read from a model. The view uses it
+to update the presentation output.
 
 **Relay bindings** are called in response to user input (key presses, taps,
 mouse clicks). Each one reports what the user did, typically to a model
@@ -151,8 +154,8 @@ function GameView(bindings: GameViewBindings): Container {
 }
 ```
 
-Each binding is a simple arrow function that reads a model property. The
-child view doesn't know the model exists - it only sees its bindings
+Each query binding here is a getter, an arrow function that reads a model
+property. The child view doesn't know the model exists - it only sees its bindings
 interface. The same wiring in a JSX body reads as a tree:
 
 ```tsx
@@ -180,11 +183,10 @@ function GameView(bindings: GameViewBindings): Container {
 A view is the same function either way, so `HudView` works as a tag and as a
 plain call, whichever kind of body `HudView` itself has.
 
-## Changeable Bindings Must Be Re-read Every Frame
+## Functions Must Be Re-read Every Frame
 
-A query binding given as a function is **changeable** - its value may change
-between frames. A view must never read it once at construction and keep the
-result:
+A query binding given as a function may return a different value each
+frame. A view must never call it once at construction and keep the result:
 
 ```ts
 // Wrong - read once at construction, never updates
@@ -211,10 +213,12 @@ If the model replaces its internal state (e.g. on reset), the view
 automatically picks up the new values on the next frame.
 
 A view that does not support a value changing, such as a size its whole
-layout is built around, says so in its bindings type: `rows: number` rather
-than `rows: () => number`. That states a limitation, which can be relaxed
-later without breaking callers; see
-[Bindings in Depth](bindings-in-depth.md#fixed-and-changeable-binding-values).
+layout is built around, says so in its bindings type. It takes a fixed
+value, `rows: number`, rather than a getter, `rows: () => number`. That
+states a limitation, which can be relaxed later without breaking callers.
+A function with arguments has no fixed form, so a view that calls one less
+often says so in the binding's doc comment instead. See
+[Bindings in Depth](bindings-in-depth.md#fixed-values-and-functions).
 
 ## A Binding for Each Value, or the Whole Model
 
@@ -222,7 +226,7 @@ Not every view needs a binding for each value it shows. MVT recognises three acc
 
 | View kind                      | Access pattern                  | Rationale                                      |
 | ------------------------------ | ------------------------------- | ---------------------------------------------- |
-| **Top-level application view** | The model(s), as fixed bindings | Application-specific; biggest bindings savings |
+| **Top-level application view** | The model(s), as fixed values   | Application-specific; biggest bindings savings |
 | **Leaf / reusable view**       | Query and relay bindings        | Small interface cost; genuine reuse potential  |
 | **Static configuration**       | Ambient constants               | Never changes at runtime; not reactive state   |
 
@@ -239,7 +243,7 @@ candidates. The bindings interface gives them an adapter layer: if a model's
 property is named `posX` but the view expects `x`, only the wiring
 changes.
 
-For more on optional bindings, fixed and changeable binding values, and
+For more on optional bindings, fixed values and getters, and
 advanced access patterns, see [Bindings in Depth](bindings-in-depth.md).
 
 ---

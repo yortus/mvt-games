@@ -102,7 +102,7 @@ Key principles:
   in `refresh()`, never cached at construction time. The one exception is a
   query binding the view declares as a fixed value: the view reads it once,
   and does not support it changing (see
-  [Bindings in Depth](bindings-in-depth.md#fixed-and-changeable-binding-values)).
+  [Bindings in Depth](bindings-in-depth.md#fixed-values-and-functions)).
 - **Idempotent** - calling `refresh()` twice with the same model state
   produces the same visual result.
 - **No side effects** - `refresh()` reads state and writes to the

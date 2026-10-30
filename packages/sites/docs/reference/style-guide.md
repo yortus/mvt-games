@@ -527,7 +527,7 @@ when it does: widening `T` to `ValueOrGetter<T>` does not break callers.
 Never declare a query binding as a function and then read it only once: the
 view silently stops following a value its bindings promise to follow. That
 breaks [V-reactive](../architecture/rules.md#view-rules). See
-[Fixed and Changeable Binding Values](../architecture/bindings.md#fixed-and-changeable-binding-values).
+[Fixed Values and Getters](../architecture/bindings.md#fixed-values-and-getters).
 
 ### Top-Level Views
 

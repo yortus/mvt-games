@@ -97,7 +97,7 @@ total duration and pre-allocates all step state. No per-tick allocations.
 Each step's `progress` drives a piece of the visual effect. The sequence
 object itself never changes, so a view takes it as a fixed value
 (`matchSequence: Sequence<...>`, not a function; see
-[Bindings in Depth](../presenting-the-world/bindings-in-depth.md#fixed-and-changeable-binding-values)),
+[Bindings in Depth](../presenting-the-world/bindings-in-depth.md#fixed-values-and-functions)),
 and reads its steps' progress in `refresh()` every frame:
 
 ```ts

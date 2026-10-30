@@ -201,7 +201,7 @@ A contract can change without breaking anyone in only two ways:
 
 A caller that met the old requirement still meets a weaker one, and a
 caller that relied on the old guarantee still gets it. The reverse breaks
-someone. The [Bindings](../bindings.md#fixed-and-changeable-binding-values)
+someone. The [Bindings](../bindings.md#fixed-values-and-getters)
 page shows this for query bindings: widening a value-only binding to
 accept either form leaves every caller working.
 

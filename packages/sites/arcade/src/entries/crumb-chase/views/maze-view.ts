@@ -12,7 +12,12 @@ export interface MazeViewBindings {
     tileSize: () => number;
     rows: () => number;
     cols: () => number;
+    /** Read only when the maze is drawn: when the view is built, when the maze's size changes, and when a new game starts. */
     tileKindAt: (row: number, col: number) => TileKind;
+    /**
+     * Read every frame for each crumb still shown, so an eaten crumb disappears at once. Read for every tile only when
+     * the maze is drawn, so a crumb that comes back shows only then.
+     */
     isCrumbAt: (row: number, col: number) => boolean;
     gamePhase: () => GamePhase;
 }

@@ -38,7 +38,7 @@ The contract:
   read directly, and query bindings given as functions. The one exception is
   a query binding the view declares as a fixed value: the view reads it once,
   at construction, and does not support it changing (see
-  [Bindings](bindings.md#fixed-and-changeable-binding-values)).
+  [Bindings](bindings.md#fixed-values-and-getters)).
 - **Idempotent.** Calling `refresh()` twice with the same model state
   produces the same output.
 - **No side effects.** `refresh()` reads state and writes to the presentation

@@ -1,8 +1,7 @@
 # Bindings in Depth
 
-> Advanced bindings topics: optional query and relay bindings, fixed and
-> changeable binding values, and a decision framework for choosing how views
-> access state.
+> Advanced bindings topics: optional query and relay bindings, fixed values
+> and getters, and a decision framework for choosing how views access state.
 
 **Related:** [Bindings (Learn)](bindings.md) · [Views (Learn)](views.md) ·
 [View Composition](view-composition.md) · [Presenting Collections](collections.md)
@@ -58,25 +57,29 @@ const isVisible = bindings.isVisible?.() ?? true;
 When in doubt, keep query bindings required. A missing binding is usually a
 wiring bug, and TypeScript catching it at the call site is valuable.
 
-## Fixed and Changeable Binding Values
+## Fixed Values and Functions
 
-A query binding's type says whether the view supports its value changing:
+A query binding is given as a [fixed value](../../reference/glossary.md) or
+as a function. A function that takes no arguments and returns the current
+value is a [getter](../../reference/glossary.md). For a query binding without
+arguments, the type says which form the view accepts, and so whether the
+view supports the value changing:
 
 | Declared as        | Callers pass         | What it says about the view                                          |
 | ------------------ | -------------------- | -------------------------------------------------------------------- |
-| `() => T`          | A function           | Supports the value changing: calls it every refresh                  |
+| `() => T`          | A getter             | Supports the value changing: calls it every refresh                  |
 | `T`                | A fixed value        | Does not support the value changing: reads it once, at construction  |
 | `ValueOrGetter<T>` | Whichever suits them | Supports the value changing, and accepts a fixed value too           |
 
-### Changeable values
+### Getters
 
-Most query bindings are functions, and the view follows them however their
+Most query bindings are getters, and the view follows them however their
 values change. That is the flexible choice, and the right one for anything
 read from model state: a view that follows a changing size or label can be
 used in more places than one that assumes it never changes.
 
 Supporting change has one cost: the view must re-read the value in
-`refresh()` every frame, either by calling the binding directly or through
+`refresh()` every frame, either by calling the getter directly or through
 [change detection](../reacting-to-changes/change-detection.md), which keeps a
 rarely-changing value cheap to follow. It must never read the value once at
 construction and keep the result. (Nothing notifies the view of a change: MVT
@@ -105,8 +108,8 @@ function GoodView(bindings: MyViewBindings): Container {
 
 This guarantees that if the model replaces its internal state (e.g. on reset),
 the view picks up the new values on the next frame without any manual
-notification wiring. A view that declares a function but reads it only once
-breaks that promise silently; if it cannot follow a change, it should declare
+notification wiring. A view that declares a getter but calls it only once
+breaks that promise silently. If it cannot follow a change, it should declare
 a fixed value instead.
 
 ### Fixed values
@@ -117,7 +120,7 @@ to it means rebuilding the view's structure, which may not be worth writing
 yet. Such a view can declare the value as a plain `T`. That is an honest
 statement of a limitation: the view reads the value once, at construction,
 and does not support it changing. Callers see the limitation in the type, and
-cannot pass a function by mistake.
+cannot pass a getter by mistake.
 
 ```ts
 interface TerrainViewBindings {
@@ -142,18 +145,39 @@ A limitation declared this way can be relaxed later without breaking anyone.
 Widening `T`, or `() => T`, to `ValueOrGetter<T>` leaves every call site
 passing something the view accepts.
 
+### Functions with arguments
+
+A query binding with arguments, such as `tileKindAt(row, col)`, is always a
+function, so its type can't say whether the view follows changes. Callers
+can expect that it does, as it would a getter. The view calls the function
+again every frame, for whatever arguments it needs.
+
+A view that calls one less often has no fixed form to declare, so it says so
+in the binding's doc comment. Callers then know that a change shows only at
+those moments:
+
+```ts
+interface TerrainViewBindings {
+    /** Read when a column scrolls into view and is drawn. */
+    isSolidAt: (col: number, row: number) => boolean;
+}
+```
+
 ### In this project
 
 - **Model state** is `() => T`: it changes, so the view must follow it.
 - **A value the view does not support changing** is `T`, as a stated
   limitation, until supporting change is worth the work.
+- **A query binding with arguments** is a function, followed every frame
+  unless its doc comment says when the view calls it instead.
 - **Views reused with both fixed and changing values**, like the shared views
-  in `packages/sites/arcade/src/shared/`, can take `ValueOrGetter<T>` from `@mvtjs/pixi`, which accepts
-  a fixed value or a function. The JSX runtime's own attributes work this way:
-  `x={12}` is set once, `x={() => model.x}` every frame.
+  in `packages/sites/arcade/src/shared/`, can take `ValueOrGetter<T>` from
+  `@mvtjs/pixi`, which accepts a fixed value or a getter. The JSX runtime's
+  own attributes work this way: `x={12}` is set once, `x={() => model.x}`
+  every frame.
 
 The
-[architecture page](../../architecture/bindings.md#fixed-and-changeable-binding-values)
+[architecture page](../../architecture/bindings.md#fixed-values-and-getters)
 covers the trade-offs in full, including why accepting both depends on the
 language.
 
@@ -166,9 +190,9 @@ patterns - choose by reuse potential and data-source complexity.
 
 | View kind                                        | Access pattern                                                      | Rationale                                                           |
 | ------------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| **Top-level application view**                   | The model(s), as fixed bindings                                     | Application-specific; largest bindings surface; no reuse scenario   |
+| **Top-level application view**                   | The model(s), as fixed values                                       | Application-specific; largest bindings surface; no reuse scenario   |
 | **Reusable leaf view**                           | Query and relay bindings                                            | Small interface cost; genuine reuse; absorbs model-shape mismatches |
-| **Static config** (tile size, screen dimensions) | Import from a data module (application-specific) or use a fixed query binding   | Never changes at runtime; not reactive state                        |
+| **Static config** (tile size, screen dimensions) | Import from a data module (application-specific) or take a fixed value as a query binding | Never changes at runtime; not reactive state                        |
 
 ### Why top-level views take the whole model
 
@@ -177,7 +201,7 @@ the **least** likely to be reused elsewhere - it exists to wire this
 application's specific sub-views together. It is also the view with the
 **largest** bindings surface: every property in every collection would have
 to be projected through indexed bindings. Giving it the model itself, as one
-fixed binding, eliminates that entire layer.
+binding with a fixed value, eliminates that entire layer.
 
 In this project, that binding is named `model`. The view wires its
 sub-views' bindings from the model's properties:

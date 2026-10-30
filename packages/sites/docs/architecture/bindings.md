@@ -72,63 +72,83 @@ is the bullet, is it visible, what is the score. It never changes anything; it
 only returns a value. That is what lets `refresh()` read every query binding
 as often as it likes without side effects.
 
-### Fixed and Changeable Binding Values
+A query binding is given in one of two ways:
 
-A query binding's value can be given in one of two ways:
-
-- **As a function.** The view calls it whenever it needs the current value,
-  which in practice means every `refresh()`. This is how a query binding
-  follows state that changes, such as a position.
 - **As a fixed value.** The view reads it once, at construction, and does not
   follow any later change.
+- **As a function.** The view calls it whenever it needs the value, which in
+  practice means every `refresh()`. This is how a query binding follows
+  state that changes, such as a position.
 
-The view's bindings type declares which it accepts for each query binding,
-and so whether the view supports that value changing. There are three
-choices:
+A function that takes no arguments, such as `score`, is a **getter**, which
+returns the current value. A function that takes arguments, such as
+`tileKindAt(row, col)`, returns the value its arguments pick. Either way, it's
+a function the view calls, not a property accessor that a language runs for
+you when you read a field.
+
+### Functions Are Followed Every Frame
+
+Callers can expect the same of every function they pass. The view calls it
+again every frame, so it follows whatever the function returns. This holds
+for functions with arguments as much as for getters, so nobody has to ask
+which kind a binding is before relying on it.
+
+A view that calls a function less often must say so. For a getter, it says so
+in the type, by declaring a fixed value instead (see below). A function with
+arguments has no fixed form, so the view says so in the binding's
+documentation, such as "read when a column scrolls into view". Callers then
+know that a change shows only at those moments.
+
+### Fixed Values and Getters
+
+For a query binding without arguments, the view's bindings type declares
+which form it accepts, and so whether the view supports the value changing.
+There are three choices:
 
 | Declared as | Callers pass | For callers | For the view |
 |---|---|---|---|
-| Function only: `() -> T` | A function. A fixed value must be wrapped: `() -> 42` | Can supply anything, but wrapping fixed values is a little clumsy, and the wiring no longer shows which values are fixed | Supports the value changing, for every query binding. [Change detection](views.md#immediate-mode-data-flow-retained-mode-output) keeps rarely-changing values cheap, though following a change to something structural, such as a grid size, can mean rebuilding |
-| Value only: `T` | A fixed value | Cannot supply a value that changes | Does not support the value changing. The simplest to write, but a limitation every caller has to live with |
-| Either: `T or () -> T` | Whichever suits | The most convenient, and the wiring shows which values are fixed and which change | Supports the value changing, and handles both forms. Wrapping fixed values in functions at construction is simple, but reads them every frame; keeping the distinction lets the view skip per-frame work for fixed values |
+| Getter only: `() -> T` | A getter. A fixed value must be wrapped: `() -> 42` | Can supply anything, but wrapping fixed values is a little clumsy, and the wiring no longer shows which values are fixed | Supports the value changing, for every query binding. [Change detection](views.md#immediate-mode-data-flow-retained-mode-output) keeps rarely-changing values cheap, though following a change to something structural, such as a grid size, can mean rebuilding |
+| Fixed value only: `T` | A fixed value | Cannot supply a value that changes | Does not support the value changing. The simplest to write, but a limitation every caller has to live with |
+| Either: `T or () -> T` | Whichever suits | The most convenient, and the wiring shows which values are fixed and which change | Supports the value changing, and handles both forms. Wrapping fixed values in getters at construction is simple, but calls them every frame; keeping the distinction lets the view skip per-frame work for fixed values |
 
 Supporting change is the more flexible choice: the view can be used wherever
-the value comes from, fixed or not. A value-only query binding is an honest
-statement of a limitation instead, useful where following a change would
-cost more than it is worth for now.
+the value comes from, fixed or not. A query binding that takes only a fixed
+value is an honest statement of a limitation instead, useful where following
+a change would cost more than it is worth for now.
 
 A few consequences follow:
 
-- **A query binding declared as a function may change, and the view must treat
-  it so.** A view that reads a function once at construction and keeps the
+- **A query binding declared as a getter may change, and the view must treat
+  it so.** A view that calls a getter once at construction and keeps the
   result breaks [V-reactive](rules.md#view-rules): its bindings promise to
   follow a value that it silently stops following. If the view does not
-  support the value changing, it must declare the query binding as
-  value-only, so its bindings state the limitation.
+  support the value changing, it must declare the query binding as fixed
+  value only, so its bindings state the limitation.
 - **The limitation can be relaxed later without breaking callers.** Widening
-  a value-only query binding to "either" leaves every call site passing
-  something the view accepts, as does widening a function-only one. The
-  view's implementation changes; its callers do not. Changing directly
-  between function-only and value-only does break callers.
+  a fixed-value-only query binding to "either" leaves every call site passing
+  something the view accepts, as does widening a getter-only one. The view's
+  implementation changes; its callers do not. Changing directly between
+  getter only and fixed value only does break callers.
 - **"Either" depends on the language.** It needs a type that is a union of a
-  value and a function, and a way to tell them apart at run time. TypeScript
+  value and a getter, and a way to tell them apart at run time. TypeScript
   and dynamically typed languages such as JavaScript, Python and Lua have
   both. Most statically typed languages would need an explicit wrapper type,
   which puts ceremony at every call site and undoes the convenience that is
-  the point. There, choose between function-only and value-only for each query
-  binding. Even where it works, "either" is ambiguous for a query whose value
-  is itself a function.
+  the point. There, choose between getter only and fixed value only for each
+  query binding. Even where it works, "either" is ambiguous for a query whose
+  value is itself a function.
 
 As a rule of thumb: declare what the view actually supports. Accepting either
 form is the most convenient for callers and suits widely reused views, where
-the extra work in the view is repaid at many call sites. A value-only query
-binding states a limitation that can be relaxed later without breaking
-anyone.
+the extra work in the view is repaid at many call sites. A query binding
+that takes only a fixed value states a limitation that can be relaxed later
+without breaking anyone.
 
 ## Relay Bindings and Input Handling
 
-A relay binding is always a function: the view calls it when the user does
-something, with the details of what happened, such as where a tap landed. The
+A relay binding is always a function, but not a getter. The view calls it
+when the user does something, with the details of what happened, such as
+where a tap landed. The
 view only reports the input; what it means is up to whoever wired the relay.
 
 Relay bindings should be optional. A view that supports tap input defines
@@ -170,8 +190,8 @@ createGameView(gameModel):
     })
 ```
 
-Each value that changes is given as a simple function that reads a model
-property. The view doesn't know the model exists - it only sees its bindings
+Each value that changes is given as a getter that reads a model property.
+The view doesn't know the model exists - it only sees its bindings
 interface.
 
 ## When a Binding for Each Value Isn't Worth It
@@ -183,7 +203,7 @@ testing, substitutability).
 Two common exceptions are:
 
 - **The top-level application view.** For this view it is much simpler to
-pass the top-level model itself, as a fixed binding. This view is
+pass the top-level model itself, as a fixed value. This view is
 application-specific with no reuse potential, and has the largest binding
 surface. So the cost vs benefit is in favour of one binding that holds the
 whole model.
