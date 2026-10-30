@@ -40,8 +40,8 @@ const ACTIVE = 1;
 const AFTER = 2;
 
 /**
- * Creates a ticker-driven dispatcher that routes each sequence step
- * through enter/active/inactive lifecycle callbacks.
+ * Creates a tracker that keeps track of each sequence step's phase from
+ * frame to frame, and calls its entering/active/inactive lifecycle callbacks.
  *
  * Phase is derived purely from step state every frame:
  * - `isActive`       -> ACTIVE
@@ -52,7 +52,7 @@ const AFTER = 2;
  *
  * Call the returned function inside `refresh()`.
  */
-export function createSequenceReaction<N extends string>(
+export function createSequenceTracker<N extends string>(
     sequence: Sequence<N>,
     handlers: { [K in N]?: StepHandlers },
 ): () => void {

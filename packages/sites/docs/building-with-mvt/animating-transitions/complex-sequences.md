@@ -170,17 +170,19 @@ strategy from the previous section, applied to sequences. The sequence
 object is the shared coordination mechanism - each sub-view reads its own
 slice independently.
 
-## Reacting to Step Lifecycle Events
+## Tracking a Sequence's Steps
 
 Reading `isActive` and `progress` in `refresh()` works well for continuous
 effects (fading, shaking, scaling). But some effects need **one-shot
 actions** at specific moments: spawn particles when dust begins, set up
 text when the popup enters, clean up when a step ends.
 
-A **sequence reaction** bridges step state to lifecycle callbacks:
+A **sequence tracker** keeps track of each step's phase, and calls your
+callbacks for it: once as a step starts, on every frame while it runs, and
+once as it comes to rest:
 
 ```ts
-const updateEffects = createSequenceReaction(matchSequence, {
+const updateEffects = createSequenceTracker(matchSequence, {
     dust: {
         entering: () => {
             // One-shot: position dust particles at matched cells
@@ -330,7 +332,7 @@ function refresh() {
 The same `Sequence` API works in both modes - the only difference is
 whether time comes from `update(deltaMs)` or from setting `progress`
 directly. Step `isActive` flags, per-step progress, and
-`SequenceReaction` all work identically.
+`createSequenceTracker` all work identically.
 
 If the model slows down or pauses, the effects automatically follow.
 
@@ -444,7 +446,7 @@ Six child views each handle their own slice:
   `steps.bannerOut`, slides a combo banner in and out
 - **Pieces view** - reads `steps.fade`, fades matched tiles out
 
-Each child uses `createSequenceReaction` to handle one-shot setup
+Each child uses `createSequenceTracker` to handle one-shot setup
 (`entering`), continuous interpolation (`active`), and cleanup
 (`inactive`). The parent view triggers `matchSequence.start()` when the
 model enters the `matching` phase. Cascade intensity scales the effects -
@@ -463,7 +465,7 @@ presentation state.
   durationMs }`. The sequence factory pre-allocates all state.
 - **Split effects across sub-views**, each reading only the steps it
   needs. The parent creates and distributes the sequence via bindings.
-- **Sequence reactions** provide lifecycle callbacks (`entering`,
+- **Sequence trackers** provide lifecycle callbacks (`entering`,
   `active`, `inactive`) for one-shot setup, continuous interpolation,
   and cleanup.
 - **Self-timed sequences** are presentation state - the view owns the

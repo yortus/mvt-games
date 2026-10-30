@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { createSequenceReaction, type Sequence } from '@mvtjs/utils';
+import { createSequenceTracker, type Sequence } from '@mvtjs/utils';
 import { GRID_COLS, GRID_ROWS } from '../../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 import { setRefresh } from '@mvtjs/pixi';
@@ -40,7 +40,7 @@ export function ShakeContainerView(bindings: ShakeContainerViewBindings): Contai
     content.position.set(centreX, centreY);
     view.addChild(content);
 
-    const updateShake = createSequenceReaction(bindings.matchSequence, {
+    const updateShake = createSequenceTracker(bindings.matchSequence, {
         shake: {
             inactive: () => content.position.set(centreX, centreY),
             active: (progress) => {

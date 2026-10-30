@@ -9,7 +9,7 @@ make common parts of it shorter, and none of them needs a renderer:
   the last poll, and whether each number went up or down; `memoiseLast`
   recomputes only when its argument changes.
 - **Time-driven state:** tweens (`createBooleanTween`, `createEdgeTween`),
-  sequences (`createSequence`, `createSequenceReaction`) and a metronome
+  sequences (`createSequence`, `createSequenceTracker`) and a metronome
   (`createMetronome`), all advanced by an `update(deltaMs)` call rather than
   a clock.
 - **Collections:** `createSlotList` and `createOrderedSlotList`, which keep a

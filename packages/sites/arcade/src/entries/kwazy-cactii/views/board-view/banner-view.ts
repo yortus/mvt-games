@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from 'pixi.js';
-import { createSequenceReaction, type Sequence } from '@mvtjs/utils';
+import { createSequenceTracker, type Sequence } from '@mvtjs/utils';
 import { GRID_COLS, GRID_ROWS } from '../../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
 import { setRefresh } from '@mvtjs/pixi';
@@ -45,7 +45,7 @@ export function BannerView(bindings: BannerViewBindings): Container {
     banner.position.set(BOARD_WIDTH_PX * 0.5, BOARD_HEIGHT_PX * 0.5);
     view.addChild(banner);
 
-    const updateBanner = createSequenceReaction(bindings.matchSequence, {
+    const updateBanner = createSequenceTracker(bindings.matchSequence, {
         bannerIn: {
             entering: () => {
                 const cascade = bindings.cascadeStep();

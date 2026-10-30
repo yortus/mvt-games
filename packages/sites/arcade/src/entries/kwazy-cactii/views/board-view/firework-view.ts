@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { createSequenceReaction, type Sequence } from '@mvtjs/utils';
+import { createSequenceTracker, type Sequence } from '@mvtjs/utils';
 import type { CactusCell } from '../../models';
 import { MIN_CASCADE_FOR_FIREWORKS } from '../../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from '../view-constants';
@@ -46,7 +46,7 @@ export function FireworkView(bindings: FireworkViewBindings): Container {
     let centreX = 0;
     let centreY = 0;
 
-    const updateFirework = createSequenceReaction(bindings.matchSequence, {
+    const updateFirework = createSequenceTracker(bindings.matchSequence, {
         fireworkLaunch: {
             entering: () => {
                 const cascade = bindings.cascadeStep();

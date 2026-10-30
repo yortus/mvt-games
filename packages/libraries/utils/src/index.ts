@@ -8,7 +8,7 @@ export { createBooleanTween, type BooleanTween, type BooleanTweenOptions } from 
 export { createEdgeTween, type EdgeTween, type EdgeTweenOptions } from './edge-tween';
 export { createMetronome, type Metronome } from './metronome';
 export { createSequence, type Sequence, type StepDef } from './sequence';
-export { createSequenceReaction, type StepHandlers } from './sequence-reaction';
+export { createSequenceTracker, type StepHandlers } from './sequence-tracker';
 export { createSlotList, type IndexedSlots, type Slot, type SlotList, type SlotListOptions } from './slot-list';
 export { createOrderedSlotList, type OrderedSlot, type OrderedSlotList } from './slot-list';
 export { createPerformanceHistory, METRIC_KINDS, type MetricKind, type PerformanceHistory, type PerformanceHistoryOptions } from './performance-history';

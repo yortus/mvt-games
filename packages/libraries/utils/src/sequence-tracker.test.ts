@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createSequence } from './sequence';
-import { createSequenceReaction } from './sequence-reaction';
+import { createSequenceTracker } from './sequence-tracker';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -25,12 +25,12 @@ function singleStepSequence() {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('createSequenceReaction', () => {
+describe('createSequenceTracker', () => {
     describe('initialisation', () => {
         it('fires inactive handler on creation when sequence has not started', () => {
             const seq = singleStepSequence();
             const inactive = vi.fn();
-            createSequenceReaction(seq, { x: { inactive } });
+            createSequenceTracker(seq, { x: { inactive } });
             expect(inactive).toHaveBeenCalledOnce();
             expect(inactive).toHaveBeenCalledWith('start');
         });
@@ -40,7 +40,7 @@ describe('createSequenceReaction', () => {
             seq.start();
             seq.update(200);
             const inactive = vi.fn();
-            createSequenceReaction(seq, { x: { inactive } });
+            createSequenceTracker(seq, { x: { inactive } });
             expect(inactive).toHaveBeenCalledWith('end');
         });
 
@@ -50,7 +50,7 @@ describe('createSequenceReaction', () => {
             seq.update(50);
             const entering = vi.fn();
             const active = vi.fn();
-            createSequenceReaction(seq, { x: { entering, active } });
+            createSequenceTracker(seq, { x: { entering, active } });
             expect(entering).toHaveBeenCalledOnce();
             expect(active).toHaveBeenCalledOnce();
         });
@@ -60,7 +60,7 @@ describe('createSequenceReaction', () => {
         it('fires with progress each tick while the step is active', () => {
             const seq = singleStepSequence();
             const active = vi.fn();
-            const update = createSequenceReaction(seq, { x: { active } });
+            const update = createSequenceTracker(seq, { x: { active } });
 
             seq.start();
             seq.update(25);
@@ -75,7 +75,7 @@ describe('createSequenceReaction', () => {
         it('does not fire when the step is inactive', () => {
             const seq = singleStepSequence();
             const active = vi.fn();
-            const update = createSequenceReaction(seq, { x: { active } });
+            const update = createSequenceTracker(seq, { x: { active } });
 
             // Step not started yet - update should not fire active
             update();
@@ -87,7 +87,7 @@ describe('createSequenceReaction', () => {
         it('fires once with at=start when step transitions from before to active', () => {
             const seq = singleStepSequence();
             const entering = vi.fn();
-            const update = createSequenceReaction(seq, { x: { entering } });
+            const update = createSequenceTracker(seq, { x: { entering } });
 
             seq.start();
             seq.update(10);
@@ -99,7 +99,7 @@ describe('createSequenceReaction', () => {
         it('does not fire again while the step remains active', () => {
             const seq = singleStepSequence();
             const entering = vi.fn();
-            const update = createSequenceReaction(seq, { x: { entering } });
+            const update = createSequenceTracker(seq, { x: { entering } });
 
             seq.start();
             seq.update(10);
@@ -116,7 +116,7 @@ describe('createSequenceReaction', () => {
         it('fires with at=end when step completes', () => {
             const seq = singleStepSequence();
             const inactive = vi.fn();
-            const update = createSequenceReaction(seq, { x: { inactive } });
+            const update = createSequenceTracker(seq, { x: { inactive } });
             inactive.mockClear(); // clear initialisation call
 
             seq.start();
@@ -133,7 +133,7 @@ describe('createSequenceReaction', () => {
         it('fires with at=start on initialisation for an unstarted sequence', () => {
             const seq = singleStepSequence();
             const inactive = vi.fn();
-            createSequenceReaction(seq, { x: { inactive } });
+            createSequenceTracker(seq, { x: { inactive } });
             expect(inactive).toHaveBeenCalledWith('start');
         });
     });
@@ -142,7 +142,7 @@ describe('createSequenceReaction', () => {
         it('cycles through inactive(start) -> entering -> active -> inactive(end)', () => {
             const seq = singleStepSequence();
             const log: string[] = [];
-            const update = createSequenceReaction(seq, {
+            const update = createSequenceTracker(seq, {
                 x: {
                     inactive: (at) => log.push(`inactive(${at})`),
                     entering: (at) => log.push(`entering(${at})`),
@@ -179,7 +179,7 @@ describe('createSequenceReaction', () => {
             const seq = twoStepSequence();
             const aLog: string[] = [];
             const bLog: string[] = [];
-            const update = createSequenceReaction(seq, {
+            const update = createSequenceTracker(seq, {
                 a: {
                     inactive: (at) => aLog.push(`inactive(${at})`),
                     entering: () => aLog.push('entering'),
@@ -218,7 +218,7 @@ describe('createSequenceReaction', () => {
         it('works with only an active handler', () => {
             const seq = singleStepSequence();
             const active = vi.fn();
-            const update = createSequenceReaction(seq, { x: { active } });
+            const update = createSequenceTracker(seq, { x: { active } });
 
             seq.start();
             seq.update(50);
@@ -229,7 +229,7 @@ describe('createSequenceReaction', () => {
         it('works with only an inactive handler', () => {
             const seq = singleStepSequence();
             const inactive = vi.fn();
-            const update = createSequenceReaction(seq, { x: { inactive } });
+            const update = createSequenceTracker(seq, { x: { inactive } });
 
             // Initialisation
             expect(inactive).toHaveBeenCalledOnce();
@@ -247,7 +247,7 @@ describe('createSequenceReaction', () => {
 
         it('works with an empty handler object', () => {
             const seq = singleStepSequence();
-            const update = createSequenceReaction(seq, { x: {} });
+            const update = createSequenceTracker(seq, { x: {} });
 
             seq.start();
             seq.update(50);
@@ -259,7 +259,7 @@ describe('createSequenceReaction', () => {
         it('fires inactive(start) then entering on restart while active', () => {
             const seq = singleStepSequence();
             const log: string[] = [];
-            const update = createSequenceReaction(seq, {
+            const update = createSequenceTracker(seq, {
                 x: {
                     inactive: (at) => log.push(`inactive(${at})`),
                     entering: (at) => log.push(`entering(${at})`),
@@ -289,7 +289,7 @@ describe('createSequenceReaction', () => {
         it('fires inactive(start) on restart after step had completed', () => {
             const seq = singleStepSequence();
             const inactive = vi.fn();
-            const update = createSequenceReaction(seq, { x: { inactive } });
+            const update = createSequenceTracker(seq, { x: { inactive } });
             inactive.mockClear();
 
             seq.start();
@@ -313,7 +313,7 @@ describe('createSequenceReaction', () => {
             const active = vi.fn();
             const entering = vi.fn();
             const inactive = vi.fn();
-            const update = createSequenceReaction(seq, { x: { active, entering, inactive } });
+            const update = createSequenceTracker(seq, { x: { active, entering, inactive } });
             inactive.mockClear(); // clear init
 
             update();

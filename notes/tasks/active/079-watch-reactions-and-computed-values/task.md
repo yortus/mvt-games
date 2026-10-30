@@ -521,8 +521,8 @@ Decided in the design sessions. Do not reopen without new information.
   single-getter case, seconds that fell within a range, is as short written by hand. The names were poor too: `any` is
   TypeScript's top type, both are as generic as names get in a broad utilities package, and neither starts with a
   verb. Adding a helper later is a minor release, and removing one a breaking change, so they wait for real uses.
-- **`createSequenceReaction` is renamed, with its behaviour kept** (2026-10-29); the name is open question 2. It
-  isn't a reaction in this task's sense: it calls each step's handler for its current phase at construction, and
+- **`createSequenceReaction` is renamed `createSequenceTracker`, with its behaviour kept** (2026-10-29; the name,
+  open question 2, chosen 2026-10-30). It isn't a reaction in this task's sense: it calls each step's handler for its current phase at construction, and
   `active` on every frame while a step runs. That's right for its job, which is mostly drawing a sequence's phases:
   `active` draws from `progress`, and `inactive` mostly draws the rest state, so calling it at construction is how a
   view starts valid. Only `entering` is a one-off. Keeping the name would leave two "reactions" in `@mvtjs/utils` with
@@ -621,9 +621,13 @@ Every use case and question raised in 008, 078 and the `derive-util` spike, and 
 
 1. **Calling many reactions.** A view with many reactions calls each in refresh. A helper that runs several (for
    example `runReactions(a, b, c)`, returning one function) would shorten that, or an indexed loop over an array does
-   the same. Decide during migration, if call sites get noisy.
+   the same. Decide during migration, if call sites get noisy. **Settled (2026-10-30): no helper.** The most calls
+   left in one step is six, and they read plainly; several counts with their own sounds became one array reaction.
 2. **The new name for `createSequenceReaction`.** It's renamed, with its behaviour kept (see
-   [Settled Questions](#settled-questions)). Candidates: `createSequenceHandler` and `createSequenceDispatcher`.
+   [Settled Questions](#settled-questions)). **Settled (2026-10-30): `createSequenceTracker`.** It keeps track of each
+   step's phase from frame to frame, and the name suggests neither a reaction nor driving the sequence's time.
+   Rejected: `createSequenceFollower` (reads as a disciple), and `Listener`, `Driver`, `Runner`, `Renderer` and
+   `Binding`, which suggest a push, owning the time, or a term the repo already uses.
 
 ## Acceptance Criteria
 
@@ -653,9 +657,9 @@ Every use case and question raised in 008, 078 and the `derive-util` spike, and 
       model replaces); Neon Monsoon's game model keeps its watcher, polled where it is
 - [x] Today's `watch` and `memoiseLast` removed
 - [x] 008's `watch-builder.spike.ts` and its test removed (2026-10-29)
-- [ ] `createSequenceReaction` renamed (open question 2), with its behaviour unchanged: its file, test, barrel export,
+- [x] `createSequenceReaction` renamed `createSequenceTracker` (open question 2), with its behaviour unchanged: its file, test, barrel export,
       the five Kwazy Cactii board views, the `@mvtjs/utils` README, and the docs page Complex Sequences (its term
-      "sequence reaction" and its heading "Reacting to Step Lifecycle Events")
+      "sequence reaction" and its heading "Reacting to Step Lifecycle Events") (2026-10-30)
 - [x] `derive-util` deleted, locally and on `origin`, superseded by `createComputed` with nothing ported: see
       [Coverage of Earlier Designs](#coverage-of-earlier-designs) (2026-10-29)
 - [ ] Docs: Change Detection rewritten for the three tools, the shapes each takes, and the invariants (with what
@@ -715,7 +719,7 @@ maintainer (reasons in Settled Questions):
 - `watch` gets one signature too, and a one-getter reading has no `anyChanged`. Reactions also refuse mixed arrays
   held in variables.
 - No `all` and `any` helpers.
-- `createSequenceReaction` is renamed, with its behaviour kept; the name is open question 2.
+- `createSequenceReaction` is renamed `createSequenceTracker`, with its behaviour kept.
 - In development, a reading kept past the next poll throws, through proxies. The primitives check is always on, run
   on changes only.
 - Models may use all three tools. Lint checks four local shapes in every file, as errors.
@@ -817,3 +821,6 @@ and lint, the four new rules included, is clean. What it settled:
   library's tests and README, and the lint rules' tests: `showPhase` became `updateTextureWhenPhaseChanges`,
   `playPump` became `playPumpSoundWhenInflationRises`, and so on. A one-line reaction longer than 120 characters
   now takes one line per option, so its `when` and `react` stay visible.
+- **`createSequenceReaction` renamed `createSequenceTracker`** (open question 2): its file and test, the barrel, the
+  five Kwazy Cactii board views, the `@mvtjs/utils` README and Complex Sequences, whose heading is now "Tracking a
+  Sequence's Steps". Behaviour unchanged.
