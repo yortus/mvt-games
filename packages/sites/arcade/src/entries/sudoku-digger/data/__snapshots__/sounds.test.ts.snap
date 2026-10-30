@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`sudoku digger sounds > CHOSEN sounds as it did, audible, unclipped and soft 1`] = `"5d591921"`;
+
+exports[`sudoku digger sounds > DEAD_END sounds as it did, audible, unclipped and soft 1`] = `"2b5d9e19"`;
+
+exports[`sudoku digger sounds > DUG sounds as it did, audible, unclipped and soft 1`] = `"bf17e955"`;
+
+exports[`sudoku digger sounds > FILLED sounds as it did, audible, unclipped and soft 1`] = `"34fd3bdd"`;
+
+exports[`sudoku digger sounds > FINISHED sounds as it did, audible, unclipped and soft 1`] = `"1899a719"`;
+
+exports[`sudoku digger sounds > GAVE_UP sounds as it did, audible, unclipped and soft 1`] = `"da6b611a"`;
+
+exports[`sudoku digger sounds > HELD sounds as it did, audible, unclipped and soft 1`] = `"66de5cf5"`;
+
+exports[`sudoku digger sounds > MARKED sounds as it did, audible, unclipped and soft 1`] = `"8213f619"`;
+
+exports[`sudoku digger sounds > NEEDED sounds as it did, audible, unclipped and soft 1`] = `"84c596c9"`;
+
+exports[`sudoku digger sounds > PLACED sounds as it did, audible, unclipped and soft 1`] = `"39bec005"`;
+
+exports[`sudoku digger sounds > RUBBED_OUT sounds as it did, audible, unclipped and soft 1`] = `"495710ed"`;
+
+exports[`sudoku digger sounds > SEED sounds as it did, audible, unclipped and soft 1`] = `"f3089d89"`;
+
+exports[`sudoku digger sounds > SHUFFLE sounds as it did, audible, unclipped and soft 1`] = `"5bd8055f"`;
+
+exports[`sudoku digger sounds > STUCK sounds as it did, audible, unclipped and soft 1`] = `"326e4958"`;
+
+exports[`sudoku digger sounds > TRIED sounds as it did, audible, unclipped and soft 1`] = `"4fe674d9"`;
+
+exports[`sudoku digger sounds > TRY sounds as it did, audible, unclipped and soft 1`] = `"3ca5d951"`;

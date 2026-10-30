@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**081**.
+**082**.
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -143,6 +143,7 @@ deleted.
 
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
+| 081 | [Sudoku Digger, a Demo of Making Sudoku Puzzles](tasks/active/081-sudoku-digger-demo.md) | medium | 2026-10-30 |
 
 ### Backlog
 
