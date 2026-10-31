@@ -28,9 +28,9 @@
  *
  * Every branch is built up front and kept; switching only changes which one is
  * visible, so it never restructures the scene. An unselected branch returns
- * `SKIP_DESCENDANTS`, so its bindings never run. With construction inert, that
- * means a binding such as `model.boss!.hp` only ever runs while its `when`
- * holds.
+ * `SKIP_DESCENDANTS`, so its bindings never run, and it sits out `updateView`
+ * too, so its update steps don't either. With construction inert, that means
+ * a binding such as `model.boss!.hp` only ever runs while its `when` holds.
  *
  * For a heavy branch, pass a function as the `<Match>` child to build it on
  * first selection instead: `<Match when={...}>{() => <Heavy />}</Match>`.
@@ -39,7 +39,7 @@
  */
 
 import { assert } from '../assert';
-import { setNodeRefresh, SKIP_DESCENDANTS, tickCounter } from '../view-tick-api';
+import { hasNodeUpdateInSubtree, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, tickCounter } from '../view-tick-api';
 import type { JsxTarget } from './jsx-target';
 
 // ---------------------------------------------------------------------------
@@ -144,17 +144,32 @@ export function createSwitch<N extends object>(options: SwitchOptions<N>): Switc
         // Index into `branches` of the one shown, or -1 for none.
         let selected = -1;
 
+        // Which branches gate their subtree's update steps, by index, and the
+        // branch selected for `updateView`, worked out in an update step of the
+        // switch's own. See `gateUpdates`.
+        const isUpdateGated: boolean[] = [];
+        let isSelectedInUpdate = false;
+        let selectedForUpdate = -1;
+        // A branch newly selected, whose update steps are looked for once it has refreshed, and built if it is lazy
+        let newlySelected = -1;
+
         for (let i = 0; i < branches.length; i++) {
             const branch = branches[i];
             const index = i;
             setVisible(branch, false);
             target.append(container, branch);
+            gateUpdates(branch, index);
 
             // Wraps the `<Match>`'s own refresh (its misuse check and lazy build) in a
             // gate, so it only runs while its branch is selected.
             setNodeRefresh(branch, (ownRefresh) => {
                 if (index !== selected) return SKIP_DESCENDANTS;
-                return ownRefresh?.();
+                const result = ownRefresh?.();
+                if (index === newlySelected) {
+                    newlySelected = -1;
+                    gateUpdates(branch, index);
+                }
+                return result;
             });
         }
 
@@ -166,23 +181,60 @@ export function createSwitch<N extends object>(options: SwitchOptions<N>): Switc
         return container;
 
         function select(): void {
+            const next = findSelected();
+            if (next === selected) return;
+
+            if (selected !== -1) {
+                setVisible(branches[selected], false);
+                // A branch may have gained an update step while it showed, such as a lazy one as it was built
+                gateUpdates(branches[selected], selected);
+            }
+            if (next !== -1) setVisible(branches[next], true);
+            selected = next;
+            newlySelected = next;
+        }
+
+        /** The index of the first branch whose condition holds, or -1 for none. */
+        function findSelected(): number {
             // A few conditions at most, so a linear scan is the right cost model:
             // at most one call per branch, stopping at the first that holds. The
             // default branch, if any, is last and always holds.
-            let next = -1;
             for (let i = 0; i < conditions.length; i++) {
                 const when = conditions[i];
                 if (when !== undefined && tickCounter.isCounting) tickCounter.reads++;
-                if (when === undefined || when()) {
-                    next = i;
-                    break;
-                }
+                if (when === undefined || when()) return i;
             }
-            if (next === selected) return;
+            return -1;
+        }
 
-            if (selected !== -1) setVisible(branches[selected], false);
-            if (next !== -1) setVisible(branches[next], true);
-            selected = next;
+        /**
+         * Gives a branch that has an update step somewhere in it a gate of its
+         * own in `updateView`, which skips the branch's update steps unless it
+         * is selected, as its refresh gate skips its refresh. Selection is
+         * worked out afresh in an update step of the switch's own, which runs
+         * before any branch's. A model can change in its update, before the
+         * next refresh shows the change, and a branch's update steps must not
+         * read the state it was built for once that has gone.
+         *
+         * Called as each branch is put in the switch, again once it has
+         * refreshed on being selected, for a lazy branch just built, and again
+         * as it is hidden, for a branch that gained an update step since. Only a branch with an update step is given the gate, so a
+         * switch of branches without any still costs nothing to update.
+         */
+        function gateUpdates(branch: N, index: number): void {
+            if (isUpdateGated[index] === true || !hasNodeUpdateInSubtree(branch)) return;
+            isUpdateGated[index] = true;
+            if (!isSelectedInUpdate) {
+                isSelectedInUpdate = true;
+                setNodeUpdate(container, (deltaMs, ownUpdate) => {
+                    selectedForUpdate = findSelected();
+                    return ownUpdate?.(deltaMs);
+                });
+            }
+            setNodeUpdate(branch, (deltaMs, ownUpdate) => {
+                if (index !== selectedForUpdate) return SKIP_DESCENDANTS;
+                return ownUpdate?.(deltaMs);
+            });
         }
     }
 

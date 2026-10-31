@@ -1,7 +1,4 @@
-import {
-    BOX_OF, CELL_COUNT, COLUMN_OF, countDigits, findCandidates, lowestDigit, PEER_COUNT, PEERS, ROW_OF, toDigitSet,
-    UNIT_CELLS, UNIT_COUNT,
-} from './sudoku-rules';
+import { BOX_OF, CELL_COUNT, COLUMN_OF, countDigits, findCandidates, lowestDigit, PEER_COUNT, PEERS, ROW_OF, toDigitSet, UNIT_CELLS, UNIT_COUNT } from '../sudoku-grid';
 
 // ---------------------------------------------------------------------------
 // Interface

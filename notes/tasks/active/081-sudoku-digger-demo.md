@@ -136,3 +136,16 @@ the levels' givens ranges rethought.
   server, which the script took for this checkout's (a loose end: the
   script could check the server it finds serves its own checkout). Left: a
   playtest in the browser.
+- 2026-10-30: Committed as 11302176. After it: needed cells are teal, not
+  red; a dead end draws a cross in its cell and shakes the grid; a second
+  solution marks the cells where it differs and pulses the needed cell; a
+  cell being dug shows its digits 3 by 3, striking out each rival as it
+  fails, with a brush sound. Then, for the Sudoku game (082), the model's
+  `finishNow()` and `generateSudoku({ seed, level })`, which makes a
+  puzzle at once, out of sight (Easiest about 1 ms, the others tens of ms,
+  the slowest about 170 ms). The entry's barrel exports
+  `loadSudokuGenerator()`, which imports the generator only when called:
+  a plain export put the models and sounds in the Arcade's first load,
+  65.5 KB against its 60 KB budget. Left: a playtest in the browser.
+- 2026-10-31: Renamed the Evil level Hardest, at the user's word. The
+  cited paper's title keeps its "Evil".

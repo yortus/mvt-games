@@ -20,6 +20,7 @@ import { entry as gardenSnakeEntry } from './garden-snake';
 import { entry as kwazyCactiiEntry } from './kwazy-cactii';
 import { entry as neonMonsoonEntry } from './neon-monsoon';
 import { entry as reorderingListsEntry } from './reordering-lists';
+import { entry as sudokuEntry } from './sudoku';
 import { entry as sudokuDiggerEntry } from './sudoku-digger';
 import { entry as tuneTrackerEntry } from './tune-tracker';
 
@@ -55,6 +56,7 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     coralEntry,
     fractalForestEntry,
     sudokuDiggerEntry,
+    sudokuEntry,
 ];
 
 /** The entry with `id`, if there is one. */

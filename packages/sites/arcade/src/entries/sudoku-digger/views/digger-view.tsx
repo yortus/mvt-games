@@ -3,7 +3,7 @@
 import type { Container } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
 import type { SfxChip } from '#shared';
-import { LEVELS } from '../data';
+import { LEVELS } from '../sudoku-grid';
 import type { DiggerModel, DiggerPhase, Playback } from '../models';
 import { ButtonView } from './button-view';
 import { DiggerAudioView } from './digger-audio-view';
@@ -43,28 +43,40 @@ export function DiggerView(bindings: DiggerViewBindings): Container {
     const caption = createComputed({ watch: () => toCaptionKey(model), compute: () => writeCaption(model) });
     const isMaking = () => model.phase === 'trying' || model.phase === 'seeding' || model.phase === 'filling';
     const givensText = createComputed({
-        watch: { isMaking, givens: () => model.givensCount },
+        watch: { isMaking, givens: () => model.digging.givensCount },
         compute: ({ isMaking, givens }) => (isMaking ? '-' : NUMBER_TEXTS[givens]),
     });
     const targetText = createComputed({
-        watch: { isMaking, target: () => model.givensTarget },
+        watch: { isMaking, target: () => model.digging.givensTarget },
         compute: ({ isMaking, target }) => (isMaking ? '-' : NUMBER_TEXTS[target]),
     });
-    const movesText = createComputed({ watch: () => model.searchTries + model.searchRetreats, compute: String });
-    const deadEndsText = createComputed({ watch: () => model.searchRetreats, compute: String });
+    const movesText = createComputed({ watch: () => model.search.tries.count + model.search.retreats.count, compute: String });
+    const deadEndsText = createComputed({ watch: () => model.search.retreats.count, compute: String });
     const gradeText = () => (model.grade === undefined ? '...' : LEVEL_NAMES[model.grade]);
     const gradeColor = () => (model.grade === undefined ? DIM_TEXT_COLOR : model.grade === model.level ? LOGIC_COLOR : WARNING_COLOR);
     const isPlayback = (playback: Playback) => () => model.playback === playback;
-    const choosePlayback = (playback: Playback) => () => setPlayback(playback);
+    const choosePlayback = (playback: Playback) => () => model.choosePlayback(playback);
     // While shuffling, how far the last shuffle has moved. Otherwise nothing is moving
     const shuffleProgress = () => (model.phase === 'shuffling' && model.stepKind === 'shuffled' ? model.stepProgress : 1);
     const white = () => TEXT_COLOR;
+    // The counts, a row each, down the foot of the panel
+    const stats: readonly { label: string; value: () => string }[] = [
+        { label: 'Puzzles tried', value: () => NUMBER_TEXTS[model.trying.gridsTried] },
+        { label: 'Givens', value: givensText },
+        { label: 'Keep at least', value: targetText },
+        { label: 'Each line keeps', value: () => NUMBER_TEXTS[model.digging.fewestPerLine] },
+        { label: 'Search moves', value: movesText },
+        { label: 'Dead ends', value: deadEndsText },
+        { label: 'Restarts', value: () => NUMBER_TEXTS[model.filling.restarts] },
+        { label: 'Cells dug', value: () => NUMBER_TEXTS[model.digging.dug.count] },
+        { label: 'Cells kept', value: () => NUMBER_TEXTS[model.digging.needed.count + model.digging.held.count] },
+    ];
 
     return (
         <container label="sudoku-digger">
             <graphics ref={(g) => g.rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(BACKGROUND_COLOR)} />
             {/* The puzzles tried out of sight show dimmed, until one is chosen */}
-            <container x={GRID_X} y={GRID_Y} alpha={() => (model.phase === 'trying' && !model.isGridChosen ? TRYING_ALPHA : 1)}>
+            <container x={GRID_X} y={GRID_Y} alpha={() => (model.phase === 'trying' && !model.trying.isGridChosen ? TRYING_ALPHA : 1)}>
                 <GridView
                     digitAt={model.digitAt}
                     cellKindAt={model.cellKindAt}
@@ -75,33 +87,25 @@ export function DiggerView(bindings: DiggerViewBindings): Container {
                     isHighlightedAt={model.isHighlightedAt}
                     isDifferentAt={model.isDifferentAt}
                     fullGridDigitAt={model.fullGridDigitAt}
-                    focusCell={() => (model.phase === 'digging' ? model.focusCell : -1)}
-                    testedCell={() => model.testedCell}
-                    ownDigit={() => model.originalDigit}
-                    rivalDigits={() => model.rivalDigits}
-                    ruledOutDigits={() => model.ruledOutDigits}
-                    testDigit={() => model.testDigit}
-                    deadEnds={() => model.searchRetreats}
-                    deadEndCell={() => model.lastSearchCell}
-                    cellsNeeded={() => model.cellsNeeded}
-                    neededCell={() => model.lastNeededCell}
-                    cellsDug={() => model.cellsDug}
-                    dugCell={() => model.lastDugCell}
-                    dugDigit={() => model.lastDugDigit}
-                    seedsPlaced={() => model.seedsPlaced}
-                    seedCell={() => model.lastSeedCell}
-                    placements={() => model.logicPlacements}
-                    placedCell={() => model.techniqueCell}
-                    shuffleKind={() => model.shuffleKind}
-                    shuffleFirst={() => model.shuffleFirst}
-                    shuffleSecond={() => model.shuffleSecond}
+                    focusCell={() => (model.phase === 'digging' ? model.digging.focusCell : -1)}
+                    testedCell={() => model.digging.testedCell}
+                    ownDigit={() => model.digging.originalDigit}
+                    rivalDigits={() => model.digging.rivalDigits}
+                    ruledOutDigits={() => model.digging.ruledOutDigits}
+                    testDigit={() => model.digging.testDigit}
+                    deadEnds={model.search.retreats}
+                    needed={model.digging.needed}
+                    dug={model.digging.dug}
+                    seeds={model.filling.seeds}
+                    placements={model.grading.placements}
+                    shuffle={model.shuffling}
                     shuffleProgress={shuffleProgress}
                 />
                 <LineCountsView
                     isShown={() => model.phase === 'digging'}
-                    givensInRow={model.givensInRow}
-                    givensInColumn={model.givensInColumn}
-                    fewestPerLine={() => model.fewestPerLine}
+                    givensInRow={model.digging.givensInRow}
+                    givensInColumn={model.digging.givensInColumn}
+                    fewestPerLine={() => model.digging.fewestPerLine}
                 />
             </container>
             <container x={PANEL_X} y={PANEL_Y}>
@@ -114,36 +118,11 @@ export function DiggerView(bindings: DiggerViewBindings): Container {
                 </container>
                 <text y={CAPTION_Y} text={caption} style={CAPTION_STYLE} tint={TEXT_COLOR} />
                 <container y={STATS_Y}>
-                    <PanelRowView label="Puzzles tried" value={() => NUMBER_TEXTS[model.gridsTried]} color={white} width={PANEL_WIDTH} />
-                    <container y={ROW_HEIGHT}>
-                        <PanelRowView label="Givens" value={givensText} color={white} width={PANEL_WIDTH} />
-                    </container>
-                    <container y={ROW_HEIGHT * 2}>
-                        <PanelRowView label="Keep at least" value={targetText} color={white} width={PANEL_WIDTH} />
-                    </container>
-                    <container y={ROW_HEIGHT * 3}>
-                        <PanelRowView label="Each line keeps" value={() => NUMBER_TEXTS[model.fewestPerLine]} color={white} width={PANEL_WIDTH} />
-                    </container>
-                    <container y={ROW_HEIGHT * 4}>
-                        <PanelRowView label="Search moves" value={movesText} color={white} width={PANEL_WIDTH} />
-                    </container>
-                    <container y={ROW_HEIGHT * 5}>
-                        <PanelRowView label="Dead ends" value={deadEndsText} color={white} width={PANEL_WIDTH} />
-                    </container>
-                    <container y={ROW_HEIGHT * 6}>
-                        <PanelRowView label="Restarts" value={() => NUMBER_TEXTS[model.restarts]} color={white} width={PANEL_WIDTH} />
-                    </container>
-                    <container y={ROW_HEIGHT * 7}>
-                        <PanelRowView label="Cells dug" value={() => NUMBER_TEXTS[model.cellsDug]} color={white} width={PANEL_WIDTH} />
-                    </container>
-                    <container y={ROW_HEIGHT * 8}>
-                        <PanelRowView
-                            label="Cells kept"
-                            value={() => NUMBER_TEXTS[model.cellsNeeded + model.cellsHeld]}
-                            color={white}
-                            width={PANEL_WIDTH}
-                        />
-                    </container>
+                    {stats.map(({ label, value }, i) => (
+                        <container y={ROW_HEIGHT * i}>
+                            <PanelRowView label={label} value={value} color={white} width={PANEL_WIDTH} />
+                        </container>
+                    ))}
                 </container>
             </container>
             <container y={BUTTON_Y}>
@@ -164,41 +143,28 @@ export function DiggerView(bindings: DiggerViewBindings): Container {
             <DiggerAudioView
                 sfx={sfx}
                 phase={() => model.phase}
-                seedsPlaced={() => model.seedsPlaced}
-                seedCell={() => model.lastSeedCell}
-                seedDigit={() => model.lastSeedDigit}
-                searchTries={() => model.searchTries}
-                searchRetreats={() => model.searchRetreats}
-                searchCell={() => model.lastSearchCell}
-                searchDigit={() => model.lastSearchDigit}
-                restarts={() => model.restarts}
-                cellsDug={() => model.cellsDug}
-                dugCell={() => model.lastDugCell}
-                dugDigit={() => model.lastDugDigit}
-                cellsNeeded={() => model.cellsNeeded}
-                testsFailed={() => model.testsFailed}
-                cellsHeld={() => model.cellsHeld}
-                focusCell={() => model.focusCell}
-                shufflesDone={() => model.shufflesDone}
-                logicPlacements={() => model.logicPlacements}
-                placedCell={() => model.techniqueCell}
-                placedDigit={() => model.techniqueDigit}
-                logicReductions={() => model.logicReductions}
-                needsGuessing={() => model.needsGuessing}
+                seeds={model.filling.seeds}
+                tries={model.search.tries}
+                retreats={model.search.retreats}
+                restarts={() => model.filling.restarts}
+                dug={model.digging.dug}
+                needed={model.digging.needed}
+                failedTests={model.digging.failedTests}
+                held={model.digging.held}
+                shufflesDone={() => model.shuffling.count}
+                placements={model.grading.placements}
+                logicReductions={() => model.grading.reductions}
+                needsGuessing={() => model.grading.needsGuessing}
                 puzzlesFinished={() => model.puzzlesFinished}
-                gridsTried={() => model.gridsTried}
-                isGridChosen={() => model.isGridChosen}
+                gridsTried={() => model.trying.gridsTried}
+                isGridChosen={() => model.trying.isGridChosen}
             />
         </container>
     );
 
-    function setPlayback(playback: Playback): void {
-        model.playback = playback;
-    }
-
     /** Pauses the making if it is running, and takes it on one step. */
     function stepOnce(): void {
-        model.playback = 'paused';
+        model.choosePlayback('paused');
         model.step();
     }
 }

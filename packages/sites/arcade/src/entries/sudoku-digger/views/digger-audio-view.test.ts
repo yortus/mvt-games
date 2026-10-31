@@ -5,7 +5,7 @@ import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
 import {
     CHOSEN, DEAD_END, DUG, FILLED, FINISHED, GAVE_UP, HELD, MARKED, NEEDED, PLACED, RUBBED_OUT, SEED, SHUFFLE, STUCK, TRIED, TRY,
 } from '../data';
-import type { DiggerPhase } from '../models';
+import type { CellEvent, DiggerPhase } from '../models';
 import { DiggerAudioView } from './digger-audio-view';
 
 // The view is tested by what it asks of its chip: which sounds it plays, at which notes, and where.
@@ -179,25 +179,16 @@ function setUp(initial: Partial<State> = {}) {
     const view = DiggerAudioView({
         sfx,
         phase: () => state.phase,
-        seedsPlaced: () => state.seedsPlaced,
-        seedCell: () => state.seedCell,
-        seedDigit: () => state.seedDigit,
-        searchTries: () => state.searchTries,
-        searchRetreats: () => state.searchRetreats,
-        searchCell: () => state.searchCell,
-        searchDigit: () => state.searchDigit,
+        seeds: readEvent(() => state.seedsPlaced, () => state.seedCell, () => state.seedDigit),
+        tries: readEvent(() => state.searchTries, () => state.searchCell, () => state.searchDigit),
+        retreats: readEvent(() => state.searchRetreats, () => state.searchCell, () => state.searchDigit),
         restarts: () => state.restarts,
-        cellsDug: () => state.cellsDug,
-        dugCell: () => state.dugCell,
-        dugDigit: () => state.dugDigit,
-        cellsNeeded: () => state.cellsNeeded,
-        testsFailed: () => state.testsFailed,
-        cellsHeld: () => state.cellsHeld,
-        focusCell: () => state.focusCell,
+        dug: readEvent(() => state.cellsDug, () => state.dugCell, () => state.dugDigit),
+        needed: readEvent(() => state.cellsNeeded, () => state.focusCell, () => 0),
+        failedTests: readEvent(() => state.testsFailed, () => state.focusCell, () => 0),
+        held: readEvent(() => state.cellsHeld, () => state.focusCell, () => 0),
         shufflesDone: () => state.shufflesDone,
-        logicPlacements: () => state.logicPlacements,
-        placedCell: () => state.placedCell,
-        placedDigit: () => state.placedDigit,
+        placements: readEvent(() => state.logicPlacements, () => state.placedCell, () => state.placedDigit),
         logicReductions: () => state.logicReductions,
         needsGuessing: () => state.needsGuessing,
         puzzlesFinished: () => state.puzzlesFinished,
@@ -212,6 +203,15 @@ function setUp(initial: Partial<State> = {}) {
     };
     tick();
     return { sfx, state, tick };
+}
+
+/** A `CellEvent` that reads the test's state, so a test can raise its count by changing the state. */
+function readEvent(count: () => number, cell: () => number, digit: () => number): CellEvent {
+    return {
+        get count() { return count(); },
+        get cell() { return cell(); },
+        get digit() { return digit(); },
+    };
 }
 
 /** Creates a headless chip whose `play` and `stop` are spied on, so a test can read what the view asked of it. */

@@ -1,5 +1,5 @@
 import type { Random } from './random';
-import { CELL_COUNT } from './sudoku-rules';
+import { CELL_COUNT } from '../sudoku-grid';
 
 // ---------------------------------------------------------------------------
 // Interface

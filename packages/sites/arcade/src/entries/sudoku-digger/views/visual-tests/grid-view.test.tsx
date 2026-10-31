@@ -1,6 +1,6 @@
 import { advanceTime } from '@mvtjs/pixi';
 import { canvasTest } from 'v-snap';
-import type { CellKind, DigMark } from '../../models';
+import type { CellEvent, CellKind, DigMark, ShuffleKind } from '../../models';
 import { GridView, type GridViewBindings } from '../grid-view';
 import { GRID_SIZE } from '../view-constants';
 
@@ -24,27 +24,23 @@ canvasTest('grading, with pencil marks rubbed out', SIZE, () => GridView(createB
 })));
 
 canvasTest('two columns half way through swapping', SIZE, () => GridView(createBindings({
-    shuffleKind: () => 'columns',
-    shuffleFirst: () => 3,
-    shuffleSecond: () => 5,
+    shuffle: shuffled('columns', 3, 5),
     shuffleProgress: () => 0.5,
 })));
 
 canvasTest('two digits half way through swapping', SIZE, () => GridView(createBindings({
-    shuffleKind: () => 'digits',
-    shuffleFirst: () => 2,
-    shuffleSecond: () => 7,
+    shuffle: shuffled('digits', 2, 7),
     shuffleProgress: () => 0.5,
 })));
 
 canvasTest('a third of the way through a turn', SIZE, () => GridView(createBindings({
-    shuffleKind: () => 'turn',
+    shuffle: shuffled('turn', 0, 0),
     shuffleProgress: () => 0.33,
 })));
 
 // A second solution, swapping the 1s and 2s of four cells in the top two rows, the cell being dug kept and pulsing
 canvasTest('a second solution, its differences marked', SIZE, async () => {
-    let needed = 0;
+    const needed = { count: 0, cell: 0, digit: digitOf(0) };
     const isSwapped = (cell: number) => cell === 0 || cell === 1 || cell === 9 + 6 || cell === 9 + 7;
     const view = GridView(createBindings({
         digitAt: (cell) => (isSwapped(cell) ? 3 - digitOf(cell) : digitOf(cell)),
@@ -53,11 +49,10 @@ canvasTest('a second solution, its differences marked', SIZE, async () => {
         isDifferentAt: isSwapped,
         fullGridDigitAt: digitOf,
         focusCell: () => 0,
-        cellsNeeded: () => needed,
-        neededCell: () => 0,
+        needed,
     }));
     await advanceTime(16, view);
-    needed = 1;
+    needed.count = 1;
     await advanceTime(150, view);
     return view;
 });
@@ -65,19 +60,14 @@ canvasTest('a second solution, its differences marked', SIZE, async () => {
 // A dead end at the top left, its cross fading and the grid shaking, a cell dug out beside it, and a seed popping in,
 // a moment after each
 canvasTest('a dead end, a dug cell and a seed, flashing', SIZE, async () => {
-    let count = 0;
-    const view = GridView(createBindings({
-        digitAt: (cell) => (cell <= 1 ? 0 : digitOf(cell)),
-        deadEnds: () => count,
-        deadEndCell: () => 0,
-        cellsDug: () => count,
-        dugCell: () => 1,
-        dugDigit: () => digitOf(1),
-        seedsPlaced: () => count,
-        seedCell: () => 2,
-    }));
+    const deadEnds = { count: 0, cell: 0, digit: 0 };
+    const dug = { count: 0, cell: 1, digit: digitOf(1) };
+    const seeds = { count: 0, cell: 2, digit: digitOf(2) };
+    const view = GridView(createBindings({ digitAt: (cell) => (cell <= 1 ? 0 : digitOf(cell)), deadEnds, dug, seeds }));
     await advanceTime(16, view);
-    count = 1;
+    deadEnds.count = 1;
+    dug.count = 1;
+    seeds.count = 1;
     await advanceTime(100, view);
     return view;
 });
@@ -94,6 +84,14 @@ function isInTopRows(cell: number): boolean {
 
 const MARKS: readonly DigMark[] = ['dug', 'needed', 'held'];
 
+/** A shuffle of `kind` that swapped `first` and `second`. */
+function shuffled(kind: ShuffleKind, first: number, second: number) {
+    return { kind, first, second, count: 1 };
+}
+
+/** A moment that never comes. */
+const NOTHING: CellEvent = { count: 0, cell: -1, digit: 0 };
+
 /** Bindings for the full grid, all givens, still, unless `overrides` says otherwise. */
 function createBindings(overrides: Partial<GridViewBindings>): GridViewBindings {
     return {
@@ -106,26 +104,18 @@ function createBindings(overrides: Partial<GridViewBindings>): GridViewBindings 
         isHighlightedAt: () => false,
         isDifferentAt: () => false,
         fullGridDigitAt: () => 0,
-        cellsNeeded: () => 0,
-        neededCell: () => 0,
         focusCell: () => -1,
         testedCell: () => -1,
         ownDigit: () => 0,
         rivalDigits: () => 0,
         ruledOutDigits: () => 0,
         testDigit: () => 0,
-        deadEnds: () => 0,
-        deadEndCell: () => 0,
-        cellsDug: () => 0,
-        dugCell: () => 0,
-        dugDigit: () => 0,
-        seedsPlaced: () => 0,
-        seedCell: () => 0,
-        placements: () => 0,
-        placedCell: () => -1,
-        shuffleKind: () => undefined,
-        shuffleFirst: () => 0,
-        shuffleSecond: () => 0,
+        deadEnds: NOTHING,
+        needed: NOTHING,
+        dug: NOTHING,
+        seeds: NOTHING,
+        placements: NOTHING,
+        shuffle: { kind: undefined, first: 0, second: 0, count: 0 },
         shuffleProgress: () => 1,
         ...overrides,
     };

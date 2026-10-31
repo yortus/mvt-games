@@ -321,7 +321,8 @@ The rules above apply inside each package. Between packages:
 
 Within the site, its shared views are imported as `#shared`, the tunes
 two of its demos play as `#tunes`, and the pixel glyphs that entries set
-their text in as `#pixel-glyphs`. Each is an alias that
+their text in as `#pixel-glyphs`. Sudoku imports Sudoku Digger, whose
+puzzles and grid it shares, as `#sudoku-digger`. Each is an alias that
 `packages/sites/arcade/package.json` defines.
 
 ## Entry Structure

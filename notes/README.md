@@ -145,6 +145,7 @@ deleted.
 | # | Task | Priority | Created |
 | --- | --- | --- | --- |
 | 081 | [Sudoku Digger, a Demo of Making Sudoku Puzzles](tasks/active/081-sudoku-digger-demo.md) | medium | 2026-10-30 |
+| 082 | [Sudoku, a Game of Daily Puzzles with Doodled Notes](tasks/active/082-sudoku-daily-game.md) | medium | 2026-10-30 |
 
 ### Backlog
 

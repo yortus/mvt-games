@@ -1157,6 +1157,56 @@ function describeSwitch<N extends object>({ fixture, jsx, Switch, Match }: Suite
             expect(builds).toBe(1);
         });
 
+        it('skips a hidden branch\'s update steps, as it skips its refresh', () => {
+            const model: { boss?: Boss } = { boss: { hp: 3, isEnraged: false } };
+            const read: number[] = [];
+            const sw = Switch({
+                children: [
+                    Match({
+                        when: () => model.boss !== undefined,
+                        children: jsx(fixture.everyFrame.tag, { onUpdate: () => void read.push(model.boss!.hp) }),
+                    }),
+                    Match({ else: true, children: target.createGroup() }),
+                ],
+            });
+            refresh(sw);
+            updateNode(sw, 16);
+            expect(read).toEqual([3]);
+
+            // Gone in the model's update, before any refresh has hidden the branch
+            model.boss = undefined;
+            expect(() => updateNode(sw, 16)).not.toThrow();
+            expect(read).toEqual([3]);
+
+            model.boss = { hp: 4, isEnraged: false };
+            updateNode(sw, 16);
+            expect(read).toEqual([3, 4]);
+        });
+
+        it('gates the update steps a lazy branch gains as it is built', () => {
+            let isOn = true;
+            let updates = 0;
+            const sw = Switch({
+                children: Match({ when: () => isOn, children: () => jsx(fixture.everyFrame.tag, { onUpdate: () => void updates++ }) }),
+            });
+            refresh(sw);
+            updateNode(sw, 16);
+            expect(updates).toBe(1);
+
+            // Turned off in the model's update, before any refresh has hidden the branch
+            isOn = false;
+            updateNode(sw, 16);
+            expect(updates).toBe(1);
+        });
+
+        it('adds no update step to a switch whose branches have none, so such a switch costs nothing to update', () => {
+            const t = setup({ withDefault: true });
+            refresh(t.sw);
+
+            expect(hasNodeUpdate(t.sw)).toBe(false);
+            expect(fixture.children(t.sw).some((branch) => hasNodeUpdate(branch))).toBe(false);
+        });
+
         it('rejects a child that is not a <Match>', () => {
             expect(() => Switch({ children: target.createGroup() })).toThrow(/<Match>/);
         });

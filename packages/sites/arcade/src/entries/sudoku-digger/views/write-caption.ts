@@ -1,4 +1,5 @@
-import { COLUMN_OF, type DiggerModel, type DiggerPhase, ROW_OF, type Technique } from '../models';
+import { type DiggerModel, type DiggerPhase, type Technique } from '../models';
+import { COLUMN_OF, ROW_OF } from '../sudoku-grid';
 import { LEVEL_NAMES } from './view-constants';
 
 // The caption under the phases, which says what the last step did in plain
@@ -15,14 +16,14 @@ import { LEVEL_NAMES } from './view-constants';
  */
 export function toCaptionKey(model: DiggerModel): number {
     if (model.stepKind !== 'search-tried' && model.stepKind !== 'search-retreated') return model.stepCount;
-    return -1 - (PHASES.indexOf(model.phase) * 1000 + (model.focusCell + 1) * 10 + model.testDigit);
+    return -1 - (PHASES.indexOf(model.phase) * 1000 + (model.digging.focusCell + 1) * 10 + model.digging.testDigit);
 }
 
 /** What the model's last step did, in a sentence or three. */
 export function writeCaption(model: DiggerModel): string {
-    const cell = model.focusCell;
-    const d = model.originalDigit;
-    const t = model.testDigit;
+    const cell = model.digging.focusCell;
+    const d = model.digging.originalDigit;
+    const t = model.digging.testDigit;
     switch (model.stepKind) {
         case 'started':
             return `A new puzzle. Puzzles are made out of sight until one comes out ${LEVEL_NAMES[model.level]}.`;
@@ -42,7 +43,7 @@ export function writeCaption(model: DiggerModel): string {
         case 'dig-chosen':
             return `Can the ${d} at ${nameCell(cell)} be dug out?`;
         case 'dig-held':
-            return `No: row ${ROW_OF[cell] + 1} or column ${COLUMN_OF[cell] + 1} would keep fewer than ${model.fewestPerLine} givens. The ${d} stays.`;
+            return `No: row ${ROW_OF[cell] + 1} or column ${COLUMN_OF[cell] + 1} would keep fewer than ${model.digging.fewestPerLine} givens. The ${d} stays.`;
         case 'dig-only-digit':
             return 'Yes: no other digit could go there, so the puzzle still has one solution.';
         case 'dig-testing':
@@ -54,9 +55,9 @@ export function writeCaption(model: DiggerModel): string {
         case 'dig-dug':
             return `No other digit leads anywhere, so the ${d} goes. The puzzle still has one solution.`;
         case 'dig-enough':
-            return `The puzzle is down to ${model.givensCount} givens, its target. Digging stops.`;
+            return `The puzzle is down to ${model.digging.givensCount} givens, its target. Digging stops.`;
         case 'dig-done':
-            return `Every cell has been tried, and ${model.givensCount} givens are left.`;
+            return `Every cell has been tried, and ${model.digging.givensCount} givens are left.`;
         case 'shuffled':
             return writeShuffle(model);
         case 'grade-marked':
@@ -96,10 +97,10 @@ const BOX_NAMES: readonly string[] = [
 
 function writeTry(model: DiggerModel): string {
     const asked = LEVEL_NAMES[model.level];
-    const tried = model.triedGrade === undefined ? asked : LEVEL_NAMES[model.triedGrade];
-    const n = model.gridsTried;
-    if (!model.isGridChosen) return `Trying puzzles out of sight: number ${n} came out ${tried}, not ${asked}.`;
-    if (model.triedGrade === model.level) return `Number ${n} came out ${asked}. Now watch it being made again, step by step.`;
+    const tried = model.trying.triedGrade === undefined ? asked : LEVEL_NAMES[model.trying.triedGrade];
+    const n = model.trying.gridsTried;
+    if (!model.trying.isGridChosen) return `Trying puzzles out of sight: number ${n} came out ${tried}, not ${asked}.`;
+    if (model.trying.triedGrade === model.level) return `Number ${n} came out ${asked}. Now watch it being made again, step by step.`;
     return `None of ${n} came out ${asked}. The nearest, which came out ${tried}, is made instead.`;
 }
 
@@ -108,11 +109,11 @@ function writeTesting(cell: number, d: number, t: number): string {
 }
 
 function writeShuffle(model: DiggerModel): string {
-    switch (model.shuffleKind) {
+    switch (model.shuffling.kind) {
         case 'digits':
-            return `Shuffling: every ${model.shuffleFirst} swaps with every ${model.shuffleSecond}. The puzzle is just as hard, but looks new.`;
+            return `Shuffling: every ${model.shuffling.first} swaps with every ${model.shuffling.second}. The puzzle is just as hard, but looks new.`;
         case 'columns':
-            return `Shuffling: columns ${model.shuffleFirst + 1} and ${model.shuffleSecond + 1} swap places, within their stack of boxes.`;
+            return `Shuffling: columns ${model.shuffling.first + 1} and ${model.shuffling.second + 1} swap places, within their stack of boxes.`;
         case 'stacks':
             return 'Shuffling: two stacks of boxes swap places.';
         case 'turn':
@@ -122,15 +123,15 @@ function writeShuffle(model: DiggerModel): string {
 }
 
 function writeReasoning(model: DiggerModel): string {
-    const d = model.techniqueDigit;
-    const unit = nameUnit(model.techniqueUnit);
-    switch (model.technique) {
+    const d = model.grading.techniqueDigit;
+    const unit = nameUnit(model.grading.techniqueUnit);
+    switch (model.grading.technique) {
         case 'naked-single':
-            return `Only a ${d} can go at ${nameCell(model.techniqueCell)}.`;
+            return `Only a ${d} can go at ${nameCell(model.grading.techniqueCell)}.`;
         case 'hidden-single':
             return `In ${unit}, a ${d} fits only one cell.`;
         case 'locked-candidates':
-            return model.techniqueUnit >= 18
+            return model.grading.techniqueUnit >= 18
                 ? `In ${unit}, a ${d} fits only the lit cells, which share a line. So a ${d} can't go elsewhere on that line.`
                 : `In ${unit}, a ${d} fits only the lit cells, which share a box. So a ${d} can't go elsewhere in that box.`;
         case 'naked-pair':
@@ -147,14 +148,14 @@ function writeReasoning(model: DiggerModel): string {
 function writeVerdict(model: DiggerModel): string {
     const asked = LEVEL_NAMES[model.level];
     const graded = model.grade === undefined ? asked : LEVEL_NAMES[model.grade];
-    const found = model.gridsTried === 1 ? 'the first puzzle tried' : `puzzle ${model.gridsTried} of those tried`;
+    const found = model.trying.gridsTried === 1 ? 'the first puzzle tried' : `puzzle ${model.trying.gridsTried} of those tried`;
     return `Done. Asked for ${asked}, it came out ${graded}: ${writeHardest(model)}. It was ${found}.`;
 }
 
 function writeHardest(model: DiggerModel): string {
-    if (model.needsGuessing) return 'it needs guesswork';
-    if (model.hardestTechnique === undefined) return 'it has nothing to solve';
-    return `its hardest step is ${TECHNIQUE_NAMES[model.hardestTechnique]}`;
+    if (model.grading.needsGuessing) return 'it needs guesswork';
+    if (model.grading.hardestTechnique === undefined) return 'it has nothing to solve';
+    return `its hardest step is ${TECHNIQUE_NAMES[model.grading.hardestTechnique]}`;
 }
 
 function nameCell(cell: number): string {

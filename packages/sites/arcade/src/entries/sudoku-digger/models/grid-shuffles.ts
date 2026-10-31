@@ -1,4 +1,4 @@
-import { CELL_COUNT } from './sudoku-rules';
+import { CELL_COUNT } from '../sudoku-grid';
 
 // Ways to change a grid that keep it a valid Sudoku, and keep a puzzle just
 // as hard: what the paper calls equivalent propagation. Each works in place,

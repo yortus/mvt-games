@@ -1,4 +1,4 @@
-import type { Level } from '../data';
+import type { Level } from '../sudoku-grid';
 
 // ---------------------------------------------------------------------------
 // The screen
@@ -66,7 +66,7 @@ export const LEVEL_NAMES: Readonly<Record<Level, string>> = {
     easy: 'Easy',
     medium: 'Medium',
     hard: 'Hard',
-    evil: 'Evil',
+    hardest: 'Hardest',
 };
 
 /** The text of each whole number from 0 to 100, made once, so a count's text never has to be built. */

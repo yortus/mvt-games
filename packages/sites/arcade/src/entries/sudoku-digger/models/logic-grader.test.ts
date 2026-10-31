@@ -49,7 +49,7 @@ describe('the logic grader', () => {
     it('never places a wrong digit, nor rubs out a right one, in puzzles of every level', () => {
         const usedTechniques = new Set<string>();
         for (let seed = 1; seed <= 12; seed++) {
-            const puzzle = makePuzzle(seed, seed % 2 === 0 ? 'evil' : 'hard');
+            const puzzle = makePuzzle(seed, seed % 2 === 0 ? 'hardest' : 'hard');
             expect(countSolutions(puzzle)).toBe(1);
             const solution = findSolution(puzzle) ?? puzzle;
             const grader = createLogicGrader();
@@ -69,7 +69,7 @@ describe('the logic grader', () => {
 
     it('keeps its hardest technique as the hardest of its steps, in the order of TECHNIQUES', () => {
         const grader = createLogicGrader();
-        grader.start(makePuzzle(4, 'evil'));
+        grader.start(makePuzzle(4, 'hardest'));
         let hardest = -1;
         while (grader.status === 'solving') {
             grader.step();
@@ -92,9 +92,9 @@ function countEmpty(grid: Readonly<Uint8Array>): number {
 }
 
 /** A puzzle made by the digger model, for `level`, from `seed`. */
-function makePuzzle(seed: number, level: 'hard' | 'evil'): Uint8Array {
+function makePuzzle(seed: number, level: 'hard' | 'hardest'): Uint8Array {
     const model = createDiggerModel({ seed, level });
-    model.playback = 'fast';
+    model.choosePlayback('fast');
     while (model.phase !== 'grading') model.update(1000);
     // The grader's first step is the pencil marks, with only the givens shown
     const puzzle = new Uint8Array(81);

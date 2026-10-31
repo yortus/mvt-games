@@ -17,7 +17,7 @@ export const details: EntryDetails = {
         'Last, the puzzle is graded, by solving it the way a person would: pencil marks first, then the simplest '
         + 'step of reasoning that gets anywhere, from singles to pairs and triples. The hardest step it needs is its '
         + 'level: Easiest needs only singles, Easy hidden singles, Medium locked candidates, Hard a pair or a '
-        + 'triple, and Evil guesswork. Fewer givens alone don\'t make a puzzle hard, so most puzzles come out '
+        + 'triple, and Hardest guesswork. Fewer givens alone don\'t make a puzzle hard, so most puzzles come out '
         + 'easier than they were dug for. That is why puzzles are tried out of sight first.',
         'The method follows "Sudoku Puzzles Generating: from Easy to Evil", a paper from the 2008 MCM contest. Its '
         + 'search tries cells in reading order. This one fills the cell with the fewest choices first, so each check '
@@ -26,15 +26,19 @@ export const details: EntryDetails = {
         + 'puzzles of every level turn up often.',
     ].join('\n\n'),
     implementation: [
-        'The model runs the whole method one step at a time, as a set of stages: seeding, filling, digging, '
-        + 'shuffling and grading. Each step holds the screen for a while, longer for the steps worth reading, and '
-        + 'the search\'s moves speed up as a search goes on. Time reaches it only through its update, so Step, '
+        'The model runs the whole method one step at a time, as a set of stages, and is built from a child model '
+        + 'for each: a grid filler, which seeds the grid and fills it, a cell digger, a shuffler, and the grader. '
+        + 'Each child takes a step and says what it did. The model chooses which one runs, and how long each step '
+        + 'holds the screen, from one table: longer for the steps worth reading, while the search\'s moves speed '
+        + 'up as a search goes on. Time reaches it only through its update, so Step, '
         + 'Slow, Normal and Fast change only how much time it is given. The search keeps its own stack rather than '
         + 'calling itself, so it can stop after any move, and allocates nothing as it goes. Its random numbers come '
         + 'from a seed, so the same seed makes the same puzzles. That is also how a puzzle tried out of sight is '
         + 'made again in sight: the model notes its random numbers\' state as each try begins, and winds them '
         + 'back to the chosen one\'s.',
-        'The views read the model\'s cells, counts and last step. The grid view keeps its flashes as presentation '
+        'The views read the model\'s cells, counts and last step. Each moment worth a flash or a sound, such as '
+        + 'a cell dug out, is one record that the model changes in place: a count, and the cell and digit of the '
+        + 'last time. The grid view keeps its flashes as presentation '
         + 'state, set as a count rises, and slides and turns the cells during a shuffle from how far the step has '
         + 'gone. The caption is written only when it changes, and the audio view throttles the search\'s blips, '
         + 'however fast it runs, and plays each digit at its note on a pentatonic scale.',
@@ -42,7 +46,7 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Watch, or choose a level, a speed, or a new puzzle.',
         controls: [
-            { action: 'Choose a level', inputs: [{ button: 'Easiest' }, { button: 'Evil' }], note: 'Starts a new puzzle for that level' },
+            { action: 'Choose a level', inputs: [{ button: 'Easiest' }, { button: 'Hardest' }], note: 'Starts a new puzzle for that level' },
             { action: 'Step', inputs: [{ button: 'Step' }], note: 'Pauses, and takes one step each press' },
             { action: 'Speed', inputs: [{ button: 'Slow' }, { button: 'Normal' }, { button: 'Fast' }] },
             { action: 'New puzzle', inputs: [{ button: 'New' }] },

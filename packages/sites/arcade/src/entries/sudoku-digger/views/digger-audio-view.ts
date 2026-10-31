@@ -5,40 +5,36 @@ import type { SfxChip } from '#shared';
 import {
     CHOSEN, DEAD_END, DUG, FILLED, FINISHED, GAVE_UP, HELD, MARKED, NEEDED, PLACED, RUBBED_OUT, SEED, SHUFFLE, STUCK, TRIED, TRY,
 } from '../data';
-import { COLUMN_OF, type DiggerPhase } from '../models';
+import type { CellEvent, DiggerPhase } from '../models';
+import { COLUMN_OF } from '../sudoku-grid';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
-/** What a `DiggerAudioView` plays on, and the counts it plays the sounds of. Each count rises at a moment worth a sound. */
+/**
+ * What a `DiggerAudioView` plays on, and the counts it plays the sounds of.
+ * Each count rises at a moment worth a sound. A `CellEvent` is a record the
+ * model keeps and changes in place, read once: its count, and the cell and
+ * digit of the last time, which say where the sound plays, and its note.
+ */
 export interface DiggerAudioViewBindings {
     /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
     readonly sfx: SfxChip<'audio90'>;
     /** The view chimes as the grid is full, and as the pencil marks go in. */
     readonly phase: () => DiggerPhase;
-    readonly seedsPlaced: () => number;
-    readonly seedCell: () => number;
-    readonly seedDigit: () => number;
-    readonly searchTries: () => number;
-    readonly searchRetreats: () => number;
-    /** The cell and digit of the search's last move. */
-    readonly searchCell: () => number;
-    readonly searchDigit: () => number;
+    readonly seeds: CellEvent;
+    /** The search's moves: each try blips, and each retreat at a dead end thumps. */
+    readonly tries: CellEvent;
+    readonly retreats: CellEvent;
     readonly restarts: () => number;
-    readonly cellsDug: () => number;
-    readonly dugCell: () => number;
-    readonly dugDigit: () => number;
-    readonly cellsNeeded: () => number;
+    readonly dug: CellEvent;
+    readonly needed: CellEvent;
     /** Rival digits that led nowhere in the cell being dug. Each is brushed out, unless the cell is dug as it fails. */
-    readonly testsFailed: () => number;
-    readonly cellsHeld: () => number;
-    /** The cell being dug, which the needed and held sounds play at. */
-    readonly focusCell: () => number;
+    readonly failedTests: CellEvent;
+    readonly held: CellEvent;
     readonly shufflesDone: () => number;
-    readonly logicPlacements: () => number;
-    readonly placedCell: () => number;
-    readonly placedDigit: () => number;
+    readonly placements: CellEvent;
     readonly logicReductions: () => number;
     readonly needsGuessing: () => boolean;
     readonly puzzlesFinished: () => number;
@@ -71,7 +67,7 @@ export interface DiggerAudioViewBindings {
  * as its count rises.
  */
 export function DiggerAudioView(bindings: DiggerAudioViewBindings): Container {
-    const { sfx } = bindings;
+    const { sfx, seeds, tries, retreats, dug, needed, failedTests, held, placements } = bindings;
     const view = new Container();
     view.label = 'digger-audio';
 
@@ -83,20 +79,20 @@ export function DiggerAudioView(bindings: DiggerAudioViewBindings): Container {
     let triedCell = 0;
     let triedDigit = 1;
     let deadEndCell = 0;
-    const moves = watch({ tries: bindings.searchTries, retreats: bindings.searchRetreats });
+    const moves = watch({ tries: () => tries.count, retreats: () => retreats.count });
 
     const watcher = watch({
         phase: bindings.phase,
-        seeds: bindings.seedsPlaced,
+        seeds: () => seeds.count,
         triesHeard: () => triesHeard,
         deadEndsHeard: () => deadEndsHeard,
         restarts: bindings.restarts,
-        dug: bindings.cellsDug,
-        needed: bindings.cellsNeeded,
-        testsFailed: bindings.testsFailed,
-        held: bindings.cellsHeld,
+        dug: () => dug.count,
+        needed: () => needed.count,
+        failedTests: () => failedTests.count,
+        held: () => held.count,
         shuffles: bindings.shufflesDone,
-        placements: bindings.logicPlacements,
+        placements: () => placements.count,
         reductions: bindings.logicReductions,
         needsGuessing: bindings.needsGuessing,
         finished: bindings.puzzlesFinished,
@@ -115,13 +111,13 @@ export function DiggerAudioView(bindings: DiggerAudioViewBindings): Container {
         if (m.tries.increased && msSinceTry >= TRY_GAP_MS) {
             msSinceTry = 0;
             triesHeard++;
-            triedCell = bindings.searchCell();
-            triedDigit = bindings.searchDigit();
+            triedCell = tries.cell;
+            triedDigit = tries.digit;
         }
         if (m.retreats.increased && msSinceDeadEnd >= DEAD_END_GAP_MS) {
             msSinceDeadEnd = 0;
             deadEndsHeard++;
-            deadEndCell = bindings.searchCell();
+            deadEndCell = retreats.cell;
         }
     }
 
@@ -129,19 +125,19 @@ export function DiggerAudioView(bindings: DiggerAudioViewBindings): Container {
         const w = watcher.poll();
         if (w.isGridChosen.changed && w.isGridChosen.current) sfx.play(CHOSEN);
         else if (w.gridsTried.increased) sfx.play(TRIED);
-        if (w.seeds.increased) sfx.play(SEED, { note: SEED_ROOT + toPentatonic(bindings.seedDigit()), pan: toPan(bindings.seedCell()) });
+        if (w.seeds.increased) sfx.play(SEED, { note: SEED_ROOT + toPentatonic(seeds.digit), pan: toPan(seeds.cell) });
         if (w.triesHeard.increased) sfx.play(TRY, { note: TRY_ROOT + toPentatonic(triedDigit), pan: toPan(triedCell) });
         if (w.deadEndsHeard.increased) sfx.play(DEAD_END, { pan: toPan(deadEndCell) });
         if (w.restarts.increased) sfx.play(GAVE_UP);
         if (w.phase.changed && w.phase.current === 'digging' && w.phase.previous === 'filling') sfx.play(FILLED);
-        if (w.dug.increased) sfx.play(DUG, { note: DUG_ROOT + toPentatonic(bindings.dugDigit()), pan: toPan(bindings.dugCell()) });
-        if (w.needed.increased) sfx.play(NEEDED, { pan: toPan(bindings.focusCell()) });
+        if (w.dug.increased) sfx.play(DUG, { note: DUG_ROOT + toPentatonic(dug.digit), pan: toPan(dug.cell) });
+        if (w.needed.increased) sfx.play(NEEDED, { pan: toPan(needed.cell) });
         // The last rival to fail digs the cell, whose chime says it all
-        if (w.testsFailed.increased && !w.dug.increased) sfx.play(RUBBED_OUT, { pan: toPan(bindings.focusCell()) });
-        if (w.held.increased) sfx.play(HELD, { pan: toPan(bindings.focusCell()) });
+        if (w.failedTests.increased && !w.dug.increased) sfx.play(RUBBED_OUT, { pan: toPan(failedTests.cell) });
+        if (w.held.increased) sfx.play(HELD, { pan: toPan(held.cell) });
         if (w.shuffles.increased) sfx.play(SHUFFLE);
         if (w.phase.changed && w.phase.current === 'grading') sfx.play(MARKED);
-        if (w.placements.increased) sfx.play(PLACED, { note: PLACED_ROOT + toPentatonic(bindings.placedDigit()), pan: toPan(bindings.placedCell()) });
+        if (w.placements.increased) sfx.play(PLACED, { note: PLACED_ROOT + toPentatonic(placements.digit), pan: toPan(placements.cell) });
         if (w.reductions.increased) sfx.play(RUBBED_OUT);
         if (w.needsGuessing.changed && w.needsGuessing.current) sfx.play(STUCK);
         if (w.finished.increased) sfx.play(FINISHED);
