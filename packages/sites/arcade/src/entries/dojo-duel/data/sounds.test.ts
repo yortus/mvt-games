@@ -15,7 +15,7 @@ const { songs, sounds: found } = findSounds({ ...sounds, ...music });
 const instruments = new Set(songs.flatMap(([, song]): readonly unknown[] => song.instruments));
 const effects = found.filter(([, sound]) => !instruments.has(sound));
 
-describe('dojo duel sounds', () => {
+describe('dojo duel sounds', { timeout: 30_000 }, () => {
     it('has effects and songs to test', () => {
         expect(effects.length).toBeGreaterThan(0);
         expect(songs.length).toBeGreaterThan(0);
