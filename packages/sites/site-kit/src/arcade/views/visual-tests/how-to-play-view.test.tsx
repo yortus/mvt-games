@@ -3,6 +3,7 @@ import '../../arcade.css';
 import type { DeviceKind } from '../../../device';
 import type { HowToPlay } from '../../../entry-types';
 import { HowToPlayView } from '../how-to-play-view';
+import { wearTheme } from './wear-theme.test-support';
 
 /**
  * A game's controls: keys, and touch, with a note under an action, a note for
@@ -40,7 +41,8 @@ const DEMO: HowToPlay = {
 /** Returns the view, as a device of `deviceKind` shows it, in a panel the width of the info panel's page, on its background. */
 function inPanel(howToPlay: HowToPlay, deviceKind: DeviceKind): HTMLElement {
     const panel = document.createElement('div');
-    panel.style.cssText = 'width:520px;padding:16px;background:#161b22;color:#c9d1d9;font-family:sans-serif;';
+    // On the panel's surface, in whatever theme the page wears
+    panel.style.cssText = 'width:520px;padding:16px;background:var(--theme-surface);color:var(--theme-text);font-family:sans-serif;';
     panel.append(HowToPlayView({ howToPlay: () => howToPlay, deviceKind }));
     return panel;
 }
@@ -54,3 +56,13 @@ htmlTest('a game, on a laptop with a touch screen, with keys and touch', () => i
 htmlTest('a demo, on a desktop, with the mouse', () => inPanel(DEMO, 'desktop'));
 
 htmlTest('a demo, on a phone, with touch only', () => inPanel(DEMO, 'handheld'));
+
+htmlTest('a game, on a desktop, with keys only, in the Dark theme', () => {
+    wearTheme('dark');
+    return inPanel(GAME, 'desktop');
+});
+
+htmlTest('a game, on a desktop, with keys only, in the Light theme', () => {
+    wearTheme('light');
+    return inPanel(GAME, 'desktop');
+});

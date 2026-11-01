@@ -3,14 +3,15 @@ import {
     BACKDROP_DELAY_MS, BURN_MS, BURN_STAGGER_MS, FLOAT_DELAY_MS, FLOAT_MS, LAUNCH_MS, POWER_ON_MS, RECEDE_MS, SHOW_STILL_MS,
 } from '../data';
 import type { ArcadePhase } from '../models';
+import type { PhotoPose } from './card-photo';
 import {
-    createEntryTransitionViewModel, EMERGE_MS, FLOAT_BACK_DELAY_MS, FLOAT_BACK_MS, type PicturePose, POWER_OFF_BEAM_MS, POWER_OFF_MS,
+    createEntryTransitionViewModel, EMERGE_MS, FLOAT_BACK_DELAY_MS, FLOAT_BACK_MS, POWER_OFF_BEAM_MS, POWER_OFF_MS,
     POWER_ON_BEAM_MS, QUIET_FADE_MS, RETURN_TOTAL_MS, type EntryTransitionViewModel,
 } from './entry-transition-view-model';
 import type { Rect } from './rect';
 
 /** A card's polaroid: a square window on a picture twice as wide, showing its left half, tilted, in its border. */
-const CARD: PicturePose = {
+const CARD: PhotoPose = {
     window: { x: 100, y: 200, width: 50, height: 50 },
     frame: { x: 100, y: 200, width: 100, height: 50 },
     tilt: 3,
@@ -391,7 +392,7 @@ function windowOf(transition: EntryTransitionViewModel): Rect {
     return { x: transition.picture.x, y: transition.picture.y, width: transition.picture.width, height: transition.picture.height };
 }
 
-function pictureOf(transition: EntryTransitionViewModel): PicturePose {
+function pictureOf(transition: EntryTransitionViewModel): PhotoPose {
     return {
         window: windowOf(transition),
         frame: { x: transition.picture.frameX, y: transition.picture.frameY, width: transition.picture.frameWidth, height: transition.picture.frameHeight },

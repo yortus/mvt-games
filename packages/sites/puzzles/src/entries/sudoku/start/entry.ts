@@ -16,6 +16,8 @@ export const entry: ArcadeEntry = {
     thumbnail,
     // The grid, with notes in it
     thumbnailCrop: { x: 8, y: 72, width: 524, height: 524 },
+    // The top of the grid: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 270, y: 72 },
     cardColor: 'lemon',
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),

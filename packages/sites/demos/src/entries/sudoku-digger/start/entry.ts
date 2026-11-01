@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 640,
     screenHeight: 480,
     thumbnail,
+    // The grid, not the steps beside it: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 230, y: 240 },
     cardColor: 'lavender',
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),

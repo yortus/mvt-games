@@ -19,6 +19,8 @@ export const entry: ArcadeEntry = {
     cardColor: 'apricot',
     // A square of the image around the set, left of the panel
     thumbnailCrop: { x: 40, y: 0, width: 800, height: 800 },
+    // The fractal, at the middle: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 440, y: 400 },
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
 };

@@ -1169,8 +1169,8 @@ button:disabled {
 
 /* --- Narrow screens: one panel at a time, chosen by tabs --- */
 
-/* The site's nav folds its links away at 700px: the theme's menu becomes its ◐ */
-@media (max-width: 700px) {
+/* The site's nav folds its links away at 820px: the theme's menu becomes its ◐ */
+@media (max-width: 820px) {
     .theme-picker-icon {
         display: block;
     }

@@ -2,6 +2,7 @@ import { htmlTest } from 'v-snap';
 import '../../arcade.css';
 import { type HighscoreRow, TABLE_SIZE } from '../../../highscores';
 import { HighscoreTableView, type HighscoreTableViewBindings } from '../highscore-table-view';
+import { wearTheme } from './wear-theme.test-support';
 
 /** Initials for each place, so every row reads differently. */
 const INITIALS = ['TJG', 'ACE', 'BOB', 'K.O', 'ZAP', 'MAX', 'R2D', 'JO ', 'Q.T', 'WIZ'];
@@ -17,7 +18,8 @@ function rowsOf(count: number): HighscoreRow[] {
 function inPanel(bindings: HighscoreTableViewBindings): HTMLElement {
     const panel = document.createElement('div');
     panel.className = 'info-highscores';
-    panel.style.cssText = 'width:276px;padding:12px;background:#161b22;';
+    // On the panel's surface, in whatever theme the page wears
+    panel.style.cssText = 'width:276px;padding:12px;background:var(--theme-surface);';
     panel.append(HighscoreTableView(bindings));
     return panel;
 }
@@ -35,4 +37,16 @@ htmlTest('three places taken', () => {
 htmlTest('the row just entered, lit', () => {
     const rows = rowsOf(TABLE_SIZE);
     return inPanel({ rows: () => rows, status: () => 'ready', highlightRank: () => 4 });
+});
+
+htmlTest('a full table, in the Dark theme', () => {
+    wearTheme('dark');
+    const rows = rowsOf(TABLE_SIZE);
+    return inPanel({ rows: () => rows, status: () => 'ready' });
+});
+
+htmlTest('a full table, in the Light theme', () => {
+    wearTheme('light');
+    const rows = rowsOf(TABLE_SIZE);
+    return inPanel({ rows: () => rows, status: () => 'ready' });
 });

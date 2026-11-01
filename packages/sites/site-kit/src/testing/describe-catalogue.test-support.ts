@@ -118,6 +118,19 @@ export function describeCatalogue(options: DescribeCatalogueOptions): void {
             }
         });
 
+        it('gives each thumbnail a focus inside its crop, for cards that crop it closer', () => {
+            for (const entry of catalogue) {
+                const crop = thumbnailCropOf(entry);
+                const focus = entry.thumbnailFocus;
+                expect(focus, entry.id).toBeDefined();
+                if (focus === undefined) continue;
+                expect(focus.x, entry.id).toBeGreaterThanOrEqual(crop.x);
+                expect(focus.y, entry.id).toBeGreaterThanOrEqual(crop.y);
+                expect(focus.x, entry.id).toBeLessThanOrEqual(crop.x + crop.width);
+                expect(focus.y, entry.id).toBeLessThanOrEqual(crop.y + crop.height);
+            }
+        });
+
         it('keeps highscores only for games the highscores Worker has tables for', () => {
             for (const entry of catalogue) {
                 if (entry.hasHighscores !== true) continue;

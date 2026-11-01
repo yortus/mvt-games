@@ -159,9 +159,27 @@
     background: var(--site-nav-bg);
 }
 
-/* Too narrow for the icons as well as the labels, the labels stay */
-@media (max-width: 900px) {
+/*
+ * Too narrow for the icons as well as the labels, the labels stay. Measured,
+ * the links with their icons need the bar to be 1135px wide, beside
+ * VitePress's search box and menus
+ */
+@media (max-width: 1160px) {
     .VPNavBar .site-cross-icon {
+        display: none;
+    }
+}
+
+/*
+ * Where the labels alone only just fit, the search box shows only its
+ * magnifier, as it does on a phone, until there is room for its words: just
+ * above VitePress's menu width, where they need 815px, and just above the
+ * width where its sidebar stays open (960px), whose room the site's name
+ * then takes
+ */
+@media (min-width: 768px) and (max-width: 840px), (min-width: 960px) and (max-width: 1010px) {
+    .VPNavBar .DocSearch-Button-Placeholder,
+    .VPNavBar .DocSearch-Button-Keys {
         display: none;
     }
 }

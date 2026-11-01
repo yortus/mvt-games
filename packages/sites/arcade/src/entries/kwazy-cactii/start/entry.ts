@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 1600,
     screenHeight: 2180,
     thumbnail,
+    // The grid of cacti, above the score: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 800, y: 800 },
     // The colour of its cactii
     cardColor: 'mint',
     hasHighscores: true,

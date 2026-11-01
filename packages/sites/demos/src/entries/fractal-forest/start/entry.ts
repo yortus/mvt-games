@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 480,
     screenHeight: 360,
     thumbnail,
+    // The nearest tree: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 250, y: 180 },
     cardColor: 'mint',
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),

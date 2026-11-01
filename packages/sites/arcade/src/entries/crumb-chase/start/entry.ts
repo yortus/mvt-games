@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 470,
     inspiredBy: { title: 'Pac-Man', maker: 'Namco', year: 1980 },
     thumbnail,
+    // The cats' den, and the score whole: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 235, y: 235 },
     // The colour of its crumbs
     cardColor: 'lemon',
     hasHighscores: true,

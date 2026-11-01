@@ -74,7 +74,9 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
             onDestroyed={() => observer.disconnect()}
         >
             <div class="arcade-title" ref={(e) => { title = e; }}>
-                <h1 class="arcade-name">{WordmarkView({ text: bindings.wordmark, label: bindings.label })}</h1>
+                <h1 class="arcade-name">
+                    {WordmarkView({ text: bindings.wordmark, label: bindings.label })}
+                </h1>
             </div>
             {/* Shut, it takes no room, and nothing in it takes the focus */}
             <div

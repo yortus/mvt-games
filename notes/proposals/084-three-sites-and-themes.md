@@ -5,15 +5,17 @@
 > share almost all their code: the page, the entry host, the shared views,
 > the highscores, the build's plugins. That code moves into a fourth package,
 > `site-kit`, which the three import. Then give the sites themes: the
-> current look becomes **Arcade**, and two new ones join it, **Studio**
-> (dark, quiet, modern) and **Paper** (light, like a newspaper's puzzle
-> page). A visitor picks one setting, which every site follows: **Default**,
-> where each site wears its own theme (the arcade Arcade, the demos Studio,
-> the puzzles Paper), or one of the three, worn by all of them.
+> current look becomes **Arcade**, and two new ones join it, **Dark**
+> (quiet, modern) and **Light** (warm paper and ink). They were first named
+> Studio and Paper, as most of this proposal still calls them. A visitor
+> picks one setting, which every site follows: **Default**, where each site
+> wears its own theme (the arcade Arcade, the demos Dark, the puzzles
+> Light), or one of the three, worn by all of them.
 
-**Status:** implemented in part. Part A (the split, the flat tags, the one
-dev server) is done, in the main checkout, uncommitted (2026-11-01). Part B
-(themes) is not started.
+**Status:** implemented, uncommitted in the main checkout (2026-11-01).
+Part A (the split, the flat tags, the one dev server) and Part B (the
+themes, Arcade, Studio and Paper) are done. Follow-ons are listed at the end
+of section 15.
 
 **Written:** 2026-11-01, on `vnext` at `adba8e48`, against
 `packages/sites/arcade/` as it is that day: 24 entries, 188 colour literals
@@ -493,15 +495,15 @@ passing, with no reference image changed.
 
 Part B, themes.
 
-8. Tokenise `arcade.css` and `nav.css` with the Arcade's values. No image
-   changes.
-9. The setting: the model, saving, the `storage` event, the first-paint
-   script, the `data-theme` view, the picker. Only Arcade defined.
-10. Paper: its tokens, then its wordmark, card and way in. Visual tests.
-11. Studio: the same.
-12. The contrast test. The site's defaults switched on: demos to Studio,
-    puzzles to Paper.
-13. Docs: the page app's README on themes, a line in the entries' guide.
+8. ~~Tokenise `arcade.css` and `nav.css` with the Arcade's values. No image
+   changes.~~ Done.
+9. ~~The setting: the model, saving, the `storage` event, the first-paint
+   script, the `data-theme` view, the picker. Only Arcade defined.~~ Done.
+10. ~~Paper: its tokens, then its wordmark, card and way in. Visual tests.~~ Done.
+11. ~~Studio: the same.~~ Done.
+12. ~~The contrast test. The site's defaults switched on: demos to Studio,
+    puzzles to Paper.~~ Done.
+13. ~~Docs: the page app's README on themes, a line in the entries' guide.~~ Done (the page's README section 10, the kit's README, `AGENTS.md`).
 
 ## 15. Progress
 
@@ -550,3 +552,152 @@ Part B, themes.
   for every site. `npm run preview` is gone: nobody used it. A stale
   `dist/assets/` from the old layout lingers locally until `dist/` is
   cleared (CI starts clean).
+
+**2026-11-01, Part B done.**
+
+- Step 8, by a sub-agent: 71 `--theme-*` properties in `themes.css` (the
+  Arcade's, the default), 225 references in `arcade.css` and `nav.css`,
+  each checked equal to the literal it replaced; the kit's 17 images and the
+  arcade's and puzzles' walls byte-identical. `nav.css` keeps its `--site-*`
+  names, now read from the theme, so the docs' and playground's copies are
+  untouched. `arcade.css` imports the theme files itself, so the visual
+  tests that import it alone get them.
+- Studio and Paper are each a file (`theme-studio.css`, `theme-paper.css`):
+  a value for every property, and rules for the site's name and the cards'
+  names in type (plain-text twins beside the pixel ones, each theme showing
+  one), straight untaped pictures, and their own card faces. The candy
+  palette became `--theme-candy-*`; the way in's frame reads
+  `--theme-polaroid`, `--theme-shadow-near` and `-far`.
+- Both are quiet (`isQuiet` in `views/themes.ts`): the reduced-motion way
+  in and out, with no burn. A way of their own (Studio's "grow") is a
+  follow-on.
+- The setting: `themeChoice`, `theme`, `chooseTheme` on the model;
+  `mvt-arcade:theme` in storage, followed across tabs by the `storage`
+  event; `SITE_THEMES` (arcade Arcade, demos Studio, puzzles Paper); the
+  first paint written into each page's `<head>` by the kit
+  (`first-paint-theme.ts`); the picker, `NavThemeView`, in the nav.
+- Found: Vite's dev server resolved an `@import` nested in an imported CSS
+  file from the repo's root on the demos site alone (not the arcade's or the
+  puzzles'). Not chased; `arcade.css` imports each theme file directly.
+- Checked: contrast (`themes.test.ts`, every theme, 20 pairs, AA; Studio's
+  button violet darkened to #5e60e0 to pass), the first paint against the
+  CSS (`first-paint-theme.test.ts`), 6 new visual poses (pause menu, a full
+  highscore table, How to Play, in Studio and Paper), every old image
+  identical, 3085 unit tests, lint, `npm run build` with every check (home
+  pages 51.5 to 55.6 KB of 60). The demos' and puzzles' wall pictures
+  retaken in their own themes.
+- Follow-ons: a way in of Studio's own; softer page sounds for Studio and
+  Paper; the docs' nav following the choice; entries reading the theme
+  (Sudoku in ink on newsprint); the marquee's colours, the wall's ember
+  shader and the search's magnifier icon are still the Arcade's in every
+  theme (the last is a data URI, hidden from `var()`); empty highscore rows
+  are pale on Paper.
+
+**2026-11-01, Part B revised after a first look.** Studio and Paper are
+renamed **Dark** and **Light** (`'dark'`, `'light'`; `theme-dark.css`,
+`theme-light.css`); the names above are the first ones. Changed at the
+user's asking:
+
+- No tags on the cards: the era had been the only one left, and no tag is
+  special enough for every card. Tags show in the info panel, as outlined
+  pills like the search's chips, and in the search.
+- No serif anywhere: `--theme-font-serif` is gone; the info button's letter
+  and Light's masthead and names are in the system's sans-serif, and
+  Light's typewriter for keys is the system's monospace.
+- Dark and Light show each card's photo full width (`cardPhoto:
+  'full-width'` in `views/themes.ts`): across the card's lower half, edge to
+  edge, straight, unframed, and not growing as the card is selected, with
+  the star and the info button just above it. The photo shows the middle
+  of the entry's crop that fills it (`fullWidthPhotoIn`, `cropToAspect` in
+  `card-photo.ts`); the card's pose now carries the whole picture behind
+  the photo (`PhotoPose.frame`, read from the picture's place in the photo),
+  so the way in starts from what the card shows. `PicturePose` merged into
+  `PhotoPose`.
+- Dark: larger names (24px at the design size), no stripe of colour across
+  the card's top, and the card a shade lighter than the page
+  (`--theme-raised`, the colour the photo's frame was).
+- Light: larger names in ink, with no highlighter behind them; its card
+  colours, now only the selected card's ring, deepened so the ring shows on
+  paper.
+- Open: the top half of a full-width card holds only the name and the two
+  buttons, so it is mostly empty. The entry's summary, or a shorter card in
+  these themes, would fill it; left for the user to judge.
+
+**2026-11-01, square photos.** At the user's asking, a full-width photo is
+now a square across the card's foot, under both bands' height, and the star
+and the info button are back at the bottom right, floating over its corner
+in Dark and Light. Each entry gives a focus (`thumbnailFocus`, in its own
+pixels), which a closer crop keeps at its centre as nearly as its crop
+allows (`cropToAspect`); `describeCatalogue` requires one inside the crop.
+Each was chosen from the entry's picture and checked on the walls: Sudoku's
+square crop now shows the whole grid. The empty top half is gone with it.
+
+**2026-11-01, names.** Dark's and Light's card names are centred and larger
+(32px at the design size), shrunk to fit one line as the pixel names fit
+themselves: the card measures its name once per theme, once it is on the
+wall, and sets `--name-fit`, which the size is multiplied by. Every size on
+a card scales together, so one measure holds at any width. Light's names
+are a soft warm grey (#9a9082), 3:1 on the card, enough for text this
+large. Dark's are all one soft, warm grey (#c8c2b8),
+no longer each card's colour. A name's box is padded 0.12em above and
+below, so the tails of g, j and y are not cut off. Both themes set the names in
+small capitals (`font-variant-caps`, after the `font` shorthand, which
+resets it), spaced closer (-0.04em).
+
+**2026-11-01, site names.** Dark's and Light's site names drop the accent's
+full stop and the double rule. Both are 52px small capitals, like the
+cards' names: Dark's letters are filled with a gradient from a warm pale
+grey into the accent's violet (`background-clip: text`), and Light's are
+ink, underlined with a wavy red-pencil squiggle (`text-decoration: underline
+wavy`). Fonts beyond the system's are an open question for the user: the
+home-page budget counts JavaScript only, so a self-hosted font would not
+fail it.
+
+**2026-11-01, the Arcade's marquee everywhere.** The user liked neither;
+every theme now shows the Arcade's pixel marquee for the site's name, and
+its plain-text twin is gone. The nav broke on phones (375px and under): the
+palette made five tools, which wrapped under the name and behind the page's
+title. Under 660px the nav's top row now stays one row: the name has a zero
+flex basis, so the row shrinks it (to an ellipsis, at 320px) rather than
+wrapping, and grows back to its own width; the tools sit at the right
+(`margin-left: auto`), and close up under 400px. Dark's cards are their own colour
+again, at a quarter of its brightness (`color-mix` with black), which
+keeps the warm grey names easy to read. Light's are a wash of their colour, 24% of
+it on white. The nav's breakpoints, set before the Demos and Puzzles links
+and the palette joined it, overflowed from 665px to 930px: measured at
+every width, the whole nav needs 935px and without its links' icons 790px,
+so the icons go at 980px and the hamburger comes at 820px (the runner's
+bar follows), which fits from 1100px down to 300px in the Arcade and Dark
+themes. The playground's copy overflowed the same way (705px to 935px)
+and takes the same breakpoints, its theme picker folding at 820px with
+them. The docs' bar, VitePress's, overflowed from 905px to 1135px and
+around its own breakpoints: the links' icons go at 1160px, and the search
+box shows only its magnifier from 768px to 840px and from 960px to 1010px.
+Each was measured at every width, 5px apart, and fits from 1400px down
+(the docs to 315px, where VitePress's own phone bar runs a few pixels
+over). Found on the way: the docs' Vite opens its own page-update socket
+on port 24678, not the one server's, so a second `npm run dev` on another
+port has docs that reload without end. Not fixed. Light's page is now a neutral pale
+grey (#f4f4f5, and in the first paint), not warm newsprint, which clashed
+with the cards' washes of colour. The names' colours are the other theme's
+cards, turned about: Dark's are a pale wash of the card's colour (24% on
+white), Light's the card's colour at a quarter brightness (25% on black),
+each mixed from its own theme's palette. Then, at the user's asking, both
+names are the card's plain Arcade colour (`--arcade-candy-*`, in a `:root`
+block of `themes.css` no theme overrides, which the Arcade's own palette
+reads; each card sets `--arcade-candy` beside `--candy`). It suits Dark;
+on Light's pale cards the pastels barely show. Then both at half
+brightness (`color-mix` with black): right for Light, dim on Dark's dark
+cards. Settled: Light's names at half brightness, Dark's at full. Then Dark's drawn in
+outline only (`-webkit-text-stroke`, 1.2px at the design size, with a
+transparent fill), in the card's full Arcade colour. It looked bad on the
+user's phone: phones' variable fonts build letters of overlapping pieces,
+whose every edge a stroke traces, and the stroke thinned to 0.7px. Now the
+letter is filled with the card's own colour over its stroke (`paint-order:
+stroke fill`), hiding the inner half and the overlaps, with the stroke
+twice as wide and at least 2px, the spacing looser (-0.01em), and 2px of
+room at each end so the box does not cut the outline off. Light's names
+are outlined the same way, in the card's Arcade colour at half
+brightness, filled with its card's wash. Both outlines then thickened: the
+stroke 3.6px at the design size, at least 3px, so 1.8px shows (at least
+1.5px).

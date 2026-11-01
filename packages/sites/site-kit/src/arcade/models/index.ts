@@ -7,3 +7,4 @@ export {
 } from './highscores-model';
 export { type ActiveTags, searchWordsOf, TAG_GROUPS, type TagChip, type TagGroup, tagValuesOf } from './entry-filters';
 export { type ArcadeSoundSettings, DEFAULT_SOUND_SETTINGS, formatSoundSettings, HANDHELD_SOUND_SETTINGS, parseSoundSettings } from './sound-settings';
+export { parseThemeChoice, THEME_CHOICES, THEME_KINDS, type ThemeChoice, type ThemeKind } from './theme-choice';

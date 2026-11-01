@@ -40,6 +40,14 @@ export interface ArcadeEntry {
      */
     readonly thumbnailCrop?: ThumbnailCrop;
     /**
+     * The point of the play area a card cropped closer than `thumbnailCrop`
+     * keeps at its centre, as nearly as the crop allows: what the picture is
+     * of. A theme whose cards show a square photo crops a wide or tall
+     * picture so, keeping this point in view. Every entry in a catalogue
+     * gives one; it defaults to the crop's centre.
+     */
+    readonly thumbnailFocus?: ThumbnailFocus;
+    /**
      * The colour of the entry's card, from the arcade's candy palette (its
      * title is a deep shade of it): one that suits its thumbnail. Defaults to
      * one picked from its id, the same every time.
@@ -159,6 +167,12 @@ export interface Inspiration {
     readonly year: number;
 }
 
+/** A point of an entry's play area, in the entry's own pixels. */
+export interface ThumbnailFocus {
+    readonly x: number;
+    readonly y: number;
+}
+
 /** A rectangle of an entry's play area, in the entry's own pixels. */
 export interface ThumbnailCrop {
     /** Its top left corner. */
@@ -227,4 +241,11 @@ export const CARD_COLORS: readonly CardColor[] = [
 /** The part of `entry`'s play area its card shows: its own crop, or the whole play area. */
 export function thumbnailCropOf(entry: ArcadeEntry): ThumbnailCrop {
     return entry.thumbnailCrop ?? { x: 0, y: 0, width: entry.screenWidth, height: entry.screenHeight };
+}
+
+/** The point a closer crop of `entry`'s picture keeps at its centre: its own, or its crop's centre. */
+export function thumbnailFocusOf(entry: ArcadeEntry): ThumbnailFocus {
+    if (entry.thumbnailFocus !== undefined) return entry.thumbnailFocus;
+    const crop = thumbnailCropOf(entry);
+    return { x: crop.x + crop.width / 2, y: crop.y + crop.height / 2 };
 }

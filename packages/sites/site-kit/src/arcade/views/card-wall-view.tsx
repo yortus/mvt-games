@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 import type { ArcadeEntry } from '../../entry-types';
 import { createAttractViewModel } from './attract-view-model';
+import type { ThemeKind } from '../models';
 import type { PhotoPose } from './card-photo';
 import { cardIn, CardView, isCardLink, isOnCardButton, isOnPolaroid, linkOf, photoPoseOf } from './card-view';
 import { movedPosition, wallMoveFor } from './card-wall-keys';
@@ -43,6 +44,8 @@ export interface CardWallViewBindings {
     readonly isLiveShowing: () => boolean;
     /** Reported with the card whose entry should play live, or -1 for none, as it changes. */
     readonly onLiveWanted?: (index: number) => void;
+    /** The theme the page wears, which says how every card shows its photo and its name. */
+    readonly theme: () => ThemeKind;
     /** Reported with the card pressed, and where its photo is drawn, for the way into its entry to start from. */
     readonly onLaunchPressed?: (index: number, from: PhotoPose) => void;
     readonly onInfoPressed?: (index: number) => void;
@@ -97,6 +100,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         isTabStop: () => tabStop === index,
         live: () => (bindings.liveIndex() === index ? bindings.liveElement : undefined),
         isLiveShowing: bindings.isLiveShowing,
+        theme: bindings.theme,
         onLaunchPressed: (from) => bindings.onLaunchPressed?.(index, from),
         onInfoPressed: () => bindings.onInfoPressed?.(index),
         isFavourite: () => bindings.isFavouriteAt(index),

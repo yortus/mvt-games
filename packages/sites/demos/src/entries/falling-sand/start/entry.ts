@@ -18,6 +18,8 @@ export const entry: ArcadeEntry = {
     cardColor: 'apricot',
     // The tank, without its controls
     thumbnailCrop: { x: 0, y: 0, width: 480, height: 560 },
+    // The pile, the water pouring and the sand below: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 240, y: 280 },
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
 };

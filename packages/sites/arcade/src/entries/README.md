@@ -583,6 +583,12 @@ export const details: EntryDetails = {
 - **`thumbnailCrop`** picks the part of the play area the card shows, and
   **`cardColor`** the card's colour, from the Arcade's palette. Both are
   optional.
+- **`thumbnailFocus`** is the point of the play area the picture is of,
+  such as the player's ship, in the entry's own pixels. The Dark and Light
+  themes show every card's photo as a square, so a picture of any other
+  shape is cropped closer, and the crop keeps this point at its centre, as
+  nearly as it can. Every entry gives one: look at the card in both themes,
+  and move it until nothing that matters is cut off.
 
 The entry's size in lines and files, and the renderers it draws with, are
 measured from its source when the site builds. Nobody writes them down.

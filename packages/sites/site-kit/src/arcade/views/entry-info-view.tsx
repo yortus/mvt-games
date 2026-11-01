@@ -8,7 +8,7 @@ import { type HighscoresStatus, TAG_GROUPS, tagValuesOf } from '../models';
 import { focusOnOpen } from './focus-on-open';
 import { HighscoreTableView } from './highscore-table-view';
 import { HowToPlayView } from './how-to-play-view';
-import { GROUP_LABELS, sizeLabel, SOURCE_ROOT, tagLabel } from './labels';
+import { sizeLabel, SOURCE_ROOT, tagLabel } from './labels';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -59,7 +59,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
     const entryId = (): string | undefined => bindings.entry()?.id;
     const descParagraphs = createComputed({ watch: () => details()?.description, compute: splitParagraphs });
     const implParagraphs = createComputed({ watch: () => details()?.implementation, compute: splitParagraphs });
-    const tagsText = createComputed({ watch: entryId, compute: () => describeTags(entry(), factsFor) });
+    const tags = createComputed({ watch: entryId, compute: () => tagPillsOf(entry(), factsFor) });
     const sizeText = createComputed({ watch: entryId, compute: (id) => describeSize(factsFor(id ?? '')) });
     const inspirationText = createComputed({ watch: entryId, compute: () => describeInspiration(entry()?.inspiredBy) });
     const sourceHref = createComputed({ watch: entryId, compute: (id) => SOURCE_ROOT + (factsFor(id ?? '')?.sourcePath ?? '') });
@@ -86,7 +86,11 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                 <section class="info-panel" role="dialog" aria-modal="true" aria-labelledby="info-name">
                     <button type="button" class="info-close" aria-label="Close" text="×" onClick={() => onClosePressed?.()} />
                     <h2 id="info-name" text={() => entry()?.name ?? ''} />
-                    <p class="info-tags" text={tagsText} />
+                    <ul class="info-tags" aria-label="Tags" visible={() => tags().length > 0}>
+                        <List items={tags}>
+                            {(tag) => <li class={() => tag().className} text={() => tag().label} />}
+                        </List>
+                    </ul>
                     <p
                         class="info-inspired"
                         visible={() => entry()?.inspiredBy !== undefined}
@@ -245,17 +249,21 @@ function splitParagraphs(text: string | undefined): string[] {
     return text?.split('\n\n') ?? [];
 }
 
-/** "Type: Game · Era: 1980s · ..." for every group the entry has a tag in. */
-function describeTags(entry: ArcadeEntry | undefined, factsFor: (id: string) => EntryFacts | undefined): string {
-    if (entry === undefined) return '';
+/** A tag as its pill shows it: its label, as the search's chips read it, and its group's class, which colours it. */
+interface TagPill {
+    readonly className: string;
+    readonly label: string;
+}
+
+/** Every tag the entry has, as pills: its era, its genres, then the renderers it draws with. */
+function tagPillsOf(entry: ArcadeEntry | undefined, factsFor: (id: string) => EntryFacts | undefined): TagPill[] {
+    if (entry === undefined) return [];
     const facts = factsFor(entry.id);
-    const parts: string[] = [];
+    const pills: TagPill[] = [];
     for (const group of TAG_GROUPS) {
-        const values = tagValuesOf(entry, facts, group);
-        if (values.length === 0) continue;
-        parts.push(`${GROUP_LABELS[group]}: ${values.map((value) => tagLabel({ group, value })).join(', ')}`);
+        for (const value of tagValuesOf(entry, facts, group)) pills.push({ className: `is-${group}`, label: tagLabel({ group, value }) });
     }
-    return parts.join(' · ');
+    return pills;
 }
 
 /** "Inspired by Pac-Man (Namco, 1980)" */

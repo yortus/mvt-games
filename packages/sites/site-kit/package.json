@@ -12,6 +12,7 @@
         "./pixel-glyphs": "./src/pixel-glyphs/index.ts",
         "./runner": "./src/runner/index.ts",
         "./shared": "./src/shared/index.ts",
+        "./site-config": "./src/arcade/site-config.ts",
         "./site-page": "./src/arcade/start-site-page.ts",
         "./snapshot": "./src/snapshot/index.ts",
         "./storage": "./src/storage/index.ts",

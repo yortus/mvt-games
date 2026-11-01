@@ -1,6 +1,6 @@
 export {
     type ArcadeEntry, type ControlButton, type ControlGesture, type ControlInput, type ControlKey, type ControlRow, type EntryDetails, type HowToPlay, type EntryKind, type EntryTag, type Era, type Genre, type Inspiration, type RendererKind,
-    type ThumbnailCrop, type CardColor, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS, thumbnailCropOf, CARD_COLORS,
+    type ThumbnailCrop, type ThumbnailFocus, type CardColor, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS, thumbnailCropOf, thumbnailFocusOf, CARD_COLORS,
 } from './arcade-entry';
 export {
     defineElementLoader, definePixiLoader, type ElementEntrySession, type ElementEntryStarter, type ElementEntryStarterFields, type ElementStartBase,

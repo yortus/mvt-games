@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 240,
     screenHeight: 320,
     thumbnail,
+    // The ship, and the fighters diving past it: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 120, y: 180 },
     // The colour of its neon
     cardColor: 'orchid',
     hasHighscores: true,

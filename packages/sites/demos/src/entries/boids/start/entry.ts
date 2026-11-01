@@ -19,6 +19,8 @@ export const entry: ArcadeEntry = {
     cardColor: 'seafoam',
     // The arena, without its sliders
     thumbnailCrop: { x: 0, y: 0, width: 600, height: 492 },
+    // The flock: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 300, y: 246 },
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
 };

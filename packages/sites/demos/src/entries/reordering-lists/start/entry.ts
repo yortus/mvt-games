@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 600,
     screenHeight: 420,
     thumbnail,
+    // The cards, and what each list keeps: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 210, y: 210 },
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
 };

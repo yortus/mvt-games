@@ -19,6 +19,8 @@ export const entry: ArcadeEntry = {
     cardColor: 'bubblegum',
     // A square of the Pixi machine's reels, in the top left quadrant
     thumbnailCrop: { x: 120, y: 0, width: 400, height: 400 },
+    // The reels: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 320, y: 200 },
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),
 };

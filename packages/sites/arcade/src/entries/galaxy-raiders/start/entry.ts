@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 390,
     inspiredBy: { title: 'Galaga', maker: 'Namco', year: 1981 },
     thumbnail,
+    // The raiders in formation: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 140, y: 170 },
     // The colour of its raiders
     cardColor: 'lavender',
     hasHighscores: true,

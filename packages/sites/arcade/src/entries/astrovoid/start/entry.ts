@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 430,
     inspiredBy: { title: 'Asteroids', maker: 'Atari', year: 1979 },
     thumbnail,
+    // The rocks and the ship, above the score: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 200, y: 200 },
     hasHighscores: true,
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),

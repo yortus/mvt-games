@@ -7,6 +7,7 @@ import {
     type ActiveTags, chipsFor, matchesTags, matchesWords, noActiveTags, searchWordsOf, sortByName, type TagChip, tagValuesOf,
 } from './entry-filters';
 import { clampVolume, type ArcadeSoundSettings, DEFAULT_SOUND_SETTINGS } from './sound-settings';
+import type { ThemeChoice, ThemeKind } from './theme-choice';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -192,6 +193,17 @@ export interface ArcadeModel {
      */
     isSoundMuted: boolean;
 
+    // --- Theme ----------------------------------------------------------------
+    // The visitor's choice of look, which the page keeps between visits, and
+    // which every site follows.
+
+    /** The theme the visitor chose: one, which every site wears, or `'default'`, where each site wears its own. */
+    readonly themeChoice: ThemeChoice;
+    /** The theme the page wears: the one chosen, or, for `'default'`, the site's own. */
+    readonly theme: ThemeKind;
+    /** Chooses a theme, or the default. */
+    readonly chooseTheme: (choice: ThemeChoice) => void;
+
     // --- The info panels ----------------------------------------------------
     // One panel is open at a time. It is an entry's, or the Arcade's own.
 
@@ -267,6 +279,10 @@ export interface ArcadeModelOptions {
     readonly soundSettings?: ArcadeSoundSettings;
     /** The ids of the entries the visitor marked as favourites on a visit before. Ids of entries not listed are dropped. */
     readonly favouriteIds?: readonly string[];
+    /** The theme the visitor chose on a visit before, on any site. Defaults to `'default'`. */
+    readonly themeChoice?: ThemeChoice;
+    /** The site's own theme, which the default choice wears. Defaults to `'arcade'`. */
+    readonly siteTheme?: ThemeKind;
     /** Whether the page has a saved game for the entry with `id`. Without it, no entry has one. */
     readonly hasSavedGame?: (id: string) => boolean;
 }
@@ -319,6 +335,8 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     let restartCount = 0;
     let isResumeOffered = false;
     let soundSettings = options.soundSettings ?? DEFAULT_SOUND_SETTINGS;
+    let themeChoice: ThemeChoice = options.themeChoice ?? 'default';
+    const siteTheme: ThemeKind = options.siteTheme ?? 'arcade';
     /** Counts launches, so a load that finishes after the visitor has left is ignored. */
     let launchCount = 0;
     /** The info panel open, if any. It is an entry's, or the Arcade's own. */
@@ -458,6 +476,16 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         set isSoundMuted(value) {
             changeSound({ isMuted: value });
+        },
+
+        get themeChoice() {
+            return themeChoice;
+        },
+        get theme() {
+            return themeChoice === 'default' ? siteTheme : themeChoice;
+        },
+        chooseTheme(choice) {
+            themeChoice = choice;
         },
 
         launch(id, launchOptions) {

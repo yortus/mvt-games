@@ -109,7 +109,8 @@ export function EntryTransitionView(bindings: EntryTransitionViewBindings): Elem
             // one: spread as far as the border, so it falls from the paper, not hidden under it
             style.boxShadow = drawnBorder === 0
                 ? ''
-                : `0 0 0 ${drawnBorder}px ${POLAROID_WHITE}, 2px 4px 3px ${drawnBorder}px ${SHADOW_NEAR}, 8px 16px 26px ${drawnBorder}px ${SHADOW_FAR}`;
+                : `0 0 0 ${drawnBorder}px var(--theme-polaroid), 2px 4px 3px ${drawnBorder}px var(--theme-shadow-near), `
+                    + `8px 16px 26px ${drawnBorder}px var(--theme-shadow-far)`;
         }
         if (picture.width !== drawnWidth || picture.height !== drawnHeight) {
             drawnWidth = picture.width;
@@ -221,8 +222,3 @@ export function EntryTransitionView(bindings: EntryTransitionViewBindings): Elem
 
 /** How long the waiting bar's light takes to run its length. */
 const PROGRESS_PERIOD_MS = 1200;
-
-/** The polaroid's paper, and its shadow as it lies lifted on its card. Must match `.card-polaroid` in `arcade.css`. */
-const POLAROID_WHITE = '#f4f1ea';
-const SHADOW_NEAR = 'rgba(0, 0, 0, 0.3)';
-const SHADOW_FAR = 'rgba(0, 0, 0, 0.5)';

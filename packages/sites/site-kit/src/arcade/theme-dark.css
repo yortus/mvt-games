@@ -1,0 +1,151 @@
+/* ==========================================================================
+   The Dark theme
+   ========================================================================== */
+
+/*
+ * Dark, calm and modern, as a creative tool's interface is: graphite rather
+ * than navy, one cool accent, the system's own type throughout, rounded
+ * tiles and soft shadows. It frames each entry's screen as the work, with
+ * nothing competing. It is the demos' own theme.
+ *
+ * Its values, for the properties `themes.css` lists, then the rules that
+ * make it look its own way: the names in the system's type, on flat tiles a
+ * shade lighter than the page. Its cards show their photos full width
+ * (`views/themes.ts`), which `arcade.css` lays out.
+ */
+
+:root[data-theme="dark"] {
+    /* --- Surfaces --- */
+    --theme-bg: #121417;
+    --theme-inset: #0e1013;
+    --theme-surface: #1a1d21;
+    --theme-raised: #24282e;
+    --theme-highscore-bg: #0e1013;
+    --theme-screen: #000;
+    --theme-scrim: rgba(8, 9, 11, 0.72);
+    --theme-scrim-soft: rgba(8, 9, 11, 0.6);
+
+    /* --- Lines --- */
+    --theme-border: #2c3036;
+    --theme-divider: #24282e;
+    --theme-track: #3a3f46;
+
+    /* --- Text --- */
+    --theme-text: #d7dbe0;
+    --theme-text-strong: #f2f4f7;
+    --theme-text-muted: #8f96a0;
+    --theme-text-faint: #6b7280;
+
+    /* --- Accents: one cool violet, and a soft amber for the stars --- */
+    --theme-accent: #8b8cff;
+    --theme-accent-hover: #a9aaff;
+    --theme-accent-tint: rgba(139, 140, 255, 0.16);
+    --theme-accent-fill: #5e60e0;
+    --theme-on-accent-fill: #fff;
+    --theme-focus: #8b8cff;
+    --theme-gesture-text: #a9aaff;
+    --theme-highlight: #f5c76e;
+    --theme-on-highlight: #121417;
+    --theme-game-button: #8b8cff;
+    --theme-go: #5e60e0;
+    --theme-go-hover: #6d6ef0;
+    --theme-go-border: #6d6ef0;
+    --theme-on-go: #fff;
+    --theme-danger: #e5484d;
+    --theme-danger-mark: #ff6369;
+    --theme-hover-wash: rgba(255, 255, 255, 0.06);
+
+    /* --- Cards --- */
+    --theme-card-border: rgba(255, 255, 255, 0.07);
+    --theme-card-badge-bg: rgba(18, 20, 23, 0.8);
+    --theme-card-badge-border: rgba(255, 255, 255, 0.08);
+    --theme-card-badge-text: #e8ebef;
+    /* The tags: deep tints of violet, green and blue */
+    --theme-tag-era: #3a3366;
+    --theme-tag-genre: #23443a;
+    --theme-tag-renderer: #1f3a55;
+    --theme-on-tag: #e8ebef;
+    /* A thin dark frame round the picture */
+    --theme-polaroid: #24282e;
+    /* The candy palette, a little softer: the cards, at a quarter of their brightness, and the ring round the selected card */
+    --theme-candy-bubblegum: #f28dbf;
+    --theme-candy-peach: #f4a08e;
+    --theme-candy-apricot: #f2bd78;
+    --theme-candy-lemon: #eadc7a;
+    --theme-candy-mint: #9ee38c;
+    --theme-candy-seafoam: #82dcc7;
+    --theme-candy-sky: #8cc4f5;
+    --theme-candy-lavender: #ad9ef5;
+    --theme-candy-orchid: #dd96f0;
+
+    /* --- Highscores: the cabinet's colours, softened --- */
+    --theme-highscore-1: #ff7a7a;
+    --theme-highscore-2: #ffb366;
+    --theme-highscore-3: #ffe066;
+    --theme-highscore-4: #7ee2a8;
+    --theme-highscore-5: #7cc7ff;
+    --theme-highscore-new: #f5c76e;
+    --theme-highscore-new-lit: #fff;
+    --theme-placed-score: #fff;
+    --theme-placed-rank: #7ee2a8;
+
+    /* --- The nav: near black, light grey, the violet for where you are --- */
+    --theme-nav-bg: #0e1013;
+    --theme-nav-border: #24282e;
+    --theme-nav-text: #e6e9ed;
+    --theme-nav-text-muted: rgba(230, 233, 237, 0.62);
+    --theme-nav-hover-bg: rgba(255, 255, 255, 0.06);
+    --theme-nav-active-bg: rgba(139, 140, 255, 0.18);
+    --theme-nav-brand-hover: #fff;
+
+    /* --- Type: the system's own, even where the Arcade has pixels --- */
+    --theme-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
+    --theme-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    --theme-font-mono-short: ui-monospace, monospace;
+    --theme-font-pixel: var(--theme-font-ui);
+
+    /* --- Corners: rounder --- */
+    --theme-radius-control: 8px;
+    --theme-radius-box: 10px;
+    --theme-radius-panel: 14px;
+    --theme-radius-card: 14px;
+    --theme-radius-field: 10px;
+    --theme-radius-key: 6px;
+    --theme-radius-pill: 999px;
+
+    /* --- Shadows: soft, and straight down --- */
+    --theme-shadow-note: 0 16px 40px rgba(0, 0, 0, 0.5);
+    --theme-shadow-menu: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --theme-shadow-float: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --theme-shadow-polaroid: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.35);
+    --theme-shadow-near: rgba(0, 0, 0, 0.35);
+    --theme-shadow-far: rgba(0, 0, 0, 0.5);
+    --theme-shadow-polaroid-lifted: 0 2px 4px var(--theme-shadow-near), 0 14px 32px var(--theme-shadow-far);
+    --theme-shadow-transition: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* A flat tile of the card's own colour at a quarter of its brightness, with no grid etched in it */
+:root[data-theme="dark"] .card { background: color-mix(in srgb, var(--candy) 25%, #000); }
+
+/* Each name in the system's type, centred, shrunk to fit one line, drawn in outline only, in the card's colour as the Arcade has it */
+:root[data-theme="dark"] .card-name .pixel-text { display: none; }
+:root[data-theme="dark"] .card-name-text {
+    display: block;
+    font: 700 calc(32px * var(--card-scale, 1) * var(--name-fit, 1)) / 1.2 var(--theme-font-ui);
+    /* Small capitals, after the shorthand, which resets them: each word's capital stands a little taller than the rest */
+    font-variant-caps: small-caps;
+    /* A little looser than Light's, so neighbouring letters' outlines stay apart */
+    letter-spacing: -0.01em;
+    /*
+     * The outline is drawn first and the letter filled over it, in the card's
+     * own colour (as `.card`'s background), so only the outline's outer half
+     * shows: a font whose letters are built of overlapping pieces, as phones'
+     * are, would otherwise show every piece's edge inside the letter. The
+     * outline is twice the width that shows, and never shows thinner than 1.5px
+     */
+    color: color-mix(in srgb, var(--candy) 25%, #000);
+    -webkit-text-stroke: max(3px, calc(3.6px * var(--card-scale, 1))) var(--arcade-candy);
+    paint-order: stroke fill;
+    /* Room at each end for the outline, which the box would otherwise cut off */
+    padding-inline: 2px;
+}

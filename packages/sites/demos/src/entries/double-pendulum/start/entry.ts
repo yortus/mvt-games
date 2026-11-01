@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 360,
     screenHeight: 420,
     thumbnail,
+    // The pendulum and its trail, above the buttons: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 180, y: 180 },
     cardColor: 'sky',
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),

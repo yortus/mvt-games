@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 360,
     screenHeight: 300,
     thumbnail,
+    // The bursts, over the city: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 200, y: 150 },
     cardColor: 'lavender',
     loadDetails: async () => (await import('./details')).details,
     load: async () => (await import('./load')).load(),

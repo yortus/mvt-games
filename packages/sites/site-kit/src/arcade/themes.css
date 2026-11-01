@@ -1,0 +1,218 @@
+/* ==========================================================================
+   Themes
+   ========================================================================== */
+
+/*
+ * A theme is a set of these custom properties. The Arcade's, below, is the
+ * default. Every colour, font, radius and shadow the page uses, in
+ * `arcade.css` and `nav.css`, reads one of them, so another theme restyles
+ * the page by giving them its own values, under `:root[data-theme="..."]`.
+ *
+ * Each is named for what it does, not for how it looks. Some share a value
+ * in this theme, such as the page and the wells sunk into its panels, so
+ * another theme can set them apart.
+ *
+ * `arcade.css` brings this file in, so every view's visual test gets the
+ * theme as the page does. Each of the other themes is a file of its own,
+ * with its values and the few rules that make it look its own way, which
+ * `arcade.css` brings in too: Vite's dev server finds an `@import` inside an
+ * imported file from the wrong folder, on some sites.
+ */
+
+
+/*
+ * The Arcade's candy palette, a card's colour (`cardColor`), by its name,
+ * whatever the theme: the Arcade's cards are these colours, and the other
+ * themes colour their cards' names with them
+ */
+:root {
+    --arcade-candy-bubblegum: #ff9ecb;
+    --arcade-candy-peach: #ffb3a1;
+    --arcade-candy-apricot: #ffcf8f;
+    --arcade-candy-lemon: #fff09a;
+    --arcade-candy-mint: #b5f5a3;
+    --arcade-candy-seafoam: #99eedc;
+    --arcade-candy-sky: #9fd4ff;
+    --arcade-candy-lavender: #c4b5ff;
+    --arcade-candy-orchid: #efaaff;
+}
+
+/* The Arcade theme, the default: GitHub's dark greys, a blue accent, and arcade yellow */
+:root,
+:root[data-theme="arcade"] {
+    /* --- Surfaces, from the page up --- */
+
+    /* The page itself */
+    --theme-bg: #0d1117;
+    /* Wells sunk into a panel: key caps, the search's tags, the sound box */
+    --theme-inset: #0d1117;
+    /* Panels and notes, the search box, the toast */
+    --theme-surface: #161b22;
+    /* Buttons, and an info panel's selected tab and its page */
+    --theme-raised: #21262d;
+    /* Under a highscore table, in an info panel and where a score places */
+    --theme-highscore-bg: #0d1117;
+    /* Behind an entry's screen: the runner, a card's photo, the way in */
+    --theme-screen: #000;
+    /* Over the page under an info panel, and over an entry where a score places */
+    --theme-scrim: rgba(0, 0, 0, 0.7);
+    /* Over a paused entry, a little lighter, so the game shows through */
+    --theme-scrim-soft: rgba(0, 0, 0, 0.6);
+
+    /* --- Lines --- */
+
+    /* The edges of panels, boxes and controls, and the rules in a table */
+    --theme-border: #30363d;
+    /* The rule between the parts of a note */
+    --theme-divider: #21262d;
+    /* A slider's track, past its thumb */
+    --theme-track: #484f58;
+
+    /* --- Text --- */
+
+    /* Body text */
+    --theme-text: #c9d1d9;
+    /* Headings, what was typed, key caps, and text under the pointer */
+    --theme-text-strong: #e6edf3;
+    /* Labels, counts, hints and notes */
+    --theme-text-muted: #8b949e;
+    /* The least of all: an entry's download size */
+    --theme-text-faint: #6e7681;
+
+    /* --- Accents --- */
+
+    /* Links, an edge under the pointer, a slider's fill, the loading bar */
+    --theme-accent: #58a6ff;
+    /* A link under the pointer */
+    --theme-accent-hover: #79c0ff;
+    /* A tag to choose in the search, under the pointer or arrowed to */
+    --theme-accent-tint: rgba(56, 139, 253, 0.15);
+    /* A tag chosen in the search, and the text on it */
+    --theme-accent-fill: #1f6feb;
+    --theme-on-accent-fill: #fff;
+    /* The keyboard's focus ring, and the search box while it has focus */
+    --theme-focus: #58a6ff;
+    /* A gesture's name, in How to Play, on a tint of the accent */
+    --theme-gesture-text: #79c0ff;
+    /* A favourite's star, an info panel's headings and summary, the pause and placing headings, and the initials' cursor */
+    --theme-highlight: #ffd83d;
+    /* Text on the highlight */
+    --theme-on-highlight: #161b22;
+    /* An on-screen button in How to Play, as the games draw them */
+    --theme-game-button: #ffd83d;
+    /* The button that goes on: Play, Resume, Continue */
+    --theme-go: #238636;
+    --theme-go-hover: #2ea043;
+    --theme-go-border: #2ea043;
+    --theme-on-go: #fff;
+    /* The edge of a toast that reports a problem */
+    --theme-danger: #da3633;
+    /* The line struck through a sound that is off */
+    --theme-danger-mark: #f85149;
+    /* A faint wash over a plain button under the pointer */
+    --theme-hover-wash: rgba(255, 255, 255, 0.08);
+
+    /* --- Cards --- */
+
+    /* A card's edge */
+    --theme-card-border: rgba(0, 0, 0, 0.35);
+    /* The star and the info button on a card */
+    --theme-card-badge-bg: rgba(13, 17, 23, 0.85);
+    --theme-card-badge-border: rgba(0, 0, 0, 0.4);
+    --theme-card-badge-text: #e6edf3;
+    /* An entry's tags in its info panel, one colour for each group, and their text */
+    --theme-tag-era: #c4b5ff;
+    --theme-tag-genre: #b5f5a3;
+    --theme-tag-renderer: #9fd4ff;
+    --theme-on-tag: #0d1117;
+    /* The polaroid's paper. `entry-transition-view.tsx` draws it too */
+    --theme-polaroid: #f4f1ea;
+    /* The palette a card's colour is from (`cardColor`): each light enough for the card's dark title */
+    --theme-candy-bubblegum: var(--arcade-candy-bubblegum);
+    --theme-candy-peach: var(--arcade-candy-peach);
+    --theme-candy-apricot: var(--arcade-candy-apricot);
+    --theme-candy-lemon: var(--arcade-candy-lemon);
+    --theme-candy-mint: var(--arcade-candy-mint);
+    --theme-candy-seafoam: var(--arcade-candy-seafoam);
+    --theme-candy-sky: var(--arcade-candy-sky);
+    --theme-candy-lavender: var(--arcade-candy-lavender);
+    --theme-candy-orchid: var(--arcade-candy-orchid);
+
+    /* --- Highscores --- */
+
+    /* The places, each in its own colour, as a cabinet's were, five to a cycle */
+    --theme-highscore-1: #ff4f4f;
+    --theme-highscore-2: #ff9a1f;
+    --theme-highscore-3: #ffe21f;
+    --theme-highscore-4: #3dff74;
+    --theme-highscore-5: #2ed9ff;
+    /* The row just entered, which flashes between these two */
+    --theme-highscore-new: #ffd83d;
+    --theme-highscore-new-lit: #fff;
+    /* Where a score places: the score, and the place it takes */
+    --theme-placed-score: #fff;
+    --theme-placed-rank: #7ee787;
+
+    /*
+     * --- The nav ---
+     * Its own colours, kept apart from the page's, as are the runner's bar
+     * and the Perfmon, which take them. This theme's: yellow on a very dark
+     * blue. `nav.css` gives them the names the docs and the playground share
+     */
+    --theme-nav-bg: #0a0f2e;
+    --theme-nav-border: #1e2a63;
+    --theme-nav-text: #ffd83d;
+    --theme-nav-text-muted: rgba(255, 216, 61, 0.68);
+    --theme-nav-hover-bg: rgba(255, 216, 61, 0.08);
+    --theme-nav-active-bg: rgba(255, 216, 61, 0.15);
+    /* The site's name, under the pointer */
+    --theme-nav-brand-hover: #fff3b0;
+
+    /* --- Type --- */
+
+    /* Everything but what follows */
+    --theme-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    /* Key caps in the (i)'s note */
+    --theme-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    /* The key shown on a pause menu's choice: a shorter stack, kept as it was */
+    --theme-font-mono-short: ui-monospace, monospace;
+    /* The site's name in the nav, and an entry's in the runner's bar */
+    --theme-font-pixel: 'MVT Pixel', ui-monospace, monospace;
+
+    /* --- Corners --- */
+
+    /* Buttons, tabs, and small boxes such as a highscore table's */
+    --theme-radius-control: 6px;
+    /* Boxes inside a panel, menus, the toast and the runner's hints */
+    --theme-radius-box: 8px;
+    /* Panels, and the (i)'s note */
+    --theme-radius-panel: 12px;
+    /* A card, at the design size: the card scales it */
+    --theme-radius-card: 12px;
+    /* The search box, rounded to half its height on one line */
+    --theme-radius-field: 20px;
+    /* Key caps */
+    --theme-radius-key: 5px;
+    /* Tags and other pills */
+    --theme-radius-pill: 999px;
+
+    /* --- Shadows --- */
+
+    /* The (i)'s note, dropped from the nav */
+    --theme-shadow-note: 0 12px 32px rgba(0, 0, 0, 0.55);
+    /* The runner's menu, dropped from its bar */
+    --theme-shadow-menu: 0 8px 24px rgba(0, 0, 0, 0.5);
+    /* The Perfmon, floating over the page */
+    --theme-shadow-float: 0 8px 24px rgba(0, 0, 0, 0.5);
+    /*
+     * A polaroid, at rest on its card, and lifted. The lifted one's two
+     * shadows are colours of their own, since `entry-transition-view.tsx`
+     * draws them too, spread under the picture's border
+     */
+    --theme-shadow-polaroid: 1px 2px 1px rgba(0, 0, 0, 0.35), 4px 7px 12px rgba(0, 0, 0, 0.4);
+    --theme-shadow-near: rgba(0, 0, 0, 0.3);
+    --theme-shadow-far: rgba(0, 0, 0, 0.5);
+    --theme-shadow-polaroid-lifted: 2px 4px 3px var(--theme-shadow-near), 8px 16px 26px var(--theme-shadow-far);
+    /* The picture, on its way into an entry */
+    --theme-shadow-transition: 0 10px 40px rgba(0, 0, 0, 0.6);
+}

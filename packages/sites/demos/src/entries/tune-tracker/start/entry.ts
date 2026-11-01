@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 500,
     // The meters, and the pattern's left side round the row playing: the chords, the bass and the bar
     thumbnailCrop: { x: 0, y: 154, width: 400, height: 300 },
+    // The notes, from the row numbers on: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 150, y: 304 },
     thumbnail,
     cardColor: 'sky',
     loadDetails: async () => (await import('./details')).details,

@@ -1,18 +1,30 @@
-import { type ArcadeEntry, type CardColor, CARD_COLORS, thumbnailCropOf } from '../../entry-types';
+import { type ArcadeEntry, type CardColor, CARD_COLORS, thumbnailCropOf, thumbnailFocusOf, type ThumbnailFocus } from '../../entry-types';
 import type { Rect } from './rect';
 
-// An entry's card shows its thumbnail as a photo in a polaroid, fitted inside
-// a square at the centre of the card, tilted a little and taped down across
-// two corners. The photo is the part of the thumbnail the entry names
-// (`thumbnailCrop`), of whatever shape; the thumbnail itself pictures the
-// whole play area. The photo is a window on the whole picture, placed so the
-// crop fills it, so a transition can show the window and the whole picture
-// behind it without changing picture.
+// An entry's card shows its thumbnail as a photo, in one of two ways, as the
+// theme says. In a polaroid, it is fitted inside a square at the centre of
+// the card, tilted a little and taped down across two corners, and shows the
+// part of the thumbnail the entry names (`thumbnailCrop`), of whatever shape.
+// Full width, it fills a square across the foot of the card, edge to edge,
+// and shows as much of that crop as fits a square, centred on the entry's
+// focus (`thumbnailFocus`) as nearly as the crop allows. Either way the thumbnail
+// itself pictures the whole play area, and the photo is a window on it,
+// placed so the crop it shows fills it, so a transition can show the window
+// and the whole picture behind it without changing picture.
 
-/** Where a card's polaroid and photo sit, untilted, in the coordinates of the square they are fitted in. */
+/** How a card shows its photo: in a polaroid, tilted and taped, or in a square across the card's foot, edge to edge. */
+export type CardPhotoKind = 'polaroid' | 'full-width';
+
+/**
+ * Where a card's polaroid and photo sit, untilted: in the coordinates of the
+ * square they are fitted in, or, full width, of the inside of the card. A
+ * full-width photo's polaroid is the photo, with no border.
+ */
 export interface CardPhoto {
     readonly polaroid: Rect;
     readonly photo: Rect;
+    /** The part of the play area the photo shows, in the entry's screen pixels. */
+    readonly crop: Rect;
     /** The card's scale, from its square (`cardScaleFor`): what every size on it is multiplied by. */
     readonly scale: number;
     /** The polaroid's white border round the photo, at that scale. */
@@ -20,12 +32,16 @@ export interface CardPhoto {
 }
 
 /**
- * Where a card's photo is drawn, as the card shows it now: tilted at rest, or
- * straight and closer while selected.
+ * Where a photo is drawn, and the whole picture behind its window. On a card,
+ * as the card shows it now: tilted at rest, or straight and closer while
+ * selected, the window showing part of the picture, in a border. At the play
+ * area, window and picture are one, straight, with no border.
  */
 export interface PhotoPose {
     /** The photo, in the viewport, as if untilted: it turns about its centre. */
     readonly window: Rect;
+    /** The whole picture, behind the window, as if untilted. */
+    readonly frame: Rect;
     /** Degrees, clockwise. */
     readonly tilt: number;
     /** The polaroid's white border round the photo, in CSS pixels, at the size it is drawn. */
@@ -67,19 +83,6 @@ export const CARD_BORDER = 1;
  * centre is the card's. Must match `.card-name` and `.card-foot` in `arcade.css`.
  */
 export const CARD_BAND_HEIGHT = 40;
-
-/** The candy palette, as CSS colours: each card's background, light enough for its dark title. */
-export const CARD_COLOR_VALUES: Readonly<Record<CardColor, string>> = {
-    bubblegum: '#ff9ecb',
-    peach: '#ffb3a1',
-    apricot: '#ffcf8f',
-    lemon: '#fff09a',
-    mint: '#b5f5a3',
-    seafoam: '#99eedc',
-    sky: '#9fd4ff',
-    lavender: '#c4b5ff',
-    orchid: '#efaaff',
-};
 
 /** Space kept clear around the polaroid, inside the square, at the design side: room for its tilt, and its tape. */
 export const POLAROID_MARGIN = 24;
@@ -131,8 +134,39 @@ export function cardPhotoIn(entry: ArcadeEntry, area: Rect): CardPhoto {
     return {
         polaroid,
         photo: { x: polaroid.x + border, y: polaroid.y + border, width: photoWidth, height: photoHeight },
+        crop,
         scale,
         border,
+    };
+}
+
+/**
+ * Fits `entry`'s photo in a square `side` wide across the foot of a card
+ * whose square is `side` wide, in the coordinates of the inside of the
+ * card: edge to edge, in no border, under both its bands' height, showing
+ * as much of the entry's crop as fills it, centred on its focus.
+ */
+export function fullWidthPhotoIn(entry: ArcadeEntry, side: number): CardPhoto {
+    const scale = cardScaleFor(side);
+    const photo: Rect = { x: 0, y: 2 * CARD_BAND_HEIGHT * scale, width: side, height: side };
+    const crop = cropToAspect(thumbnailCropOf(entry), 1, thumbnailFocusOf(entry));
+    return { polaroid: photo, photo, crop, scale, border: 0 };
+}
+
+/**
+ * As much of `crop` as fits at `aspect` (width over height): its full height
+ * where it is wider than that, its full width where it is taller. It is
+ * centred on `focus`, as nearly as it can be without leaving `crop`.
+ */
+export function cropToAspect(crop: Rect, aspect: number, focus: ThumbnailFocus): Rect {
+    const isWider = crop.width / crop.height > aspect;
+    const width = isWider ? crop.height * aspect : crop.width;
+    const height = isWider ? crop.height : crop.width / aspect;
+    return {
+        x: clamp(focus.x - width / 2, crop.x, crop.x + crop.width - width),
+        y: clamp(focus.y - height / 2, crop.y, crop.y + crop.height - height),
+        width,
+        height,
     };
 }
 
@@ -170,11 +204,11 @@ export function tapeFor(polaroid: Rect, look: Pick<CardLook, 'tilt' | 'tapedCorn
 }
 
 /**
- * Where the whole play area lies when `entry`'s crop fills `photo`: larger
- * than the photo, and offset so the crop lines up with it.
+ * Where the whole play area lies when `crop`, the entry's own unless given,
+ * fills `photo`: larger than the photo, and offset so the crop lines up with
+ * it.
  */
-export function frameForCrop(entry: ArcadeEntry, photo: Rect): Rect {
-    const crop = thumbnailCropOf(entry);
+export function frameForCrop(entry: ArcadeEntry, photo: Rect, crop: Rect = thumbnailCropOf(entry)): Rect {
     const scale = photo.width / crop.width;
     return {
         x: photo.x - crop.x * scale,
@@ -185,11 +219,11 @@ export function frameForCrop(entry: ArcadeEntry, photo: Rect): Rect {
 }
 
 /**
- * The style that places `entry`'s thumbnail inside its photo so the crop
- * fills the photo: in percentages of the photo, so it holds at any size.
+ * The style that places `entry`'s thumbnail inside its photo so `crop`, the
+ * entry's own unless given, fills the photo: in percentages of the photo, so
+ * it holds at any size.
  */
-export function cropStyleFor(entry: ArcadeEntry): string {
-    const crop = thumbnailCropOf(entry);
+export function cropStyleFor(entry: ArcadeEntry, crop: Rect = thumbnailCropOf(entry)): string {
     const across = (value: number): string => `${(value / crop.width * 100).toFixed(3)}%`;
     const down = (value: number): string => `${(value / crop.height * 100).toFixed(3)}%`;
     return `left: ${across(-crop.x)}; top: ${down(-crop.y)}; `
@@ -230,6 +264,10 @@ function tapeAt(polaroid: Rect, tilt: number, corner: CornerKind): TapePiece {
         y: polaroid.y + polaroid.height / 2 + offsetX * sin + offsetY * cos,
         angle: angle + tilt,
     };
+}
+
+function clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), max);
 }
 
 /** FNV-1a: a small, well-spread hash of a string, as an unsigned 32-bit number. */

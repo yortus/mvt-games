@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 390,
     inspiredBy: { title: 'Dig Dug', maker: 'Namco', year: 1982 },
     thumbnail,
+    // The digger at the surface, and the burrows under it: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 140, y: 140 },
     // The colour of its earth
     cardColor: 'peach',
     hasHighscores: true,

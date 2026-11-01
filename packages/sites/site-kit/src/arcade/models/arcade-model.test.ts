@@ -195,6 +195,23 @@ describe('ArcadeModel', () => {
         });
     });
 
+    describe('the theme', () => {
+        it('wears the site\'s own theme by default, and the one chosen once one is', () => {
+            const model = createArcadeModel(options({ siteTheme: 'light' }));
+            expect(model.themeChoice).toBe('default');
+            expect(model.theme).toBe('light');
+            model.chooseTheme('dark');
+            expect(model.theme).toBe('dark');
+            model.chooseTheme('default');
+            expect(model.theme).toBe('light');
+        });
+
+        it('starts with the choice the visitor made on a visit before, on any site', () => {
+            const model = createArcadeModel(options({ themeChoice: 'arcade', siteTheme: 'light' }));
+            expect(model.theme).toBe('arcade');
+        });
+    });
+
     describe('running an entry', () => {
         it('loads an entry, starts it once the way in has had its time, and lets it run once it is revealed', async () => {
             const model = createArcadeModel(options());

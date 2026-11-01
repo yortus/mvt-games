@@ -4,11 +4,11 @@ import { destroyElement, Match, Switch } from '@mvtjs/html';
 import { assert, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '#shared';
 import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';
-import type { ArcadeModel } from '../models';
-import type { SiteConfig } from '../site-config';
+import type { ArcadeModel, ThemeKind } from '../models';
+import { SITE_THEMES, type SiteConfig } from '../site-config';
 import { AboutView } from './about-view';
 import { ArcadeHeadView } from './arcade-head-view';
-import { cardHeightFor, frameForCrop, type PhotoPose } from './card-photo';
+import { cardHeightFor, type PhotoPose } from './card-photo';
 import { createCardWallLayout } from './card-wall-layout';
 import { CardWallView, photoPoseIn } from './card-wall-view';
 import { EntryInfoView } from './entry-info-view';
@@ -17,12 +17,14 @@ import type { Perfmon } from './load-perfmon';
 import { NavPerfmonView } from './nav-perfmon-view';
 import { NavSearchView } from './nav-search-view';
 import { NavSoundView } from './nav-sound-view';
+import { NavThemeView } from './nav-theme-view';
+import { THEMES } from './themes';
 import { PlacingView } from './placing-view';
 import { NO_RECT, type Rect } from './rect';
 import { ResumeOfferView } from './resume-offer-view';
 import { RunnerView } from './runner-view';
 import { EntryTransitionView } from './entry-transition-view';
-import { createEntryTransitionViewModel, type PicturePose } from './entry-transition-view-model';
+import { createEntryTransitionViewModel } from './entry-transition-view-model';
 import { WallEffectView } from './wall-effect-view';
 
 // ---------------------------------------------------------------------------
@@ -166,15 +168,17 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         turn: () => (bindings.isTurned() ? 90 : 0),
         arcadePhase: () => model.phase,
         arcadeElapsedMs: () => model.elapsedMs,
-        isMotionReduced: bindings.isMotionReduced,
+        // The quiet way, for less motion, or for a quiet theme
+        isMotionReduced: () => bindings.isMotionReduced() || THEMES[model.theme].isQuiet,
     });
     const phaseWatcher = watch({ phase: () => model.phase });
     // A link straight to an entry launches it before there is a wall to leave
     if (model.phase !== 'browsing') transition.holdGrown();
     /** The picture on the card launched, for the way in to start from as the launch begins. */
-    let launchedFrom: PicturePose | undefined;
+    let launchedFrom: PhotoPose | undefined;
     let isScrollLockDrawn = false;
     let isTurnDrawn = false;
+    let themeDrawn: ThemeKind | undefined;
     // Presentation state: whether the entry was paused by its info panel opening over it, to resume as the panel closes
     let isPausedForInfo = false;
 
@@ -192,6 +196,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         liveElement: bindings.liveElement,
         isLiveShowing: bindings.isLiveShowing,
         onLiveWanted: (index) => bindings.onLiveWanted?.(entries[index]),
+        theme: () => model.theme,
         onLaunchPressed: (index, from) => launch(index, from),
         onInfoPressed: (index) => model.openInfo(entries[index].id),
         isFavouriteAt: (index) => model.isFavourite(entries[index].id),
@@ -238,7 +243,12 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         onAboutPressed: toggleAbout,
         onDismissed: model.closeAbout,
     });
-    bindings.navTools?.append(navSearch, navSound, navPerfmon, about);
+    const navTheme = NavThemeView({
+        choice: () => model.themeChoice,
+        siteTheme: SITE_THEMES[bindings.site.id],
+        onChosen: model.chooseTheme,
+    });
+    bindings.navTools?.append(navSearch, navSound, navTheme, navPerfmon, about);
 
     window.addEventListener('keydown', onKeyDown);
     const homeLinks = bindings.homeLinks ?? [];
@@ -414,7 +424,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 launchedFrom = undefined;
             }
             else if (phase.current === 'browsing') {
-                transition.leaveTo(cardPictureAt(activeIndex()), cardRects());
+                transition.leaveTo(cardPoseAt(activeIndex()), cardRects());
             }
         }
         transition.update(deltaMs);
@@ -428,7 +438,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     function launch(index: number, from: PhotoPose | undefined): void {
         const entry = entries[index];
         if (entry === undefined) return;
-        launchedFrom = from === undefined ? undefined : { ...from, frame: frameForCrop(entry, from.window) };
+        launchedFrom = from;
         model.launch(entry.id);
         if (model.phase !== 'launching') launchedFrom = undefined;
     }
@@ -438,10 +448,25 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         return model.phase === 'browsing' && model.infoEntry === undefined && transition.phase === 'idle';
     }
 
-    /** Writes what the Arcade sets on the whole page: the scroll lock, and the runner's turn. */
+    /** Writes what the Arcade sets on the whole page: the scroll lock, the runner's turn, and the theme. */
     function drawPage(): void {
         lockScroll();
         drawTurn();
+        drawTheme();
+    }
+
+    /**
+     * Marks the page with the theme it wears. The stylesheet's custom
+     * properties follow the mark, and the browser's own controls follow the
+     * scheme. The page's first paint marks it already, from the choice kept.
+     */
+    function drawTheme(): void {
+        const theme = model.theme;
+        if (theme === themeDrawn) return;
+        themeDrawn = theme;
+        const root = document.documentElement;
+        root.dataset.theme = theme;
+        root.style.colorScheme = THEMES[theme].scheme;
     }
 
     /**
@@ -660,18 +685,13 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     }
 
     /**
-     * Card `index`'s photo, if it is on the wall, as it is drawn now: tilted
-     * at rest, or straight and closer while selected. Read when a transition
-     * starts, so the way back lands on the polaroid as the card shows it.
+     * Card `index`'s photo, if it is on the wall, as it is drawn now, with
+     * the whole thumbnail behind it: tilted at rest, or straight and closer
+     * while selected. Read when a transition starts, so the way back lands on
+     * the photo as the card shows it.
      */
     function cardPoseAt(index: number): PhotoPose | undefined {
         return index < 0 || !layout.isVisibleAt(index) ? undefined : photoPoseIn(wall, entries[index].id);
-    }
-
-    /** Card `index`'s photo, with the whole thumbnail behind it. */
-    function cardPictureAt(index: number): PicturePose | undefined {
-        const pose = cardPoseAt(index);
-        return pose === undefined ? undefined : { ...pose, frame: frameForCrop(entries[index], pose.window) };
     }
 }
 

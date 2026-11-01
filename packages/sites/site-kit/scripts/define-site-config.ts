@@ -14,6 +14,7 @@ import process from 'node:process';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defaultClientConditions, defaultServerConditions, defineConfig, type Plugin, type UserConfigFnObject } from 'vite';
 import type { SiteKind } from '@mvtjs/site-kit/arcade';
+import { firstPaintThemeHtml } from './first-paint-theme.ts';
 import { siteNavHtml } from './site-nav.ts';
 import { entryFactsPlugin } from './vite-plugin-entry-facts.ts';
 import { entryPagesPlugin } from './vite-plugin-entry-pages.ts';
@@ -50,7 +51,7 @@ export function defineSiteConfig(options: SiteConfigOptions): UserConfigFnObject
             spritesheetPlugin(),
             entryFactsPlugin(),
             entryPagesPlugin({ site, siteRoot, movedEntries, isSiteRoot }),
-            siteNavPlugin(site, siteRoot),
+            sitePagePlugin(site, siteRoot),
             // `npm run dev:https` serves the site over HTTPS with a self-signed
             // certificate, so a phone on the network can play sound. Sound needs a
             // secure page, because only a secure page has `AudioWorklet`. Over
@@ -95,15 +96,21 @@ const HTTPS_MODE = 'https';
 /** Each site's port, when its dev server runs alone. */
 const DEV_PORTS: Readonly<Record<SiteKind, number>> = { arcade: 5173, demos: 5180, puzzles: 5185 };
 
-/** Writes the site's nav where its page marks it, `<!-- site-nav -->`, with the site's own link active. */
-function siteNavPlugin(site: SiteKind, siteRoot: string): Plugin {
+/**
+ * Writes into the site's page what every site's page has: the theme, from
+ * the first frame, where the page marks it with `<!-- site-theme -->`, and
+ * the nav, with the site's own link active, at `<!-- site-nav -->`.
+ */
+function sitePagePlugin(site: SiteKind, siteRoot: string): Plugin {
     return {
-        name: 'site-nav',
+        name: 'site-page',
         transformIndexHtml(html) {
-            if (!html.includes(NAV_MARK)) return html;
-            return html.replace(NAV_MARK, () => siteNavHtml(site, siteRoot));
+            return html
+                .replace(THEME_MARK, () => firstPaintThemeHtml(site))
+                .replace(NAV_MARK, () => siteNavHtml(site, siteRoot));
         },
     };
 }
 
+const THEME_MARK = '<!-- site-theme -->';
 const NAV_MARK = '<!-- site-nav -->';

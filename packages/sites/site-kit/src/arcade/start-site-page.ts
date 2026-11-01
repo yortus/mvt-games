@@ -16,9 +16,10 @@ import {
     HANDHELD_SOUND_SETTINGS,
     parseEntryPath,
     parseSoundSettings,
+    parseThemeChoice,
 } from './models';
 import { type ArcadeAudioViews, ArcadeView, loadArcadeAudioViews, loadPerfmon, type Perfmon } from './views';
-import type { SiteConfig } from './site-config';
+import { SITE_THEMES, type SiteConfig } from './site-config';
 import './nav.css';
 import './arcade.css';
 
@@ -121,6 +122,12 @@ export function startSitePage(site: SiteConfig): void {
     const INITIALS_KEY = 'mvt-arcade:initials';
     /** Where the ids of the visitor's favourite entries are kept between visits, as a JSON array. */
     const FAVOURITES_KEY = 'mvt-arcade:favourites';
+    /**
+     * Where the visitor's choice of theme is kept. Every site reads it, so a
+     * choice made on one is worn on all of them. The page's first paint reads
+     * it too, before this script runs (see the site kit's `define-site-config.ts`).
+     */
+    const THEME_KEY = 'mvt-arcade:theme';
     /** Where a game left part way through is kept, for the visitor to resume next time: this, then the entry's id. */
     const SAVED_GAME_KEY = 'mvt-arcade:saved-game:';
 
@@ -133,6 +140,8 @@ export function startSitePage(site: SiteConfig): void {
         rememberedInitials: store.read(INITIALS_KEY),
         soundSettings: firstSoundSettings,
         favouriteIds: readFavourites(),
+        themeChoice: parseThemeChoice(store.read(THEME_KEY)),
+        siteTheme: SITE_THEMES[site.id],
         hasSavedGame: (id) => store.read(SAVED_GAME_KEY + id) !== undefined,
         loadEntry: async (entry) => {
             const starter = await entry.load();
@@ -216,6 +225,13 @@ export function startSitePage(site: SiteConfig): void {
     applySoundSettings(keptSoundSettings);
     /** The favourites last saved. The model replaces its array whenever they change. */
     let keptFavouriteIds = model.favouriteIds;
+    /** The choice of theme last saved. */
+    let keptThemeChoice = model.themeChoice;
+    // A choice made in another tab, on any of the sites, is worn here at once.
+    // The browser tells every other tab as a page changes what it keeps
+    window.addEventListener('storage', (e) => {
+        if (e.key === THEME_KEY) model.chooseTheme(parseThemeChoice(e.newValue ?? undefined));
+    });
 
     // A game is saved every few seconds of play (in the loop), as the visitor
     // leaves it, and as the page is hidden or closed, which a phone may do
@@ -307,6 +323,12 @@ export function startSitePage(site: SiteConfig): void {
         if (model.favouriteIds !== keptFavouriteIds) {
             keptFavouriteIds = model.favouriteIds;
             store.writeJson(FAVOURITES_KEY, keptFavouriteIds);
+        }
+        if (model.themeChoice !== keptThemeChoice) {
+            keptThemeChoice = model.themeChoice;
+            // The default is kept as no choice at all
+            if (keptThemeChoice === 'default') store.remove(THEME_KEY);
+            else store.write(THEME_KEY, keptThemeChoice);
         }
         // The model replaces its sound settings object whenever one changes. The page gives the new settings to the host and saves them.
         if (model.soundSettings !== keptSoundSettings) {

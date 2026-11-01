@@ -1,4 +1,5 @@
 import type { ArcadeEntry, EntryKind } from '../entry-types';
+import type { ThemeKind } from './models';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -31,3 +32,14 @@ export type SiteKind = 'arcade' | 'demos' | 'puzzles';
 
 /** Every site, in the order the nav lists them. */
 export const SITE_KINDS: readonly SiteKind[] = ['arcade', 'demos', 'puzzles'];
+
+/**
+ * Each site's own theme, which it wears while the visitor's choice is the
+ * default. The page's first paint needs it before any of the site's code
+ * runs, so it is here, not in each site's config.
+ */
+export const SITE_THEMES: Readonly<Record<SiteKind, ThemeKind>> = {
+    arcade: 'arcade',
+    demos: 'dark',
+    puzzles: 'light',
+};

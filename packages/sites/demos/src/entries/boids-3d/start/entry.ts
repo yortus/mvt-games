@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 960,
     screenHeight: 600,
     thumbnail,
+    // The flock: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 480, y: 300 },
     // The colour of its flock
     cardColor: 'sky',
     loadDetails: async () => (await import('./details')).details,

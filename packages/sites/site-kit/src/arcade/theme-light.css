@@ -1,0 +1,149 @@
+/* ==========================================================================
+   The Light theme
+   ========================================================================== */
+
+/*
+ * Light, like a printed page: warm paper, ink-black text, hairline rules
+ * and a red pencil for what matters. It reads as calm and familiar, the
+ * place puzzles have always lived. It is the puzzles' own theme.
+ *
+ * Its values, for the properties `themes.css` lists, then the rules that
+ * make it look its own way: white cards with their names in type. Its cards show their photos full width
+ * (`views/themes.ts`), which `arcade.css` lays out.
+ */
+
+:root[data-theme="light"] {
+    /* --- Surfaces: a neutral pale grey page, so the cards' washes of colour stand clear, and white paper laid on it --- */
+    --theme-bg: #f4f4f5;
+    --theme-inset: #ece5d6;
+    --theme-surface: #fffdf8;
+    --theme-raised: #efe8da;
+    --theme-highscore-bg: #fffdf8;
+    --theme-screen: #e8e1d2;
+    --theme-scrim: rgba(30, 26, 20, 0.45);
+    --theme-scrim-soft: rgba(30, 26, 20, 0.35);
+
+    /* --- Lines: hairline rules --- */
+    --theme-border: #d8cfbd;
+    --theme-divider: #e6dfcf;
+    --theme-track: #cfc5b1;
+
+    /* --- Text: ink --- */
+    --theme-text: #2b2722;
+    --theme-text-strong: #16130f;
+    --theme-text-muted: #6b6357;
+    --theme-text-faint: #857c6f;
+
+    /* --- Accents: a red pencil --- */
+    --theme-accent: #b3261e;
+    --theme-accent-hover: #8f1d17;
+    --theme-accent-tint: rgba(179, 38, 30, 0.1);
+    --theme-accent-fill: #b3261e;
+    --theme-on-accent-fill: #fff;
+    --theme-focus: #b3261e;
+    --theme-gesture-text: #8f1d17;
+    --theme-highlight: #c8322b;
+    --theme-on-highlight: #fff;
+    --theme-game-button: #f2c94c;
+    /* The button that goes on is ink, as a printed one is */
+    --theme-go: #2b2722;
+    --theme-go-hover: #423c34;
+    --theme-go-border: #423c34;
+    --theme-on-go: #fffdf8;
+    --theme-danger: #b3261e;
+    --theme-danger-mark: #b3261e;
+    --theme-hover-wash: rgba(0, 0, 0, 0.05);
+
+    /* --- Cards: white paper --- */
+    --theme-card-border: #d8cfbd;
+    --theme-card-badge-bg: rgba(255, 253, 248, 0.94);
+    --theme-card-badge-border: #d8cfbd;
+    --theme-card-badge-text: #2b2722;
+    /* The tags: pale tints of violet, green and blue, in ink */
+    --theme-tag-era: #e6dcf7;
+    --theme-tag-genre: #d9eecf;
+    --theme-tag-renderer: #d3e4f5;
+    --theme-on-tag: #2b2722;
+    --theme-polaroid: #fffdf8;
+    /* The candy palette, deep enough to see on paper: the ring round the selected card, and a wash of it on the card */
+    --theme-candy-bubblegum: #e0609f;
+    --theme-candy-peach: #e8826b;
+    --theme-candy-apricot: #e09a3e;
+    --theme-candy-lemon: #d4b419;
+    --theme-candy-mint: #5fb84a;
+    --theme-candy-seafoam: #3fae94;
+    --theme-candy-sky: #4a95dc;
+    --theme-candy-lavender: #8a76e0;
+    --theme-candy-orchid: #c066dc;
+
+    /* --- Highscores: printed inks, dark enough for white paper --- */
+    --theme-highscore-1: #b3261e;
+    --theme-highscore-2: #b4570f;
+    --theme-highscore-3: #8a6d00;
+    --theme-highscore-4: #2e7d32;
+    --theme-highscore-5: #1f5f9e;
+    --theme-highscore-new: #c8322b;
+    --theme-highscore-new-lit: #16130f;
+    --theme-placed-score: #16130f;
+    --theme-placed-rank: #2e7d32;
+
+    /* --- The nav: ink on white, ruled off --- */
+    --theme-nav-bg: #fffdf8;
+    --theme-nav-border: #d8cfbd;
+    --theme-nav-text: #16130f;
+    --theme-nav-text-muted: rgba(22, 19, 15, 0.62);
+    --theme-nav-hover-bg: rgba(0, 0, 0, 0.05);
+    --theme-nav-active-bg: rgba(200, 50, 43, 0.1);
+    --theme-nav-brand-hover: #c8322b;
+
+    /* --- Type: the system's own, even where the Arcade has pixels --- */
+    --theme-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --theme-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+    --theme-font-mono-short: ui-monospace, monospace;
+    --theme-font-pixel: var(--theme-font-ui);
+
+    /* --- Corners: all but square, as paper is cut --- */
+    --theme-radius-control: 3px;
+    --theme-radius-box: 3px;
+    --theme-radius-panel: 4px;
+    --theme-radius-card: 2px;
+    --theme-radius-field: 3px;
+    --theme-radius-key: 3px;
+    --theme-radius-pill: 3px;
+
+    /* --- Shadows: paper on paper, faint and warm --- */
+    --theme-shadow-note: 0 6px 18px rgba(60, 48, 30, 0.18);
+    --theme-shadow-menu: 0 6px 18px rgba(60, 48, 30, 0.18);
+    --theme-shadow-float: 0 6px 18px rgba(60, 48, 30, 0.18);
+    --theme-shadow-polaroid: 0 0 0 1px #16130f, 0 2px 6px rgba(60, 48, 30, 0.12);
+    --theme-shadow-near: rgba(60, 48, 30, 0.18);
+    --theme-shadow-far: rgba(60, 48, 30, 0.2);
+    --theme-shadow-polaroid-lifted: 0 0 0 1px #16130f, 0 2px 3px var(--theme-shadow-near), 0 10px 22px var(--theme-shadow-far);
+    --theme-shadow-transition: 0 10px 30px rgba(60, 48, 30, 0.25);
+}
+
+/* Paper with a light wash of the card's own colour, mostly white, with no grid etched in it */
+:root[data-theme="light"] .card { background: color-mix(in srgb, var(--candy) 24%, #fff); }
+
+/* Each name in the system's type, centred, shrunk to fit one line, drawn in outline only, in the card's colour as the Arcade has it, at half its brightness */
+:root[data-theme="light"] .card-name .pixel-text { display: none; }
+:root[data-theme="light"] .card-name-text {
+    display: block;
+    font: 700 calc(32px * var(--card-scale, 1) * var(--name-fit, 1)) / 1.2 var(--theme-font-ui);
+    /* Small capitals, after the shorthand, which resets them: each word's capital stands a little taller than the rest */
+    font-variant-caps: small-caps;
+    /* A little looser, so neighbouring letters' outlines stay apart */
+    letter-spacing: -0.01em;
+    /*
+     * The outline is drawn first and the letter filled over it, in the card's
+     * own colour (as `.card`'s background), so only the outline's outer half
+     * shows: a font whose letters are built of overlapping pieces, as phones'
+     * are, would otherwise show every piece's edge inside the letter. The
+     * outline is twice the width that shows, and never shows thinner than 1.5px
+     */
+    color: color-mix(in srgb, var(--candy) 24%, #fff);
+    -webkit-text-stroke: max(3px, calc(3.6px * var(--card-scale, 1))) color-mix(in srgb, var(--arcade-candy) 50%, #000);
+    paint-order: stroke fill;
+    /* Room at each end for the outline, which the box would otherwise cut off */
+    padding-inline: 2px;
+}

@@ -81,7 +81,7 @@ export interface EntryTransitionViewModel {
     readonly waitedMs: number;
 
     /** Goes in from a card's polaroid, burning the other cards, at `cards` (zero-sized where not on the wall). */
-    readonly enterFrom: (from: PicturePose, cards: readonly Rect[]) => void;
+    readonly enterFrom: (from: PhotoPose, cards: readonly Rect[]) => void;
     /**
      * Goes in with the page blacked out and the picture at the play area, as
      * for a link straight to an entry. The picture follows the play area, as
@@ -92,7 +92,7 @@ export interface EntryTransitionViewModel {
      * Goes back out to a card's polaroid, from wherever the transition is,
      * developing `cards`; with no card to go to, the cards just develop.
      */
-    readonly leaveTo: (to: PicturePose | undefined, cards: readonly Rect[]) => void;
+    readonly leaveTo: (to: PhotoPose | undefined, cards: readonly Rect[]) => void;
     /** Draws the way in as far as the model has got, or advances the way out. */
     readonly update: (deltaMs: number) => void;
 }
@@ -125,16 +125,6 @@ export type EntryTransitionPhase =
 
 /** What is drawn over the wall's cards: nothing, their burning, or their developing. */
 export type WallEffectKind = 'none' | 'burn' | 'develop';
-
-/**
- * A photo's pose, and the whole picture behind its window. On a card, the
- * window shows part of the picture, tilted, in a border; at the play area,
- * window and picture are one, straight, with no border.
- */
-export interface PicturePose extends PhotoPose {
-    /** The whole picture, as if untilted. */
-    readonly frame: Rect;
-}
 
 /** The picture as drawn: a window on the whole picture, in a polaroid's border or none. */
 export interface EntryTransitionPicture {
@@ -236,7 +226,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
     let backdropOpacity = 0;
 
     /** The polaroid as it lay on its card when chosen: it floats from there to the centre. */
-    let launched: PicturePose | undefined;
+    let launched: PhotoPose | undefined;
     /** How far it has floated to the centre, from 0 to 1. */
     let floated = 0;
     /**
@@ -249,8 +239,8 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
     let playedTurn = 0;
     const turnOf = options.turn ?? (() => 0);
     /** On the way back: where the polaroid floats from, and to, and the scale and opacity it comes forward from. */
-    let returnFrom: PicturePose | undefined;
-    let returnTo: PicturePose | undefined;
+    let returnFrom: PhotoPose | undefined;
+    let returnTo: PhotoPose | undefined;
     let returnFromScale = 1;
     let returnFromOpacity = 1;
 
@@ -349,7 +339,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
             }
             // The entry was seen: its last frame, where it played, powers off first
             returnTo = end;
-            const played: PicturePose = { window: playedRect, frame: playedRect, tilt: playedTurn, border: 0 };
+            const played: PhotoPose = { window: playedRect, frame: playedRect, tilt: playedTurn, border: 0 };
             place(played, played, 0);
             resetPicture();
             picture.opacity = 1;
@@ -591,7 +581,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
      * The polaroid comes forward from `scale` and `opacity`, at `from`, then
      * floats back onto its card at `to`, as the cards develop.
      */
-    function startReturning(from: PicturePose | undefined, to: PicturePose | undefined, scale: number, opacity: number): void {
+    function startReturning(from: PhotoPose | undefined, to: PhotoPose | undefined, scale: number, opacity: number): void {
         returnFrom = from;
         returnTo = to;
         if (from !== undefined) place(from, from, 0);
@@ -660,7 +650,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
      * `pose`, the size it is on its card, but at the play area's centre, and
      * straight, or turned as the play area was: where it comes out of the dot.
      */
-    function centredOnPlay(pose: PicturePose): PicturePose {
+    function centredOnPlay(pose: PhotoPose): PhotoPose {
         const centre = centreOf(playedRect);
         const dx = centre.x - (pose.window.x + pose.window.width / 2);
         const dy = centre.y - (pose.window.y + pose.window.height / 2);
@@ -672,7 +662,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
         };
     }
 
-    function pictureNow(): PicturePose {
+    function pictureNow(): PhotoPose {
         return {
             window: { x: picture.x, y: picture.y, width: picture.width, height: picture.height },
             frame: { x: picture.frameX, y: picture.frameY, width: picture.frameWidth, height: picture.frameHeight },
@@ -686,7 +676,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
     }
 
     /** The picture `t` of the way from `a` to `b`. */
-    function place(a: PicturePose, b: PicturePose, t: number): void {
+    function place(a: PhotoPose, b: PhotoPose, t: number): void {
         picture.x = a.window.x + (b.window.x - a.window.x) * t;
         picture.y = a.window.y + (b.window.y - a.window.y) * t;
         picture.width = a.window.width + (b.window.width - a.window.width) * t;

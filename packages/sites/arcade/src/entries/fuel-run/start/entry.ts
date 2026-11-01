@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 248,
     inspiredBy: { title: 'Scramble', maker: 'Konami', year: 1981 },
     thumbnail,
+    // The ship, the saucers and the fuel tanks: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 140, y: 124 },
     // The colour of its hills
     cardColor: 'mint',
     hasHighscores: true,

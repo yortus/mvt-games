@@ -14,6 +14,8 @@ export const entry: ArcadeEntry = {
     screenWidth: 320,
     screenHeight: 240,
     thumbnail,
+    // The submarine, and the seaweed ahead of it: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 120, y: 120 },
     cardColor: 'seafoam',
     hasHighscores: true,
     loadDetails: async () => (await import('./details')).details,

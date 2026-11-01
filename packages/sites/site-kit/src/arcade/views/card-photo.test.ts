@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { type ArcadeEntry, type ThumbnailCrop, CARD_COLORS } from '../../entry-types';
 import {
-    CARD_BAND_HEIGHT, CARD_BORDER, CARD_DESIGN_SIDE, cardHeightFor, cardLookFor, cardPhotoIn, cropStyleFor, frameForCrop,
-    LIFT_INSET, liftScaleFor, MAX_TILT, MIN_TILT, POLAROID_BORDER, POLAROID_MARGIN, tapeFor,
+    CARD_BAND_HEIGHT, CARD_BORDER, CARD_DESIGN_SIDE, cardHeightFor, cardLookFor, cardPhotoIn, cropStyleFor, cropToAspect,
+    frameForCrop, fullWidthPhotoIn, LIFT_INSET, liftScaleFor, MAX_TILT, MIN_TILT, POLAROID_BORDER, POLAROID_MARGIN, tapeFor,
 } from './card-photo';
 
 describe('card photos', () => {
@@ -75,6 +75,50 @@ describe('card photos', () => {
     it('styles the picture in percentages of the photo', () => {
         const entry = entryOf('style', 400, 200, { x: 200, y: 50, width: 100, height: 50 });
         expect(cropStyleFor(entry)).toBe('left: -200.000%; top: -100.000%; width: 400.000%; height: 400.000%');
+    });
+});
+
+describe('full-width card photos', () => {
+    it('fills a square across the foot of the inside of the card, edge to edge, in no border', () => {
+        for (const scale of [0.6, 1, 1.5]) {
+            const side = CARD_DESIGN_SIDE * scale;
+            const inside = cardHeightFor(side + 2 * CARD_BORDER) - 2 * CARD_BORDER;
+            const fitted = fullWidthPhotoIn(entryOf('wide', 400, 200, undefined), side);
+            expect(fitted.photo.x).toBe(0);
+            expect(fitted.photo.width).toBe(side);
+            expect(fitted.photo.height).toBe(side);
+            expect(fitted.photo.y + fitted.photo.height).toBeCloseTo(inside);
+            expect(fitted.polaroid).toEqual(fitted.photo);
+            expect(fitted.border).toBe(0);
+            expect(fitted.scale).toBeCloseTo(scale);
+        }
+    });
+
+    it('shows a square of the crop, centred on the entry\'s focus', () => {
+        const entry = { ...entryOf('tall', 200, 400, { x: 0, y: 100, width: 200, height: 300 }), thumbnailFocus: { x: 100, y: 220 } };
+        const { crop } = fullWidthPhotoIn(entry, CARD_DESIGN_SIDE);
+        expect(crop).toEqual({ x: 0, y: 120, width: 200, height: 200 });
+    });
+
+    it('centres on the crop\'s centre for an entry with no focus', () => {
+        const { crop } = fullWidthPhotoIn(entryOf('tall', 200, 400, { x: 0, y: 100, width: 200, height: 300 }), CARD_DESIGN_SIDE);
+        expect(crop).toEqual({ x: 0, y: 150, width: 200, height: 200 });
+    });
+
+    it('keeps the closer crop inside the entry\'s crop, however near its edge the focus is', () => {
+        const crop = { x: 10, y: 20, width: 400, height: 100 };
+        expect(cropToAspect(crop, 2, { x: 210, y: 70 })).toEqual({ x: 110, y: 20, width: 200, height: 100 });
+        expect(cropToAspect(crop, 2, { x: 15, y: 0 })).toEqual({ x: 10, y: 20, width: 200, height: 100 });
+        expect(cropToAspect(crop, 2, { x: 400, y: 120 })).toEqual({ x: 210, y: 20, width: 200, height: 100 });
+        expect(cropToAspect({ x: 10, y: 20, width: 100, height: 400 }, 2, { x: 60, y: 220 })).toEqual({ x: 10, y: 195, width: 100, height: 50 });
+    });
+
+    it('places the whole picture so the crop shown fills the photo', () => {
+        const entry = entryOf('frame', 400, 200, undefined);
+        const crop = { x: 100, y: 0, width: 200, height: 100 };
+        const frame = frameForCrop(entry, { x: 0, y: 0, width: 100, height: 50 }, crop);
+        expect(frame).toEqual({ x: -50, y: 0, width: 200, height: 100 });
+        expect(cropStyleFor(entry, crop)).toBe('left: -50.000%; top: 0.000%; width: 200.000%; height: 200.000%');
     });
 });
 

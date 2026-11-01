@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 368,
     inspiredBy: { title: 'Qix', maker: 'Taito', year: 1981 },
     thumbnail,
+    // The rider, the fence and the field fenced off: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 184, y: 184 },
     // The colour of its pasture
     cardColor: 'mint',
     hasHighscores: true,

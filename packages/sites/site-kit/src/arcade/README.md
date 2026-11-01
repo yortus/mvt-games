@@ -300,6 +300,50 @@ shows behind the offer. Resume closes the offer. Restart is a restart, and
 the page removes the save. A save the session cannot load, from an older
 version of the game say, is removed, and the offer closes.
 
+## 10. Themes: A Setting the Stylesheet Follows
+
+The page has three looks: **Arcade** (loud and dark, the arcade's own),
+**Dark** (calm and modern, the demos' own) and **Light** (warm paper and
+ink, the puzzles' own). The visitor picks one from the palette in the nav,
+or the default, where each site wears its own.
+
+The choice is a setting, like the sound, so it is the model's:
+`themeChoice` (`'default'` or a theme), and `theme`, the one the page
+wears, worked out from the choice and the site's own theme
+([`site-config.ts`](./site-config.ts), `SITE_THEMES`). The page saves the
+choice (`mvt-arcade:theme`), and every site reads it, since they share one
+origin. A choice made in another tab arrives as a `storage` event, which
+the page hands to the model.
+
+How a theme looks is almost all CSS. Every colour, font, corner and shadow
+in [`arcade.css`](./arcade.css) and [`nav.css`](./nav.css) reads a custom
+property, `--theme-*`. The Arcade's values, the default, are in
+[`themes.css`](./themes.css); [`theme-dark.css`](./theme-dark.css) and
+[`theme-light.css`](./theme-light.css) give their own, under
+`:root[data-theme="..."]`, with the few rules that make each its own, such
+as the cards' names in type rather than pixels. The site's name is the
+Arcade's pixel marquee in every theme. `ArcadeView` marks `<html>` with the
+theme as the model's changes (`drawTheme`), and the stylesheet follows. The
+views barely know: each card's plain-text name sits beside its pixel one,
+and each theme shows one.
+
+Three things are not CSS, and are in [`views/themes.ts`](./views/themes.ts).
+A quiet theme (`isQuiet`) takes the quiet way into an entry, as a visitor
+who asks for less motion does: the wall fades rather than burns. A theme
+says how its cards show their photos (`cardPhoto`): in a polaroid, tilted
+and taped, as the Arcade's do, or full width, in a square across each
+card's foot, edge to edge, with nothing tilted and nothing growing as the
+card is selected. A square photo crops a picture of another shape closer,
+keeping the entry's focus (`thumbnailFocus`) at its centre as nearly as it
+can. The card fits its photo either way, so it needs to know which; the way
+into an entry starts from the photo as the card shows it, and the part of
+the picture it shows. And the page's first frame comes before its script: a few lines in
+each page's `<head>`, which the site kit writes there
+(`scripts/first-paint-theme.ts`), read the choice and mark `<html>`, so a
+light theme never flashes dark. A test keeps their backgrounds in step with
+the CSS, and another checks every theme's text against what it lies on, for
+WCAG AA's contrast (`themes.test.ts`).
+
 ## Where It Bends the Rules
 
 Four places do something the rules would usually rule out. Each is

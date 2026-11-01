@@ -15,6 +15,8 @@ export const entry: ArcadeEntry = {
     screenHeight: 270,
     inspiredBy: { title: 'International Karate', maker: 'System 3', year: 1985 },
     thumbnail,
+    // Both fighters: what a square crop of its picture keeps in view
+    thumbnailFocus: { x: 192, y: 135 },
     // The colour of its wooden floor
     cardColor: 'apricot',
     loadDetails: async () => (await import('./details')).details,
