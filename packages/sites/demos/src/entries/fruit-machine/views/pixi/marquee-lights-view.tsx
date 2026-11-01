@@ -7,8 +7,8 @@ import { BULB_OFF, BULB_ON, CELL_SIZE, FRAME_PADDING, WHITE, WINDOW_WIDTH, WINDO
 // Bindings
 // ---------------------------------------------------------------------------
 
-/** `'busy'` chases fast, `'party'` flashes, `'off'` is dark. */
-export type LightsMode = 'idle' | 'busy' | 'party' | 'off';
+/** `'idle'` chases slowly, `'busy'` chases fast, `'party'` flashes. */
+export type LightsMode = 'idle' | 'busy' | 'party';
 
 export interface MarqueeLightsViewBindings {
     readonly mode: () => LightsMode;
@@ -40,7 +40,6 @@ export function MarqueeLightsView(bindings: MarqueeLightsViewBindings): Containe
             case 'idle': return (bulb + Math.floor(clockMs / 220)) % 4 === 0;
             case 'busy': return (bulb + Math.floor(clockMs / 45)) % 4 < 2;
             case 'party': return (bulb % 2 === 0) === (Math.floor(clockMs / 140) % 2 === 0);
-            default: return false;
         }
     }
 }

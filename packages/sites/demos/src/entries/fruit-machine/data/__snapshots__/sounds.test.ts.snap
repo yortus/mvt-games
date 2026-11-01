@@ -4,8 +4,6 @@ exports[`fruit machine sounds > BIG_WIN sounds as it did, audible and unclipped,
 
 exports[`fruit machine sounds > COIN sounds as it did, audible and unclipped 1`] = `"5d4b540a"`;
 
-exports[`fruit machine sounds > GAME_OVER sounds as it did, audible and unclipped, as loud as every other song 1`] = `"f151d08d"`;
-
 exports[`fruit machine sounds > LEVER sounds as it did, audible and unclipped 1`] = `"e500a588"`;
 
 exports[`fruit machine sounds > NO_WIN sounds as it did, audible and unclipped 1`] = `"6ff9fe4c"`;

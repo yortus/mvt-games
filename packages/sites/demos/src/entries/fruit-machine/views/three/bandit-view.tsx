@@ -77,8 +77,8 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
                     isLitAt={litCells.isLitAt}
                     progress={() => celebration.progress}
                 />
-                <CreditDisplayView kit={kit} balance={() => model.balance} win={() => model.lastWin} y={1.95} />
-                <TopBoxView kit={kit} isGameOver={() => model.phase === 'gameOver'} lampGlow={lampGlow} />
+                <CreditDisplayView kit={kit} bet={model.bet} paid={() => model.lastPaid} y={1.95} />
+                <TopBoxView kit={kit} lampGlow={lampGlow} />
                 <LeverView
                     kit={kit}
                     spinCount={() => model.spinCount}
@@ -99,18 +99,17 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
         if (model.canSpin) void model.spin();
     }
 
-    /** Flashes through a celebration, glows steadily once the game is over, and is dark otherwise. */
+    /** Flashes through a celebration, glows dimly through a spin, and is dark otherwise. */
     function lampGlow(): number {
         switch (model.phase) {
             case 'celebrating': return (celebration.progress * 4) % 1 < 0.5 ? 1 : 0.1;
-            case 'gameOver': return 0.6;
             case 'spinning': return 0.25;
             default: return 0;
         }
     }
 
     function refreshCursor(): void {
-        const cursor = drag !== undefined ? 'grabbing' : isLeverHovered && model.phase !== 'gameOver' ? 'pointer' : 'grab';
+        const cursor = drag !== undefined ? 'grabbing' : isLeverHovered ? 'pointer' : 'grab';
         if (cursor === shownCursor) return;
         shownCursor = cursor;
         dragSurface.style.cursor = cursor;

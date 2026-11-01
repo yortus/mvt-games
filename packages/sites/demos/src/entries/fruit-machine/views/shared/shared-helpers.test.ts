@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CELEBRATION_OPENER_MS, FIRST_SETTLE_MS, SETTLE_DISTANCE, SETTLE_MS, SETTLE_STAGGER_MS, type SymbolKind } from '../../data';
+import {
+    BET, CELEBRATION_OPENER_MS, FIRST_SETTLE_MS, PAYTABLE, type Paytable, SETTLE_DISTANCE, SETTLE_MS, SETTLE_STAGGER_MS, type SymbolKind,
+} from '../../data';
 import { createFruitMachineModel } from '../../models';
 import { formatCredits, formatRows } from './format';
 import { createLitCells } from './lit-cells';
@@ -19,6 +21,9 @@ const FIVE_WAY_STRIPS: readonly (readonly SymbolKind[])[] = [
     ['pic6', 'pic3', 'pic4'],
     ['pic6', 'pic1', 'pic5'],
 ];
+
+/** The machine's paytable, with the way on `FIVE_WAY_STRIPS` paying back the bet, so it is celebrated. */
+const BET_BACK_PAYTABLE: Paytable = { ...PAYTABLE, pic6: { ...PAYTABLE.pic6, 5: BET } };
 
 function advance(model: ReturnType<typeof createFruitMachineModel>, totalMs: number): void {
     for (let elapsed = 0; elapsed < totalMs; elapsed += 10) model.update(10);
@@ -59,7 +64,7 @@ describe('reel landing', () => {
 
 describe('lit cells', () => {
     it('lights nothing until a celebration, then every winning cell, then each way', () => {
-        const model = createFruitMachineModel({ seed: 2, strips: FIVE_WAY_STRIPS });
+        const model = createFruitMachineModel({ seed: 2, strips: FIVE_WAY_STRIPS, paytable: BET_BACK_PAYTABLE });
         const lit = createLitCells({ celebration: model.celebration });
         expect(lit.isAnyLit).toBe(false);
 

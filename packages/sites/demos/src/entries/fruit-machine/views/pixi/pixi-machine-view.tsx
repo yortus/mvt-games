@@ -6,7 +6,6 @@ import type { FruitMachineModel, WayWin } from '../../models';
 import { SYMBOL_COLORS, SYMBOL_NAMES, type SymbolArt } from '../art';
 import { createLitCells, easeOutBack, formatCredits, lastFor, shownReelPosition } from '../shared';
 import { BackdropView } from './backdrop-view';
-import { GameOverView } from './game-over-view';
 import { JuiceBurstView } from './juice-burst-view';
 import { type LightsMode, MarqueeLightsView } from './marquee-lights-view';
 import { MetersView } from './meters-view';
@@ -66,12 +65,11 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
                 progress={() => celebration.progress}
             />
             <JuiceBurstView stepIndex={() => celebration.stepIndex} isLitAt={litCells.isLitAt} colorAt={juiceColorAt} />
-            <MetersView balance={() => model.balance} bet={model.bet} win={() => model.lastWin} />
-            <WinBannerView isShown={() => celebration.isActive} amount={() => model.lastWin} caption={caption} />
+            <MetersView bet={model.bet} paid={() => model.lastPaid} />
+            <WinBannerView isShown={() => celebration.isActive} amount={() => model.lastPaid} caption={caption} />
             <container x={BUTTON_X} y={BUTTON_Y}>
                 <SpinButtonView mode={buttonMode} radius={BUTTON_RADIUS} onPressed={pressButton} />
             </container>
-            <GameOverView isShown={() => model.phase === 'gameOver'} />
         </container>
     );
 
@@ -79,7 +77,6 @@ export function PixiMachineView(bindings: PixiMachineViewBindings): Container {
         switch (model.phase) {
             case 'spinning': return 'busy';
             case 'celebrating': return 'party';
-            case 'gameOver': return 'off';
             default: return 'idle';
         }
     }

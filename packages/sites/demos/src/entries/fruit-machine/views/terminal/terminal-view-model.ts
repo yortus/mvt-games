@@ -1,6 +1,6 @@
 import { watch } from '@mvtjs/utils';
 import { PAYTABLE, ROW_COUNT, type SymbolKind } from '../../data';
-import type { FruitMachineModel } from '../../models';
+import type { FruitMachineModel, SpinOptions } from '../../models';
 import { SYMBOL_LABELS } from '../art';
 import { createLitCells, formatCredits, formatRows } from '../shared';
 import { drawBanner, drawPaytable, drawWindowBox } from './ascii-art';
@@ -117,11 +117,10 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
             if (changes.spinCount.changed) logSpinStart();
             if (changes.isStopping.changed && changes.isStopping.current) print('Stopping...');
             if (changes.phase.changed) {
-                const { previous, current } = changes.phase;
+                const { previous } = changes.phase;
                 if (previous === 'spinning') logLanding();
                 // The last step's index is the number of ways: anything less was cut short
                 if (previous === 'celebrating') print(changes.step.previous === model.outcome!.wins.length ? 'Celebration over.' : 'Celebration skipped.');
-                if (current === 'gameOver') print('Out of credits. GAME OVER. Reload the page to play again.');
             }
             if (changes.step.changed && celebration.win !== undefined) logWay();
         },
@@ -138,7 +137,7 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
                     'Commands:',
                     '  spin       spin the reels (or press Enter again)',
                     '  stop       land the reels now, or skip the celebration (Ctrl+C too)',
-                    '  balance    show your credits',
+                    '  cheat      spin, rigged to pay more than the bet',
                     '  paytable   show what each fruit pays',
                     '  clear      clear the screen',
                 ].join('\n'));
@@ -150,8 +149,10 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
                 if (model.canStop) model.stop();
                 else print('Nothing to stop.');
                 return;
-            case 'balance':
-                print(`Balance ${formatCredits(model.balance)} credits: ${Math.floor(model.balance / model.bet)} spins at ${model.bet}.`);
+            case 'cheat':
+                // The result is decided as the spin starts, so the machine can choose it
+                if (model.canSpin) print('Rigged: this spin pays more than the bet, whatever the reels seem to do.');
+                spin({ isRiggedToWin: true });
                 return;
             case 'paytable':
                 print(drawPaytable(PAYTABLE));
@@ -165,14 +166,14 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
         }
     }
 
-    function spin(): void {
+    function spin(options?: SpinOptions): void {
         if (!model.canSpin) {
             print(whyNotSpin());
             return;
         }
         isBusy = true;
         // The spin's promise resolves once the machine is idle: then the prompt comes back
-        void model.spin().then(() => {
+        void model.spin(options).then(() => {
             isBusy = false;
         });
         ownSpinCount = model.spinCount;
@@ -182,7 +183,6 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
         switch (model.phase) {
             case 'spinning': return "Can't spin: the reels are turning. Type stop.";
             case 'celebrating': return "Can't spin: still celebrating. Type stop to skip it.";
-            case 'gameOver': return "Can't spin: out of credits. Game over.";
             default: return "Can't spin.";
         }
     }
@@ -191,7 +191,7 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
 
     function logSpinStart(): void {
         const where = model.spinCount === ownSpinCount ? '' : ' (from another view)';
-        print(`Spin ${model.spinCount}${where}: bet ${model.bet}, balance ${formatCredits(model.balance)}.`);
+        print(`Spin ${model.spinCount}${where}: bet ${model.bet}.`);
     }
 
     function logLanding(): void {
@@ -204,10 +204,15 @@ export function createTerminalViewModel(options: TerminalViewModelOptions): Term
         }));
         if (outcome.totalWin === 0) {
             print('No win.');
+            return;
+        }
+        const ways = outcome.wins.length === 1 ? '1 way' : `${outcome.wins.length} ways`;
+        // Less than the bet back is a loss, however many ways paid it, so it is no WIN
+        if (outcome.totalWin < model.bet) {
+            print(`Paid back ${formatCredits(outcome.totalWin)} of the ${formatCredits(model.bet)} bet on ${ways}.`);
         }
         else {
-            const ways = outcome.wins.length === 1 ? '1 way' : `${outcome.wins.length} ways`;
-            print(`WIN ${formatCredits(outcome.totalWin)} credits on ${ways}. Balance ${formatCredits(model.balance)}.`);
+            print(`WIN ${formatCredits(outcome.totalWin)} credits on ${ways}.`);
         }
     }
 

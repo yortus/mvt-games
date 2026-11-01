@@ -9,27 +9,25 @@ import { FONT_FAMILY, METER_FACE, METER_HEIGHT, METER_LABEL, METER_VALUE, METERS
 // ---------------------------------------------------------------------------
 
 export interface MetersViewBindings {
-    readonly balance: () => number;
     /** Fixed: the bet never changes. */
     readonly bet: number;
-    readonly win: () => number;
+    /** What the last spin paid back, which may be less than the bet: not always a win. */
+    readonly paid: () => number;
 }
 
 // ---------------------------------------------------------------------------
 // View
 // ---------------------------------------------------------------------------
 
-/** Balance, bet and win, on three plates under the window. */
+/** The bet and what the last spin paid, on two plates under the window. */
 export function MetersView(bindings: MetersViewBindings): Container {
-    const balanceText = createComputed({ watch: bindings.balance, compute: formatCredits });
-    const winText = createComputed({ watch: bindings.win, compute: formatCredits });
+    const paidText = createComputed({ watch: bindings.paid, compute: formatCredits });
     const betText = formatCredits(bindings.bet);
 
     return (
         <container y={METERS_Y}>
-            <PlateView index={0} label="BALANCE" value={balanceText} />
-            <PlateView index={1} label="BET" value={() => betText} />
-            <PlateView index={2} label="WIN" value={winText} />
+            <PlateView index={0} label="BET" value={() => betText} />
+            <PlateView index={1} label="PAID" value={paidText} />
         </container>
     );
 }
@@ -39,7 +37,8 @@ export function MetersView(bindings: MetersViewBindings): Container {
 // ---------------------------------------------------------------------------
 
 const PLATE_GAP = 12;
-const PLATE_WIDTH = (WINDOW_WIDTH - 2 * PLATE_GAP) / 3;
+const PLATE_COUNT = 2;
+const PLATE_WIDTH = (WINDOW_WIDTH - (PLATE_COUNT - 1) * PLATE_GAP) / PLATE_COUNT;
 
 const LABEL_STYLE = { fontFamily: FONT_FAMILY, fontSize: 12, fontWeight: '800', letterSpacing: 2, fill: METER_LABEL };
 const VALUE_STYLE = { fontFamily: FONT_FAMILY, fontSize: 24, fontWeight: '900', fill: METER_VALUE };

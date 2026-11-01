@@ -31,8 +31,7 @@ export function ControlPanelView(bindings: ControlPanelViewBindings): Element {
     const { model, art } = bindings;
     const { reels, celebration } = model;
     const litCells = createLitCells({ celebration });
-    const balanceText = createComputed({ watch: () => model.balance, compute: formatCredits });
-    const lastWinText = createComputed({ watch: () => model.lastWin, compute: formatCredits });
+    const lastPaidText = createComputed({ watch: () => model.lastPaid, compute: formatCredits });
     const spinCountText = createComputed({ watch: () => model.spinCount, compute: String });
     const betText = formatCredits(model.bet);
     // The result is decided as a spin starts, so it changes only with the spin count
@@ -42,9 +41,8 @@ export function ControlPanelView(bindings: ControlPanelViewBindings): Element {
     return (
         <section class="panel" aria-label="Control panel">
             <div class="panel-meters">
-                <MeterView label="Balance" value={balanceText} />
                 <MeterView label="Bet" value={() => betText} />
-                <MeterView label="Last win" value={lastWinText} />
+                <MeterView label="Last paid" value={lastPaidText} />
                 <MeterView label="Spins" value={spinCountText} />
             </div>
             <div class="panel-status">
@@ -56,11 +54,6 @@ export function ControlPanelView(bindings: ControlPanelViewBindings): Element {
             <div class="panel-actions">
                 <button type="button" class="panel-spin" text="Spin" disabled={() => !model.canSpin} onClick={spin} />
                 <button type="button" class="panel-stop" text="Stop" disabled={() => !model.canStop} onClick={stop} />
-                <span
-                    class="panel-game-over"
-                    visible={() => model.phase === 'gameOver'}
-                    text="Out of credits: game over. Reload to play again."
-                />
             </div>
             <div class="panel-columns">
                 <ReelsTableView
@@ -83,11 +76,11 @@ export function ControlPanelView(bindings: ControlPanelViewBindings): Element {
                 <summary text="Peek: the result, decided as the spin started" />
                 <p text={peekText} />
             </details>
-            <div visible={() => model.phase !== 'spinning' && model.lastWin > 0}>
+            <div visible={() => model.phase !== 'spinning' && model.lastPaid > 0}>
                 <WinsListView
                     wins={() => model.outcome?.wins ?? NO_WINS}
                     currentWin={() => celebration.win}
-                    totalWin={() => model.lastWin}
+                    totalWin={() => model.lastPaid}
                     urlFor={art.urlFor}
                     nameFor={nameFor}
                 />
@@ -126,7 +119,6 @@ const PHASE_CLASSES: { readonly [P in MachinePhase]: string } = {
     idle: 'phase phase-idle',
     spinning: 'phase phase-spinning',
     celebrating: 'phase phase-celebrating',
-    gameOver: 'phase phase-game-over',
 };
 
 interface MeterViewBindings {

@@ -48,43 +48,25 @@ describe('computeReturn', () => {
             expect(MACHINE.rtp, `RTP by symbol: ${breakdown}`).toBeLessThan(0.88);
         });
 
-        it('win something on most spins, in small amounts, which keeps the balance steady', () => {
+        it('pay something on most spins, mostly less than the bet', () => {
             expect(MACHINE.hitRate).toBeGreaterThan(0.7);
             expect(MACHINE.hitRate).toBeLessThan(0.9);
         });
 
         it('agree with a long run of the machine itself', () => {
-            const model = createFruitMachineModel({ seed: 12345, startingBalance: Number.MAX_SAFE_INTEGER });
+            const model = createFruitMachineModel({ seed: 12345 });
             const spins = 50_000;
             let won = 0;
             let hits = 0;
 
             for (let i = 0; i < spins; i++) {
                 quickSpin(model);
-                won += model.lastWin;
-                if (model.lastWin > 0) hits++;
+                won += model.lastPaid;
+                if (model.lastPaid > 0) hits++;
             }
 
             expect(won / spins / BET).toBeCloseTo(MACHINE.rtp, 1);
             expect(hits / spins).toBeCloseTo(MACHINE.hitRate, 2);
-        }, LONG_RUN_TIMEOUT_MS);
-
-        it('are steady: from twenty bets, few players run out of credits within 50 spins', () => {
-            // A property of the strips and paytable, so tested from a balance of
-            // its own rather than the machine's starting balance, which is tuned
-            // separately and changes how often the game ends. The machine takes
-            // more than it pays, so everyone runs out in the end. A steady one
-            // takes its time.
-            const players = 1000;
-            let gamesOver = 0;
-
-            for (let player = 0; player < players; player++) {
-                const model = createFruitMachineModel({ seed: player + 1, startingBalance: 20 * BET });
-                for (let spin = 0; spin < 50 && model.canSpin; spin++) quickSpin(model);
-                if (model.phase === 'gameOver') gamesOver++;
-            }
-
-            expect(gamesOver / players).toBeLessThan(0.05);
         }, LONG_RUN_TIMEOUT_MS);
     });
 });

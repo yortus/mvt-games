@@ -70,7 +70,7 @@
         flex-direction: column;
         gap: 10px;
     }
-    .panel-meters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .panel-meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .meter {
         padding: 6px 8px;
         border: 1px solid #30363d;
@@ -89,7 +89,6 @@
     }
     .phase-spinning { background: #1f6feb; }
     .phase-celebrating { background: #bf8700; }
-    .phase-game-over { background: #da3633; }
     .flag {
         padding: 2px 8px;
         border-radius: 999px;
@@ -110,7 +109,6 @@
     .panel-spin { background: #238636; }
     .panel-stop { background: #da3633; }
     .panel-actions button:disabled { background: #21262d; color: #6e7681; cursor: default; }
-    .panel-game-over { color: #ff7b72; font-weight: 600; }
     .panel-columns { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; align-items: start; }
     /* Too narrow for the reels table beside the window: the window goes below it */
     @container (max-width: 520px) {

@@ -12,7 +12,6 @@ import type { MaterialKit } from './material-kit';
 
 export interface TopBoxViewBindings {
     readonly kit: MaterialKit;
-    readonly isGameOver: () => boolean;
     /** How brightly the lamp on top glows, from 0 to 1. */
     readonly lampGlow: () => number;
 }
@@ -22,8 +21,8 @@ export interface TopBoxViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The box on top of the cabinet: a sign with the machine's name, which says
- * GAME OVER at the end, and a lamp that flashes through a celebration.
+ * The box on top of the cabinet: a sign with the machine's name, and a lamp
+ * that flashes through a celebration.
  */
 export function TopBoxView(bindings: TopBoxViewBindings): Object3D {
     const { kit } = bindings;
@@ -32,7 +31,8 @@ export function TopBoxView(bindings: TopBoxViewBindings): Object3D {
     signCanvas.height = 128;
     const signTexture = kit.own(new CanvasTexture(signCanvas));
     signTexture.colorSpace = SRGBColorSpace;
-    let signIsGameOver: boolean | undefined;
+    // The sign never changes, so it is painted once
+    paintSign();
     const lampMaterial = kit.glowing(LAMP);
     const boxZ = FRONT_Z - BOX_DEPTH / 2 - 0.1;
 
@@ -45,7 +45,6 @@ export function TopBoxView(bindings: TopBoxViewBindings): Object3D {
                 material={kit.own(new MeshBasicMaterial({ map: signTexture }))}
                 y={BOX_HEIGHT / 2}
                 z={boxZ + BOX_DEPTH / 2 + 0.01}
-                onRefresh={refreshSign}
             />
             <mesh geometry={kit.own(new CylinderGeometry(0.42, 0.5, 0.2, 32))} material={kit.metal(CHROME)} y={BOX_HEIGHT + 0.17} z={boxZ} />
             <mesh
@@ -58,16 +57,12 @@ export function TopBoxView(bindings: TopBoxViewBindings): Object3D {
         </group>
     );
 
-    /** Painted again only when the game ends. */
-    function refreshSign(): void {
-        const isGameOver = bindings.isGameOver();
-        if (isGameOver === signIsGameOver) return;
-        signIsGameOver = isGameOver;
+    function paintSign(): void {
         const context = signCanvas.getContext('2d')!;
         context.fillStyle = DISPLAY_FACE;
         context.fillRect(0, 0, signCanvas.width, signCanvas.height);
-        context.fillStyle = isGameOver ? '#ff5468' : DISPLAY_TEXT;
-        const text = isGameOver ? 'GAME OVER' : 'FRUIT MACHINE';
+        context.fillStyle = DISPLAY_TEXT;
+        const text = 'FRUIT MACHINE';
         // As big as fits: fonts differ in width from one system to the next
         context.font = SIGN_FONT;
         const fit = Math.min(1, (signCanvas.width * 0.88) / context.measureText(text).width);

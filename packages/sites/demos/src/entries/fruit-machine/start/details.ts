@@ -12,7 +12,8 @@ export const details: EntryDetails = {
     implementation: 'None of the four views knows the others exist: each reads the one model every frame, and any of '
         + 'them may call its actions.',
     howToPlay: {
-        intro: 'Spin from any quadrant: the Pixi button, the 3D lever, the panel\'s Spin, or `spin` in the terminal.',
+        intro: 'Spin from any quadrant: the Pixi button, the 3D lever, the panel\'s Spin, or `spin` in the terminal. '
+            + 'Type `cheat` in the terminal for a spin rigged to pay more than the bet.',
         controls: [
             { action: 'Turn the 3D cabinet', inputs: ['drag'] },
         ],

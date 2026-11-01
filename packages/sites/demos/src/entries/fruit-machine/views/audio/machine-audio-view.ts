@@ -3,7 +3,7 @@ import type { Audio80Sound } from 'audio90';
 import { createMetronome, createReaction, increased } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/shared';
 import {
-    BIG_WIN, COIN, GAME_OVER, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5, WIN,
+    BIG_WIN, COIN, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5, WIN,
 } from '../../data';
 import type { FruitMachineModel, MachinePhase } from '../../models';
 
@@ -29,8 +29,8 @@ export interface MachineAudioViewBindings {
  * Plays the machine's sound. The lever clunks as a spin starts. The reels
  * click as they turn, and thunk as they land. A win plays a jingle, a longer
  * one for a big win, and a shower of coins. Then each winning way plays a
- * chime as it is shown. A spin that wins nothing plays a falling sigh, and a
- * slow tune plays as the credits run out.
+ * chime as it is shown. A spin that wins less than the bet, or nothing,
+ * plays a falling sigh.
  *
  * The view has no visuals, and is never added to the page. It is a fifth view
  * of the one model, beside the four that draw it, and the host updates and
@@ -105,13 +105,10 @@ export function MachineAudioView(bindings: MachineAudioViewBindings): HTMLElemen
     function playPhase(phase: MachinePhase, previous: MachinePhase): void {
         switch (phase) {
             case 'celebrating':
-                music.play(model.lastWin >= BIG_WIN_BETS * model.bet ? BIG_WIN : WIN);
+                music.play(model.lastPaid >= BIG_WIN_BETS * model.bet ? BIG_WIN : WIN);
                 break;
             case 'idle':
                 if (previous === 'spinning') sfx.play(NO_WIN);
-                break;
-            case 'gameOver':
-                music.play(GAME_OVER);
                 break;
             case 'spinning':
                 break;

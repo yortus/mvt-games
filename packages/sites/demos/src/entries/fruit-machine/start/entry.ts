@@ -22,11 +22,12 @@ export const entry: ArcadeEntry = {
     // It looks like gambling, so it says plainly what it is
     notice: {
         title: 'A game of chance, for show',
-        text: 'This is a programming demo, not gambling. No money goes in or comes out, and nothing can be bought or '
-            + 'won. The credits are pretend, and when they run out, the game is over.'
+        text: 'This is a programming demo, not gambling. Nothing is staked, kept or won. Each spin only shows what '
+            + 'the machine would pay back on a bet, and nothing carries over to the next.'
             + '\n\n'
             + 'Each spin\'s result is decided the moment it starts. The spinning reels only put on a show. Open Peek in '
-            + 'the control panel to see the result before they stop.',
+            + 'the control panel to see the result before they stop, or type cheat in the terminal for a spin rigged to '
+            + 'pay more than the bet.',
     },
     // The reels: what a square crop of its picture keeps in view
     thumbnailFocus: { x: 320, y: 200 },

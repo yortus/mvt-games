@@ -5,11 +5,8 @@
 /** Rows in the window. */
 export const ROW_COUNT = 3;
 
-/** Credits each spin costs. */
+/** Credits each spin is measured against: a payout of less than this has lost. */
 export const BET = 25;
-
-/** Credits the machine starts with: twenty spins' worth. */
-export const STARTING_BALANCE = 20 * BET;
 
 /** How fast a spinning reel turns, in strip positions per second. */
 export const SPIN_SPEED = 20;

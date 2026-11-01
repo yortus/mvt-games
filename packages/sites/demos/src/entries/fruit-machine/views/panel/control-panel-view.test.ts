@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/html';
 import {
-    BET, CELEBRATION_OPENER_MS, FIRST_SETTLE_MS, PAYTABLE, SETTLE_MS, SETTLE_STAGGER_MS, STARTING_BALANCE, type SymbolKind,
+    BET, CELEBRATION_OPENER_MS, FIRST_SETTLE_MS, PAYTABLE, type Paytable, SETTLE_MS, SETTLE_STAGGER_MS, type SymbolKind,
 } from '../../data';
 import { createFruitMachineModel, type FruitMachineModelOptions } from '../../models';
 import type { SymbolArt } from '../art';
@@ -23,6 +23,9 @@ const ONE_WAY_STRIPS: readonly (readonly SymbolKind[])[] = [
     ['pic2', 'pic3', 'pic4'],
     ['pic5', 'pic6', 'pic2'],
 ];
+
+/** The machine's paytable, with the way on `ONE_WAY_STRIPS` paying twice the bet: a win to celebrate. */
+const CELEBRATED_PAYTABLE: Paytable = { ...PAYTABLE, pic1: { ...PAYTABLE.pic1, 3: 2 * BET } };
 
 /** The panel uses only the pictures' URLs; the canvases are for the Pixi and three.js views. */
 const ART: SymbolArt = {
@@ -62,8 +65,8 @@ describe('ControlPanelView', () => {
     it('shows the meters and the guards of a machine at rest', () => {
         const t = setup();
 
-        expect(t.meter('Balance')).toBe(formatCredits(STARTING_BALANCE));
         expect(t.meter('Bet')).toBe(formatCredits(BET));
+        expect(t.meter('Last paid')).toBe(formatCredits(0));
         expect(t.meter('Spins')).toBe('0');
         expect(t.isFlagOn('canSpin')).toBe(true);
         expect(t.isFlagOn('canStop')).toBe(false);
@@ -78,7 +81,7 @@ describe('ControlPanelView', () => {
         t.advance(10);
 
         expect(t.model.phase).toBe('spinning');
-        expect(t.meter('Balance')).toBe(formatCredits(STARTING_BALANCE - BET));
+        expect(t.meter('Spins')).toBe('1');
         expect(t.button('spin').disabled).toBe(true);
         expect(t.button('stop').disabled).toBe(false);
         expect(t.panel.querySelector('.phase')?.textContent).toBe('spinning');
@@ -106,7 +109,7 @@ describe('ControlPanelView', () => {
     });
 
     it('lists the winning ways, and lights the cells being celebrated', () => {
-        const t = setup({ strips: ONE_WAY_STRIPS });
+        const t = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
         t.button('spin').click();
         t.advance(LANDED_MS + CELEBRATION_OPENER_MS);
 
@@ -115,6 +118,6 @@ describe('ControlPanelView', () => {
         expect(rows[0].classList.contains('current')).toBe(true);
         expect(rows[0].querySelector('.win-name')?.textContent).toBe('Watermelon');
         expect(t.panel.querySelectorAll('.window-grid .cell.lit')).toHaveLength(3);
-        expect(t.meter('Last win')).toBe(formatCredits(PAYTABLE.pic1[3]));
+        expect(t.meter('Last paid')).toBe(formatCredits(CELEBRATED_PAYTABLE.pic1[3]));
     });
 });

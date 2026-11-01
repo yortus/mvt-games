@@ -1,7 +1,7 @@
 import { assert } from '@mvtjs/utils';
 import {
-    BET, FIRST_SETTLE_MS, PAYTABLE, type Paytable, REEL_STRIPS, ROW_COUNT, SETTLE_STAGGER_MS, STARTING_BALANCE,
-    STOPPING_SETTLE_MS, type SymbolKind,
+    BET, FIRST_SETTLE_MS, PAYTABLE, type Paytable, REEL_STRIPS, ROW_COUNT, SETTLE_STAGGER_MS, STOPPING_SETTLE_MS,
+    type SymbolKind,
 } from '../data';
 import { type CelebrationModel, createCelebrationModel } from './celebration-model';
 import { evaluateWays, type WayWin } from './evaluate-ways';
@@ -13,20 +13,29 @@ import { createReelModel, type ReelModel } from './reel-model';
 // ---------------------------------------------------------------------------
 
 /**
- * `'celebrating'` while the wins are shown off after the reels land.
- * `'gameOver'` once the balance can't cover a bet; nothing leaves it.
+ * `'celebrating'` while the wins are shown off after the reels land, for a
+ * spin that won at least its bet.
  */
-export type MachinePhase = 'idle' | 'spinning' | 'celebrating' | 'gameOver';
+export type MachinePhase = 'idle' | 'spinning' | 'celebrating';
 
 /**
- * The fruit machine: five reels, a balance, and the two things a player can
- * do, spin and stop. The demo's one model, which every view reads and any
- * view may act on.
+ * The fruit machine: five reels, and the two things a player can do, spin
+ * and stop. The demo's one model, which every view reads and any view may
+ * act on.
+ *
+ * It keeps no balance. Each spin is measured against a fixed bet, and shows
+ * what it pays back, and nothing carries over from one spin to the next.
+ * There is nothing to build up or run out of, so there is no game to win or
+ * lose: only the machine, to watch.
  *
  * A spin's result is decided the moment it starts; the reels then take their
  * time to show it. They spin together, start to settle one second in, half a
  * second apart from left to right, and each takes half a second to land.
- * The win is paid when the last one lands, then celebrated, a way at a time.
+ * The payout is shown when the last one lands, then celebrated, a way at a
+ * time. Only a win of at least the bet is celebrated. A spin that pays back
+ * less than its bet has lost, however many ways it won on, so it is shown
+ * quietly. Real machines celebrate those too, and players learn to feel they
+ * are winning while they lose.
  *
  * Not leap-safe across phases: each `update` moves on at most one phase, so a
  * spin and its celebration take at least two calls.
@@ -38,12 +47,10 @@ export interface FruitMachineModel {
     /** True from a `stop()` during a spin until the reels land. */
     readonly isStopping: boolean;
 
-    /** Credits held. */
-    readonly balance: number;
-    /** Credits each spin costs. */
+    /** Credits each spin is measured against. */
     readonly bet: number;
-    /** What the last spin to land won. 0 from the start of each spin. */
-    readonly lastWin: number;
+    /** What the last spin to land paid back, which may be less than its bet. 0 from the start of each spin. */
+    readonly lastPaid: number;
     /** Spins so far. Watch it to notice a new spin, wherever it was started. */
     readonly spinCount: number;
     /** The current, or last, spin's result, decided when it started. Undefined before the first spin. */
@@ -55,20 +62,31 @@ export interface FruitMachineModel {
     /** True when `stop()` may be called: while spinning, until stopped, and while celebrating. */
     readonly canStop: boolean;
     /**
-     * Take the bet, decide the result, and spin. Resolves with the result
-     * once the machine is idle again (or the game is over): after the
-     * reels land and any celebration ends. Resolves from inside `update`,
-     * so a machine that isn't updated never resolves. Needs `canSpin`.
+     * Decide the result, and spin. Resolves with the result once the machine
+     * is idle again: after the reels land and any celebration ends. Resolves
+     * from inside `update`, so a machine that isn't updated never resolves.
+     * Needs `canSpin`.
      */
-    spin: () => Promise<SpinOutcome>;
+    spin: (options?: SpinOptions) => Promise<SpinOutcome>;
     /**
      * Cut short whatever is running. During a spin, land the reels within a
-     * fifth of a second; the win is paid and celebrated as usual. During a
+     * fifth of a second; the payout is shown and celebrated as usual. During a
      * celebration, end it at once, ready for the next spin. Never starts a
      * spin. Needs `canStop`.
      */
     stop: () => void;
     update: (deltaMs: number) => void;
+}
+
+/** How to spin. */
+export interface SpinOptions {
+    /**
+     * Whether the spin is rigged to win more than the bet. The machine draws
+     * stops until they pay that much. It shows that the result is the
+     * machine's choice: a real one is set to pay what its owner wants.
+     * Defaults to false.
+     */
+    readonly isRiggedToWin?: boolean;
 }
 
 /** A spin's result. */
@@ -79,7 +97,7 @@ export interface SpinOutcome {
     readonly window: readonly (readonly SymbolKind[])[];
     /** Every winning way, highest payout first. */
     readonly wins: readonly WayWin[];
-    /** Credits won: the sum of the ways' payouts. */
+    /** Credits paid back: the sum of the ways' payouts. It may be less than the bet. */
     readonly totalWin: number;
 }
 
@@ -94,8 +112,6 @@ export interface FruitMachineModelOptions {
     readonly strips?: readonly (readonly SymbolKind[])[];
     /** Defaults to the machine's paytable. */
     readonly paytable?: Paytable;
-    /** Defaults to the machine's starting balance (`STARTING_BALANCE`). */
-    readonly startingBalance?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -107,7 +123,6 @@ export function createFruitMachineModel(options: FruitMachineModelOptions = {}):
         seed = 1,
         strips = REEL_STRIPS,
         paytable = PAYTABLE,
-        startingBalance = STARTING_BALANCE,
     } = options;
     assert(!strips[0].includes('wild'), 'The first reel has no wilds: a way takes its picture from it');
 
@@ -115,10 +130,9 @@ export function createFruitMachineModel(options: FruitMachineModelOptions = {}):
     const reels = strips.map((strip) => createReelModel({ strip, stopIndex: random.nextIndex(strip.length) }));
     const celebration = createCelebrationModel();
 
-    let phase: MachinePhase = startingBalance < BET ? 'gameOver' : 'idle';
+    let phase: MachinePhase = 'idle';
     let isStopping = false;
-    let balance = startingBalance;
-    let lastWin = 0;
+    let lastPaid = 0;
     let spinCount = 0;
     let outcome: SpinOutcome | undefined;
     let resolveSpin: ((outcome: SpinOutcome) => void) | undefined;
@@ -127,9 +141,8 @@ export function createFruitMachineModel(options: FruitMachineModelOptions = {}):
         reels,
         get phase() { return phase; },
         get isStopping() { return isStopping; },
-        get balance() { return balance; },
         bet: BET,
-        get lastWin() { return lastWin; },
+        get lastPaid() { return lastPaid; },
         get spinCount() { return spinCount; },
         get outcome() { return outcome; },
         celebration,
@@ -137,12 +150,11 @@ export function createFruitMachineModel(options: FruitMachineModelOptions = {}):
         get canSpin() { return phase === 'idle'; },
         get canStop() { return (phase === 'spinning' && !isStopping) || phase === 'celebrating'; },
 
-        spin() {
+        spin(spinOptions) {
             assert(model.canSpin, () => `spin() needs canSpin, but the machine is ${phase}`);
-            balance -= BET;
-            lastWin = 0;
+            lastPaid = 0;
             spinCount++;
-            outcome = decideOutcome();
+            outcome = spinOptions?.isRiggedToWin === true ? decideWinningOutcome() : decideOutcome();
             for (let i = 0; i < reels.length; i++) {
                 reels[i].spin({ stopIndex: outcome.stops[i], settleAfterMs: FIRST_SETTLE_MS + i * SETTLE_STAGGER_MS });
             }
@@ -190,12 +202,20 @@ export function createFruitMachineModel(options: FruitMachineModelOptions = {}):
         return { stops, window, wins, totalWin };
     }
 
-    /** The last reel has landed: pay, then celebrate any wins, stopped early or not. */
+    /** Draws outcomes until one pays more than the bet. About a third of spins pay at least the bet, so it takes a few draws. */
+    function decideWinningOutcome(): SpinOutcome {
+        for (let attempt = 0; attempt < MAX_RIGGED_DRAWS; attempt++) {
+            const drawn = decideOutcome();
+            if (drawn.totalWin > BET) return drawn;
+        }
+        throw new Error(`No spin in ${MAX_RIGGED_DRAWS} draws paid more than the bet: these strips can't be rigged to win`);
+    }
+
+    /** The last reel has landed: show the payout, then celebrate a win of at least the bet, stopped early or not. */
     function land(): void {
         const { wins, totalWin } = outcome!;
-        balance += totalWin;
-        lastWin = totalWin;
-        if (wins.length > 0) {
+        lastPaid = totalWin;
+        if (totalWin >= BET) {
             phase = 'celebrating';
             celebration.start(wins);
         }
@@ -206,7 +226,7 @@ export function createFruitMachineModel(options: FruitMachineModelOptions = {}):
     }
 
     function finishSpin(): void {
-        phase = balance < BET ? 'gameOver' : 'idle';
+        phase = 'idle';
         const resolve = resolveSpin!;
         resolveSpin = undefined;
         resolve(outcome!);
@@ -219,3 +239,10 @@ export function createFruitMachineModel(options: FruitMachineModelOptions = {}):
         return true;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** The most outcomes a rigged spin draws. Each pays more than the bet about a third of the time, so this is never reached with the machine's strips. */
+const MAX_RIGGED_DRAWS = 1000;

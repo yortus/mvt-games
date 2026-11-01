@@ -6,10 +6,10 @@ control panel, and a text terminal. Spin from any of them (the Pixi button,
 the 3D lever, the panel's Spin, or `spin` in the terminal) and all four
 follow. None of them knows the others exist.
 
-It runs in the Arcade, as `/arcade/fruit-machine/`. It is an `element` entry, like
-Boids in 3D: it builds its own renderers in the element the Arcade gives it.
+It runs on the demos site, as `/demos/fruit-machine/`. It is an `element` entry, like
+Boids in 3D: it builds its own renderers in the element the site gives it.
 
-## The game
+## The machine
 
 - 5 reels of 3 rows, each reel a fixed strip of 27 or 28 symbols: six
   fruits and a wild. The model calls them `pic1` to `pic6` and `wild`; the
@@ -17,24 +17,36 @@ Boids in 3D: it builds its own renderers in the element the Arcade gives it.
 - **243 ways:** a win is a path of one cell per reel, from the first reel
   across 3, 4 or 5 adjacent reels, all the same fruit, the wild standing in
   for any. Each way pays on its own.
-- A bet of 25 credits a spin, from a starting balance of 500 credits,
-  twenty bets' worth. Below 25 credits, the game is over: reload to play
-  again.
-- It pays back **85%** on average, worked out exactly by `computeReturn`.
-  That is less than it takes, as a real machine's return is. 81% of spins
-  win something, many of them less than the bet. So every player runs out
-  in the end, but slowly. Half of them are still spinning after 111 spins,
-  and about 2% run out within 50. The test suite holds the return and that
-  steadiness, and checks the exact return against a long run of the machine
-  itself.
+- **No balance.** Each spin is measured against a fixed bet of 25 credits,
+  and shows what it pays back. Nothing carries over from one spin to the
+  next, so there is nothing to build up or run out of, and no game to win
+  or lose: only the machine, to watch. You can spin for as long as you like.
+- It pays back **85%** of the bet on average, worked out exactly by
+  `computeReturn`, as a real machine's return is less than it takes. 81% of
+  spins pay something, but only about a third pay back the bet or more. The
+  test suite holds the return, and checks it against a long run of the
+  machine itself.
+- **Only a win is celebrated.** A spin that pays back less than its bet has
+  lost, however many ways it won on. Real machines celebrate those spins
+  anyway, with lights and jingles, so players feel they are winning while
+  they lose. Here, a spin is celebrated only if it pays back at least its
+  bet. A smaller payout is shown quietly, with the sound of a loss. The
+  meters call it **PAID**, not WIN, and the terminal says how much of the
+  bet came back.
+- **A cheat.** Type `cheat` in the terminal for a spin rigged to pay more
+  than the bet (`spin({ isRiggedToWin: true })`). The machine draws stops
+  until they pay that much, then the reels spin to them as usual, and
+  nothing in the other three views can tell. The result is decided the
+  moment a spin starts, so it is the machine's choice: a real one is set to
+  pay what its owner wants.
 
 ## What it shows
 
 **One model, four projections.** Everything the machine is lives in
-`createFruitMachineModel`: the reels, the balance, the phase, the
+`createFruitMachineModel`: the reels, the payout, the phase, the
 celebration, and the two actions, `spin()` and `stop()`, with their guards
 `canSpin` and `canStop`. `stop()` cuts short whatever is running: during a
-spin it lands the reels at once, and the win is still paid and shown; during
+spin it lands the reels at once, and the payout is still shown; during
 the win display it ends it, ready for the next spin. Each view reads the
 model every frame and draws it its own way, and any view may call the
 actions. Nothing connects the views to each other; the page's one loop
@@ -80,8 +92,8 @@ prompt until it resolves, as a shell does, and Ctrl+C stops the spin.
 reel, a celebration model, a pure ways evaluator and a seeded random source;
 each has its own tests. Each top-level view is layered from leaf views that
 take bindings: the Pixi machine is a backdrop, a paytable, marquee lights,
-the reels, the win path, a juice burst, meters, a win banner, the spin
-button and a game-over overlay.
+the reels, the win path, a juice burst, meters, a win banner and the spin
+button.
 
 **Presentation state, where the model has no say.** The marquee's chase,
 the juice droplets, the win banner counting up, the button sinking under a
@@ -92,7 +104,7 @@ a view model (`terminal-view-model.ts`) with tests of its own.
 
 **Change detection for costly writes.** Text is made only when the value
 it shows changes (`createComputed`, and `lastFor` for replaced objects); the 3D
-credit display and sign repaint their canvases only on change; the terminal
+credit display repaints its canvas only on change, and the sign once; the terminal
 rebuilds its ASCII reels only when a reel moves a whole symbol; the cells a
 celebration lights are worked out once per step (`createLitCells`).
 

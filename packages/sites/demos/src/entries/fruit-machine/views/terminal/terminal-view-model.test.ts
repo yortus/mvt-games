@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-    BET, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, FIRST_SETTLE_MS, PAYTABLE, SETTLE_MS, SETTLE_STAGGER_MS, STARTING_BALANCE,
+    BET, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, FIRST_SETTLE_MS, PAYTABLE, type Paytable, SETTLE_MS, SETTLE_STAGGER_MS,
     type SymbolKind,
 } from '../../data';
 import { createFruitMachineModel, type FruitMachineModel, type FruitMachineModelOptions } from '../../models';
@@ -21,6 +21,9 @@ const ONE_WAY_STRIPS: readonly (readonly SymbolKind[])[] = [
     ['pic2', 'pic3', 'pic4'],
     ['pic5', 'pic6', 'pic2'],
 ];
+
+/** The machine's paytable, with the way on `ONE_WAY_STRIPS` paying twice the bet: a win to celebrate. */
+const CELEBRATED_PAYTABLE: Paytable = { ...PAYTABLE, pic1: { ...PAYTABLE.pic1, 3: 2 * BET } };
 
 /** Strips that never win. */
 const LOSING_STRIPS: readonly (readonly SymbolKind[])[] = [
@@ -81,7 +84,7 @@ describe('terminal view model', () => {
 
         terminal.submit('help');
 
-        for (const command of ['spin', 'stop', 'balance', 'paytable', 'clear']) expect(terminal.transcript).toContain(command);
+        for (const command of ['spin', 'stop', 'cheat', 'paytable', 'clear']) expect(terminal.transcript).toContain(command);
     });
 
     it('says when it does not know a command', () => {
@@ -92,14 +95,11 @@ describe('terminal view model', () => {
         expect(terminal.transcript).toContain('Unknown command: jackpot');
     });
 
-    it('shows the balance, and the paytable', () => {
+    it('shows the paytable', () => {
         const { terminal } = setup();
 
-        terminal.submit('balance');
         terminal.submit('paytable');
 
-        const spins = Math.floor(STARTING_BALANCE / BET);
-        expect(terminal.transcript).toContain(`Balance ${formatCredits(STARTING_BALANCE)} credits: ${spins} spins at ${BET}.`);
         expect(terminal.transcript).toContain('Pays per way');
     });
 
@@ -131,21 +131,34 @@ describe('terminal view model', () => {
             advance(LANDED_MS);
 
             expect(terminal.transcript).toContain('> spin');
-            expect(terminal.transcript).toContain(`Spin 1: bet ${BET}, balance ${formatCredits(STARTING_BALANCE - BET)}.`);
+            expect(terminal.transcript).toContain(`Spin 1: bet ${BET}.`);
             expect(terminal.transcript).toContain('+--------+');
             expect(terminal.transcript).toContain('No win.');
         });
 
         it('logs each winning way as it is celebrated', () => {
-            const { terminal, advance } = setup({ strips: ONE_WAY_STRIPS });
+            const { terminal, advance } = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
 
             terminal.submit('spin');
             advance(LANDED_MS + CELEBRATION_OPENER_MS + CELEBRATION_STEP_MS);
 
-            const payout = formatCredits(PAYTABLE.pic1[3]);
+            const payout = formatCredits(CELEBRATED_PAYTABLE.pic1[3]);
             expect(terminal.transcript).toContain(`WIN ${payout} credits on 1 way.`);
             expect(terminal.transcript).toMatch(new RegExp(`MELON x3 {3}rows \\d-\\d-\\d {3}\\+${payout}`));
             expect(terminal.transcript).toContain('Celebration over.');
+        });
+
+        it('says plainly when a spin paid back less than its bet, and celebrates nothing', () => {
+            const { terminal, advance } = setup({ strips: ONE_WAY_STRIPS });
+            expect(PAYTABLE.pic1[3]).toBeLessThan(BET);
+
+            terminal.submit('spin');
+            advance(LANDED_MS + CELEBRATION_OPENER_MS + CELEBRATION_STEP_MS);
+
+            const paid = formatCredits(PAYTABLE.pic1[3]);
+            expect(terminal.transcript).toContain(`Paid back ${paid} of the ${formatCredits(BET)} bet on 1 way.`);
+            expect(terminal.transcript).not.toContain('WIN');
+            expect(terminal.transcript).not.toContain('Celebration');
         });
 
         it('repeats the last command on an empty line', async () => {
@@ -206,7 +219,7 @@ describe('terminal view model', () => {
             const { model, terminal } = setup();
             terminal.submit('spin');
 
-            terminal.submit('balance');
+            terminal.submit('paytable');
             expect(terminal.transcript).toContain('A spin is running.');
 
             terminal.submit('stop');
@@ -214,7 +227,7 @@ describe('terminal view model', () => {
         });
 
         it('says when a celebration is cut short', () => {
-            const { model, terminal, advance } = setup({ strips: ONE_WAY_STRIPS });
+            const { model, terminal, advance } = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
             terminal.submit('spin');
             advance(LANDED_MS);
 
@@ -225,24 +238,26 @@ describe('terminal view model', () => {
         });
     });
 
-    it('announces game over', () => {
-        const { terminal, advance } = setup({ strips: LOSING_STRIPS, startingBalance: BET });
+    it('cheats: rigs a spin to pay more than the bet, and says so', () => {
+        const { model, terminal, advance } = setup();
 
-        terminal.submit('spin');
+        terminal.submit('cheat');
+        expect(terminal.transcript).toContain('Rigged');
+        expect(model.outcome!.totalWin).toBeGreaterThan(BET);
+
         advance(LANDED_MS);
-
-        expect(terminal.transcript).toContain('GAME OVER');
+        expect(terminal.transcript).toContain(`WIN ${formatCredits(model.outcome!.totalWin)} credits`);
     });
 
     it('recalls earlier commands, back and forward', () => {
         const { terminal } = setup();
         terminal.submit('help');
-        terminal.submit('balance');
+        terminal.submit('paytable');
 
-        expect(terminal.recall(-1)).toBe('balance');
+        expect(terminal.recall(-1)).toBe('paytable');
         expect(terminal.recall(-1)).toBe('help');
         expect(terminal.recall(-1)).toBe('help');
-        expect(terminal.recall(1)).toBe('balance');
+        expect(terminal.recall(1)).toBe('paytable');
         expect(terminal.recall(1)).toBe('');
     });
 });

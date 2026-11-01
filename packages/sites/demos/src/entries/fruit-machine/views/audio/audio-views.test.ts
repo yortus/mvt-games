@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/html';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
-    BET, BIG_WIN, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, GAME_OVER, LEVER, NO_WIN, REEL_CLICK,
-    REEL_STOP, SETTLE_MS, SETTLE_STAGGER_MS, STOPPING_SETTLE_MS, type SymbolKind, WAY_OF_3, WAY_OF_5, WIN,
+    BET, BIG_WIN, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, LEVER, NO_WIN, PAYTABLE,
+    type Paytable, REEL_CLICK, REEL_STOP, SETTLE_MS, SETTLE_STAGGER_MS, STOPPING_SETTLE_MS, type SymbolKind, WAY_OF_3, WAY_OF_5, WIN,
 } from '../../data';
 import { createFruitMachineModel, type FruitMachineModelOptions } from '../../models';
 import { MachineAudioView } from './machine-audio-view';
@@ -64,7 +64,7 @@ describe('MachineAudioView', () => {
     });
 
     it('plays a jingle and a shower of coins for a win, then a chime for its way', () => {
-        const t = setUp({ strips: WAY_OF_3_STRIPS });
+        const t = setUp({ strips: WAY_OF_3_STRIPS, paytable: BET_BACK_PAYTABLE });
         void t.model.spin();
         t.advance(LANDED_MS + CELEBRATION_OPENER_MS);
         expect(listPlayed(t.music)).toEqual([WIN]);
@@ -77,6 +77,17 @@ describe('MachineAudioView', () => {
         expect(countPlayed(t.sfx, NO_WIN)).toBe(0);
     });
 
+    it('plays the sigh, and no jingle, coins or chime, for a spin that paid back less than its bet', () => {
+        const t = setUp({ strips: WAY_OF_3_STRIPS });
+        expect(PAYTABLE.pic1[3]).toBeLessThan(BET);
+        void t.model.spin();
+        t.advance(LANDED_MS + CELEBRATION_OPENER_MS + CELEBRATION_STEP_MS);
+        expect(countPlayed(t.sfx, NO_WIN)).toBe(1);
+        expect(t.music.play).not.toHaveBeenCalled();
+        expect(countPlayed(t.sfx, COIN)).toBe(0);
+        expect(countPlayed(t.sfx, WAY_OF_3)).toBe(0);
+    });
+
     it('plays the longer jingle for a big win, and a higher chime for a longer way', () => {
         const t = setUp({ strips: WAY_OF_5_STRIPS });
         void t.model.spin();
@@ -85,16 +96,8 @@ describe('MachineAudioView', () => {
         expect(countPlayed(t.sfx, WAY_OF_5)).toBe(1);
     });
 
-    it('plays the slow tune as the credits run out, instead of the sigh', () => {
-        const t = setUp({ strips: NO_WIN_STRIPS, startingBalance: BET });
-        void t.model.spin();
-        t.advance(LANDED_MS + GAME_OVER.durationMs);
-        expect(listPlayed(t.music)).toEqual([GAME_OVER]);
-        expect(countPlayed(t.sfx, NO_WIN)).toBe(0);
-    });
-
     it('cuts a jingle short when the next spin starts', () => {
-        const t = setUp({ strips: WAY_OF_3_STRIPS });
+        const t = setUp({ strips: WAY_OF_3_STRIPS, paytable: BET_BACK_PAYTABLE });
         void t.model.spin();
         t.advance(LANDED_MS + TICK_MS);
         t.model.stop();
@@ -107,12 +110,10 @@ describe('MachineAudioView', () => {
         expect(t.music.play).not.toHaveBeenCalled();
     });
 
-    it('plays nothing for a machine at rest, nor for one already over', () => {
+    it('plays nothing for a machine at rest', () => {
         const atRest = setUp({ strips: NO_WIN_STRIPS });
-        const over = setUp({ strips: NO_WIN_STRIPS, startingBalance: 0 });
         atRest.advance(1000);
-        over.advance(1000);
-        for (const chip of [atRest.music, atRest.sfx, over.music, over.sfx]) {
+        for (const chip of [atRest.music, atRest.sfx]) {
             expect(chip.play).not.toHaveBeenCalled();
             expect(chip.queue).not.toHaveBeenCalled();
             expect(chip.stop).not.toHaveBeenCalled();
@@ -141,6 +142,9 @@ const WAY_OF_3_STRIPS: readonly (readonly SymbolKind[])[] = [
     ['pic2', 'pic3', 'pic4'],
     ['pic5', 'pic6', 'pic2'],
 ];
+
+/** The machine's paytable, with the way on `WAY_OF_3_STRIPS` paying back exactly the bet: the smallest win celebrated. */
+const BET_BACK_PAYTABLE: Paytable = { ...PAYTABLE, pic1: { ...PAYTABLE.pic1, 3: BET } };
 
 /** One way wins. It is the first picture, on all five reels, and it pays a big win. */
 const WAY_OF_5_STRIPS: readonly (readonly SymbolKind[])[] = [

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-    BET, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, FIRST_SETTLE_MS, PAYTABLE, ROW_COUNT, SETTLE_MS,
-    SETTLE_STAGGER_MS, STARTING_BALANCE, STOPPING_SETTLE_MS, type SymbolKind,
+    BET, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, FIRST_SETTLE_MS, PAYTABLE, type Paytable, ROW_COUNT, SETTLE_MS,
+    SETTLE_STAGGER_MS, STOPPING_SETTLE_MS, type SymbolKind,
 } from '../data';
 import { createFruitMachineModel, type FruitMachineModel, type FruitMachineModelOptions } from './fruit-machine-model';
 
@@ -24,6 +24,12 @@ const ONE_WAY_STRIPS: readonly (readonly SymbolKind[])[] = [
     ['pic2', 'pic3', 'pic4'],
     ['pic5', 'pic6', 'pic2'],
 ];
+
+/** The machine's paytable, with the one way on `ONE_WAY_STRIPS` paying twice the bet: a win to celebrate. */
+const CELEBRATED_PAYTABLE: Paytable = { ...PAYTABLE, pic1: { ...PAYTABLE.pic1, 3: 2 * BET } };
+
+/** The machine's paytable, with the one way on `ONE_WAY_STRIPS` paying back less than the bet. */
+const SMALL_WIN_PAYTABLE: Paytable = { ...PAYTABLE, pic1: { ...PAYTABLE.pic1, 3: BET - 10 } };
 
 /** Strips that never win: no picture on the first reel is on the second. */
 const LOSING_STRIPS: readonly (readonly SymbolKind[])[] = [
@@ -63,12 +69,11 @@ async function hasResolved(promise: Promise<unknown>): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 describe('fruit machine model', () => {
-    it('starts idle, with its starting balance, ready to spin', () => {
+    it('starts idle, ready to spin', () => {
         const model = setup();
 
         expect(model.phase).toBe('idle');
-        expect(model.balance).toBe(STARTING_BALANCE);
-        expect(model.lastWin).toBe(0);
+        expect(model.lastPaid).toBe(0);
         expect(model.spinCount).toBe(0);
         expect(model.outcome).toBeUndefined();
         expect(model.canSpin).toBe(true);
@@ -93,13 +98,12 @@ describe('fruit machine model', () => {
     });
 
     describe('spinning', () => {
-        it('takes the bet and decides the result at once', () => {
+        it('decides the result at once', () => {
             const model = setup();
 
             void model.spin();
 
             expect(model.phase).toBe('spinning');
-            expect(model.balance).toBe(STARTING_BALANCE - BET);
             expect(model.spinCount).toBe(1);
             expect(model.outcome).toBeDefined();
             expect(model.reels.every((reel) => reel.phase === 'spinning')).toBe(true);
@@ -150,23 +154,23 @@ describe('fruit machine model', () => {
             void model.spin();
 
             advance(model, LANDED_MS - 10);
-            expect(model.lastWin).toBe(0);
+            expect(model.lastPaid).toBe(0);
 
             advance(model, 10);
             expect(model.outcome!.totalWin).toBe(PAYTABLE.pic1[3]);
-            expect(model.lastWin).toBe(PAYTABLE.pic1[3]);
-            expect(model.balance).toBe(STARTING_BALANCE - BET + PAYTABLE.pic1[3]);
+            expect(model.lastPaid).toBe(PAYTABLE.pic1[3]);
         });
 
         it('clears the last win at the start of the next spin', () => {
+            // A win smaller than the bet, so the machine goes straight back to idle
             const model = setup({ strips: ONE_WAY_STRIPS });
             void model.spin();
             advance(model, LANDED_MS);
-            model.stop();
+            expect(model.lastPaid).toBeGreaterThan(0);
 
             void model.spin();
 
-            expect(model.lastWin).toBe(0);
+            expect(model.lastPaid).toBe(0);
         });
     });
 
@@ -183,7 +187,7 @@ describe('fruit machine model', () => {
         });
 
         it('celebrates a win, then goes idle and resolves the spin', async () => {
-            const model = setup({ strips: ONE_WAY_STRIPS });
+            const model = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
             const spin = model.spin();
 
             advance(model, LANDED_MS);
@@ -198,11 +202,33 @@ describe('fruit machine model', () => {
             expect(model.phase).toBe('idle');
             expect(await hasResolved(spin)).toBe(true);
         });
+
+        it('celebrates a win of exactly the bet', () => {
+            const paytable = { ...PAYTABLE, pic1: { ...PAYTABLE.pic1, 3: BET } };
+            const model = setup({ strips: ONE_WAY_STRIPS, paytable });
+            void model.spin();
+
+            advance(model, LANDED_MS);
+
+            expect(model.phase).toBe('celebrating');
+        });
+
+        it('pays a win smaller than the bet quietly: it goes idle without celebrating', async () => {
+            const model = setup({ strips: ONE_WAY_STRIPS, paytable: SMALL_WIN_PAYTABLE });
+            const spin = model.spin();
+
+            advance(model, LANDED_MS);
+
+            expect(model.lastPaid).toBe(SMALL_WIN_PAYTABLE.pic1[3]);
+            expect(model.phase).toBe('idle');
+            expect(model.celebration.isActive).toBe(false);
+            expect(await spin).toBe(model.outcome);
+        });
     });
 
     describe('stopping', () => {
         it('lands a spin quickly, then pays and celebrates it as usual', async () => {
-            const model = setup({ strips: ONE_WAY_STRIPS });
+            const model = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
             const spin = model.spin();
             advance(model, 300);
 
@@ -213,7 +239,7 @@ describe('fruit machine model', () => {
             advance(model, STOPPING_SETTLE_MS);
             expect(model.reels.every((reel) => reel.phase === 'stopped')).toBe(true);
             expect(model.isStopping).toBe(false);
-            expect(model.lastWin).toBe(PAYTABLE.pic1[3]);
+            expect(model.lastPaid).toBe(CELEBRATED_PAYTABLE.pic1[3]);
             expect(model.phase).toBe('celebrating');
             expect(model.canStop).toBe(true);
             expect(await hasResolved(spin)).toBe(false);
@@ -224,7 +250,7 @@ describe('fruit machine model', () => {
         });
 
         it('takes a second stop to cut the celebration short', async () => {
-            const model = setup({ strips: ONE_WAY_STRIPS });
+            const model = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
             const spin = model.spin();
             model.stop();
             advance(model, STOPPING_SETTLE_MS);
@@ -259,21 +285,21 @@ describe('fruit machine model', () => {
         });
 
         it('ends a celebration at once, and resolves the spin', async () => {
-            const model = setup({ strips: ONE_WAY_STRIPS });
+            const model = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
             const spin = model.spin();
             advance(model, LANDED_MS);
-            const balance = model.balance;
+            const paid = model.lastPaid;
 
             model.stop();
 
             expect(model.phase).toBe('idle');
             expect(model.celebration.isActive).toBe(false);
-            expect(model.balance).toBe(balance);
+            expect(model.lastPaid).toBe(paid);
             expect(await hasResolved(spin)).toBe(true);
         });
 
         it('never starts a spin', () => {
-            const model = setup({ strips: ONE_WAY_STRIPS });
+            const model = setup({ strips: ONE_WAY_STRIPS, paytable: CELEBRATED_PAYTABLE });
             void model.spin();
             advance(model, LANDED_MS);
 
@@ -290,49 +316,48 @@ describe('fruit machine model', () => {
         });
     });
 
-    describe('game over', () => {
-        it('comes when the machine goes idle with less than a bet', async () => {
-            const model = setup({ strips: LOSING_STRIPS, startingBalance: BET });
-            const spin = model.spin();
+    describe('with nothing to run out of', () => {
+        it('spins for as long as you like, however little it pays', () => {
+            const model = setup({ strips: LOSING_STRIPS });
 
-            advance(model, LANDED_MS);
+            for (let spin = 0; spin < 100; spin++) {
+                void model.spin();
+                advance(model, LANDED_MS);
+                expect(model.phase).toBe('idle');
+            }
 
-            expect(model.phase).toBe('gameOver');
-            expect(model.canSpin).toBe(false);
-            expect(model.canStop).toBe(false);
-            expect(await spin).toBe(model.outcome);
+            expect(model.spinCount).toBe(100);
+            expect(model.canSpin).toBe(true);
+        });
+    });
+
+    describe('rigged spins', () => {
+        it('pay more than the bet every time, and are celebrated', () => {
+            const model = setup();
+
+            for (let spin = 0; spin < 50; spin++) {
+                void model.spin({ isRiggedToWin: true });
+                expect(model.outcome!.totalWin).toBeGreaterThan(BET);
+                advance(model, LANDED_MS);
+                expect(model.phase).toBe('celebrating');
+                model.stop();
+            }
         });
 
-        it('waits for the celebration to end', () => {
-            // The one way pays less than the bet, so the balance falls short of another spin
-            const paytable = { ...PAYTABLE, pic1: { 3: BET - 10, 4: BET, 5: BET } };
-            const model = setup({ strips: ONE_WAY_STRIPS, paytable, startingBalance: BET });
-            void model.spin();
+        it('play the same from the same seed', () => {
+            const a = setup({ seed: 99 });
+            const b = setup({ seed: 99 });
 
-            advance(model, LANDED_MS);
-            expect(model.phase).toBe('celebrating');
+            void a.spin({ isRiggedToWin: true });
+            void b.spin({ isRiggedToWin: true });
 
-            advance(model, CELEBRATION_OPENER_MS + CELEBRATION_STEP_MS);
-            expect(model.phase).toBe('gameOver');
+            expect(a.outcome).toEqual(b.outcome);
         });
 
-        it('is where a machine without a bet to start with begins', () => {
-            const model = setup({ startingBalance: BET - 1 });
+        it('are refused on strips that can never pay more than the bet', () => {
+            const model = setup({ strips: LOSING_STRIPS });
 
-            expect(model.phase).toBe('gameOver');
-            expect(model.canSpin).toBe(false);
-        });
-
-        it('lasts: nothing leaves it', () => {
-            const model = setup({ strips: LOSING_STRIPS, startingBalance: BET });
-            void model.spin();
-            advance(model, LANDED_MS);
-
-            advance(model, 10_000);
-
-            expect(model.phase).toBe('gameOver');
-            expect(() => model.spin()).toThrow();
-            expect(() => model.stop()).toThrow();
+            expect(() => model.spin({ isRiggedToWin: true })).toThrow();
         });
     });
 });

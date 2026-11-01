@@ -10,8 +10,10 @@ import type { MaterialKit } from './material-kit';
 
 export interface CreditDisplayViewBindings {
     readonly kit: MaterialKit;
-    readonly balance: () => number;
-    readonly win: () => number;
+    /** Fixed: the bet never changes. */
+    readonly bet: number;
+    /** What the last spin paid back, which may be less than the bet: not always a win. */
+    readonly paid: () => number;
     readonly y: number;
 }
 
@@ -19,7 +21,7 @@ export interface CreditDisplayViewBindings {
 // View
 // ---------------------------------------------------------------------------
 
-/** A little lit panel under the window showing the credits and the win, repainted when either changes. */
+/** A little lit panel under the window showing the bet and what the last spin paid, repainted when the payout changes. */
 export function CreditDisplayView(bindings: CreditDisplayViewBindings): Object3D {
     const { kit } = bindings;
     const canvas = document.createElement('canvas');
@@ -27,8 +29,8 @@ export function CreditDisplayView(bindings: CreditDisplayViewBindings): Object3D
     canvas.height = 64;
     const texture = kit.own(new CanvasTexture(canvas));
     texture.colorSpace = SRGBColorSpace;
-    let shownBalance = -1;
-    let shownWin = -1;
+    const betText = `BET ${formatCredits(bindings.bet)}`;
+    let shownPaid = -1;
 
     return (
         <mesh
@@ -41,11 +43,9 @@ export function CreditDisplayView(bindings: CreditDisplayViewBindings): Object3D
     );
 
     function repaint(): void {
-        const balance = bindings.balance();
-        const win = bindings.win();
-        if (balance === shownBalance && win === shownWin) return;
-        shownBalance = balance;
-        shownWin = win;
+        const paid = bindings.paid();
+        if (paid === shownPaid) return;
+        shownPaid = paid;
         const context = canvas.getContext('2d')!;
         context.fillStyle = DISPLAY_FACE;
         context.fillRect(0, 0, canvas.width, canvas.height);
@@ -53,9 +53,9 @@ export function CreditDisplayView(bindings: CreditDisplayViewBindings): Object3D
         context.font = '800 34px ui-monospace, "Cascadia Mono", Consolas, monospace';
         context.textBaseline = 'middle';
         context.textAlign = 'left';
-        context.fillText(`CREDITS ${formatCredits(balance)}`, 18, canvas.height / 2 + 2);
+        context.fillText(betText, 18, canvas.height / 2 + 2);
         context.textAlign = 'right';
-        context.fillText(`WIN ${formatCredits(win)}`, canvas.width - 18, canvas.height / 2 + 2);
+        context.fillText(`PAID ${formatCredits(paid)}`, canvas.width - 18, canvas.height / 2 + 2);
         texture.needsUpdate = true;
     }
 }
