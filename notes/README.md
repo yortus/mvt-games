@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**085**.
+**087** (085 is taken, by work in a worktree).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -106,7 +106,6 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 077 | [Audio90 Studio](./proposals/077-audio90-studio.md) | Proposed. An editor for `audio90`'s sounds and songs, built with MVT, as a private site at `/studio/` beside the playground, depending on `audio90` by its npm name. Four stages, each worth shipping: a sound designer for either chip (presets, sliders, randomise, mutate, export as code), an engine editor for the Audio90's engines with a scope and the keyboard as a piano, a tracker made from the Tune Tracker's views, and sharing (a song in a link, Open in Playground, WAV). Grown from 074 section 8 |
 | 080 | [The Audio80's voices inside the Audio90](./proposals/080-audio80-voices-in-the-audio90.md) | Proposed. One chip kind: the Audio90's voices 0-3 become the Audio80, run unchanged with its own output stage so its sounds stay byte-identical, and voices 4-15 stay Audio90 voices (4 + 12, since no song uses more than 10). Two stages first, each worth doing on its own: chips that rest while silent, and one meaning for each tracker token (`f` keeps brightness). Then songs of one kind, the Arcade's nine Audio80 entries moved, and the `Audio80` chip deprecated; mixed songs later |
 | 083 | [Tock, MVT for web apps](./proposals/083-tock-mvt-for-web-apps.md) | Proposed. A rival to React and Vue built on MVT: the same models, views and bindings, with an app ticker that ticks on demand (input, async results, models' deadlines, while animating) so an idle page costs nothing. Keyed lists with cleanup scopes, form bindings, async delivery, a router model, recording and replay; `@mvtjs/widgets` (a model and an accessible view per widget); a Tock site and a docs track; js-framework-benchmark plus our own suites against React, Vue, Solid and Svelte. Stage 0 is a spike with go or no-go hypotheses |
-| 084 | [Three sites, and themes for them](./proposals/084-three-sites-and-themes.md) | Implemented 2026-11-01, uncommitted: the split into arcade, demos and puzzles with a site-kit, flat tags, one dev server, and three themes (Arcade, Dark, Light; first named Studio and Paper) with a shared setting. Follow-ons in its section 15. Split the Arcade's package into `arcade` (games), `demos` and `puzzles` (Sudoku first), sharing a fourth package, `site-kit`, with the page app, entry host, shared views and build plugins. Then themes: Arcade (as now), Studio (dark, modern; the demos' own) and Paper (light, a newspaper's puzzle page; the puzzles' own), one setting for all three sites, Default meaning each site's own |
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
@@ -177,6 +176,7 @@ deleted.
 | 072 | [Update and Refresh Method Names](tasks/backlog/072-update-and-refresh-method-names.md) | low | 2026-10-15 |
 | 073 | [Models Take Their Random Source](tasks/backlog/073-models-take-their-random-source.md) | medium | 2026-10-15 |
 | 076 | [audio90: Gaps in the API](tasks/backlog/076-audio90-api-gaps.md) | low | 2026-10-29 |
+| 086 | [The Three Sites and Their Themes: Follow-Ons](tasks/backlog/086-site-and-theme-follow-ons.md) | low | 2026-11-01 |
 
 ## Archive
 
@@ -230,6 +230,7 @@ deleted.
 | 074 | [Proposal: audio90, a standalone sound package](archive/074-audio90-standalone-package.md) (`@mvtjs/chiptune` published as `audio90` 0.8.0, versioned on its own like v-snap and easy to move to a repository of its own: one clock, the sound card's, with chips paused by their host; sounds in place of instruments and sound effects; the chip as one object that plays songs itself, with no music player; a chip each for music and sound effects; repeat, pitch, fades, `stereoWidth`, `onRow` and `onEnded`; songs started part way and `positionMs`; song text; neutral docs, with the MVT material on the Sound and Music page; its own tests, reference sounds and CONTRIBUTING. The Studio moved to 077, and the gaps to task 076) | 2026-10-29 |
 | 078 | [Proposal: `watch` without polling](archive/078-watch-without-polling.md) (superseded by task 079, before it was built) | 2026-10-25 |
 | 079 | [`watch`, Reactions and Computed Values](archive/079-watch-reactions-and-computed-values/task.md) (`watch` rebuilt, with `createReaction` and `createComputed` beside it, in `packages/libraries/utils/src/watch-api/`; `memoiseLast` removed and `createSequenceReaction` renamed `createSequenceTracker`; every call site migrated, with reactions named for their effect and trigger; four lint rules; a record watch as fast as before; the docs rewritten, with a new Computed Values page; changesets for a breaking release) | 2026-10-30 |
+| 084 | [Proposal: three sites, and themes for them](archive/084-three-sites-and-themes.md) (the Arcade split into `packages/sites/arcade/` (its games), `demos/` and `puzzles/`, sharing `packages/sites/site-kit/`; one flat list of tags; one dev server for everything; three themes, Arcade, Dark and Light, one setting for every site, with each site's own as the default. Follow-ons in task 086) | 2026-11-01 |
 
 ## Elsewhere
 

@@ -12,10 +12,10 @@
 > wears its own theme (the arcade Arcade, the demos Dark, the puzzles
 > Light), or one of the three, worn by all of them.
 
-**Status:** implemented, uncommitted in the main checkout (2026-11-01).
-Part A (the split, the flat tags, the one dev server) and Part B (the
-themes, Arcade, Studio and Paper) are done. Follow-ons are listed at the end
-of section 15.
+**Status:** done, and archived (2026-11-01). Part A (the split, the flat
+tags, the one dev server) and Part B (the themes, Arcade, Dark and Light)
+are committed (`cef7d811`, `f9ea449f`). The follow-ons are in task
+[086](../tasks/backlog/086-site-and-theme-follow-ons.md).
 
 **Written:** 2026-11-01, on `vnext` at `adba8e48`, against
 `packages/sites/arcade/` as it is that day: 24 entries, 188 colour literals
@@ -23,7 +23,7 @@ in `arcade.css`, the dev servers in `scripts/run-dev-servers.ts`, the build
 in `vite.config.ts` and `.github/workflows/deploy.yml`.
 
 **Related:**
-[the Arcade's page](../../packages/sites/arcade/src/arcade/README.md),
+[the page, now the site kit's](../../packages/sites/site-kit/src/arcade/README.md),
 [Adding an Entry](../../packages/sites/arcade/src/entries/README.md),
 [the playground's themes](../../packages/sites/playground/src/views/themes.ts)
 (the one precedent in the repo, written to the page from TypeScript),
@@ -701,3 +701,7 @@ are outlined the same way, in the card's Arcade colour at half
 brightness, filled with its card's wash. Both outlines then thickened: the
 stroke 3.6px at the design size, at least 3px, so 1.8px shows (at least
 1.5px).
+
+**2026-11-01, archived.** Committed in `f9ea449f`. What section 15 left
+open, and section 13's questions 4 and 5, moved to task
+[086](../tasks/backlog/086-site-and-theme-follow-ons.md).
