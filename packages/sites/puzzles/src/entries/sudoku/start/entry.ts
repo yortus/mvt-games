@@ -9,7 +9,7 @@ import thumbnail from './thumbnail.webp';
 export const entry: ArcadeEntry = {
     id: 'sudoku',
     name: 'Sudoku',
-    summary: 'A new Sudoku puzzle every day, at five levels, with notes that can link cells: a pair across two cells shows as one note.',
+    summary: 'A new Sudoku puzzle every day, at four levels, with notes that can link cells: a pair across two cells shows as one note.',
     tags: ['puzzle'],
     screenWidth: 540,
     screenHeight: 768,

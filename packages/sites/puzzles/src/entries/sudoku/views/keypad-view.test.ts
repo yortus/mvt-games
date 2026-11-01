@@ -5,7 +5,7 @@ import { loadSudokuGenerator } from '../generator';
 import { createPuzzleModel } from '../models';
 import { KeypadView } from './keypad-view';
 
-// The keypad is wired to a real puzzle, as the puzzle's screen wires it, and its keys are tapped.
+// The keypad is wired to a real puzzle, as the puzzle's screen wires it, and its keys are pressed, then let go or held.
 
 const generateSudoku = await loadSudokuGenerator();
 const { givens, solution } = generateSudoku({ seed: 1, level: 'easy' });
@@ -13,37 +13,51 @@ const { givens, solution } = generateSudoku({ seed: 1, level: 'easy' });
 const CELL = givens.findIndex((digit, cell) => digit === 0 && cell % 9 < 8 && givens[cell + 1] === 0);
 
 describe('KeypadView', () => {
-    it('fills the one cell selected on a double tap of a key, leaving no mark from the first tap', () => {
-        const { puzzle, tapKey, tick } = setUp();
-        puzzle.select([CELL]);
-        tapKey(solution[CELL]);
-        tick(100);
-        tapKey(solution[CELL]);
-        expect(puzzle.digitAt(CELL)).toBe(solution[CELL]);
-        expect(puzzle.marksAt(CELL)).toBe(0);
-        // The fill is the only action left to undo
-        expect(puzzle.undoCount).toBe(1);
-    });
-
-    it('pencils a mark in and out with two taps too far apart to be a double tap', () => {
-        const { puzzle, tapKey, tick } = setUp();
+    it('pencils a mark in and out with a tap', () => {
+        const { puzzle, tapKey } = setUp();
         puzzle.select([CELL]);
         tapKey(4);
         expect(puzzle.marksAt(CELL)).toBe(1 << 4);
-        tick(500);
         tapKey(4);
         expect(puzzle.marksAt(CELL)).toBe(0);
         expect(puzzle.digitAt(CELL)).toBe(0);
     });
 
-    it('fills nothing on a double tap while several cells are selected, but notes the digit for them and takes it out again', () => {
-        const { puzzle, tapKey, tick } = setUp();
-        puzzle.select([CELL, CELL + 1]);
-        tapKey(4);
-        tick(100);
-        tapKey(4);
+    it('fills the one cell selected as a key is held, leaving no mark, and does nothing more as it is let go', () => {
+        const { puzzle, holdKey } = setUp();
+        puzzle.select([CELL]);
+        holdKey(solution[CELL]);
+        expect(puzzle.digitAt(CELL)).toBe(solution[CELL]);
+        expect(puzzle.marksAt(CELL)).toBe(0);
+        expect(puzzle.undoCount).toBe(1);
+    });
+
+    it('takes a press let go before it is held long enough for a tap', () => {
+        const { puzzle, keyOf, tick } = setUp();
+        puzzle.select([CELL]);
+        keyOf(4).emit('pointerdown', {} as FederatedPointerEvent);
+        tick(200);
+        keyOf(4).emit('pointerup', {} as FederatedPointerEvent);
         expect(puzzle.digitAt(CELL)).toBe(0);
-        expect(puzzle.groupNotes).toEqual([]);
+        expect(puzzle.marksAt(CELL)).toBe(1 << 4);
+    });
+
+    it('fills nothing as a key is held while several cells are selected, but notes the digit for them as it is let go', () => {
+        const { puzzle, holdKey } = setUp();
+        puzzle.select([CELL, CELL + 1]);
+        holdKey(4);
+        expect(puzzle.digitAt(CELL)).toBe(0);
+        expect(puzzle.groupNotes.length).toBe(1);
+    });
+
+    it('drops a press that slides off its key', () => {
+        const { puzzle, keyOf, tick } = setUp();
+        puzzle.select([CELL]);
+        keyOf(4).emit('pointerdown', {} as FederatedPointerEvent);
+        keyOf(4).emit('pointerupoutside', {} as FederatedPointerEvent);
+        tick(600);
+        expect(puzzle.digitAt(CELL)).toBe(0);
+        expect(puzzle.marksAt(CELL)).toBe(0);
     });
 });
 
@@ -51,21 +65,26 @@ function setUp() {
     const puzzle = createPuzzleModel({ givens, solution });
     const keypad = KeypadView({
         digits: () => puzzle.selectionDigits,
-        isEnabled: () => puzzle.canNoteSelection,
+        isEnabled: () => puzzle.canNoteSelection || puzzle.selection.length === 1,
         canFill: () => puzzle.selection.length === 1,
-        changes: () => puzzle.changes,
-        onPressed: puzzle.toggleNote,
-        onDoubleTapped: (digit) => puzzle.fillCell(puzzle.selection[0], digit),
-        onTapTakenBack: puzzle.undo,
+        onTapped: puzzle.toggleNote,
+        onHeld: (digit) => puzzle.fillCell(puzzle.selection[0], digit),
     });
-    const tick = (deltaMs = 16): void => {
-        updateView(keypad, deltaMs);
+    const tick = (ms = 16): void => {
+        for (let left = ms; left > 0; left -= 16) updateView(keypad, Math.min(16, left));
         refreshView(keypad);
     };
+    const keyOf = (digit: number): Container => keypad.children[digit - 1] as Container;
     const tapKey = (digit: number): void => {
-        const key = keypad.children[digit - 1] as Container;
-        key.emit('pointertap', {} as FederatedPointerEvent);
+        keyOf(digit).emit('pointerdown', {} as FederatedPointerEvent);
+        tick(50);
+        keyOf(digit).emit('pointerup', {} as FederatedPointerEvent);
+    };
+    const holdKey = (digit: number): void => {
+        keyOf(digit).emit('pointerdown', {} as FederatedPointerEvent);
+        tick(600);
+        keyOf(digit).emit('pointerup', {} as FederatedPointerEvent);
     };
     tick();
-    return { puzzle, tapKey, tick };
+    return { puzzle, keyOf, tick, tapKey, holdKey };
 }

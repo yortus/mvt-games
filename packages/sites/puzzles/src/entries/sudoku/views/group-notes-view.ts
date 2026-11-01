@@ -1,8 +1,9 @@
 import { Container, Graphics, Text, type TextStyleOptions } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
+import { CARD_COLOR, FONT_FAMILY } from '../../../shared';
 import { hasDigit } from '../generator';
 import { GROUP_NOTE_LABEL_HEIGHT, type GroupNoteLayout, type GroupNoteLine } from './group-note-layout';
-import { CARD_COLOR, CELL_SIZE, FONT_FAMILY, GROUP_COLORS } from './view-constants';
+import { CELL_SIZE, GROUP_COLORS } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings

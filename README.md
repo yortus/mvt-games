@@ -33,7 +33,8 @@ MVT too, in HTML.
 | Fruit Machine    | One model, four views: Pixi, three.js, an HTML panel, a terminal  |
 | Reordering Lists | Rows of cards sliding into place as a script reorders them        |
 
-The Puzzles has Sudoku, a puzzle a day, so far.
+The Puzzles has two games of daily puzzles so far: Sudoku, and Minotaur, in
+which you build a maze from clues on its walls.
 
 Each game, demo and puzzle is an **entry**: a self-contained module under
 `packages/sites/<site>/src/entries/<id>/` with its own data, models, and views,

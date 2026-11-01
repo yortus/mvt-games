@@ -34,19 +34,25 @@ export interface PuzzleModel {
     readonly marksAt: (cell: number) => number;
     /** The group notes, oldest first. None holds a filled cell. The list is replaced, never changed, so a view can tell when it changes. */
     readonly groupNotes: readonly GroupNote[];
-    /** The cells selected for notes, in order: none, one, or several. Only empty cells can be selected. */
+    /**
+     * The cells selected, in order: none, one, or several. Several are all
+     * empty, for notes. One can be empty, for notes, or filled in by the
+     * player, to change or clear. A given is never selected.
+     */
     readonly selection: readonly number[];
     readonly isSelectedAt: (cell: number) => boolean;
     /**
-     * Whether notes can be made for the selection: it is one cell, or
+     * Whether notes can be made for the selection: it is one empty cell, or
      * several that share a row, a column or a box, and the puzzle is not
      * solved.
      */
     readonly canNoteSelection: boolean;
-    /** The digits noted for the selection, as a set: the one cell's pencil marks, or the group note of exactly those cells. */
+    /**
+     * The digits of the selection, as a set: the one cell's pencil marks, or
+     * its digit if it is filled in, or the group note of exactly the cells
+     * selected.
+     */
     readonly selectionDigits: number;
-    /** The cell whose number is being chosen, or -1. */
-    readonly pickerCell: number;
     /** Whether every cell holds its solution's digit. */
     readonly isSolved: boolean;
     /** How many actions undo can take back. */
@@ -60,7 +66,11 @@ export interface PuzzleModel {
     /** The cell filled in or emptied last, or -1. */
     readonly lastFilledCell: number;
 
-    /** Selects `cells` for notes, leaving out any that are not empty. */
+    /**
+     * Selects `cells`: one cell that the player filled in, to change or
+     * clear, or else the empty ones among them, for notes. A given is never
+     * selected.
+     */
     select: (cells: readonly number[]) => void;
     /**
      * Notes `digit` for the selection, or takes it out if it is there: a
@@ -68,19 +78,17 @@ export interface PuzzleModel {
      * group note with no digits left is gone.
      */
     toggleNote: (digit: number) => void;
-    /** Opens the choice of a number for `cell`, unless it is given. */
-    openPicker: (cell: number) => void;
-    closePicker: () => void;
     /**
-     * Fills `digit` into the picker's cell, or empties it for 0, and closes
-     * the picker. Either way, the cell's marks go. A filled cell belongs to
-     * no group note, so each note that holds it shrinks to leave it out, and
-     * gives up the digit too, if it holds it. Left with no digits, a note is
-     * gone, and left with one cell, its digits become pencil marks there.
+     * Fills `digit` into `cell`, unless it is given, in place of any digit
+     * there. Its marks go. A filled cell belongs to no group note, so each
+     * note that holds it shrinks to leave it out, and gives up the digit too,
+     * if it holds it. Left with no digits, a note is gone, and left with one
+     * cell, its digits become pencil marks there. A cell selected alone stays
+     * selected, so it can be changed again.
      */
-    fillIn: (digit: number) => void;
-    /** Fills `digit` into `cell`, as `fillIn` does, without the picker. For filling the one cell selected. */
     fillCell: (cell: number, digit: number) => void;
+    /** Empties `cell`, unless it is given. */
+    clearCell: (cell: number) => void;
     /** Takes back the last action. */
     undo: () => void;
     /** Returns the puzzle as it stands, to be restored later through the options' `saved`. */
@@ -125,7 +133,6 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     let selectionNote: GroupNote | undefined;
     const clashes = new Uint8Array(CELL_COUNT);
 
-    let pickerCell = -1;
     let isSolved = false;
     let changes = 0;
     let answersPlaced = 0;
@@ -147,8 +154,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         get selection() { return selection; },
         isSelectedAt: (cell) => selection.includes(cell),
         get canNoteSelection() { return canNoteSelection(); },
-        get selectionDigits() { return selection.length === 1 ? marks[selection[0]] : selectionNote?.digits ?? 0; },
-        get pickerCell() { return pickerCell; },
+        get selectionDigits() { return findSelectionDigits(); },
         get isSolved() { return isSolved; },
         get undoCount() { return history.count; },
         get changes() { return changes; },
@@ -157,20 +163,21 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         get undosDone() { return undosDone; },
         get lastFilledCell() { return lastFilledCell; },
         select(cells) {
-            if (pickerCell >= 0) return;
+            if (cells.length === 1 && isAnswerAt(cells[0])) {
+                selectCells([cells[0]]);
+                return;
+            }
             const empty = cells.filter((cell, i) => digits[cell] === 0 && cells.indexOf(cell) === i);
             selectCells(empty.sort((a, b) => a - b));
         },
         toggleNote,
-        openPicker(cell) {
-            if (isSolved || isBusy() || givens[cell] !== 0) return;
-            pickerCell = cell;
-        },
-        closePicker() { pickerCell = -1; },
-        fillIn,
         fillCell(cell, digit) {
-            if (isSolved || isBusy() || givens[cell] !== 0) return;
+            if (isSolved || givens[cell] !== 0) return;
             fill(cell, digit);
+        },
+        clearCell(cell) {
+            if (isSolved || givens[cell] !== 0) return;
+            fill(cell, 0);
         },
         undo,
         save: () => writePuzzleSave({ givens, digits, marks, groupNotes }),
@@ -180,7 +187,18 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     // --- Marks and group notes ---
 
     function canNoteSelection(): boolean {
-        return !isSolved && isSelectionOneUnit;
+        return !isSolved && isSelectionOneUnit && !(selection.length === 1 && digits[selection[0]] !== 0);
+    }
+
+    /** The one cell's digit, if it is filled in, or its pencil marks, or the group note of exactly the cells selected. */
+    function findSelectionDigits(): number {
+        if (selection.length !== 1) return selectionNote?.digits ?? 0;
+        return digits[selection[0]] !== 0 ? toDigitSet(digits[selection[0]]) : marks[selection[0]];
+    }
+
+    /** Whether `cell` holds a digit the player filled in. */
+    function isAnswerAt(cell: number): boolean {
+        return givens[cell] === 0 && digits[cell] !== 0;
     }
 
     function selectCells(cells: readonly number[]): void {
@@ -195,7 +213,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     }
 
     function toggleNote(digit: number): void {
-        if (isBusy() || !canNoteSelection()) return;
+        if (!canNoteSelection()) return;
         history.start();
         if (selection.length === 1) {
             history.keepCell(selection[0]);
@@ -212,13 +230,6 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
 
     // --- Answers ---
 
-    function fillIn(digit: number): void {
-        const cell = pickerCell;
-        if (cell < 0) return;
-        pickerCell = -1;
-        fill(cell, digit);
-    }
-
     /**
      * Fills `digit` into `cell`, or empties it for 0. Its marks go. A filled
      * cell belongs to no group note, so each note that holds it shrinks, and
@@ -232,7 +243,8 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         lastFilledCell = cell;
         marks[cell] = 0;
         if (digit !== 0) {
-            selectCells(selection.filter((each) => each !== cell));
+            // Several cells selected are for notes, which a filled cell is not; one alone stays, to be changed
+            if (selection.length > 1) selectCells(selection.filter((each) => each !== cell));
             const shrunk = shrinkGroupNotes(groupNotes, cell, digit, pencilInLeftOver);
             if (shrunk !== groupNotes) {
                 history.keepGroupNotes(groupNotes);
@@ -254,12 +266,12 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     }
 
     function undo(): void {
-        if (isSolved || isBusy()) return;
+        if (isSolved) return;
         const notesBefore = history.undo(groupNotes);
         if (notesBefore === undefined) return;
         replaceGroupNotes(notesBefore);
-        // A cell filled in again can't stay selected
-        selectCells(selection.filter((cell) => digits[cell] === 0));
+        // Several cells selected are for notes, so a cell filled in again leaves them
+        if (selection.length > 1) selectCells(selection.filter((cell) => digits[cell] === 0));
         findClashes();
         isSolved = checkSolved();
         undosDone++;
@@ -268,11 +280,6 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
 
     function finishAction(): void {
         if (history.finish()) changes++;
-    }
-
-    /** Whether the picker is open, which leaves no room for another action. */
-    function isBusy(): boolean {
-        return pickerCell >= 0;
     }
 
     // --- The rules ---

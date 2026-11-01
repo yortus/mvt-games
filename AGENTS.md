@@ -78,7 +78,11 @@ packages/sites/site-kit/src/       Imported by the sites as @mvtjs/site-kit/<fol
 The demos also hold `src/tunes/`, the Audio90 tunes the Tune Tracker plays
 (`#tunes`). Sudoku's puzzle maker and grid are in
 `packages/sites/puzzles/src/entries/sudoku/generator/`, which Sudoku Digger, a
-demo, imports as `@mvtjs/puzzles/sudoku-generator`.
+demo, imports as `@mvtjs/puzzles/sudoku-generator`. The puzzles' games
+share `packages/sites/puzzles/src/shared/`: day numbers, the records kept in
+the browser, the calendar, and the way in (a How to play card and a
+walkthrough on a practice puzzle, with an arrow), as models and views. See
+[A Puzzle's Day and Its Way In](packages/sites/arcade/src/entries/README.md#a-puzzles-day-and-its-way-in).
 
 Visual tests are in a `visual-tests/` folder beside the views they test, one
 `<view file's name>.test.tsx` for each view, and declare `canvasTest` or

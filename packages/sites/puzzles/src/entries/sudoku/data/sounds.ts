@@ -5,18 +5,6 @@ import { createAudio90Sound } from 'audio90';
 // quiet. A digit placed is played at its own note, chosen by the audio
 // view, so each digit has a voice of its own.
 
-/** The picker opening on a cell: a light, dry tick, like a pencil tapped on the table. */
-export const OPENED = createAudio90Sound({
-    oscillator: { wave: 'triangle' },
-    filter: { mode: 'lowpass12', cutoffHz: 3000 },
-    envelope: { attackMs: 0, decayMs: 25, sustain: 0, releaseMs: 10 },
-    note: 'E-6',
-    glideTo: 'B-5',
-    lengthMs: 25,
-    priority: 1,
-    volume: 2.2,
-});
-
 /** A digit written in: a warm wooden knock, at the digit's note. */
 export const PLACED = createAudio90Sound({
     engine: 'fm',

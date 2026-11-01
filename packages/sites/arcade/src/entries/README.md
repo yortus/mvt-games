@@ -762,6 +762,58 @@ game's start, so it saves nothing. Astrovoid is the simplest example. Its
 Fenceline also saves the state of its random numbers as the round began, so
 a resumed round is laid out as it was, and leaving cannot deal a new one.
 
+## A Puzzle's Day and Its Way In
+
+Every game on the puzzles site has a puzzle for each day, at each of its
+levels. Every one also has the same way in: a card that says how to play,
+and a walkthrough on a practice puzzle. The parts they share are in
+`packages/sites/puzzles/src/shared/`. Sudoku and Minotaur both use them, so
+look at either for a whole example.
+
+**The levels.** Every puzzle has the same four levels: Easy, Medium, Hard
+and Expert, as `PUZZLE_LEVELS`, with their names in `LEVEL_NAMES`. So a
+player knows what to expect from each, whichever game they open. Decide
+what each level means for your puzzles, such as their size or the
+reasoning they take. A puzzle maker with levels of its own maps the four
+onto them, as Sudoku does onto Sudoku Digger's five.
+
+**The day.** Make the game's records with `createDailyRecords`, under the
+game's id. Then make its calendar with `createDailyCalendar`, and show it
+with `CalendarView`. A puzzle's seed comes from its day and its level, so
+every player gets the same puzzle on the same day.
+
+**The text.** Write how to play once, in `start/how-to-play.ts`, as a
+`HowToPlayText`: the rules, a short paragraph each, then the controls for
+playing a puzzle, then notes for the info panel. `details.ts` builds its
+`howToPlay` from it, and the card in the game shows it too. So the two
+never disagree. Keep the file plain data, because the details load after
+the page's first paint, and must not pull in Pixi.
+
+**The walkthrough.** Its steps are data. Each step has a name, the text its
+card shows, a check for whether the player has done it, and a way to find
+its demo on the practice puzzle as it stands. A demo is a list of touches:
+taps, double taps, holds and drags. Each touch is on targets of your game's own
+kind, such as a cell or a key. The last step asks nothing, and never
+counts as done. Make the demos follow the puzzle's solution, so that what
+the arrow shows is right.
+
+**The model.** Give the game model an `intro`, made with `createIntroModel`
+from the records, a way to make a practice puzzle, and the walkthrough.
+Call `intro.showCardIfNew()` as the model is made, so the card shows over
+the calendar the first time the game opens. While a walkthrough plays, the
+game's `puzzle` is the practice puzzle, and it is never kept. Its `phase`
+is `playing` then, even for a walkthrough started from the calendar, so
+the walkthrough plays on the puzzle's screen. As it ends, the player is
+back where they started.
+
+**The screen.** Put a **How to play** button beside Undo, which shows the
+card. Then put `IntroView` last in the game's whole screen, over the
+calendar and the puzzle's screen alike. Give it a small example of the
+game, drawn by your own board view to fit `EXAMPLE_SIZE`, and a function
+that finds where each target is on the puzzle's screen, for the arrow.
+Everything the player sees of the way in is then laid out the same in
+every game.
+
 ## Checklist
 
 - `data/` has constants in domain units (not pixels)
@@ -788,4 +840,5 @@ a resumed round is laid out as it was, and leaving cannot deal a new one.
 - A game with a score reports it as `scoring`, says `hasHighscores: true`,
   and has a table in `GAMES` (see [Keeping Highscores](#keeping-highscores))
 - A game that can be resumed gives `saveGame` and `loadGame` (see [Saving a Game](#saving-a-game))
+- A puzzle has a puzzle a day, its text in `start/how-to-play.ts`, and the shared way in: a How to play button and `IntroView` (see [A Puzzle's Day and Its Way In](#a-puzzles-day-and-its-way-in))
 - The title, characters, art, levels and sounds are the entry's own (see [Originality](#originality))

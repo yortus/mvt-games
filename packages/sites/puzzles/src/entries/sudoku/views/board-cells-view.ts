@@ -1,10 +1,9 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
+import { CARD_COLOR, CLASH_CELL_COLOR, SOLVED_GLOW_COLOR } from '../../../shared';
 import { CELL_COUNT, COLUMN_OF, mixColors, ROW_OF } from '../generator';
-import {
-    CARD_COLOR, CELL_SIZE, CLASH_CELL_COLOR, GIVEN_CELL_COLOR, PICKING_CELL_COLOR, SELECTED_CELL_COLOR, SOLVED_GLOW_COLOR,
-} from './view-constants';
+import { CELL_SIZE, GIVEN_CELL_COLOR, SELECTED_CELL_COLOR } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -16,10 +15,8 @@ export interface BoardCellsViewBindings {
     isGivenAt: (cell: number) => boolean;
     /** Whether the digit in `cell` breaks a rule. */
     isClashAt: (cell: number) => boolean;
-    /** The cells selected for notes. */
+    /** The cells selected. */
     selection: () => readonly number[];
-    /** The cell whose number is being chosen, or -1. */
-    pickerCell: () => number;
     /** Whether the puzzle is solved. As it becomes solved, a glow ripples out from the grid's middle. */
     isSolved: () => boolean;
     /** A count that rises as each puzzle opens. A puzzle opened already solved has no glow. */
@@ -62,12 +59,11 @@ export function BoardCellsView(bindings: BoardCellsViewBindings): Container {
     }
 
     function refresh(): void {
-        const pickerCell = bindings.pickerCell();
         const selection = bindings.selection();
         for (let cell = 0; cell < CELL_COUNT; cell++) {
             const isGiven = bindings.isGivenAt(cell);
             const isClash = bindings.digitAt(cell) !== 0 && bindings.isClashAt(cell);
-            cells[cell].tint = mixColors(findCellColor(cell, pickerCell, selection, isGiven, isClash), SOLVED_GLOW_COLOR, glowAt(cell));
+            cells[cell].tint = mixColors(findCellColor(cell, selection, isGiven, isClash), SOLVED_GLOW_COLOR, glowAt(cell));
         }
     }
 
@@ -89,8 +85,7 @@ const GLOW_STEP_MS = 70;
 const GLOW_FLASH_MS = 450;
 const GLOW_DONE_MS = GLOW_STEP_MS * 6 + GLOW_FLASH_MS;
 
-function findCellColor(cell: number, pickerCell: number, selection: readonly number[], isGiven: boolean, isClash: boolean): number {
-    if (cell === pickerCell) return PICKING_CELL_COLOR;
+function findCellColor(cell: number, selection: readonly number[], isGiven: boolean, isClash: boolean): number {
     if (selection.includes(cell)) return SELECTED_CELL_COLOR;
     if (isClash && !isGiven) return CLASH_CELL_COLOR;
     return isGiven ? GIVEN_CELL_COLOR : CARD_COLOR;

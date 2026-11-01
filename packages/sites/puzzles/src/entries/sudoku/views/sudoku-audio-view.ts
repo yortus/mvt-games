@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
 import type { SfxChip } from '@mvtjs/site-kit/shared';
-import { CLASHED, OPENED, PLACED, SOLVED, UNDONE } from '../data';
+import { CLASHED, PLACED, SOLVED, UNDONE } from '../data';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -12,8 +12,6 @@ import { CLASHED, OPENED, PLACED, SOLVED, UNDONE } from '../data';
 export interface SudokuAudioViewBindings {
     /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
     readonly sfx: SfxChip<'audio90'>;
-    /** The cell a number is being chosen for, or -1. The picker ticks as it opens. */
-    readonly pickerCell: () => number;
     /** Digits filled in, and those that broke a rule as they went in, in the open puzzle. */
     readonly answersPlaced: () => number;
     readonly clashesMade: () => number;
@@ -31,19 +29,17 @@ export interface SudokuAudioViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Plays the game's sounds, on the Audio90. The picker ticks as it opens.
- * Each digit filled in knocks at its own note on a pentatonic scale, from
- * where its cell is across the grid, and one that breaks a rule knocks low,
- * twice. Undo blips, and a solved puzzle chimes. Notes are silent, as a
- * pencil is. A double tap on a digit's key takes back what its first tap
- * made, and that undo is not heard.
+ * Plays the game's sounds, on the Audio90. Each digit filled in knocks at
+ * its own note on a pentatonic scale, from where its cell is across the
+ * grid, and one that breaks a rule knocks low, twice. Undo blips, and a
+ * solved puzzle chimes. Notes are silent, as a pencil is, and so is a cell
+ * cleared.
  */
 export function SudokuAudioView(bindings: SudokuAudioViewBindings): Container {
     const { sfx } = bindings;
     const view = new Container();
     view.label = 'sudoku-audio';
     const watcher = watch({
-        pickerCell: bindings.pickerCell,
         placed: bindings.answersPlaced,
         clashes: bindings.clashesMade,
         undos: bindings.undosDone,
@@ -55,11 +51,9 @@ export function SudokuAudioView(bindings: SudokuAudioViewBindings): Container {
 
     function refresh(): void {
         const w = watcher.poll();
-        const isPickerOpened = w.pickerCell.changed && w.pickerCell.current >= 0;
-        if (isPickerOpened) sfx.play(OPENED, { pan: toPan(w.pickerCell.current) });
         if (w.clashes.increased) sfx.play(CLASHED, { pan: toPan(bindings.filledCell()) });
         else if (w.placed.increased) sfx.play(PLACED, { note: PLACED_ROOT + toPentatonic(bindings.filledDigit()), pan: toPan(bindings.filledCell()) });
-        if (w.undos.increased && !isPickerOpened && !w.placed.increased && !w.clashes.increased) sfx.play(UNDONE);
+        if (w.undos.increased) sfx.play(UNDONE);
         if (w.solved.increased) sfx.play(SOLVED);
     }
 }

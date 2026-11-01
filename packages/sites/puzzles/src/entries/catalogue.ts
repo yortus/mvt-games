@@ -1,4 +1,5 @@
 import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
+import { entry as minotaurEntry } from './minotaur';
 import { entry as sudokuEntry } from './sudoku';
 
 // ---------------------------------------------------------------------------
@@ -11,6 +12,7 @@ import { entry as sudokuEntry } from './sudoku';
  */
 export const CATALOGUE: readonly ArcadeEntry[] = [
     sudokuEntry,
+    minotaurEntry,
 ];
 
 /** The entry with `id`, if there is one. */

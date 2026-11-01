@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**087** (085 is taken, by work in a worktree).
+**089** (085 is taken, by work in a worktree).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -153,6 +153,7 @@ deleted.
 | --- | --- | --- | --- |
 | 081 | [Sudoku Digger, a Demo of Making Sudoku Puzzles](tasks/active/081-sudoku-digger-demo.md) | medium | 2026-10-30 |
 | 082 | [Sudoku, a Game of Daily Puzzles with Doodled Notes](tasks/active/082-sudoku-daily-game.md) | medium | 2026-10-30 |
+| 088 | [One Way In for Every Puzzle](tasks/active/088-puzzle-way-in.md) | medium | 2026-11-01 |
 
 ### Backlog
 
@@ -231,6 +232,7 @@ deleted.
 | 078 | [Proposal: `watch` without polling](archive/078-watch-without-polling.md) (superseded by task 079, before it was built) | 2026-10-25 |
 | 079 | [`watch`, Reactions and Computed Values](archive/079-watch-reactions-and-computed-values/task.md) (`watch` rebuilt, with `createReaction` and `createComputed` beside it, in `packages/libraries/utils/src/watch-api/`; `memoiseLast` removed and `createSequenceReaction` renamed `createSequenceTracker`; every call site migrated, with reactions named for their effect and trigger; four lint rules; a record watch as fast as before; the docs rewritten, with a new Computed Values page; changesets for a breaking release) | 2026-10-30 |
 | 084 | [Proposal: three sites, and themes for them](archive/084-three-sites-and-themes.md) (the Arcade split into `packages/sites/arcade/` (its games), `demos/` and `puzzles/`, sharing `packages/sites/site-kit/`; one flat list of tags; one dev server for everything; three themes, Arcade, Dark and Light, one setting for every site, with each site's own as the default. Follow-ons in task 086) | 2026-11-01 |
+| 087 | [Proposal: a wall maze puzzle for the puzzles site](archive/087-wall-maze-puzzle.md) (Minotaur, a maze to build each day, from wall-length clues: the genre known as Build a Maze or Labyrinth; playtested) | 2026-11-01 |
 
 ## Elsewhere
 

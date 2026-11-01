@@ -1,10 +1,11 @@
 import { Container, Graphics } from 'pixi.js';
 import { advanceTime } from '@mvtjs/pixi';
 import { canvasTest } from 'v-snap';
+import { PAPER_COLOR } from '../../../../shared';
 import { loadSudokuGenerator } from '../../generator';
 import { createPuzzleModel, type PuzzleModel } from '../../models';
 import { BoardView } from '../board-view';
-import { GRID_SIZE, PAPER_COLOR } from '../view-constants';
+import { GRID_SIZE } from '../view-constants';
 
 // The board is wired to a real puzzle, which is played in through the model.
 
@@ -50,21 +51,17 @@ canvasTest('a group note across filled cells, clear of their digits', SIZE, () =
 canvasTest('a pair note turned into a pencil mark, as one of its digits is filled in', SIZE, () => pose((puzzle) => {
     const touching = EMPTY_CELLS.find((cell) => cell % 9 < 8 && EMPTY_CELLS.includes(cell + 1)) ?? -1;
     note(puzzle, [touching, touching + 1], [solution[touching], solution[touching + 1]]);
-    puzzle.openPicker(touching);
-    puzzle.fillIn(solution[touching]);
+    puzzle.fillCell(touching, solution[touching]);
 }));
 
 canvasTest('cells selected for notes, highlighted', SIZE, () => pose((puzzle) => puzzle.select(EMPTY_CELLS.slice(0, 3))));
-
-canvasTest('a number being chosen, its cell lit', SIZE, () => pose((puzzle) => puzzle.openPicker(EMPTY_CELLS[10])));
 
 canvasTest('the glow rippling out of a grid just solved', SIZE, async () => {
     const puzzle = createPuzzleModel({ givens, solution });
     const view = makeBoard(puzzle);
     await advanceTime(16, view);
     for (const cell of EMPTY_CELLS) {
-        puzzle.openPicker(cell);
-        puzzle.fillIn(solution[cell]);
+        puzzle.fillCell(cell, solution[cell]);
     }
     await advanceTime(260, view);
     return view;
@@ -92,10 +89,8 @@ function makeBoard(puzzle: PuzzleModel): Container {
         selection: () => puzzle.selection,
         onSelected: puzzle.select,
         puzzlesOpened: () => 1,
-        pickerCell: () => puzzle.pickerCell,
         isSolved: () => puzzle.isSolved,
         changes: () => puzzle.changes,
-        onCellDoubleTapped: puzzle.openPicker,
     });
     board.position.set(10, 10);
     view.addChild(board);

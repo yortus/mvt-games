@@ -55,22 +55,15 @@ describe('BoardView', () => {
         expect(puzzle.selection).toEqual([PAIR, PAIR + 1]);
     });
 
-    it('opens the picker on a double tap', () => {
+    it('selects a cell filled in, to change it, but never a given', () => {
         const { puzzle, board, tick } = setUp();
-        const { x, y } = middleOf(PAIR);
-        tap(board, x, y);
+        puzzle.fillCell(PAIR, solution[PAIR]);
+        const filled = middleOf(PAIR);
+        tap(board, filled.x, filled.y);
         tick();
-        tap(board, x, y);
-        expect(puzzle.pickerCell).toBe(PAIR);
-    });
-
-    it('opens no picker on a double tap on a given, which is never selected either', () => {
-        const { puzzle, board, tick } = setUp();
-        const { x, y } = middleOf(GIVEN_CELL);
-        tap(board, x, y);
-        tick();
-        tap(board, x, y);
-        expect(puzzle.pickerCell).toBe(-1);
+        expect(puzzle.selection).toEqual([PAIR]);
+        const given = middleOf(GIVEN_CELL);
+        tap(board, given.x, given.y);
         expect(puzzle.selection).toEqual([]);
     });
 });
@@ -86,10 +79,8 @@ function setUp() {
         selection: () => puzzle.selection,
         onSelected: puzzle.select,
         puzzlesOpened: () => 1,
-        pickerCell: () => puzzle.pickerCell,
         isSolved: () => puzzle.isSolved,
         changes: () => puzzle.changes,
-        onCellDoubleTapped: puzzle.openPicker,
     });
     const tick = (deltaMs = 16): void => {
         updateView(board, deltaMs);

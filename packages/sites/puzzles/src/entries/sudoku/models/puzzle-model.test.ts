@@ -24,17 +24,10 @@ describe('PuzzleModel', () => {
         expect(puzzle.undoCount).toBe(0);
     });
 
-    it('fills in a digit from the picker, and undoes it', () => {
+    it('fills in a digit, and undoes it', () => {
         const puzzle = createPuzzleModel({ givens, solution });
         const cell = EMPTY_CELLS[0];
-        puzzle.openPicker(cell);
-        expect(puzzle.pickerCell).toBe(cell);
-        // Nothing can be noted while the picker is open
-        puzzle.select([cell]);
-        puzzle.toggleNote(3);
-        expect(puzzle.marksAt(cell)).toBe(0);
-        puzzle.fillIn(solution[cell]);
-        expect(puzzle.pickerCell).toBe(-1);
+        puzzle.fillCell(cell, solution[cell]);
         expect(puzzle.digitAt(cell)).toBe(solution[cell]);
         expect(puzzle.answersPlaced).toBe(1);
 
@@ -43,18 +36,44 @@ describe('PuzzleModel', () => {
         expect(puzzle.undosDone).toBe(1);
     });
 
-    it('fills in a cell without the picker, but not a given', () => {
+    it('fills in, changes and clears a cell, but never a given', () => {
         const puzzle = createPuzzleModel({ givens, solution });
-        puzzle.fillCell(EMPTY_CELLS[0], solution[EMPTY_CELLS[0]]);
+        const cell = EMPTY_CELLS[0];
+        puzzle.fillCell(cell, 1);
+        puzzle.fillCell(cell, 2);
+        expect(puzzle.digitAt(cell)).toBe(2);
+        puzzle.clearCell(cell);
+        expect(puzzle.digitAt(cell)).toBe(0);
         puzzle.fillCell(GIVEN_CELL, (givens[GIVEN_CELL] % 9) + 1);
-        expect(puzzle.digitAt(EMPTY_CELLS[0])).toBe(solution[EMPTY_CELLS[0]]);
+        puzzle.clearCell(GIVEN_CELL);
         expect(puzzle.digitAt(GIVEN_CELL)).toBe(givens[GIVEN_CELL]);
     });
 
-    it('opens no picker on a given cell', () => {
+    it('selects one cell filled in, to change it, showing its digit, but takes no notes for it, and never selects a given', () => {
         const puzzle = createPuzzleModel({ givens, solution });
-        puzzle.openPicker(GIVEN_CELL);
-        expect(puzzle.pickerCell).toBe(-1);
+        const [cell, other] = EMPTY_CELLS;
+        puzzle.select([cell]);
+        puzzle.fillCell(cell, solution[cell]);
+        // Filled in alone, it stays selected, to be changed again
+        expect(puzzle.selection).toEqual([cell]);
+        expect(puzzle.selectionDigits).toBe(1 << solution[cell]);
+        expect(puzzle.canNoteSelection).toBe(false);
+        puzzle.toggleNote(3);
+        expect(puzzle.marksAt(cell)).toBe(0);
+        // Among several, only the empty cells are selected
+        puzzle.select([cell, other]);
+        expect(puzzle.selection).toEqual([other]);
+        puzzle.select([GIVEN_CELL]);
+        expect(puzzle.selection).toEqual([]);
+    });
+
+    it('takes a cell filled in out of several selected for notes', () => {
+        const puzzle = createPuzzleModel({ givens, solution });
+        // Two empty cells side by side
+        const first = EMPTY_CELLS.find((cell) => cell % 9 < 8 && givens[cell + 1] === 0) ?? -1;
+        puzzle.select([first, first + 1]);
+        puzzle.fillCell(first, solution[first]);
+        expect(puzzle.selection).toEqual([first + 1]);
     });
 
     it('marks a digit that breaks a rule, and the digit it clashes with', () => {
@@ -195,13 +214,13 @@ describe('PuzzleModel', () => {
             expect(puzzle.undoCount).toBe(0);
         });
 
-        it('clears a cell\'s marks as it is filled in, and drops it from the selection', () => {
+        it('clears a cell\'s marks as it is filled in, and keeps it selected alone, to be changed again', () => {
             const puzzle = createPuzzleModel({ givens, solution });
             puzzle.select([pair]);
             puzzle.toggleNote(5);
             fillIn(puzzle, pair, solution[pair]);
             expect(puzzle.marksAt(pair)).toBe(0);
-            expect(puzzle.selection).toEqual([]);
+            expect(puzzle.selection).toEqual([pair]);
             puzzle.undo();
             expect(puzzle.marksAt(pair)).toBe(toSet(5));
         });
@@ -286,8 +305,8 @@ function rowOf(cell: number): number[] {
 }
 
 function fillIn(puzzle: PuzzleModel, cell: number, digit: number): void {
-    puzzle.openPicker(cell);
-    puzzle.fillIn(digit);
+    if (digit === 0) puzzle.clearCell(cell);
+    else puzzle.fillCell(cell, digit);
 }
 
 /** The set of `digits`, with bit `d` set for each digit `d`. */

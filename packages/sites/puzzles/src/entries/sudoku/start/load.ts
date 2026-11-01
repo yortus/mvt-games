@@ -1,7 +1,8 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { createLocalStore, createMemoryStore } from '@mvtjs/site-kit/storage';
+import { toDayNumber } from '../../../shared';
 import { loadSudokuGenerator, type SudokuGenerator } from '../generator';
-import { createSudokuModel, playShowcase, type SudokuModel, toDayNumber } from '../models';
+import { createSudokuModel, playShowcase, type SudokuModel } from '../models';
 import { SCREEN_HEIGHT, SCREEN_WIDTH, SudokuView } from '../views';
 
 // ---------------------------------------------------------------------------
@@ -50,7 +51,7 @@ export const load = definePixiLoader(async () => {
 function createPlayersModel(generate: SudokuGenerator): SudokuModel {
     const now = new Date();
     const today = toDayNumber({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() });
-    return createSudokuModel({ today, store: createLocalStore(), generate, offersTutorial: true });
+    return createSudokuModel({ today, store: createLocalStore(), generate, offersIntro: true });
 }
 
 /**
@@ -59,7 +60,7 @@ function createPlayersModel(generate: SudokuGenerator): SudokuModel {
  * nothing, and shows a puzzle part played.
  */
 function createShowcaseModel(generate: SudokuGenerator): SudokuModel {
-    const model = createSudokuModel({ today: SHOWCASE_DAY, store: createMemoryStore(), generate, offersTutorial: false });
+    const model = createSudokuModel({ today: SHOWCASE_DAY, store: createMemoryStore(), generate, offersIntro: false });
     playShowcase({ model, generate });
     return model;
 }

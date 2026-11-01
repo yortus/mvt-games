@@ -345,7 +345,12 @@ in as `@mvtjs/site-kit/pixel-glyphs`. Inside the kit, they are aliases
 keep the tunes two of them play as `#tunes`. Sudoku's puzzle maker and grid
 are in Sudoku's own folder, in the puzzles, and Sudoku Digger, a demo that
 shows the maker at work, imports them as `@mvtjs/puzzles/sudoku-generator`.
-The demos may import from the puzzles, and never the other way round.
+The demos may import from the puzzles, and never the other way round. Every
+puzzle on the puzzles site is a puzzle a day, and they share
+`packages/sites/puzzles/src/shared/`: the days' numbers, the records of what
+is solved and started, the calendar to choose a day from, and the way in.
+The way in is a card that says how to play, and a walkthrough on a practice
+puzzle, with an arrow that shows each step. Each comes as models and views.
 
 ## Entry Structure
 

@@ -2,8 +2,6 @@
 
 exports[`sudoku sounds > CLASHED sounds as it did, audible, unclipped and soft 1`] = `"567cf349"`;
 
-exports[`sudoku sounds > OPENED sounds as it did, audible, unclipped and soft 1`] = `"4f151c19"`;
-
 exports[`sudoku sounds > PLACED sounds as it did, audible, unclipped and soft 1`] = `"ea9b9a7d"`;
 
 exports[`sudoku sounds > SOLVED sounds as it did, audible, unclipped and soft 1`] = `"d81b55b5"`;

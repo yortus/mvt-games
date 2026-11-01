@@ -1,6 +1,6 @@
 import { Container, type FederatedPointerEvent, Graphics, Rectangle } from 'pixi.js';
-import { setUpdate } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
+import { THIN_LINE_COLOR } from '../../../shared';
 import { drawGridLines } from '../generator';
 import type { GroupNote } from '../models';
 import { BoardCellsView } from './board-cells-view';
@@ -9,7 +9,7 @@ import { createBoardGesturesViewModel } from './board-gestures-view-model';
 import { layOutGroupNotes } from './group-note-layout';
 import { GroupNotesView } from './group-notes-view';
 import { PencilMarksView } from './pencil-marks-view';
-import { BOX_LINE_COLOR, CELL_SIZE, GRID_SIZE, THIN_LINE_COLOR } from './view-constants';
+import { BOX_LINE_COLOR, CELL_SIZE, GRID_SIZE } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -26,20 +26,16 @@ export interface BoardViewBindings {
     marksAt: (cell: number) => number;
     /** The group notes, drawn over the grid. Tapping one's label selects its cells. */
     groupNotes: () => readonly GroupNote[];
-    /** The cells selected for notes, lit. */
+    /** The cells selected, lit: empty cells for notes, or one filled in, to change or clear. */
     selection: () => readonly number[];
     /** A count that rises as each puzzle opens, so the group notes are laid out afresh. */
     puzzlesOpened: () => number;
-    /** The cell whose number is being chosen, lit, or -1. */
-    pickerCell: () => number;
     /** Whether the puzzle is solved. As it becomes solved, a glow ripples out from the grid's middle. */
     isSolved: () => boolean;
     /** A count that rises with every action finished, so the group notes are laid out again only as they may have changed. */
     changes: () => number;
-    /** The player chose these cells for notes, or none, with a tap or a drag. */
+    /** The player chose these cells, or none, with a tap or a drag. */
     onSelected: (cells: readonly number[]) => void;
-    /** The player tapped `cell` twice, quickly. */
-    onCellDoubleTapped: (cell: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,8 +47,8 @@ export interface BoardViewBindings {
  * notes. A tap selects a cell, or takes one out of several selected, or
  * clears the one selected. A drag selects every cell it passes through the
  * middle of, so it can run past a cell's corner without taking it in. A tap
- * on a group note's label selects its cells. Tapping a cell twice, quickly,
- * opens the choice of its number. Its origin is the grid's top left corner.
+ * on a group note's label selects its cells. Its origin is the grid's top
+ * left corner.
  *
  * It is made of layers: the cells, the lines, the pencil marks, the group
  * notes and the digits. The group notes are laid out once each time they
@@ -76,7 +72,6 @@ export function BoardView(bindings: BoardViewBindings): Container {
         selection: bindings.selection,
         labelNoteAt: findLabelNoteAt,
         onSelected: bindings.onSelected,
-        onCellDoubleTapped: bindings.onCellDoubleTapped,
     });
 
     // The group notes go under the digits, so a note's line passes behind a filled cell's digit. Their labels never cover one
@@ -86,7 +81,6 @@ export function BoardView(bindings: BoardViewBindings): Container {
             isGivenAt: bindings.isGivenAt,
             isClashAt: bindings.isClashAt,
             selection: bindings.selection,
-            pickerCell: bindings.pickerCell,
             isSolved: bindings.isSolved,
             puzzlesOpened: bindings.puzzlesOpened,
         }),
@@ -101,7 +95,6 @@ export function BoardView(bindings: BoardViewBindings): Container {
     view.on('pointerup', (e) => gestures.release(e.pointerId));
     view.on('pointerupoutside', (e) => gestures.release(e.pointerId));
     view.on('pointercancel', (e) => gestures.release(e.pointerId));
-    setUpdate(view, gestures.update);
     return view;
 
     /** The group note whose label is at (`x`, `y`), in cells, if one is shown there: the last drawn, if they overlap. */

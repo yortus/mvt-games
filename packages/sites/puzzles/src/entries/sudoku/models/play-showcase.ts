@@ -1,5 +1,6 @@
 import { CELL_COUNT, COLUMN_OF, countDigits, findCandidates, pickDigit, ROW_OF, type SudokuGenerator } from '../generator';
 import { findPuzzleSeed } from './find-puzzle-seed';
+import { GENERATOR_LEVELS } from './model-constants';
 import type { PuzzleModel } from './puzzle-model';
 import type { SudokuModel } from './sudoku-model';
 
@@ -12,10 +13,10 @@ import type { SudokuModel } from './sudoku-model';
  */
 export function playShowcase(options: ShowcaseOptions): void {
     const { model } = options;
-    model.openPuzzle(model.today);
+    model.openPuzzle(model.calendar.today);
     const puzzle = model.puzzle;
     if (puzzle === undefined) return;
-    const { givens, solution } = options.generate({ seed: findPuzzleSeed(model.today, model.level), level: model.level });
+    const { givens, solution } = options.generate({ seed: findPuzzleSeed(model.puzzleDay, model.puzzleLevel), level: GENERATOR_LEVELS[model.puzzleLevel] });
     const givenDigits = Uint8Array.from(givens);
 
     const empty: number[] = [];
@@ -26,8 +27,7 @@ export function playShowcase(options: ShowcaseOptions): void {
     for (let i = 0; i < SHOWCASE_CELLS && i < empty.length; i++) {
         const cell = empty[i];
         if (i % 3 === 0) {
-            puzzle.openPicker(cell);
-            puzzle.fillIn(solution[cell]);
+            puzzle.fillCell(cell, solution[cell]);
             continue;
         }
         // The right digit, and up to two others that the givens allow there: the highest, and the middle one

@@ -1,7 +1,8 @@
 import { Container, Text, type TextStyleOptions } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
+import { ANSWER_COLOR, CLASH_COLOR, FONT_FAMILY, INK_COLOR } from '../../../shared';
 import { CELL_COUNT, COLUMN_OF, DIGIT_TEXTS, ROW_OF } from '../generator';
-import { ANSWER_COLOR, CELL_SIZE, CLASH_COLOR, FONT_FAMILY, INK_COLOR } from './view-constants';
+import { CELL_SIZE } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings

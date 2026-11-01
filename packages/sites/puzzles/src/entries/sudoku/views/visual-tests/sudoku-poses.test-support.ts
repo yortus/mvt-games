@@ -1,9 +1,10 @@
 import { Container, Graphics } from 'pixi.js';
 import { advanceTime, refreshView } from '@mvtjs/pixi';
 import { createMemoryStore } from '@mvtjs/site-kit/storage';
+import { PAPER_COLOR, toDayNumber } from '../../../../shared';
 import { loadSudokuGenerator } from '../../generator';
-import { createSudokuModel, findPuzzleSeed, playShowcase, type SudokuModel, toDayNumber } from '../../models';
-import { PAPER_COLOR, SCREEN_HEIGHT, SCREEN_WIDTH } from '../view-constants';
+import { createSudokuModel, findPuzzleSeed, GENERATOR_LEVELS, playShowcase, type SudokuModel } from '../../models';
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../view-constants';
 
 /** Today, in every pose: Friday 30 October 2026. */
 export const TODAY = toDayNumber({ year: 2026, month: 10, day: 30 });
@@ -20,7 +21,7 @@ export type Play = (model: SudokuModel) => void;
  * them.
  */
 export async function poseGame(makeView: (model: SudokuModel) => Container, play: Play | readonly Play[], ms = 16): Promise<Container> {
-    const model = createSudokuModel({ today: TODAY, store: createMemoryStore(), generate, offersTutorial: false });
+    const model = createSudokuModel({ today: TODAY, store: createMemoryStore(), generate, offersIntro: false });
     const view = new Container();
     view.addChild(new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(PAPER_COLOR), makeView(model));
     await advanceTime(16, model, view);
@@ -38,11 +39,10 @@ export async function poseGame(makeView: (model: SudokuModel) => Container, play
 
 /** Fills in every empty cell of the open puzzle with its solution's digit. */
 export function solve(model: SudokuModel): void {
-    const { solution } = generate({ seed: findPuzzleSeed(model.puzzleDay, model.level), level: model.level });
+    const { solution } = generate({ seed: findPuzzleSeed(model.puzzleDay, model.puzzleLevel), level: GENERATOR_LEVELS[model.puzzleLevel] });
     for (let cell = 0; cell < solution.length; cell++) {
         if (model.puzzle?.digitAt(cell) !== 0) continue;
-        model.puzzle.openPicker(cell);
-        model.puzzle.fillIn(solution[cell]);
+        model.puzzle.fillCell(cell, solution[cell]);
     }
 }
 

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio90PlayOptions } from 'audio90';
 import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
-import { CLASHED, OPENED, PLACED, SOLVED, UNDONE } from '../data';
+import { CLASHED, PLACED, SOLVED, UNDONE } from '../data';
 import { SudokuAudioView } from './sudoku-audio-view';
 
 // The view is tested by what it asks of its chip: which sounds it plays, at which notes, and where.
@@ -17,15 +17,6 @@ describe('SudokuAudioView', () => {
     it('plays nothing as it is made', () => {
         const { sfx } = setUp({ answersPlaced: 3, puzzlesSolved: 1 });
         expect(listPlayed(sfx)).toEqual([]);
-    });
-
-    it('ticks as the picker opens, but not as it closes', () => {
-        const { sfx, state, tick } = setUp();
-        state.pickerCell = 40;
-        tick();
-        state.pickerCell = -1;
-        tick();
-        expect(listPlayed(sfx)).toEqual([OPENED]);
     });
 
     it('knocks each digit filled in at its own note, higher for a higher digit, from its cell\'s side', () => {
@@ -53,18 +44,11 @@ describe('SudokuAudioView', () => {
         expect(listPlayed(sfx)).toEqual([CLASHED]);
     });
 
-    it('blips for an undo, unless it took back the first tap of a double tap that opened the picker or filled a cell', () => {
+    it('blips for an undo', () => {
         const { sfx, state, tick } = setUp();
         state.undosDone = 1;
         tick();
-        state.undosDone = 2;
-        state.pickerCell = 10;
-        tick();
-        state.pickerCell = -1;
-        state.undosDone = 3;
-        state.answersPlaced = 1;
-        tick();
-        expect(listPlayed(sfx)).toEqual([UNDONE, OPENED, PLACED]);
+        expect(listPlayed(sfx)).toEqual([UNDONE]);
     });
 
     it('chimes as a puzzle is solved', () => {
@@ -76,7 +60,6 @@ describe('SudokuAudioView', () => {
 });
 
 interface State {
-    pickerCell: number;
     answersPlaced: number;
     clashesMade: number;
     filledCell: number;
@@ -87,12 +70,11 @@ interface State {
 
 function setUp(initial: Partial<State> = {}) {
     const state: State = {
-        pickerCell: -1, answersPlaced: 0, clashesMade: 0, filledCell: -1, filledDigit: 0, undosDone: 0, puzzlesSolved: 0, ...initial,
+        answersPlaced: 0, clashesMade: 0, filledCell: -1, filledDigit: 0, undosDone: 0, puzzlesSolved: 0, ...initial,
     };
     const sfx = createSpiedChip();
     const view = SudokuAudioView({
         sfx,
-        pickerCell: () => state.pickerCell,
         answersPlaced: () => state.answersPlaced,
         clashesMade: () => state.clashesMade,
         filledCell: () => state.filledCell,
