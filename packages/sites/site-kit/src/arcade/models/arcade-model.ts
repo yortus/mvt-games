@@ -113,13 +113,15 @@ export interface ArcadeModel {
     readonly loadFailure: string | undefined;
     /**
      * Whether the entry started is paused. Only an entry started can be, and
-     * not while a score of its is placing, or while it offers to resume. One
+     * not while a score of its is placing, or while it shows its notice or
+     * offers to resume. One
      * paused as it is revealed stays paused once it is.
      */
     isPaused: boolean;
     /**
-     * Whether the entry started stands still: revealing, paused, offering to
-     * resume a saved game, or waiting while a score of its places, so that
+     * Whether the entry started stands still: revealing, paused, showing its
+     * notice, offering to resume a saved game, or waiting while a score of
+     * its places, so that
      * nothing can restart the run behind the prompt. The page stops the entry
      * while it is.
      */
@@ -154,6 +156,24 @@ export interface ArcadeModel {
     readonly resume: () => void;
     /** Closes the offer, and starts the entry afresh, as `restart` does. Does nothing unless one is offered. */
     readonly startAfresh: () => void;
+
+    // --- Notices ------------------------------------------------------------
+    // An entry with a notice shows it as it starts, until the visitor asks
+    // not to see it again. The page keeps their answer between visits.
+
+    /**
+     * Whether the entry started shows its notice. It stands still behind the
+     * notice until the visitor reads it and goes on, or leaves.
+     */
+    readonly isNoticeShown: boolean;
+    /**
+     * The ids of the entries whose notices the visitor asked not to see
+     * again. The model replaces the array whenever it changes, for the page
+     * to keep.
+     */
+    readonly hiddenNoticeIds: readonly string[];
+    /** Closes the notice, and lets the entry play. Does nothing unless a notice shows. */
+    readonly closeNotice: (options: CloseNoticeOptions) => void;
 
     // --- Highscores ---------------------------------------------------------
 
@@ -257,6 +277,12 @@ export interface LaunchOptions {
     readonly isDirect?: boolean;
 }
 
+/** How the visitor closes an entry's notice. */
+export interface CloseNoticeOptions {
+    /** Whether the notice shows the next time the entry starts. False once the visitor asks not to see it again. */
+    readonly isShownAgain: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
@@ -285,6 +311,8 @@ export interface ArcadeModelOptions {
     readonly siteTheme?: ThemeKind;
     /** Whether the page has a saved game for the entry with `id`. Without it, no entry has one. */
     readonly hasSavedGame?: (id: string) => boolean;
+    /** The ids of the entries whose notices the visitor asked not to see again, on a visit before. Ids of entries not listed are dropped. */
+    readonly hiddenNoticeIds?: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -334,6 +362,8 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     let isPaused = false;
     let restartCount = 0;
     let isResumeOffered = false;
+    let isNoticeShown = false;
+    let hiddenNoticeIds: readonly string[] = (options.hiddenNoticeIds ?? []).filter((id, i, ids) => ids.indexOf(id) === i && indexById.has(id));
     let soundSettings = options.soundSettings ?? DEFAULT_SOUND_SETTINGS;
     let themeChoice: ThemeChoice = options.themeChoice ?? 'default';
     const siteTheme: ThemeKind = options.siteTheme ?? 'arcade';
@@ -432,10 +462,10 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             return isPaused;
         },
         set isPaused(value) {
-            isPaused = isEntryStarted() && highscores.placing === 'none' && !isResumeOffered && value;
+            isPaused = isEntryStarted() && highscores.placing === 'none' && !isNoticeShown && !isResumeOffered && value;
         },
         get isEntryFrozen() {
-            return phase === 'revealing' || isPaused || isResumeOffered || highscores.placing !== 'none';
+            return phase === 'revealing' || isPaused || isNoticeShown || isResumeOffered || highscores.placing !== 'none';
         },
         get restartCount() {
             return restartCount;
@@ -527,6 +557,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             enter('browsing');
             starter = undefined;
             isPaused = false;
+            isNoticeShown = false;
             isResumeOffered = false;
             highscores.close();
         },
@@ -543,6 +574,19 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         startAfresh() {
             if (!isResumeOffered) return;
             model.restart();
+        },
+
+        get isNoticeShown() {
+            return isNoticeShown;
+        },
+        get hiddenNoticeIds() {
+            return hiddenNoticeIds;
+        },
+        closeNotice(closeOptions) {
+            if (!isNoticeShown) return;
+            isNoticeShown = false;
+            const id = activeEntry?.id;
+            if (!closeOptions.isShownAgain && id !== undefined && !hiddenNoticeIds.includes(id)) hiddenNoticeIds = [...hiddenNoticeIds, id];
         },
 
         highscores,
@@ -608,6 +652,8 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         isPaused = false;
         // Fresh tables, for where a run will place, and for the game's "HI"
         if (activeEntry?.hasHighscores === true) highscores.reload();
+        // The notice comes first. The offer to resume, if there is one, waits behind it
+        isNoticeShown = activeEntry?.notice !== undefined && !hiddenNoticeIds.includes(activeEntry.id);
         isResumeOffered = activeEntry !== undefined && options.hasSavedGame?.(activeEntry.id) === true;
     }
 

@@ -1,5 +1,5 @@
 export {
-    type ArcadeEntry, type ControlButton, type ControlGesture, type ControlInput, type ControlKey, type ControlRow, type EntryDetails, type HowToPlay, type EntryKind, type EntryTag, type Era, type Genre, type Inspiration, type RendererKind,
+    type ArcadeEntry, type ControlButton, type ControlGesture, type ControlInput, type ControlKey, type ControlRow, type EntryDetails, type EntryNotice, type HowToPlay, type EntryKind, type EntryTag, type Era, type Genre, type Inspiration, type RendererKind,
     type ThumbnailCrop, type ThumbnailFocus, type CardColor, ENTRY_KINDS, ERAS, GENRES, RENDERER_KINDS, thumbnailCropOf, thumbnailFocusOf, CARD_COLORS,
 } from './arcade-entry';
 export {

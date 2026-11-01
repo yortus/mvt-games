@@ -1,4 +1,6 @@
-export { type ArcadeModel, type ArcadeModelOptions, type ArcadePhase, createArcadeModel, type LaunchOptions } from './arcade-model';
+export {
+    type ArcadeModel, type ArcadeModelOptions, type ArcadePhase, type CloseNoticeOptions, createArcadeModel, type LaunchOptions,
+} from './arcade-model';
 export { formatEntryPath, parseEntryPath } from './arcade-path';
 export { type ArcadeQuery, formatArcadeQuery, parseArcadeQuery } from './arcade-query';
 export {

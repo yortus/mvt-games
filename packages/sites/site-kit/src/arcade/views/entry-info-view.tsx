@@ -43,8 +43,9 @@ export interface EntryInfoViewBindings {
  * An entry's info panel, over the wall, or over the entry as it plays:
  * everything the card leaves out. Its name, its tags (the renderers it draws
  * with among them) and the classic it is inspired by head the panel. Then
- * come tabs, each where the entry has it: Description (what it is, how it's
- * made, the techniques it shows, and its size), How to Play, and Highscores. Play, or
+ * come tabs, each where the entry has it: Description (its notice, if it has
+ * one, then what it is, how it's made, the techniques it shows, and its
+ * size), How to Play, and Highscores. Play, or
  * Resume over the entry, and a link to its source end it.
  *
  * It opens on Description, or on How to Play over the entry, where that is
@@ -58,6 +59,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
     // Each is worked out once per entry shown, keyed by the entry's id
     const entryId = (): string | undefined => bindings.entry()?.id;
     const descParagraphs = createComputed({ watch: () => details()?.description, compute: splitParagraphs });
+    const noticeParagraphs = createComputed({ watch: () => entry()?.notice?.text, compute: splitParagraphs });
     const implParagraphs = createComputed({ watch: () => details()?.implementation, compute: splitParagraphs });
     const tags = createComputed({ watch: entryId, compute: () => tagPillsOf(entry(), factsFor) });
     const sizeText = createComputed({ watch: entryId, compute: (id) => describeSize(factsFor(id ?? '')) });
@@ -104,6 +106,12 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                     </div>
                     <div class="info-pages">
                         <div class={() => pageClass('description')} id="info-page-description" role="tabpanel">
+                            <aside class="info-notice" visible={() => entry()?.notice !== undefined} aria-labelledby="info-notice-title">
+                                <h3 id="info-notice-title" text={() => entry()?.notice?.title ?? ''} />
+                                <List items={noticeParagraphs}>
+                                    {(paragraph) => <p text={paragraph} />}
+                                </List>
+                            </aside>
                             <p class="info-summary" text={() => entry()?.summary ?? ''} />
                             <List items={descParagraphs}>
                                 {(paragraph) => <p class="info-description" text={paragraph} />}

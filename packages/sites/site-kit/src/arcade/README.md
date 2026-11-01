@@ -34,6 +34,7 @@
 | [`views/runner-view.tsx`](./views/runner-view.tsx), [`pause-menu-view.tsx`](./views/pause-menu-view.tsx) | The bar over a running entry, and the pause menu |
 | [`views/placing-view.tsx`](./views/placing-view.tsx), [`highscore-table-view.tsx`](./views/highscore-table-view.tsx) | The prompt for a player's initials when their score places, and a game's highscore table, in the pixel font |
 | [`views/resume-offer-view.tsx`](./views/resume-offer-view.tsx) | The offer to resume a game the visitor left part way through, or to restart it |
+| [`views/entry-notice-view.tsx`](./views/entry-notice-view.tsx) | An entry's notice: what the visitor should know before they play it, with a box to not show it again |
 | [`../storage/`](../storage/) | `LocalStore`: what the page keeps in the browser between visits, read and written without ever throwing |
 | [`views/*-audio-view.ts`](./views/) | The views that play the Arcade's own sounds and the pause menu's previews of the volumes. They load on the visitor's first press |
 | [`../runner/`](../runner/) | The entry host, which runs one entry of any renderer |
@@ -72,12 +73,15 @@ Which state belongs to the model, and which to the views?
   the entry, from the runner's (i), adds none: Back from an entry leaves it. The model also holds the visitor's sound
   settings. These are a volume for the music and one for the effects, the
   level each had when it was turned off, and whether all sound is muted. It
-  holds the visitor's favourites too, which the wall shows first, and
-  whether a saved game is offered for resuming. The page saves the settings
-  and the favourites in `localStorage`, through a `LocalStore`
+  holds the visitor's favourites too, which the wall shows first, the
+  entries whose notices they asked not to see again, and whether a saved
+  game is offered for resuming. The page saves the settings, the favourites
+  and the hidden notices in `localStorage`, through a `LocalStore`
   ([`../storage/`](../storage/)), whenever they change, and reads them back
-  on load. A started entry stands still while it is revealed, and runs once
-  the reveal is over.
+  on load. A started entry stands still while it is revealed. An entry with
+  a notice (`ArcadeEntry.notice`) also stands still while the notice shows
+  (`isNoticeShown`), until the visitor goes on or leaves. It runs once both
+  are over.
 - **In the views:** which card is selected (`selected` in
   [`card-wall-view.tsx`](./views/card-wall-view.tsx)), where each card is
   and where it is sliding to (the layout), and every frame of the way in and
@@ -298,7 +302,8 @@ resume (`isResumeOffered`), and the entry stands still until the visitor
 chooses. The page loads the saved game into the new session at once, so it
 shows behind the offer. Resume closes the offer. Restart is a restart, and
 the page removes the save. A save the session cannot load, from an older
-version of the game say, is removed, and the offer closes.
+version of the game say, is removed, and the offer closes. An entry with a
+notice shows it first, and the offer waits behind it.
 
 ## 10. Themes: A Setting the Stylesheet Follows
 

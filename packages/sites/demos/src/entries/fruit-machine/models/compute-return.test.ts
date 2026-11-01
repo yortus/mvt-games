@@ -41,11 +41,11 @@ describe('computeReturn', () => {
     });
 
     describe("the machine's strips and paytable", () => {
-        it('pay back about 120%', () => {
+        it('pay back about 85%, less than they take, as a real machine does', () => {
             const breakdown = JSON.stringify(MACHINE.rtpBySymbol);
 
-            expect(MACHINE.rtp, `RTP by symbol: ${breakdown}`).toBeGreaterThan(1.15);
-            expect(MACHINE.rtp, `RTP by symbol: ${breakdown}`).toBeLessThan(1.25);
+            expect(MACHINE.rtp, `RTP by symbol: ${breakdown}`).toBeGreaterThan(0.82);
+            expect(MACHINE.rtp, `RTP by symbol: ${breakdown}`).toBeLessThan(0.88);
         });
 
         it('win something on most spins, in small amounts, which keeps the balance steady', () => {
@@ -69,16 +69,18 @@ describe('computeReturn', () => {
             expect(hits / spins).toBeCloseTo(MACHINE.hitRate, 2);
         }, LONG_RUN_TIMEOUT_MS);
 
-        it('are steady: from ten bets, few players run out of credits', () => {
+        it('are steady: from twenty bets, few players run out of credits within 50 spins', () => {
             // A property of the strips and paytable, so tested from a balance of
             // its own rather than the machine's starting balance, which is tuned
-            // separately and changes how often the game ends
+            // separately and changes how often the game ends. The machine takes
+            // more than it pays, so everyone runs out in the end. A steady one
+            // takes its time.
             const players = 1000;
             let gamesOver = 0;
 
             for (let player = 0; player < players; player++) {
-                const model = createFruitMachineModel({ seed: player + 1, startingBalance: 10 * BET });
-                for (let spin = 0; spin < 100 && model.canSpin; spin++) quickSpin(model);
+                const model = createFruitMachineModel({ seed: player + 1, startingBalance: 20 * BET });
+                for (let spin = 0; spin < 50 && model.canSpin; spin++) quickSpin(model);
                 if (model.phase === 'gameOver') gamesOver++;
             }
 

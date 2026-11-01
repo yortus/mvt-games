@@ -683,6 +683,65 @@ describe('ArcadeModel', () => {
             expect(model.isResumeOffered).toBe(false);
         });
     });
+
+    describe('notices', () => {
+        it('shows an entry\'s notice as it starts, and holds it still until the notice is closed', async () => {
+            const model = createArcadeModel(options({ entries: withNotice('sim-demo') }));
+            await play(model, 'sim-demo');
+            expect(model.isNoticeShown).toBe(true);
+            expect(model.isEntryFrozen).toBe(true);
+            model.isPaused = true;
+            expect(model.isPaused).toBe(false);
+            model.closeNotice({ isShownAgain: true });
+            expect(model.isNoticeShown).toBe(false);
+            expect(model.isEntryFrozen).toBe(false);
+        });
+
+        it('shows the notice each time the entry starts, until the visitor asks not to see it again', async () => {
+            const model = createArcadeModel(options({ entries: withNotice('sim-demo') }));
+            await play(model, 'sim-demo');
+            model.closeNotice({ isShownAgain: true });
+            model.exit();
+            await play(model, 'sim-demo');
+            expect(model.isNoticeShown).toBe(true);
+            model.closeNotice({ isShownAgain: false });
+            expect(model.hiddenNoticeIds).toEqual(['sim-demo']);
+            model.exit();
+            await play(model, 'sim-demo');
+            expect(model.isNoticeShown).toBe(false);
+        });
+
+        it('hides the notices the visitor hid on a visit before, and forgets ids not listed', async () => {
+            const model = createArcadeModel(options({ entries: withNotice('sim-demo'), hiddenNoticeIds: ['sim-demo', 'gone-demo', 'sim-demo'] }));
+            expect(model.hiddenNoticeIds).toEqual(['sim-demo']);
+            await play(model, 'sim-demo');
+            expect(model.isNoticeShown).toBe(false);
+        });
+
+        it('shows no notice for an entry without one, and closes the notice as the entry is left', async () => {
+            const model = createArcadeModel(options({ entries: withNotice('sim-demo') }));
+            await play(model, 'maze-game');
+            expect(model.isNoticeShown).toBe(false);
+            model.exit();
+            await start(model, 'sim-demo');
+            expect(model.isNoticeShown).toBe(true);
+            model.exit();
+            expect(model.isNoticeShown).toBe(false);
+            // Closing a notice that no longer shows changes nothing
+            model.closeNotice({ isShownAgain: false });
+            expect(model.hiddenNoticeIds).toEqual([]);
+        });
+
+        it('shows the notice before the offer to resume a saved game', async () => {
+            const model = createArcadeModel(options({ entries: withNotice('sim-demo'), hasSavedGame: () => true }));
+            await play(model, 'sim-demo');
+            expect(model.isNoticeShown).toBe(true);
+            expect(model.isResumeOffered).toBe(true);
+            model.closeNotice({ isShownAgain: true });
+            // The offer still holds the entry
+            expect(model.isEntryFrozen).toBe(true);
+        });
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -740,6 +799,11 @@ function entry(id: string, name: string, tags: readonly EntryTag[], details: Ent
         loadDetails: () => Promise.resolve(details),
         load: () => Promise.resolve(STARTER),
     };
+}
+
+/** The test's entries, the one with `id` given a notice. */
+function withNotice(id: string): ArcadeEntry[] {
+    return ENTRIES.map((e) => (e.id === id ? { ...e, notice: { title: 'Before you start', text: 'Something to know.' } } : e));
 }
 
 /** The test's entries, each counting the times its long text is loaded. */

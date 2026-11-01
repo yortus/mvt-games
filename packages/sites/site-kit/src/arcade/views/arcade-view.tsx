@@ -12,6 +12,7 @@ import { cardHeightFor, type PhotoPose } from './card-photo';
 import { createCardWallLayout } from './card-wall-layout';
 import { CardWallView, photoPoseIn } from './card-wall-view';
 import { EntryInfoView } from './entry-info-view';
+import { EntryNoticeView } from './entry-notice-view';
 import type { ArcadeAudioViews } from './load-arcade-audio-views';
 import type { Perfmon } from './load-perfmon';
 import { NavPerfmonView } from './nav-perfmon-view';
@@ -339,8 +340,15 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             <Switch>
                 <Match when={() => bindings.perfmon() !== undefined}>{PerfmonPanelView}</Match>
             </Switch>
+            <EntryNoticeView
+                isOpen={() => isEntryShown() && model.isNoticeShown}
+                notice={() => model.activeEntry?.notice}
+                onContinuePressed={(isShownAgain) => model.closeNotice({ isShownAgain })}
+                onBackPressed={leaveEntry}
+            />
+            {/* An entry's notice comes first, and the offer waits behind it */}
             <ResumeOfferView
-                isOpen={() => isEntryShown() && model.isResumeOffered}
+                isOpen={() => isEntryShown() && model.isResumeOffered && !model.isNoticeShown}
                 title={() => model.activeEntry?.name ?? ''}
                 onResumePressed={model.resume}
                 onRestartPressed={model.startAfresh}
@@ -554,10 +562,11 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     /**
      * Escape closes the info panel, pauses or resumes the entry playing (a
      * game or a demo, alike), or leaves one still on its way in. Not while a score
-     * places, or while a saved game is offered: their views have the keys then.
+     * places, while an entry's notice shows, or while a saved game is
+     * offered: their views have the keys then.
      */
     function stepBack(e: KeyboardEvent): void {
-        if (highscores.placing !== 'none' || model.isResumeOffered) return;
+        if (highscores.placing !== 'none' || model.isNoticeShown || model.isResumeOffered) return;
         if (model.infoEntry !== undefined) closeInfo();
         else if (model.phase === 'playing') model.isPaused = !model.isPaused;
         else if (model.phase !== 'browsing') model.exit();

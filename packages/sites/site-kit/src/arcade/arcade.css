@@ -721,6 +721,17 @@ button { font: inherit; color: inherit; }
 .info-tags li.is-renderer { --tag-bg: var(--theme-tag-renderer); }
 /* The credit sits close under the tags; the summary stands clear of both */
 .info-inspired { margin-top: 6px; font-size: 13px; font-style: italic; color: var(--theme-text-muted); }
+/* An entry's notice heads its Description, set apart from the rest by its tint */
+.info-notice {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: var(--theme-radius-control);
+    background: var(--theme-accent-tint);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.info-notice h3 { margin-bottom: 6px; font-size: 15px; color: var(--theme-text-strong); }
+.info-notice p + p { margin-top: 8px; }
 .info-summary { margin: 14px 0 12px; font-size: 16px; font-weight: 700; line-height: 1.5; color: var(--theme-highlight); }
 .info-description { margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
 .info-section { margin: 16px 0; }
@@ -1200,6 +1211,56 @@ button { font: inherit; color: inherit; }
 .resume-offer-panel button:hover { border-color: var(--theme-accent); }
 .resume-offer-panel .resume-offer-resume { background: var(--theme-go); border-color: var(--theme-go-border); color: var(--theme-on-go); font-weight: 600; }
 
+/* An entry's notice, over it as it stands: placed as the offer to resume is, and wider, for more to read */
+.entry-notice-layer { display: contents; }
+.entry-notice {
+    position: fixed;
+    top: var(--runner-bar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10003;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--theme-scrim-soft);
+}
+.entry-notice-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 440px;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 20px 22px 22px;
+    border-radius: var(--theme-radius-panel);
+    border: 1px solid var(--theme-border);
+    background: var(--theme-surface);
+}
+.entry-notice-title { font-size: 18px; color: var(--theme-text-strong); }
+.entry-notice-text { display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.5; color: var(--theme-text); }
+.entry-notice-hide { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--theme-text-muted); cursor: pointer; }
+.entry-notice-hide input { width: 16px; height: 16px; margin: 0; accent-color: var(--theme-accent); cursor: pointer; }
+.entry-notice-buttons { display: flex; gap: 10px; }
+/* Each with its key beside its label, where it has one */
+.entry-notice-buttons button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: var(--theme-radius-control);
+    border: 1px solid var(--theme-border);
+    background: var(--theme-raised);
+    font-size: 15px;
+    cursor: pointer;
+}
+.entry-notice-buttons button:hover { border-color: var(--theme-accent); }
+.entry-notice-buttons .entry-notice-continue { background: var(--theme-go); border-color: var(--theme-go-border); color: var(--theme-on-go); font-weight: 600; }
+
 .initials { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .initials-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .initials button { cursor: pointer; }
@@ -1281,6 +1342,7 @@ html.is-runner-turned .runner-frame,
 html.is-runner-turned .pause-menu,
 html.is-runner-turned .info-backdrop.is-over-entry,
 html.is-runner-turned .resume-offer,
+html.is-runner-turned .entry-notice,
 html.is-runner-turned .placing {
     top: 0;
     right: auto;
@@ -1294,6 +1356,7 @@ html.is-runner-turned .runner-frame,
 html.is-runner-turned .pause-menu,
 html.is-runner-turned .info-backdrop.is-over-entry,
 html.is-runner-turned .resume-offer,
+html.is-runner-turned .entry-notice,
 html.is-runner-turned .placing {
     left: calc(100vw - var(--runner-bar-height));
     height: calc(100vw - var(--runner-bar-height));

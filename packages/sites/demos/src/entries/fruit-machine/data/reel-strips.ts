@@ -8,8 +8,8 @@ import type { SymbolKind } from './symbol-kind';
  *
  * - No symbol repeats within three places of itself, wrapping round, so a
  *   window never shows a picture twice on one reel. That keeps the ways a
- *   spin can win, and so its swings, small: with a balance of only ten bets,
- *   a steady machine is what keeps game over rare.
+ *   spin can win, and so its swings, small. The machine takes more than it
+ *   pays, so a steady one is what makes a game last.
  * - One wild on each reel but the first. None on the first, so every way's
  *   picture is the one it starts with.
  * - Lower pictures are commoner: from two `pic1` per strip to seven `pic6`.

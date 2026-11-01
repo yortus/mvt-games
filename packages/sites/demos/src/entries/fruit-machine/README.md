@@ -17,15 +17,16 @@ Boids in 3D: it builds its own renderers in the element the Arcade gives it.
 - **243 ways:** a win is a path of one cell per reel, from the first reel
   across 3, 4 or 5 adjacent reels, all the same fruit, the wild standing in
   for any. Each way pays on its own.
-- A bet of 25 credits a spin, from a starting balance of 100 credits.
-  Below 25 credits, the game is over: reload to play again.
-- It pays back **119.5%** on average, worked out exactly by
-  `computeReturn`. 81% of spins win something, many of them less than the
-  bet. With only four bets to start, about a fifth of players see game over
-  within 20 spins (31% within 100). The machine itself is steady: from ten
-  bets, about 3% would run out within 100 spins. The test suite holds the
-  return and that steadiness, and checks the exact return against a long run
-  of the machine itself.
+- A bet of 25 credits a spin, from a starting balance of 500 credits,
+  twenty bets' worth. Below 25 credits, the game is over: reload to play
+  again.
+- It pays back **85%** on average, worked out exactly by `computeReturn`.
+  That is less than it takes, as a real machine's return is. 81% of spins
+  win something, many of them less than the bet. So every player runs out
+  in the end, but slowly. Half of them are still spinning after 111 spins,
+  and about 2% run out within 50. The test suite holds the return and that
+  steadiness, and checks the exact return against a long run of the machine
+  itself.
 
 ## What it shows
 

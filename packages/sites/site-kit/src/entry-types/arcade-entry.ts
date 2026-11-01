@@ -59,6 +59,13 @@ export interface ArcadeEntry {
      */
     readonly hasHighscores?: boolean;
     /**
+     * Something the visitor should know before they play, such as that a
+     * demo that looks like gambling is not. It opens over the entry each time
+     * it starts, until the visitor asks not to see it again. It also heads
+     * the Description in the entry's info panel. Most entries need none.
+     */
+    readonly notice?: EntryNotice;
+    /**
      * Imports the entry's long text, from its `start/details.ts`. The arcade
      * loads every entry's after its first paint, so the home page's first load
      * holds only what the cards show.
@@ -155,6 +162,18 @@ export type ControlGesture = 'joystick' | 'swipe' | 'tap' | 'double-tap' | 'hold
 /** A button on the screen, by its label: one an entry draws, or one of the touch controls the host draws beside it. */
 export interface ControlButton {
     readonly button: string;
+}
+
+/**
+ * What an entry's visitor should know before they play: a heading, and a
+ * paragraph or two. The text is plain, with paragraphs separated by a blank
+ * line, as in `EntryDetails`.
+ */
+export interface EntryNotice {
+    /** The heading, in a few words. */
+    readonly title: string;
+    /** What the visitor should know. Keep it short enough to read before playing. */
+    readonly text: string;
 }
 
 /** A game an entry is inspired by: its title, who made it, and the year it came out. */

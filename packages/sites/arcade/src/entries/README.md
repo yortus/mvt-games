@@ -589,6 +589,11 @@ export const details: EntryDetails = {
   shape is cropped closer, and the crop keeps this point at its centre, as
   nearly as it can. Every entry gives one: look at the card in both themes,
   and move it until nothing that matters is cut off.
+- **`notice`** is something the visitor should know before they play
+  (`{ title, text }`).
+  It opens over the entry as it starts, with Continue and Back, and a box to
+  not show it again. It also heads the Description in the info panel. Most
+  entries need none. Keep it short enough to read before playing.
 
 The entry's size in lines and files, and the renderers it draws with, are
 measured from its source when the site builds. Nobody writes them down.

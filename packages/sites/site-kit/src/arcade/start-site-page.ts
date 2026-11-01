@@ -44,7 +44,8 @@ import './arcade.css';
 // running session's `scoring` for the end of a run, and remembers the
 // visitor's initials between visits.
 //
-// It keeps the visitor's favourites between visits too. It saves a game every
+// It keeps the visitor's favourites between visits too, and the entries'
+// notices they asked not to see again. It saves a game every
 // few seconds of play, and as the visitor leaves it, for the model to offer
 // to resume next time.
 //
@@ -106,7 +107,7 @@ export function startSitePage(site: SiteConfig): void {
     let livePreparing: Promise<void> = Promise.resolve();
 
     // Declared before the model is made, which reads them.
-    /** What the page keeps in the browser between visits: the visitor's settings, initials, favourites and saved games. */
+    /** What the page keeps in the browser between visits: the visitor's settings, initials, favourites, hidden notices and saved games. */
     const store = createLocalStore();
     /** Where the visitor's sound settings are kept between visits. It is older than the other keys, so it is named differently. */
     const SOUND_SETTINGS_KEY = 'mvt-arcade-sound';
@@ -130,6 +131,8 @@ export function startSitePage(site: SiteConfig): void {
     const THEME_KEY = 'mvt-arcade:theme';
     /** Where a game left part way through is kept, for the visitor to resume next time: this, then the entry's id. */
     const SAVED_GAME_KEY = 'mvt-arcade:saved-game:';
+    /** Where the ids of the entries whose notices the visitor asked not to see again are kept, as a JSON array. */
+    const HIDDEN_NOTICES_KEY = 'mvt-arcade:hidden-notices';
 
     const model = createArcadeModel({
         entries: site.catalogue,
@@ -139,10 +142,11 @@ export function startSitePage(site: SiteConfig): void {
         // The model checks them. Storage can be blocked, as in a private window, which just means none
         rememberedInitials: store.read(INITIALS_KEY),
         soundSettings: firstSoundSettings,
-        favouriteIds: readFavourites(),
+        favouriteIds: readIds(FAVOURITES_KEY),
         themeChoice: parseThemeChoice(store.read(THEME_KEY)),
         siteTheme: SITE_THEMES[site.id],
         hasSavedGame: (id) => store.read(SAVED_GAME_KEY + id) !== undefined,
+        hiddenNoticeIds: readIds(HIDDEN_NOTICES_KEY),
         loadEntry: async (entry) => {
             const starter = await entry.load();
             if (DEV) checkPlayArea(entry, starter);
@@ -225,6 +229,8 @@ export function startSitePage(site: SiteConfig): void {
     applySoundSettings(keptSoundSettings);
     /** The favourites last saved. The model replaces its array whenever they change. */
     let keptFavouriteIds = model.favouriteIds;
+    /** The hidden notices last saved. The model replaces its array whenever they change. */
+    let keptHiddenNoticeIds = model.hiddenNoticeIds;
     /** The choice of theme last saved. */
     let keptThemeChoice = model.themeChoice;
     // A choice made in another tab, on any of the sites, is worn here at once.
@@ -323,6 +329,11 @@ export function startSitePage(site: SiteConfig): void {
         if (model.favouriteIds !== keptFavouriteIds) {
             keptFavouriteIds = model.favouriteIds;
             store.writeJson(FAVOURITES_KEY, keptFavouriteIds);
+        }
+        // Blocked storage means a hidden notice shows again on the next visit
+        if (model.hiddenNoticeIds !== keptHiddenNoticeIds) {
+            keptHiddenNoticeIds = model.hiddenNoticeIds;
+            store.writeJson(HIDDEN_NOTICES_KEY, keptHiddenNoticeIds);
         }
         if (model.themeChoice !== keptThemeChoice) {
             keptThemeChoice = model.themeChoice;
@@ -474,8 +485,9 @@ export function startSitePage(site: SiteConfig): void {
     }
 
     /** Returns the ids of the entries the visitor marked as favourites on a visit before. The model drops any it does not list. */
-    function readFavourites(): string[] {
-        const saved = store.readJson(FAVOURITES_KEY);
+    /** Reads the ids kept at `key`, as a JSON array. Anything else kept there counts as none. */
+    function readIds(key: string): string[] {
+        const saved = store.readJson(key);
         return Array.isArray(saved) ? saved.filter((id): id is string => typeof id === 'string') : [];
     }
 
