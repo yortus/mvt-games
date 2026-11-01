@@ -1108,18 +1108,20 @@ to settle.
 ### 13.1 Follow-ups from the restructure
 
 Found while doing steps 1 to 11 (2026-10-30), and left for the owner to
-decide or for later work. Strike each through when it's settled.
+decide or for later work. Strike each through when it's settled. On
+2026-11-01, when 075 was archived, the items still open moved to task
+[090](../tasks/backlog/090-book-follow-ons.md), with the chapters numbered
+as they are now.
 
-1. **Merge `docs-book` into `vnext`.** The owner's call, after reading the
-   book. The branch's commits sit on `vnext` at `7d35702b`. If `vnext` has
-   moved on, rebase first and check the docs build, the section anchors
-   and the playground's tests again.
+1. ~~**Merge `docs-book` into `vnext`.**~~ Done 2026-11-01: the branch
+   went onto main as one commit, `e0e13c2d`.
 2. **The book's length.** It came out at about 97,000 words, against
    84,900 before. The merges removed the repetition, but the new concrete
    openings, Common Mistakes, summaries and further reading added more.
    Chapters 8, 10, 12 and 16 are the longest, at 3,400 to 4,500 words
    each. Decide whether a further tightening pass is wanted.
-3. **Where Part IV sits.** One reader of the finished book suggested
+3. ~~**Where Part IV sits.**~~ Settled 2026-11-01, when Part IV was
+   taken apart (step 15). One reader of the finished book suggested
    moving Part IV (Why MVT Works) after Part V (Advanced Presentation
    Topics). Its case: Part V barely uses Part IV, Part V would then
    follow straight on from Part III (Chapter 17 picks up Chapter 12's
@@ -1132,7 +1134,7 @@ decide or for later work. Strike each through when it's settled.
    Chapter 16 says so in an "In this project" aside. Decide whether to
    change the library (and then the aside), or keep them as a documented
    exception.
-5. **Kwazy Cactii's random source.** Its game model (`createGameModel`)
+5. ~~**Kwazy Cactii's random source.**~~ Task 073 covers it. Its game model (`createGameModel`)
    takes no `random`, though its board model does, so its visual test
    depends on v-snap seeding `Math.random`, which Chapter 23 calls a
    safety net and not the fix. Task
@@ -1157,7 +1159,8 @@ decide or for later work. Strike each through when it's settled.
    `progress`, and then simplify Chapter 5's example.
 10. ~~**Steps 12 to 14.** The interactive examples and the print build
     (section 9) aren't started.~~ Done 2026-10-30.
-11. **Publishing the PDF.** `npm run print` makes the book's PDF from a
+11. ~~**Publishing the PDF.**~~ Done: each deploy prints it, and the
+    Preface links to it. `npm run print` makes the book's PDF from a
     built site, but neither the build nor the deploy runs it, so the PDF
     isn't online, and the Preface doesn't offer it. Decide whether the
     deploy should print it (it needs Playwright's browser, which CI already

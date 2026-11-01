@@ -31,7 +31,7 @@ every binding on every refresh),
 [the watch API](../../packages/libraries/utils/src/watch-api/README.md),
 [the playground](../../packages/sites/playground/) and
 [its docs embeds](../archive/061-playground-embeds-for-the-docs.md),
-[075](./075-docs-as-a-book.md) (the docs as a book),
+[075](../archive/075-docs-as-a-book.md) (the docs as a book),
 [077](./077-audio90-studio.md) (the Studio, the first app-shaped MVT site
 after the Arcade's page).
 

@@ -6,7 +6,7 @@
 | Created  | 2026-10-17 |
 | Updated  | 2026-10-29 |
 
-**Folded into [075](../proposals/075-docs-as-a-book.md), section 9, on
+**Folded into [075](075-docs-as-a-book.md), section 9, on
 2026-10-29.** Its four questions are answered in 075 section 9.4, and its
 work is 075's implementation steps 12 and 13.
 

@@ -35,7 +35,7 @@ the docs' `TryIt.vue`. Nothing measured yet.
 [its model](../../packages/sites/playground/src/embed/embed-model.ts),
 [TryIt.vue](../../packages/sites/docs/.vitepress/components/TryIt.vue),
 [the book's shape](../../packages/sites/docs/.vitepress/book.ts),
-[075](../proposals/075-docs-as-a-book.md) (the book and its embeds),
+[075](075-docs-as-a-book.md) (the book and its embeds),
 [062](../tasks/backlog/062-playground-on-phones-and-safari.md) (the playground on phones),
 [063](../tasks/backlog/063-playground-shortcuts-while-the-preview-has-focus.md) (shortcuts while the preview has focus),
 [080](../proposals/080-audio80-voices-in-the-audio90.md) (which may change the chip the Sound sheet describes).
