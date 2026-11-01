@@ -35,14 +35,37 @@ export interface RunSandboxOptions {
  * `project` asks for, calls `start`, and runs the MVT loop each frame: the
  * project's `update`, then `updateView` and `refreshView` over its root, then
  * a draw. It measures each frame, and sends the page its performance a few
- * times a second. The page pauses, steps and speeds it up with messages. An error
- * stops the loop, so the page does not fill with the same error sixty times
- * a second.
+ * times a second. The page pauses, steps and speeds it up with messages.
+ * While paused, it draws nothing until a step, which leaves the computer
+ * free. An error stops the loop, so the page does not fill with the same
+ * error sixty times a second.
  */
 export async function runSandbox(options: RunSandboxOptions): Promise<void> {
     const { report, mainModule } = options;
     const fail = (phase: ErrorPhase, error: unknown): void => report.post({ kind: 'error', phase, ...report.describe(error) });
     setInterval(() => report.post({ kind: 'heartbeat' }), HEARTBEAT_MS);
+
+    // Listening from the start, since the page answers `started` with whether the run is paused, and its speed
+    let isPaused = false;
+    let speed = 1;
+    let stepMs = 0;
+    window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
+        if (event.source !== window.parent) return;
+        const message = event.data;
+        if (message.kind === 'pause') isPaused = true;
+        else if (message.kind === 'resume') isPaused = false;
+        else if (message.kind === 'step') stepMs += message.deltaMs;
+        else if (message.kind === 'set-speed') speed = message.speed;
+        else if (message.kind === 'set-background' && /^#[0-9a-f]{6}$/i.test(message.colour)) {
+            document.documentElement.style.background = message.colour;
+            document.body.style.background = message.colour;
+        }
+        else if (message.kind === 'key') {
+            // Fired where a real key press would be, so listeners on the window and the document both hear it
+            const { type, ...init } = message.key;
+            (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent(type, { ...init, bubbles: true, cancelable: true }));
+        }
+    });
 
     let project: Project;
     try {
@@ -73,24 +96,9 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
     }
 
     const meter = createPerformanceMeter({ takeGpuMs: host.takeGpuMs });
-    let isPaused = false;
-    let speed = 1;
-    let stepMs = 0;
     let lastTime: number | undefined;
     let frames = 0;
     let sentSamples = 0;
-    window.addEventListener('message', (event: MessageEvent<HostMessage>) => {
-        if (event.source !== window.parent) return;
-        const message = event.data;
-        if (message.kind === 'pause') isPaused = true;
-        else if (message.kind === 'resume') isPaused = false;
-        else if (message.kind === 'step') stepMs += message.deltaMs;
-        else if (message.kind === 'set-speed') speed = message.speed;
-        else if (message.kind === 'set-background' && /^#[0-9a-f]{6}$/i.test(message.colour)) {
-            document.documentElement.style.background = message.colour;
-            document.body.style.background = message.colour;
-        }
-    });
     requestAnimationFrame(frame);
 
     function frame(time: number): void {
@@ -99,12 +107,17 @@ export async function runSandbox(options: RunSandboxOptions): Promise<void> {
         const deltaMs = isPaused ? stepMs : elapsed * speed;
         const isAdvancing = !isPaused || stepMs > 0;
         stepMs = 0;
+        // The chip keeps the sound card's time, so it is paused while the project is
+        if (isAdvancing) sound.made()?.resume();
+        else sound.made()?.pause();
+        // A paused project's views show what they showed, so it draws only its first frame, and each step
+        if (!isAdvancing && frames > 0) {
+            requestAnimationFrame(frame);
+            return;
+        }
         meter.startFrame();
         (globalThis as { __pgFrameStart?: number }).__pgFrameStart = performance.now();
         try {
-            // The chip keeps the sound card's time, so it is paused while the project is
-            if (isAdvancing) sound.made()?.resume();
-            else sound.made()?.pause();
             if (isAdvancing) {
                 // Type errors don't stop a project running, so its model may have no `update`
                 if (typeof ticked?.update === 'function') ticked.update(deltaMs);

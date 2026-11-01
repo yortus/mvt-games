@@ -1,5 +1,7 @@
 import { defineConfig } from 'vitepress';
 import { withMermaid } from 'vitepress-plugin-mermaid';
+import { createSidebar, fillSectionReferences, numberExperiments, numberHeadings, PRINTED_BOOK_FILE, toBookTitle, writeRedirects } from './book';
+import { createSearchRender } from './search-render';
 
 // BASE_URL from CI is the repo root (e.g. /mvt-games/).
 // VitePress docs live under /docs/ within that base.
@@ -26,15 +28,43 @@ const shareImage = {
 };
 
 export default withMermaid(defineConfig({
+    // The site's name, shared with the Arcade and the playground. The book's
+    // own title, Building Web Games with MVT, heads its preface and sidebar.
     title: 'MVT Games',
-    description: 'Architecture guides, style conventions, and reactivity patterns for the MVT Games project.',
+    description: 'Building Web Games with MVT: a book about the Model-View-Ticker architecture for games that run in the browser, with examples that run in the page.',
     base,
     outDir: '../../../dist/docs',
-    // articles/ holds drafts that are not published yet.
-    srcExclude: ['RESTRUCTURE-PLAN.md', 'articles/**'],
+    // articles/ holds drafts that are not published yet, and ai-agents/ holds
+    // the skills for AI agents, which link into the book but aren't part of it.
+    srcExclude: ['articles/**', 'ai-agents/**'],
     ignoreDeadLinks: [
         /^\/playground\//,
     ],
+
+    // Numbers each page's headings and experiments from its file name, and
+    // fills in each `[§](page#section)` link with that section's number and
+    // heading (book.ts)
+    markdown: {
+        config: (md) => {
+            md.use(numberHeadings);
+            md.use(numberExperiments);
+            md.use(fillSectionReferences);
+            // A line break within a paragraph is a space. Left as a line
+            // break, Vue drops it between two elements, as between a bold
+            // phrase ending one line and a link starting the next
+            md.renderer.rules.softbreak = () => ' ';
+        },
+    },
+
+    // A chapter's title carries its number: "8. Bindings"
+    transformPageData(pageData) {
+        pageData.title = toBookTitle(pageData.relativePath, pageData.title);
+    },
+
+    // Keeps the book's old addresses working (book.ts)
+    buildEnd(siteConfig) {
+        writeRedirects({ outDir: siteConfig.outDir, base: siteConfig.site.base });
+    },
 
     appearance: 'dark',
 
@@ -42,7 +72,7 @@ export default withMermaid(defineConfig({
     // summary and address, with the site's picture. Sites that build link
     // previews read these tags, and no page sets them itself.
     transformHead({ pageData, siteData }) {
-        // The address VitePress serves the page at: `architecture/models.html`, or `architecture/` for an index
+        // The address VitePress serves the page at: `chapters/08-bindings.html`, or `/` for an index
         const path = pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '.html');
         return [
             ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
@@ -59,10 +89,12 @@ export default withMermaid(defineConfig({
     },
 
     // Inline __SITE_ROOT__ so the custom Layout can build cross-site links
-    // (Arcade, Playground) that bypass VitePress's SPA router.
+    // (Arcade, Playground) that bypass VitePress's SPA router, and
+    // __SITE_ORIGIN__ so a printed page can say where it is online.
     vite: {
         define: {
             __SITE_ROOT__: JSON.stringify(repoBase),
+            __SITE_ORIGIN__: JSON.stringify(siteOrigin),
         },
         // Mermaid 11.17 added `fastdom` and its promise extension, both
         // CommonJS/UMD, which `withMermaid`'s own pre-bundle list does not
@@ -85,141 +117,15 @@ export default withMermaid(defineConfig({
         // taking the link as a page of the docs.
         logoLink: { link: `${siteBase}arcade/`, target: '_self' },
 
-        sidebar: [
-            {
-                text: 'Home',
-                items: [
-                    { text: 'Documentation Home', link: '/' },
-                ],
-            },
-            {
-                text: 'Architecture',
-                items: [
-                    { text: 'Overview', link: '/architecture/' },
-                    { text: 'Models', link: '/architecture/models' },
-                    { text: 'Views', link: '/architecture/views' },
-                    { text: 'Bindings', link: '/architecture/bindings' },
-                    { text: 'The Ticker', link: '/architecture/ticker' },
-                    { text: 'Rules', link: '/architecture/rules' },
-                    {
-                        text: 'Principles',
-                        items: [
-                            { text: 'Overview', link: '/architecture/principles/' },
-                            { text: 'Separation of Concerns', link: '/architecture/principles/separation-of-concerns' },
-                            { text: 'Single Source of Truth', link: '/architecture/principles/single-source-of-truth' },
-                            { text: 'Command-Query Separation', link: '/architecture/principles/command-query-separation' },
-                            { text: 'Dependency Inversion', link: '/architecture/principles/dependency-inversion' },
-                            { text: 'Composite Reuse', link: '/architecture/principles/composite-reuse' },
-                            { text: 'Design by Contract', link: '/architecture/principles/design-by-contract' },
-                            { text: 'Illegal States Unrepresentable', link: '/architecture/principles/illegal-states-unrepresentable' },
-                            { text: 'Design for Testability', link: '/architecture/principles/design-for-testability' },
-                        ],
-                    },
-                    { text: 'Heritage', link: '/architecture/heritage' },
-                ],
-            },
-            {
-                text: 'Building with MVT',
-                items: [
-                    { text: 'Quickstart', link: '/building-with-mvt/quickstart' },
-                    { text: 'The Game Loop', link: '/building-with-mvt/the-game-loop' },
-                    {
-                        text: 'Simulating the World',
-                        items: [
-                            { text: 'Models', link: '/building-with-mvt/simulating-the-world/models' },
-                            { text: 'Time Management', link: '/building-with-mvt/simulating-the-world/time-management' },
-                            { text: 'Model Composition', link: '/building-with-mvt/simulating-the-world/model-composition' },
-                        ],
-                    },
-                    {
-                        text: 'Presenting the World',
-                        items: [
-                            { text: 'Views', link: '/building-with-mvt/presenting-the-world/views' },
-                            { text: 'Bindings', link: '/building-with-mvt/presenting-the-world/bindings' },
-                            { text: 'Declarative Views', link: '/building-with-mvt/presenting-the-world/declarative-views' },
-                            { text: 'View Composition', link: '/building-with-mvt/presenting-the-world/view-composition' },
-                            { text: 'Bindings in Depth', link: '/building-with-mvt/presenting-the-world/bindings-in-depth' },
-                            { text: 'Presenting Collections', link: '/building-with-mvt/presenting-the-world/collections' },
-                            { text: 'Sound and Music', link: '/building-with-mvt/presenting-the-world/sound' },
-                            { text: 'Reading Layout Back', link: '/building-with-mvt/presenting-the-world/reading-layout' },
-                        ],
-                    },
-                    {
-                        text: 'Reacting to Changes',
-                        items: [
-                            { text: 'Why Polling', link: '/building-with-mvt/reacting-to-changes/why-polling' },
-                            { text: 'Change Detection', link: '/building-with-mvt/reacting-to-changes/change-detection' },
-                            { text: 'Computed Values', link: '/building-with-mvt/reacting-to-changes/computed-values' },
-                            { text: 'Events and Signals', link: '/building-with-mvt/reacting-to-changes/events-and-signals' },
-                        ],
-                    },
-                    {
-                        text: 'Adding Visual Polish',
-                        items: [
-                            { text: 'Presentation State', link: '/building-with-mvt/adding-visual-polish/presentation-state' },
-                            { text: 'Taming Complex Views', link: '/building-with-mvt/adding-visual-polish/taming-complex-views' },
-                            { text: 'Reduced Motion', link: '/building-with-mvt/adding-visual-polish/reduced-motion' },
-                        ],
-                    },
-                    {
-                        text: 'Animating Transitions',
-                        items: [
-                            { text: 'Phase-Based Transitions', link: '/building-with-mvt/animating-transitions/phase-based-transitions' },
-                            { text: 'Open-Ended Phases', link: '/building-with-mvt/animating-transitions/open-ended-phases' },
-                            { text: 'Complex Sequences', link: '/building-with-mvt/animating-transitions/complex-sequences' },
-                        ],
-                    },
-                    {
-                        text: 'Iterating with Confidence',
-                        items: [
-                            { text: 'Testing', link: '/building-with-mvt/iterating-with-confidence/testing' },
-                            { text: 'Testing Models', link: '/building-with-mvt/iterating-with-confidence/testing-models' },
-                            { text: 'Testing Views', link: '/building-with-mvt/iterating-with-confidence/testing-views' },
-                            { text: 'Visual Tests', link: '/building-with-mvt/iterating-with-confidence/visual-tests' },
-                        ],
-                    },
-                    {
-                        text: 'Avoiding Pitfalls',
-                        items: [
-                            { text: 'Common Mistakes', link: '/building-with-mvt/avoiding-pitfalls/common-mistakes' },
-                        ],
-                    },
-                    {
-                        text: 'Performance',
-                        items: [
-                            { text: 'Why Performance Matters', link: '/building-with-mvt/performance/why-performance-matters' },
-                            { text: 'Hot Paths', link: '/building-with-mvt/performance/hot-paths' },
-                            { text: 'Performance Measurements', link: '/building-with-mvt/performance/measurements' },
-                            { text: 'Benchmarking Methods', link: '/building-with-mvt/performance/benchmarking-methods' },
-                        ],
-                    },
-                ],
-            },
-            {
-                text: 'Reference',
-                items: [
-                    { text: 'Architecture Rules', link: '/reference/architecture-rules' },
-                    { text: 'Style Guide', link: '/reference/style-guide' },
-                    { text: 'Glossary', link: '/reference/glossary' },
-                    { text: 'Project Structure', link: '/reference/project-structure' },
-                ],
-            },
-            {
-                text: 'AI Agents',
-                collapsed: true,
-                items: [
-                    { text: 'Agent Orientation', link: '/ai-agents/' },
-                    { text: 'Skill: MVT Model', link: '/ai-agents/skill-mvt-model' },
-                    { text: 'Skill: MVT View', link: '/ai-agents/skill-mvt-view' },
-                    { text: 'Skill: Code Style', link: '/ai-agents/skill-code-style' },
-                    { text: 'Skill: Code Review', link: '/ai-agents/skill-code-review' },
-                    { text: 'Skill: Documentation', link: '/ai-agents/skill-documentation' },
-                ],
-            },
-        ],
+        // The book: its parts, its appendices and the pages for working in
+        // this repo, in reading order, with a link to the printed book (book.ts)
+        sidebar: createSidebar(`${base}${PRINTED_BOOK_FILE}`),
 
+        // Appendix G's cheat sheets are written out for the index, since
+        // the search doesn't run the component that draws them
         search: {
             provider: 'local',
+            options: { _render: createSearchRender() },
         },
     },
 }));

@@ -96,8 +96,14 @@ button:disabled {
 }
 
 /* Share and Export sit at the right */
-.header-share {
+/* The buttons at the right, from Cheat sheet on */
+.header-reference {
     margin-left: auto;
+}
+
+.header-reference-open {
+    border-color: var(--pg-accent);
+    color: var(--pg-accent);
 }
 
 .header button {
@@ -113,26 +119,94 @@ button:disabled {
     color-scheme: dark;
 }
 
-.theme-picker {
+/* The settings: sliders in the nav's colours, as the Help's (i) is, and a
+   panel below them, part of the nav, so in its colours too */
+.settings {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.theme-picker-menu {
-    font: inherit;
-    font-size: 13px;
+.settings-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: none;
     color: var(--site-nav-text-muted);
+    transition: color 0.15s, background 0.15s;
+}
+
+.settings-button::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M2 4h12M2 8h12M2 12h12'/%3E%3Ccircle cx='5' cy='4' r='1.7' fill='%23000'/%3E%3Ccircle cx='10.5' cy='8' r='1.7' fill='%23000'/%3E%3Ccircle cx='7' cy='12' r='1.7' fill='%23000'/%3E%3C/svg%3E") center / 18px no-repeat;
+}
+
+.settings-button:hover,
+.settings-button:focus-visible {
+    color: var(--site-nav-text);
+    background: var(--site-nav-hover-bg);
+}
+
+.settings-button[aria-expanded="true"] {
+    color: var(--site-nav-text);
+    background: var(--site-nav-active-bg);
+}
+
+.settings-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(280px, calc(100vw - 24px));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    box-sizing: border-box;
     background: var(--site-nav-bg);
     border: 1px solid var(--site-nav-border);
-    border-radius: 6px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+    color: var(--site-nav-text);
+    font-size: 13px;
+}
+
+.settings-theme {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-label {
+    font-size: 12px;
+    color: var(--site-nav-text-muted);
+}
+
+.settings-theme-menu {
+    color: var(--site-nav-text);
+    background: var(--site-nav-bg);
+    border-color: var(--site-nav-border);
     padding: 4px 8px;
+}
+
+.settings-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
     cursor: pointer;
 }
 
-.theme-picker-menu:hover,
-.theme-picker-menu:focus-visible {
-    color: var(--site-nav-text);
+.settings-about {
+    margin: 0 0 0 22px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--site-nav-text-muted);
 }
 
 /* The Help's (i), last in the nav, as the Arcade's nav has its own (i): an icon in the nav's colours */
@@ -174,15 +248,6 @@ button:disabled {
     background: var(--site-nav-active-bg);
 }
 
-/* Shown on a narrow screen only, where the menu lies over it, unseen */
-.theme-picker-icon {
-    display: none;
-    padding: 6px;
-    color: var(--site-nav-text-muted);
-    font-size: 18px;
-    line-height: 1;
-}
-
 /* The panel tabs are for narrow screens only */
 .panel-tabs {
     display: none;
@@ -197,6 +262,7 @@ button:disabled {
     --console-height: 200px;
     display: grid;
     grid-template-columns: var(--files-width) 5px minmax(0, 1fr) 5px var(--run-width);
+    grid-template-rows: minmax(0, 1fr);
     min-height: 0;
 }
 
@@ -206,6 +272,28 @@ button:disabled {
 
 .workspace-files-folded > .divider:first-of-type {
     visibility: hidden;
+}
+
+/* The cheat sheet covers the run, in the run's column, so the editor keeps
+   its width. The run goes on behind it */
+.reference-pane,
+.run-pane {
+    grid-column: 5;
+    grid-row: 1;
+}
+
+.reference-pane {
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--pg-background);
+}
+
+.workspace:not(.workspace-reference-open) > .reference-pane {
+    display: none;
 }
 
 .divider {
@@ -466,19 +554,40 @@ button:disabled {
     border-bottom: 1px solid var(--pg-border);
 }
 
-.run-run {
-    background: color-mix(in srgb, var(--pg-success) 22%, var(--pg-raised));
-    border-color: var(--pg-success);
-    color: var(--pg-success);
+/* Step, Slow, Normal and Fast: one group, the one in effect marked. The
+   playground and the embeds share it */
+.play-controls {
+    display: flex;
 }
 
-.run-on-change {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: var(--pg-muted);
-    cursor: pointer;
+.play-controls .play-control {
+    border-radius: 0;
+    margin-left: -1px;
+}
+
+.play-controls .play-control:first-child {
+    border-radius: 6px 0 0 6px;
+    margin-left: 0;
+}
+
+.play-controls .play-control:last-child {
+    border-radius: 0 6px 6px 0;
+}
+
+.play-controls .play-control:hover:not(:disabled),
+.play-controls .play-control-active {
+    position: relative;
+}
+
+.play-controls .play-control-active {
+    border-color: var(--pg-accent);
+    color: var(--pg-accent);
+    background: color-mix(in srgb, var(--pg-accent) 16%, var(--pg-raised));
+}
+
+/* Restart, or the note that takes its place, at the right */
+.run-restart {
+    margin-left: auto;
 }
 
 .run-phase {
@@ -1167,22 +1276,221 @@ button:disabled {
     color: var(--pg-accent);
 }
 
-/* --- Narrow screens: one panel at a time, chosen by tabs --- */
+/* --- The cheat sheet, in the playground's pane and the embed's drawer --- */
 
-/* The site's nav folds its links away at 820px: the theme's menu becomes its ◐ */
-@media (max-width: 820px) {
-    .theme-picker-icon {
-        display: block;
-    }
-
-    .theme-picker-menu {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-    }
+.reference-layer {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
+.reference {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--pg-panel);
+    font-size: 13px;
+}
+
+.reference-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--pg-border);
+}
+
+.reference-title {
+    flex: none;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.reference-search {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    color: var(--pg-text);
+    background: var(--pg-background);
+    border: 1px solid var(--pg-border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    outline: none;
+}
+
+.reference-search:focus {
+    border-color: var(--pg-accent);
+}
+
+.reference-close {
+    flex: none;
+    padding: 0 8px;
+    font-size: 16px;
+    line-height: 22px;
+}
+
+.reference-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--pg-border);
+}
+
+.reference-chip {
+    padding: 1px 8px;
+    font-size: 12px;
+    border-radius: 10px;
+}
+
+.reference-chip-chosen {
+    border-color: var(--pg-accent);
+    color: var(--pg-accent);
+    background: var(--pg-selected);
+}
+
+.reference-every {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    color: var(--pg-muted);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.reference-loading {
+    padding: 12px 8px;
+    color: var(--pg-muted);
+}
+
+.reference-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.reference-rows {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 4px 10px 16px;
+}
+
+.reference-rows p {
+    margin: 6px 0;
+}
+
+.reference code,
+.reference pre {
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+}
+
+.reference p code,
+.reference-entry-use code {
+    padding: 0 3px;
+    border-radius: 4px;
+    background: var(--pg-background);
+}
+
+.reference-note,
+.reference-links {
+    color: var(--pg-muted);
+}
+
+.reference-link {
+    color: var(--pg-accent);
+}
+
+.reference-group {
+    margin: 14px 0 4px;
+    font-size: 12px;
+    color: var(--pg-accent);
+}
+
+.reference-entry {
+    padding: 5px 0;
+    border-bottom: 1px solid var(--pg-border);
+}
+
+/* The entry's name and what it's for, as one button that opens it */
+.reference-entry-head {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.reference-entry-name {
+    margin-right: 6px;
+    color: var(--pg-accent);
+    font-weight: 600;
+}
+
+.reference-entry-head:hover .reference-entry-name,
+.reference-entry-open .reference-entry-name {
+    text-decoration: underline;
+}
+
+.reference-signature {
+    margin: 3px 0 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--pg-muted);
+}
+
+.reference-summary {
+    color: var(--pg-muted);
+}
+
+.reference-snippet {
+    margin: 6px 0;
+    padding: 6px 8px;
+    overflow: auto;
+    border-radius: 6px;
+    background: var(--pg-background);
+}
+
+.reference-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.reference-import {
+    overflow-wrap: anywhere;
+}
+
+.reference-action {
+    padding: 1px 8px;
+    font-size: 12px;
+}
+
+/* --- Narrow screens: one panel at a time, chosen by tabs --- */
+
 @media (max-width: 800px) {
+
+    /* The cheat sheet is a panel of its own, with a tab */
+    .header-reference {
+        display: none;
+    }
+
+    .header-share {
+        margin-left: auto;
+    }
 
     .panel-tabs {
         display: flex;
@@ -1195,7 +1503,8 @@ button:disabled {
         border-bottom: 2px solid transparent;
         border-radius: 0;
         background: none;
-        padding: 8px;
+        padding: 8px 4px;
+        white-space: nowrap;
     }
 
     .panel-tab-active {
@@ -1208,17 +1517,28 @@ button:disabled {
         grid-template-rows: minmax(0, 1fr);
     }
 
+    .reference-pane,
+    .run-pane {
+        grid-column: 1;
+    }
+
     .workspace > .divider-vertical,
     .files-fold {
         display: none;
     }
 
     .show-files .editor-pane,
+    .show-files .reference-pane,
     .show-files .run-pane,
     .show-code .files,
+    .show-code .reference-pane,
     .show-code .run-pane,
+    .show-reference .files,
+    .show-reference .editor-pane,
+    .show-reference .run-pane,
     .show-run .files,
-    .show-run .editor-pane {
+    .show-run .editor-pane,
+    .show-run .reference-pane {
         display: none;
     }
 

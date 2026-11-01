@@ -1,288 +1,82 @@
 # Skill: Writing MVT Models
 
-> Self-contained instructions for writing a correct MVT model in this
-> project. Load this file before writing or modifying model code.
+> Load before writing or changing anything under a `models/` directory, or
+> a `*-model.ts` file. What a model is, and why, is taught in the book,
+> mostly in [Chapter 4, Models](../chapters/04-models.md) and
+> [Chapter 6, Time and Phases](../chapters/06-time-and-phases.md). This
+> file is the checklist, the lint rules, and what must pass before you
+> hand over.
 
 ---
 
-## File Structure
-
-**[project convention]** Each model file follows this internal ordering:
-
-```ts
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
-
-// Public interface - this is the contract consumers depend on
-
-// ---------------------------------------------------------------------------
-// Options (if needed)
-// ---------------------------------------------------------------------------
-
-// Options type for the factory function
-
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
-
-// createXxx() factory function implementation
-
-// ---------------------------------------------------------------------------
-// Internals (if needed)
-// ---------------------------------------------------------------------------
-
-// Internal types, constants, and helpers used only inside this file
-```
-
-Exports (types, interfaces, factory functions) go above all internals.
-Main types before helper types they compose.
-
-## The `update(deltaMs)` Contract
-
-**[MVT requirement]** Every model exposes an `update(deltaMs: number)` method.
-The ticker calls it once per frame. This is the **sole mechanism** by which
-time flows into a model.
-
-The contract guarantees:
-- **Determinism** - same sequence of `update()` calls produces the same state.
-- **Ticker control** - pause, slow-motion, fast-forward, and single-step all
-  work because models only see `deltaMs`.
-- **Consistent snapshots** - model state is stable between `update()` and
-  view `refresh()`.
-
-### Forbidden Time Mechanisms
-
-**[MVT requirement]** Models must never use:
-
-| Forbidden                          | Why                                              |
-| ---------------------------------- | ------------------------------------------------ |
-| `setTimeout` / `setInterval`       | Fires on wall-clock time, not model time         |
-| `requestAnimationFrame`            | Bypasses the ticker's `deltaMs` pipeline         |
-| Auto-playing GSAP tweens           | GSAP's global ticker advances them independently |
-| `Date.now()` / `performance.now()` | Wall-clock reads create non-determinism          |
-
-Any mechanism that advances state exclusively through `update(deltaMs)` is
-valid.
-
-## GSAP Timeline Recipe
-
-**[project convention]** This project uses GSAP paused timelines as a
-convenient way to express timed sequences. This is not an MVT
-requirement - other codebases could use plain arithmetic, a different
-tweening library, or any approach that keeps time under ticker control.
-
-### Step 1 - Create once at construction time
-
-```ts
-const timeline = gsap.timeline({
-    paused: true,              // detach from GSAP's global ticker
-    autoRemoveChildren: true,  // clean up completed tweens automatically
-});
-```
-
-### Step 2 - Append tweens as transitions are scheduled
-
-```ts
-function scheduleMove(targetX: number, targetY: number): void {
-    const t = timeline.time();
-    timeline.to(state, { x: targetX, y: targetY, duration: 0.3, ease: 'none' }, t);
-    timeline.set(state, { moving: false }, t + 0.3);
-}
-```
-
-### Step 3 - Advance in `update()`
-
-```ts
-update(deltaMs) {
-    const deltaSec = deltaMs / 1000;
-    timeline.time(timeline.time() + deltaSec);
-}
-```
-
-### GSAP Gotchas
-
-- Always use `autoRemoveChildren: true` with explicit tween positioning.
-- Prefer `timeline.set()` over `onComplete` for state transitions.
-- Guard against zero-duration tweens. When `duration = distance / speed` can
-  produce zero, floor with `|| 0.001`.
-
-## Advance-then-Orchestrate Pattern
-
-**[project convention]** When a model uses GSAP timelines, structure
-`update()` in two phases:
-
-1. **Advance** - unconditionally advance every timeline and child model.
-2. **Orchestrate** - check current state and trigger new sequences as needed.
-
-```ts
-update(deltaMs) {
-    const dt = 0.001 * deltaMs;
-    moveTimeline.time(moveTimeline.time() + dt);
-    attackTimeline.time(attackTimeline.time() + dt);
-
-    // Orchestration: trigger next sequence when idle
-    if (!state.moving) scheduleMove();
-}
-```
-
-`update()` must not contain detailed sequencing logic (manual timer arithmetic,
-multi-step state machines). That work belongs in `schedule*()` helpers that
-build timeline sequences declaratively.
-
-## Watching in a Model
-
-A model rarely needs to watch anything: its own code makes its changes, so it
-knows when they happen. When it does watch, such as a sub-model's phase,
-nothing is final while `update` runs. So poll right after the changes you
-watch, at a point you choose on purpose, and use `watch` from `@mvtjs/utils`
-(logic in a step):
-
-```ts
-function update(deltaMs: number): void {
-    boss.update(deltaMs);
-    hitBossWithShots();
-    // Everything that can change the boss's phase has run
-    const w = bossWatcher.poll();
-    if (w.changedTo('defeated')) turnBulletsIntoGems();
-}
-```
-
-Neon Monsoon's game model does this. See
-[Change Detection: Where to Read](../building-with-mvt/reacting-to-changes/change-detection.md#where-to-read).
-
-## Time Leap Safety
-
-Models differ in whether they tolerate large `update()` calls:
-
-- **Leap-safe** - purely arithmetic models (e.g. countdown timers). Any
-  `update()` size produces correct results.
-- **Not leap-safe** - models with orchestration guards, GSAP timeline
-  callbacks, or phase transitions. These need small incremental steps.
-
-Do not assume a model is leap-safe unless you know its internals. When writing
-a model, document whether it is leap-safe if the answer is not obvious.
-
-For testing non-leap-safe models, use `advanceTime`, which steps 16 ms at a
-time and flushes microtasks after each step. In the site, import it from the
-renderer package, which re-exports it:
-
-```ts
-await advanceTime(1600, game); // the test must be async
-```
-
-## Domain Coordinates, Not Pixels
-
-**[MVT requirement]** Model state must use domain-level terms, not
-presentation-specific ones:
-
-| Domain                | Model exposes                                | View computes              |
-| --------------------- | -------------------------------------------- | -------------------------- |
-| Grid-based game       | Fractional `row` / `col`                     | `x = col * tileSize`      |
-| Open arena            | World-unit position (`worldX`, `worldY`)     | Pixel position from scale  |
-| Named states          | `phase: 'inflating' \| 'popped'`             | Sprite frame, alpha, scale |
-| Moments that repeat   | A count: `shotsFired`, and the last one's details | A sound as the count rises |
-
-Views compute pixel positions and visual properties from domain coordinates.
-Models know nothing about screen size or rendering technology.
-
-**Counts, not events.** A view finds most moments, such as a death, in a
-phase that changes. Some moments can happen twice in a row with no change of
-state, such as a shot or a coin. For each kind, the model keeps a count
-(`shotsFired++`) and resets it for a new game. A view plays a sound when the
-count rises. When the sound depends on which one or where, the model also
-keeps the last one's details (`lastBrokenRockSize`). Models never emit
-events or play sounds. See
-[Sound and Music](../building-with-mvt/presenting-the-world/sound.md).
-
-## Factory Function Pattern
-
-**[project convention]** Models use factory functions and plain records, not
-classes:
-
-```ts
-// ---------------------------------------------------------------------------
-// Interface
-// ---------------------------------------------------------------------------
-
-interface TimerModel {
-    readonly remainingMs: number;
-    readonly isExpired: boolean;
-    update: (deltaMs: number) => void;
-}
-
-// ---------------------------------------------------------------------------
-// Options
-// ---------------------------------------------------------------------------
-
-interface TimerModelOptions {
-    readonly durationMs: number;
-}
-
-// ---------------------------------------------------------------------------
-// Factory
-// ---------------------------------------------------------------------------
-
-function createTimerModel(options: TimerModelOptions): TimerModel {
-    const { durationMs } = options;
-    let remainingMs = durationMs;
-
-    const model: TimerModel = {
-        get remainingMs() { return remainingMs; },
-        get isExpired() { return remainingMs <= 0; },
-        update(deltaMs) {
-            if (remainingMs > 0) {
-                remainingMs = Math.max(0, remainingMs - deltaMs);
-            }
-        },
-    };
-
-    return model;
-}
-```
-
-Key points:
-- **Interface** is the public contract - exported and referenced by consumers.
-- **Options object** makes factories extensible without breaking call sites.
-- **Private state** lives in the closure, invisible to consumers.
-- **`readonly` properties** signal "read from outside, mutate only from within."
-- **Getters** expose computed or private-mutable values.
-
-## What to Export
-
-From a model file, export:
-- The model interface (e.g. `TimerModel`)
-- The options interface (e.g. `TimerModelOptions`)
-- The factory function (e.g. `createTimerModel`)
-- Any domain types used in the interface (e.g. `GamePhase`, `TileKind`)
-
-Do not export internal helpers or mutable state types.
-
-Re-export through the directory's barrel file (`index.ts`).
-
-## Forbidden Patterns - Quick Reference
-
-| Pattern                                | Rule         | Fix                                           |
-| -------------------------------------- | ------------ | --------------------------------------------- |
-| `setTimeout` / `setInterval` in model  | M-time       | Use `update(deltaMs)` with arithmetic or GSAP |
-| Module-level `let` in a model file     | M-isolation  | State in the factory's closure: every model the file makes would share it (lint: `@mvtjs/no-module-state`) |
-| Importing a view or view module        | M-isolation  | Models never reference views                  |
-| Storing pixel coordinates              | M-domain     | Use domain units (row/col, world units)       |
-| Fields named for controls (`firePressed`, `swipeCount`), or watching one for a press | M-domain | State named for what a held control does (`isFiring`); an action for a one-off command (`startNewRun()`), which acts at the next update (lint: `@mvtjs/no-control-names`) |
-| Using `class`                          | Style        | Factory function + plain record               |
-| Using `enum` or const-object enum      | Style        | String-literal union                          |
-| Using `null`                           | Style        | Use `undefined`                               |
-| Using `Type` in type names             | Style        | Use `Kind` (e.g. `TileKind`)                  |
-| Using `state` for lifecycle property   | Style        | Use `phase` (e.g. `GamePhase`)                |
-| `array.map()` in `update()` hot path   | H-alloc      | Index-based `for` loop                        |
-| Template-string keys in `update()`     | H-alloc      | Arithmetic encoding (`r * cols + c`)          |
-
-## Full References
-
-- [Models (Learn)](../building-with-mvt/simulating-the-world/models.md) - introduction from scratch
-- [Time Management](../building-with-mvt/simulating-the-world/time-management.md) - GSAP recipes, advance-then-orchestrate
-- [Model Composition](../building-with-mvt/simulating-the-world/model-composition.md) - parent-child delegation
-- [Architecture Rules](../architecture/rules.md) - all model rules (M-time through M-composition)
-- [Style Guide](../reference/style-guide.md) - naming, formatting, file structure
-- [Hot Paths](../building-with-mvt/performance/hot-paths.md) - performance rules for `update()`
-- [Testing Models](../building-with-mvt/iterating-with-confidence/testing-models.md) - testing models, `advanceTime`
+## Before You Write
+
+Read the sections you need, by anchor:
+
+| Topic | Read |
+| --- | --- |
+| The `update(deltaMs)` contract | [Chapter 4](../chapters/04-models.md#the-update-deltams-contract) |
+| What belongs in a model, and what stays out | [Chapter 4](../chapters/04-models.md#splitting-concerns-between-model-and-view), [and out](../chapters/04-models.md#things-to-keep-out-of-a-model) |
+| Domain coordinates, not pixels | [Chapter 4](../chapters/04-models.md#domain-coordinates) |
+| The factory, its interface and options | [Chapter 4](../chapters/04-models.md#writing-a-model-as-a-factory), [Code Style](../working-in-this-repo/code-style.md#factory-functions) |
+| Input: what the player means, not the control | [Chapter 4](../chapters/04-models.md#actions-say-what-the-player-means) |
+| Counts for moments that repeat (`shotsFired`) | [Chapter 4](../chapters/04-models.md#state-that-views-can-notice), [Chapter 9](../chapters/09-noticing-changes.md#counts-moments-that-repeat) |
+| Parents and children, and collections | [Chapter 4](../chapters/04-models.md#trees-of-models), [collections](../chapters/04-models.md#collections-of-models) |
+| Advance, then orchestrate | [Chapter 6](../chapters/06-time-and-phases.md#advance-then-orchestrate) |
+| Phases and a single progress value | [Chapter 6](../chapters/06-time-and-phases.md#phases-and-progress) |
+| Steps of any size up to the ticker's cap, carrying leftover time | [Chapter 6](../chapters/06-time-and-phases.md#steps-of-different-sizes) |
+| Watching a sub-model inside `update` | [Chapter 9](../chapters/09-noticing-changes.md#where-to-poll-for-changes) |
+| Paused GSAP timelines in a model | [Appendix E](../appendices/e-timelines-with-gsap.md) |
+| Hot paths in `update` | [Chapter 24](../chapters/24-hot-paths.md#the-hot-path-rules) |
+| Testing a model, `advanceTime` | [Chapter 15](../chapters/15-testing-models.md#advancing-time) |
+| Every model rule (M-time, M-isolation, M-domain, M-composition) | [Appendix A](../appendices/a-mvt-on-one-page.md#model-rules) |
+
+## Checklist
+
+- Time arrives only as `deltaMs`. No `setTimeout`, `setInterval`,
+  `requestAnimationFrame`, `Date.now()`, `performance.now()`, or a GSAP
+  tween or timeline that isn't paused.
+- No module-level `let`: every model that the file creates would share it. State
+  lives in the factory's closure.
+- No import of a view, a renderer or the ticker.
+- Positions in domain units (`row`, `col`, world units), never pixels.
+  Named phases, never colours or textures.
+- Input as state for a control held (`isThrusting`) or an action for a
+  one-off command (`startNewRun()`), never a control's name.
+- A moment that can repeat without a change of state is a count, reset for
+  a new game, plus the details of the last occurrence if a sound needs them.
+  Models don't emit events or play sounds.
+- A parent updates its children first, then does what spans them
+  (collisions, phase changes). Sequencing lives in `schedule*()` helpers.
+- The model produces the same results at any step size up to the
+  ticker's cap (typically 100 ms). A timer or phase that ends partway
+  through a step carries the time left over into what comes next, in a
+  `while` loop.
+  Collisions are checked along the way, not only at the end of a step,
+  and everything that came due during a step happens.
+- The file follows [Code Organisation](../working-in-this-repo/code-style.md#code-organisation),
+  and exports the interface, options, factory and the domain types that
+  its interface uses, and only those.
+- No per-tick allocations in `update` (index loops, numeric keys).
+
+## Lint
+
+ESLint runs the first three on `models/` directories and `*-model.ts`
+files in the sites, and the last row on every file:
+
+| Rule | Reports |
+| --- | --- |
+| `@mvtjs/no-wall-clock` | Timers, clock reads and auto-playing tweens |
+| `@mvtjs/no-module-state` | Module-level `let` |
+| `@mvtjs/no-control-names` | Members named for a control (`firePressed`, `swipeCount`) |
+| `@mvtjs/no-conditional-poll`, `no-repeated-poll`, `no-unused-watch`, `no-inline-watch` | A watcher or reaction called behind a condition, twice in a step, never, or made and used in one expression |
+
+## Before You Hand Over
+
+- A test beside the model (`xxx-model.test.ts`), creating it, acting
+  through its public API, and asserting on its state. Expected values come
+  from the model's own constants, not copied numbers. Move time on in
+  steps no bigger than the ticker's cap, with `advanceTime`, never one
+  big `update`.
+- `npm run lint`, `npx tsc -b` and `npm run test:unit` pass.
+- Load the `code-style` skill's checklist too.

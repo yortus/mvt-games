@@ -1,6 +1,9 @@
 import { refreshView, updateView } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import { EXPORT_PACKAGES } from 'virtual:export-packages';
+import { REFERENCE_SHEETS_URL } from 'virtual:reference-sheets';
+import type { ReferenceSheet } from '../cheat-sheets';
+import { loadExample } from './example-loader';
 import { EXAMPLES, findExample, STARTERS } from './examples';
 import { exportProject, zipExportedProject } from './export';
 import { createLanguageClient } from './language';
@@ -27,7 +30,8 @@ import {
     saveSettings,
     type StoredProject,
 } from './storage';
-import { HelpButtonView, PlaygroundView, THEME_CHOICES, ThemePickerView, THEMES } from './views';
+import { THEME_CHOICES, THEMES } from './editor';
+import { HelpButtonView, PlaygroundView, SettingsView } from './views';
 import './nav.css';
 import './playground.css';
 
@@ -42,7 +46,8 @@ import './playground.css';
 // links and exported projects, and keeps the URL naming the example open. It
 // reads the project to open from the URL: an example, or a share link.
 // Without one, it opens the project the
-// visitor last worked on, or the first example. Whatever opens, runs. The
+// visitor last worked on, or the first example. It fetches the cheat
+// sheets the first time the cheat sheet opens. Whatever opens, runs. The
 // sandbox's origin is opaque, so a shared project cannot reach anything the
 // site keeps for the visitor.
 
@@ -84,6 +89,7 @@ const settingsWatcher = watch({
     runWidth: () => model.layout.runWidth,
     consoleHeight: () => model.layout.consoleHeight,
     isFilesFolded: () => model.layout.isFilesFolded,
+    isReferenceOpen: () => model.layout.isReferenceOpen,
 });
 
 // The language service starts once the page has drawn, since loading
@@ -93,13 +99,22 @@ const language = createLanguageClient({ files: () => model.files, isBarrelKept: 
 const root = document.getElementById('playground');
 if (root === null) throw new Error('The page has no #playground element');
 root.append(PlaygroundView({ model, examples: EXAMPLES, starters: STARTERS, language }));
-// The theme's menu, and the Help's (i) after the GitHub link, are in the
-// site's nav, a second root, ticked as the first is
+// The settings, and the Help's (i) after the GitHub link, are in the site's
+// nav, a second root, ticked as the first is
 const nav = document.querySelector<HTMLElement>('.site-nav');
 const navTools = document.getElementById('site-nav-tools');
 const navEnd = document.getElementById('site-nav-end');
 if (nav === null || navTools === null || navEnd === null) throw new Error('The page has no site nav with #site-nav-tools and #site-nav-end');
-navTools.append(ThemePickerView({ themes: THEME_CHOICES, theme: () => model.theme, onThemeChosen: (theme) => model.setTheme(theme) }));
+navTools.append(SettingsView({
+    themes: THEME_CHOICES,
+    theme: () => model.theme,
+    isRunOnChange: () => model.isRunOnChange,
+    isOpen: () => model.layout.isSettingsOpen,
+    onPressed: () => model.layout.toggleSettings(),
+    onClosed: () => model.layout.closeSettings(),
+    onThemeChosen: (theme) => model.setTheme(theme),
+    onRunOnChangeToggled: (isOn) => model.setRunOnChange(isOn),
+}));
 navEnd.append(HelpButtonView({
     isOpen: () => model.layout.isHelpOpen,
     // The nav is above the Help's backdrop, so the (i) closes the Help as well as opening it
@@ -123,6 +138,7 @@ function frame(timeMs: number): void {
     lastTimeMs = timeMs;
     model.update(deltaMs);
     followModel(model);
+    loadReferenceSheetsIfOpen(model);
     saveChangedSettings(model);
     updateView(root!, deltaMs);
     updateView(nav!, deltaMs);
@@ -180,13 +196,17 @@ async function openDatabase(): Promise<ProjectDatabase> {
 /**
  * The project to open first, and which example it is, if it is one: what
  * the URL names, or else the kept project open last, or else the one saved
- * last, or else the first example.
+ * last, or else the first example. The URL may name one of the book's
+ * examples, which the playground doesn't list: it opens as a new project,
+ * as a shared one does.
  */
 async function readFirstProject(projects: ProjectDatabase, lastId: string | undefined): Promise<{ project: OpenedProject; exampleId?: string }> {
     const request = readHashRequest(location.hash);
     if (request.kind === 'example') {
         const example = findExample(request.id);
         if (example !== undefined) return { project: example, exampleId: example.id };
+        const bookExample = await loadExample(request.id);
+        if (bookExample !== undefined) return { project: { name: bookExample.name, description: bookExample.description, files: bookExample.files } };
     }
     else if (request.kind === 'shared') {
         const shared = await decodeSharedProject(request.encoded);
@@ -287,8 +307,27 @@ function saveChangedSettings(workspace: WorkspaceModel): void {
             runWidth: layout.runWidth,
             consoleHeight: layout.consoleHeight,
             isFilesFolded: layout.isFilesFolded,
+            isReferenceOpen: layout.isReferenceOpen,
         },
     });
+}
+
+/** Whether the cheat sheets have been asked for. They're fetched once, the first time the cheat sheet opens. */
+let isReferenceRequested = false;
+
+/** Fetches the cheat sheets for the model, the first time the cheat sheet opens. */
+function loadReferenceSheetsIfOpen(workspace: WorkspaceModel): void {
+    if (isReferenceRequested || !workspace.layout.isReferenceOpen) return;
+    isReferenceRequested = true;
+    void (async () => {
+        try {
+            const response = await fetch(REFERENCE_SHEETS_URL);
+            workspace.reference.sheets = await response.json() as readonly ReferenceSheet[];
+        }
+        catch (error) {
+            console.error('The cheat sheets could not be loaded', error);
+        }
+    })();
 }
 
 /** The project waiting to be saved, if any: the latest only, since it replaces any before it. */

@@ -167,6 +167,30 @@ describe('a project language service', { timeout: 60_000 }, () => {
         expect(service.libraryFileText(inLibrary!.path)).toContain('Graphics');
     });
 
+    it('finds where a library declares a name, a type, a member and a static member, and leaves main.ts as it was', async () => {
+        const { service, loaded } = createService();
+        const files = exampleFiles('bouncing-ball');
+        await service.setFiles(files);
+        const before = service.diagnostics();
+
+        const watchAt = await service.libraryDefinition('@mvtjs/utils', 'watch');
+        expect(watchAt).toMatchObject({ isLibrary: true });
+        expect(service.libraryFileText(watchAt!.path)).toContain('export declare function watch');
+        const tickedAt = await service.libraryDefinition('playground', 'Ticked');
+        expect(service.libraryFileText(tickedAt!.path)).toContain('interface Ticked');
+        const circleAt = await service.libraryDefinition('pixi.js', 'Graphics.circle');
+        expect(circleAt?.path).toMatch(/^\/node_modules\/pixi\.js\//);
+        const fromAt = await service.libraryDefinition('pixi.js', 'Texture.from');
+        expect(fromAt?.path).toMatch(/^\/node_modules\/pixi\.js\//);
+        expect(await service.libraryDefinition('@mvtjs/utils', 'createNothing')).toBeUndefined();
+
+        // A library the project doesn't import has its types loaded first
+        expect(loaded).not.toContain('gsap');
+        expect(await service.libraryDefinition('gsap', 'gsap.timeline')).toMatchObject({ isLibrary: true });
+        expect(loaded).toContain('gsap');
+        expect(service.diagnostics()).toEqual(before);
+    });
+
     it('renames a name in every file that uses it', async () => {
         const { service } = createService();
         const files = exampleFiles('bouncing-ball');

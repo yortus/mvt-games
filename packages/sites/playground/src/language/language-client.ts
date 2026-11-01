@@ -33,6 +33,8 @@ export interface LanguageClient {
     readonly quickInfo: (path: string, offset: number) => Promise<QuickInfo | undefined>;
     readonly signatureHelp: (path: string, offset: number) => Promise<SignatureHelp | undefined>;
     readonly definition: (path: string, offset: number) => Promise<DefinitionTarget | undefined>;
+    /** Where a library declares a name, or a member of one, such as `Graphics.circle` from `pixi.js`. */
+    readonly libraryDefinition: (specifier: string, name: string) => Promise<DefinitionTarget | undefined>;
     /** The edits that rename what is at the offset in every file, or why it cannot be renamed. */
     readonly rename: (path: string, offset: number, newName: string) => Promise<readonly FileEdit[] | string>;
     readonly organizeImports: (path: string) => Promise<readonly FileEdit[]>;
@@ -86,6 +88,7 @@ export function createLanguageClient(options: LanguageClientOptions): LanguageCl
         quickInfo: async (path, offset) => (await ready()) ? remote!.quickInfo(path, offset) : undefined,
         signatureHelp: async (path, offset) => (await ready()) ? remote!.signatureHelp(path, offset) : undefined,
         definition: async (path, offset) => (await ready()) ? remote!.definition(path, offset) : undefined,
+        libraryDefinition: async (specifier, name) => (await ready()) ? remote!.libraryDefinition(specifier, name) : undefined,
         rename: async (path, offset, newName) => (await ready()) ? remote!.rename(path, offset, newName) : 'The language service is still loading.',
         organizeImports: async (path) => (await ready()) ? remote!.organizeImports(path) : [],
         keptBarrels: async () => (await ready()) ? remote!.keptBarrels() : undefined,

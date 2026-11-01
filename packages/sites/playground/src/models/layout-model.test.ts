@@ -35,6 +35,22 @@ describe('a layout model', () => {
         expect(layout.filesWidth).toBe(smallest);
     });
 
+    it('opens and closes the cheat sheet, as it was left', () => {
+        const layout = createLayoutModel({ saved: { isReferenceOpen: true } });
+        expect(layout.isReferenceOpen).toBe(true);
+        layout.toggleReference();
+        expect(layout.isReferenceOpen).toBe(false);
+        expect(createLayoutModel().isReferenceOpen).toBe(false);
+    });
+
+    it('opens the cheat sheet with its panel on a narrow screen, and shows the code as it closes', () => {
+        const layout = createLayoutModel();
+        layout.showPanel('reference');
+        expect(layout.isReferenceOpen).toBe(true);
+        layout.closeReference();
+        expect(layout.narrowPanel).toBe('code');
+    });
+
     it('matches a file by its name first, then by letters in order', () => {
         const layout = createLayoutModel();
         layout.openQuickOpen(['main.ts', 'models/ball-model.ts', 'models/index.ts', 'views/ball-view.ts']);
@@ -76,6 +92,21 @@ describe('a layout model', () => {
         layout.openHelp();
         layout.closeHelp();
         expect(layout.isHelpOpen).toBe(false);
+    });
+
+    it('opens the settings and closes them, and closes them as a dialog opens', () => {
+        const layout = createLayoutModel({});
+        layout.toggleSettings();
+        expect(layout.isSettingsOpen).toBe(true);
+        layout.toggleSettings();
+        expect(layout.isSettingsOpen).toBe(false);
+        layout.toggleSettings();
+        layout.openHelp();
+        expect(layout.isSettingsOpen).toBe(false);
+        layout.toggleSettings();
+        expect(layout.isHelpOpen).toBe(false);
+        layout.closeSettings();
+        expect(layout.isSettingsOpen).toBe(false);
     });
 
     it('folds a folder in the file list, and unfolds it, as a new set each time', () => {

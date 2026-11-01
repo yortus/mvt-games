@@ -30,9 +30,9 @@ export const noNull: Rule.RuleModule = {
         docs: { description: 'Disallow `null` in our own code and APIs; use `undefined`' },
         schema: [],
         messages: {
-            value: 'Use `undefined`, not `null`: our code does not create `null`. See the style guide, "No `null`".',
+            value: 'Use `undefined`, not `null`: our code does not create `null`. See the style guide, "`undefined`, Not `null`".',
             type: 'Use `undefined` in this type, not `null`: our own APIs do not pass `null` on. Convert a third-party '
-                + '`null` where it arrives (`?? undefined`). See the style guide, "No `null`".',
+                + '`null` where it arrives (`?? undefined`). See the style guide, "`undefined`, Not `null`".',
         },
     },
     create(context) {

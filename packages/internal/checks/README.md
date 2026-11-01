@@ -5,7 +5,7 @@
 > the other tests, and fail when the repo's structure drifts from what was
 > decided.
 
-**Related:** [Project Structure](../../sites/docs/reference/project-structure.md)
+**Related:** [Project Structure](../../sites/docs/working-in-this-repo/project-structure.md)
 
 ---
 

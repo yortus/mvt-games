@@ -9,9 +9,9 @@ import tseslint from 'typescript-eslint';
 // with only the `node` and `import` conditions, never `@mvtjs/source`.
 import mvt from '#eslint-plugin';
 
-// The playground's examples and starting projects: small projects, written as
-// an entry's code is, and linted by the same rules.
-const PLAYGROUND_EXAMPLES = 'packages/sites/playground/{examples,starters}/**/*.{ts,tsx}';
+// The playground's examples, the book's and the starting projects: small
+// projects, written as an entry's code is, and linted by the same rules.
+const PLAYGROUND_EXAMPLES = 'packages/sites/playground/{examples,book,starters}/**/*.{ts,tsx}';
 
 // Views are `XxxView(bindings)` functions, query bindings have no `get` prefix,
 // and types use function-valued properties.
@@ -26,15 +26,15 @@ const VIEW_CONVENTION_FILES = [
 const VIEW_CONVENTION_SELECTORS = [
     {
         selector: 'TSInterfaceDeclaration[id.name=/(ViewBindings|ViewModel|ViewModelOptions)$/] TSPropertySignature[key.name=/^get[A-Z]/]',
-        message: 'Name a query binding, or a view model member or option, for what it returns, without a `get` prefix. See the style guide, "Views and Bindings".',
+        message: 'Name a query binding, or a view model member or option, for what it returns, without a `get` prefix. See Code Style, "Views and Bindings" (packages/sites/docs/working-in-this-repo/code-style.md).',
     },
     {
         selector: 'FunctionDeclaration[id.name=/^create[A-Z][A-Za-z0-9]*View$/]',
-        message: 'A view is an `XxxView(bindings)` function, not a `createXxxView` factory. See the style guide, "Views and Bindings".',
+        message: 'A view is an `XxxView(bindings)` function, not a `createXxxView` factory. See Code Style, "Views and Bindings" (packages/sites/docs/working-in-this-repo/code-style.md).',
     },
     {
         selector: 'TSInterfaceDeclaration[id.name=/ViewProps$/]',
-        message: 'Name the input of a view `XxxViewBindings`, not props. See the style guide, "Views and Bindings".',
+        message: 'Name the input of a view `XxxViewBindings`, not props. See Code Style, "Views and Bindings" (packages/sites/docs/working-in-this-repo/code-style.md).',
     },
 ];
 
@@ -42,10 +42,10 @@ const POW_MESSAGE = 'Write `Math.exp(y * Math.log(x))`, or `Math.exp(n * LN_SEMI
 
 // No module imports its own barrel or an ancestor's (`.`, `..`, `../..`,
 // `./index` and the like): inside a directory, import the file directly
-// (packages/sites/docs/reference/project-structure.md).
+// (packages/sites/docs/working-in-this-repo/project-structure.md).
 const OWN_BARREL_IMPORT = {
     regex: '^\\.{1,2}(/\\.\\.)*(/index)?/?$',
-    message: 'Import the file directly, not your own or an ancestor\'s barrel (packages/sites/docs/reference/project-structure.md).',
+    message: 'Import the file directly, not your own or an ancestor\'s barrel (packages/sites/docs/working-in-this-repo/project-structure.md).',
 };
 
 // The view tick API, and `advanceTime`, which a renderer package re-exports
@@ -114,7 +114,7 @@ export default tseslint.config(
             }],
             '@stylistic/quote-props': ['error', 'consistent'],
             // Function members in types as properties, not methods: stricter
-            // parameter checks, and nothing here uses `this`. See the style guide.
+            // parameter checks, and nothing here uses `this`. See Code Style.
             '@typescript-eslint/method-signature-style': ['error', 'property'],
             // Allow underscore-prefixed unused parameters
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
@@ -220,7 +220,7 @@ export default tseslint.config(
         files: [
             'packages/sites/{site-kit,arcade,demos,puzzles}/src/**/models/**/*.{ts,tsx}', 'packages/sites/{site-kit,arcade,demos,puzzles}/src/**/*-model.ts',
             'packages/sites/playground/src/**/models/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*-model.ts',
-            'packages/sites/playground/{examples,starters}/**/models/**/*.{ts,tsx}', 'packages/sites/playground/{examples,starters}/**/*-model.ts',
+            'packages/sites/playground/{examples,book,starters}/**/models/**/*.{ts,tsx}', 'packages/sites/playground/{examples,book,starters}/**/*-model.ts',
         ],
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,
@@ -266,6 +266,7 @@ export default tseslint.config(
             'packages/sites/site-kit/scripts/vite-plugin-entry-pages.ts',
             'packages/sites/site-kit/scripts/vite-plugin-spritesheet.ts',
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',
+            'packages/sites/playground/scripts/vite-plugin-reference-sheets.ts',
             'packages/libraries/audio90/src/web/worklet/register-chip-processor.ts',
             // v-snap replaces canvas text drawing and patches a Pixi pool.
             'packages/libraries/v-snap/src/browser/canvas-text.ts',

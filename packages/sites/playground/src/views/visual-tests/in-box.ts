@@ -1,5 +1,5 @@
 import { THEME_KINDS, type ThemeKind } from '../../models';
-import { THEMES, writePalette } from '../themes';
+import { THEMES, writePalette } from '../../editor';
 
 // ---------------------------------------------------------------------------
 // Functions

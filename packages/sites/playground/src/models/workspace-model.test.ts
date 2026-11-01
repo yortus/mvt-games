@@ -115,16 +115,39 @@ describe('a workspace model', () => {
         expect(model.phase).toBe('running');
     });
 
-    it('pauses, steps only while paused, and resumes', () => {
+    it('pauses as it steps, and carries on at a speed', () => {
         const model = createRunningModel();
-        model.step();
-        expect(model.steps).toBe(0);
-        model.pause();
         model.step();
         expect(model.isPaused).toBe(true);
         expect(model.steps).toBe(1);
-        model.resume();
+        model.step();
+        expect(model.steps).toBe(2);
+        model.playAt(0.25);
         expect(model.isPaused).toBe(false);
+        expect(model.speed).toBe(0.25);
+        expect(model.runsRequested).toBe(1);
+    });
+
+    it('runs the project, paused, as Step is pressed with no run going', () => {
+        const model = createWorkspaceModel({ project: PROJECT });
+        model.step();
+        expect(model.phase).toBe('preparing');
+        expect(model.runsRequested).toBe(1);
+        expect(model.isPaused).toBe(true);
+        expect(model.steps).toBe(0);
+        model.step();
+        expect(model.runsRequested).toBe(1);
+    });
+
+    it('runs the project again, unpaused, as a speed is chosen after an error stopped it', () => {
+        const model = createRunningModel();
+        model.step();
+        model.reportSandboxMessage({ kind: 'error', phase: 'frame', message: 'boom', stack: '' });
+        model.playAt(2);
+        expect(model.phase).toBe('preparing');
+        expect(model.runsRequested).toBe(2);
+        expect(model.isPaused).toBe(false);
+        expect(model.speed).toBe(2);
     });
 
     it('stops a run whose sandbox goes silent, and not one that keeps talking', () => {
@@ -158,10 +181,10 @@ describe('a workspace model', () => {
 
     it('ignores the sandbox once stopped', () => {
         const model = createRunningModel();
-        model.stop();
+        for (let ms = 0; ms < 10000; ms += 500) model.update(500);
         model.reportSandboxMessage({ kind: 'console', level: 'log', text: 'late' });
         expect(model.phase).toBe('stopped');
-        expect(model.consoleEntries).toEqual([]);
+        expect(model.consoleEntries.some((entry) => entry.text === 'late')).toBe(false);
     });
 
     it('asks for a check once the files stand unchanged for half a second', () => {
@@ -207,6 +230,18 @@ describe('a workspace model', () => {
         expect(model.sandboxesStarted).toBe(started + 1);
     });
 
+    it('keeps a paused run paused as a change runs it again, and unpauses it as Run is pressed', () => {
+        const model = createRunningModel();
+        model.step();
+        model.editFile('main.ts', 'changed');
+        model.update(500);
+        model.reportChecked({ checkNumber: model.checksRequested, problems: [], sandboxDocument: '<html 2>' });
+        expect(model.phase).toBe('starting');
+        expect(model.isPaused).toBe(true);
+        model.run();
+        expect(model.isPaused).toBe(false);
+    });
+
     it('ignores a check the files have changed since', () => {
         const model = createRunningModel();
         model.editFile('main.ts', 'changed');
@@ -219,7 +254,7 @@ describe('a workspace model', () => {
         expect(model.sandboxesStarted).toBe(started);
     });
 
-    it('does not run again after a change when run on change is off, or the visitor stopped the run', () => {
+    it('does not run again after a change when run on change is off, or the run stopped responding', () => {
         const off = createRunningModel();
         off.setRunOnChange(false);
         off.editFile('main.ts', 'changed');
@@ -229,7 +264,7 @@ describe('a workspace model', () => {
         expect(off.sandboxesStarted).toBe(started);
 
         const stopped = createRunningModel();
-        stopped.stop();
+        for (let ms = 0; ms < 10000; ms += 500) stopped.update(500);
         stopped.editFile('main.ts', 'changed');
         stopped.update(500);
         stopped.reportChecked({ checkNumber: stopped.checksRequested, problems: [], sandboxDocument: '<html>' });

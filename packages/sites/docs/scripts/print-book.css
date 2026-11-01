@@ -1,0 +1,795 @@
+/* The printed book's styles, which Paged.js lays out into pages. The pages
+   bring their content only, never the site's styles: this sheet sets every
+   page as a book does.
+
+   The trim is 7.5 by 9.25 inches, a usual size for a programming book, with
+   the wider margin at the spine. Text is Source Serif, justified and
+   hyphenated, with headings, running heads and captions in Source Sans and
+   code in Source Code Pro. A part or chapter starts on a right-hand page.
+   The running heads name the chapter on a left-hand page and the section on
+   a right-hand one, and a chapter's first page has neither, only its number
+   at the foot. The front matter is numbered in roman numerals, and the
+   numbers start again at 1 with Chapter 1. */
+
+/* --- Pages --- */
+
+@page {
+    size: 7.5in 9.25in;
+    margin: 21mm 22mm 22mm 25mm;
+}
+
+@page :left {
+    margin-left: 22mm;
+    margin-right: 25mm;
+
+    @top-left {
+        content: counter(page);
+        font: 600 8pt/1 var(--sans);
+        vertical-align: bottom;
+        padding-bottom: 5mm;
+    }
+
+    @top-center {
+        content: string(chapter);
+        font: 8pt/1 var(--sans);
+        letter-spacing: 0.04em;
+        vertical-align: bottom;
+        padding-bottom: 5mm;
+        white-space: nowrap;
+    }
+}
+
+@page :right {
+    margin-left: 25mm;
+    margin-right: 22mm;
+
+    @top-center {
+        content: string(section);
+        font: 8pt/1 var(--sans);
+        letter-spacing: 0.04em;
+        vertical-align: bottom;
+        padding-bottom: 5mm;
+        white-space: nowrap;
+    }
+
+    @top-right {
+        content: counter(page);
+        font: 600 8pt/1 var(--sans);
+        vertical-align: bottom;
+        padding-bottom: 5mm;
+    }
+}
+
+/* The front matter: no running heads, roman numerals at the foot */
+@page front {
+    @top-left { content: none; }
+    @top-center { content: none; }
+    @top-right { content: none; }
+
+    @bottom-center {
+        content: counter(page, lower-roman);
+        font: 8pt/1 var(--sans);
+    }
+}
+
+/* The title pages carry no number at all */
+@page title {
+    @top-left { content: none; }
+    @top-center { content: none; }
+    @top-right { content: none; }
+}
+
+/* A chapter's first page: its number at the foot, no running head */
+@page chapter:first {
+    @top-left { content: none; }
+    @top-center { content: none; }
+    @top-right { content: none; }
+
+    @bottom-center {
+        content: counter(page);
+        font: 8pt/1 var(--sans);
+    }
+}
+
+@page part {
+    @top-left { content: none; }
+    @top-center { content: none; }
+    @top-right { content: none; }
+}
+
+@page :blank {
+    @top-left { content: none; }
+    @top-center { content: none; }
+    @top-right { content: none; }
+    @bottom-center { content: none; }
+}
+
+/* --- Type --- */
+
+:root {
+    --serif: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, serif;
+    --sans: 'Source Sans 3 Variable', 'Source Sans 3', 'Segoe UI', sans-serif;
+    --mono: 'Source Code Pro Variable', 'Source Code Pro', Consolas, monospace;
+    --ink: #1a1a1a;
+    --quiet: #5c5c5c;
+    --rule: #9a9a9a;
+    --tint: #f3f3f1;
+    --accent: #6b2d8f;
+}
+
+html {
+    color: var(--ink);
+    background: #fff;
+    font-family: var(--serif);
+    font-size: 10.25pt;
+    line-height: 14.5pt;
+    font-optical-sizing: auto;
+    font-kerning: normal;
+    font-variant-numeric: oldstyle-nums proportional-nums;
+    text-rendering: optimizeLegibility;
+}
+
+body {
+    margin: 0;
+}
+
+/* Where a page may break is print-book-breaks.js's call: it keeps headings
+   with their sections, and avoids widows and orphans. Paged.js lays each page
+   out as columns, and the browser's own rules would quietly move lines into a
+   column past the page's end, so they're turned off */
+* {
+    orphans: 1;
+    widows: 1;
+}
+
+p,
+li,
+dd {
+    text-align: justify;
+    hyphens: auto;
+    hyphenate-limit-chars: 6 3 3;
+}
+
+/* Book paragraphs: an indent, no gap, except after a heading or a break */
+p {
+    margin: 0;
+}
+
+p + p {
+    text-indent: 1.4em;
+}
+
+/* Anything that isn't running text keeps some air around it */
+ul,
+ol,
+dl,
+table,
+.table,
+figure,
+blockquote,
+.code,
+.custom-block,
+.mermaid {
+    margin-top: 7pt;
+    margin-bottom: 7pt;
+}
+
+ul + p,
+ol + p,
+table + p,
+.table + p,
+.code + p,
+.custom-block + p,
+figure + p,
+.mermaid + p,
+blockquote + p {
+    margin-top: 7pt;
+}
+
+strong {
+    font-weight: 650;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    font-variant-numeric: normal;
+    hyphens: manual;
+}
+
+/* An inline name may break after a dot, never in the middle of a word */
+p code,
+li code,
+td code {
+    overflow-wrap: anywhere;
+}
+
+/* --- Headings --- */
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+    font-family: var(--sans);
+    color: var(--ink);
+    text-align: left;
+    hyphens: manual;
+    break-inside: avoid;
+    font-variant-numeric: lining-nums;
+}
+
+h2 {
+    font-size: 13pt;
+    line-height: 16pt;
+    font-weight: 650;
+    margin: 18pt 0 6pt;
+}
+
+/* The running heads: the chapter on a left-hand page, the section on a
+   right-hand one, or the chapter until its first section. Paged.js keeps one
+   rule for each name, so each name is set by one rule */
+.chapter-head h1 {
+    string-set: chapter content(text);
+}
+
+h2,
+.chapter-head h1 {
+    string-set: section content(text);
+}
+
+h3 {
+    font-size: 11pt;
+    line-height: 14pt;
+    font-weight: 650;
+    margin: 13pt 0 4pt;
+}
+
+h4 {
+    font-size: 10.25pt;
+    line-height: 14pt;
+    font-weight: 600;
+    font-style: italic;
+    margin: 10pt 0 2pt;
+}
+
+.heading-number {
+    color: var(--accent);
+    margin-right: 0.45em;
+}
+
+/* --- Title pages, contents --- */
+
+.title-matter {
+    page: title;
+}
+
+.half-title {
+    break-after: page;
+    padding-top: 55mm;
+    text-align: center;
+}
+
+.half-title h1 {
+    font-size: 20pt;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.title-page {
+    break-before: right;
+    break-after: page;
+    padding-top: 45mm;
+    text-align: center;
+}
+
+.title-page h1 {
+    font-size: 32pt;
+    line-height: 38pt;
+    font-weight: 650;
+    margin: 0 0 10pt;
+    text-align: center;
+    /* Too long for one line, the title breaks in the middle, not before its last word */
+    text-wrap: balance;
+}
+
+.title-page .subtitle {
+    font: 400 14pt/18pt var(--sans);
+    color: var(--quiet);
+    text-align: center;
+}
+
+.colophon {
+    break-after: right;
+    padding-top: 150mm;
+    font-size: 8.5pt;
+    line-height: 12pt;
+    color: var(--quiet);
+}
+
+.colophon p {
+    text-align: left;
+    text-indent: 0;
+    margin-bottom: 5pt;
+}
+
+.front-matter {
+    page: front;
+}
+
+.contents {
+    break-after: right;
+}
+
+.contents h1,
+.chapter-head h1.front-title {
+    font-size: 24pt;
+    line-height: 28pt;
+    font-weight: 600;
+    margin: 30mm 0 14mm;
+}
+
+.contents ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.contents li {
+    text-align: left;
+    hyphens: manual;
+}
+
+.contents .contents-part {
+    font: 650 10.5pt/14pt var(--sans);
+    margin-top: 11pt;
+}
+
+.contents .contents-part > a {
+    font-weight: 650;
+}
+
+.contents a {
+    display: flex;
+    align-items: baseline;
+    gap: 4pt;
+}
+
+.contents .contents-number {
+    flex: none;
+    width: 2.6em;
+    font-variant-numeric: lining-nums;
+}
+
+.contents .contents-leader {
+    flex: 1;
+    border-bottom: 0.6pt dotted var(--rule);
+    margin: 0 2pt;
+    transform: translateY(-2.5pt);
+}
+
+/* The page each entry starts on, which print-book.ts writes in */
+.contents .contents-page {
+    flex: none;
+    font-variant-numeric: lining-nums tabular-nums;
+}
+
+.contents .contents-chapter {
+    font: 400 10pt/14.5pt var(--serif);
+}
+
+/* --- Parts --- */
+
+/* The numbers start again at 1 with the first part. The contents and page
+   references count from here; print-book.ts numbers the pages to match */
+.first-part {
+    counter-reset: page 1;
+}
+
+.part {
+    page: part;
+    break-before: right;
+    break-after: page;
+    padding-top: 60mm;
+    text-align: center;
+}
+
+.part .part-label {
+    font: 600 11pt/14pt var(--sans);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 10pt;
+}
+
+.part h1 {
+    font-size: 28pt;
+    line-height: 34pt;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+}
+
+/* --- Chapters --- */
+
+.chapter {
+    page: chapter;
+    break-before: right;
+}
+
+.chapter.front-matter {
+    page: front;
+}
+
+.chapter-head {
+    padding-top: 22mm;
+    margin-bottom: 14mm;
+}
+
+.chapter-label {
+    font: 600 10pt/12pt var(--sans);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6pt;
+}
+
+.chapter-head h1 {
+    font-size: 26pt;
+    line-height: 31pt;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* A chapter's summary, under its title */
+.chapter-head + blockquote {
+    margin: -6mm 0 10mm;
+    padding: 0;
+    border: none;
+    font-style: italic;
+    color: var(--quiet);
+}
+
+.chapter-head + blockquote p {
+    text-indent: 0;
+}
+
+/* The first paragraph after a heading has no indent */
+h1 + p,
+h2 + p,
+h3 + p,
+h4 + p,
+h5 + p,
+.chapter-head + p,
+.chapter-head + blockquote + p {
+    text-indent: 0;
+}
+
+/* --- Lists, quotes, tables --- */
+
+ul,
+ol {
+    padding-left: 1.4em;
+}
+
+li + li,
+li > ul,
+li > ol {
+    margin-top: 2pt;
+}
+
+li > p + p {
+    text-indent: 0;
+    margin-top: 3pt;
+}
+
+blockquote {
+    margin-left: 1.4em;
+    margin-right: 1.4em;
+    padding: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 8.75pt/11.5pt var(--sans);
+    border-top: 0.9pt solid var(--ink);
+    border-bottom: 0.9pt solid var(--ink);
+    break-inside: auto;
+}
+
+thead th {
+    font-weight: 650;
+    text-align: left;
+    border-bottom: 0.5pt solid var(--ink);
+}
+
+th,
+td {
+    font-variant-numeric: lining-nums tabular-nums;
+    padding: 3pt 6pt 3pt 0;
+    vertical-align: top;
+    text-align: left;
+    hyphens: auto;
+}
+
+tr {
+    break-inside: avoid;
+}
+
+td code,
+th code,
+.table-cell code {
+    font-size: 0.92em;
+    /* A long name in a narrow column breaks only when it must, so it never
+       sets the column's width to a few letters */
+    overflow-wrap: break-word;
+}
+
+/* print-book.ts lays a table out as one, at the text's width, then remakes
+   it as rows of blocks, each a grid with the table's column widths. Paged.js
+   breaks a page between blocks reliably, and between a table's rows not. */
+.table {
+    font: 8.75pt/11.5pt var(--sans);
+    border-top: 0.9pt solid var(--ink);
+    border-bottom: 0.9pt solid var(--ink);
+}
+
+.table-row {
+    display: grid;
+    break-inside: avoid;
+}
+
+.table-head {
+    font-weight: 650;
+    border-bottom: 0.5pt solid var(--ink);
+}
+
+.table-cell {
+    font-variant-numeric: lining-nums tabular-nums;
+    padding: 3pt 6pt 3pt 0;
+    text-align: left;
+    hyphens: auto;
+    min-width: 0;
+}
+
+/* --- Code --- */
+
+.code {
+    background: var(--tint);
+    padding: 5pt 7pt;
+    border-left: 1.5pt solid var(--rule);
+}
+
+.code pre {
+    margin: 0;
+    font: 400 7.9pt/10.6pt var(--mono);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.code code {
+    font-size: 1em;
+}
+
+.code .line {
+    display: block;
+    min-height: 10.6pt;
+}
+
+.code .shiki span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+    font-weight: var(--shiki-light-font-weight);
+}
+
+/* --- Callouts --- */
+
+.custom-block {
+    border-top: 0.6pt solid var(--rule);
+    border-bottom: 0.6pt solid var(--rule);
+    padding: 5pt 0;
+    font-size: 9.25pt;
+    line-height: 13pt;
+    break-inside: avoid;
+}
+
+.custom-block p {
+    text-indent: 0;
+}
+
+.custom-block p + p {
+    margin-top: 4pt;
+}
+
+.custom-block-title {
+    font: 650 8.5pt/12pt var(--sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2pt;
+}
+
+/* --- Figures --- */
+
+.mermaid,
+figure {
+    text-align: center;
+    break-inside: avoid;
+}
+
+.mermaid p {
+    text-align: center;
+    text-indent: 0;
+    hyphens: manual;
+}
+
+.mermaid svg {
+    max-width: 100% !important;
+    max-height: 105mm;
+    height: auto;
+}
+
+/* An image keeps its shape as it's scaled down: its width and height
+   attributes, which print-book.ts sets, give only its proportions */
+img {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+}
+
+/* An example that runs online: its still, and where to run it */
+figure.try-it {
+    margin: 9pt 0;
+}
+
+/* Under the still: its number and name on the left, where it runs online on the right */
+figure.try-it .try-it-foot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 2pt 12pt;
+    margin-top: 4pt;
+}
+
+figure.try-it .try-it-title {
+    font: 600 9pt/12pt var(--sans);
+    text-align: left;
+}
+
+figure.try-it .try-it-label {
+    color: var(--accent);
+    margin-right: 0.5em;
+}
+
+figure.try-it img {
+    display: block;
+    max-height: 62mm;
+    margin: 0 auto;
+    border: 0.5pt solid var(--rule);
+}
+
+figure.try-it .try-it-caption {
+    font: 8.5pt/11pt var(--sans);
+    color: var(--quiet);
+    text-align: right;
+}
+
+/* --- Appendix G's cheat sheets: a compact entry for each API, kept on one page, with a rule above it --- */
+
+/* Each group is a numbered subsection, as any `###` is, kept with its first entry */
+.cheat-sheet-group {
+    margin: 11pt 0 3pt;
+    break-after: avoid;
+}
+
+.cheat-entry {
+    padding: 3pt 0 4pt;
+    border-top: 0.5pt solid var(--rule);
+    break-inside: avoid;
+}
+
+.cheat-entry p {
+    margin: 2pt 0;
+    text-align: left;
+    hyphens: manual;
+}
+
+.cheat-entry-name {
+    margin-right: 4pt;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.cheat-entry pre {
+    margin: 3pt 0;
+    padding: 3pt 6pt;
+    background: var(--tint);
+    font: 400 7.6pt/10pt var(--mono);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.cheat-entry pre code {
+    font-size: 1em;
+}
+
+.cheat-entry-signature {
+    color: var(--quiet);
+}
+
+.cheat-entry-foot {
+    font: 8pt/10.5pt var(--sans);
+    color: var(--quiet);
+}
+
+/* --- Cross-references and footnotes --- */
+
+/* A link to another chapter gives the page it goes to, which print-book.ts
+   writes in before the layout, so the text never grows once laid out */
+.page-ref {
+    font-variant-numeric: lining-nums;
+}
+
+/* The space and the short rule above a page's notes belong to its first
+   note, not to the notes' area: Paged.js adds an area's own margin, padding
+   and border only after the page is laid out, which would push its last
+   lines off it */
+.pagedjs_footnote_inner_content > .footnote:first-child {
+    padding-top: 7pt;
+    background: linear-gradient(var(--rule), var(--rule)) top left / 35% 0.5pt no-repeat;
+}
+
+.footnote {
+    float: footnote;
+    font: 7.5pt/10pt var(--sans);
+    color: var(--quiet);
+    text-align: left;
+    text-indent: 0;
+    hyphens: manual;
+    overflow-wrap: anywhere;
+}
+
+/* Numbered by print-book.ts, from 1 in each chapter, as text before the
+   layout, rather than by Paged.js's counters, which can't start again in
+   each chapter and fill in only after the page is laid out */
+::footnote-call {
+    content: none;
+}
+
+::footnote-marker {
+    content: none;
+}
+
+.note-call {
+    font: 600 6.5pt/1 var(--sans);
+    vertical-align: super;
+    color: var(--accent);
+}
+
+.note-number {
+    font-weight: 600;
+    margin-right: 3pt;
+}
+
+/* --- Pieces the site has that a book leaves out --- */
+
+.header-anchor,
+button.copy,
+span.lang,
+.try-it-box,
+.try-it-online,
+.try-it-caption > a {
+    display: none;
+}
+
+.try-it-print-image {
+    display: block;
+}

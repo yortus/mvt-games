@@ -9,8 +9,12 @@ export interface HeaderViewBindings {
     readonly projectName: () => string;
     /** Rises each time the visitor asks to save, for a moment's note that the project is saved. */
     readonly saves: () => number;
+    /** Whether the cheat sheet is open, which its button shows by lighting up. */
+    readonly isReferenceOpen: () => boolean;
     /** Reported as the cog beside the project's name is pressed, for the project's options. */
     readonly onOptionsPressed?: () => void;
+    /** Reported as Cheat sheet is pressed, which opens the cheat sheet, or closes it. */
+    readonly onReferencePressed?: () => void;
     readonly onProjectsPressed?: () => void;
     readonly onSharePressed?: () => void;
     readonly onExportPressed?: () => void;
@@ -23,7 +27,7 @@ export interface HeaderViewBindings {
 /**
  * The playground's header: Projects, the way to every project, then the
  * project open, its name the page's heading, with a cog for its options, and
- * at the right, Share and Export. The project is saved as it changes,
+ * at the right, Cheat sheet, Share and Export. The project is saved as it changes,
  * so a request to save only says so: "Saved" shows beside the name for a
  * moment.
  */
@@ -43,6 +47,14 @@ export function HeaderView(bindings: HeaderViewBindings): Element {
             <h1 class="header-project" text={bindings.projectName} />
             <button type="button" class="header-options" title="Project options" aria-label="Project options" text="⚙" onClick={() => bindings.onOptionsPressed?.()} />
             <span class="header-saved" text="Saved" visible={() => savedNoteMs > 0} />
+            <button
+                type="button"
+                class={() => (bindings.isReferenceOpen() ? 'header-reference header-reference-open' : 'header-reference')}
+                text="Cheat sheet"
+                title="The APIs your project can use, beside the code (F1)"
+                aria-pressed={() => bindings.isReferenceOpen()}
+                onClick={() => bindings.onReferencePressed?.()}
+            />
             <button type="button" class="header-share" text="Share" onClick={() => bindings.onSharePressed?.()} />
             <button type="button" class="header-export" text="Export" title="Download the project as a Vite project, to run on your own machine" onClick={() => bindings.onExportPressed?.()} />
         </header>

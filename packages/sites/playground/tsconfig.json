@@ -1,11 +1,11 @@
 {
     "extends": "../../../tsconfig.base.json",
     "compilerOptions": {
-        // The examples and starters import `playground` as a project in the playground
-        // does. Here it is the module's source.
+        // The examples, the book's and the starters import `playground` as a
+        // project in the playground does. Here it is the module's source.
         "paths": {
             "playground": ["./src/project-api/index.ts"]
         }
     },
-    "include": ["src", "examples", "starters", "libraries", "vite.config.ts", "vsnap.config.ts"]
+    "include": ["src", "examples", "book", "starters", "libraries", "cheat-sheets", "scripts", "vite.config.ts", "vsnap.config.ts"]
 }

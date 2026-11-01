@@ -8,6 +8,8 @@
 // missing until a link was shared. A page that only sends the visitor on, as
 // a moved entry's old address does, says so (`noindex`), and is left out.
 //
+// A page marked `noindex`, which isn't for linking to, is left out.
+//
 // Each page needs a title, a description, its address, a picture with its
 // size and a description of it, and a large card on X (`twitter:card`). The
 // picture is a file in `dist/`, the size its tags say, at least as wide as a
@@ -63,7 +65,10 @@ const checkedImages = new Set<string>();
 const entryImages = new Map<string, string>();
 for (const page of pages) {
     const name = relative(dist, page).replaceAll('\\', '/');
-    const tags = readTags(readFileSync(page, 'utf8'));
+    const html = readFileSync(page, 'utf8');
+    // A page that asks not to be indexed, such as the playground's embed page, is not for sharing
+    if (/<meta\s+name="robots"\s+content="[^"]*noindex/.test(html)) continue;
+    const tags = readTags(html);
     for (const tag of REQUIRED_TAGS) {
         if ((tags.get(tag) ?? '') === '') problems.push(`${name}: no ${tag}`);
     }

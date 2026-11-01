@@ -17,8 +17,8 @@ export type ReelPhase = 'stopped' | 'spinning' | 'settling';
  * stop down to the stop. That is the domain's account of the landing; a view
  * that wants it to bounce eases `progress` itself.
  *
- * Leap-safe: one large `update` lands the reel exactly where many small ones
- * would.
+ * It carries the time left over from spinning into settling, so one large
+ * `update` lands the reel exactly where many small ones would.
  */
 export interface ReelModel {
     readonly strip: readonly SymbolKind[];

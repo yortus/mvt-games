@@ -15,7 +15,7 @@ export const noThis: Rule.RuleModule = {
         type: 'suggestion',
         docs: { description: 'Disallow `this`; close over state instead' },
         schema: [],
-        messages: { this: 'Avoid `this`: close over state instead. See the style guide, "No `this`".' },
+        messages: { this: 'Avoid `this`: close over state instead. See the style guide, "Closures, Not `this`".' },
     },
     create(context) {
         return {

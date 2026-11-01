@@ -37,8 +37,9 @@ export type MachinePhase = 'idle' | 'spinning' | 'celebrating';
  * quietly. Real machines celebrate those too, and players learn to feel they
  * are winning while they lose.
  *
- * Not leap-safe across phases: each `update` moves on at most one phase, so a
- * spin and its celebration take at least two calls.
+ * Each `update` moves on at most one phase. The celebration starts on the
+ * `update` after the last reel lands, so it starts up to one step late, and
+ * a spin and its celebration take at least two calls.
  */
 export interface FruitMachineModel {
     /** The reels, first reel first. Driven by the machine: read them, don't call them. */

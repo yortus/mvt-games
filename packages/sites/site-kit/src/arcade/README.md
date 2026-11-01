@@ -10,8 +10,8 @@
 > those lessons, each pointing at the code that shows it.
 
 **Related:** [Adding an Entry](../../../arcade/src/entries/README.md) ·
-[Architecture Rules](../../../docs/architecture/rules.md) ·
-[Presentation State](../../../docs/building-with-mvt/adding-visual-polish/presentation-state.md)
+[Architecture Rules](../../../docs/appendices/a-mvt-on-one-page.md) ·
+[Presentation State](../../../docs/chapters/11-presentation-state.md)
 
 ---
 
@@ -387,15 +387,15 @@ deliberate:
 The guide answers, in general, the questions that building the Arcade
 raised, with the Arcade's code as its example:
 
-- [Reading Layout Back](../../../docs/building-with-mvt/presenting-the-world/reading-layout.md):
+- [Reading Layout Back](../../../docs/chapters/21-reading-layout-back.md):
   measurements as input (section 7), and reading a pose once (`photoPoseOf`,
   above).
-- [Open-Ended Phases, "When a Transition Decides When Play Starts"](../../../docs/building-with-mvt/animating-transitions/open-ended-phases.md#when-a-transition-decides-when-play-starts):
+- [Open-Ended Phases, "When a Transition Decides When Play Starts"](../../../docs/chapters/06-time-and-phases.md#when-a-transition-decides-when-play-starts):
   why the model times the way into an entry (section 5), and the views
   follow.
-- [Reduced Motion](../../../docs/building-with-mvt/adding-visual-polish/reduced-motion.md):
+- [Reduced Motion](../../../docs/chapters/22-reduced-motion.md):
   why `isMotionReduced` is a binding that only the views see, and why the
   quiet way in follows the model's time.
-- [Presentation State, "Controls that are both output and input"](../../../docs/building-with-mvt/adding-visual-polish/presentation-state.md#controls-that-are-both-output-and-input):
+- [Presentation State, "Controls that are both output and input"](../../../docs/chapters/11-presentation-state.md#controls-that-are-both-output-and-input):
   why `onHistoryStep`, in `start-site-page.ts`, skips the history steps the page takes
   itself.

@@ -11,7 +11,26 @@ export type HostMessage =
     | { readonly kind: 'step'; readonly deltaMs: number }
     | { readonly kind: 'set-speed'; readonly speed: number }
     /** The colour around the project, as `#rrggbb`, as the page's theme changes. */
-    | { readonly kind: 'set-background'; readonly colour: string };
+    | { readonly kind: 'set-background'; readonly colour: string }
+    /**
+     * A key pressed or let go in the page, which the sandbox fires as a
+     * keyboard event of its own. A page can't move the keyboard's focus into
+     * the sandbox without a click there, since its origin is opaque, so a
+     * page that has the focus passes its keys on.
+     */
+    | { readonly kind: 'key'; readonly key: ForwardedKey };
+
+/** A keyboard event, as a message can carry it. */
+export interface ForwardedKey {
+    readonly type: 'keydown' | 'keyup';
+    readonly key: string;
+    readonly code: string;
+    readonly repeat: boolean;
+    readonly shiftKey: boolean;
+    readonly ctrlKey: boolean;
+    readonly altKey: boolean;
+    readonly metaKey: boolean;
+}
 
 /** When an error happened: loading the project, starting it, in a frame, or outside all three. */
 export type ErrorPhase = 'load' | 'start' | 'frame' | 'outside';

@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions, defineConfig, type Plugin } from 'vite';
 import { LIBRARIES, LIBRARY_MANIFEST, SANDBOX_RUNNER, toLibraryEntryName } from './libraries/index.ts';
-import { exportPackagesPlugin, libraryTypesPlugin } from './scripts/index.ts';
+import { exportPackagesPlugin, libraryTypesPlugin, referenceSheetsPlugin } from './scripts/index.ts';
 
 const ROOT = import.meta.dirname;
 
@@ -55,8 +55,8 @@ export default defineConfig({
     root: ROOT,
     base: (process.env.BASE_URL ?? '/') + PLAYGROUND_PATH,
     publicDir: false,
-    // The language service's type bundles: served in development, and written as assets by the build
-    plugins: [libraryTypesPlugin(), exportPackagesPlugin(), linkPreviewPlugin()],
+    // The language service's type bundles and the cheat sheets: served in development, and written as assets by the build
+    plugins: [libraryTypesPlugin(), referenceSheetsPlugin(), exportPackagesPlugin(), linkPreviewPlugin()],
     // The language service's worker is built on its own, so it needs the plugin too
     worker: {
         format: 'es',
@@ -86,6 +86,8 @@ export default defineConfig({
             preserveEntrySignatures: 'strict',
             input: {
                 index: resolve(ROOT, 'index.html'),
+                // One example, for an iframe in a page of the docs
+                embed: resolve(ROOT, 'embed.html'),
                 ...Object.fromEntries([...LIBRARIES.map(toLibraryEntryName), SANDBOX_RUNNER].map((name) => [
                     `library-${name}`,
                     resolve(ROOT, `libraries/entries/${name}.ts`),

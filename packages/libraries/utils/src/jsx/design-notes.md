@@ -49,7 +49,7 @@ Either way it would hide inputs. A view's bindings are its whole contract and
 its test seam; a value looked up from wherever the view ends up is an input
 that neither shows, and a missing one fails at run time rather than compile
 time. The needs context meets are met instead by the four ways in
-[Sharing What Many Views Need](../../../../sites/docs/building-with-mvt/presenting-the-world/view-composition.md#sharing-what-many-views-need):
+[Sharing What Many Views Need](../../../../sites/docs/chapters/13-composing-views.md#sharing-values-between-many-views):
 imports, a function that makes views over shared things, handing over a built
 child, and grouping shared bindings.
 
@@ -69,7 +69,7 @@ What there is (`window` listeners, a shared resource, a texture a view made,
 a GSAP timeline) is released by the `onDestroyed` attribute in JSX, which the
 JSX target runs when the element is destroyed (on Pixi, the `'destroyed'`
 event). See
-[Releasing What a View Holds](../../../../sites/docs/building-with-mvt/presenting-the-world/views.md#releasing-what-a-view-holds).
+[Releasing a View's Resources](../../../../sites/docs/chapters/07-views.md#releasing-a-view-s-resources).
 
 If scopes are added one day, two constraints follow from section 1:
 

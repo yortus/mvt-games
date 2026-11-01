@@ -4,7 +4,7 @@ import '../../playground.css';
 import { EXAMPLES, STARTERS } from '../../examples';
 import { createWorkspaceModel, THEME_KINDS } from '../../models';
 import { PlaygroundView } from '../playground-view';
-import { THEMES } from '../themes';
+import { THEMES } from '../../editor';
 import { inBox } from './in-box';
 
 const WIDTH = 900;
@@ -23,6 +23,27 @@ htmlTest('the file list folded, and the panes resized', { viewport: { width: WID
     model.layout.toggleFiles();
     model.layout.resizeRun(-120);
     model.layout.resizeConsole(60);
+}));
+
+htmlTest('the cheat sheet open, over the run', { viewport: { width: WIDTH, height: HEIGHT } }, () => playground((model) => {
+    model.reference.sheets = [{
+        id: 'the-tick',
+        title: 'The tick',
+        summary: "How a view writes the model's state every tick.",
+        moreAt: [],
+        groups: [{
+            title: 'A view tick by tick',
+            entries: [{
+                name: 'setRefresh',
+                from: '@mvtjs/pixi',
+                importLine: "import { setRefresh } from '@mvtjs/pixi';",
+                signature: 'setRefresh(view: View, refresh: RefreshMethod | undefined): void',
+                summary: "Sets `view`'s refresh method.",
+                useFor: "Give a view a refresh method, which writes the model's state to the view's display objects every tick.",
+            }],
+        }],
+    }];
+    model.layout.toggleReference();
 }));
 
 htmlTest('the Problems tab, with a problem', { viewport: { width: WIDTH, height: HEIGHT } }, () => playground((model) => {

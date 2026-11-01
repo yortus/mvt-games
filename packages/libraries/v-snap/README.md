@@ -25,7 +25,7 @@ fail on another. The usual cure for the flakiness is to draw every image
 in Docker, so that every machine draws alike. But then every developer
 and every CI job must run Docker, and the slow tests get slower. So many
 projects fall back on fragile
-[assertions](https://yortus.com/mvt-games/docs/building-with-mvt/iterating-with-confidence/testing-views.html#scene-graph-assertions)
+[assertions](https://yortus.com/mvt-games/docs/chapters/16-testing-views.html#assertions-on-a-view-s-output)
 about their views, or skip view testing altogether.
 
 v-snap is fast, and it draws the same images on every machine, without

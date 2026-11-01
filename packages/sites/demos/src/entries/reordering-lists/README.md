@@ -52,7 +52,7 @@ Dense ids and storage indices both make the lookup an array index.
 | [`views/card-row-view.tsx`](./views/card-row-view.tsx) | Both rows, and the card view they share |
 | `*.test.ts` | Both forms stay in step; slide, entrance and exit behaviour of each view model |
 
-See [Presenting Collections](../../../../docs/building-with-mvt/presenting-the-world/collections.md) for how to
+See [Lists in Motion](../../../../docs/chapters/19-lists-in-motion.md) for how to
 apply both approaches, and
-[Keyed by storage index](../../../../docs/building-with-mvt/presenting-the-world/collections.md#keyed-by-storage-index-orderedslotlist)
+[Choosing between them](../../../../docs/chapters/19-lists-in-motion.md#choosing-between-them)
 for when to reach for `OrderedSlotList`.

@@ -8,9 +8,12 @@ import { inBox } from './in-box';
 const BASE: HeaderViewBindings = {
     projectName: () => 'Bouncing Ball',
     saves: () => 0,
+    isReferenceOpen: () => false,
 };
 
 htmlTest('a project open', () => inBox(HeaderView(BASE), 900, 44));
+
+htmlTest('the cheat sheet open', () => inBox(HeaderView({ ...BASE, isReferenceOpen: () => true }), 900, 44));
 
 htmlTest('just saved', async () => {
     let saves = 0;

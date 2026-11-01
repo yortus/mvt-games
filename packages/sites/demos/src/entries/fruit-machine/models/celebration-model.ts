@@ -13,7 +13,9 @@ export type CelebrationStepKind = 'allWins' | 'oneWin';
  * each way in turn, once. Views read the step and its progress, and decide
  * what celebrating looks like.
  *
- * Leap-safe: a large `update` skips the steps it covers.
+ * It carries the time left over from one step into the next, so it shows
+ * the same steps whatever size its updates are. A large `update` passes
+ * over the steps it covers.
  */
 export interface CelebrationModel {
     readonly isActive: boolean;

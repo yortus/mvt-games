@@ -87,7 +87,10 @@ export interface CatModelOptions {
 /**
  * Creates a cat. At each tile it reaches, it takes the way that brings it
  * nearest the tile it is heading for, and never turns straight back unless
- * it must. It is leap-safe only in steps of less than one tile's move.
+ * it must. Each one-tile move drops the time left over when the cat arrives,
+ * as `TileMove.advance` says, so the cat runs a little slow, by up to one
+ * step on every tile. A step longer than one tile's move takes it one tile
+ * only.
  */
 export function createCatModel(options: CatModelOptions): CatModel {
     const {

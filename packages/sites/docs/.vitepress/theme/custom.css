@@ -217,3 +217,10 @@
 .vp-doc td:first-child strong {
     white-space: nowrap;
 }
+
+/* A heading's number, written as the page is built (book.ts), shown a
+   little quieter than the heading's own words */
+.vp-doc .heading-number {
+    color: var(--vp-c-text-2);
+    font-variant-numeric: tabular-nums;
+}

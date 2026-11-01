@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 /** The panels a narrow screen shows one at a time. */
-export type PanelKind = 'files' | 'code' | 'run';
+export type PanelKind = 'files' | 'code' | 'reference' | 'run';
 
 /** What the bottom of the run pane shows. */
 export type RunPaneTabKind = 'console' | 'problems' | 'performance';
@@ -20,11 +20,14 @@ export const DEFAULT_SIZES: PaneSizes = { filesWidth: 230, runWidth: 480, consol
 
 /**
  * How the workspace is laid out: the panes' sizes, whether the file list is
- * folded away, which panel a narrow screen shows, which tab the run pane
- * shows, and the dialog that opens a file by name.
+ * folded away, whether the cheat sheet is open, which panel a narrow screen
+ * shows, which tab the run pane shows, and the dialog that opens a file by
+ * name.
  */
 export interface LayoutModel extends PaneSizes {
     readonly isFilesFolded: boolean;
+    /** Whether the cheat sheet shows, beside the editor. */
+    readonly isReferenceOpen: boolean;
     /** The folders folded in the file list, by path. */
     readonly foldedFolders: ReadonlySet<string>;
     readonly narrowPanel: PanelKind;
@@ -36,6 +39,8 @@ export interface LayoutModel extends PaneSizes {
     readonly isProjectOptionsOpen: boolean;
     /** Whether the Help dialog is open, which says how the playground works. */
     readonly isHelpOpen: boolean;
+    /** Whether the settings show, below their button in the site's nav. */
+    readonly isSettingsOpen: boolean;
     /** What the visitor has typed in the dialog that opens a file by name. */
     readonly quickOpenQuery: string;
     /** The paths that match the query, best first. */
@@ -48,8 +53,13 @@ export interface LayoutModel extends PaneSizes {
     /** Resizes the console by a distance, kept within its limits. It grows as the divider moves up. */
     readonly resizeConsole: (deltaPx: number) => void;
     readonly toggleFiles: () => void;
+    /** Opens the cheat sheet, or closes it. */
+    readonly toggleReference: () => void;
+    /** Closes the cheat sheet. A narrow screen showing it shows the code instead. */
+    readonly closeReference: () => void;
     /** Folds a folder in the file list, or unfolds it. */
     readonly toggleFolder: (path: string) => void;
+    /** Shows a panel on a narrow screen. The cheat sheet's panel opens the cheat sheet. */
     readonly showPanel: (panel: PanelKind) => void;
     readonly showRunPaneTab: (tab: RunPaneTabKind) => void;
     /** Opens the dialog that opens a file by name, matching against these paths. */
@@ -61,6 +71,9 @@ export interface LayoutModel extends PaneSizes {
     readonly closeProjectOptions: () => void;
     readonly openHelp: () => void;
     readonly closeHelp: () => void;
+    /** Opens the settings, or closes them. */
+    readonly toggleSettings: () => void;
+    readonly closeSettings: () => void;
     readonly setQuickOpenQuery: (query: string) => void;
 }
 
@@ -70,7 +83,7 @@ export interface LayoutModel extends PaneSizes {
 
 export interface LayoutModelOptions {
     /** The sizes and fold kept from a visit before, if any. Sizes outside their limits are brought inside. */
-    readonly saved?: Partial<PaneSizes> & { readonly isFilesFolded?: boolean };
+    readonly saved?: Partial<PaneSizes> & { readonly isFilesFolded?: boolean; readonly isReferenceOpen?: boolean };
 }
 
 // ---------------------------------------------------------------------------
@@ -84,6 +97,7 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
     let runWidth = clamp(saved.runWidth ?? DEFAULT_SIZES.runWidth, LIMITS.runWidth);
     let consoleHeight = clamp(saved.consoleHeight ?? DEFAULT_SIZES.consoleHeight, LIMITS.consoleHeight);
     let isFilesFolded = saved.isFilesFolded ?? false;
+    let isReferenceOpen = saved.isReferenceOpen ?? false;
     let foldedFolders: ReadonlySet<string> = new Set();
     let narrowPanel: PanelKind = 'code';
     let runPaneTab: RunPaneTabKind = 'console';
@@ -91,6 +105,7 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
     let isProjectsOpen = false;
     let isProjectOptionsOpen = false;
     let isHelpOpen = false;
+    let isSettingsOpen = false;
     let quickOpenQuery = '';
     let quickOpenPaths: readonly string[] = [];
     let quickOpenMatches: readonly string[] = [];
@@ -100,6 +115,7 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
         get runWidth() { return runWidth; },
         get consoleHeight() { return consoleHeight; },
         get isFilesFolded() { return isFilesFolded; },
+        get isReferenceOpen() { return isReferenceOpen; },
         get foldedFolders() { return foldedFolders; },
         get narrowPanel() { return narrowPanel; },
         get runPaneTab() { return runPaneTab; },
@@ -107,6 +123,7 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
         get isProjectsOpen() { return isProjectsOpen; },
         get isProjectOptionsOpen() { return isProjectOptionsOpen; },
         get isHelpOpen() { return isHelpOpen; },
+        get isSettingsOpen() { return isSettingsOpen; },
         get quickOpenQuery() { return quickOpenQuery; },
         get quickOpenMatches() { return quickOpenMatches; },
 
@@ -126,6 +143,13 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
             isFilesFolded = !isFilesFolded;
         },
 
+        toggleReference() {
+            if (isReferenceOpen) closeReference();
+            else isReferenceOpen = true;
+        },
+
+        closeReference,
+
         toggleFolder(path) {
             // A new set, so a view that follows it sees the change
             const next = new Set(foldedFolders);
@@ -135,6 +159,7 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
 
         showPanel(panel) {
             narrowPanel = panel;
+            if (panel === 'reference') isReferenceOpen = true;
         },
 
         showRunPaneTab(tab) {
@@ -172,6 +197,16 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
             isHelpOpen = false;
         },
 
+        toggleSettings() {
+            const isOpening = !isSettingsOpen;
+            closeDialogs();
+            isSettingsOpen = isOpening;
+        },
+
+        closeSettings() {
+            isSettingsOpen = false;
+        },
+
         closeProjects() {
             isProjectsOpen = false;
         },
@@ -188,12 +223,19 @@ export function createLayoutModel(options: LayoutModelOptions = {}): LayoutModel
 
     return model;
 
-    /** Closes every dialog, so the one opening is the only one. */
+    /** Closes the cheat sheet. A narrow screen showing it shows the code instead. */
+    function closeReference(): void {
+        isReferenceOpen = false;
+        if (narrowPanel === 'reference') narrowPanel = 'code';
+    }
+
+    /** Closes every dialog, and the settings, so the one opening is the only one. */
     function closeDialogs(): void {
         isQuickOpenOpen = false;
         isProjectsOpen = false;
         isProjectOptionsOpen = false;
         isHelpOpen = false;
+        isSettingsOpen = false;
     }
 }
 

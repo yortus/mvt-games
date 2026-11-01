@@ -1,7 +1,9 @@
 import { h, defineComponent, type VNode } from 'vue';
 import DefaultTheme from 'vitepress/theme';
 import type { Theme } from 'vitepress';
+import CheatSheet from '../components/CheatSheet.vue';
 import PlaygroundLink from '../components/PlaygroundLink.vue';
+import TryIt from '../components/TryIt.vue';
 import './custom.css';
 
 declare const __SITE_ROOT__: string;
@@ -20,7 +22,9 @@ export default {
         },
     }),
     enhanceApp({ app }) {
+        app.component('CheatSheet', CheatSheet);
         app.component('PlaygroundLink', PlaygroundLink);
+        app.component('TryIt', TryIt);
     },
 } satisfies Theme;
 
@@ -66,7 +70,7 @@ const CROSS_LINKS: readonly CrossLink[] = [
         icon: '<path d="M3 3h14v14H3zM7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14"/>',
     },
     {
-        label: 'Docs',
+        label: 'Book',
         href: `${__SITE_ROOT__}docs/`,
         isActive: true,
         viewBox: '0 0 20 20',

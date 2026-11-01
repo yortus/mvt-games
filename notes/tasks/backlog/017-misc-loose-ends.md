@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-10-18 |
+| Updated  | 2026-11-01 |
 
 ## Description
 
@@ -151,6 +151,20 @@ Settled questions that should not be reopened without new information are in
 - **CI benchmarking.** Timing noise on shared runners makes it hard; 010
   recommended treating the harness as an on-demand tool. 010 section 8, item
   4.
+
+- **The cheat sheets' follow-ups,** from
+  [089](../../archive/089-api-cheat-sheets.md) section 11. Decide each after
+  using the sheets for a while:
+  - The editor's hover could end with the sheet that holds the name, such
+    as "On the cheat sheet: Watching for changes", linking to it. Cheap,
+    since the data exists.
+  - The playground could mark the entries that the open file imports, as
+    the embed's "Used here" does. It would mean watching the editor's text.
+  - The sheets would make a compact reference for AI agents. Should they go
+    in `packages/sites/docs/public/llms.txt`?
+  - F1 opens and closes the sheet, checked in Chromium only. Check it in
+    Firefox and Safari, and if it doesn't hold in one, add Ctrl+Shift+H. It
+    can't work while the preview has the focus until task 063 is done.
 
 ### Investigate
 
@@ -305,6 +319,7 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Parked items each still parked, or moved into their own task
 - [ ] Import and export layout, and line length, enforced by lint
 - [ ] `<List>` builds list items straight into a list element, with no wrapper
+- [ ] 089's cheat sheet follow-ups each built or dropped, and F1 checked in Firefox and Safari
 
 ## Progress Log
 
@@ -390,3 +405,5 @@ falling-sand demo. Each is a new variant, measured with
   playground can load them from source.
 - 2026-10-18: Drain-the-tail was built on 2026-09-30 (`aa1f37fc`), but its
   parked item was never ticked. Moved to 017a.
+- 2026-11-01: Archived 089 (API cheat sheets) and took in its open
+  questions 2 to 4, and checking F1 in Firefox and Safari (Decide).

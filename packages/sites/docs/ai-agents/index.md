@@ -1,50 +1,16 @@
-# AI Agent Orientation
+# AI Agent Skills
 
-> This page is the docs-site entry point for AI agents. The canonical
-> compressed orientation is
-> [AGENTS.md](https://github.com/yortus/mvt-games/blob/main/AGENTS.md) in the
-> repo root - start there for architecture, rules, conventions, commands, and
-> project structure.
+> Not published. The orientation for agents is
+> [AGENTS.md](../../../../AGENTS.md), at the repo root: architecture,
+> layout, conventions, commands and rules. The skills below are short task
+> checklists that link into the book. Load the one for your task.
 
-**Related:** [Architecture](../architecture/index.md) -
-[Architecture Rules](../architecture/rules.md) -
-[Style Guide](../reference/style-guide.md) -
-[Project Structure](../reference/project-structure.md)
+| Task | Skills file |
+| --- | --- |
+| Writing or changing a model | [skill-mvt-model.md](skill-mvt-model.md) |
+| Writing or changing a view | [skill-mvt-view.md](skill-mvt-view.md) |
+| Following code conventions | [skill-code-style.md](skill-code-style.md) |
+| Reviewing code | [skill-code-review.md](skill-code-review.md) |
+| Writing or changing docs | [skill-documentation.md](skill-documentation.md) |
 
----
-
-## Quick Links
-
-| Need to know... | Go to |
-|---|---|
-| MVT architecture (language-neutral) | [Architecture section](../architecture/index.md) |
-| Universal MVT rules | [Architecture Rules](../architecture/rules.md) |
-| Why the rules are what they are, and deciding a case no rule covers | [The Principles Behind MVT](../architecture/principles/index.md) |
-| This repo's code style | [Style Guide](../reference/style-guide.md) |
-| Project layout and barrels | [Project Structure](../reference/project-structure.md) |
-| Adding a game or demo, and keeping it original | `packages/sites/arcade/src/entries/README.md` (its Originality section) |
-| Playing sound in a game | [Sound and Music](../building-with-mvt/presenting-the-world/sound.md), then the guides in `packages/libraries/audio90/docs/` |
-| Writing, running and accepting visual tests | [Visual Tests](../building-with-mvt/iterating-with-confidence/visual-tests.md) |
-| All terms defined | [Glossary](../reference/glossary.md) |
-
-## Skills Files
-
-Load the relevant skills file for task-specific instructions:
-
-| Task                       | Skills file                                        |
-| -------------------------- | -------------------------------------------------- |
-| Writing a new model        | [skill-mvt-model.md](skill-mvt-model.md)           |
-| Writing a new view         | [skill-mvt-view.md](skill-mvt-view.md)             |
-| Following code conventions | [skill-code-style.md](skill-code-style.md)         |
-| Reviewing code             | [skill-code-review.md](skill-code-review.md)       |
-| Updating documentation     | [skill-documentation.md](skill-documentation.md)   |
-
-## Documentation Map
-
-| Section | Content |
-|---|---|
-| [Architecture](../architecture/index.md) | Transferable MVT specification |
-| [Building with MVT](../building-with-mvt/quickstart.md) | Progressive guide from quickstart to advanced topics |
-| [Topics](../building-with-mvt/simulating-the-world/time-management.md) | In-depth topic pages |
-| [Reference](../reference/architecture-rules.md) | Rules, style, glossary |
-
+Claude Code registers each one as a skill in `.claude/skills/`.

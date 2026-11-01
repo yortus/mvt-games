@@ -1,12 +1,12 @@
 /** @jsxImportSource @mvtjs/html */
 import { PerfmonView } from '@mvtjs/html';
 import { createComputed, createReaction, watch } from '@mvtjs/utils';
+import type { ReferenceEntry } from '../../cheat-sheets';
 import { LIBRARIES, LIBRARY_SUMMARIES } from '../../libraries';
 import type { DefinitionTarget, LanguageClient, TypeProblem } from '../language';
 import type { PanelKind, ThemeKind, WorkspaceModel } from '../models';
 import type { RendererKind } from '../project-api';
 import { MAIN_PATH } from '../runtime';
-import { CodeEditorView } from './code-editor-view';
 import { ConsoleView } from './console-view';
 import { DialogView } from './dialog-view';
 import { createDialogs } from './dialogs';
@@ -14,14 +14,15 @@ import { DividerView } from './divider-view';
 import { FileListView } from './file-list-view';
 import { HeaderView } from './header-view';
 import { type HelpLibrary, HelpView } from './help-view';
-import { PreviewView } from './preview-view';
+import { PreviewView } from '../preview';
 import { ProblemsView } from './problems-view';
 import { ProjectOptionsView } from './project-options-view';
 import { ProjectsView } from './projects-view';
 import { QuickOpenView } from './quick-open-view';
+import { ReferenceView, toChapterUrl } from '../reference';
 import { RunControlsView } from './run-controls-view';
 import { ShareView } from './share-view';
-import { THEMES, writePalette } from './themes';
+import { CodeEditorView, THEMES, writePalette } from '../editor';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -44,12 +45,15 @@ export interface PlaygroundViewBindings {
 /**
  * The playground: the header, then the project's files, the editor, and the
  * run, with its controls, its preview, and its console and Problems list.
- * Dividers between the panes resize them, and the file list folds away. A
- * narrow screen shows one panel at a time, chosen by tabs.
+ * Dividers between the panes resize them, and the file list folds away. The
+ * cheat sheet opens over the run, so the editor keeps its width, and the run
+ * goes on behind it. A narrow screen shows one panel at a time, chosen by
+ * tabs.
  *
- * Ctrl+Enter, or Cmd+Enter, runs the project from anywhere on the page,
+ * Ctrl+Enter, or Cmd+Enter, restarts the project from anywhere on the page,
  * Ctrl+P, or Cmd+P, opens a file by name, Ctrl+O, or Cmd+O, opens the
- * Projects dialog, and Ctrl+S, or Cmd+S, saves the project.
+ * Projects dialog, Ctrl+S, or Cmd+S, saves the project, and F1 opens the
+ * cheat sheet, or closes it.
  */
 export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
     const { model } = bindings;
@@ -73,7 +77,9 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
             <HeaderView
                 projectName={() => model.projectName}
                 saves={() => model.savesRequested}
+                isReferenceOpen={() => layout.isReferenceOpen}
                 onOptionsPressed={() => layout.openProjectOptions()}
+                onReferencePressed={() => layout.toggleReference()}
                 onProjectsPressed={() => layout.openProjects()}
                 onSharePressed={() => model.share()}
                 onExportPressed={() => model.exportProject()}
@@ -88,7 +94,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                     />
                 ))}
             </nav>
-            <div class={() => (layout.isFilesFolded ? 'workspace workspace-files-folded' : 'workspace')} ref={writeAllSizes} onRefresh={writeSizes}>
+            <div class={workspaceClass} ref={writeAllSizes} onRefresh={writeSizes}>
                 <FileListView
                     paths={() => model.paths}
                     activePath={() => model.activePath}
@@ -134,19 +140,24 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                     })}
                 </div>
                 <DividerView orientation="vertical" label="Resize the run" onDragged={(deltaPx) => layout.resizeRun(deltaPx)} />
+                <div class="reference-pane">
+                    <ReferenceView
+                        model={model.reference}
+                        isOpen={() => layout.isReferenceOpen}
+                        chapterUrlOf={(path) => toChapterUrl(path, import.meta.env.BASE_URL)}
+                        onCopyImportPressed={(line) => void navigator.clipboard?.writeText(line).catch(() => undefined)}
+                        onDefinitionPressed={openLibraryDefinition}
+                        onClosed={() => layout.closeReference()}
+                    />
+                </div>
                 <div class="run-pane">
                     <RunControlsView
                         phase={() => model.phase}
                         isPaused={() => model.isPaused}
                         speed={() => model.speed}
-                        isRunOnChange={() => model.isRunOnChange}
-                        onRunPressed={() => model.run()}
-                        onStopPressed={() => model.stop()}
-                        onPausePressed={() => model.pause()}
-                        onResumePressed={() => model.resume()}
+                        onRestartPressed={() => model.run()}
                         onStepPressed={() => model.step()}
-                        onSpeedChosen={(speed) => model.setSpeed(speed)}
-                        onRunOnChangeToggled={(isOn) => model.setRunOnChange(isOn)}
+                        onSpeedPressed={(speed) => model.playAt(speed)}
                     />
                     {PreviewView({
                         sandboxDocument: () => model.sandboxDocument,
@@ -156,7 +167,7 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         speed: () => model.speed,
                         background: () => THEMES[model.theme].palette.background,
                         isFocusTaken: () => model.isRunByVisitor,
-                        placeholder: () => (model.phase === 'preparing' ? 'Preparing...' : 'Press Run, or Ctrl+Enter, to run the project'),
+                        placeholder: () => (model.phase === 'preparing' ? 'Preparing...' : 'Press Normal, or Ctrl+Enter, to run the project'),
                         onSandboxMessage: (message) => model.reportSandboxMessage(message),
                     })}
                     <DividerView orientation="horizontal" label="Resize the console" onDragged={(deltaPx) => layout.resizeConsole(deltaPx)} />
@@ -257,6 +268,12 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
         </div>
     );
 
+    /** The workspace's class, which says whether the file list is folded and the cheat sheet open. */
+    function workspaceClass(): string {
+        if (layout.isFilesFolded) return layout.isReferenceOpen ? 'workspace workspace-files-folded workspace-reference-open' : 'workspace workspace-files-folded';
+        return layout.isReferenceOpen ? 'workspace workspace-reference-open' : 'workspace';
+    }
+
     function isLibraryOpen(): boolean {
         return model.libraryFile !== undefined && model.activePath === model.libraryFile.path;
     }
@@ -289,6 +306,14 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
         });
     }
 
+    /** Opens the declarations of a cheat sheet's entry, read-only, as go to definition does. */
+    function openLibraryDefinition(entry: ReferenceEntry): void {
+        if (entry.from === undefined) return;
+        void bindings.language?.libraryDefinition(entry.from, entry.name).then((target) => {
+            if (target !== undefined) openDefinition(target);
+        });
+    }
+
     /**
      * Writes the theme's colours to the CSS, as it changes. They go on the
      * document's root, since the editor's menu opens in the page's body,
@@ -316,6 +341,12 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
     }
 
     function onKeyDown(event: KeyboardEvent): void {
+        if (event.key === 'F1') {
+            // In place of the browser's own help
+            event.preventDefault();
+            layout.toggleReference();
+            return;
+        }
         if (!(event.ctrlKey || event.metaKey)) return;
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -402,6 +433,7 @@ const HELP_LIBRARIES: readonly HelpLibrary[] = LIBRARIES
 const PANELS: readonly { readonly kind: PanelKind; readonly label: string }[] = [
     { kind: 'files', label: 'Files' },
     { kind: 'code', label: 'Code' },
+    { kind: 'reference', label: 'Cheat sheet' },
     { kind: 'run', label: 'Run' },
 ];
 
@@ -409,6 +441,7 @@ const PANELS: readonly { readonly kind: PanelKind; readonly label: string }[] = 
 const PANEL_CLASSES: Readonly<Record<PanelKind, string>> = {
     files: 'playground show-files',
     code: 'playground show-code',
+    reference: 'playground show-reference',
     run: 'playground show-run',
 };
 

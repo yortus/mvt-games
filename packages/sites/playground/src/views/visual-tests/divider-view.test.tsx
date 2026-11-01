@@ -3,7 +3,7 @@ import '../../nav.css';
 import '../../playground.css';
 import { THEME_KINDS } from '../../models';
 import { DividerView } from '../divider-view';
-import { THEMES, writePalette } from '../themes';
+import { THEMES, writePalette } from '../../editor';
 
 /** Returns two panes side by side, or one above the other, with a divider between. */
 function betweenPanes(orientation: 'vertical' | 'horizontal'): HTMLElement {

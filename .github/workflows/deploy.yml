@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
-# Builds the site, the playground and the docs, and deploys them to GitHub
-# Pages. A push that changes only files none of them is built from, such as a
-# README, a changelog, notes, or a package's own docs, deploys nothing.
+# Builds the site, the playground and the docs, prints the book as a PDF, and
+# deploys them to GitHub Pages. A push that changes only files none of them is
+# built from, such as a README, a changelog, notes, or a package's own docs,
+# deploys nothing.
 
 on:
     push:
@@ -61,6 +62,29 @@ jobs:
             - run: npm run build:docs
             # With everything built: every page has what a link preview needs
             - run: npm run check:link-previews
+
+            # The book as a PDF, printed from the built docs into
+            # dist/docs/building-web-games-with-mvt.pdf, which the Preface and the
+            # docs' sidebar link to. It's printed on every deploy, since a deploy
+            # replaces the whole site. A book that no longer prints, such as one
+            # with text lost off a page, fails the deploy, so the link never
+            # goes to a missing or stale file. The browser is Playwright's
+            # headless shell, from the cache or downloaded, as in visual.yml.
+            - name: Where Playwright keeps its browser
+              id: playwright
+              run: |
+                  echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/ms-playwright" >> "$GITHUB_ENV"
+                  echo "version=$(node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+              working-directory: packages/sites/docs
+
+            - uses: actions/cache@v4
+              with:
+                  path: ${{ runner.temp }}/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+
+            - run: npx playwright install chromium-headless-shell
+              working-directory: packages/sites/docs
+            - run: npm run print -w @mvtjs/docs
 
             - uses: actions/upload-pages-artifact@v3
               with:

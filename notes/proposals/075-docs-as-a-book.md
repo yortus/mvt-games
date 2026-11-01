@@ -12,8 +12,11 @@
 > hold the principle pages in full. It also lists about thirty errors found along
 > the way, which can be fixed now, before anything moves.
 
-**Status:** proposed. Nothing is done yet. Section 10's errors can be fixed
-at any time, without waiting for the rest. Where the principles go is
+**Status:** being implemented, on the branch `docs-book` (from `vnext` at
+`7d35702b`), in reviewed chunks, one for each step in section 13. Steps 1
+to 14 are done (2026-10-30): the restructure, the examples that run in
+the book's pages, and the print build. Section 13.1 lists the follow-ups
+left for the owner, the merge into `vnext` among them. Where the principles go is
 settled (2026-10-29): one summary chapter in Part IV (section 4.5), and
 the full pages as appendices, one for each principle, named by its
 acronym (section 4.8). Interactive examples were added on 2026-10-29
@@ -94,7 +97,7 @@ teaches the same ideas from the start. The copies are often near-verbatim.
 | The metronome, with a near-identical heartbeat example | Sound, Taming Complex Views | 2 |
 | The `update(deltaMs)` contract bullets | Architecture Models, Models, Time Management ("Recap") | 3 |
 | The `createTimerModel` test | Models, Time Management, Testing Models | 3 |
-| Leap safety and `advanceTime` (each page points to the other for the definition) | Time Management, Testing Models | 2 |
+| Steps up to the delta cap and `advanceTime` (each page points to the other for the definition) | Time Management, Testing Models | 2 |
 | GSAP pitfalls (zero-duration tweens, `paused: true`) | Time Management, Common Mistakes, the model skill | 3 |
 | Immediate-mode data flow, retained-mode output | Architecture Views, Heritage, Declarative Views | 3 |
 | Fixed and changeable binding values | Architecture Bindings, Bindings, Bindings in Depth, Style Guide | 4 |
@@ -315,7 +318,7 @@ showed broken.
 | # | Chapter | Sources | About |
 | --- | --- | --- | --- |
 | 3 | **Models** | Models, Architecture Models, Model Composition, the Style Guide's factory section | The `update(deltaMs)` contract, domain coordinates, factories, trees of models, collections of models (`SlotList` belongs here), actions named for what the player means, and what a model exposes for views to notice (counts, phases) |
-| 4 | **Time and Phases** | Time Management (without GSAP), Phase-Based Transitions, the model half of Open-Ended Phases | Time arrives as `deltaMs`. How to structure `update()`. Leap safety. One `phase` and one `progress`. Phases that wait, and why `progress` stays at 1 |
+| 4 | **Time and Phases** | Time Management (without GSAP), Phase-Based Transitions, the model half of Open-Ended Phases | Time arrives as `deltaMs`. How to structure `update()`. Steps of different sizes, up to the cap. One `phase` and one `progress`. Phases that wait, and why `progress` stays at 1 |
 | 5 | **The Tick** | The Ticker, The Game Loop | Ticks, why the order matters, input between ticks, the delta cap, pause, slow motion, stepping and replay. In this project: `updateView`, `refreshView`, `SKIP_DESCENDANTS` |
 
 Phases move here because they are domain state machines. The MISU
@@ -398,7 +401,7 @@ this chapter's job, and its screen-shake example leads into Part V.
 
 | # | Chapter | Sources | About |
 | --- | --- | --- | --- |
-| 21 | **Testing Models** | Testing (opener), Testing Models | The only home for leap safety's testing side and `advanceTime`. It opens from "control, observe, repeat" in Chapter 13, and links to DfT for the why |
+| 21 | **Testing Models** | Testing (opener), Testing Models | The only home for stepping tests in pieces up to the cap, and `advanceTime`. It opens from "control, observe, repeat" in Chapter 13, and links to DfT for the why |
 | 22 | **Testing Views** | Testing Views | Assertions or images: "the value problem". Audio views get a link to Chapter 18's testing section, not a copy |
 | 23 | **Visual Tests** | Visual Tests, Testing Views' snapshot sections | Posing, advancing time, whole screens, keeping images the same, reviewing a change. One word for one thing: "reference image". "Choosing a Tool" shrinks to an aside that links to v-snap's README |
 | 24 | **Why Performance Matters** | Why Performance Matters | Unchanged in substance |
@@ -455,14 +458,14 @@ summary.
 
 | Concept | Home | Pages that keep only a sentence and a link |
 | --- | --- | --- |
-| The frame sequence | Ch. 1 (the picture), Ch. 5 (the detail) | Preface, Ch. 2, Ch. 6, Ch. 14, CQS, App. A |
+| The frame sequence | Ch. 1 (the picture), Ch. 4 (the detail) | Preface, Ch. 2, Ch. 6, Ch. 14, CQS, App. A |
 | Two kinds of state | Ch. 1 | Ch. 9 |
-| Presentation state, view models | Ch. 9 (view models in Ch. 16) | Ch. 1, Ch. 5, Ch. 6, Ch. 18, SSOT |
+| Presentation state, view models | Ch. 9 (view models in Ch. 16) | Ch. 1, Ch. 4, Ch. 6, Ch. 18, SSOT |
 | The delete-the-view test | Ch. 9 | Ch. 6, SoC |
-| `update(deltaMs)` contract | Ch. 3 | Ch. 4, App. A |
-| Leap safety | Ch. 4 | Ch. 21 |
-| `advanceTime` | Ch. 21 | Ch. 4 |
-| Phases and progress | Ch. 4 | Ch. 9, Ch. 20, MISU |
+| `update(deltaMs)` contract | Ch. 3 | Ch. 5, App. A |
+| Steps up to the delta cap | Ch. 5 | Ch. 21 |
+| `advanceTime` | Ch. 21 | Ch. 5 |
+| Phases and progress | Ch. 5 | Ch. 9, Ch. 20, MISU |
 | Counts and `watch()` | Ch. 8 | Ch. 3 (the model's side), Ch. 18, Ch. 25, CQS |
 | The metronome | Ch. 16 | Ch. 18 |
 | Access patterns (bindings, model, constants) | Ch. 7 | Ch. 6 |
@@ -473,10 +476,10 @@ summary.
 | Testing a model | Ch. 21 | Ch. 3 (one sentence, no example) |
 | Testing an audio view | Ch. 18 | Ch. 22 |
 | Reference images and review | Ch. 23 | Ch. 22 |
-| Hot paths | Ch. 25 | Ch. 5, App. A |
+| Hot paths | Ch. 25 | Ch. 4, App. A |
 | Performance figures | App. C, its short version | Every page that quotes a number |
 | Why polling | Ch. 14 | Ch. 8, Ch. 15, SSOT, CQS |
-| GSAP timelines | App. E | Ch. 4 |
+| GSAP timelines | App. E | Ch. 5 |
 | The rules | App. A | Each chapter states its own rules where it teaches them |
 
 The rules deserve a note. Today they are stated in their own pages and
@@ -593,9 +596,12 @@ book's own SSOT principle applied to its own docs.
   sidebar, and this theme keeps them. Remove the hand-written ones. The
   sidebar then becomes the one record of the reading order, and a link
   can't skip a page again.
-- **Chapter numbers.** Put them in the sidebar text and the page titles
-  ("7. Bindings"), so a page can say "Chapter 7". Keep them out of file
-  names, so inserting a chapter doesn't rename files.
+- **Chapter numbers.** Put them in the sidebar text, the page titles
+  ("7. Bindings") and the file names (`chapters/08-bindings.md`), and
+  number each page's headings down to three parts (7.1, 7.1.1). The site
+  adds the numbers to headings as it builds, from the file name, so the
+  text has none and a heading's anchor never changes. Settled 2026-10-30
+  (open question 3).
 - **Old URLs.** 91 files outside the docs site link into it (READMEs,
   code comments, `AGENTS.md`, the notes), and the live site's URLs may be
   shared. Add a redirect map: old path to new path, with a small redirect
@@ -837,71 +843,384 @@ is quick to confirm.
 1. ~~**Where the principles go.**~~ Settled 2026-10-29: one summary
    chapter in Part IV (section 4.5), and the full pages as appendices,
    each named by its acronym (section 4.8).
-2. **Phases in the model part.** Chapter 4 holds model phases and Chapter
-   9 view-owned phases. Is splitting "phases" across two parts clear, or
-   should a short section in Chapter 9 bring both sides together?
-3. **Chapter numbers in titles.** They help a book, but every insertion
-   renumbers what follows. Is that churn worth it, or should chapters be
-   numbered only in the sidebar?
-4. **A troubleshooting index.** Should a short Appendix F list symptoms,
-   each linking to the chapter section that explains it, or is that one
-   more thing to keep in step?
-5. **The skills on the published site.** Once they are link lists, should
-   they leave the docs site (with `srcExclude`), or stay in a collapsed
-   section for anyone curious?
-6. **The book's title.** The site is titled "MVT Games", but the book
-   would be about MVT. Something like *Building Games with MVT* would say
-   what it is. This affects the Preface and the site title, nothing else.
-7. **What print shows in place of an example.** A still and a short link,
-   a still and a QR code, or nothing? A still helps where the example
-   shows motion the text describes. A QR code suits paper but means little
-   in a PDF.
-8. **Whether to make a print version now.** The embeds are useful online
-   whether or not a PDF exists. The print build could wait until there is
-   a reason for a PDF, as long as section 9.1's rules are followed from
-   the start, so the extras can be stripped later.
-9. **Which level an embed opens at.** Run is lighter. Edit and run
-   invites the reader to change the code, which is the point of an
-   example. A chapter could choose for each example.
+2. ~~**Phases in the model part.**~~ Settled 2026-10-30: the split stays.
+   Chapter 5 holds the model's phases, and Chapter 9 opens its view-owned
+   phases with a short section that recalls Chapter 5's, so a reader sees
+   both sides in one place.
+3. ~~**Chapter numbers in titles.**~~ Settled 2026-10-30, by the owner: in
+   the sidebar, the page titles and the file names, and headings numbered
+   down to three parts (section 8).
+4. ~~**A troubleshooting index.**~~ Settled 2026-10-30, by the owner: a
+   short Appendix F, whose entries only link.
+5. ~~**The skills on the published site.**~~ Settled 2026-10-30, by the
+   owner: they leave the site (`srcExclude`), and stay in the repo for
+   agents.
+6. ~~**The book's title.**~~ Settled 2026-10-30, by the owner, and
+   changed to *Building Web Games with MVT* on 2026-11-01 (step 15): *Building
+   Games with MVT*. The site's own name, "MVT Games", stays in the nav,
+   since it links to the Arcade and matches the Arcade's and the
+   playground's navs; the book's title heads the preface and the sidebar.
+7. ~~**What print shows in place of an example.**~~ Settled 2026-10-30:
+   the example's still, and the address of its page online. No QR code.
+8. ~~**Whether to make a print version now.**~~ Settled 2026-10-30, by the
+   owner asking for the remaining steps: yes.
+9. ~~**Which level an embed opens at.**~~ Settled 2026-10-30: one level,
+   which runs at once and has an Edit button that loads the editor only
+   when pressed. The reader gets both, and pays for the editor only on
+   asking for it.
 
 ## 13. Implementation Steps
 
 Each step from 3 on is one reviewable chunk, in reading order, so each
 review sees whole parts of the book.
 
-1. Fix section 10's errors (except row 22, which goes with 074). No pages
-   move.
-2. Settle the open questions, and write the Writing Guide (section 7.2)
+1. ~~Fix section 10's errors (except row 22, which goes with 074). No pages
+   move.~~ Done 2026-10-30. Checked again first, since the Watch API
+   (`createReaction`, `createComputed`) and 074's docs landed after the
+   review. Rows 3, 21, 22 and 29 were already fixed, row 2's line had been
+   reworded on purpose, and row 13's page now leads with `<List>`. Every
+   other row is fixed. Also fixed: the "spiral of death" wording, Why
+   Polling's claim that nothing like `createMemo` exists, and the
+   measurements' short version, which disagreed with its own tables.
+2. ~~Settle the open questions, and write the Writing Guide (section 7.2)
    with the chapter shape and the outline, so every rewrite follows the
-   same standard.
-3. Lay out the skeleton. Set up the new folders and sidebar, the redirect
+   same standard.~~ Done 2026-10-30. Questions 2 to 6 are settled. The
+   Writing Guide (`working-in-this-repo/writing-guide.md`) takes in the
+   Style Guide's Writing section, contributing.md (deleted) and the
+   documentation skill (now a short checklist that points to it).
+3. ~~Lay out the skeleton. Set up the new folders and sidebar, the redirect
    map, and the removal of hand-written Previous and Next. Move pages
    without rewriting them, so the diff shows the moves. Update the repo's
-   links in one scripted pass.
-4. Front matter and Parts I and II: Preface, Chapters 1-5.
-5. Part III: Chapters 6-12.
-6. Part IV: Chapter 13 from the principles overview, Chapter 14 (the
+   links in one scripted pass.~~ Done 2026-10-30. Pages are in
+   `chapters/`, `appendices/` and `working-in-this-repo/`. Where a chapter
+   merges several pages, the main one moved to the chapter's file and the
+   others are appended after a marker comment, for steps 4 to 7 to merge.
+   `.vitepress/book.ts` holds the reading order, builds the sidebar,
+   numbers the headings and writes a redirect page at each old address.
+   The skills left the site, and Chapter 8 also takes in Computed Values,
+   a page added after the review. Chapter 17 and Appendix E are
+   placeholders until their steps.
+4. ~~Front matter and Parts I and II: Preface, Chapters 1-5.~~
+5. ~~Part III: Chapters 6-12.~~
+6. ~~Part IV: Chapter 13 from the principles overview, Chapter 14 (the
    merge) and Chapter 15. The principle pages move to The Principles in
-   Depth, with their links updated.
-7. Parts V and VI: Chapters 16-25.
-8. Appendices A-E, the glossary rewrite, and the deletion of the
-   reference rules stub and Common Mistakes.
-9. Working in This Repo: the split Style Guide, Project Structure and the
-   README moves.
-10. The agent files: `AGENTS.md`, the skills as checklists, `llms.txt`.
-11. A final read straight through, start to finish, checking that no page
-    uses an idea before its chapter.
+   Depth, with their links updated.~~
+7. ~~Parts V and VI: Chapters 16-25.~~
+8. ~~Appendices A-E, the glossary rewrite, and the deletion of the
+   reference rules stub and Common Mistakes.~~ Steps 4 to 8 done
+   2026-10-30, with each part written in parallel against the Writing
+   Guide, then checked together: the build, every section anchor, and
+   every quoted figure against Appendix C's short version, whose own
+   figures were checked against the generated tables (about twenty had
+   drifted). Appendix F became a symptom index rather than being deleted.
+   The book came out at about 99,600 words against 84,900 before: the
+   merges removed the repetition (Chapters 4, 7 and 14 shrank), but the
+   new concrete openings, Common Mistakes, summaries and further reading
+   added more than they cut.
+9. ~~Working in This Repo: the split Style Guide, Project Structure and the
+   README moves.~~ Done 2026-10-30. Code Style holds only this repo's
+   conventions, and links to Chapters 6, 7 and 10 for what it used to
+   teach.
+10. ~~The agent files: `AGENTS.md`, the skills as checklists, `llms.txt`.~~
+    Done 2026-10-30. The skills went from about 11,000 words to about
+    4,000, and link to the book's sections. Facts found only in a skill
+    moved to the book, the entries README or Code Style; three that were
+    stale were dropped.
+11. ~~A final read straight through, start to finish, checking that no page
+    uses an idea before its chapter.~~ Done 2026-10-30, by three readers,
+    then an editing pass that gave each repeated idea one home (the
+    Writing Guide's table now lists them), made Common Mistakes headings
+    that Appendix F links to, fixed about forty facts that had drifted from
+    the code, and shortened the long chapters. The book ended at about
+    97,000 words. Cross-references now use `[§](page#section)`, which the
+    site fills in with the section's current number and heading as it
+    builds, so typed section numbers can't go stale.
 
 The interactive examples (section 9) don't wait for the restructure. Steps
 12 and 13 can run beside steps 4 to 7, and step 14 waits for the chapters
 to settle.
 
-12. The embed page (section 9.4). Run first, then Edit and run. Measure
+12. ~~The embed page (section 9.4). Run first, then Edit and run. Measure
     each level's load size and agree it before it ships, as 061 asked.
-    Lint, type checks, tests and the docs build pass.
-13. `<TryIt>` and the stills. Give each playground example a visual test
+    Lint, type checks, tests and the docs build pass.~~ Done 2026-10-30.
+    `packages/sites/playground/embed.html` and `src/embed-main.ts`, with
+    an embed model, view and hash reader in `src/embed/`. It reuses the
+    playground's runtime and preview, and loads the editor only when the
+    reader presses Edit. To keep that so, the page's colours moved to
+    `src/palettes/` (no CodeMirror), the preview to `src/preview/`, and the
+    editor and its themes to `src/editor/`. Otherwise the views' barrel,
+    which only the playground's page imports, lands in the page's own
+    chunk, and loading the editor from it ran the playground's page too.
+    Measured, gzipped, from the build: the embed page loads 129 KB at
+    first, mostly the TypeScript transpiler (sucrase) and the examples'
+    files; the example's sandbox then loads its renderer (Pixi, 77 KB);
+    Edit loads the editor, 176 KB. The estimate in section 9.4 was about
+    100 KB for the first load. Checked in Playwright's headless browser:
+    the still, the run, the editor, an edit running again, and print.
+    **Owner:** agree these sizes, as 061 asked.
+13. ~~`<TryIt>` and the stills. Give each playground example a visual test
     posed for its still, add the component to the docs theme, and use it
     on at least one page, starting with Chapter 2's bouncing ball. Its
-    listing comes from the example's files with `<<<`.
-14. The print build (section 9.5): the print page, Paged.js, the PDF from
-    Playwright's headless shell. Only if open question 8 says now.
+    listing comes from the example's files with `<<<`.~~ Done 2026-10-30.
+    `TryIt.vue` in the docs theme; each example's still is the reference
+    image of `src/examples/visual-tests/examples.test.ts`, and the
+    playground's v-snap config gained Pixi views for it. Chapters 2, 3
+    and 10 use it, in place of every playground link the book had. One
+    change from the plan: Chapter 2's listing stays its own, simpler than
+    the playground's ball (which adds friction, a shadow and throwing), so
+    it isn't imported with `<<<`; the chapter says the example does more.
+14. ~~The print build (section 9.5): the print page, Paged.js, the PDF from
+    Playwright's headless shell. Only if open question 8 says now.~~ Done
+    2026-10-30, as `packages/sites/docs/scripts/print-book.ts`
+    (`npm run print -w @mvtjs/docs`). It serves the built site, opens each
+    page of the book in reading order in the light theme, waits for its
+    diagrams, joins the pages' rendered content into one document with a
+    title page, contents and a page for each part, rewrites links between
+    pages into links within the document (1,579, all resolved), and prints
+    it: 318 A4 pages, 3.6 MB. One change from the plan: no Paged.js.
+    Playwright's own PDF printing gives page numbers and a running header,
+    and needs no new library; what it can't give is page numbers in the
+    contents, which link instead. Add Paged.js if a contents page with page
+    numbers is wanted. The PDF isn't built or published by the site's
+    build; whether to publish it is follow-up 11.
+15. ~~The owner's review of steps 12 to 14.~~ Done 2026-10-30. The owner
+    asked for far more examples, each written for its page rather than
+    taken from the playground's, a taller embed with the editor below the
+    run rather than beside it, and a PDF typeset as a book rather than the
+    web pages printed.
+    - **The book's examples.** 50 of them, in the playground's new `book/`
+      folder, written for the passages they sit beside: 2 to 4 in each
+      teaching chapter, one in Chapter 14 and one in Appendix E, none in
+      Chapters 13 and 15. They replace the 4 uses of the playground's own
+      examples. Each runs the passage's own code, with the same names, and
+      its lead-in says what to watch or change. Where an example showed a
+      listing to be wrong, the listing was fixed (Chapters 3, 9, 10, 11,
+      12 and 20). Each has a headless run test
+      (`src/examples/book-examples.test.ts`) and a still
+      (`src/examples/visual-tests/book.test.ts`), taken at the moment its
+      `example.ts` names (`stillMs`), running the real loop a frame at a
+      time.
+    - **The embed.** The editor opens below the run, at the full width,
+      with the file buttons above the code. The embed says how tall the
+      editor is, and the page grows by that much: 420 pixels for the run,
+      880 with the editor. A running example takes the keyboard. The embed
+      loads only its own example's files (`src/example-loader/`), so 50
+      examples cost a page nothing until one runs.
+    - **The PDF.** Typeset by Paged.js from the book's own stylesheet
+      (`scripts/print-book.css`), none of the site's: a 7.5 by 9.25 inch
+      page with mirrored margins, Source Serif text, justified and
+      hyphenated, with Source Sans headings and Source Code Pro code; a half
+      title, title page and colophon; contents with page numbers and
+      leaders; each part and chapter opening on a right-hand page; running
+      heads (the chapter on the left, the section on the right); roman
+      numerals in the front matter; a page number after each link to
+      another chapter; links out of the book as footnotes, numbered from 1
+      in each chapter; curly quotes, en dashes and ellipses. 376 pages.
+      Two Paged.js gaps are worked around in `print-book.ts`: Chromium no
+      longer carries a counter reset from one page on to the next, so the
+      script numbers the pages and footnotes itself, and code blocks lose
+      their line breaks when carried over a page, so each line is a block.
+    - **Page breaks, after the owner's second review.** Headings had been
+      left at the foot of a page, paragraphs split with one line on a page,
+      and chapters ended on a page with a line or two. Worse, a check
+      found text lost from the PDF on 11 pages: Paged.js lays a page out as
+      columns, and text pushed into a second column after the page was
+      broken (by page numbers filled in late, a footnote's area, an image
+      decoding, or Paged.js's own re-check of a page) was never printed. Now
+      `scripts/print-book-breaks.js`, a Paged.js handler, moves each break:
+      a heading or a paragraph ending in a colon keeps two lines of what
+      follows, no paragraph or block of code leaves or carries one line
+      alone, nothing hidden comes before a break, and a table, remade as
+      rows of blocks, breaks only between rows, two at least on each side.
+      Page references and footnote numbers are text before the layout,
+      found by laying the book out until they settle (two to four layouts),
+      and a chapter whose last page would be under a quarter full starts
+      that page earlier. The print fails if any text is outside its page.
+      Every paragraph of the site was checked against the PDF's text.
+    - **The experiments, after the owner's third review.** Each example is
+      titled with its number in its chapter (Experiment 4A, or E1 in an
+      appendix), filled in by the docs' Markdown, and its name. The embed
+      passes the page's keys to the sandbox, which a page can't give the
+      focus to, so a game's keys work as soon as it runs; a re-run after
+      an edit no longer takes the focus from the editor; the page holds
+      still when another experiment above closes; and the playground opens
+      a book example by name, so the link below an experiment works. In
+      every example the constants worth changing are in a Tunables section
+      at the top of their file. Chapter 4's leap-safety and Chapter 5's
+      big-step experiments now say plainly what they do, Chapter 6's
+      drifting bullet has its own time controls, Chapter 9's door slides
+      and its popup bobs visibly, Chapter 10's shield turns round the ship,
+      and Chapter 11's views can each be hidden while the game runs.
+    - **The experiments, after the owner's fourth review.** The text names
+      each experiment by its number, through a link written
+      `[§](#try-<example>)` that the build fills in, never by where it
+      sits, so a printed layout may move it. Run gives an experiment the
+      keys whether or not the focus reaches the embed: the embed keeps the
+      focus itself rather than handing it to the sandbox, and while the
+      focus stays in the docs page, the page passes the keys on until the
+      reader clicks elsewhere; an outline shows which experiment has them.
+      Every phase readout ends on `closed`. Chapter 9's door is a
+      spaceship's, Chapter 10's shield only turns, and Chapter 11's grid
+      is three layer views, each with its own toggle.
+    - **Leap safety, dropped after the owner's fifth review.** It taught
+      callers to read a model's code to know whether it could take a big
+      step, against Design by Contract, and to audit for a problem that
+      callers never cause. Chapter 4's section is now Steps of Different
+      Sizes: the device chooses each step, up to the ticker's cap, so
+      `update` promises the same game at any step up to the cap, and a
+      timer or phase carries its leftover time to keep that promise. A
+      caller that needs to go further steps in pieces no bigger than the
+      cap. Experiment 4C is two cannons given time in frame-sized steps up
+      to the cap, with rings where 1 ms steps put their balls. The term is
+      gone from the book, the skills and the code's comments.
+    - **Part II reordered.** The Tick is now Chapter 4 and Time and Phases
+      Chapter 5, so where `deltaMs` comes from, and its cap, are taught
+      before the chapter that relies on them. The Tick's view mechanics
+      (the four functions, walking the tree, children added during a
+      refresh, `SKIP_DESCENDANTS`, the walk's cached list, Pixi's
+      `onRender`) moved to Chapter 6, where views are taught, and its
+      "runs twice, or never" mistake to Chapter 11. A review of Parts III
+      to VI for the same kind of problem is in follow-up 21.
+    - **The build's link-preview check** now passes: the redirect pages
+      carry their new page's preview tags, and a `noindex` page (the embed)
+      is left out.
+    - **Seven parts** (2026-11-01, the owner's call). The old Part IV, Why
+      MVT Works, is gone: Why Views Poll is Chapter 10, after Noticing
+      Changes; Where MVT Comes From is dropped, its three ideas found only
+      there moved (the engines' update functions to the new Chapter 1,
+      dirty checking to Why Views Poll, lockstep networking to Models); and
+      the principles are chapters, in a closing Part VII: The Principles
+      Behind MVT (25), one chapter for each principle (26 to 33), and Using
+      the Principles (34), the screen shake answered. Testing is Part IV,
+      before Advanced Presentation, and Performance is Part VI. Chapter 1
+      is left for the new opening chapter, Games in the Browser, as the
+      book becomes *Building Web Games with MVT*, with an appendix on MVT
+      beyond the web. The chapters' addresses weren't published, so only
+      the old docs' addresses redirect.
+    - **Building Web Games with MVT** (2026-11-01, the owner's call). The
+      book is now titled for what it teaches, and its PDF is
+      `building-web-games-with-mvt.pdf`. Chapter 1, Games in the Browser,
+      sets out what the browser and the tools built on it provide and leave
+      open, and Appendix H, MVT Beyond the Web, takes over the Preface's
+      claim that MVT works in any language. The sites' nav calls the docs
+      "Book", at the same address, `/docs/`.
+
+### 13.1 Follow-ups from the restructure
+
+Found while doing steps 1 to 11 (2026-10-30), and left for the owner to
+decide or for later work. Strike each through when it's settled.
+
+1. **Merge `docs-book` into `vnext`.** The owner's call, after reading the
+   book. The branch's commits sit on `vnext` at `7d35702b`. If `vnext` has
+   moved on, rebase first and check the docs build, the section anchors
+   and the playground's tests again.
+2. **The book's length.** It came out at about 97,000 words, against
+   84,900 before. The merges removed the repetition, but the new concrete
+   openings, Common Mistakes, summaries and further reading added more.
+   Chapters 8, 10, 12 and 16 are the longest, at 3,400 to 4,500 words
+   each. Decide whether a further tightening pass is wanted.
+3. **Where Part IV sits.** One reader of the finished book suggested
+   moving Part IV (Why MVT Works) after Part V (Advanced Presentation
+   Topics). Its case: Part V barely uses Part IV, Part V would then
+   follow straight on from Part III (Chapter 17 picks up Chapter 12's
+   lists), and the "why" chapters would come once every rule they explain
+   has been seen. The order in section 4 was the owner's choice, and it
+   stands until the owner says otherwise.
+4. **Positional arguments in the sequence API.** `createSequence(defs)`
+   and `createSequenceTracker(sequence, handlers)` take positional
+   arguments, against the one-options-object convention the book teaches.
+   Chapter 16 says so in an "In this project" aside. Decide whether to
+   change the library (and then the aside), or keep them as a documented
+   exception.
+5. **Kwazy Cactii's random source.** Its game model (`createGameModel`)
+   takes no `random`, though its board model does, so its visual test
+   depends on v-snap seeding `Math.random`, which Chapter 23 calls a
+   safety net and not the fix. Task
+   [073](../tasks/backlog/073-models-take-their-random-source.md) covers
+   models taking their random source; add this model to it.
+6. **`for...of` on arrays.** `AGENTS.md`'s rule 5 says never to use it.
+   Chapter 25 (rule H-loops) says it costs nothing in V8, and keeps the
+   index loop as the safe habit for engines that haven't been measured.
+   Make the two agree, one way or the other.
+7. **`@mvtjs/pixi`'s README.** Its "What it costs" section
+   (`packages/libraries/pixi/src/README.md`) quotes older figures than
+   Appendix C's. It's a package's own docs, so it should state its figures
+   without the book; update them from the benchmark tables.
+8. **Two meanings of "pose".** Chapter 19's "Reading a Pose Once" uses
+   "pose" for where something is drawn on the page, and Chapter 23 uses it
+   for arranging a view into a state for its image (v-snap's term, and the
+   glossary's). Rename one, probably Chapter 19's.
+9. **Kwazy Cactii's board progress.** Chapter 5 now says plainly that the
+   board model exposes a progress for each phase (`swapProgress`,
+   `matchProgress`, `settleProgress`), the shape the chapter advises
+   against. The code is unchanged. Decide whether to move the board to one
+   `progress`, and then simplify Chapter 5's example.
+10. ~~**Steps 12 to 14.** The interactive examples and the print build
+    (section 9) aren't started.~~ Done 2026-10-30.
+11. **Publishing the PDF.** `npm run print` makes the book's PDF from a
+    built site, but neither the build nor the deploy runs it, so the PDF
+    isn't online, and the Preface doesn't offer it. Decide whether the
+    deploy should print it (it needs Playwright's browser, which CI already
+    installs for the visual tests) and the Preface link to it.
+12. **The embed's size.** Agree the measured sizes in step 12 (129 KB
+    gzipped at first, the renderer once it runs, 176 KB more on Edit), as
+    061 asked. If the first load should shrink, the TypeScript transpiler
+    could load only on Edit, with the examples transpiled at build time.
+    Since step 15 the embed loads only its own example's files, not all of
+    them, so measure again before deciding.
+13. **A speed control in the embed.** The examples about time (Chapters 4
+    and 5) would gain from slowing the run, as the playground can.
+14. **Projects that tick their own views.** The playground updates the
+    whole stage with the real frame time after the project's `update`. So
+    `book/pause-and-slow-motion` (Chapter 4) hides its game layer from
+    that and updates it itself, with the scaled time. An option for a
+    project to run its own view updates would remove the workaround.
+15. **Text measured in an example.** `book-examples.test.ts` runs in Node,
+    where Pixi can't measure text, so Chapter 19 has one example, not one
+    for "Measurements Are Input". Running that test in the browser would
+    allow one.
+16. **Helpers the examples share.** A frame-time meter and a seeded random
+    source are copied into each example that needs them (Chapters 23 to
+    25). Decide whether the playground should offer them as a library a
+    project may import, or whether the copies, which keep each example
+    whole, are better.
+17. **`book/shield-on-the-clock` uses `setTimeout`,** on purpose (Chapter
+    3's broken shield). Its still assumes the 3-second timer hasn't fired
+    within the few milliseconds the still takes. If the still is ever
+    flaky, take it before the timer is set.
+18. **An index, and figure numbers, in the PDF.** A printed book usually
+    has both. The text never refers to a figure by number, so captions
+    without numbers read fine, but an index would help the reference
+    chapters.
+19. **Numbers written into the examples' code.** Some durations and sizes
+    are still written inline, such as a hurt flash's 400 ms in Chapter 16's
+    player HUD, rather than named as tunables. Name them if readers would
+    try changing them. Some examples' `main.ts` also have a Project
+    section after their Tunables, and others don't.
+20. **Arcade models that drop leftover time.** Chapter 5 now says a model
+    gives the same game at any step up to the ticker's cap. Three games
+    fall short, and only their comments say so: Crumb Chase's `TileMove`
+    drops the time past each tile, so a cat's 250 ms tile takes about
+    267 ms at 30 Hz and 300 ms at 100 ms steps, and the cats lose ground
+    on the mouse as the frame rate drops; Burrow Bust's digger and enemies
+    start each move at the timeline's playhead, dropping up to a step a
+    tile (its rocks weren't checked); and the fruit machine's celebration
+    starts on the update after the last reel lands. Fixing them changes
+    how the games play, so it's the owner's call.
+21. ~~**Ordering in Parts III to VI**~~ (review of 2026-10-31). Done
+    2026-11-01: testing moved to Part IV (step 15); watching in a view's
+    update step moved to Presentation State; keys moved to Lists and
+    Switches; Composing Views points to Bindings for wiring and to Lists and
+    Switches for `<List>`; the polling figures stay only in Why Views Poll
+    and Appendix C; Why Views Poll's categories of state and Sound and
+    Music's copy of the opening-sound mistake went. The removed item and the
+    view model versus MVVM were each already down to a pointer. Part VI's
+    testing chapters come after Part V's chapters that each test their
+    own topic (Ch16, 18, 19, 20), so the specific cases come before the
+    general one: move Chapters 21 to 23 to a part between Part IV and
+    Advanced Presentation. Smaller: Ch8's update-step bullet under "Where
+    to Read" belongs in Ch9; Ch10's "Lists have no keys" belongs in Ch12;
+    wiring is taught in both Ch7 and Ch11; Ch11 repeats Ch12's `<List>`
+    snippet; and a few ideas are repeated (a reaction's first read, an
+    item view and its removed item, the three categories of state, the
+    polling costs, view model versus MVVM).

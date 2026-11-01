@@ -75,7 +75,7 @@ const LINKS: readonly NavLink[] = [
         icon: '<svg class="site-nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h14v14H3zM7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14"/></svg>',
     },
     {
-        label: 'Docs',
+        label: 'Book',
         href: 'docs/',
         icon: '<svg class="site-nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.5C8.5 4.3 6 4 2.5 4.5V15c3.5-.5 6 0 7.5 1.2 1.5-1.2 4-1.7 7.5-1.2V4.5C14 4 11.5 4.3 10 5.5zM10 5.5v10.7"/></svg>',
     },

@@ -11,7 +11,7 @@ MVT splits applications into three layers:
   No wall-clock time, no view references, no presentation values.
 - **View** - reads state, writes presentation output. Stateless (no domain
   state). refresh() runs each frame, must be idempotent and side-effect free.
-- **Ticker** - drives the frame loop: model.update(deltaMs) then
+- **Ticker** - drives the loop each frame: model.update(deltaMs) then
   view.update(deltaMs) (views with state) then view.refresh() then render.
   One turn is a tick: the ticker ticks the models, then the views. In this
   repo, views set update and refresh methods on their Pixi containers with
@@ -42,7 +42,8 @@ presentation state, refresh views, render. Models settle before views read.
   query binding declared as a fixed value may be read once. May hold cosmetic
   presentation state (gains update(deltaMs), set with setUpdate). Extract complex presentation
   logic to a view model.
-- Ticker: strict sequence (update, refresh, render). Cap deltaMs. No domain
+- Ticker: strict sequence (update models, update views, refresh views,
+  render). Cap deltaMs. No domain
   logic or rendering code.
 - Hot paths: no per-tick allocations. Index-based for loops. Pre-allocated
   structures. Change detection for expensive infrequent rebuilds.
@@ -50,8 +51,9 @@ presentation state, refresh views, render. Models settle before views read.
 ## Project Conventions (this repo only)
 
 - Factory functions, not classes: createXxxModel(options) -> XxxModel
-- Views are functions: XxxView(bindings: XxxViewBindings) -> Container,
-  usable as a JSX tag or a plain call. The body may be JSX or plain
+- Views are functions: XxxView(bindings: XxxViewBindings), returning a
+  Pixi container, three.js object or DOM element, usable as a JSX tag or
+  a plain call. A top-level view takes { model }. The body may be JSX or plain
   TypeScript, whichever suits the view; neither is required. JSX tends to
   suit trees of display objects that follow the model, plain TypeScript views
   that mostly draw or manage their own display objects.
@@ -64,9 +66,13 @@ presentation state, refresh views, render. Models settle before views read.
   views play on sound chips from audio90, the Audio80 (4 mono voices)
   or the Audio90 (16 stereo voices of FM, analog and samples). An entry
   names its kind of chip in its starter and gets two: music, for its
-  songs, and sfx, for its sound effects. The chips keep the sound card's
-  time, and the entry host pauses them with the game. Which song plays
-  and repeating sounds are the view's presentation state.
+  songs, and sfx, for its sound effects. Repeating sounds, such as a
+  heartbeat, are presentation state, advanced in the update step. Music
+  plays on the chip's own sequencer, on the sound card's clock, so a late
+  frame never holds it up: a view only chooses which song plays and how
+  fast, with the music chip's play, queue, stop and tempoScale. The chips
+  keep the sound card's time, so the entry host pauses them as it pauses
+  the game.
 - String-literal unions, not enums
 - 4-space indent, lower-kebab-case files, PascalCase types, camelCase rest
 - A file is named for its main export, whatever folder it is in
@@ -76,13 +82,19 @@ presentation state, refresh views, render. Models settle before views read.
 
 ## Documentation
 
-- packages/sites/docs/architecture/ - transferable MVT specification (language-neutral)
-- packages/sites/docs/architecture/principles/ - the eight design principles
-  the rules follow from (SoC, SSOT, CQS, DIP, CRP, DbC, MISU, DfT), one page
-  each, for deciding cases no rule covers
-- packages/sites/docs/building-with-mvt/ - progressive guide, from quickstart to
-  performance (time, composition, change detection, testing, etc.)
-- packages/sites/docs/reference/ - rules, style guide, glossary, project structure
-- packages/sites/docs/ai-agents/ - agent orientation and task-specific skills files
+- packages/sites/docs/index.md - the preface to the book, Building Web
+  Games with MVT
+- packages/sites/docs/chapters/ - the book's chapters, one per file in
+  reading order (01-games-in-the-browser.md to 34-using-the-principles.md), with a
+  chapter for each of the eight design principles (SoC, SSOT, CQS, DIP,
+  CRP, DbC, MISU, DfT) in Part VII
+- packages/sites/docs/appendices/ - the rules on one page (A), the glossary
+  (B), measurements and benchmarking (C, D), GSAP timelines (E),
+  troubleshooting (F), the API cheat sheets (G), and MVT beyond the
+  web (H)
+- packages/sites/docs/working-in-this-repo/ - code style, project structure,
+  and the writing guide
+- packages/sites/docs/ai-agents/ - task-specific skills files for agents
+  (not published), which link into the book
 - packages/libraries/audio90/docs/ - guides to the Audio80 and Audio90 sound chips and their tracker music
 - AGENTS.md - compressed agent entry point (canonical)

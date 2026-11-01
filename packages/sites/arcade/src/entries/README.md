@@ -179,7 +179,7 @@ function createGameModel(options: GameModelOptions): GameModel {
 
 Create leaf views for each presentation entity. A view is a function that
 takes a bindings object and returns a Pixi container (see
-[Style Guide: Views and Bindings](../../../docs/reference/style-guide.md#views-and-bindings)):
+[Code Style: Views and Bindings](../../../docs/working-in-this-repo/code-style.md#views-and-bindings)):
 
 ```ts
 export interface BallViewBindings {
@@ -658,7 +658,23 @@ npx vitest run packages/sites/arcade/src/entries/visual-tests/canvas-entries.tes
 
 Give the views their own visual tests too, with one test for each
 state their bindings can show. See
-[Visual Tests](../../../docs/building-with-mvt/iterating-with-confidence/visual-tests.md).
+[Visual Tests](../../../docs/chapters/17-visual-tests.md).
+
+The Arcade's `vsnap.config.ts` registers its three kinds of view, Pixi,
+three.js and HTML. It refreshes each posed view before its image is
+taken, and destroys it afterwards the MVT way, so a pose does neither. A
+few of its settings change what a test's options need to say:
+
+- **Pixi is the default kind,** so a Pixi view's test gives no `kind`.
+- **Pixi views are drawn as pixel art,** since most of the games are.
+  Pass `{ pixelArt: false }` for a view that its game draws with
+  antialiasing, such as the fruit machine's.
+- **A three.js view's test gives `kind: 'three'`,** the image's `width`
+  and `height`, and a `camera`. If the game lights the view with an
+  environment map, pass the game's own scene setup function as `scene`,
+  as the fruit machine's three.js tests do.
+- **A test file declares one kind only:** `canvasTest` for Pixi and
+  three.js views, or `htmlTest` for HTML views.
 
 ## Keeping Highscores
 

@@ -3,9 +3,9 @@
 Performance benchmarks for MVT in this repo: keeping Pixi containers in step
 with a model, `updateView` and `refreshView`, the hot path rules, memory and
 garbage collection, and the games and demos themselves. The results, with what they mean, are in
-[Performance Measurements](../../sites/docs/building-with-mvt/performance/measurements.md).
+[Appendix C, Measurements](../../sites/docs/appendices/c-measurements.md).
 How they are measured, and why, is in
-[Benchmarking Methods](../../sites/docs/building-with-mvt/performance/benchmarking-methods.md).
+[Appendix D, Measuring Performance](../../sites/docs/appendices/d-measuring-performance.md).
 
 ## Running
 
@@ -105,6 +105,36 @@ Things that have caught these benchmarks out before, all in the method page:
 module-level `let` variables declared below the code that runs at the top of a
 measured file (they are not yet initialised when it runs), a result variable
 that allocates on every `+=`, and a reactive library that never reacted.
+
+## What the benchmarks have found and fixed
+
+The `games-and-demos` suite has found waste in the games more than once.
+The docs give only what each game costs now, so the fixes are recorded
+here.
+
+- **Fuel Run** allocated 2-3 KB a frame. Its views redrew graphics every
+  frame: each explosion, and the fuel bar. They are now drawn once, then
+  scaled or resized.
+- **Crumb Chase** allocated 2-3 KB a frame too, from its model. Every
+  one-tile step of the mouse or a cat started a GSAP tween. The steps are
+  now plain arithmetic advanced by `update(deltaMs)`. The model allocates
+  nothing, and its update fell from about 6 µs to 0.2 µs.
+- **Boids** allocated about 360 KB a frame, and the engine collected 88
+  times a minute. Most of it was the view redrawing all 200 boids into one
+  Pixi `Graphics` every frame, which makes Pixi build new shape data each
+  time. Each boid is now its own `Graphics`, sharing one triangle,
+  positioned and turned. The rest came from sliders that redrew when
+  nothing had changed, and from numbers the engine had to box: writes to a
+  boid record that had getters, a random-number function called per boid,
+  and Pixi's `rotation` setter. It now allocates about 34 bytes a frame,
+  and its frame time fell from about 1 ms to about 0.5 ms.
+
+Two other figures have moved with library versions. Solid's effects left
+330-380 bytes of garbage per changed container per frame with solid-js
+1.9.11 under Node 22, against about 630 now. The JSX runtime's refresh
+methods once generated code for each shape of element. The closures that
+replaced them, which work under any Content Security Policy, came within
+1.1-1.3x of that generated code in scenes of thousands of elements.
 
 ## What is excluded
 

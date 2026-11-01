@@ -5,10 +5,17 @@
     "type": "module",
     "scripts": {
         "dev": "vitepress dev --port 5200",
-        "build": "vitepress build"
+        "build": "vitepress build",
+        "print": "tsx scripts/print-book.ts"
     },
     "devDependencies": {
+        "@fontsource-variable/source-code-pro": "^5.3.1",
+        "@fontsource-variable/source-sans-3": "^5.3.1",
+        "@fontsource-variable/source-serif-4": "^5.3.1",
         "mermaid": "^11.13.0",
+        "pagedjs": "^0.4.3",
+        "playwright": "~1.64.1",
+        "tsx": "^4.21.0",
         "vitepress": "^1.6.4",
         "vitepress-plugin-mermaid": "^2.0.17",
         "vue": "^3.5.43"

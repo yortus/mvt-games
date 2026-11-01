@@ -10,7 +10,7 @@ export interface WorkspaceSettings {
     readonly theme?: ThemeKind;
     /** The kept project open last, which a visit with no link to an example or a project opens. */
     readonly lastProjectId?: string;
-    readonly layout?: Partial<PaneSizes> & { readonly isFilesFolded?: boolean };
+    readonly layout?: Partial<PaneSizes> & { readonly isFilesFolded?: boolean; readonly isReferenceOpen?: boolean };
 }
 
 // ---------------------------------------------------------------------------
@@ -33,6 +33,7 @@ export function loadSettings(): WorkspaceSettings {
                 runWidth: numberOrUndefined(layout.runWidth),
                 consoleHeight: numberOrUndefined(layout.consoleHeight),
                 isFilesFolded: typeof layout.isFilesFolded === 'boolean' ? layout.isFilesFolded : undefined,
+                isReferenceOpen: typeof layout.isReferenceOpen === 'boolean' ? layout.isReferenceOpen : undefined,
             },
         };
     }

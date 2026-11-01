@@ -128,8 +128,8 @@ function helpSections(libraries: readonly HelpLibrary[]): HelpSection[] {
         {
             title: 'Running your project',
             blocks: [
-                paragraph("Press Run to start your project in the preview on the right. You usually won't need to press it again. With Run on change ticked, the project restarts by itself a moment after you stop typing. If there's a problem that would stop it running, it waits until you've fixed it."),
-                paragraph("Pause and Step let you freeze time and move forward one frame at a time. That's handy for seeing exactly what happens. The speed menu slows time down or speeds it up."),
+                paragraph("Your project runs in the preview on the right as soon as it opens. It restarts by itself a moment after you stop typing. If there's a problem that would stop it running, it waits until you've fixed it. To keep what's on screen while you edit, untick Run on change in the settings, the sliders at the top right of the page. Restart runs it again from the beginning, whenever you like."),
+                paragraph("Step freezes time, and each press after that moves your project on one frame. That's handy for seeing exactly what happens. Slow runs it at a quarter of the speed, Fast at twice the speed, and Normal in real time. Each of them also carries on from where Step left off, or runs your project if it isn't running. A change you make while it's paused runs it again, paused on its first frame, so you can step through the new code."),
                 paragraph("Below the preview, the Console shows anything your project logs with `console.log`. Problems lists anything that's wrong, with a link to the exact place. Problems that stop your project from running come first. Type errors are listed too, but they won't stop it from running."),
                 paragraph('The Performance tab shows how fast your project runs, and how much work each frame does. Click its (i) to find out what each number means.'),
             ],
@@ -138,6 +138,7 @@ function helpSections(libraries: readonly HelpLibrary[]): HelpSection[] {
             title: 'Getting help from the editor',
             blocks: [
                 paragraph("The editor understands TypeScript, so it can help you as you type. It suggests names as you go, including what you can import. Rest the pointer on a name to see its type signature and documentation. While you type a function call, it shows what the function expects. Problems are underlined, and many come with a quick fix. Right-click for more, such as renaming something everywhere it's used."),
+                paragraph("Press Cheat sheet, at the top right, or F1, for the cheat sheet. It opens over the run, so your code keeps its room, and lists the APIs your project can use, arranged by what you might want to do, such as noticing changes or playing a sound. Each entry says what it's for. Click one to see an example, copy its import, or jump to its declaration. Search finds an API by its name, or by what it does."),
                 paragraph("Organise Imports tidies up the imports at the top of a file. It sorts them into one block, merges imports from the same place, and removes any you aren't using. It follows TypeScript's order, so `@mvtjs/pixi` comes before `pixi.js`. If you want to keep two groups of imports apart, put a comment between them."),
             ],
         },
@@ -170,7 +171,7 @@ function helpSections(libraries: readonly HelpLibrary[]): HelpSection[] {
         {
             title: 'Colours',
             blocks: [
-                paragraph("Pick a colour theme from the menu at the top right of the page. On a phone, it's the ◐ button. There are dark and light themes, and the playground remembers your choice."),
+                paragraph('Pick a colour theme in the settings, the sliders at the top right of the page. There are dark and light themes, and the playground remembers your choice.'),
             ],
         },
     ];
@@ -191,7 +192,8 @@ export const project = definePixiProject({
 });`;
 
 const KEYS: readonly (readonly [string, string])[] = [
-    ['Ctrl+Enter', 'Run your project'],
+    ['Ctrl+Enter', 'Restart your project'],
+    ['F1', 'Open the cheat sheet, or close it'],
     ['Ctrl+S', 'Save now (your projects also save as you type)'],
     ['Ctrl+P', 'Jump to a file by typing its name'],
     ['Ctrl+O', 'Open your projects'],

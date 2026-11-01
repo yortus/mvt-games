@@ -116,7 +116,8 @@ export interface SlotListOptions<T> {
 // ---------------------------------------------------------------------------
 
 /**
- * Array-backed implementation. Per-member complexity of this implementation,
+ * Creates a slot list, in which each item keeps one slot until it's removed.
+ * It's backed by an array. Per-member complexity of this implementation,
  * with `n = slots.length` and `p` the number of slots pending release:
  *
  *   slots.length, slots.at, liveCount, isFull   O(1)

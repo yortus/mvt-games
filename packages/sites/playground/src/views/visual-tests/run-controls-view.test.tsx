@@ -4,16 +4,26 @@ import '../../playground.css';
 import { RunControlsView } from '../run-controls-view';
 import { inBox } from './in-box';
 
-htmlTest('not run yet', () => inBox(RunControlsView({
-    phase: () => 'idle',
+htmlTest('starting', () => inBox(RunControlsView({
+    phase: () => 'starting',
     isPaused: () => false,
     speed: () => 1,
-    isRunOnChange: () => true,
 }), 480, 40));
 
-htmlTest('running, paused, at half speed', () => inBox(RunControlsView({
+htmlTest('running, paused by Step', () => inBox(RunControlsView({
     phase: () => 'running',
     isPaused: () => true,
-    speed: () => 0.5,
-    isRunOnChange: () => false,
+    speed: () => 1,
+}), 480, 40));
+
+htmlTest('running slowly', () => inBox(RunControlsView({
+    phase: () => 'running',
+    isPaused: () => false,
+    speed: () => 0.25,
+}), 480, 40));
+
+htmlTest('stopped by an error', () => inBox(RunControlsView({
+    phase: () => 'failed',
+    isPaused: () => false,
+    speed: () => 1,
 }), 480, 40));

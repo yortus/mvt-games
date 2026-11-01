@@ -1,6 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
-import { createComputed } from '@mvtjs/utils';
 import type { RunPhase } from '../models';
+import { PlayControlsView } from '../preview';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -10,82 +10,46 @@ export interface RunControlsViewBindings {
     readonly phase: () => RunPhase;
     readonly isPaused: () => boolean;
     readonly speed: () => number;
-    /** Whether a change runs the project again, once the files check clean. */
-    readonly isRunOnChange: () => boolean;
-    readonly onRunPressed?: () => void;
-    readonly onStopPressed?: () => void;
-    readonly onPausePressed?: () => void;
-    readonly onResumePressed?: () => void;
+    /** Reported as Restart is pressed, which runs the project again from the start. */
+    readonly onRestartPressed?: () => void;
+    /** Reported as Step is pressed, which pauses the run and moves it on one frame. */
     readonly onStepPressed?: () => void;
-    readonly onSpeedChosen?: (speed: number) => void;
-    readonly onRunOnChangeToggled?: (isOn: boolean) => void;
+    /** Reported with a speed, as Slow, Normal or Fast is pressed. */
+    readonly onSpeedPressed?: (speed: number) => void;
 }
 
 // ---------------------------------------------------------------------------
 // View
 // ---------------------------------------------------------------------------
 
-/** Run, Stop, Pause or Resume, Step, the speed, whether a change runs it again, and where the run is. */
+/**
+ * Step, Slow, Normal and Fast, and at the right, Restart, or while a run
+ * gets going, a note that it is. A run that's going needs no note, since
+ * the preview shows it, and one an error stopped has its error in the
+ * console.
+ */
 export function RunControlsView(bindings: RunControlsViewBindings): Element {
-    const isLive = (): boolean => bindings.phase() === 'starting' || bindings.phase() === 'running';
-    const speedValue = createComputed({ watch: bindings.speed, compute: String });
-
     return (
         <div class="run-controls">
-            <button type="button" class="run-run" title="Run the project (Ctrl+Enter)" text="Run" onClick={() => bindings.onRunPressed?.()} />
-            <button
-                type="button"
-                class="run-stop"
-                text="Stop"
-                disabled={() => bindings.phase() === 'idle' || bindings.phase() === 'stopped'}
-                onClick={() => bindings.onStopPressed?.()}
+            <PlayControlsView
+                isPaused={bindings.isPaused}
+                speed={bindings.speed}
+                onStepPressed={bindings.onStepPressed}
+                onSpeedPressed={bindings.onSpeedPressed}
             />
             <button
                 type="button"
-                class="run-pause"
-                text={() => (bindings.isPaused() ? 'Resume' : 'Pause')}
-                disabled={() => !isLive()}
-                onClick={() => (bindings.isPaused() ? bindings.onResumePressed?.() : bindings.onPausePressed?.())}
+                class="run-restart"
+                title="Run it again from the start (Ctrl+Enter)"
+                text="Restart"
+                visible={() => !isStarting()}
+                onClick={() => bindings.onRestartPressed?.()}
             />
-            <button
-                type="button"
-                class="run-step"
-                title="Advance one frame"
-                text="Step"
-                disabled={() => !isLive() || !bindings.isPaused()}
-                onClick={() => bindings.onStepPressed?.()}
-            />
-            <select class="run-speed" aria-label="Speed" value={speedValue} onChange={onSpeedChanged}>
-                {SPEEDS.map((speed) => <option value={String(speed)} text={`${speed}x`} />)}
-            </select>
-            <label class="run-on-change" title="Run again half a second after the files stop changing, if they have no problems">
-                <input
-                    type="checkbox"
-                    checked={bindings.isRunOnChange}
-                    onChange={(event) => bindings.onRunOnChangeToggled?.((event.target as HTMLInputElement).checked)}
-                />
-                <span text="Run on change" />
-            </label>
-            <span class="run-phase" text={() => PHASE_LABELS[bindings.phase()]} />
+            <span class="run-phase" text={() => (bindings.phase() === 'preparing' ? 'Preparing...' : 'Starting...')} visible={isStarting} />
         </div>
     );
 
-    function onSpeedChanged(event: Event): void {
-        bindings.onSpeedChosen?.(Number((event.target as HTMLSelectElement).value));
+    function isStarting(): boolean {
+        return bindings.phase() === 'preparing' || bindings.phase() === 'starting';
     }
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-const SPEEDS = [0.25, 0.5, 1, 2, 4];
-
-const PHASE_LABELS: Readonly<Record<RunPhase, string>> = {
-    idle: 'Not run yet',
-    preparing: 'Preparing...',
-    starting: 'Starting...',
-    running: 'Running',
-    failed: 'Stopped by an error',
-    stopped: 'Stopped',
-};

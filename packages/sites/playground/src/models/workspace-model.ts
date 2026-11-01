@@ -2,7 +2,8 @@ import { createPerformanceHistory, type PerformanceHistory, type PerformanceMetr
 import { findExample, findStarter } from '../examples';
 import type { FileEdit, TypeProblem } from '../language';
 import type { RendererKind } from '../project-api';
-import { findProjectLocation, MAIN_PATH, type Problem, type ProjectFile, type SourceLocation } from '../runtime';
+import { createReferenceModel, type ReferenceModel } from '../reference';
+import { findProjectLocation, findRenderer, MAIN_PATH, type Problem, type ProjectFile, type SourceLocation } from '../runtime';
 import type { ConsoleLevel, SandboxMessage } from '../sandbox';
 import { createLayoutModel, type LayoutModel, type LayoutModelOptions } from './layout-model';
 import { isProjectNameTaken, toUniqueProjectName } from './project-names';
@@ -15,7 +16,8 @@ import { isProjectNameTaken, toUniqueProjectName } from './project-names';
  * Where a run is. `preparing`: Run was pressed, and the page is making the
  * project's modules. `starting`: the sandbox is loading them. `running`: the
  * project has drawn a frame. `failed`: an error stopped it, and the sandbox
- * still shows its last frame. `stopped`: there is no sandbox.
+ * still shows its last frame. `stopped`: the sandbox stopped responding,
+ * and was taken away.
  */
 export type RunPhase = 'idle' | 'preparing' | 'starting' | 'running' | 'failed' | 'stopped';
 
@@ -158,8 +160,9 @@ export interface WorkspaceModel {
     readonly checksRequested: number;
     /**
      * Whether a check that finds no problems runs the project again. It
-     * restarts a run that is going, or that an error stopped, but not one the
-     * visitor stopped.
+     * restarts a run that is going, or that an error stopped, but not one
+     * that stopped responding. A paused run starts again paused, on its
+     * first frame.
      */
     readonly isRunOnChange: boolean;
     /** Type errors and warnings, as the language service last found them. They never stop a run. */
@@ -191,6 +194,8 @@ export interface WorkspaceModel {
 
     /** How the workspace is laid out. */
     readonly layout: LayoutModel;
+    /** The cheat sheets, which follow the renderer that the project's `main.ts` uses. */
+    readonly reference: ReferenceModel;
 
     /** Opens a project in place of the one open: a kept one, by its id, or else one from a link. Its barrels are kept unless it says not. */
     readonly openProject: (project: OpenedProject) => void;
@@ -231,13 +236,18 @@ export interface WorkspaceModel {
     /** Opens a library's declaration file, read-only, at a place. */
     readonly openLibraryFile: (file: LibraryFile & { readonly line: number; readonly column: number }) => void;
 
+    /** Runs the project from the start, unpaused. */
     readonly run: () => void;
-    readonly stop: () => void;
-    readonly pause: () => void;
-    readonly resume: () => void;
-    /** Advances a paused run by one frame. */
+    /**
+     * Pauses the run and advances it one frame. With no run going, it runs
+     * the project, paused on its first frame.
+     */
     readonly step: () => void;
-    readonly setSpeed: (speed: number) => void;
+    /**
+     * Runs at a speed, where 1 is real time: a paused run carries on, and
+     * with no run going, it runs the project.
+     */
+    readonly playAt: (speed: number) => void;
     readonly setRunOnChange: (isOn: boolean) => void;
     readonly clearConsole: () => void;
     /** Opens a file at a place, as a console entry's link does. */
@@ -387,6 +397,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     let externalEdits = 0;
     let libraryFile: LibraryFile | undefined;
     const layout = createLayoutModel({ saved: options.savedLayout });
+    const reference = createReferenceModel({ renderer: 'pixi' });
 
     openProject(options.project);
 
@@ -436,6 +447,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         get externalEdits() { return externalEdits; },
         get libraryFile() { return libraryFile; },
         layout,
+        reference,
 
         openProject,
 
@@ -549,36 +561,20 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         },
 
         run() {
-            runsRequested++;
-            phase = 'preparing';
             isPaused = false;
-            sandboxDocument = undefined;
-            consoleEntries = [];
-            layout.showPanel('run');
-            // The run checks the files as it prepares them, so a check due for them is not needed
-            isCheckDue = false;
-        },
-
-        stop() {
-            if (phase === 'idle' || phase === 'stopped') return;
-            phase = 'stopped';
-            sandboxDocument = undefined;
-        },
-
-        pause() {
-            if (isRunLive()) isPaused = true;
-        },
-
-        resume() {
-            isPaused = false;
+            requestRun();
         },
 
         step() {
-            if (isRunLive() && isPaused) steps++;
+            isPaused = true;
+            if (isRunLive()) steps++;
+            else if (phase !== 'preparing') requestRun();
         },
 
-        setSpeed(value) {
+        playAt(value) {
             if (value > 0) speed = value;
+            isPaused = false;
+            if (!isRunLive() && phase !== 'preparing') requestRun();
         },
 
         setRunOnChange(isOn) {
@@ -808,6 +804,7 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
     function onFilesChanged(): void {
         paths = [...texts.keys()].sort(comparePaths);
         files = paths.map((path) => ({ path, text: texts.get(path) ?? '' }));
+        reference.renderer = findRenderer(texts.get(MAIN_PATH) ?? '');
         edits++;
         exampleId = undefined;
         isCheckDue = true;
@@ -858,12 +855,22 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
         return names;
     }
 
+    function requestRun(): void {
+        runsRequested++;
+        phase = 'preparing';
+        sandboxDocument = undefined;
+        consoleEntries = [];
+        layout.showPanel('run');
+        // The run checks the files as it prepares them, so a check due for them is not needed
+        isCheckDue = false;
+    }
+
+    /** Starts a sandbox, paused if the run was: a run on change keeps the pause, so the visitor can edit and step. */
     function startSandbox(document: string, isByVisitor: boolean): void {
         sandboxDocument = document;
         isRunByVisitor = isByVisitor;
         sandboxesStarted++;
         phase = 'starting';
-        isPaused = false;
         silentMs = 0;
         performanceHistory = undefined;
     }

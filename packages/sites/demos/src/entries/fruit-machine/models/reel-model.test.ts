@@ -87,15 +87,15 @@ describe('reel model', () => {
 
     it('lands the same from one large update as from many small ones', () => {
         const stepped = setup(4);
-        const leapt = setup(4);
+        const inOneStep = setup(4);
         stepped.spin({ stopIndex: 2, settleAfterMs: 1500 });
-        leapt.spin({ stopIndex: 2, settleAfterMs: 1500 });
+        inOneStep.spin({ stopIndex: 2, settleAfterMs: 1500 });
 
         advance(stepped, 1500 + SETTLE_MS);
-        leapt.update(1500 + SETTLE_MS);
+        inOneStep.update(1500 + SETTLE_MS);
 
-        expect(leapt.phase).toBe('stopped');
-        expect(leapt.position).toBe(stepped.position);
+        expect(inOneStep.phase).toBe('stopped');
+        expect(inOneStep.position).toBe(stepped.position);
     });
 
     it('spins only from rest', () => {

@@ -53,6 +53,13 @@ export interface ProjectLanguageService {
     readonly quickInfo: (path: string, offset: number) => QuickInfo | undefined;
     readonly signatureHelp: (path: string, offset: number) => SignatureHelp | undefined;
     readonly definition: (path: string, offset: number) => DefinitionTarget | undefined;
+    /**
+     * Where a library declares a name, or a member of one, such as `watch`
+     * from `@mvtjs/utils` or `Graphics.circle` from `pixi.js`, as go to
+     * definition finds it. A library the project doesn't import has its
+     * types loaded first.
+     */
+    readonly libraryDefinition: (specifier: string, name: string) => Promise<DefinitionTarget | undefined>;
     /** The edits that rename what is at the offset, in every file, or why it cannot be renamed. */
     readonly rename: (path: string, offset: number, newName: string) => readonly FileEdit[] | string;
     readonly organizeImports: (path: string) => readonly FileEdit[];
@@ -275,18 +282,43 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
         },
 
         definition(path, offset) {
-            const definitions = env?.languageService.getDefinitionAtPosition(toServicePath(path), offset);
-            const first = definitions?.[0];
-            if (env === undefined || first === undefined) return undefined;
-            const file = env.languageService.getProgram()?.getSourceFile(first.fileName);
-            const place = file?.getLineAndCharacterOfPosition(first.textSpan.start) ?? { line: 0, character: 0 };
-            const isLibrary = !texts.has(first.fileName);
-            return {
-                path: isLibrary ? first.fileName : toProjectPath(first.fileName),
-                line: place.line + 1,
-                column: place.character + 1,
-                isLibrary,
-            };
+            return findDefinition(toServicePath(path), offset);
+        },
+
+        async libraryDefinition(specifier, name) {
+            if (!isLibrary(specifier)) return undefined;
+            let isLoaded = false;
+            for (const kind of TYPE_BUNDLES_OF[specifier]) {
+                if (bundles.has(kind)) continue;
+                bundles.set(kind, await loadBundle(kind));
+                isLoaded = true;
+            }
+            if (env === undefined) return undefined;
+            if (isLoaded) {
+                env = createEnvironment(texts, envRenderer);
+                envBundles = [...bundles.keys()].sort().join(',');
+            }
+            // Asks where each of a few lines that name it points, appended to
+            // main.ts for a moment: as a value, as a type, then a member of
+            // an instance or of the value itself
+            const mainPath = toServicePath(MAIN_FILE);
+            const text = texts.get(mainPath);
+            if (text === undefined) return undefined;
+            const probes = definitionProbes(specifier, name);
+            const probed = `${text}\n${probes.map((p) => p.line).join('\n')}\n`;
+            env.updateFile(mainPath, toServiceText(probed));
+            try {
+                let start = text.length + 1;
+                for (const probe of probes) {
+                    const found = findDefinition(mainPath, start + probe.offset);
+                    if (found?.isLibrary === true) return found;
+                    start += probe.line.length + 1;
+                }
+                return undefined;
+            }
+            finally {
+                env.updateFile(mainPath, toServiceText(text));
+            }
         },
 
         rename(path, offset, newName) {
@@ -340,6 +372,22 @@ export function createProjectLanguageService(options: ProjectLanguageServiceOpti
     };
 
     return service;
+
+    /** Where the name at an offset in a service file is declared: in the project, or in a library's declarations. */
+    function findDefinition(servicePath: string, offset: number): DefinitionTarget | undefined {
+        const definitions = env?.languageService.getDefinitionAtPosition(servicePath, offset);
+        const first = definitions?.[0];
+        if (env === undefined || first === undefined) return undefined;
+        const file = env.languageService.getProgram()?.getSourceFile(first.fileName);
+        const place = file?.getLineAndCharacterOfPosition(first.textSpan.start) ?? { line: 0, character: 0 };
+        const isInLibrary = !texts.has(first.fileName);
+        return {
+            path: isInLibrary ? first.fileName : toProjectPath(first.fileName),
+            line: place.line + 1,
+            column: place.character + 1,
+            isLibrary: isInLibrary,
+        };
+    }
 
     function createEnvironment(files: ReadonlyMap<string, string>, renderer: string): VirtualTypeScriptEnvironment {
         const fsMap = new Map<string, string>();
@@ -642,6 +690,29 @@ function toOneEdit(path: string, before: string, after: string): FileEdit {
  */
 function toServiceText(text: string): string {
     return text === '' ? ' ' : text;
+}
+
+/** The file every project has, which `libraryDefinition` appends its lines to for a moment. */
+const MAIN_FILE = 'main.ts';
+
+/**
+ * Lines of code that name a library's export, or a member of one, each with
+ * the offset of the name to look up: as a value, as a type, and for a
+ * member, on an instance of the export or on the export itself, such as a
+ * static method.
+ */
+function definitionProbes(specifier: string, name: string): { readonly line: string; readonly offset: number }[] {
+    const [root, ...members] = name.split('.');
+    const reference = `import(${JSON.stringify(specifier)}).${root}`;
+    const probe = (line: string): { line: string; offset: number } => ({ line, offset: line.length - 2 });
+    if (members.length === 0) {
+        return [probe(`declare const __cheatSheetValue: typeof ${reference};`), probe(`type __CheatSheetType = ${reference};`)];
+    }
+    const path = members.join('.');
+    return [
+        probe(`declare const __cheatSheetInstance: ${reference}; __cheatSheetInstance.${path};`),
+        probe(`declare const __cheatSheetValue: typeof ${reference}; __cheatSheetValue.${path};`),
+    ];
 }
 
 function toServicePath(path: string): string {
