@@ -19,12 +19,12 @@
         "generate-textures": "tsx ../site-kit/scripts/generate-textures.ts"
     },
     "dependencies": {
-        "@mvtjs/html": "^0.7.0",
-        "@mvtjs/pixi": "^0.7.0",
+        "@mvtjs/html": "^0.8.0",
+        "@mvtjs/pixi": "^0.8.0",
         "@mvtjs/puzzles": "*",
         "@mvtjs/site-kit": "*",
-        "@mvtjs/three": "^0.7.0",
-        "@mvtjs/utils": "^0.7.0",
+        "@mvtjs/three": "^0.8.0",
+        "@mvtjs/utils": "^0.8.0",
         "audio90": "^0.8.0",
         "pixi-solid": "^1.0.0",
         "pixi.js": "^8.16.0",

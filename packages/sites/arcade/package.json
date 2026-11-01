@@ -14,9 +14,9 @@
         "generate-textures": "tsx ../site-kit/scripts/generate-textures.ts"
     },
     "dependencies": {
-        "@mvtjs/pixi": "^0.7.0",
+        "@mvtjs/pixi": "^0.8.0",
         "@mvtjs/site-kit": "*",
-        "@mvtjs/utils": "^0.7.0",
+        "@mvtjs/utils": "^0.8.0",
         "audio90": "^0.8.0",
         "gsap": "^3.14.2",
         "pixi.js": "^8.16.0"

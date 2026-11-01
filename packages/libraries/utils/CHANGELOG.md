@@ -1,5 +1,16 @@
 # @mvtjs/utils
 
+## 0.8.0
+
+### Minor Changes
+
+- 7ec36de: Breaking: `createSequenceReaction` is now `createSequenceTracker`. It works as before: it keeps track of each step's phase from frame to frame, and calls a step's `entering`, `active` and `inactive` handlers. It isn't a reaction in the sense of `createReaction`, which acts only on a change, so the new name says what it does. Rename it where you import it.
+- 7ec36de: Breaking: `watch` has changed, and has two new companions, `createReaction` and `createComputed`. `memoiseLast` is gone. A reaction is a function you call on every step, which runs `react` when what it watches changes in a way that `when` accepts: `createReaction({ watch: bindings.phase, when: 'dying', react: () => sfx.play(EXPLODE) })`. The conditions are `increased`, `decreased` and `changedFrom(value)`, all exported. A computed value works out its value on its first read, and again only when what it watches changes. It's a getter, so it goes straight into a JSX prop: `createComputed({ watch: bindings.score, compute: String })`. `watch` now takes one getter, a record or an array. Its reading gives `current` where it gave `value`, `previous` equal to `current` when nothing changed, `changedTo(value)` and `changedFrom(value)`, and, for a record or an array, `anyChanged`. The first poll is now a starting point, not a change: nothing reacts because it was made, so a view draws its first state itself, and drops any poll it made at construction to skip that first change. A getter must return a primitive, and one that returns an object throws. A reading kept past the next poll throws in development. To move from `memoiseLast`, turn `text={() => scoreText(bindings.score())}` into `createComputed({ watch: bindings.score, compute: ... })` and `text={scoreText}`. See "Watching for Changes" in `src/watch-api/README.md`.
+
+### Patch Changes
+
+- 80cb13b: A hidden `<Switch>` branch now sits out `updateView`, as it already sat out `refreshView`, so its update steps no longer run while another branch shows. Before, a branch's update steps went on reading the state it was built for after that state had gone, such as a puzzle view's open puzzle once the player closed it. The switch picks its branch afresh in an update step of its own, so the change holds from the update in which the model makes it. A switch whose branches have no update steps costs nothing more to update.
+
 ## 0.7.0
 
 No changes in this release.

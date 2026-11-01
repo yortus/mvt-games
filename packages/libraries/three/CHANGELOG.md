@@ -1,5 +1,14 @@
 # @mvtjs/three
 
+## 0.8.0
+
+### Patch Changes
+
+- Updated dependencies [7ec36de]
+- Updated dependencies [80cb13b]
+- Updated dependencies [7ec36de]
+  - @mvtjs/utils@0.8.0
+
 ## 0.7.0
 
 ### Patch Changes
