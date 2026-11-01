@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 
 // ---------------------------------------------------------------------------
 // Bindings

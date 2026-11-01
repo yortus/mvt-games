@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import { createReaction, increased } from '@mvtjs/utils';
-import type { MusicChip, SfxChip } from '#shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/shared';
 import { GAME_OVER, RESPAWN, SHIP_HIT, SHOT, STAGE_CLEAR, STAGE_FANFARE, STAGE_TUNE } from '../data';
 import type { GamePhase } from '../models';
 

@@ -1,0 +1,28 @@
+<!doctype html>
+<!--
+    Dev-only: the page `scripts/generate-thumbnails.ts` photographs each entry
+    on. Served by the dev server, and left out of the build. See `src/snapshot.ts`.
+-->
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MVT Games - Snapshot</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body {
+                background: #000;
+                color: #c9d1d9;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+                overflow: hidden;
+            }
+            /* Sized to the entry by the script: an entry may set its own display */
+            #snapshot { position: relative; }
+            #snapshot > canvas { display: block; }
+        </style>
+    </head>
+    <body>
+        <div id="snapshot"></div>
+        <script type="module" src="/src/snapshot.ts"></script>
+    </body>
+</html>

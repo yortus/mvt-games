@@ -200,7 +200,7 @@ Two quick tests:
 - **Domain logic runs without a screen.** A model can be tested, replayed
   and profiled on its own, in milliseconds, with no renderer at all.
 - **One model, any number of views.** The
-  [fruit machine demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/README.md) is
+  [fruit machine demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/README.md) is
   one model shown through four views at once: Pixi, three.js, an HTML
   panel and a text terminal. None of them knows the others exist.
 - **Time control is free.** Pause, slow motion, fast forward, single-step
@@ -244,7 +244,7 @@ Separation has costs, and it is worth knowing them up front.
   [presentation state](../../building-with-mvt/adding-visual-polish/presentation-state.md),
   even a view model of its own. What it can't hold is domain logic. The
   fruit machine's reels land with a bounce that lives entirely in the views
-  ([`reel-landing.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/views/shared/reel-landing.ts)):
+  ([`reel-landing.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/views/shared/reel-landing.ts)):
   the model settles each reel in a straight line, and each view eases it its
   own way.
 - **Not a game manager.** The ticker only keeps time. "If the game is over,

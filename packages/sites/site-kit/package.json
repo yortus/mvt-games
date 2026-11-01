@@ -1,0 +1,56 @@
+{
+    "name": "@mvtjs/site-kit",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "exports": {
+        "./arcade": "./src/arcade/index.ts",
+        "./device": "./src/device/index.ts",
+        "./entry-types": "./src/entry-types/index.ts",
+        "./highscores": "./src/highscores/index.ts",
+        "./input": "./src/input/index.ts",
+        "./pixel-glyphs": "./src/pixel-glyphs/index.ts",
+        "./runner": "./src/runner/index.ts",
+        "./shared": "./src/shared/index.ts",
+        "./site-page": "./src/arcade/start-site-page.ts",
+        "./snapshot": "./src/snapshot/index.ts",
+        "./storage": "./src/storage/index.ts",
+        "./testing": "./src/testing/index.ts",
+        "./virtual-entry-facts": "./src/virtual-entry-facts.d.ts",
+        "./vite": "./scripts/index.ts",
+        "./pixel-art": "./scripts/pixel-art.ts"
+    },
+    "imports": {
+        "#highscores": "./src/highscores/index.ts",
+        "#shared": "./src/shared/index.ts",
+        "#pixel-glyphs": "./src/pixel-glyphs/index.ts"
+    },
+    "scripts": {
+        "generate-pixel-font": "tsx scripts/generate-pixel-font.ts",
+        "highscores:dev": "wrangler dev -c highscores-worker/wrangler.toml --env test",
+        "highscores:deploy": "wrangler deploy -c highscores-worker/wrangler.toml",
+        "highscores:deploy:test": "wrangler deploy -c highscores-worker/wrangler.toml --env test",
+        "highscores:types": "wrangler types -c highscores-worker/wrangler.toml --include-env=false highscores-worker/worker-configuration.d.ts"
+    },
+    "dependencies": {
+        "@mvtjs/html": "^0.7.0",
+        "@mvtjs/pixi": "^0.7.0",
+        "@mvtjs/utils": "^0.7.0",
+        "audio90": "^0.8.0",
+        "pixi.js": "^8.16.0"
+    },
+    "devDependencies": {
+        "@types/glob": "^8.1.0",
+        "@types/node": "^26.6.3",
+        "@types/pngjs": "^6.0.5",
+        "@vitejs/plugin-basic-ssl": "^2.3.0",
+        "glob": "^13.0.6",
+        "pngjs": "^7.0.0",
+        "tsx": "^4.21.0",
+        "vite": "^8.3.2",
+        "vitepress": "^1.6.4",
+        "vitest": "^5.0.1",
+        "v-snap": "*",
+        "wrangler": "^4.148.0"
+    }
+}

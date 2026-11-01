@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container, Graphics } from 'pixi.js';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 import { NEON } from './view-constants';
 
 // ---------------------------------------------------------------------------

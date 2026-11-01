@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate, SKIP_DESCENDANTS } from '@mvtjs/pixi';
 import { createReaction } from '@mvtjs/utils';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 import { FARM_FENCED_HORN_MS } from '../data';
 import type { Direction } from '../models';
 import { drawOutlinedPixels, drawPixels, type PixelRects } from './drawing';

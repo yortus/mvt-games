@@ -25,7 +25,10 @@ packages/
 │   ├── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
 │   └── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 ├── sites/               What gets deployed
-│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite), and the Cloudflare Worker that keeps the highscore tables
+│   ├── arcade/          @mvtjs/arcade (private): the Arcade, the arcade games' site (Vite)
+│   ├── demos/           @mvtjs/demos (private): the Demos' site (Vite)
+│   ├── puzzles/         @mvtjs/puzzles (private): the Puzzles' site (Vite)
+│   ├── site-kit/        @mvtjs/site-kit (private): what the three sites share, and the Cloudflare Worker that keeps the highscore tables
 │   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite)
 │   └── docs/            @mvtjs/docs (private): this documentation (VitePress)
 └── internal/            What serves this repo only, and never ships
@@ -42,25 +45,41 @@ users. Each one in `sites/` is deployed, and each one in `internal/` serves
 only this repo. If a package in `internal/` is ever published, it moves to
 `libraries/`.
 
-Each package's source is in its own `src/`. The site's is laid out by area:
+Each package's source is in its own `src/`. There are three sites, the
+arcade (its games), the demos and the puzzles, and each is the same small
+package: its page, a note of what it is (`site.ts`), and its entries:
 
 ```
-packages/sites/arcade/src/
-├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
-├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
-│   └── <id>/            Self-contained entry
-│       ├── start/       How the Arcade lists the entry, and loads it
-│       ├── data/        Static data and configuration constants
-│       ├── models/      State and domain logic + domain types
-│       └── views/       Presentation and user-input handling
+packages/sites/<site>/
+├── index.html           The site's page. The site kit writes its nav in
+├── vite.config.ts       defineSiteConfig({ site }), from @mvtjs/site-kit/vite
+└── src/
+    ├── main.ts          startSitePage(SITE): runs the page
+    ├── site.ts          SITE: its name, its marquee, its catalogue, and whether its entries are games or demos
+    └── entries/         Its entries, one directory each, and catalogue.ts, which lists them
+        └── <id>/        Self-contained entry
+            ├── start/   How the site lists the entry, and loads it
+            ├── data/    Static data and configuration constants
+            ├── models/  State and domain logic + domain types
+            └── views/   Presentation and user-input handling
+```
+
+Everything the sites share is in the site kit, `packages/sites/site-kit/`,
+laid out by area. A site imports each folder by its package name, as
+`@mvtjs/site-kit/shared`:
+
+```
+packages/sites/site-kit/src/
+├── arcade/              The page each site runs, in HTML JSX: model, views, its own sounds, its styles, and the page's loop (start-site-page.ts)
 ├── device/              What the visitor's device supports, such as touch
 ├── input/               Input that needs no renderer: the keyboard, for the entry host and the Pixi stage
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
-├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way, imported as `#pixel-glyphs`
-├── shared/              The site's shared views (overlay, pixel text, input, swipes) and the chip types views play on, imported as `#shared`
-├── tunes/               The site's Audio90 tunes, their instruments and samples, which the Tune Tracker plays, imported as `#tunes`
+├── pixel-glyphs/        The pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way
+├── shared/              The shared views (overlay, pixel text, input, swipes) and the chip types views play on
+├── snapshot/            The page `generate-thumbnails` photographs each entry on
+├── testing/             The checks every site's catalogue passes
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
 
@@ -109,8 +128,8 @@ public API.
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `createReaction`, `createComputed`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
-| `packages/sites/arcade/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView`, `KeyboardInputView`, `SwipeInputView` |
-| `packages/sites/arcade/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
+| `packages/sites/site-kit/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView`, `KeyboardInputView`, `SwipeInputView` |
+| `packages/sites/site-kit/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 
 ::: info Data directories are not MVT layers
 Game modules typically include a `data/` directory for static constants (arena
@@ -316,26 +335,29 @@ The rules above apply inside each package. Between packages:
   `@mvtjs/utils` is imported directly for its helpers: `watch`, tweens,
   sequences, slot lists, the metronome.
 - **The playground stands alone.** It is a package of its own,
-  `packages/sites/playground/`, and shares no code with the Arcade. It
+  `packages/sites/playground/`, and shares no code with the sites. It
   imports only the libraries, as the projects it runs do.
 
-Within the site, its shared views are imported as `#shared`, the tunes
-two of its demos play as `#tunes`, and the pixel glyphs that entries set
-their text in as `#pixel-glyphs`. Sudoku imports Sudoku Digger, whose
-puzzles and grid it shares, as `#sudoku-digger`. Each is an alias that
-`packages/sites/arcade/package.json` defines.
+The sites import the kit by its name: its shared views as
+`@mvtjs/site-kit/shared`, and the pixel glyphs that entries set their text
+in as `@mvtjs/site-kit/pixel-glyphs`. Inside the kit, they are aliases
+(`#shared`, `#pixel-glyphs`) that its `package.json` defines. The demos
+keep the tunes two of them play as `#tunes`. Sudoku's puzzle maker and grid
+are in Sudoku's own folder, in the puzzles, and Sudoku Digger, a demo that
+shows the maker at work, imports them as `@mvtjs/puzzles/sudoku-generator`.
+The demos may import from the puzzles, and never the other way round.
 
 ## Entry Structure
 
-Each game and demo is an **entry**: a self-contained module under
-`packages/sites/arcade/src/entries/<id>/`, named for its id. A typical layout:
+Each game, demo and puzzle is an **entry**: a self-contained module under
+`packages/sites/<site>/src/entries/<id>/`, named for its id. A typical layout:
 
 ```
-packages/sites/arcade/src/entries/<id>/
+packages/sites/<site>/src/entries/<id>/
 ├── index.ts              Barrel - re-exports the entry
 ├── start/
 │   ├── index.ts          Barrel - re-exports `entry` from entry.ts
-│   ├── entry.ts          `entry`: what the Arcade's card shows (name, tags, thumbnail...), `loadDetails` and `load`
+│   ├── entry.ts          `entry`: what its card shows (name, tags, thumbnail...), `loadDetails` and `load`
 │   ├── details.ts        `details`: the long text (description, how it's made, instructions, techniques), loaded after the first paint
 │   ├── load.ts           `load()`: the entry's code, imported only when it is launched
 │   ├── thumbnail.webp    Its card's picture, made by `npm run generate-thumbnails`
@@ -354,7 +376,7 @@ packages/sites/arcade/src/entries/<id>/
     └── game-view.ts       Top-level view - wires all child views (.tsx if its body is JSX)
 ```
 
-`start/` is the same in every entry, so the Arcade, the thumbnail script and
+`start/` is the same in every entry, so the sites, the thumbnail script and
 the benchmarks find each one the same way. Everything else is the entry's
 own: a small demo may have only `models/` and `views/`.
 

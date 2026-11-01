@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'fenceline',
     name: 'Fenceline',
     summary: 'String wire across a wild meadow to fence it off, penning sheep and starving the dust devils.',
-    tags: { kind: 'game', era: '1980s', genres: ['action', 'puzzle'] },
+    tags: ['1980s', 'action', 'puzzle'],
     screenWidth: 496,
     screenHeight: 368,
     inspiredBy: { title: 'Qix', maker: 'Taito', year: 1981 },

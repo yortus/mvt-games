@@ -165,7 +165,7 @@ export default tseslint.config(
         },
     },
     {
-        files: ['packages/sites/arcade/src/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*.{ts,tsx}', PLAYGROUND_EXAMPLES],
+        files: ['packages/sites/{site-kit,arcade,demos,puzzles}/src/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*.{ts,tsx}', PLAYGROUND_EXAMPLES],
         rules: {
             'no-restricted-imports': ['error', { patterns: [OWN_BARREL_IMPORT], paths: [VIEW_TICK_API_FROM_RENDERER] }],
         },
@@ -218,7 +218,7 @@ export default tseslint.config(
     // MVT's own rules (packages/internal/eslint-plugin), for models: no wall-clock time, no module state, no members named for a control
     {
         files: [
-            'packages/sites/arcade/src/**/models/**/*.{ts,tsx}', 'packages/sites/arcade/src/**/*-model.ts',
+            'packages/sites/{site-kit,arcade,demos,puzzles}/src/**/models/**/*.{ts,tsx}', 'packages/sites/{site-kit,arcade,demos,puzzles}/src/**/*-model.ts',
             'packages/sites/playground/src/**/models/**/*.{ts,tsx}', 'packages/sites/playground/src/**/*-model.ts',
             'packages/sites/playground/{examples,starters}/**/models/**/*.{ts,tsx}', 'packages/sites/playground/{examples,starters}/**/*-model.ts',
         ],
@@ -263,8 +263,8 @@ export default tseslint.config(
         files: [
             'packages/libraries/pixi/src/container-mixin.ts',
             'packages/libraries/three/src/object3d-mixin.ts',
-            'packages/sites/arcade/scripts/vite-plugin-entry-pages.ts',
-            'packages/sites/arcade/scripts/vite-plugin-spritesheet.ts',
+            'packages/sites/site-kit/scripts/vite-plugin-entry-pages.ts',
+            'packages/sites/site-kit/scripts/vite-plugin-spritesheet.ts',
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',
             'packages/libraries/audio90/src/web/worklet/register-chip-processor.ts',
             // v-snap replaces canvas text drawing and patches a Pixi pool.

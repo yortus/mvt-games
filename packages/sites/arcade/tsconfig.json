@@ -1,4 +1,4 @@
 {
     "extends": "../../../tsconfig.base.json",
-    "include": ["src", "vsnap.config.ts"]
+    "include": ["src", "vsnap.config.ts", "../site-kit/src/virtual-entry-facts.d.ts"]
 }

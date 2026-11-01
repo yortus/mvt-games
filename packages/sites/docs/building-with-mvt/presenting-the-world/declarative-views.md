@@ -188,7 +188,7 @@ projectile, the HUD and the overlays together, and wires their bindings to
 the model. That's a tree of views with properties, which JSX describes well.
 
 At the other end is the Arcade's card wall
-(`packages/sites/arcade/src/arcade/views/card-wall-view.tsx`). Its JSX is a
+(`packages/sites/site-kit/src/arcade/views/card-wall-view.tsx`). Its JSX is a
 single tag:
 
 ```tsx

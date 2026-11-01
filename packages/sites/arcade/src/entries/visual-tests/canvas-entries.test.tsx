@@ -14,8 +14,8 @@ import { Container } from 'pixi.js';
 import { onTestFinished } from 'vitest';
 import { canvasTest } from 'v-snap';
 import type { PixiImageOptions } from 'v-snap/pixi';
-import type { ArcadeEntry, PixiEntryStarter } from '../../entry-types';
-import { advanceHeadless, createHeadlessSound, findThumbnailAdvanceMs, startPixiHeadless } from '../../runner';
+import type { ArcadeEntry, PixiEntryStarter } from '@mvtjs/site-kit/entry-types';
+import { advanceHeadless, createHeadlessSound, findThumbnailAdvanceMs, startPixiHeadless } from '@mvtjs/site-kit/runner';
 import { CATALOGUE } from '../catalogue';
 
 /**

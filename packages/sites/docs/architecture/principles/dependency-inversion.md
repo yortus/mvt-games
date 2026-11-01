@@ -135,7 +135,7 @@ can be tested and paused. It is the same move as the drone's target, made
 for time. The model doesn't call the clock; the ticker calls the model.
 
 Random numbers are a dependency in the same way. The
-[falling sand demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/falling-sand/models/grain-grid/grain-grid.ts)
+[falling sand demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/falling-sand/models/grain-grid/grain-grid.ts)
 takes its random source as an option, and Neon Monsoon's game model takes
 a seed, so that the same input replays the same game.
 

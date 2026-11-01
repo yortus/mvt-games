@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import { createReaction } from '@mvtjs/utils';
-import type { SfxChip } from '#shared';
+import type { SfxChip } from '@mvtjs/site-kit/shared';
 import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
 import { MIN_CELLS_FOR_BIG_MATCH } from './view-constants';

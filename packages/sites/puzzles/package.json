@@ -1,0 +1,32 @@
+{
+    "name": "@mvtjs/puzzles",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "exports": {
+        "./entries": "./src/entries/index.ts",
+        "./sudoku-generator": "./src/entries/sudoku/generator/index.ts",
+        "./sudoku-generator/models": "./src/entries/sudoku/generator/models/index.ts"
+    },
+    "scripts": {
+        "dev": "vite --host",
+        "dev:https": "vite --host --mode https",
+        "build": "vite build",
+        "preview": "vite preview",
+        "generate-thumbnails": "tsx ../site-kit/scripts/generate-thumbnails.ts"
+    },
+    "dependencies": {
+        "@mvtjs/pixi": "^0.7.0",
+        "@mvtjs/site-kit": "*",
+        "@mvtjs/utils": "^0.7.0",
+        "audio90": "^0.8.0",
+        "pixi.js": "^8.16.0"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.3",
+        "tsx": "^4.21.0",
+        "vite": "^8.3.2",
+        "vitest": "^5.0.1",
+        "v-snap": "*"
+    }
+}

@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'burrow-bust',
     name: 'Burrow Bust',
     summary: 'Dig tunnels through the earth, and pump up the creatures that chase you along them.',
-    tags: { kind: 'game', era: '1980s', genres: ['maze', 'action'] },
+    tags: ['1980s', 'maze', 'action'],
     screenWidth: 280,
     screenHeight: 390,
     inspiredBy: { title: 'Dig Dug', maker: 'Namco', year: 1982 },

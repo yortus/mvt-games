@@ -126,7 +126,7 @@ start: every option, every binding and every `deltaMs` is one.
 Views work the same way. A leaf view reads everything it shows through its
 [bindings](../bindings.md), so a test poses it with fixed values. The
 fruit machine's
-[spin button test](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/views/pixi/visual-tests/spin-button-view.test.tsx)
+[spin button test](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/views/pixi/visual-tests/spin-button-view.test.tsx)
 takes one image of the button in each of its modes (abridged):
 
 ```ts
@@ -166,7 +166,7 @@ game model takes a seed, and one of its tests plays thirty seconds of the
 real stage twice, steering, focusing and bombing to a script, and checks
 that both games end with the same score, lives and positions. One of the
 fruit machine's
-[long runs](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/models/compute-return.test.ts)
+[long runs](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/models/compute-return.test.ts)
 plays 50,000 spins from one seed, to check that the machine pays back what
 its paytable says it should. As the test's own comment puts it: "They are
 seeded, so they are slow, not flaky."
@@ -188,7 +188,7 @@ ticker is free to do any of them ([T-control](../rules.md#ticker-rules)):
   views' update steps, out of the tick. Its views are still refreshed and
   drawn, so the game shows frozen.
 - **Slow motion and fast forward.** The
-  [boids demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/boids/start/load.ts)
+  [boids demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/boids/start/load.ts)
   has a time scale slider. Its session multiplies `deltaMs` by the
   slider's value before passing it on, and the flock model never knows.
 - **Single step.** Call `update` once, with one frame's time. A debugging

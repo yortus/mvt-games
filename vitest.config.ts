@@ -11,7 +11,9 @@ const SOURCE_CONDITION = '@mvtjs/source';
 // One test run over every workspace in packages/: the unit tests in Node, and
 // the visual tests in a browser. Each vsnap() plugin adds the projects for
 // one package's visual tests when Vitest starts: `visual-canvas` and
-// `visual-html` for the Arcade, `visual-playground-html` for the playground,
+// `visual-html` for the arcade, `visual-demos-*`, `visual-puzzles-*` and
+// `visual-kit-*` for the demos, the puzzles and the site kit,
+// `visual-playground-html` for the playground,
 // and `visual-library-html` for the HTML library's views. They bring
 // v-snap's reporter with them. The plugins also leave the visual tests out of
 // this config's own tests, which they name "unit". So `-p unit` runs the unit
@@ -21,8 +23,12 @@ const SOURCE_CONDITION = '@mvtjs/source';
 // each one's own config runs its tests, and the scripts call it.
 export default defineConfig({
     plugins: [
-        // The Arcade's visual tests, which build its views with its own Vite config
+        // The sites' visual tests, each built with its own Vite config, and the
+        // kit's, for the views the sites share, which need nothing beyond this config
         vsnap({ root: resolve(ROOT, 'packages/sites/arcade'), viteConfig: './vite.config.ts' }),
+        vsnap({ root: resolve(ROOT, 'packages/sites/demos'), viteConfig: './vite.config.ts', name: 'visual-demos' }),
+        vsnap({ root: resolve(ROOT, 'packages/sites/puzzles'), viteConfig: './vite.config.ts', name: 'visual-puzzles' }),
+        vsnap({ root: resolve(ROOT, 'packages/sites/site-kit'), name: 'visual-kit' }),
         // The playground's, which need nothing beyond this config
         vsnap({ root: resolve(ROOT, 'packages/sites/playground'), name: 'visual-playground' }),
         // The HTML library's, for the views it offers, such as its Perfmon

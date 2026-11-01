@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'crumb-chase',
     name: 'Crumb Chase',
     summary: 'Eat every crumb in the maze before the cats from the pen catch you.',
-    tags: { kind: 'game', era: '1980s', genres: ['maze'] },
+    tags: ['1980s', 'maze'],
     screenWidth: 560,
     screenHeight: 470,
     inspiredBy: { title: 'Pac-Man', maker: 'Namco', year: 1980 },

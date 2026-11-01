@@ -1,5 +1,5 @@
 import { prepareAudio90Samples } from 'audio90';
-import { definePixiLoader, type EntrySession } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { BOSS_ATTACKS, SAMPLES, STAGE_EVENTS, textures } from '../data';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';

@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 import { COLOURS } from './view-constants';
 
 // ---------------------------------------------------------------------------

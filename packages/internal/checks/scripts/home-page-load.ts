@@ -1,18 +1,19 @@
-// Measures the site's home page, the Arcade: the JavaScript it needs before
-// its first paint, which must not include a renderer (Pixi or three.js), and
-// must stay under a budget, gzipped. The Arcade shows cards, not entries: an
+// Measures a site's home page, its wall of cards (the arcade's, the demos' or
+// the puzzles'): the JavaScript it needs before its first paint, which must
+// not include a renderer (Pixi or three.js), and must stay under a budget,
+// gzipped. The page shows cards, not entries: an
 // entry's code, and the renderer it draws with, load only once it is
 // launched, as dynamic imports, and its long text just after the first
 // paint. So does anything few visitors open, such as the Perfmon. A static
 // import of one, from anywhere the home page reaches, would bring it into the
 // first load unnoticed, and the page would take longer to appear.
 //
-// It builds the Arcade in memory, as it is deployed, with its own Vite
+// It builds the site in memory, as it is deployed, with its own Vite
 // config, and walks the home page's chunks from its entry through their
 // static imports, which the browser loads before the page runs. Dynamic
 // imports are left out: they load later, on demand. A test runs it with the
-// other tests (`home-page-budget.test.ts`), and `npm run build:arcade` runs
-// it after building (`home-page-budget.ts`).
+// other tests (`home-page-budget.test.ts`), and `npm run build` runs it
+// after building the sites (`home-page-budget.ts`).
 
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
@@ -31,8 +32,10 @@ import { build } from 'vite';
  */
 export const HOME_PAGE_BUDGET_BYTES = 60 * 1024;
 
-/** What the home page loads before its first paint, and what is wrong with it, if anything. */
+/** What a site's home page loads before its first paint, and what is wrong with it, if anything. */
 export interface HomePageLoad {
+    /** The site measured. */
+    readonly site: SiteName;
     /** Each chunk loaded before the first paint, by file name, with its size gzipped, in bytes. */
     readonly chunks: readonly { readonly name: string; readonly gzippedBytes: number }[];
     /** All of them together, gzipped, in bytes. */
@@ -45,8 +48,14 @@ export interface HomePageLoad {
 // Functions
 // ---------------------------------------------------------------------------
 
-/** Builds the Arcade in memory, and measures its home page's first load. */
-export async function measureHomePageLoad(): Promise<HomePageLoad> {
+/** The sites, each with a home page to measure. */
+export type SiteName = 'arcade' | 'demos' | 'puzzles';
+export const SITE_NAMES: readonly SiteName[] = ['arcade', 'demos', 'puzzles'];
+
+/** Builds `site` in memory, and measures its home page's first load. */
+export async function measureHomePageLoad(site: SiteName): Promise<HomePageLoad> {
+    const siteRoot = fileURLToPath(new URL(`../../../sites/${site}/`, import.meta.url));
+    const homePage = siteRoot + 'index.html';
     // A test runner sets NODE_ENV to `test`, and Vite would then build as for
     // development, keeping code a deploy leaves out: measured so, the first
     // load is a few KB heavier than the one visitors get. So it builds for
@@ -56,7 +65,7 @@ export async function measureHomePageLoad(): Promise<HomePageLoad> {
     let output: Awaited<ReturnType<typeof build>>;
     try {
         output = await build({
-            configFile: ARCADE_ROOT + 'vite.config.ts',
+            configFile: siteRoot + 'vite.config.ts',
             mode: 'production',
             // How `vite build` loads it too, without the warning about the native loader
             configLoader: 'bundle',
@@ -71,7 +80,7 @@ export async function measureHomePageLoad(): Promise<HomePageLoad> {
     const built = (Array.isArray(output) ? output : [output]).flatMap((o) => ('output' in o ? o.output : []));
     const byName = new Map(built.filter((c) => c.type === 'chunk').map((c) => [c.fileName, c]));
 
-    const entry = [...byName.values()].find((c) => c.isEntry && c.facadeModuleId !== null && normalise(c.facadeModuleId) === normalise(HOME_PAGE));
+    const entry = [...byName.values()].find((c) => c.isEntry && c.facadeModuleId !== null && normalise(c.facadeModuleId) === normalise(homePage));
     if (entry === undefined) throw new Error('home page load: found no chunk for the home page\'s entry');
 
     // The home page's first load: its entry chunk and everything it imports statically
@@ -102,12 +111,12 @@ export async function measureHomePageLoad(): Promise<HomePageLoad> {
     if (totalBytes > HOME_PAGE_BUDGET_BYTES) {
         problems.push(`its JavaScript is ${toKb(totalBytes)} KB gzipped, over the budget of ${toKb(HOME_PAGE_BUDGET_BYTES, 0)} KB`);
     }
-    return { chunks, totalBytes, problems };
+    return { site, chunks, totalBytes, problems };
 }
 
 /** Describes the home page's first load, chunk by chunk, and what is wrong with it, if anything, with what to do. */
 export function describeHomePageLoad(load: HomePageLoad): string {
-    const lines = ['The home page\'s first load, gzipped:'];
+    const lines = [`The ${load.site} home page's first load, gzipped:`];
     for (const chunk of load.chunks) lines.push(`  ${toKb(chunk.gzippedBytes).padStart(6)} KB  ${chunk.name}`);
     lines.push(`  ${toKb(load.totalBytes).padStart(6)} KB  in all, of a budget of ${toKb(HOME_PAGE_BUDGET_BYTES, 0)} KB`);
     if (load.problems.length === 0) {
@@ -123,10 +132,6 @@ export function describeHomePageLoad(load: HomePageLoad): string {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-const ARCADE_ROOT = fileURLToPath(new URL('../../../sites/arcade/', import.meta.url));
-/** The site's root page only sends the visitor on to the Arcade's, which is the one to measure. */
-const HOME_PAGE = ARCADE_ROOT + 'arcade/index.html';
 
 /** Packages the home page's first load must not include, and how their modules' paths show them. */
 const FORBIDDEN: readonly { readonly name: string; readonly path: string }[] = [

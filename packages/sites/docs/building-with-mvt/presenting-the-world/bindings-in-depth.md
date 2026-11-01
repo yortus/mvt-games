@@ -171,7 +171,7 @@ interface TerrainViewBindings {
 - **A query binding with arguments** is a function, followed every frame
   unless its doc comment says when the view calls it instead.
 - **Views reused with both fixed and changing values**, like the shared views
-  in `packages/sites/arcade/src/shared/`, can take `ValueOrGetter<T>` from
+  in `packages/sites/site-kit/src/shared/`, can take `ValueOrGetter<T>` from
   `@mvtjs/pixi`, which accepts a fixed value or a getter. The JSX runtime's
   own attributes work this way: `x={12}` is set once, `x={() => model.x}`
   every frame.

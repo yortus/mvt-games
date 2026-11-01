@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, Graphics } from 'pixi.js';
-import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
+import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';

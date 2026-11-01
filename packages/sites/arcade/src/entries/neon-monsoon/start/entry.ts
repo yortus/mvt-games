@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'neon-monsoon',
     name: 'Neon Monsoon',
     summary: 'Weave a tiny ship through storms of bullets, with a slow focus mode, screen-clearing bombs and a three-phase boss.',
-    tags: { kind: 'game', era: '1990s', genres: ['shooter', 'scrolling'] },
+    tags: ['1990s', 'shooter', 'scrolling'],
     screenWidth: 240,
     screenHeight: 320,
     thumbnail,

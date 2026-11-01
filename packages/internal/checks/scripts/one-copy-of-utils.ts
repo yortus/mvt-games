@@ -1,14 +1,14 @@
-// Checks that the built site holds one copy of @mvtjs/utils: one in the
-// Arcade's JavaScript, and one in the playground's. A second copy throws as
-// it loads, so a build with two would ship a page that fails for every
-// visitor. Vite's dev server and its build resolve packages differently, so
+// Checks that the built site holds one copy of @mvtjs/utils: one in each
+// site's JavaScript (the arcade's, the demos', the puzzles'), and one in the
+// playground's. A second copy throws as it loads, so a build with two would
+// ship a page that fails for every visitor. Vite's dev server and its build resolve packages differently, so
 // a duplicate can appear in the build alone, with nothing seen in
 // development. This repo's site is the nearest thing to a real project that
 // uses the packages, so it is checked as it is deployed.
 //
 // It counts the key every copy records itself under, `mvtjs:copies`, which
 // copies before 0.5 use too, across the emitted JavaScript in `dist/`.
-// `npm run build` runs it after building the Arcade and the playground;
+// `npm run build` runs it after building the sites and the playground;
 // `npm run check:one-copy-of-utils` runs it alone, once they are built.
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -25,8 +25,10 @@ const MARKER = 'mvtjs:copies';
 
 const dist = fileURLToPath(new URL('../../../../dist/', import.meta.url));
 const sites: readonly { readonly name: string; readonly dir: string; readonly skip: readonly string[] }[] = [
-    // The playground and the docs are built into folders of the Arcade's `dist/`
-    { name: 'the Arcade', dir: dist, skip: ['playground', 'docs'] },
+    // Each is built into a folder of its own in `dist/`
+    { name: 'the arcade', dir: join(dist, 'arcade'), skip: [] },
+    { name: 'the demos', dir: join(dist, 'demos'), skip: [] },
+    { name: 'the puzzles', dir: join(dist, 'puzzles'), skip: [] },
     { name: 'the playground', dir: join(dist, 'playground'), skip: [] },
 ];
 

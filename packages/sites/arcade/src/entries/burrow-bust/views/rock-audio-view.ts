@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import { createReaction } from '@mvtjs/utils';
-import type { SfxChip } from '#shared';
+import type { SfxChip } from '@mvtjs/site-kit/shared';
 import { ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE } from '../data';
 import type { RockPhase } from '../models';
 

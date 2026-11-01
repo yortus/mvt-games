@@ -1,4 +1,4 @@
-import type { ControlButton, EntryDetails } from '../../../entry-types';
+import type { ControlButton, EntryDetails } from '@mvtjs/site-kit/entry-types';
 
 /** The Atk button the touch controls show, which turns the joystick's way into an attack, as Space does. It comes first, as the details use it. */
 const ATTACK: ControlButton = { button: 'Atk' };

@@ -3,7 +3,7 @@
 import { type Container, type Graphics, Texture } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
-import { measurePixelText, PixelTextView } from '#shared';
+import { measurePixelText, PixelTextView } from '@mvtjs/site-kit/shared';
 import { textures } from '../data';
 import { NEON } from './view-constants';
 

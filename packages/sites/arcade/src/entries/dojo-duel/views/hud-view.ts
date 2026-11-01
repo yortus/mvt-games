@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 import { createComputed, createReaction } from '@mvtjs/utils';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 import type { GamePhase } from '../data';
 import { POINTS_TO_WIN_ROUND } from '../data';
 import { SCREEN_WIDTH, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';

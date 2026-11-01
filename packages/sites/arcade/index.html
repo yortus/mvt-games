@@ -2,31 +2,28 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <!--
-            The site's root. It sends the visitor on to the Arcade, keeping the
-            query. A link from before the Arcade had its own folder named an
-            entry in the fragment (`#crumb-chase`), and goes to that entry's own
-            address. Only a script can read the fragment.
-        -->
-        <script>
-            (function () {
-                var id = location.hash.slice(1);
-                var entry = /^[a-z0-9-]+$/.test(id) ? id + '/' : '';
-                location.replace('%BASE_URL%arcade/' + entry + location.search);
-            })();
-        </script>
-        <noscript><meta http-equiv="refresh" content="0; url=%BASE_URL%arcade/" /></noscript>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <!-- Safari ignores `user-scalable=no`, so its own pinch-zoom gestures are turned down here -->
+        <script>['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault()},{passive:false})});</script>
         <title>MVT Arcade</title>
-        <meta name="description" content="Games, demos and art, each built with Model-View-Ticker, an architecture for games and interactive apps." />
-        <!-- A link to the site's root, shared, shows the Arcade. The build adds the picture -->
+        <meta name="description" content="Arcade games, each built with Model-View-Ticker, an architecture for games and interactive apps." />
+        <!--
+            What a link to the page shows when it is shared. The build gives each
+            entry's copy of the page its own, and adds the address and the picture
+        -->
         <meta name="twitter:card" content="summary_large_image" />
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="MVT Arcade" />
         <meta property="og:title" content="MVT Arcade" />
-        <meta property="og:description" content="Games, demos and art, each built with Model-View-Ticker, an architecture for games and interactive apps." />
+        <meta property="og:description" content="Arcade games, each built with Model-View-Ticker, an architecture for games and interactive apps." />
+        <!-- Dark from the first frame, before the stylesheets arrive -->
         <style>html { background: #0d1117; color-scheme: dark; }</style>
     </head>
     <body>
-        <p><a href="%BASE_URL%arcade/" style="color: #58a6ff">Go to the MVT Arcade</a></p>
+        <!-- site-nav -->
+
+        <main id="arcade"></main>
+
+        <script type="module" src="/src/main.ts"></script>
     </body>
 </html>

@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { createComputed, createReaction } from '@mvtjs/utils';
 import { setRefresh } from '@mvtjs/pixi';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 
 // ---------------------------------------------------------------------------
 // Bindings

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <!-- Safari ignores `user-scalable=no`, so its own pinch-zoom gestures are turned down here -->
+        <script>['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault()},{passive:false})});</script>
+        <title>MVT Puzzles</title>
+        <meta name="description" content="Puzzles to sit with, each built with Model-View-Ticker, an architecture for games and interactive apps." />
+        <!--
+            What a link to the page shows when it is shared. The build gives each
+            entry's copy of the page its own, and adds the address and the picture
+        -->
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="MVT Puzzles" />
+        <meta property="og:title" content="MVT Puzzles" />
+        <meta property="og:description" content="Puzzles to sit with, each built with Model-View-Ticker, an architecture for games and interactive apps." />
+        <!-- Dark from the first frame, before the stylesheets arrive -->
+        <style>html { background: #0d1117; color-scheme: dark; }</style>
+    </head>
+    <body>
+        <!-- site-nav -->
+
+        <main id="arcade"></main>
+
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>

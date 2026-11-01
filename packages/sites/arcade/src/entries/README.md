@@ -1,6 +1,7 @@
 # Adding an Entry
 
-> Step-by-step guide to adding a game or a demo to the Arcade. Covers the
+> Step-by-step guide to adding a game, a demo or a puzzle to one of the
+> sites: the Arcade, the Demos or the Puzzles. Covers the
 > directory layout, the `start/` directory every entry has, models, views,
 > the two kinds of starter, the catalogue and the thumbnail.
 
@@ -8,17 +9,20 @@ See the [MVT documentation](../../../docs/index.md) for architecture background.
 
 ## Overview
 
-Everything the Arcade lists is an **entry**: a game or a demo. A demo shows
-a technique, or is a piece of art to watch. Each is a self-contained module under
-`packages/sites/arcade/src/entries/<id>/`, named for its id. Games and demos are
-built the same way; the difference is in their metadata, such as their
-`kind` tag and how to play a game. To add one, you need:
+Everything a site lists is an **entry**. The Arcade lists arcade games, the
+Demos lists demos, and the Puzzles lists puzzles. A demo shows a technique,
+or is a piece of art to watch. Each entry is a self-contained module under
+`packages/sites/<site>/src/entries/<id>/`, named for its id. This guide
+lives with the Arcade's entries, but it goes for every site's. Games and
+demos are built the same way. What differs is which site lists them: each
+site says whether its entries are games, which are played and get controls,
+or demos (`entryKind`, in its `src/site.ts`). To add one, you need:
 
 1. A directory with data, models, and views.
 2. A `start/` directory: `entry.ts`, what the Arcade's card shows,
    `details.ts`, the entry's long text, and `load.ts`, the code it imports
    when the entry is launched.
-3. A line in `catalogue.ts`.
+3. A line in its site's `catalogue.ts`.
 4. A thumbnail.
 
 The Arcade lists every entry without loading any entry's code, so the first
@@ -32,7 +36,7 @@ An entry here can be inspired by a classic, but must not copy it. Ideas,
 genres and mechanics are free to use; titles, character names and designs,
 artwork, music and specific level layouts are not.
 
-- **Art** is drawn from scratch, in a generator script in `packages/sites/arcade/scripts/`
+- **Art** is drawn from scratch, in a generator script in its site's `scripts/`
   (`generate-<name>-textures.ts`) or in the entry's views, so where it came
   from is in the repo. Never use sprites ripped from another game, and do not
   trace or closely follow someone else's artwork, even reworked.
@@ -303,13 +307,13 @@ directly.
 
 `load()` loads the entry's assets and returns a **starter**: how to start the
 entry, and how the host should run it. Its types are in
-[`entry-types/`](../entry-types/entry-starter.ts). An entry drawn with Pixi
+[`entry-types/`](../../../site-kit/src/entry-types/entry-starter.ts). An entry drawn with Pixi
 returns a `pixi` starter, and draws on a stage the host owns. The entry
 makes its `load` with `definePixiLoader`, which types it for the chip its
 starter plays on, if any (see [Sound](#sound)):
 
 ```ts
-import { definePixiLoader, type EntrySession } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 import { textures } from '../data';
@@ -418,7 +422,7 @@ If your entry makes sound, its starter names the kind of sound chip it
 plays on. There are two virtual sound chips, from `audio90`. The **Audio80**
 has four voices, in the spirit of the 1980s home computers. The **Audio90**
 has sixteen stereo voices of FM, analog and samples, in the spirit of the
-1990s. The [Tune Tracker](./tune-tracker/start/load.ts) plays on the Audio90.
+1990s. The [Tune Tracker](../../../demos/src/entries/tune-tracker/start/load.ts) plays on the Audio90.
 
 You name the kind in your starter's `soundChip`. The host gives each session
 two chips of that kind: `music`, which your songs play on, and `sfx`, which
@@ -481,8 +485,8 @@ order: the session's `update`, then `updateView` and `refreshView` over its
 `init` does. If the entry has one, its session's `ready` is a promise that
 settles once every renderer can draw. A host that produces one image, such
 as the thumbnail script or a visual test, waits for it. See
-[Boids in 3D](./boids-3d/start/load.ts) for a small one, and the
-[Fruit Machine](./fruit-machine/start/load.ts) for one model with views on
+[Boids in 3D](../../../demos/src/entries/boids-3d/start/load.ts) for a small one, and the
+[Fruit Machine](../../../demos/src/entries/fruit-machine/start/load.ts) for one model with views on
 three renderers.
 
 ## Step 5: Describe the Entry (`start/entry.ts`)
@@ -493,7 +497,7 @@ load, so keep it to what the card needs. It imports your entry's long text
 and its starter only when they're wanted:
 
 ```ts
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 /** Breakout, as the arcade lists it. Its code loads on launch, from `load.ts`, and its long text after the Arcade's first paint, from `details.ts`. */
@@ -501,7 +505,7 @@ export const entry: ArcadeEntry = {
     id: 'breakout',
     name: 'Breakout',
     summary: 'Knock out every brick with a ball and a paddle.',
-    tags: { kind: 'game', era: '1970s', genres: ['action'] },
+    tags: ['1970s', 'action'],
     screenWidth: 300,
     screenHeight: 400,
     thumbnail,
@@ -517,7 +521,7 @@ long text just after the page first appears, so the cards don't have to
 wait for it:
 
 ```ts
-import type { EntryDetails } from '../../../entry-types';
+import type { EntryDetails } from '@mvtjs/site-kit/entry-types';
 
 /** Breakout's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
@@ -539,10 +543,11 @@ export const details: EntryDetails = {
   `/arcade/breakout/` launches it. The build gives that address a page of
   its own, a copy of the Arcade's, so a link to it shows the entry's name,
   summary and thumbnail when it is shared.
-- **`tags`** are what the search filters by: its `kind` (`game` or `demo`),
-  an `era` if it is in the style of one, and the `genres` that say what it
-  is, such as `art` for a demo made to be looked at. The values are listed in
-  [`arcade-entry.ts`](../entry-types/arcade-entry.ts).
+- **`tags`** are what the search filters by, in one list: an era if it is
+  in the style of one, then the genres that say what it is, such as `art`
+  for a demo made to be looked at. No tag rules out another; the search
+  shows the entries with every tag chosen. The values are listed in
+  [`arcade-entry.ts`](../../../site-kit/src/entry-types/arcade-entry.ts).
 - **`screenWidth`** and **`screenHeight`** are the play area, in the entry's
   own pixels: the same numbers its views use, written out, since importing
   them would bring the views, and their renderer, into the Arcade's first
@@ -569,7 +574,7 @@ export const details: EntryDetails = {
   and the mouse on a desktop, and touch on a phone or a tablet. So give
   them as data rather than in the text, and keep the `notes` true on every
   device. The kinds are listed in
-  [`arcade-entry.ts`](../entry-types/arcade-entry.ts). If it's a demo, give
+  [`arcade-entry.ts`](../../../site-kit/src/entry-types/arcade-entry.ts). If it's a demo, give
   it **`techniques`**, the patterns it shows off, and a `howToPlay` if it
   takes input.
 - **`inspiredBy`** credits the classic the entry is inspired by, if there is
@@ -613,8 +618,10 @@ thumbnail, so copy another entry's `thumbnail.webp` into `start/` as a
 placeholder first, then take the real one:
 
 ```bash
-npm run generate-thumbnails -- breakout
+npm run generate-thumbnails -w @mvtjs/arcade -- breakout
 ```
+
+Name the site the entry is in: `-w @mvtjs/demos` for a demo.
 
 It starts the entry headless, advances it by `thumbnailAdvanceMs`, and saves
 two pictures. `start/thumbnail.webp` is for its card. `start/share.png` is
@@ -625,8 +632,8 @@ picture that would be too large as a PNG is saved as `start/share.jpg`
 instead. The build stops if an entry has neither. Run the script again
 whenever the entry's look changes.
 
-If the Arcade's dev server is running, the script uses it. Otherwise it
-starts one of its own.
+If the dev server is running (`npm run dev`), the script uses it. Otherwise
+it starts one of its own, for the site.
 
 The entry also gets a visual test of its whole screen, at the same moment,
 without any new code. `visual-tests/canvas-entries.test.tsx` makes one for every
@@ -670,9 +677,9 @@ A run that can also end in a win counts that as over too, as
 Next, `start/entry.ts` says the entry has a table, with
 `hasHighscores: true`. Last, the game needs a table in the Worker that
 keeps them. Add it to `GAMES` in
-[`highscores/rules/games.ts`](../highscores/rules/games.ts), with a cap
+[`highscores/rules/games.ts`](../../../site-kit/src/highscores/rules/games.ts), with a cap
 that no real score could reach, and deploy the Worker, as
-[its README](../../highscores-worker/README.md#looking-after-the-tables)
+[its README](../../../site-kit/highscores-worker/README.md#looking-after-the-tables)
 says. Tests check that the entries
 with `hasHighscores` and the games in `GAMES` are the same, and start each
 of those games to check that it reports its score.

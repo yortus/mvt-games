@@ -8,7 +8,7 @@
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
 - **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`)
-- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: the Arcade's page (`packages/sites/arcade/src/arcade/main.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/sites/arcade/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: the entry's container sits out `updateView`
+- **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each site's page (`startSitePage`, in `packages/sites/site-kit/src/arcade/start-site-page.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/sites/site-kit/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. Pausing is the host's call: the entry's container sits out `updateView`
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report user input
 
 Full reference: [Architecture Overview](packages/sites/docs/architecture/index.md) -
@@ -31,7 +31,10 @@ packages/
 │   ├── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
 │   └── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
 ├── sites/               What gets deployed
-│   ├── arcade/          @mvtjs/arcade (private): the Arcade, its games and demos (Vite): pages, src/, scripts/ (textures, thumbnails, the pixel font, spritesheet plugin), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
+│   ├── arcade/          @mvtjs/arcade (private): the arcade games' site (Vite): its page, its entries, their texture scripts. Its build also writes the site's root
+│   ├── demos/           @mvtjs/demos (private): the demos' site, the same shape
+│   ├── puzzles/         @mvtjs/puzzles (private): the puzzles' site, the same shape
+│   ├── site-kit/        @mvtjs/site-kit (private): what the three sites share: the page, the entry host, shared views, highscores, the Vite config and plugins, scripts/ (the one dev server, thumbnails, the pixel font), highscores-worker/ (the Cloudflare Worker that keeps the highscore tables)
 │   ├── playground/      @mvtjs/playground (private): an editor in the browser that runs small MVT projects in a sandbox (Vite): src/, examples/ and starters/ (each a project; starters/ are what New opens), libraries/ (what a project may import)
 │   └── docs/            @mvtjs/docs (private): the documentation (VitePress)
 └── internal/            What serves this repo only, and never ships
@@ -42,24 +45,40 @@ notes/                   Proposals and tasks
 ```
 
 ```
-packages/sites/arcade/src/
-├── arcade/              The Arcade, the home page, in HTML JSX: model, views, its own sounds, and the page's loop (main.ts)
-├── entries/             Every game and demo, one directory each, and catalogue.ts, which lists them
-│   └── <id>/            Self-contained entry
-│       ├── start/       entry.ts (what the Arcade's card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp (its card's picture), share.png (its link preview's picture)
-│       ├── data/        Static data and configuration constants
-│       ├── models/      State & domain logic + domain types
-│       └── views/       Presentation (Pixi, three.js or HTML)
+packages/sites/<site>/              arcade, demos or puzzles
+├── index.html           The site's page; the kit writes its nav in
+├── vite.config.ts       defineSiteConfig({ site }), from @mvtjs/site-kit/vite
+└── src/
+    ├── main.ts          startSitePage(SITE)
+    ├── site.ts          SITE: its name, marquee, About text, catalogue, and its entries' kind (game or demo)
+    ├── share.jpg        Its wall's link preview, made by generate-thumbnails
+    └── entries/         Its entries, one directory each, and catalogue.ts, which lists them
+        └── <id>/        Self-contained entry
+            ├── start/   entry.ts (what its card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp (its card's picture), share.png (its link preview's picture)
+            ├── data/    Static data and configuration constants
+            ├── models/  State & domain logic + domain types
+            └── views/   Presentation (Pixi, three.js or HTML)
+```
+
+```
+packages/sites/site-kit/src/       Imported by the sites as @mvtjs/site-kit/<folder>
+├── arcade/              The page, in HTML JSX: model, views, its own sounds, its styles, and the page's loop (start-site-page.ts, imported as @mvtjs/site-kit/site-page)
 ├── device/              What the visitor's device supports, such as touch
 ├── input/               Input that needs no renderer: the keyboard, for the entry host and the Pixi stage
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
-├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way, imported as `#pixel-glyphs`
-├── shared/              The site's shared views (overlay, pixel text, input, swipes) and the chip types views play on, imported as `#shared`
-├── tunes/               The site's Audio90 tunes, their instruments and samples, which the Tune Tracker plays, imported as `#tunes`
+├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way
+├── shared/              The shared views (overlay, pixel text, input, swipes) and the chip types views play on
+├── snapshot/            The page generate-thumbnails photographs each entry on
+├── testing/             describeCatalogue, the checks every site's catalogue passes
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
 ```
+
+The demos also hold `src/tunes/`, the Audio90 tunes the Tune Tracker plays
+(`#tunes`). Sudoku's puzzle maker and grid are in
+`packages/sites/puzzles/src/entries/sudoku/generator/`, which Sudoku Digger, a
+demo, imports as `@mvtjs/puzzles/sudoku-generator`.
 
 Visual tests are in a `visual-tests/` folder beside the views they test, one
 `<view file's name>.test.tsx` for each view, and declare `canvasTest` or
@@ -77,13 +96,15 @@ Inside the repo, the libraries resolve to their `src/` (an `@mvtjs/source`
 
 Full reference: [Project Structure](packages/sites/docs/reference/project-structure.md)
 
-## The Arcade and Its Entries
+## The Sites and Their Entries
 
-- **ArcadeEntry** - what the Arcade lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, tags, screenWidth, screenHeight, thumbnail, loadDetails, load }`. What the card shows only, so listing every entry loads no entry's code; `loadDetails()` imports `start/details.ts`, the long text (description, instructions, techniques), which the page loads after its first paint, and `load()` imports `start/load.ts`
+- **The sites** - three: the arcade (arcade games), the demos, and the puzzles. Each lists its own entries on the same page app, from the site kit, with its own name; the site, not the entry, says whether its entries are games or demos (`SiteConfig.entryKind`). They share one origin, so the visitor's favourites, saved games and settings follow them across
+- **ArcadeEntry** - what a site lists, in `<id>/start/entry.ts`, exported as `entry`: `{ id, name, summary, tags, screenWidth, screenHeight, thumbnail, loadDetails, load }`. What the card shows only, so listing every entry loads no entry's code; `loadDetails()` imports `start/details.ts`, the long text (description, instructions, techniques), which the page loads after its first paint, and `load()` imports `start/load.ts`
 - **EntryStarter** - what `load()` returns. A `pixi` starter draws on the host's Pixi stage; an `element` starter brings its own renderers (three.js, Pixi, the DOM, or several) and mounts into an element. Either's `start(...)` returns an **EntrySession**: `{ update(deltaMs), destroy() }`, with `inputConfig` for games, and `scoring` for a game with a highscore table
-- **CATALOGUE** - every entry, in `packages/sites/arcade/src/entries/catalogue.ts`
-- **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`arcade/main.ts`) starts and stops sessions as the model's phase changes
-- To add a game or demo: create `packages/sites/arcade/src/entries/<id>/` with its own data/models/views and `start/`, add it to `catalogue.ts`, and follow the [originality rules](packages/sites/arcade/src/entries/README.md#originality). See [Adding an Entry](packages/sites/arcade/src/entries/README.md)
+- **Tags** - one flat list of an era (at most one) and genres: `tags: ['1980s', 'maze']`. The search shows entries with every tag chosen
+- **CATALOGUE** - a site's entries, in `packages/sites/<site>/src/entries/catalogue.ts`
+- **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`startSitePage`) starts and stops sessions as the model's phase changes
+- To add a game, demo or puzzle: create `packages/sites/<site>/src/entries/<id>/` with its own data/models/views and `start/`, add it to that site's `catalogue.ts`, and follow the [originality rules](packages/sites/arcade/src/entries/README.md#originality). See [Adding an Entry](packages/sites/arcade/src/entries/README.md)
 
 ## Key Conventions
 
@@ -99,7 +120,7 @@ Full reference: [Project Structure](packages/sites/docs/reference/project-struct
 - **`Kind` over `Type`** in type names - avoids overloading the word "type" in TypeScript
 - **Functions start with a verb** - `measureLoudness`, `toInt16`, `isAlive`, so a call never reads as a value; views and bindings are named for what they are. A reaction (`createReaction`) is named for its effect, then its trigger: `playPumpSoundWhenInflationRises`, `updateTextureWhenPhaseChanges`, never `playPump`
 - **Bindings for reusable views** - leaf views (views of single game objects, HUDs) accept query and relay bindings; a top-level application view's one binding is the model itself, a fixed value (it's application-specific, never reused). Query bindings are named for what they return (`score`, `isAlive`, `tileKindAt(row, col)`), no `get` prefix; relay bindings are `on` + what the user did (`onFirePressed`). A model takes what the player means, never the control: state for a control held (`isThrusting`, not `thrustPressed`), an action for a one-off command (`startNewRun()`, not `restartPressed`), with the wiring saying what each control means (lint: `@mvtjs/no-control-names`). A query binding's type says what the view supports: `() => T` changes, `T` is read once, `ValueOrGetter<T>` is either. Never declare a function and read it only once
-- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It calls reactions (`createReaction`) in its refresh step and plays on a change, such as a phase beginning or a count rising, never on a state alone. A reaction never reacts to its first read, so a sound for the state a view starts in, such as a game's opening tune, is played as the view is made. Models expose a count (`shotsFired`) for a moment that repeats, and a reaction with `when: increased` plays each rise. Audio views play on a virtual sound chip from `audio90`: the **Audio80** (4 mono voices, 1980s) or the **Audio90** (16 stereo voices of FM, analog and samples, 1990s). An entry that makes sound names its kind of chip in its starter (`soundChip: 'audio90'`), and makes its `load` with `definePixiLoader` (or `defineElementLoader`), so the chips' types are inferred, and the entry host gives it two chips of that kind: `music`, for its songs, and `sfx`, for its sound effects, each at the listener's volume for it. Views take them as `MusicChip<'audio80'>` and `SfxChip<'audio80'>`, from `#shared`, which leave out the host's controls. An entry that names no chip gets none. Audio90 samples are bounced from the chip's own engines, never recorded, and an entry bounces them in `load` with `prepareAudio90Samples`. Repeating sounds are presentation state, advanced in the update step. Music plays on the chip's own sequencer, on the sound card's clock, so a late frame never holds it up: a view chooses which song plays and how fast, with the music chip's `play`, `queue`, `stop` and `tempoScale`, and each call goes to the chip as it is made. A chip keeps the sound card's time, so the host pauses it as the game pauses (`pause`), and it holds its sound while the page is hidden; a headless chip's clock moves with the ticks (`update`), so tests stay exact. The music chip's `row` and `beat` are what the listener hears. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/audio90/docs/](packages/libraries/audio90/docs/using-the-audio90.md)
+- **Sound is a view's job** - an audio view is a view that plays sounds instead of drawing visuals. It calls reactions (`createReaction`) in its refresh step and plays on a change, such as a phase beginning or a count rising, never on a state alone. A reaction never reacts to its first read, so a sound for the state a view starts in, such as a game's opening tune, is played as the view is made. Models expose a count (`shotsFired`) for a moment that repeats, and a reaction with `when: increased` plays each rise. Audio views play on a virtual sound chip from `audio90`: the **Audio80** (4 mono voices, 1980s) or the **Audio90** (16 stereo voices of FM, analog and samples, 1990s). An entry that makes sound names its kind of chip in its starter (`soundChip: 'audio90'`), and makes its `load` with `definePixiLoader` (or `defineElementLoader`), so the chips' types are inferred, and the entry host gives it two chips of that kind: `music`, for its songs, and `sfx`, for its sound effects, each at the listener's volume for it. Views take them as `MusicChip<'audio80'>` and `SfxChip<'audio80'>`, from `@mvtjs/site-kit/shared`, which leave out the host's controls. An entry that names no chip gets none. Audio90 samples are bounced from the chip's own engines, never recorded, and an entry bounces them in `load` with `prepareAudio90Samples`. Repeating sounds are presentation state, advanced in the update step. Music plays on the chip's own sequencer, on the sound card's clock, so a late frame never holds it up: a view chooses which song plays and how fast, with the music chip's `play`, `queue`, `stop` and `tempoScale`, and each call goes to the chip as it is made. A chip keeps the sound card's time, so the host pauses it as the game pauses (`pause`), and it holds its sound while the page is hidden; a headless chip's clock moves with the ticks (`update`), so tests stay exact. The music chip's `row` and `beat` are what the listener hears. An audio view in a `<List>` plays only on changes that a newly arrived item cannot cause. See [Sound and Music](packages/sites/docs/building-with-mvt/presenting-the-world/sound.md) and the guides in [packages/libraries/audio90/docs/](packages/libraries/audio90/docs/using-the-audio90.md)
 - **`_` prefix** for intentionally unused parameters
 - **Plain writing** - in docs, comments, test names and messages: a friendly, mentoring voice in everyday language (talk to the reader as "you", say why as well as what), short, complete sentences, terms explained where first used, no in-house names in packages. This is the default unless told otherwise. See [Style Guide: Writing](packages/sites/docs/reference/style-guide.md#writing)
 - **4-space indentation**, `lower-kebab-case` file names, `PascalCase` types, `camelCase` everything else
@@ -111,8 +132,8 @@ Full reference: [Style Guide](packages/sites/docs/reference/style-guide.md)
 
 | Command                | Purpose                       |
 | ---------------------- | ----------------------------- |
-| `npm run dev`          | Start the three sites' dev servers together (the Arcade's at :5173 serves /docs/ and /playground/ from the other two); Ctrl+C stops all three. It starts nothing if one is running already. One site alone: `npm run dev -w @mvtjs/docs` |
-| `npm run dev:https`    | The same, with the Arcade over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
+| `npm run dev`          | One dev server at :5173 for everything: each site's Vite (arcade, demos, puzzles, playground, and VitePress's docs) mounted under its own path. It starts nothing if the port is in use. One site alone: `npm run dev -w @mvtjs/demos` |
+| `npm run dev:https`    | The same, over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check + production build |
 | `npm run build:playground` | Build the playground alone, into `dist/playground/` |
 | `npm run lint`         | Check lint and formatting     |
@@ -150,7 +171,7 @@ done. Proposals and tasks share one number sequence.
 4. **No classes.** Use factory functions returning plain records that satisfy an interface. [Style Guide](packages/sites/docs/reference/style-guide.md)
 5. **Hot-path awareness.** `update()` and `refresh()` run every tick (~60fps). Avoid per-tick allocations: no `array.map()`, no template-string keys, no `for...of` on arrays, no inline closures. Use index-based `for` loops and pre-allocated structures. [Hot Paths](packages/sites/docs/building-with-mvt/performance/hot-paths.md)
 6. **Model coordinates must be domain-level, not pixels.** Grid-based game objects expose fractional `row`/`col`/`direction` - not `x`/`y` in pixels. Views compute pixel positions from domain coordinates. [Models](packages/sites/docs/building-with-mvt/simulating-the-world/models.md)
-7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles (except the credit in an entry's `inspiredBy`), character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/sites/arcade/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/sites/arcade/src/entries/README.md#originality)
+7. **Games and demos are original.** Inspired by a classic is fine; copying is not. No other game's titles (except the credit in an entry's `inspiredBy`), character names or designs, artwork, music or level layouts, and all art is drawn from scratch in the repo (a `packages/sites/<site>/scripts/generate-*-textures.ts` script, or the views). [Originality](packages/sites/arcade/src/entries/README.md#originality)
 
 Full rules: [Architecture Rules](packages/sites/docs/architecture/rules.md)
 

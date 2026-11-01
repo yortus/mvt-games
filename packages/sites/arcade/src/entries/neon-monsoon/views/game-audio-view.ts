@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import type { Audio90Sound } from 'audio90';
 import { createMetronome, watch } from '@mvtjs/utils';
-import type { MusicChip, SfxChip } from '#shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/shared';
 import {
     ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, CHARGE_TONES, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
     EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, type ItemKind, LOCK_TICK, LOCKED, POWER_UP, RESPAWN, RING_UP, SHIELD_HIT,

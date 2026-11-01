@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'kwazy-cactii',
     name: 'Kwazy Cactii',
     summary: 'Swap neighbouring cactii to line up three or more of a kind, and chain the cascades for bonus points.',
-    tags: { kind: 'game', era: '2000s', genres: ['puzzle'] },
+    tags: ['2000s', 'puzzle'],
     screenWidth: 1600,
     screenHeight: 2180,
     thumbnail,

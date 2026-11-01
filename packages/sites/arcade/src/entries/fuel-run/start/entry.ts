@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'fuel-run',
     name: 'Fuel Run',
     summary: 'Fly low over scrolling terrain, bombing fuel tanks to keep flying, while rockets and saucers rise to meet you.',
-    tags: { kind: 'game', era: '1980s', genres: ['shooter', 'scrolling'] },
+    tags: ['1980s', 'shooter', 'scrolling'],
     screenWidth: 448,
     screenHeight: 248,
     inspiredBy: { title: 'Scramble', maker: 'Konami', year: 1981 },

@@ -6,7 +6,7 @@
 > way.
 
 **Status: adopted.** Used by every game and demo, the cabinet, the
-shared views in `packages/sites/arcade/src/shared/`, the Pixi JSX runtime and the playground.
+shared views in `packages/sites/site-kit/src/shared/`, the Pixi JSX runtime and the playground.
 Nothing in the repo refreshes through Pixi's `onRender` any more.
 
 ---

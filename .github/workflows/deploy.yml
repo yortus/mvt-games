@@ -50,15 +50,16 @@ jobs:
             - run: npm run test:unit
             # audio90's own tests, which the root's leave out. The site plays on its chips
             - run: npm test -w audio90
-            - run: npm run build:arcade
+            # The arcade, the demos and the puzzles
+            - run: npm run build:sites
               env:
-                  # The Worker that keeps the Arcade's highscore tables (deploy-highscores.yml)
+                  # The Worker that keeps the highscore tables (deploy-highscores.yml)
                   VITE_HIGHSCORES_URL: https://highscores.yortus.workers.dev
             - run: npm run build:playground
-            # With the Arcade and the playground built: each holds one copy of @mvtjs/utils, as a second throws on load
+            # With the sites and the playground built: each holds one copy of @mvtjs/utils, as a second throws on load
             - run: npm run check:one-copy-of-utils
             - run: npm run build:docs
-            # With all three built: every page has what a link preview needs
+            # With everything built: every page has what a link preview needs
             - run: npm run check:link-previews
 
             - uses: actions/upload-pages-artifact@v3

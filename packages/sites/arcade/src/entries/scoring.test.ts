@@ -1,7 +1,7 @@
 import { Container, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
-import { startPixiEntry } from '../entry-types';
-import { createHeadlessSound } from '../runner';
+import { startPixiEntry } from '@mvtjs/site-kit/entry-types';
+import { createHeadlessSound } from '@mvtjs/site-kit/runner';
 import { CATALOGUE } from './catalogue';
 
 // Loading a spritesheet needs a browser. Every texture becomes Pixi's 1x1

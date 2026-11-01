@@ -3,7 +3,7 @@
 import type { Container, Graphics } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
-import { isTouchDevice, OverlayView, SwipeInputView } from '#shared';
+import { isTouchDevice, OverlayView, SwipeInputView } from '@mvtjs/site-kit/shared';
 import { COLS, ROWS } from '../data';
 import type { GameModel } from '../models';
 

@@ -1,8 +1,9 @@
 import { Container } from 'pixi.js';
-import { findEntry } from '@mvtjs/arcade/entries';
+import { findEntry as findGame } from '@mvtjs/arcade/entries';
+import { findEntry as findDemo } from '@mvtjs/demos/entries';
 import {
     type EntryInputConfig, type PixiEntryStarter, type SessionChips, type SoundChipFinder, type SoundChipKind, startPixiEntry,
-} from '@mvtjs/arcade/entry-types';
+} from '@mvtjs/site-kit/entry-types';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
@@ -105,9 +106,9 @@ else {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Loads a game or demo by id, as the Arcade would launch it. Only entries drawn with Pixi run headless here. */
+/** Loads a game or demo by id, as its site would launch it. Only entries drawn with Pixi run headless here. */
 async function loadPixiStarter(id: string): Promise<PixiEntryStarter> {
-    const entry = findEntry(id);
+    const entry = findGame(id) ?? findDemo(id);
     if (entry === undefined) throw new Error(`unknown game or demo: ${id}`);
     const starter = await entry.load();
     if (starter.kind !== 'pixi') throw new Error(`${id} is not drawn with Pixi, so it cannot run headless`);

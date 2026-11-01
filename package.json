@@ -13,10 +13,10 @@
         "#eslint-plugin": "./packages/internal/eslint-plugin/src/index.ts"
     },
     "scripts": {
-        "dev": "tsx packages/sites/arcade/scripts/run-dev-servers.ts",
-        "dev:https": "tsx packages/sites/arcade/scripts/run-dev-servers.ts --https",
-        "build": "tsc -b && npm run build -w @mvtjs/arcade && npm run check:home-page-budget && npm run build -w @mvtjs/playground && npm run check:one-copy-of-utils && npm run build -w @mvtjs/docs && npm run check:link-previews",
-        "build:arcade": "tsc -b && npm run build -w @mvtjs/arcade && npm run check:home-page-budget",
+        "dev": "tsx packages/sites/site-kit/scripts/run-dev-server.ts",
+        "dev:https": "tsx packages/sites/site-kit/scripts/run-dev-server.ts --https",
+        "build": "npm run build:sites && npm run build -w @mvtjs/playground && npm run check:one-copy-of-utils && npm run build -w @mvtjs/docs && npm run check:link-previews",
+        "build:sites": "tsc -b && npm run build -w @mvtjs/arcade -w @mvtjs/demos -w @mvtjs/puzzles && npm run check:home-page-budget",
         "build:docs": "npm run build -w @mvtjs/docs",
         "build:playground": "npm run build -w @mvtjs/playground",
         "build:packages": "npm run build -w @mvtjs/utils -w @mvtjs/pixi -w @mvtjs/three -w @mvtjs/html -w audio90 && npm run check:view-type-registration",
@@ -37,10 +37,10 @@
         "test:visual:update": "vitest run visual-tests/ -u",
         "test:vsnap": "npm test -w v-snap",
         "test:audio90": "npm test -w audio90",
-        "generate-textures": "npm run generate-textures -w @mvtjs/arcade",
+        "generate-textures": "npm run generate-textures -w @mvtjs/arcade -w @mvtjs/demos",
         "audio:render": "tsx --conditions=@mvtjs/source packages/libraries/audio90/scripts/render-wav.ts",
-        "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/arcade --",
-        "measure-load": "npm run measure-load -w @mvtjs/arcade --"
+        "generate-thumbnails": "npm run generate-thumbnails -w @mvtjs/arcade -w @mvtjs/demos -w @mvtjs/puzzles",
+        "measure-load": "tsx packages/sites/site-kit/scripts/measure-load.ts"
     },
     "devDependencies": {
         "@arethetypeswrong/core": "^0.18.5",

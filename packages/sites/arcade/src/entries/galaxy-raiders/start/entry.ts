@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'galaxy-raiders',
     name: 'Galaxy Raiders',
     summary: 'Hold off waves of raiders that break formation to dive at your ship.',
-    tags: { kind: 'game', era: '1980s', genres: ['shooter'] },
+    tags: ['1980s', 'shooter'],
     screenWidth: 280,
     screenHeight: 390,
     inspiredBy: { title: 'Galaga', maker: 'Namco', year: 1981 },

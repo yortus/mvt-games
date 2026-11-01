@@ -18,7 +18,7 @@ const DEV_PORT = 5300;
  * Adds the two tags of the page's link preview that need full addresses: the
  * page's own, and its picture's. The picture is the Arcade's card wall, which
  * the Arcade's build writes at this address, from the site's root
- * (packages/sites/arcade/scripts/share-image.ts). `SITE_ORIGIN` names the
+ * (packages/sites/site-kit/scripts/share-image.ts). `SITE_ORIGIN` names the
  * site's origin, such as `https://example.com`. A build with none, for trying
  * the site out, writes the addresses from the site's root.
  */

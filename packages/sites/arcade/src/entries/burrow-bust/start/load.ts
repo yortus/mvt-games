@@ -1,4 +1,4 @@
-import { definePixiLoader, type EntrySession } from '../../../entry-types';
+import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 import { FIELD_ROWS, FIELD_COLS, BASE_FIELD, DIGGER_SPAWN, LEVELS, textures } from '../data';

@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView, type SfxChip } from '#shared';
+import { isTouchDevice, OverlayView, type SfxChip } from '@mvtjs/site-kit/shared';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from './view-constants';

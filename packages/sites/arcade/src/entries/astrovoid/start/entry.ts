@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'astrovoid',
     name: 'Astrovoid',
     summary: 'Rotate, thrust and fire to break drifting rocks into ever smaller pieces, in an arena that wraps at its edges.',
-    tags: { kind: 'game', era: '1970s', genres: ['shooter'] },
+    tags: ['1970s', 'shooter'],
     screenWidth: 400,
     screenHeight: 430,
     inspiredBy: { title: 'Asteroids', maker: 'Atari', year: 1979 },

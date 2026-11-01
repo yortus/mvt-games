@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '#shared';
+import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
 import { List } from '@mvtjs/pixi';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';

@@ -174,7 +174,7 @@ layout view model, `card-wall-layout.ts`, which has tests of its own.
 `photoPoseOf`, in `card-view.tsx`, reads a card's photo from the page as
 the way into an entry starts:
 
-- [`card-wall-view.tsx`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/card-wall-view.tsx)
-- [`card-wall-layout.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/card-wall-layout.ts)
-  and its [tests](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/card-wall-layout.test.ts)
-- [`card-view.tsx`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/card-view.tsx)
+- [`card-wall-view.tsx`](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/views/card-wall-view.tsx)
+- [`card-wall-layout.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/views/card-wall-layout.ts)
+  and its [tests](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/views/card-wall-layout.test.ts)
+- [`card-view.tsx`](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/views/card-view.tsx)

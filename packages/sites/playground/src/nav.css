@@ -1,6 +1,6 @@
-/* The site's nav, as the Arcade's page has it (arcade/src/shared/nav.css). The
+/* The site's nav, as the sites' pages have it (site-kit/src/arcade/nav.css). The
    playground keeps its own copy, as the docs keep theirs, so it shares no code
-   with the Arcade. */
+   with the sites. */
 
 /* ==========================================================================
    Shared site navigation bar

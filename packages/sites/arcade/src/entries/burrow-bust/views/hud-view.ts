@@ -1,6 +1,6 @@
 import { Container, Sprite } from 'pixi.js';
 import { createComputed, createReaction } from '@mvtjs/utils';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 import { textures } from '../data';
 import { setRefresh } from '@mvtjs/pixi';
 

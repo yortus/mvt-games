@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'dojo-duel',
     name: 'Dojo Duel',
     summary: 'A one-on-one karate match against the computer: punches, kicks, sweeps and blocks, best of three rounds.',
-    tags: { kind: 'game', era: '1980s', genres: ['fighting'] },
+    tags: ['1980s', 'fighting'],
     screenWidth: 384,
     screenHeight: 270,
     inspiredBy: { title: 'International Karate', maker: 'System 3', year: 1985 },

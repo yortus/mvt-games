@@ -12,10 +12,13 @@
         { "path": "./packages/libraries/audio90/scripts" },
         { "path": "./packages/libraries/v-snap" },
         { "path": "./packages/internal/eslint-plugin" },
+        { "path": "./packages/sites/site-kit" },
         { "path": "./packages/sites/arcade" },
+        { "path": "./packages/sites/demos" },
+        { "path": "./packages/sites/puzzles" },
         { "path": "./packages/sites/playground" },
         { "path": "./packages/internal/benchmarks" },
-        { "path": "./packages/sites/arcade/highscores-worker" },
+        { "path": "./packages/sites/site-kit/highscores-worker" },
         { "path": "./packages/internal/checks" }
     ]
 }

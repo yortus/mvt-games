@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { createMetronome, createReaction, increased } from '@mvtjs/utils';
-import type { MusicChip, SfxChip } from '#shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/shared';
 import {
     BAA,
     BLOW_OUT,

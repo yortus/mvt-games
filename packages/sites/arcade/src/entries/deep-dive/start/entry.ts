@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'deep-dive',
     name: 'Deep Dive',
     summary: 'Hold to rise, let go to sink, and steer a little submarine through a sea cave that gets tighter and faster.',
-    tags: { kind: 'game', era: '2000s', genres: ['action', 'scrolling', 'tiny'] },
+    tags: ['2000s', 'action', 'scrolling', 'tiny'],
     screenWidth: 320,
     screenHeight: 240,
     thumbnail,

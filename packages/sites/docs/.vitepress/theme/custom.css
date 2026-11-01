@@ -7,7 +7,7 @@
 }
 
 /* ==========================================================================
-   The site's nav, as the Arcade's page has it (arcade/src/shared/nav.css),
+   The site's nav, as the sites' pages have it (site-kit/src/arcade/nav.css),
    made of VitePress's own navbar, so its search, its light and dark switch
    and its menu on a narrow screen stay. The docs keep their own copy, as the
    playground keeps its, so they share no code with the Arcade.

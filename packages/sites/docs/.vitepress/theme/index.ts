@@ -43,8 +43,8 @@ interface CrossLink {
 
 /**
  * The site's links: plain `<a>` elements, which VitePress's router leaves
- * alone (`vp-raw`), since the Arcade and the playground are not pages of the
- * docs.
+ * alone (`vp-raw`), since the sites and the playground are not pages of the
+ * docs. They match the sites' own nav, in the site kit's `scripts/site-nav.ts`.
  */
 const CROSS_LINKS: readonly CrossLink[] = [
     {
@@ -52,6 +52,18 @@ const CROSS_LINKS: readonly CrossLink[] = [
         href: `${__SITE_ROOT__}arcade/`,
         viewBox: '0 0 20 20',
         icon: '<path d="M6 5h8a5 5 0 015 5v1.5a2.5 2.5 0 01-4.6 1.4L13 11H7l-1.4 1.9A2.5 2.5 0 011 11.5V10a5 5 0 015-5z"/><path d="M6 7.5v4M4 9.5h4"/><circle cx="13" cy="8.5" r=".6"/><circle cx="15" cy="10.5" r=".6"/>',
+    },
+    {
+        label: 'Demos',
+        href: `${__SITE_ROOT__}demos/`,
+        viewBox: '0 0 20 20',
+        icon: '<path d="M10 2.5l1.7 5.8 5.8 1.7-5.8 1.7L10 17.5l-1.7-5.8L2.5 10l5.8-1.7z"/>',
+    },
+    {
+        label: 'Puzzles',
+        href: `${__SITE_ROOT__}puzzles/`,
+        viewBox: '0 0 20 20',
+        icon: '<path d="M3 3h14v14H3zM7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14"/>',
     },
     {
         label: 'Docs',

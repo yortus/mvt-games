@@ -21,7 +21,7 @@
 import { PNG } from 'pngjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parsePixelArt } from './pixel-art';
+import { parsePixelArt } from '@mvtjs/site-kit/pixel-art';
 
 // ---------------------------------------------------------------------------
 // Output directory

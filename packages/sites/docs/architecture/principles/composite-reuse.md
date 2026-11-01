@@ -112,7 +112,7 @@ mouse and cats all move one tile at a time, but neither extends a shared
 actor. Each holds a
 [`TileMove`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/crumb-chase/models/tile-move.ts),
 a small model that slides a position to the next tile, with tests of its
-own. The [fruit machine](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/README.md)'s
+own. The [fruit machine](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/README.md)'s
 model holds a reel model for each reel, a celebration model, a ways
 evaluator and a seeded random source, and each of those has its own tests
 too. The [DIP page](dependency-inversion.md#building-its-own-children)
@@ -199,7 +199,7 @@ it needs, wherever in the model tree it lives.
   from MVT components), processed by separate systems. MVT composes models
   and views. The two work at different levels, and fit together: how a model
   stores its state inside is its own business. Falling Sand's
-  [array grain grid](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/falling-sand/models/grain-grid/array-grain-grid.ts)
+  [array grain grid](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/falling-sand/models/grain-grid/array-grain-grid.ts)
   keeps each field of every grain in its own typed array, "as an
   entity-component system would lay them out", behind the same `GrainGrid`
   interface as a version that keeps an object per grain. Neon Monsoon's

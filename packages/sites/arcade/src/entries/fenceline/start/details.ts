@@ -1,4 +1,4 @@
-import type { EntryDetails } from '../../../entry-types';
+import type { EntryDetails } from '@mvtjs/site-kit/entry-types';
 
 // ---------------------------------------------------------------------------
 // Details

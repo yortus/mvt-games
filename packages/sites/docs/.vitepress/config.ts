@@ -17,7 +17,7 @@ const siteOrigin = process.env.SITE_ORIGIN ?? '';
 
 // The picture a link to any page shows: the Arcade's card wall, which the
 // Arcade's build writes at this address
-// (packages/sites/arcade/scripts/share-image.ts).
+// (packages/sites/site-kit/scripts/share-image.ts).
 const shareImage = {
     url: `${siteOrigin}${siteBase}arcade/share.jpg`,
     width: 1200,

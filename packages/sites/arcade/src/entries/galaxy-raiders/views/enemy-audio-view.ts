@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
 import { watch } from '@mvtjs/utils';
-import type { SfxChip } from '#shared';
+import type { SfxChip } from '@mvtjs/site-kit/shared';
 import { CARRIER_HIT, DIVE, SCOUT_HIT, STRIKER_HIT } from '../data';
 import type { EnemyKind, EnemyPhase } from '../models';
 

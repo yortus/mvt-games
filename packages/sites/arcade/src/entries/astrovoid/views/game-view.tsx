@@ -2,7 +2,7 @@
 
 import type { Container, Graphics } from 'pixi.js';
 import { createMetronome } from '@mvtjs/utils';
-import { isTouchDevice, OverlayView, type SfxChip } from '#shared';
+import { isTouchDevice, OverlayView, type SfxChip } from '@mvtjs/site-kit/shared';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';

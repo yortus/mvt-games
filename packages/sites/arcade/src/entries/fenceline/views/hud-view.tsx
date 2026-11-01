@@ -3,7 +3,7 @@
 import { type Container, type Graphics, Texture } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 import { drawPixels, type PixelRects } from './drawing';
 import { COLOURS, HUD_HEIGHT } from './view-constants';
 

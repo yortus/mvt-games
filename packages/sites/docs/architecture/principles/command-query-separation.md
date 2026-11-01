@@ -40,7 +40,7 @@ their order."
 ## Symptoms
 
 When something happens in a model and a view needs to hear about it, it's tempting to mix commands and queries. Suppose the
-[fruit machine demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/README.md)
+[fruit machine demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/README.md)
 let its views know a spin had started with a flag that is cleared when it
 is read:
 
@@ -115,9 +115,9 @@ function update(deltaMs: number) {
 ```
 
 The fruit machine has four readers of that one count. Its
-[audio view](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/views/audio/machine-audio-view.ts)
+[audio view](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/views/audio/machine-audio-view.ts)
 reacts to it exactly this way, to play the lever's sound. The
-[lever view](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/views/three/lever-view.tsx)
+[lever view](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/views/three/lever-view.tsx)
 does the same comparison by hand, to swing the lever. The terminal watches
 the count to log each spin, and even notes when a spin was started from
 another view, and the panel shows it as a number. None of them affects the

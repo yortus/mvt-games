@@ -1,10 +1,12 @@
 // Checks that a link to any page of the built site previews well when it is
 // shared. Chat apps and social networks build a link's preview from the
 // page's Open Graph tags, as the page is served, without running its
-// scripts. So the tags are checked in the built pages, in `dist/`: the
-// Arcade's, each entry's, the site's root, the playground's and every page
-// of the docs. Three builds write them, each its own way, and nothing else
-// would notice one of them going missing until a link was shared.
+// scripts. So the tags are checked in the built pages, in `dist/`: each
+// site's (the arcade's, the demos', the puzzles'), each entry's, the site's
+// root, the playground's and every page of the docs. Several builds write
+// them, each its own way, and nothing else would notice one of them going
+// missing until a link was shared. A page that only sends the visitor on, as
+// a moved entry's old address does, says so (`noindex`), and is left out.
 //
 // Each page needs a title, a description, its address, a picture with its
 // size and a description of it, and a large card on X (`twitter:card`). The
@@ -18,7 +20,7 @@
 // origin, and writes addresses from the site's root, which this allows, with
 // a note. In CI, which deploys the site, a missing origin fails.
 //
-// `npm run build` runs it after building the three; `npm run
+// `npm run build` runs it after building them all; `npm run
 // check:link-previews` runs it alone, once they are built.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -75,7 +77,7 @@ for (const page of pages) {
 
     const image = tags.get('og:image');
     if (image === undefined || !image.startsWith(origin + base)) continue;
-    if (/^arcade\/[^/]+\/index\.html$/.test(name)) {
+    if (/^(arcade|demos|puzzles)\/[^/]+\/index\.html$/.test(name)) {
         const other = entryImages.get(image);
         if (other !== undefined) problems.push(`${name}: shows the same picture as ${other}`);
         entryImages.set(image, name);
@@ -96,7 +98,7 @@ if (origin === '') console.log('Link previews: no SITE_ORIGIN, so the addresses 
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Every page a link can name: each `.html` file in `dist/` but the not-found pages. */
+/** Every page a link can name: each `.html` file in `dist/` but the not-found pages, and those that only send the visitor on. */
 function listPages(): string[] {
     let entries;
     try {
@@ -107,7 +109,9 @@ function listPages(): string[] {
     }
     const pages: string[] = [];
     for (const entry of entries) {
-        if (entry.isFile() && entry.name.endsWith('.html') && entry.name !== '404.html') pages.push(join(entry.parentPath, entry.name));
+        if (!entry.isFile() || !entry.name.endsWith('.html') || entry.name === '404.html') continue;
+        const path = join(entry.parentPath, entry.name);
+        if (!readFileSync(path, 'utf8').includes('<meta name="robots" content="noindex"')) pages.push(path);
     }
     return pages.sort();
 }

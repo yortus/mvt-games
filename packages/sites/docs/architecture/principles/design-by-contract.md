@@ -43,7 +43,7 @@ failure, at the point where it happened.
 ## Symptoms
 
 The easy way to handle a call that comes at the wrong time is to ignore
-it. Suppose the [fruit machine](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fruit-machine/README.md)'s
+it. Suppose the [fruit machine](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/README.md)'s
 `spin()` did that:
 
 ```ts

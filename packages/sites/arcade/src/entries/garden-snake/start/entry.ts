@@ -1,4 +1,4 @@
-import type { ArcadeEntry } from '../../../entry-types';
+import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import thumbnail from './thumbnail.webp';
 
 // ---------------------------------------------------------------------------
@@ -10,7 +10,7 @@ export const entry: ArcadeEntry = {
     id: 'garden-snake',
     name: 'Garden Snake',
     summary: 'Steer a hungry snake round the garden. Every berry makes it longer, and faster.',
-    tags: { kind: 'game', era: '1970s', genres: ['action', 'tiny'] },
+    tags: ['1970s', 'action', 'tiny'],
     screenWidth: 256,
     screenHeight: 280,
     thumbnail,

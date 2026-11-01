@@ -152,10 +152,10 @@ runs at the same moment on either. The page reads
 wall's layout, and attract mode, which stays off. The view model reads it
 as each transition starts, and its tests run both paths:
 
-- [`main.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/main.ts)
-- [`entry-transition-view-model.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/entry-transition-view-model.ts)
-  and its [tests](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/entry-transition-view-model.test.ts)
-- [`card-wall-layout.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/arcade/views/card-wall-layout.ts)
+- [`main.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/start-site-page.ts)
+- [`entry-transition-view-model.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/views/entry-transition-view-model.ts)
+  and its [tests](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/views/entry-transition-view-model.test.ts)
+- [`card-wall-layout.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/site-kit/src/arcade/views/card-wall-layout.ts)
 
 ---
 

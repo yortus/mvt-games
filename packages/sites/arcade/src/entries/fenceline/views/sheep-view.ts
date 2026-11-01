@@ -1,7 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { createReaction } from '@mvtjs/utils';
-import { PixelTextView } from '#shared';
+import { PixelTextView } from '@mvtjs/site-kit/shared';
 import type { SheepPhase } from '../models';
 import { drawOutlinedPixels, drawPixels, type PixelRects } from './drawing';
 import { COLOURS } from './view-constants';

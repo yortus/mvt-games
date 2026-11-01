@@ -352,7 +352,7 @@ Compared with the array form:
   view is still there to animate out. From a plain array, a removed item is
   simply gone.
 
-The [reordering-lists demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/reordering-lists/README.md)
+The [reordering-lists demo](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/reordering-lists/README.md)
 runs both forms side by side, driven by the same script.
 
 ### Drag and drop

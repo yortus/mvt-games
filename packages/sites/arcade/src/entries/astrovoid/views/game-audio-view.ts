@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
 import { createMetronome, createReaction, increased } from '@mvtjs/utils';
-import type { SfxChip } from '#shared';
+import type { SfxChip } from '@mvtjs/site-kit/shared';
 import {
     BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
     WAVE_CLEAR,
