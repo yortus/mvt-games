@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createBulletField } from './bullet-field';
 import type { ShotKind } from './common';
-import { MAX_POWER, SHIP_FOCUSED_SPEED, SHIP_SPEED, SHOT_HIT_RADII, SHOT_INTERVAL_MS } from './model-constants';
+import { MAX_POWER, SHIP_FOCUSED_SPEED, SHIP_SPEED, SHIP_TARGET_SPEED_SCALE, SHOT_HIT_RADII, SHOT_INTERVAL_MS } from './model-constants';
 import { createShipModel } from './ship-model';
 
 function setUp() {
@@ -29,6 +29,31 @@ describe('ShipModel', () => {
         ship.setHeading('left', 'up');
         ship.update(100);
         expect(Math.hypot(ship.x - startX, ship.y - startY)).toBeCloseTo(SHIP_SPEED * 0.1);
+    });
+
+    it('flies straight to its target, faster than it flies headed, and stops there', () => {
+        const { ship } = setUp();
+        const startX = ship.x;
+        const startY = ship.y;
+        // 3 across by 4 up is 5 steps away, at one step each tenth of a second
+        const step = SHIP_SPEED * SHIP_TARGET_SPEED_SCALE * 0.1;
+        const toX = startX - step * 3;
+        const toY = startY - step * 4;
+        ship.setHeading('right', 'down');
+        ship.setTarget(toX, toY);
+        ship.update(100);
+        expect(Math.hypot(ship.x - startX, ship.y - startY)).toBeCloseTo(step);
+        expect((ship.x - startX) / (ship.y - startY)).toBeCloseTo(3 / 4);
+        for (let i = 0; i < 5; i++) ship.update(100);
+        expect(ship.x).toBeCloseTo(toX);
+        expect(ship.y).toBeCloseTo(toY);
+    });
+
+    it('flies to a target outside the arena only as far as its edge', () => {
+        const { ship } = setUp();
+        ship.setTarget(ship.x, ship.maxY + 100);
+        for (let i = 0; i < 100; i++) ship.update(100);
+        expect(ship.y).toBeCloseTo(ship.maxY);
     });
 
     it('stays inside the arena', () => {

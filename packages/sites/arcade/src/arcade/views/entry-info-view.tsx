@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 import { List } from '@mvtjs/html';
 import { createComputed } from '@mvtjs/utils';
+import { detectDeviceKind } from '../../device';
 import type { HighscoreRow } from '../../highscores';
 import type { ArcadeEntry, EntryDetails, EntryFacts, Inspiration } from '../../entry-types';
 import { type HighscoresStatus, TAG_GROUPS, tagValuesOf } from '../models';
@@ -63,6 +64,8 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
     const inspirationText = createComputed({ watch: entryId, compute: () => describeInspiration(entry()?.inspiredBy) });
     const sourceHref = createComputed({ watch: entryId, compute: (id) => SOURCE_ROOT + (factsFor(id ?? '')?.sourcePath ?? '') });
     const techniques = (): readonly string[] => details()?.techniques ?? [];
+    // How to play shows the controls of the device the page is on
+    const deviceKind = detectDeviceKind();
     // Presentation state: the tab that shows, and the entry it was chosen for, to start afresh for another
     let tab: InfoTab = 'description';
     let tabFor: ArcadeEntry | undefined;
@@ -123,7 +126,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                             role="tabpanel"
                             visible={() => isTabShown('how-to-play')}
                         >
-                            {HowToPlayView({ howToPlay: () => details()?.howToPlay })}
+                            {HowToPlayView({ howToPlay: () => details()?.howToPlay, deviceKind })}
                         </div>
                         <div
                             class={() => pageClass('highscores')}

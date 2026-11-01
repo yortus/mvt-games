@@ -13,8 +13,8 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Eat every crumb in the maze to win.',
         controls: [
-            { action: 'Move', inputs: ['arrows', 'wasd', 'swipe'] },
-            { action: 'Restart', inputs: ['enter'] },
+            { action: 'Move', inputs: ['arrows', 'wasd'], touchInputs: ['swipe'] },
+            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'] },
         ],
         notes: [
             'Press or swipe a way early: you turn at the next corner that opens that way.',

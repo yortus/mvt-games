@@ -6,6 +6,9 @@ import { setRefresh } from '@mvtjs/pixi';
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** Which ways a d-pad goes: all four, and between them, or only left and right. */
+export type DpadKind = 'four-way' | 'left-right';
+
 export interface TouchInputViewBindings {
     /** The canvas's size, in CSS pixels. */
     canvasWidth: () => number;
@@ -17,6 +20,7 @@ export interface TouchInputViewBindings {
     gameHeight: () => number;
     scale: () => number;
     hasDpad: () => boolean;
+    dpadKind: () => DpadKind;
     hasPrimaryButton: () => boolean;
     hasSecondaryButton: () => boolean;
     primaryLabel: () => string;
@@ -60,6 +64,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         showPrimary: bindings.hasPrimaryButton,
         showSecondary: bindings.hasSecondaryButton,
         floatingJoystick: bindings.isJoystickFloating,
+        dpadKind: bindings.dpadKind,
         primaryLabel: bindings.primaryLabel,
         secondaryLabel: bindings.secondaryLabel,
     });
@@ -76,7 +81,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
 
         const structuralChange = w.showDpad.changed
             || w.showPrimary.changed || w.showSecondary.changed
-            || w.floatingJoystick.changed;
+            || w.floatingJoystick.changed || w.dpadKind.changed;
 
         if (structuralChange) {
             rebuild();
@@ -84,9 +89,11 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         else {
             if (w.primaryLabel.changed && primaryText) {
                 primaryText.text = bindings.primaryLabel();
+                fitLabel(primaryText);
             }
             if (w.secondaryLabel.changed && secondaryText) {
                 secondaryText.text = bindings.secondaryLabel();
+                fitLabel(secondaryText);
             }
         }
 
@@ -115,7 +122,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
                 buildFloatingJoystick(dpadGroup);
             }
             else {
-                buildFixedDpad(dpadGroup);
+                buildFixedDpad(dpadGroup, bindings.dpadKind());
             }
         }
 
@@ -304,13 +311,13 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
 
     // ---- Fixed D-pad builder -----------------------------------------------
 
-    function buildFixedDpad(parent: Container): void {
+    function buildFixedDpad(parent: Container, kind: DpadKind): void {
         const dpadBg = new Graphics();
         dpadBg.circle(0, 0, DPAD_CSS_RADIUS).fill({ color: 0xffffff, alpha: 0.08 });
         parent.addChild(dpadBg);
 
         const arrowGfx = new Graphics();
-        drawDpadArrows(arrowGfx, DPAD_CSS_RADIUS);
+        drawDpadArrows(arrowGfx, DPAD_CSS_RADIUS, kind);
         arrowGfx.alpha = ARROW_ALPHA;
         parent.addChild(arrowGfx);
 
@@ -328,7 +335,8 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
             updateDpadDirection(e.getLocalPosition(dpadHit));
         });
 
-        dpadHit.on('pointermove', (e: FederatedPointerEvent) => {
+        // Followed wherever the thumb goes, so one that drifts off the d-pad still steers
+        dpadHit.on('globalpointermove', (e: FederatedPointerEvent) => {
             if (e.pointerId !== dpadTrackingId) return;
             updateDpadDirection(e.getLocalPosition(dpadHit));
         });
@@ -349,6 +357,11 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
 
             if (dist < DPAD_CSS_RADIUS * DEAD_ZONE) {
                 setDirection('none', 'none');
+                return;
+            }
+
+            if (kind === 'left-right') {
+                setDirection(x < 0 ? 'left' : 'right', 'none');
                 return;
             }
 
@@ -381,12 +394,13 @@ function destroyChildren(container: Container): void {
     }
 }
 
-function drawDpadArrows(gfx: Graphics, radius: number): void {
+function drawDpadArrows(gfx: Graphics, radius: number, kind: DpadKind): void {
     const r = radius * 0.65;
     const s = radius * 0.15;
 
     gfx.moveTo(r, 0).lineTo(r - s, -s).lineTo(r - s, s).closePath().fill({ color: 0xffffff, alpha: 1.0 });
     gfx.moveTo(-r, 0).lineTo(-r + s, -s).lineTo(-r + s, s).closePath().fill({ color: 0xffffff, alpha: 1.0 });
+    if (kind === 'left-right') return;
     gfx.moveTo(0, -r).lineTo(-s, -r + s).lineTo(s, -r + s).closePath().fill({ color: 0xffffff, alpha: 1.0 });
     gfx.moveTo(0, r).lineTo(-s, r - s).lineTo(s, r - s).closePath().fill({ color: 0xffffff, alpha: 1.0 });
 }
@@ -419,6 +433,7 @@ function buildActionButton(
     });
     text.anchor.set(0.5, 0.5);
     text.alpha = 0.6;
+    fitLabel(text);
     parent.addChild(text);
 
     hit.on('pointerdown', () => {
@@ -436,4 +451,11 @@ function buildActionButton(
     hit.on('pointercancel', release);
 
     return text;
+}
+
+/** Shrinks a button's label, if it must, to fit inside the button. */
+function fitLabel(text: Text): void {
+    text.scale.set(1);
+    const maxWidth = BTN_CSS_RADIUS * 1.6;
+    if (text.width > maxWidth) text.scale.set(maxWidth / text.width);
 }

@@ -1,4 +1,3 @@
-import { isTouchDevice } from '#shared';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
@@ -40,8 +39,7 @@ export const load = definePixiLoader(async () => {
                     isOver: () => gameModel.phase === 'game-over',
                 },
                 inputConfig: {
-                    // A touch screen steers by swiping, in the view
-                    showDpad: !isTouchDevice(),
+                    // A touch screen steers by swiping, in the view, so no controls are drawn
                     // A direction held stays the snake's way until another is pressed
                     onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
                     onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },

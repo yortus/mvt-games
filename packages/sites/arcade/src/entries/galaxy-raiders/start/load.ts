@@ -49,9 +49,7 @@ export const load = definePixiLoader(async () => {
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
                 inputConfig: {
-                    showDpad: true,
-                    showPrimary: true,
-                    primaryLabel: 'Fire',
+                    // On a touch screen, the game view's drag steers and fires, so no controls are drawn
                     onXDirectionChanged: (dir) => { gameModel.direction = dir; },
                     onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.fire(); },
                     onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },

@@ -1,11 +1,11 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import { type Container, Graphics } from 'pixi.js';
-import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
+import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
-import { TILE_SIZE, SCREEN_WIDTH, PLAY_HEIGHT } from './view-constants';
+import { TILE_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT, PLAY_HEIGHT } from './view-constants';
 import { TerrainView } from './terrain-view';
 import { ShipView } from './ship-view';
 import { BulletView } from './bullet-view';
@@ -45,11 +45,37 @@ export interface GameViewBindings {
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, music, sfx } = bindings;
-    const gameOverText = `GAME OVER\n\n${isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart'}`;
+    const isTouch = isTouchDevice();
+    const gameOverText = `GAME OVER\n\n${isTouch ? 'Tap to restart' : 'Press Enter to restart'}`;
     const playMask = new Graphics().rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
 
     return (
         <container>
+            {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the touch controls' space */}
+            <DragInputView
+                isEnabled={isTouch}
+                x={-SCREEN_WIDTH * 2}
+                y={-SCREEN_HEIGHT}
+                width={SCREEN_WIDTH * 5}
+                height={SCREEN_HEIGHT * 4}
+                fromX={() => toScreenX(model.ship.worldCol)}
+                fromY={() => model.ship.worldRow * TILE_SIZE}
+                minX={model.ship.minScreenCol * TILE_SIZE}
+                maxX={model.ship.maxScreenCol * TILE_SIZE}
+                minY={model.ship.minRow * TILE_SIZE}
+                maxY={model.ship.maxRow * TILE_SIZE}
+                onDragged={(x, y) => {
+                    model.targetScreenCol = x / TILE_SIZE;
+                    model.targetRow = y / TILE_SIZE;
+                }}
+                onLifted={() => {
+                    model.targetScreenCol = undefined;
+                    model.targetRow = undefined;
+                }}
+                // The ship fires ahead while a finger flies it, as fast as its bullets allow
+                heldRepeatMs={AUTO_FIRE_MS}
+                onHeld={model.fire}
+            />
             <GameAudioView
                 music={music}
                 sfx={sfx}
@@ -181,3 +207,10 @@ export function GameView(bindings: GameViewBindings): Container {
         return (worldCol - model.scrollCol) * TILE_SIZE;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How often the ship fires while a finger flies it, in ms. */
+const AUTO_FIRE_MS = 200;

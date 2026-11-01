@@ -12,10 +12,10 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Fly over the land, keep your fuel up, and destroy the base at the end of the run.',
         controls: [
-            { action: 'Move', inputs: ['arrows', 'wasd', 'joystick'] },
-            { action: 'Shoot', inputs: ['space', { button: 'Fire' }], note: 'Ahead' },
-            { action: 'Bomb', inputs: ['shift', { button: 'Bomb' }], note: 'Drops a bomb' },
-            { action: 'Restart', inputs: ['enter'] },
+            { action: 'Move', inputs: ['arrows', 'wasd'], touchInputs: ['drag'] },
+            { action: 'Shoot', inputs: ['space'], touchInputs: ['hold'], note: 'Ahead', touchNote: 'A finger held to fly fires too' },
+            { action: 'Bomb', inputs: ['shift'], touchInputs: [{ button: 'Bomb' }], note: 'Drops a bomb' },
+            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'] },
         ],
         notes: [
             'Your fuel burns as you fly. Bomb the fuel tanks on the ground to fill up: run dry and you crash. Shoot or dodge the rockets and saucers that rise to meet you.',

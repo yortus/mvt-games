@@ -45,10 +45,8 @@ export const load = definePixiLoader(async () => {
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
                 inputConfig: {
-                    showDpad: true,
-                    showPrimary: true,
+                    // On a touch screen, the game view's drag flies and fires, so only Bomb is drawn
                     showSecondary: true,
-                    primaryLabel: 'Fire',
                     secondaryLabel: 'Bomb',
                     onXDirectionChanged: (dir) => { gameModel.thrustX = dir; },
                     onYDirectionChanged: (dir) => { gameModel.thrustY = dir; },

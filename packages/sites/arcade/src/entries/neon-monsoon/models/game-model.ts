@@ -134,6 +134,13 @@ export interface GameModel {
     /** Which way up or down the arena the player is flying the ship, if either. */
     headingY: YDirection;
     /**
+     * Where the player is flying the ship to, if anywhere. While both are
+     * set, the ship flies straight there and stops, rather than the way
+     * `headingX` and `headingY` say.
+     */
+    targetX: number | undefined;
+    targetY: number | undefined;
+    /**
      * Whether the player is focusing: the ship flies slowly, shows its
      * hitbox, and fires the narrow column. With the volley's bar full, it
      * also raises the volley's ring, and locks the volley on.
@@ -325,6 +332,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         gems,
         headingX: 'none',
         headingY: 'none',
+        targetX: undefined,
+        targetY: undefined,
         isFocusing: false,
 
         dropBomb() {
@@ -397,6 +406,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
             // The ship flies as the player says for every step of this update
             ship.setHeading(model.headingX, model.headingY);
+            ship.setTarget(model.targetX, model.targetY);
             ship.setFocusing(model.isFocusing);
 
             // Run whole steps. After a long frame, drop what is left over

@@ -3,7 +3,7 @@
 import type { Container, Graphics } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
-import { isTouchDevice, OverlayView } from '#shared';
+import { DragInputView, isTouchDevice, OverlayView } from '#shared';
 import { CAVE_HEIGHT, SUB_X, VIEW_WIDTH } from '../data';
 import type { GameModel } from '../models';
 
@@ -29,8 +29,9 @@ export function GameView(bindings: GameViewBindings): Container {
     const { model } = bindings;
     const distanceText = createComputed({ watch: () => Math.floor(model.distance), compute: (metres) => `${metres} m` });
     const bestText = createComputed({ watch: () => Math.floor(model.best), compute: (metres) => `BEST ${metres} m` });
-    const hint = isTouchDevice() ? 'Hold Rise to go up' : 'Hold Space to rise';
-    const crashText = `CRASHED\n\n${isTouchDevice() ? 'Tap' : 'Press Enter'} to dive again`;
+    const isTouch = isTouchDevice();
+    const hint = isTouch ? 'Hold anywhere to rise' : 'Hold Space to rise';
+    const crashText = `CRASHED\n\n${isTouch ? 'Tap' : 'Press Enter'} to dive again`;
 
     // Presentation state: bubbles let out from the propeller, in cave units, so
     // they stay where they were let out as the cave scrolls by. The rock hides
@@ -41,6 +42,16 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container onUpdate={updateBubbles}>
+            {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
+            <DragInputView
+                isEnabled={isTouch}
+                x={-SCREEN_WIDTH * 2}
+                y={-SCREEN_HEIGHT}
+                width={SCREEN_WIDTH * 5}
+                height={SCREEN_HEIGHT * 4}
+                onTouched={() => { model.isBlowingTanks = true; }}
+                onLifted={() => { model.isBlowingTanks = false; }}
+            />
             <graphics ref={drawWater} />
             <List items={bubbles}>
                 {(bubble) => (

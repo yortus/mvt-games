@@ -12,9 +12,9 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Clear every creature from the field to finish the level.',
         controls: [
-            { action: 'Move', inputs: ['arrows', 'wasd', 'joystick'], note: 'You dig as you go' },
-            { action: 'Pump', inputs: ['space', { button: 'Pump' }], note: 'Shoots your pump the way you face' },
-            { action: 'Restart', inputs: ['enter'] },
+            { action: 'Move', inputs: ['arrows', 'wasd'], touchInputs: ['swipe'], note: 'You dig as you go', touchNote: 'A swipe digs that way until you let go' },
+            { action: 'Pump', inputs: ['space'], touchInputs: [{ button: 'Pump' }], note: 'Shoots your pump the way you face' },
+            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'] },
         ],
         notes: [
             'Hit a creature with your pump, then press again and again to blow it up until it pops. Deeper earth scores more; a salamander pumped from the side scores double.',

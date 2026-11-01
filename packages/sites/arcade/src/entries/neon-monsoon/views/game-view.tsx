@@ -3,7 +3,7 @@
 import { type Container, Graphics } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
-import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
+import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { ARENA_WIDTH, textures } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { BombFlashView } from './bomb-flash-view';
@@ -68,6 +68,29 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container>
+            {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the touch controls' space */}
+            <DragInputView
+                isEnabled={isTouchDevice()}
+                x={-SCREEN_WIDTH * 2}
+                y={-SCREEN_HEIGHT}
+                width={SCREEN_WIDTH * 5}
+                height={SCREEN_HEIGHT * 4}
+                fromX={() => ship.x}
+                fromY={() => ship.y}
+                minX={ship.minX}
+                maxX={ship.maxX}
+                minY={ship.minY}
+                maxY={ship.maxY}
+                gain={DRAG_GAIN}
+                onDragged={(x, y) => {
+                    model.targetX = x;
+                    model.targetY = y;
+                }}
+                onLifted={() => {
+                    model.targetX = undefined;
+                    model.targetY = undefined;
+                }}
+            />
             <GameAudioView
                 music={music}
                 sfx={sfx}
@@ -301,6 +324,9 @@ export function GameView(bindings: GameViewBindings): Container {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** How many times as far as the finger slides a drag flies the ship, so the finger needn't cross the whole arena. */
+const DRAG_GAIN = 1.5;
 
 const RESTART_PROMPT = isTouchDevice() ? 'Tap to play again' : 'Press Enter to play again';
 

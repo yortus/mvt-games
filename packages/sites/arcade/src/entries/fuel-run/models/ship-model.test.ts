@@ -104,6 +104,35 @@ describe('ShipModel', () => {
         });
     });
 
+    describe('update - target', () => {
+        it('flies to its target on the screen at its own speed, and holds it as the screen scrolls', () => {
+            const speed = 6;
+            const scrollSpeed = 3;
+            const s = makeShip({ startWorldCol: 5, startWorldRow: 7, speed, scrollSpeed });
+            const targetScreenCol = 5 + speed * 1.5;
+            const targetRow = 7 - speed * 0.5;
+            s.setTarget(targetScreenCol, targetRow);
+            s.update(1000, scrollSpeed);
+            expect(s.worldCol - scrollSpeed).toBeCloseTo(5 + speed);
+            expect(s.worldRow).toBeCloseTo(targetRow);
+            s.update(1000, scrollSpeed * 2);
+            expect(s.worldCol - scrollSpeed * 2).toBeCloseTo(targetScreenCol);
+            s.update(1000, scrollSpeed * 3);
+            expect(s.worldCol - scrollSpeed * 3).toBeCloseTo(targetScreenCol);
+            expect(s.worldRow).toBeCloseTo(targetRow);
+        });
+
+        it('flies to its target rather than the ways it is pushed', () => {
+            const s = makeShip({ startWorldCol: 5, startWorldRow: 7, scrollSpeed: 0 });
+            s.setXDirection('right');
+            s.setYDirection('down');
+            s.setTarget(5, 7);
+            s.update(1000, 0);
+            expect(s.worldCol).toBeCloseTo(5);
+            expect(s.worldRow).toBeCloseTo(7);
+        });
+    });
+
     describe('kill / respawn', () => {
         it('kill sets alive to false', () => {
             const s = makeShip();

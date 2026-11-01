@@ -644,6 +644,8 @@ button { font: inherit; color: inherit; }
 .how-controls tbody tr { border-top: 1px solid #30363d; }
 .how-controls tbody th, .how-controls tbody td { padding: 8px; text-align: left; vertical-align: middle; }
 .how-controls tbody th { width: 34%; font-weight: 600; color: #e6edf3; }
+/* With one column of inputs beside it, the action and its notes take more of the width */
+.how-controls-single tbody th { width: 44%; }
 .how-action-note { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; line-height: 1.4; color: var(--site-text-muted, #8b949e); }
 .how-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .how-or, .how-plus { font-size: 12px; color: var(--site-text-muted, #8b949e); }
@@ -679,6 +681,7 @@ button { font: inherit; color: inherit; }
 .how-gesture-swipe::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1.5 8h2.5M6 8h8.5M11.5 5l3 3-3 3'/%3E%3C/svg%3E"); }
 .how-gesture-tap::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='2.2' fill='%23000' stroke='none'/%3E%3Ccircle cx='8' cy='8' r='5.8'/%3E%3C/svg%3E"); }
 .how-gesture-double-tap::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='1.8' fill='%23000' stroke='none'/%3E%3Ccircle cx='8' cy='8' r='4.3'/%3E%3Ccircle cx='8' cy='8' r='7'/%3E%3C/svg%3E"); }
+.how-gesture-hold::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='8' cy='8' r='3' fill='%23000' stroke='none'/%3E%3Cpath d='M8 1.5A6.5 6.5 0 1 1 1.5 8'/%3E%3C/svg%3E"); }
 .how-gesture-drag::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 1.5v13M1.5 8h13M6 3.5l2-2 2 2M6 12.5l2 2 2-2M3.5 6l-2 2 2 2M12.5 6l2 2-2 2'/%3E%3C/svg%3E"); }
 .how-gesture-pinch::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 2l4.5 4.5M2 2v3.5M2 2h3.5M14 14l-4.5-4.5M14 14v-3.5M14 14h-3.5'/%3E%3C/svg%3E"); }
 .how-gesture-click::before { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='1.5' width='9' height='13' rx='4.5'/%3E%3Cpath d='M8 1.5v5M3.5 6.5h9'/%3E%3C/svg%3E"); }

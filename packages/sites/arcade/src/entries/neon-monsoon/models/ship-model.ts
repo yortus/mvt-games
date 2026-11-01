@@ -10,6 +10,7 @@ import {
     SHIP_HIT_RADIUS,
     SHIP_SPEED,
     SHIP_START_Y,
+    SHIP_TARGET_SPEED_SCALE,
     SHOT_INTERVAL_MS,
     SHOT_SPEED,
     SHOT_SPREAD_DEG,
@@ -29,6 +30,11 @@ export interface ShipModel {
     readonly y: number;
     /** The hitbox's radius: far smaller than the sprite. */
     readonly hitRadius: number;
+    /** How far the ship can fly across and up or down the arena. */
+    readonly minX: number;
+    readonly maxX: number;
+    readonly minY: number;
+    readonly maxY: number;
     readonly isAlive: boolean;
     /** Flying slowly, with the hitbox shown and the narrow column firing: alive, with the player focusing. */
     readonly isFocused: boolean;
@@ -41,6 +47,12 @@ export interface ShipModel {
      * on both holds it still. A diagonal is no faster than a straight line.
      */
     setHeading: (x: XDirection, y: YDirection) => void;
+    /**
+     * Sets where the ship flies to, in a straight line, rather than the way
+     * it is headed, or undefined for none. It flies there faster than it
+     * flies the way it is headed, by `SHIP_TARGET_SPEED_SCALE`, and stops.
+     */
+    setTarget: (x: number | undefined, y: number | undefined) => void;
     /** Sets whether the player is focusing, which makes the ship `isFocused` while it is alive. */
     setFocusing: (isFocusing: boolean) => void;
     /** Raise the power by one; false if it was already at most. */
@@ -79,6 +91,8 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
     let untilShotMs = 0;
     let headingX: XDirection = 'none';
     let headingY: YDirection = 'none';
+    let targetX: number | undefined;
+    let targetY: number | undefined;
     let isFocusing = false;
 
     const model: ShipModel = {
@@ -89,6 +103,10 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             return y;
         },
         hitRadius: SHIP_HIT_RADIUS,
+        minX: MIN_X,
+        maxX: MAX_X,
+        minY: MIN_Y,
+        maxY: MAX_Y,
         get isAlive() {
             return isAlive;
         },
@@ -108,6 +126,11 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
         setHeading(x, y) {
             headingX = x;
             headingY = y;
+        },
+
+        setTarget(toX, toY) {
+            targetX = toX;
+            targetY = toY;
         },
 
         setFocusing(focusing) {
@@ -154,15 +177,31 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
     return model;
 
     function move(deltaMs: number): void {
+        const speed = model.isFocused ? SHIP_FOCUSED_SPEED : SHIP_SPEED;
+        const step = speed * deltaMs * 0.001;
+        if (targetX !== undefined && targetY !== undefined) {
+            moveToTarget(targetX, targetY, step * SHIP_TARGET_SPEED_SCALE);
+            return;
+        }
+
         const dx = headingX === 'left' ? -1 : headingX === 'right' ? 1 : 0;
         const dy = headingY === 'up' ? -1 : headingY === 'down' ? 1 : 0;
         if (dx === 0 && dy === 0) return;
 
         // Diagonals are no faster than straight lines.
-        const speed = model.isFocused ? SHIP_FOCUSED_SPEED : SHIP_SPEED;
-        const scale = (dx !== 0 && dy !== 0 ? Math.SQRT1_2 : 1) * speed * deltaMs * 0.001;
-        x = clamp(x + dx * scale, SHIP_EDGE_MARGIN, ARENA_WIDTH - SHIP_EDGE_MARGIN);
-        y = clamp(y + dy * scale, SHIP_EDGE_MARGIN, ARENA_HEIGHT - SHIP_EDGE_MARGIN);
+        const scale = (dx !== 0 && dy !== 0 ? Math.SQRT1_2 : 1) * step;
+        x = clamp(x + dx * scale, MIN_X, MAX_X);
+        y = clamp(y + dy * scale, MIN_Y, MAX_Y);
+    }
+
+    /** Flies straight toward (`toX`, `toY`), as far as `step` goes, stopping there. */
+    function moveToTarget(toX: number, toY: number, step: number): void {
+        const dx = clamp(toX, MIN_X, MAX_X) - x;
+        const dy = clamp(toY, MIN_Y, MAX_Y) - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const share = distance <= step ? 1 : step / distance;
+        x += dx * share;
+        y += dy * share;
     }
 
     function fireWhenDue(deltaMs: number): void {
@@ -199,6 +238,10 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
 // ---------------------------------------------------------------------------
 
 const START_X = ARENA_WIDTH / 2;
+const MIN_X = SHIP_EDGE_MARGIN;
+const MAX_X = ARENA_WIDTH - SHIP_EDGE_MARGIN;
+const MIN_Y = SHIP_EDGE_MARGIN;
+const MAX_Y = ARENA_HEIGHT - SHIP_EDGE_MARGIN;
 const DEG_TO_RAD = Math.PI / 180;
 const UP = -Math.PI / 2;
 /** Shots leave from the ship's nose, ahead of its centre. */

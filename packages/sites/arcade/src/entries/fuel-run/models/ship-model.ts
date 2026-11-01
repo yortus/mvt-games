@@ -11,8 +11,19 @@ export interface ShipModel {
     readonly worldRow: number;
     /** Whether the ship is alive. */
     readonly isAlive: boolean;
+    /** How far the ship can go along the screen, in columns from its left edge, and up and down it, in rows. */
+    readonly minScreenCol: number;
+    readonly maxScreenCol: number;
+    readonly minRow: number;
+    readonly maxRow: number;
     setXDirection: (dir: XDirection) => void;
     setYDirection: (dir: YDirection) => void;
+    /**
+     * Sets where the ship flies to, at its own speed, instead of the ways it
+     * is pushed: a column from the screen's left edge, and a row. Undefined
+     * for none.
+     */
+    setTarget: (screenCol: number | undefined, row: number | undefined) => void;
     kill: () => void;
     respawn: (worldCol: number, worldRow: number) => void;
     /**
@@ -54,6 +65,8 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
     let worldRow = options.startWorldRow;
     let xDir: XDirection = 'none';
     let yDir: YDirection = 'none';
+    let targetScreenCol: number | undefined;
+    let targetRow: number | undefined;
     let alive = true;
 
     const model: ShipModel = {
@@ -66,6 +79,10 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
         get isAlive() {
             return alive;
         },
+        minScreenCol,
+        maxScreenCol,
+        minRow,
+        maxRow,
 
         setXDirection(dir: XDirection): void {
             xDir = dir;
@@ -73,6 +90,11 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
 
         setYDirection(dir: YDirection): void {
             yDir = dir;
+        },
+
+        setTarget(screenCol: number | undefined, row: number | undefined): void {
+            targetScreenCol = screenCol;
+            targetRow = row;
         },
 
         kill(): void {
@@ -84,6 +106,8 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             worldRow = row;
             xDir = 'none';
             yDir = 'none';
+            targetScreenCol = undefined;
+            targetRow = undefined;
             alive = true;
         },
 
@@ -95,13 +119,16 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             // Advance with forced scroll
             worldCol += scrollSpeed * dt;
 
-            // Player horizontal input
-            if (xDir === 'left') worldCol -= speed * dt;
-            else if (xDir === 'right') worldCol += speed * dt;
+            // Player horizontal input: toward the target, or the way pushed
+            const step = speed * dt;
+            if (targetScreenCol !== undefined) worldCol += clampStep(targetScreenCol - (worldCol - scrollCol), step);
+            else if (xDir === 'left') worldCol -= step;
+            else if (xDir === 'right') worldCol += step;
 
             // Player vertical input
-            if (yDir === 'up') worldRow -= speed * dt;
-            else if (yDir === 'down') worldRow += speed * dt;
+            if (targetRow !== undefined) worldRow += clampStep(targetRow - worldRow, step);
+            else if (yDir === 'up') worldRow -= step;
+            else if (yDir === 'down') worldRow += step;
 
             // Clamp screen-relative column
             const screenCol = worldCol - scrollCol;
@@ -115,4 +142,13 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
     };
 
     return model;
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** As much of `distance` as one step of at most `step` covers, either way. */
+function clampStep(distance: number, step: number): number {
+    return Math.max(-step, Math.min(step, distance));
 }

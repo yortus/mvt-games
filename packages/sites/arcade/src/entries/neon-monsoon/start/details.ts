@@ -13,9 +13,9 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Thread your tiny hitbox through the storm of bullets.',
         controls: [
-            { action: 'Move', inputs: ['arrows', 'wasd', 'joystick'], note: 'Your ship fires on its own' },
-            { action: 'Focus', inputs: ['shift', { button: 'Focus' }], note: 'Hold to fly slowly, show your hitbox and fire a narrow, strong shot. With the volley charged, it also locks on' },
-            { action: 'Bomb', inputs: ['space', { button: 'Bomb' }], note: 'Clears the screen and turns bullets into gems' },
+            { action: 'Move', inputs: ['arrows', 'wasd'], touchInputs: ['drag'], note: 'Your ship fires on its own' },
+            { action: 'Focus', inputs: ['shift'], touchInputs: [{ button: 'Focus' }], note: 'Hold to fly slowly, show your hitbox and fire a narrow, strong shot. With the volley charged, it also locks on' },
+            { action: 'Bomb', inputs: ['space'], touchInputs: [{ button: 'Bomb' }], note: 'Clears the screen and turns bullets into gems' },
         ],
         notes: [
             'Kill quickly to build a chain.',

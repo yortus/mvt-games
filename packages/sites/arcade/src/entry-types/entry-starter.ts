@@ -1,7 +1,7 @@
 import type { Container } from 'pixi.js';
 import type { MetricKind, View } from '@mvtjs/pixi';
 import type { Audio80, Audio90 } from 'audio90';
-import type { MusicChip, SfxChip } from '#shared';
+import type { DpadKind, MusicChip, SfxChip } from '#shared';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -282,7 +282,13 @@ export interface ElementEntrySession extends EntrySession {
 
 /** The controls an entry takes, and where the host reports them. */
 export interface EntryInputConfig {
+    /**
+     * Whether a touch screen shows a d-pad. Off by default: a game that
+     * steers by swiping or dragging over its own view shows none.
+     */
     readonly showDpad?: boolean;
+    /** Which ways the d-pad goes: all four, or, for a game that only needs them, left and right. Four by default. */
+    readonly dpadKind?: DpadKind;
     readonly showPrimary?: boolean;
     readonly showSecondary?: boolean;
     readonly primaryLabel?: string;

@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
+import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
@@ -40,11 +40,24 @@ export function GameView(bindings: GameViewBindings): Container {
     const { model, music, sfx } = bindings;
     const canvasW = FIELD_COLS * TILE_SIZE;
     const canvasH = FIELD_ROWS * TILE_SIZE;
-    const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
+    const isTouch = isTouchDevice();
+    const restartHint = isTouch ? 'Tap to restart' : 'Press Enter to restart';
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
+            {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
+            <SwipeInputView
+                isEnabled={isTouch}
+                x={-canvasW * 2}
+                y={-canvasH}
+                width={canvasW * 5}
+                height={canvasH * 4}
+                swipeDistance={SWIPE_DISTANCE}
+                // A swipe digs that way for as long as the finger stays down, and letting go stops
+                onSwiped={(direction) => { model.direction = direction; }}
+                onLifted={() => { model.direction = 'none'; }}
+            />
             <GameAudioView
                 music={music}
                 sfx={sfx}
@@ -136,3 +149,10 @@ export function GameView(bindings: GameViewBindings): Container {
         return false;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How far a finger must slide to swipe, in the game's pixels: most of a tile. */
+const SWIPE_DISTANCE = 14;

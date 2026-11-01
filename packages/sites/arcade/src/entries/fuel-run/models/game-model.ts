@@ -83,6 +83,14 @@ export interface GameModel {
     thrustX: XDirection;
     /** The way the player is pushing the ship up or down the screen: 'up' climbs and 'down' dives, within the screen. */
     thrustY: YDirection;
+    /**
+     * Where the player is flying the ship to, if anywhere: a column from the
+     * screen's left edge, and a row. While they are set, the ship flies there
+     * at its own speed and holds it, rather than going the ways `thrustX` and
+     * `thrustY` push it.
+     */
+    targetScreenCol: number | undefined;
+    targetRow: number | undefined;
     readonly isBaseAlive: boolean;
     readonly baseWorldCol: number;
     readonly baseWorldRow: number;
@@ -267,6 +275,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
         thrustX: 'none',
         thrustY: 'none',
+        targetScreenCol: undefined,
+        targetRow: undefined,
         get isBaseAlive() {
             return isBaseLive();
         },
@@ -409,6 +419,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             // Apply the player's intent
             ship.setXDirection(model.thrustX);
             ship.setYDirection(model.thrustY);
+            ship.setTarget(model.targetScreenCol, model.targetRow);
             if (wasFireAsked) tryFireBullet();
             if (wasBombAsked) tryDropBomb();
 

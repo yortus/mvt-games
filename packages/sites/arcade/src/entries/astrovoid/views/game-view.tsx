@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container, Graphics } from 'pixi.js';
+import { createMetronome } from '@mvtjs/utils';
 import { isTouchDevice, OverlayView, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
@@ -34,11 +35,16 @@ export interface GameViewBindings {
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, sfx } = bindings;
-    const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
+    const isTouch = isTouchDevice();
+    const restartHint = isTouch ? 'Tap to restart' : 'Press Enter to restart';
+    // On a touch screen, the ship fires on its own, so the thumbs are free to fly it
+    const fireBeat = createMetronome();
+    fireBeat.periodMs = isTouch ? AUTO_FIRE_MS : 0;
+    let shotsAsked = 0;
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
-        <container>
+        <container onUpdate={fireOnEachBeat}>
             <GameAudioView
                 sfx={sfx}
                 phase={() => model.phase}
@@ -94,11 +100,22 @@ export function GameView(bindings: GameViewBindings): Container {
             />
         </container>
     );
+
+    /** Asks for a shot on each beat. A shot asked for while the game isn't playing is dropped. */
+    function fireOnEachBeat(deltaMs: number): void {
+        fireBeat.update(deltaMs);
+        if (fireBeat.count === shotsAsked) return;
+        shotsAsked = fireBeat.count;
+        model.fire();
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** How often the ship fires on its own on a touch screen, in ms. */
+const AUTO_FIRE_MS = 200;
 
 function drawStars(gfx: Graphics, width: number, height: number): void {
     // Deterministic pseudo-random via simple LCG seeded at 99

@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container, Graphics } from 'pixi.js';
-import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
+import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '#shared';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
@@ -9,6 +9,7 @@ import { ShipView } from './ship-view';
 import { EnemyView } from './enemy-view';
 import { BulletView } from './bullet-view';
 import { HudView } from './hud-view';
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';
 import { EnemyAudioView } from './enemy-audio-view';
 import { GameAudioView } from './game-audio-view';
 
@@ -37,11 +38,31 @@ export interface GameViewBindings {
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, music, sfx } = bindings;
-    const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
+    const isTouch = isTouchDevice();
+    const restartHint = isTouch ? 'Tap to restart' : 'Press Enter to restart';
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
+            {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
+            <DragInputView
+                isEnabled={isTouch}
+                x={-SCREEN_WIDTH * 2}
+                y={-SCREEN_HEIGHT}
+                width={SCREEN_WIDTH * 5}
+                height={SCREEN_HEIGHT * 4}
+                fromX={() => model.ship.x}
+                fromY={() => model.ship.y}
+                minX={model.ship.minX}
+                maxX={model.ship.maxX}
+                minY={model.ship.y}
+                maxY={model.ship.y}
+                onDragged={(x) => { model.targetX = x; }}
+                onLifted={() => { model.targetX = undefined; }}
+                // The ship fires while a finger steers it, as fast as its two bullets allow
+                heldRepeatMs={AUTO_FIRE_MS}
+                onHeld={model.fire}
+            />
             <GameAudioView
                 music={music}
                 sfx={sfx}
@@ -114,6 +135,8 @@ export function GameView(bindings: GameViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
+/** How often the ship fires while a finger steers it, in ms. */
+const AUTO_FIRE_MS = 250;
 const PLAYER_BULLET_COLOR = 0xffffff;
 const ENEMY_BULLET_COLOR = 0xff4444;
 

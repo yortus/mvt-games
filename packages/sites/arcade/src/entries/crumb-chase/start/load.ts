@@ -1,4 +1,3 @@
-import { isTouchDevice } from '#shared';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
@@ -55,7 +54,6 @@ export const load = definePixiLoader(async () => {
                 loadGame: gameModel.load,
                 inputConfig: {
                     // On a touch screen, the game view's swipes steer, so no controls are drawn
-                    showDpad: !isTouchDevice(),
                     onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
                     onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
                     onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },

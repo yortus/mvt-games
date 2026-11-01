@@ -377,6 +377,35 @@ onRestartButtonChanged: (isDown) => {
 So the model never knows there is a button, and never watches for the
 moment one is pressed. The host reports a button only when it goes down or
 up, never again as a key repeats.
+
+On a touch screen, choose the controls that suit how your game steers. Each
+one is a shared view from `#shared`, so the same gesture feels the same in
+every game:
+
+- **Swipe** (`SwipeInputView`), for a game on a grid, where the player keeps
+  going the way they were sent, as in Crumb Chase, Fenceline and Garden
+  Snake. A tap can do one more thing, such as stopping. Or the player can
+  keep going only while the finger stays down, with `onLifted`, as in Burrow
+  Bust.
+- **Drag** (`DragInputView`), for a ship that follows the finger, as in
+  Galaxy Raiders, Fuel Run and Neon Monsoon. The ship moves as the finger
+  moves, from wherever it was, so the finger never covers it. Give the model
+  where the player is flying the ship to (`targetX`), and let it fly there
+  at its own speed, so a finger is no faster than the keys. A `gain` moves
+  the ship further than the finger slides, and a ship may then need to fly
+  a little faster to keep up, as Neon Monsoon's does. A drag can fire while
+  the finger is down, and a game that only needs a finger held can listen
+  for that alone, as Deep Dive does.
+- **D-pad** (`showDpad: true`), drawn by the host beside the game, for a game
+  that needs a direction held, and given the moment the thumb lands, as in
+  Dojo Duel. With `dpadKind: 'left-right'`, it goes only left and right, as
+  in Astrovoid. A d-pad gets in the way beside a swipe or a drag, since a
+  thumb on the d-pad can start one too, so a game takes one or the other.
+
+Swipes and drags listen over the game's own view, so an entry that uses them
+shows no d-pad, which is the default. The host's buttons still work beside
+them, for a game that needs one, such as Astrovoid's Thrust.
+
 The starter's other options say how the host should show the entry:
 `pixelArt` (nearest-neighbour textures, no antialiasing), `integerScale`
 (scale by whole numbers only, for crisp pixels), `fitTo` (for an entry that
@@ -499,8 +528,8 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Break every brick to clear the wall.',
         controls: [
-            { action: 'Move', inputs: ['left-right', 'a-d', 'joystick'] },
-            { action: 'Serve', inputs: ['space', { button: 'Serve' }] },
+            { action: 'Move', inputs: ['left-right', 'a-d'], touchInputs: ['joystick'] },
+            { action: 'Serve', inputs: ['space'], touchInputs: [{ button: 'Serve' }] },
         ],
     },
 };
@@ -528,11 +557,18 @@ export const details: EntryDetails = {
   the info panel shows on its How to Play tab, and which the runner's (i)
   opens over the game as it plays. It has an `intro` (what to aim for), the
   `controls`, and any `notes`. Each control is an action and the inputs
-  that do it: keys (`'arrows'`, `'space'`, or keys pressed together, such as
-  `['space', 'up']`), gestures (`'joystick'`, `'swipe'`, `'drag'`) and the
-  game's on-screen buttons (`{ button: 'Fire' }`). The panel draws them as a
-  table, with a column for the keyboard and one for touch, so give them as
-  data rather than in the text. The kinds are listed in
+  that do it. Its `inputs` work on any device that has them: keys
+  (`'arrows'`, `'space'`, or keys pressed together, such as
+  `['space', 'up']`), and gestures and buttons that work with a mouse or a
+  finger, such as a drag in a puzzle. Its `touchInputs` work on a touch
+  screen only: the touch controls the host draws (`'joystick'`,
+  `{ button: 'Fire' }`), and the gestures your game takes only there, such
+  as a swipe over its view. A `touchNote` says more, on a touch screen only.
+  The panel draws them as a table, with a column for the keyboard and one
+  for the mouse or touch, and shows only what the device has: the keyboard
+  and the mouse on a desktop, and touch on a phone or a tablet. So give
+  them as data rather than in the text, and keep the `notes` true on every
+  device. The kinds are listed in
   [`arcade-entry.ts`](../entry-types/arcade-entry.ts). If it's a demo, give
   it **`techniques`**, the patterns it shows off, and a `howToPlay` if it
   takes input.

@@ -14,8 +14,8 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Go as far as you can without touching the rock.',
         controls: [
-            { action: 'Rise', inputs: ['space', 'up', { button: 'Rise' }], note: 'Hold to rise, let go to sink' },
-            { action: 'Restart', inputs: ['enter'], note: 'After a crash' },
+            { action: 'Rise', inputs: ['space', 'up'], touchInputs: ['hold'], note: 'Hold to rise, let go to sink' },
+            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'], note: 'After a crash' },
         ],
     },
 };

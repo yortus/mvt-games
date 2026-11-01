@@ -39,9 +39,8 @@ export const load = definePixiLoader(async () => {
                     isOver: () => gameModel.phase === 'crashed',
                 },
                 inputConfig: {
-                    showPrimary: true,
-                    primaryLabel: 'Rise',
-                    // Rise, or up, blows the tanks for as long as it is held
+                    // On a touch screen, a finger held anywhere on the game view rises, so no controls are drawn.
+                    // Space, or up, blows the tanks for as long as it is held
                     onPrimaryButtonChanged: (isDown) => { gameModel.isBlowingTanks = isDown; },
                     onYDirectionChanged: (dir) => { gameModel.isBlowingTanks = dir === 'up'; },
                     onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },

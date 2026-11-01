@@ -14,9 +14,9 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Fence off the round\'s share of the meadow to clear it.',
         controls: [
-            { action: 'Move', inputs: ['arrows', 'wasd', 'swipe'] },
-            { action: 'Stop', inputs: ['tap'] },
-            { action: 'Restart', inputs: ['enter'] },
+            { action: 'Move', inputs: ['arrows', 'wasd'], touchInputs: ['swipe'] },
+            { action: 'Stop', touchInputs: ['tap'] },
+            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'] },
         ],
         notes: [
             'Walk the fences. Push off one into the meadow to string wire, and reach another fence to tie it off.',

@@ -42,6 +42,12 @@ export interface GameModel {
     readonly enemiesLeft: number;
     /** The way the player is moving the ship, or 'none' to keep it still. It moves while the game is playing. */
     direction: Direction;
+    /**
+     * Where the player is moving the ship to, in world units, if anywhere.
+     * While it is set, the ship flies there at its own speed and stops,
+     * rather than moving the way `direction` says.
+     */
+    targetX: number | undefined;
     /** Fires a shot. It leaves at the next update, if the game is playing and a bullet is free. */
     fire: () => void;
     /** Asks for a new game. It starts at the next update, if the last game is over. */
@@ -154,6 +160,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             return aliveEnemyCount();
         },
         direction: 'none',
+        targetX: undefined,
 
         fire(): void {
             isFireRequested = true;
@@ -206,6 +213,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             // Apply the player's intent. A shot asked for while the game isn't playing is dropped
             if (gamePhase === 'playing') {
                 ship.setDirection(model.direction);
+                ship.setTargetX(model.targetX);
                 if (isFireRequested) tryPlayerFire();
             }
             isFireRequested = false;

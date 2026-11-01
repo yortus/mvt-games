@@ -42,12 +42,15 @@ export const load = definePixiLoader(async () => {
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
                 inputConfig: {
+                    // On a touch screen, a left-right pad turns, a button thrusts, and the game view fires
                     showDpad: true,
-                    showPrimary: true,
-                    primaryLabel: 'Fire',
+                    dpadKind: 'left-right',
+                    showSecondary: true,
+                    secondaryLabel: 'Thrust',
                     onXDirectionChanged: (dir) => { gameModel.turning = dir; },
                     onYDirectionChanged: (dir) => { gameModel.isThrusting = dir === 'up'; },
                     onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.fire(); },
+                    onSecondaryButtonChanged: (isDown) => { gameModel.isThrusting = isDown; },
                     onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };

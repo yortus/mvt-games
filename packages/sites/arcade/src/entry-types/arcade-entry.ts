@@ -78,8 +78,11 @@ export interface EntryDetails {
 /**
  * How to play an entry: what to do, the controls, and anything else worth
  * knowing. The info panel shows the controls as a table, an action to a row,
- * with a column for the keyboard and one for touch, so they are data rather
- * than text. Give at least one of the three.
+ * with a column for the keyboard and one for the mouse or touch, so they are
+ * data rather than text. It shows only the controls of the device it is on:
+ * the keyboard and the mouse on a desktop, touch on a phone or a tablet, and
+ * all of them on a laptop with a touch screen. Give at least one of the
+ * three.
  */
 export interface HowToPlay {
     /** What to aim for, or what to do, in a sentence or two. */
@@ -90,22 +93,40 @@ export interface HowToPlay {
     readonly notes?: readonly string[];
 }
 
-/** One thing the player does, and the inputs that do it: any one of them. */
+/**
+ * One thing the player does, and the inputs that do it: any one of them. A
+ * row shows only where the device has some way to do it, or a note about it.
+ */
 export interface ControlRow {
     /** What it does, in a word or two: `'Move'`, `'Shoot'`. */
     readonly action: string;
-    /** The inputs that do it. The keys show in the keyboard's column, and the rest in the touch one. */
-    readonly inputs: readonly ControlInput[];
+    /**
+     * The inputs that do it on any device that has them: keys, which show in
+     * the keyboard's column, and gestures and buttons that work with a mouse
+     * or a finger, as an entry's own buttons and pointer gestures do. Of
+     * these, a click and the wheel show only where there is a mouse.
+     */
+    readonly inputs?: readonly ControlInput[];
+    /**
+     * The inputs that do it on a touch screen only: the touch controls the
+     * host draws, such as its joystick and buttons, and the gestures a game
+     * takes only on a touch screen, such as a swipe over its view.
+     */
+    readonly touchInputs?: readonly ControlInput[];
     /** More about it, shown under the action: `'Hold to rise, let go to sink'`. */
     readonly note?: string;
+    /** More about it on a touch screen, shown under the action there only. */
+    readonly touchNote?: string;
 }
 
 /**
  * An input: a key, or a pair of keys for two ways (`'left-right'`), or keys
- * pressed together (`['space', 'up']`). Or, for touch and the mouse, a
- * gesture, or one of the on-screen buttons a game shows (`{ button: 'Fire' }`).
+ * pressed together (`['space', 'up']`), a button among them on a touch screen
+ * (`[{ button: 'Atk' }, 'up']`, with the joystick's way as a key). Or, for
+ * touch and the mouse, a gesture, or a button on the screen
+ * (`{ button: 'Fire' }`).
  */
-export type ControlInput = ControlKey | readonly ControlKey[] | ControlGesture | ControlButton;
+export type ControlInput = ControlKey | readonly (ControlKey | ControlButton)[] | ControlGesture | ControlButton;
 
 /**
  * A key, or a set the player uses as one: all four arrows, or WASD. Forward
@@ -116,10 +137,13 @@ export type ControlKey =
     | 'up' | 'down' | 'left' | 'right' | 'forward' | 'back' | 'w'
     | 'space' | 'shift' | 'enter';
 
-/** A gesture, on a touch screen or with a mouse. The joystick is the one a game draws on a touch screen. */
-export type ControlGesture = 'joystick' | 'swipe' | 'tap' | 'double-tap' | 'drag' | 'pinch' | 'click' | 'wheel';
+/**
+ * A gesture, on a touch screen or with a mouse. The joystick is the one a game
+ * draws on a touch screen. A hold is a finger kept down, anywhere.
+ */
+export type ControlGesture = 'joystick' | 'swipe' | 'tap' | 'double-tap' | 'hold' | 'drag' | 'pinch' | 'click' | 'wheel';
 
-/** One of the buttons a game draws on a touch screen, by its label. */
+/** A button on the screen, by its label: one an entry draws, or one of the touch controls the host draws beside it. */
 export interface ControlButton {
     readonly button: string;
 }

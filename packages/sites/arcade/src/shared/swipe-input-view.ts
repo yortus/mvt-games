@@ -21,6 +21,8 @@ export interface SwipeInputViewBindings {
     onSwiped?: (direction: SwipeDirection) => void;
     /** The player tapped, touching and letting go without sliding. */
     onTapped?: () => void;
+    /** The player let go, after a swipe or a tap, for a game that steers only while a finger stays down. */
+    onLifted?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,7 +37,7 @@ export interface SwipeInputViewBindings {
  * nothing, and relays what it sees as it happens.
  */
 export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
-    const { isEnabled, swipeDistance, onSwiped, onTapped } = bindings;
+    const { isEnabled, swipeDistance, onSwiped, onTapped, onLifted } = bindings;
     const view = new Container();
     view.label = 'swipe-input';
     if (!isEnabled) return view;
@@ -77,12 +79,14 @@ export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
     const release = (e: FederatedPointerEvent): void => {
         if (e.pointerId !== pointerId) return;
         pointerId = undefined;
-        if (swiped !== undefined) return;
-        // A quick flick may slide its whole way between two moves
-        const { x, y } = e.getLocalPosition(view);
-        const way = findWay(x - startX, y - startY);
-        if (way !== undefined) onSwiped?.(way);
-        else onTapped?.();
+        if (swiped === undefined) {
+            // A quick flick may slide its whole way between two moves
+            const { x, y } = e.getLocalPosition(view);
+            const way = findWay(x - startX, y - startY);
+            if (way !== undefined) onSwiped?.(way);
+            else onTapped?.();
+        }
+        onLifted?.();
     };
     view.on('pointerup', release);
     view.on('pointerupoutside', release);

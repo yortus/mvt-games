@@ -13,8 +13,8 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Eat the berries; each makes you longer and faster. Hitting the fence or yourself ends the game.',
         controls: [
-            { action: 'Steer', inputs: ['arrows', 'wasd', 'swipe'] },
-            { action: 'Restart', inputs: ['enter'], note: 'After a game over' },
+            { action: 'Steer', inputs: ['arrows', 'wasd'], touchInputs: ['swipe'] },
+            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'], note: 'After a game over' },
         ],
     },
 };

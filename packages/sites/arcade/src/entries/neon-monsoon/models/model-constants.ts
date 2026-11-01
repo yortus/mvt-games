@@ -21,6 +21,12 @@ export const MAX_STEPS_PER_UPDATE = 4;
 
 export const SHIP_SPEED = 150;
 export const SHIP_FOCUSED_SPEED = 60;
+/**
+ * How many times as fast the ship flies to a target, as a finger drags it, as
+ * it flies the way it is headed: quick enough to follow the finger, but not
+ * so quick that touch dodges what the keys can't.
+ */
+export const SHIP_TARGET_SPEED_SCALE = 2;
 /** The hitbox: a small circle at the cockpit, far smaller than the sprite. */
 export const SHIP_HIT_RADIUS = 2;
 /**

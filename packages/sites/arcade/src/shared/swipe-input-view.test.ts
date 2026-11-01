@@ -63,6 +63,22 @@ describe('SwipeInputView', () => {
         expect(onSwiped).not.toHaveBeenCalled();
     });
 
+    it('reports letting go, after the swipe or tap it makes', () => {
+        const calls: string[] = [];
+        const view = SwipeInputView({
+            isEnabled: true, x: 0, y: 0, width: 500, height: 500, swipeDistance: SWIPE_DISTANCE,
+            onSwiped: (direction) => calls.push(direction),
+            onTapped: () => calls.push('tap'),
+            onLifted: () => calls.push('lift'),
+        });
+        view.emit('pointerdown', touch(1, 100, 100));
+        view.emit('globalpointermove', touch(1, 100, 100 + SWIPE_DISTANCE));
+        view.emit('pointerup', touch(1, 100, 100 + SWIPE_DISTANCE));
+        view.emit('pointerdown', touch(1, 100, 100));
+        view.emit('pointerupoutside', touch(1, 100, 100));
+        expect(calls).toEqual(['down', 'lift', 'tap', 'lift']);
+    });
+
     it('listens to nothing when not enabled', () => {
         const view = SwipeInputView({ isEnabled: false, x: 0, y: 0, width: 500, height: 500, swipeDistance: SWIPE_DISTANCE });
         expect(view.eventMode).not.toBe('static');

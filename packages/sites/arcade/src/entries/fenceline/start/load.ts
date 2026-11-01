@@ -1,4 +1,3 @@
-import { isTouchDevice } from '#shared';
 import { definePixiLoader, type EntrySession } from '../../../entry-types';
 import { FIELD_COLS, FIELD_ROWS, ROUNDS } from '../data';
 import { createGameModel, type HeldDirection } from '../models';
@@ -66,7 +65,6 @@ export const load = definePixiLoader(async () => {
                 inputConfig: {
                     // On a touch screen, the game view's swipes and taps steer, so no controls are drawn.
                     // Pushing off a fence strings wire, so there is no button.
-                    showDpad: !isTouchDevice(),
                     onXDirectionChanged: (direction) => {
                         if (direction !== xDirection && direction !== 'none') isYLatest = false;
                         xDirection = direction;

@@ -50,7 +50,7 @@ export const load = definePixiLoader(async () => {
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
                 inputConfig: {
-                    showDpad: true,
+                    // On a touch screen, a swipe held over the game view steers, so only Pump is drawn
                     showPrimary: true,
                     primaryLabel: 'Pump',
                     onXDirectionChanged: (dir) => {

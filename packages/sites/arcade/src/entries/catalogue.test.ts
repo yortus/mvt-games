@@ -7,6 +7,8 @@ import { CATALOGUE, findEntry } from './catalogue';
 const ENTRY_BARRELS = Object.keys(import.meta.glob('./*/index.ts'));
 /** Every texture an entry packs, as `./fuel-run/assets/jet.png` and so on. */
 const TEXTURE_FILES = Object.keys(import.meta.glob('./*/assets/*.png'));
+/** The gestures a finger can make, as a control row's `inputs` give them for the mouse and touch both. */
+const TOUCH_GESTURES: ReadonlySet<string> = new Set(['tap', 'double-tap', 'hold', 'drag', 'pinch', 'swipe']);
 
 describe('the catalogue', () => {
     it('lists each entry once', () => {
@@ -52,6 +54,19 @@ describe('the catalogue', () => {
         }
     });
 
+    it('tells how to play each game on a desktop, and on a touch screen, which each show only their own controls', async () => {
+        for (const entry of CATALOGUE) {
+            if (entry.tags.kind !== 'game') continue;
+            const controls = (await entry.loadDetails()).howToPlay?.controls ?? [];
+            // Any of a row's inputs works on a desktop. Only a click and the wheel need a mouse
+            const hasDesktopControls = controls.some((row) => (row.inputs ?? []).length > 0);
+            const hasTouchControls = controls.some((row) => (row.touchInputs ?? []).length > 0
+                || (row.inputs ?? []).some((input) => typeof input === 'string' && TOUCH_GESTURES.has(input)));
+            expect(hasDesktopControls, entry.id).toBe(true);
+            expect(hasTouchControls, entry.id).toBe(true);
+        }
+    });
+
     it('gives every How to Play something to show, and every control an action and an input', async () => {
         for (const entry of CATALOGUE) {
             const { howToPlay } = await entry.loadDetails();
@@ -60,7 +75,8 @@ describe('the catalogue', () => {
             expect(intro !== undefined || controls.length > 0 || notes.length > 0, entry.id).toBe(true);
             for (const row of controls) {
                 expect(row.action.trim(), entry.id).toBeTruthy();
-                expect(row.inputs.length, `${entry.id}: ${row.action}`).toBeGreaterThan(0);
+                const inputCount = (row.inputs ?? []).length + (row.touchInputs ?? []).length;
+                expect(inputCount, `${entry.id}: ${row.action}`).toBeGreaterThan(0);
             }
         }
     });

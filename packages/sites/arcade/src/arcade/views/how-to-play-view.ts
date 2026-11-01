@@ -1,5 +1,6 @@
 import { setRefresh } from '@mvtjs/html';
-import type { ControlGesture, ControlInput, ControlKey, ControlRow, HowToPlay } from '../../entry-types';
+import type { DeviceKind } from '../../device';
+import type { ControlButton, ControlGesture, ControlInput, ControlKey, ControlRow, HowToPlay } from '../../entry-types';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -8,6 +9,8 @@ import type { ControlGesture, ControlInput, ControlKey, ControlRow, HowToPlay } 
 export interface HowToPlayViewBindings {
     /** How to play the entry shown, or undefined for none. */
     readonly howToPlay: () => HowToPlay | undefined;
+    /** The kind of device the page is on, whose controls it shows. Read once. */
+    readonly deviceKind: DeviceKind;
 }
 
 // ---------------------------------------------------------------------------
@@ -18,13 +21,15 @@ export interface HowToPlayViewBindings {
  * Shows how to play an entry: what to aim for, then its controls as a table,
  * then anything else worth knowing. The table has a row for each action,
  * with its keys in one column, as key caps, and its gestures and on-screen
- * buttons in the next, each with an icon. A column shows only where some
- * row has something in it. The touch column is headed "Mouse / touch" where
- * a row needs a mouse.
+ * buttons in the next, each with an icon. It shows only the controls the
+ * device has: the keyboard and the mouse on a desktop, touch on a phone or a
+ * tablet, and all of them on a laptop with a touch screen. A row, or a
+ * column, shows only where it has something in it.
  *
  * It builds its content as the entry shown changes, and only then.
  */
 export function HowToPlayView(bindings: HowToPlayViewBindings): HTMLElement {
+    const { deviceKind } = bindings;
     const root = document.createElement('div');
     root.className = 'how-to-play';
     let shown: HowToPlay | undefined;
@@ -35,7 +40,7 @@ export function HowToPlayView(bindings: HowToPlayViewBindings): HTMLElement {
         const howToPlay = bindings.howToPlay();
         if (howToPlay === shown) return;
         shown = howToPlay;
-        root.replaceChildren(...(howToPlay === undefined ? [] : contentOf(howToPlay)));
+        root.replaceChildren(...(howToPlay === undefined ? [] : contentOf(howToPlay, deviceKind)));
     }
 }
 
@@ -44,28 +49,57 @@ export function HowToPlayView(bindings: HowToPlayViewBindings): HTMLElement {
 // ---------------------------------------------------------------------------
 
 /** The intro, the table of controls and the notes, each where there is one. */
-function contentOf(howToPlay: HowToPlay): HTMLElement[] {
+function contentOf(howToPlay: HowToPlay, deviceKind: DeviceKind): HTMLElement[] {
     const content: HTMLElement[] = [];
     if (howToPlay.intro !== undefined) content.push(element('p', 'how-intro', howToPlay.intro));
-    const controls = howToPlay.controls ?? [];
-    if (controls.length > 0) content.push(controlsTable(controls));
+    const rows = rowsShownOn(howToPlay.controls ?? [], deviceKind);
+    if (rows.length > 0) content.push(controlsTable(rows, deviceKind));
     for (const note of howToPlay.notes ?? []) content.push(element('p', 'how-note', note));
     return content;
 }
 
-/** A table of the controls: the action, then its keys, then its gestures and buttons. */
-function controlsTable(rows: readonly ControlRow[]): HTMLElement {
-    const hasKeys = rows.some((row) => row.inputs.some(isKeyInput));
-    const hasPointer = rows.some((row) => row.inputs.some((input) => !isKeyInput(input)));
-    const needsMouse = rows.some((row) => row.inputs.some((input) => input === 'click' || input === 'wheel'));
+/** A row as the device shows it: its keys, its gestures and buttons, and its notes. */
+interface ShownRow {
+    readonly action: string;
+    readonly keys: readonly ControlInput[];
+    readonly pointer: readonly ControlInput[];
+    readonly notes: readonly string[];
+}
 
-    const table = element('table', 'how-controls');
+/** The rows with something to show on the device, with only the inputs and notes it has. */
+function rowsShownOn(rows: readonly ControlRow[], deviceKind: DeviceKind): ShownRow[] {
+    const hasKeyboard = deviceKind !== 'handheld';
+    const hasMouse = deviceKind !== 'handheld';
+    const hasTouch = deviceKind !== 'desktop';
+    const shown: ShownRow[] = [];
+    for (const row of rows) {
+        const inputs = row.inputs ?? [];
+        const keys = hasKeyboard ? inputs.filter(isKeyInput) : [];
+        const pointer = inputs.filter((input) => !isKeyInput(input) && (hasMouse || !isMouseOnly(input)));
+        if (hasTouch) pointer.push(...(row.touchInputs ?? []));
+        const touchNote = hasTouch ? row.touchNote : undefined;
+        if (keys.length === 0 && pointer.length === 0 && touchNote === undefined) continue;
+        const notes: string[] = [];
+        if (row.note !== undefined) notes.push(row.note);
+        if (touchNote !== undefined) notes.push(touchNote);
+        shown.push({ action: row.action, keys, pointer, notes });
+    }
+    return shown;
+}
+
+/** A table of the controls: the action, then its keys, then its gestures and buttons. */
+function controlsTable(rows: readonly ShownRow[], deviceKind: DeviceKind): HTMLElement {
+    const hasKeys = rows.some((row) => row.keys.length > 0);
+    const hasPointer = rows.some((row) => row.pointer.length > 0);
+    const needsMouse = rows.some((row) => row.pointer.some(isMouseOnly));
+
+    const table = element('table', hasKeys && hasPointer ? 'how-controls' : 'how-controls how-controls-single');
     const head = element('thead');
     const headRow = element('tr');
     const corner = element('td');
     headRow.append(corner);
     if (hasKeys) headRow.append(headerCell('Keyboard'));
-    if (hasPointer) headRow.append(headerCell(needsMouse ? 'Mouse / touch' : 'Touch'));
+    if (hasPointer) headRow.append(headerCell(pointerHeading(deviceKind, needsMouse)));
     head.append(headRow);
 
     const body = element('tbody');
@@ -74,14 +108,21 @@ function controlsTable(rows: readonly ControlRow[]): HTMLElement {
         const action = element('th');
         action.scope = 'row';
         action.append(element('span', 'how-action', row.action));
-        if (row.note !== undefined) action.append(element('span', 'how-action-note', row.note));
+        for (const note of row.notes) action.append(element('span', 'how-action-note', note));
         tr.append(action);
-        if (hasKeys) tr.append(inputsCell(row.inputs.filter(isKeyInput)));
-        if (hasPointer) tr.append(inputsCell(row.inputs.filter((input) => !isKeyInput(input))));
+        if (hasKeys) tr.append(inputsCell(row.keys));
+        if (hasPointer) tr.append(inputsCell(row.pointer));
         body.append(tr);
     }
     table.append(head, body);
     return table;
+}
+
+/** The heading of the column of gestures and buttons: for the mouse, for touch, or for both where a row needs a mouse. */
+function pointerHeading(deviceKind: DeviceKind, needsMouse: boolean): string {
+    if (deviceKind === 'desktop') return 'Mouse';
+    if (deviceKind === 'handheld') return 'Touch';
+    return needsMouse ? 'Mouse / touch' : 'Touch';
 }
 
 function headerCell(text: string): HTMLElement {
@@ -102,20 +143,24 @@ function inputsCell(inputs: readonly ControlInput[]): HTMLElement {
     return cell;
 }
 
-/** One input: key caps, keys pressed together with "+" between, a gesture with its icon, or an on-screen button. */
+/** One input: key caps, keys (or a button and keys) pressed together with "+" between, a gesture with its icon, or an on-screen button. */
 function inputView(input: ControlInput): HTMLElement {
     if (typeof input === 'string') return isKey(input) ? keyView(input) : gestureView(input);
-    if ('button' in input) {
-        const button = element('span', 'how-button', input.button);
-        button.setAttribute('aria-label', `the ${input.button} button`);
-        return button;
-    }
+    if ('button' in input) return buttonView(input);
     const combo = element('span', 'how-combo');
     for (let i = 0; i < input.length; i++) {
         if (i > 0) combo.append(element('span', 'how-plus', '+'));
-        combo.append(keyView(input[i]));
+        const part = input[i];
+        combo.append(typeof part === 'string' ? keyView(part) : buttonView(part));
     }
     return combo;
+}
+
+/** An on-screen button, by its label, named for assistive technology. */
+function buttonView(input: ControlButton): HTMLElement {
+    const button = element('span', 'how-button', input.button);
+    button.setAttribute('aria-label', `the ${input.button} button`);
+    return button;
 }
 
 /** A key, or a set of keys, as key caps, named for assistive technology. */
@@ -138,9 +183,16 @@ function gestureView(gesture: ControlGesture): HTMLElement {
     return chip;
 }
 
+/** Whether an input is for the keyboard: a key, or keys pressed together with no button among them. */
 function isKeyInput(input: ControlInput): boolean {
     if (typeof input === 'string') return isKey(input);
-    return !('button' in input);
+    if ('button' in input) return false;
+    return input.every((part) => typeof part === 'string');
+}
+
+/** Whether an input needs a mouse: a click, or the wheel. */
+function isMouseOnly(input: ControlInput): boolean {
+    return input === 'click' || input === 'wheel';
 }
 
 function isKey(input: string): input is ControlKey {
@@ -186,6 +238,7 @@ const GESTURES: Readonly<Record<ControlGesture, string>> = {
     'swipe': 'Swipe',
     'tap': 'Tap',
     'double-tap': 'Double tap',
+    'hold': 'Hold',
     'drag': 'Drag',
     'pinch': 'Pinch',
     'click': 'Click',
