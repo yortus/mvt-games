@@ -16,7 +16,7 @@ function inNav(): HTMLElement {
     return nav;
 }
 
-// Wider than the nav's fold (700px), so the menu shows, rather than its ◐
-htmlTest('in the nav', { viewport: { width: 800, height: 56 } }, inNav);
+// Wider than the nav's fold (820px), so the menu shows, rather than its ◐
+htmlTest('in the nav', { viewport: { width: 900, height: 56 } }, inNav);
 
 htmlTest('in the nav, on a narrow screen', { viewport: { width: 360, height: 56 } }, inNav);
