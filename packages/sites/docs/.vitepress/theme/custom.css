@@ -35,6 +35,8 @@
     --site-nav-hover-bg: rgba(255, 216, 61, 0.08);
     --site-nav-active-bg: rgba(255, 216, 61, 0.15);
     --site-nav-pixel-font: 14px 'MVT Pixel', ui-monospace, monospace;
+    /* The links' type: the system's own, as on the other sites, rather than the book's */
+    --site-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
 /*
@@ -77,9 +79,36 @@
     padding-left: 20px !important;
 }
 
+/*
+ * The bar's contents run its full width, as the other sites' do, rather
+ * than VitePress's centred column, so on a wide screen its right-hand end
+ * meets the edge, 20px in, as theirs does
+ */
+.VPNav .VPNavBar .container {
+    max-width: none !important;
+}
+
+@media (min-width: 821px) {
+    .VPNav .VPNavBar .wrapper {
+        padding-right: 20px !important;
+    }
+}
+
+/*
+ * Beside the sidebar, VitePress makes the site's name the sidebar's
+ * heading, as wide as the sidebar, and starts the bar's contents past it.
+ * Here the name takes only its own width, as it does on a narrower screen,
+ * so the site's links follow it as they do on the other sites
+ */
 @media (min-width: 960px) {
     .VPNav .VPNavBar.has-sidebar .container > .title {
-        padding-left: 20px !important;
+        position: static !important;
+        width: auto !important;
+        padding: 0 !important;
+    }
+
+    .VPNav .VPNavBar.has-sidebar .container > .content {
+        padding: 0 !important;
     }
 }
 
@@ -101,12 +130,22 @@
     color: #fff3b0;
 }
 
-/* The site's links: an icon, then a label */
+/*
+ * The site's links: an icon, then a label. They follow the site's name, as
+ * on the other sites (16px past it, and the bar's 8px gap), and the search
+ * and VitePress's own parts take the bar's right-hand end
+ */
 .site-cross-nav {
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-right: 8px;
+    margin-left: 24px;
+    margin-right: auto;
+}
+
+/* The search keeps to its own width, rather than VitePress's, which takes the room the links leave */
+.VPNav .VPNavBar .VPNavBarSearch {
+    flex-grow: 0 !important;
 }
 
 .site-cross-link {
@@ -116,9 +155,11 @@
     padding: 6px 12px;
     border-radius: 6px;
     color: var(--site-nav-text-muted);
+    font-family: var(--site-font-ui);
     font-size: 14px;
     font-weight: 400;
-    line-height: 20px;
+    /* The type's own, as on the other sites, so each label sits at the same height */
+    line-height: normal;
     white-space: nowrap;
     transition: color 0.15s, background 0.15s;
 }
@@ -160,11 +201,13 @@
 }
 
 /*
- * Too narrow for the icons as well as the labels, the labels stay. Measured,
- * the links with their icons need the bar to be 1135px wide, beside
- * VitePress's search box and menus
+ * Too narrow for the icons as well as the labels, the labels stay. Each
+ * width leaves about 30px to spare, with a scrollbar beside the page, as on
+ * the other sites: measured, the links with their icons need the bar to be
+ * 980px wide, beside VitePress's search box and menus (1010px once its
+ * light and dark switch shows, at 1280px)
  */
-@media (max-width: 1160px) {
+@media (max-width: 1025px) {
     .VPNavBar .site-cross-icon {
         display: none;
     }
@@ -172,27 +215,82 @@
 
 /*
  * Where the labels alone only just fit, the search box shows only its
- * magnifier, as it does on a phone, until there is room for its words: just
- * above VitePress's menu width, where they need 815px, and just above the
- * width where its sidebar stays open (960px), whose room the site's name
- * then takes
+ * magnifier, as it does on a phone, until there is room for its words, just
+ * above the width where the links fold away: measured, they need 820px
  */
-@media (min-width: 768px) and (max-width: 840px), (min-width: 960px) and (max-width: 1010px) {
+@media (min-width: 821px) and (max-width: 865px) {
     .VPNavBar .DocSearch-Button-Placeholder,
     .VPNavBar .DocSearch-Button-Keys {
         display: none;
     }
 }
 
-/* Below VitePress's own menu width, the links fold into its menu, as the other sites' fold into theirs */
-@media (max-width: 767px) {
+/* At 820px and below, the links fold into VitePress's menu, at the width where the other sites' fold into theirs */
+@media (max-width: 820px) {
     .VPNavBar .site-cross-nav {
         display: none;
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 821px) {
     .site-cross-nav-screen {
+        display: none;
+    }
+}
+
+/*
+ * VitePress folds its own bar into its menu below 768px. From there up to
+ * 820px, its bar is given the same narrow layout: the menu's button and the
+ * menu itself, the search as a bare magnifier, and VitePress's "..." menu
+ * gone, since the menu holds what it would
+ */
+@media (min-width: 768px) and (max-width: 820px) {
+    .VPNav .VPNavBar .wrapper {
+        padding-right: 8px !important;
+    }
+
+    .VPNav .VPNavBar .content-body {
+        column-gap: 0.5rem;
+    }
+
+    .VPNav .VPNavBarHamburger {
+        display: flex !important;
+    }
+
+    .VPNav .VPNavScreen {
+        display: block !important;
+    }
+
+    .VPNav .VPNavBarExtra,
+    .VPNav .VPNavBarMenu {
+        display: none !important;
+    }
+
+    .VPNav .VPNavBar .VPNavBarSearch {
+        padding-left: 0 !important;
+    }
+
+    .VPNavBar .DocSearch-Button,
+    .VPNavBar .DocSearch-Button:hover {
+        justify-content: center;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        width: 48px;
+        height: 55px;
+        background: transparent;
+    }
+
+    .VPNavBar .DocSearch-Button .DocSearch-Search-Icon {
+        top: 0;
+        margin-right: 0;
+        width: 16px;
+        height: 16px;
+        color: var(--vp-c-text-1);
+    }
+
+    .VPNavBar .DocSearch-Button .DocSearch-Button-Placeholder,
+    .VPNavBar .DocSearch-Button .DocSearch-Button-Keys {
         display: none;
     }
 }
