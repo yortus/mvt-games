@@ -70,17 +70,17 @@ const CROSS_LINKS: readonly CrossLink[] = [
         icon: '<path d="M3 3h14v14H3zM7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14"/>',
     },
     {
+        label: 'Playground',
+        href: `${__SITE_ROOT__}playground/`,
+        viewBox: '0 0 20 20',
+        icon: '<path d="M3 17.5V4M7 17.5V4M3 7.5h4M3 11h4M3 14.5h4"/><path d="M7 4c3.5 0 4.5 2.5 6 6.5s2.5 6 5.5 6"/>',
+    },
+    {
         label: 'Book',
         href: `${__SITE_ROOT__}docs/`,
         isActive: true,
         viewBox: '0 0 20 20',
         icon: '<path d="M10 5.5C8.5 4.3 6 4 2.5 4.5V15c3.5-.5 6 0 7.5 1.2 1.5-1.2 4-1.7 7.5-1.2V4.5C14 4 11.5 4.3 10 5.5zM10 5.5v10.7"/>',
-    },
-    {
-        label: 'Playground',
-        href: `${__SITE_ROOT__}playground/`,
-        viewBox: '0 0 20 20',
-        icon: '<path d="M3 17.5V4M7 17.5V4M3 7.5h4M3 11h4M3 14.5h4"/><path d="M7 4c3.5 0 4.5 2.5 6 6.5s2.5 6 5.5 6"/>',
     },
     {
         label: 'GitHub',
