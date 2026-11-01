@@ -65,7 +65,6 @@ npm run dev
 | `npm run dev:https`    | The same, with the Arcade over HTTPS, with a self-signed certificate, so a phone on the network gets sound |
 | `npm run build`        | Type-check with `tsc`, then build the Arcade, the playground and the docs for production |
 | `npm run build:playground` | Build the playground alone                   |
-| `npm run preview`      | Preview the production build locally             |
 | `npm run lint`         | Check lint and formatting rules                  |
 | `npm run lint:fix`     | Apply ESLint and ESLint Stylistic auto-fixes     |
 

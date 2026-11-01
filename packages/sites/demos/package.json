@@ -15,7 +15,6 @@
         "dev": "vite --host",
         "dev:https": "vite --host --mode https",
         "build": "vite build",
-        "preview": "vite preview",
         "generate-thumbnails": "tsx ../site-kit/scripts/generate-thumbnails.ts",
         "generate-textures": "tsx ../site-kit/scripts/generate-textures.ts"
     },

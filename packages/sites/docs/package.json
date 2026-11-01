@@ -5,8 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vitepress dev --port 5200",
-        "build": "vitepress build",
-        "preview": "vitepress preview"
+        "build": "vitepress build"
     },
     "devDependencies": {
         "mermaid": "^11.13.0",

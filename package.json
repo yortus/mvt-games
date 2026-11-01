@@ -24,7 +24,6 @@
         "check:link-previews": "npm run check:link-previews -w @mvtjs/checks",
         "check:one-copy-of-utils": "npm run check:one-copy-of-utils -w @mvtjs/checks",
         "check:view-type-registration": "npm run check:view-type-registration -w @mvtjs/checks",
-        "preview": "npm run preview -w @mvtjs/arcade",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "release": "changeset version && npm install --package-lock-only",

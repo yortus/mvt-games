@@ -9,8 +9,7 @@
     },
     "scripts": {
         "dev": "vite --host",
-        "build": "vite build",
-        "preview": "vite preview"
+        "build": "vite build"
     },
     "dependencies": {
         "@codemirror/autocomplete": "^6.20.3",

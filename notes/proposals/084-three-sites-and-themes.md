@@ -547,6 +547,6 @@ Part B, themes.
   Its reference is the same bytes as before the move, and Sudoku's code
   changed only in import lines; not rewritten.
 - Left: the "Adding an Entry" guide stays in `arcade/src/entries/`, written
-  for every site. `npm run preview` previews the arcade alone. A stale
+  for every site. `npm run preview` is gone: nobody used it. A stale
   `dist/assets/` from the old layout lingers locally until `dist/` is
   cleared (CI starts clean).
