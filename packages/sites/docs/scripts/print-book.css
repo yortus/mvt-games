@@ -383,6 +383,11 @@ h4 {
     font: 400 10pt/14.5pt var(--serif);
 }
 
+/* A page outside the parts, such as the conclusion, is spaced as a part is */
+.contents .contents-alone:not(:first-child) {
+    margin-top: 11pt;
+}
+
 /* --- Parts --- */
 
 /* The numbers start again at 1 with the first part. The contents and page
@@ -530,6 +535,12 @@ th code,
     /* A long name in a narrow column breaks only when it must, so it never
        sets the column's width to a few letters */
     overflow-wrap: break-word;
+}
+
+/* Appendix A's rule names, such as M-composition, stay on one line */
+#page-appendices-a-mvt-on-one-page td:first-child,
+#page-appendices-a-mvt-on-one-page .table-cell:first-child {
+    white-space: nowrap;
 }
 
 /* print-book.ts lays a table out as one, at the text's width, then remakes

@@ -19,7 +19,7 @@ MVT requires. Plain arithmetic in `update()` can do everything that a
 timeline does, as [Chapter 6](../chapters/06-time-and-phases.md) shows.
 But a timeline can express "move to the next tile over 0.2 seconds, then
 mark the move done" in two lines, with easing built in. Six of the
-Arcade's games use GSAP in their models this way: Astrovoid, Burrow Bust,
+arcade's games use GSAP in their models this way: Astrovoid, Burrow Bust,
 Dojo Duel, Fenceline, Fuel Run and Galaxy Raiders.
 
 ## Why a Model Needs a Paused Timeline

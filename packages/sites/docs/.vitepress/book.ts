@@ -68,9 +68,9 @@ const BOOK: readonly SidebarGroup[] = [
         ],
     },
     {
-        text: 'VII. Why MVT Works',
+        text: 'VII. Principles Behind MVT',
         pages: [
-            'chapters/25-the-principles-behind-mvt',
+            'chapters/25-the-eight-principles',
             'chapters/26-separation-of-concerns',
             'chapters/27-single-source-of-truth',
             'chapters/28-command-query-separation',
@@ -82,6 +82,7 @@ const BOOK: readonly SidebarGroup[] = [
             'chapters/34-using-the-principles',
         ],
     },
+    { text: 'Conclusion', pages: ['chapters/conclusion'] },
     {
         text: 'Appendices',
         pages: [
@@ -419,7 +420,7 @@ const REDIRECTS: Readonly<Record<string, string>> = {
     'architecture/ticker': 'chapters/05-the-tick',
     'architecture/rules': 'appendices/a-mvt-on-one-page',
     'architecture/heritage': 'chapters/02-why-mvt',
-    'architecture/principles/index': 'chapters/25-the-principles-behind-mvt',
+    'architecture/principles/index': 'chapters/25-the-eight-principles',
     'architecture/principles/separation-of-concerns': 'chapters/26-separation-of-concerns',
     'architecture/principles/single-source-of-truth': 'chapters/27-single-source-of-truth',
     'architecture/principles/command-query-separation': 'chapters/28-command-query-separation',

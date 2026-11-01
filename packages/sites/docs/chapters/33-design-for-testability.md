@@ -159,7 +159,7 @@ use a timer or draw on a hidden random source. So a test never needs a
 margin for chance or timing, and a failure always means something
 changed.
 
-Two of the Arcade's games show how far this goes.
+Two of the website's games show how far this goes.
 [Neon Monsoon](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/neon-monsoon/models/game-model.test.ts)'s
 game model takes a seed, and one of its tests plays thirty seconds of the
 real stage twice, steering, focusing and bombing to a script, and checks
@@ -187,7 +187,7 @@ are one call with 16 ms. So a pause, slow motion or a single step doesn't
 need any change to the model either, and the ticker can do any of them
 ([T-control](../appendices/a-mvt-on-one-page.md#ticker-rules)):
 
-- **Pause.** The Arcade pauses an entry by leaving its models, and its
+- **Pause.** The website pauses a game by leaving its models, and its
   views' update steps, out of the tick. Its views are still refreshed and
   drawn, so the frozen game stays on screen.
 - **Slow motion and fast forward.** The
@@ -238,7 +238,7 @@ detail, free to change, and not something a test should pin down.
   while the internals change, and fail as soon as a guarantee is broken.
   So
   you can rework a component's insides with confidence, which is the
-  [goal](25-the-principles-behind-mvt.md#the-goal) all eight
+  [goal](25-the-eight-principles.md#the-goal) all eight
   principles serve.
 - **Tests are fast.** Models run without a renderer, and game time passes
   as fast as the code runs.

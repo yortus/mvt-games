@@ -7,7 +7,7 @@
 > for its examples.
 
 **Related:** [MVT on One Page](a-mvt-on-one-page.md) ·
-[The Principles Behind MVT](../chapters/25-the-principles-behind-mvt.md) ·
+[The Eight Principles](../chapters/25-the-eight-principles.md) ·
 [Troubleshooting](f-troubleshooting.md)
 
 An entry here is a reminder, not a lesson. If a definition leaves you with
@@ -29,7 +29,7 @@ with examples, and says why it matters.
 | **Cohesion, coupling** | A component is cohesive when its contents belong together and change for the same reasons. Components are loosely coupled when they depend on each other only through small, declared interfaces. [§](../chapters/26-separation-of-concerns.md#applied-to-mvt-cohesion-and-coupling) |
 | **Command, query** | A command changes state and doesn't return a value. A query returns a value, and doesn't change any state that a caller can observe. [§](../chapters/28-command-query-separation.md#the-principle) |
 | **Command-Query Separation (CQS)** | The principle that reading state never changes it. Each tick runs every command (`update`), then every query (`refresh`). [Command-Query Separation (CQS)](../chapters/28-command-query-separation.md) |
-| **Component** | Any separable unit of an MVT program, such as a model, a view or the ticker. It isn't a JSX component, or a component in an entity component system. [§](../chapters/25-the-principles-behind-mvt.md#the-goal) |
+| **Component** | Any separable unit of an MVT program, such as a model, a view or the ticker. It isn't a JSX component, or a component in an entity component system. [§](../chapters/25-the-eight-principles.md#the-goal) |
 | **Composite Reuse Principle (CRP)** | The principle of building bigger components by combining smaller ones, never by extending them. [Composite Reuse Principle (CRP)](../chapters/30-composite-reuse.md) |
 | **Computed value** | A value worked out from the getters it watches, and worked out again only when one of them changes. It computes lazily, on its first read, and it's a getter itself. [§](../chapters/09-noticing-changes.md#computed-values-a-value-worked-out-from-others) |
 | **Continuous state** | State that changes on most frames, such as a position. A view just reads it, without detecting changes. [§](../chapters/09-noticing-changes.md#when-to-use-change-detection) |
@@ -83,7 +83,7 @@ with examples, and says why it matters.
 | **Practices** | Habits the book teaches that follow from MVT's rules but aren't rules themselves, such as actions that say what the player means. Appendix A lists them, each with a link to where it's taught. [§](a-mvt-on-one-page.md#practices-the-book-teaches) |
 | **Pool** | A set of objects made once and reused, such as the views of short-lived bullets, so that objects aren't built or destroyed every frame. [§](../chapters/14-lists-and-switches.md#pools-of-short-lived-items) |
 | **Presentation state** | State that a view keeps only for how things are shown, such as how far a fade has got. The view owns it, and moves it on in its own `update(deltaMs)`. [§](../chapters/11-presentation-state.md#presentation-state-and-domain-state) |
-| **Principles** | The eight design principles that MVT's rules come from: SoC, SSOT, CQS, DIP, CRP, DbC, MISU and DfT. Each has a chapter of its own. [§](../chapters/25-the-principles-behind-mvt.md#the-eight-principles) |
+| **Principles** | The eight design principles that MVT's rules come from: SoC, SSOT, CQS, DIP, CRP, DbC, MISU and DfT. Each has a chapter of its own. [§](../chapters/25-the-eight-principles.md#the-eight-principles) |
 | **Progress** | A number from 0 to 1 that says how far through its current phase a model is. [§](../chapters/06-time-and-phases.md#phases-and-progress) |
 | **Push** | Any way of learning about a change in which the side that changed starts the work, as events and signals do. Its opposite is polling. [§](../chapters/10-why-views-poll.md#three-ways-to-detect-a-change) |
 | **Query binding** | A binding that the view reads for the state it shows, such as a position or a score. It's a fixed value, a getter, or a function with arguments such as `tileKindAt(row, col)`, and it never changes any state. [§](../chapters/08-bindings.md#query-bindings) |

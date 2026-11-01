@@ -46,7 +46,7 @@
   longer than adding them up again. A `Map` with number keys is 1.3 times
   slower than an array, and a closure made each frame leaves 56 bytes.
   `for...of` and a returned tuple don't take any extra time or memory.
-- **The Arcade's games take 4-10 µs per frame** before drawing, well
+- **The website's games take 4-10 µs per frame** before drawing, well
   under 0.1% of a frame, and allocate from tens of bytes to about 1 KB a
   frame.
 
@@ -358,9 +358,9 @@ happens.
   170 bytes, the record included. The JSX runtime adds about 480, and
   signals and an effect about 1,800.
 
-## The Arcade's Games and Demos
+## The Website's Games and Demos
 
-The Arcade's games and demos, as they ship, run under Node without drawing
+The website's games and demos, as they ship, run under Node without drawing
 anything. The games are driven by a fixed pattern of pretend input:
 directions change every half second, and buttons are pressed every second
 or so. The demos run unattended, as they do before anyone touches them.

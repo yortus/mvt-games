@@ -1,21 +1,22 @@
 # Using the Principles
 
-> Rules cover the cases someone thought of, and principles cover the rest.
-> This chapter puts the eight to work. It settles the screen shake that
-> Chapter 25 began with, shows how naming a principle makes a design
-> review shorter and clearer, and says what to do when two principles pull
+> MVT's rules apply its principles to the situations that every game
+> meets. For a request that no rule covers, you go back to the principles
+> themselves. This chapter does that for the screen shake that Chapter 25
+> began with. It also shows how naming a principle makes a design review
+> shorter and clearer, and says what to do when two principles pull
 > against each other, as they sometimes do for performance.
 
-**Related:** [The Principles Behind MVT](25-the-principles-behind-mvt.md) ·
+**Related:** [The Eight Principles](25-the-eight-principles.md) ·
 [MVT on One Page](../appendices/a-mvt-on-one-page.md) ·
 [Hot Paths](24-hot-paths.md)
 
-[Chapter 25](25-the-principles-behind-mvt.md) began with a designer's
+[Chapter 25](25-the-eight-principles.md) began with a designer's
 request: *the screen should shake when the player is hit.* The rules in
 [Appendix A](../appendices/a-mvt-on-one-page.md) don't mention screen
-shake, so they can't say where it goes. Now that you've met all eight
-principles, you can settle it, and the same steps work for any case the
-rules don't cover.
+shake. Now that you've met all eight principles, you can go back to
+them and settle it, and the same steps work for any request that no rule
+covers.
 
 ## Deciding a Case That the Rules Don't Cover
 
@@ -113,14 +114,9 @@ one is a decision you make knowingly, not by accident.
 
 ## Summary
 
-When a request falls outside the rules, ask each principle's question in
-turn, as this chapter did for the screen shake. Its answer will usually
+When a request meets a situation that no rule covers, ask each
+principle's question in turn, as this chapter did for the screen shake. Its answer will usually
 fit the rest of MVT, because the rules came from the same questions. When
 you review a design, name the principle that a finding is about. And when
 two principles pull against each other, usually for performance, make the
 trade on purpose and write it down.
-
-That's where the book ends. Its first parts taught MVT's three parts and
-the rules that keep them apart, and the later ones how to test them, grow
-them and keep them fast. This part has said why they work. When you meet a
-case that no chapter covers, the principles' questions are the ones to ask.

@@ -291,7 +291,7 @@ shows.
 
 ## How Much of a View Is JSX?
 
-Open a few JSX views in the Arcade's games and you'll notice that in
+Open a few JSX views in the arcade's games and you'll notice that in
 many of them, the JSX is a small part of the file. Fuel Run's top-level
 game view
 ([`game-view.tsx`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/fuel-run/views/game-view.tsx))

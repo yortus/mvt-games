@@ -190,7 +190,8 @@ The view itself, with its observer, is covered by a
 [visual test](17-visual-tests.md), which lays out the real page.
 
 ::: info In this book
-The Arcade's card wall does both. `card-wall-view.tsx` measures its width
+The website's card wall, which lists the games on each of its pages,
+does both. `card-wall-view.tsx` measures its width
 and each card's height with a `ResizeObserver`, and reports them to its
 layout view model, `card-wall-layout.ts`, which has tests of its own.
 `card-view.tsx` reads a card's photo from the page once, as the photo

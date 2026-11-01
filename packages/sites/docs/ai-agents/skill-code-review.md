@@ -54,7 +54,7 @@ the finding.
 
 These principles apply broadly and keep the codebase maintainable. Each
 has a page of its own, introduced in
-[Chapter 25, The Principles Behind MVT](../chapters/25-the-principles-behind-mvt.md),
+[Chapter 25, The Eight Principles](../chapters/25-the-eight-principles.md),
 with a checklist. Name the principle in a finding, so the author can read
 why it matters. This section keeps only what is specific to reviewing.
 

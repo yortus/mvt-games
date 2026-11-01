@@ -10,7 +10,7 @@
 
 **Related:** [Why MVT](../chapters/02-why-mvt.md) ·
 [The Tick](../chapters/05-the-tick.md) ·
-[The Principles Behind MVT](../chapters/25-the-principles-behind-mvt.md) ·
+[The Eight Principles](../chapters/25-the-eight-principles.md) ·
 [Glossary](b-glossary.md) ·
 [MVT Beyond the Web](h-mvt-beyond-the-web.md)
 

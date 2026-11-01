@@ -9,7 +9,7 @@
 > little more structure.
 
 **Related:** [A First Game](03-a-first-game.md) ·
-[The Principles Behind MVT](25-the-principles-behind-mvt.md) ·
+[The Eight Principles](25-the-eight-principles.md) ·
 [MVT on One Page](../appendices/a-mvt-on-one-page.md) ·
 [Glossary](../appendices/b-glossary.md)
 
@@ -89,7 +89,7 @@ MVT assigns each of the three jobs to its own part.
 
 Keeping different jobs apart, each with its own owner, is a design
 principle called Separation of Concerns (SoC). It's the first of the eight
-principles that [Chapter 25](25-the-principles-behind-mvt.md) introduces,
+principles that [Chapter 25](25-the-eight-principles.md) introduces,
 and the rest of MVT builds on it.
 
 Look at the requests again with the jobs apart. The test creates a model,

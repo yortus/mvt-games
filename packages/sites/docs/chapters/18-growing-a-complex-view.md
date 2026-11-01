@@ -547,7 +547,7 @@ shows.
 
 ### A real example: the match-3 celebration
 
-Kwazy Cactii, the Arcade's match-3 game, celebrates each match with one
+Kwazy Cactii, the arcade's match-3 game, celebrates each match with one
 shared sequence of twelve steps, a little over a second long. The board
 view makes the sequence, starts it with a reaction as the board's phase
 becomes `'matching'`, and moves it on in its update step. Six child views

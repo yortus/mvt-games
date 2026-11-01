@@ -159,7 +159,7 @@ relay binding.
 Because queries never change state, the views can refresh in any order,
 and each one reads the same finished state. Views never see a world that
 another view has half changed. That is how the
-[goal](25-the-principles-behind-mvt.md#the-goal) holds in a game
+[goal](25-the-eight-principles.md#the-goal) holds in a game
 redrawn sixty times a second:
 views can be added, removed or reordered without referencing each other,
 and every frame still shows one consistent world.

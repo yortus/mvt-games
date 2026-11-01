@@ -271,7 +271,7 @@ list with one case per item is easier to follow than one long paragraph.
 ## The Book's Shape
 
 *Building Web Games with MVT* has a preface, seven parts of numbered chapters,
-and appendices.
+a conclusion, and appendices.
 
 | Part | Chapters |
 | --- | --- |
@@ -282,7 +282,8 @@ and appendices.
 | IV. Testing | 15 Testing Models, 16 Testing Views, 17 Visual Tests |
 | V. Advanced Presentation | 18 Growing a Complex View, 19 Lists in Motion, 20 Sound and Music, 21 Reading Layout Back, 22 Reduced Motion |
 | VI. Performance | 23 Why Performance Matters, 24 Hot Paths |
-| VII. Why MVT Works | 25 The Principles Behind MVT, then one chapter for each principle: 26 SoC, 27 SSOT, 28 CQS, 29 DIP, 30 CRP, 31 DbC, 32 MISU, 33 DfT, and 34 Using the Principles |
+| VII. Principles Behind MVT | 25 The Eight Principles, then one chapter for each principle: 26 SoC, 27 SSOT, 28 CQS, 29 DIP, 30 CRP, 31 DbC, 32 MISU, 33 DfT, and 34 Using the Principles |
+| Conclusion | `chapters/conclusion.md`, which isn't numbered |
 | Appendices | A MVT on One Page, B Glossary, C Measurements, D Measuring Performance, E Timelines with GSAP, F Troubleshooting, G API Cheat Sheets, H MVT Beyond the Web |
 
 The order is set by what each chapter needs. A chapter may use only what
@@ -367,6 +368,7 @@ point to its home. Each says what it is, and keeps it short.
 | GSAP timelines in a model | Appendix E |
 | The rules, as one table | Appendix A |
 | MVT inside an engine, in other languages, and outside games | Appendix H |
+| What MVT gives and doesn't, looking back, and where to go next | Conclusion |
 
 When you add an idea, give it one home, and add it to this table.
 

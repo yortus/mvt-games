@@ -147,7 +147,7 @@ match at all.
 `advanceTime` runs that loop for you, and does a little more. Its steps
 are 16 ms, a frame at 60 frames a second, which is well under any cap.
 Here is `advanceTime` in a test like one that you might write for the
-board in Kwazy Cactii, one of the Arcade's games:
+board in Kwazy Cactii, one of the arcade's games:
 
 ```ts
 it('swaps back, and settles, when a swap makes no match', async () => {

@@ -14,7 +14,7 @@
 
 Full reference: [Chapter 2, Why MVT](packages/sites/docs/chapters/02-why-mvt.md) -
 [Appendix A, MVT on One Page](packages/sites/docs/appendices/a-mvt-on-one-page.md) (every rule) -
-[Chapter 25, The Principles Behind MVT](packages/sites/docs/chapters/25-the-principles-behind-mvt.md) (why the rules are what they are, for cases no rule covers)
+[Chapter 25, The Eight Principles](packages/sites/docs/chapters/25-the-eight-principles.md) (why the rules are what they are, for cases no rule covers)
 
 ## Project Structure
 
@@ -221,7 +221,7 @@ this repo. The reading order is in `packages/sites/docs/.vitepress/book.ts`.
 | Section | Content |
 | --- | --- |
 | [Preface](packages/sites/docs/index.md) | What the book teaches, who it's for, and MVT in a paragraph |
-| [Chapters](packages/sites/docs/chapters/) | `01-games-in-the-browser.md` to `34-using-the-principles.md`, in seven parts: MVT taught once, in reading order, each idea in one chapter (its home). Part VII is the eight principles, a chapter each, introduced by [Chapter 25](packages/sites/docs/chapters/25-the-principles-behind-mvt.md) |
+| [Chapters](packages/sites/docs/chapters/) | `01-games-in-the-browser.md` to `34-using-the-principles.md`, in seven parts, then `conclusion.md`: MVT taught once, in reading order, each idea in one chapter (its home). Part VII is the eight principles, a chapter each, introduced by [Chapter 25](packages/sites/docs/chapters/25-the-eight-principles.md) |
 | [Appendices](packages/sites/docs/appendices/) | [A, MVT on One Page](packages/sites/docs/appendices/a-mvt-on-one-page.md) (every rule), B Glossary, C Measurements, D Measuring Performance, E Timelines with GSAP, F Troubleshooting, G API Cheat Sheets, H MVT Beyond the Web |
 | [Working in This Repo](packages/sites/docs/working-in-this-repo/) | [Code Style](packages/sites/docs/working-in-this-repo/code-style.md), [Project Structure](packages/sites/docs/working-in-this-repo/project-structure.md), and the [Writing Guide](packages/sites/docs/working-in-this-repo/writing-guide.md) (the voice for all prose, and each idea's home) |
 | [Agent skills](packages/sites/docs/ai-agents/index.md) | The skills files above (not published) |

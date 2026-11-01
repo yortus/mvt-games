@@ -122,8 +122,9 @@ try {
     let partCount = 0;
     for (const group of book) {
         const pages = group.pages.map(toEntry);
-        const isFront = pages.every((entry) => entry.kind === 'preface');
-        if (!isFront) {
+        // A group of unnumbered pages, the preface or the conclusion, doesn't have a part's page
+        const isUnnumbered = pages.every((entry) => entry.number === undefined);
+        if (!isUnnumbered) {
             const part = toPart(group.text);
             const firstClass = partCount === 0 ? ' first-part' : '';
             sections.push(`<section class="part${firstClass}" id="${toPartId(group.text)}">${part.label === undefined ? '' : `<p class="part-label">${part.label}</p>`}<h1>${escapeHtml(part.title)}</h1></section>`);
@@ -611,13 +612,13 @@ function prepareBook(options: PrepareOptions): void {
     }
 }
 
-/** Returns the contents: the preface, then each part and the pages in it, each with the page it starts on. */
+/** Returns the contents: the preface, each part and the pages in it, and the conclusion, each with the page it starts on. */
 function toContents(book: ReturnType<typeof listPrintedBook>): string {
     const items: string[] = [];
     for (const group of book) {
         const entries = group.pages.map(toEntry);
-        if (entries.every((entry) => entry.kind === 'preface')) {
-            for (const entry of entries) items.push(`<li class="contents-chapter">${toContentsLink(`#${toPageId(entry.page)}`, undefined, entry.title)}</li>`);
+        if (entries.every((entry) => entry.number === undefined)) {
+            for (const entry of entries) items.push(`<li class="contents-chapter contents-alone">${toContentsLink(`#${toPageId(entry.page)}`, undefined, entry.title)}</li>`);
             continue;
         }
         const part = toPart(group.text);

@@ -1,12 +1,13 @@
-# The Principles Behind MVT
+# The Eight Principles
 
-> Each of MVT's rules follows from a small set of well-known design
-> principles, and all eight serve one goal: you can understand, test and
-> change any part of a game without touching the rest. This chapter
-> introduces the eight, and shows how each builds on the ones before it.
-> The chapters after it take one principle each, and the last chapter of
-> the book uses them to settle a request that the rules don't cover. Learn
-> the reasons, and you can decide the new cases yourself.
+> MVT is built on eight well-known design principles, and all eight serve
+> one goal: you can understand, test and change any part of a game without
+> touching the rest. MVT's rules are those principles applied to the
+> situations that every game meets. This chapter introduces the eight, and
+> shows how each builds on the ones before it. The chapters after it take
+> one principle each, and the last of them uses all eight on a request that
+> no rule covers. Learn the principles, and you can decide such cases
+> yourself.
 
 **Related:** [MVT on One Page](../appendices/a-mvt-on-one-page.md) ·
 [Single Source of Truth (SSOT)](27-single-source-of-truth.md) ·
@@ -21,24 +22,30 @@ hold domain state. The rules don't mention screen shake.
 
 So where does the shake go? Does the model need to track it? How does the
 view detect that the player was hit, when the hit is over before the view
-ever runs? The rules can't say, because they were written before anyone
-thought of this case. By the end of this part, you'll be able to answer
-each question, and say why.
+ever runs? The rules don't say. They're short checks for the situations
+that every game meets, and no list of checks can name every request a
+designer will make. The principles that the rules come from can settle
+it. By the end of this part, you'll be able to answer each question, and
+say why.
 
 ## Why Principles, Not Just Rules
 
 Rules say what an MVT program must do. They're quick to check, and most of
 the time they're all you need.
 
-Sooner or later, though, you meet a case that the rules don't mention.
-Perhaps a view plays sounds instead of drawing, or needs to detect that the
-player was just hit, or two games share a model. Then it helps to know
-*why* the rules exist, because the same reasons apply to the new case.
+The rules aren't where MVT starts, though. Each one is a principle
+applied to a situation that every game meets: time reaching a model, a
+view reading the state, the player pressing a key.
+[Appendix A](../appendices/a-mvt-on-one-page.md) names the principles that
+each rule serves. When you meet a situation that no rule covers, such as a
+view that plays sounds instead of drawing, or two games that share a
+model, the principles still apply, and they give the kind of answer that
+a rule would.
 
-A principle is the reasoning behind a group of rules, put generally enough
-to cover cases that the rules never anticipated. The eight in
-this chapter are decades-old ideas, each with a name you can search for.
-MVT applies all of them, together, to a program that runs in frames.
+A principle is a general statement about how to keep a program easy to
+understand and change. The eight in this chapter are decades-old ideas,
+each with a name you can search for. MVT applies all of them, together,
+to a program that runs in frames.
 
 ## The Goal
 
@@ -111,10 +118,10 @@ rest.
 
 ## Summary
 
-Rules cover the cases someone thought of. Principles cover the rest,
-because they say why the rules exist. MVT rests on eight well-known
-principles, and each serves the same goal: a change to one component stops
-at its edge.
+MVT rests on eight well-known principles, and each serves the same goal:
+a change to one component stops at its edge. The rules are those
+principles applied to the situations that every game meets, so when you
+meet one that no rule covers, the principles still decide it.
 
 - **SoC** gives domain state, presentation and time separate owners.
 - **SSOT** gives each piece of domain state one home, and **CQS** makes

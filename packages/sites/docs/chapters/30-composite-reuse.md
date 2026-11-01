@@ -124,8 +124,8 @@ win banner, the spin button and a game-over overlay, each a leaf view of
 its own.
 
 Leaf views written for one game are reused in others, by composing them
-into a new tree, never by extending them. The Arcade's shared overlay view
-and pixel text view appear in most of its games. Each entry
+into a new tree, never by extending them. The website's shared overlay
+view and pixel text view appear in most of its games. Each entry
 builds the view into its own tree and supplies its own bindings
 ([B-reusable](../appendices/a-mvt-on-one-page.md#binding-rules)).
 
@@ -157,7 +157,7 @@ wherever in the model tree that state lives.
   the fruit machine's reel and celebration models. The parent's tests can
   then use the real pieces.
 - **Pieces are reused across games.** The shared overlay view is in most of
-  the Arcade's games, because composing it requires only its bindings.
+  the website's games, because composing it requires only its bindings.
 - **Changes stay inside a piece.** Changing how a `TileMove` slides changes
   the mouse and the cats alike, through the same interface, and they don't
   need editing.

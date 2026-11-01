@@ -9,7 +9,7 @@
 
 **Related:** [Games in the Browser](../chapters/01-games-in-the-browser.md) ·
 [MVT on One Page](a-mvt-on-one-page.md) ·
-[The Principles Behind MVT](../chapters/25-the-principles-behind-mvt.md)
+[The Eight Principles](../chapters/25-the-eight-principles.md)
 
 Read the rules in [Appendix A](a-mvt-on-one-page.md) again, and look for
 the browser. A model moves forward only through `update(deltaMs)`. A view
@@ -36,7 +36,7 @@ These are MVT itself, and they work the same anywhere:
   functions, so you can test it with stand-ins
   ([Chapter 8](../chapters/08-bindings.md)).
 - **The rules and the principles.** Appendix A's rules, and the eight
-  principles of [Part VII](../chapters/25-the-principles-behind-mvt.md),
+  principles of [Part VII](../chapters/25-the-eight-principles.md),
   don't mention the web.
 
 ## The Book's Own Choices

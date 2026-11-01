@@ -1,13 +1,14 @@
 # Games in the Browser
 
-> A web browser has everything a game needs: a canvas to draw on, sound,
-> input from keys, pointers and gamepads, and a call to your code before
-> each frame is drawn. It doesn't have a structure for the game's own
-> code, and neither do most of the tools that web games are built with.
+> The browser provides the raw parts of a game: a canvas to draw on,
+> sound, input from keys, pointers and gamepads, and a call to your code
+> before each frame is drawn. How to organise the game's own code is left
+> to you. Most of the tools built on the browser don't settle that either.
 > Engines bring a structure of their own, renderers don't bring one, and
-> UI frameworks bring one made for web pages that are mostly still. Each leaves
-> the same question open: how to keep the code that decides what happens
-> apart from the code that shows it. The rest of the book answers it.
+> UI frameworks bring one designed for pages that are mostly still. They
+> all leave one question open, how to keep the code that decides what
+> happens apart from the code that shows it, and this book answers it
+> with MVT.
 
 **Related:** [Why MVT](02-why-mvt.md) · [The Tick](05-the-tick.md) ·
 [MVT Beyond the Web](../appendices/h-mvt-beyond-the-web.md)

@@ -135,7 +135,7 @@ red, and which texture draws it, stay in the view.
 Animation libraries can still help a model, as long as the model drives
 them from `update(deltaMs)`.
 [Appendix E](../appendices/e-timelines-with-gsap.md) shows how with GSAP,
-a popular animation library that several of the Arcade's games use.
+a popular animation library that several of the arcade's games use.
 
 Randomness is a similar case. A model that calls `Math.random()` produces
 a different result every run. A model that receives a function for random
@@ -384,7 +384,7 @@ the game's rules. Views are reached differently, and
 explains why.
 
 [Burrow Bust](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/burrow-bust/models/game-model.ts),
-one of the Arcade's games, shows what a parent's `update` decides. Its
+one of the arcade's games, shows what a parent's `update` decides. Its
 game model moves the digger before the enemies, so each enemy chases the
 digger from where it is now, not where it was a frame ago. It checks for
 digging, hits and crushing rocks only after everything has moved. And

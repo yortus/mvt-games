@@ -8,7 +8,7 @@
 
 **Related:** [Glossary](b-glossary.md) ·
 [MVT on One Page](a-mvt-on-one-page.md) ·
-[The Principles Behind MVT](../chapters/25-the-principles-behind-mvt.md)
+[The Eight Principles](../chapters/25-the-eight-principles.md)
 
 If what you see isn't here, find the part of MVT it touches in
 [Appendix A](a-mvt-on-one-page.md), and read the chapter its rule links

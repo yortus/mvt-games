@@ -287,7 +287,7 @@ card at the left end, and watch the whole row close up as it fades.
 Use a plain array when the model already holds one, and items don't need
 to animate out. Use an `OrderedSlotList` for a small list with an order of
 the player's choosing, whose items animate out: a hand of cards, a stack of
-messages, a turn order. The Arcade's
+messages, a turn order. The
 [Reordering Lists](https://github.com/yortus/mvt-games/tree/main/packages/sites/demos/src/entries/reordering-lists)
 demo shows both side by side. A script changes both rows in the same way,
 and tapping a card moves it to the front of both, so you can watch where

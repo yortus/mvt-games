@@ -267,7 +267,7 @@ look, the view does. When the phases live in a view, they're presentation
 state, and they follow the same pattern there.
 [Chapter 11](11-presentation-state.md) shows how.
 
-Kwazy Cactii, the Arcade's match-three game, models its board with five
+Kwazy Cactii, the arcade's match-three game, models its board with five
 phases, such as `'swapping'`, `'matching'` and `'settling'`, where
 settling can lead back to matching when new matches form. It exposes a
 separate progress for each phase that moves, though, the shape that

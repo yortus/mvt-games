@@ -100,7 +100,7 @@ the phase takes time, one `progress` from 0 to 1.
 shows why one progress value beats one per phase.
 [Burrow Bust](https://github.com/yortus/mvt-games/tree/main/packages/sites/arcade/src/entries/burrow-bust)'s
 rocks are `'stable'`, `'wobbling'`, `'falling'` or `'shattered'`, with one
-`progress` through the current phase. The Arcade itself is `'browsing'`,
+`progress` through the current phase. The website's page is `'browsing'`,
 `'launching'`, `'revealing'` or `'playing'`, never two at once.
 
 ### Named values, not strings or numbers
