@@ -7,6 +7,9 @@
  * default. Every colour, font, radius and shadow the page uses, in
  * `arcade.css` and `nav.css`, reads one of them, so another theme restyles
  * the page by giving them its own values, under `:root[data-theme="..."]`.
+ * The nav is the exception: it ties the sites together, so it looks the
+ * same in every theme, and `nav.css` gives its values itself
+ * (`--site-nav-*`), which the runner's bar and the Perfmon take too.
  *
  * Each is named for what it does, not for how it looks. Some share a value
  * in this theme, such as the page and the wells sunk into its panels, so
@@ -153,21 +156,6 @@
     --theme-placed-score: #fff;
     --theme-placed-rank: #7ee787;
 
-    /*
-     * --- The nav ---
-     * Its own colours, kept apart from the page's, as are the runner's bar
-     * and the Perfmon, which take them. This theme's: yellow on a very dark
-     * blue. `nav.css` gives them the names the docs and the playground share
-     */
-    --theme-nav-bg: #0a0f2e;
-    --theme-nav-border: #1e2a63;
-    --theme-nav-text: #ffd83d;
-    --theme-nav-text-muted: rgba(255, 216, 61, 0.68);
-    --theme-nav-hover-bg: rgba(255, 216, 61, 0.08);
-    --theme-nav-active-bg: rgba(255, 216, 61, 0.15);
-    /* The site's name, under the pointer */
-    --theme-nav-brand-hover: #fff3b0;
-
     /* --- Type --- */
 
     /* Everything but what follows */
@@ -176,8 +164,6 @@
     --theme-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
     /* The key shown on a pause menu's choice: a shorter stack, kept as it was */
     --theme-font-mono-short: ui-monospace, monospace;
-    /* The site's name in the nav, and an entry's in the runner's bar */
-    --theme-font-pixel: 'MVT Pixel', ui-monospace, monospace;
 
     /* --- Corners --- */
 

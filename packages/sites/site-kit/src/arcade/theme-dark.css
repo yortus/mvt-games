@@ -89,20 +89,10 @@
     --theme-placed-score: #fff;
     --theme-placed-rank: #7ee2a8;
 
-    /* --- The nav: near black, light grey, the violet for where you are --- */
-    --theme-nav-bg: #0e1013;
-    --theme-nav-border: #24282e;
-    --theme-nav-text: #e6e9ed;
-    --theme-nav-text-muted: rgba(230, 233, 237, 0.62);
-    --theme-nav-hover-bg: rgba(255, 255, 255, 0.06);
-    --theme-nav-active-bg: rgba(139, 140, 255, 0.18);
-    --theme-nav-brand-hover: #fff;
-
-    /* --- Type: the system's own, even where the Arcade has pixels --- */
+    /* --- Type: the system's own --- */
     --theme-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
     --theme-font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
     --theme-font-mono-short: ui-monospace, monospace;
-    --theme-font-pixel: var(--theme-font-ui);
 
     /* --- Corners: rounder --- */
     --theme-radius-control: 8px;

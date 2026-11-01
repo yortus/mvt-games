@@ -30,10 +30,13 @@
     --site-nav-height: 48px;
     /* The site's name, in the pixel font, at two pixels to a cell */
     --site-nav-pixel-font: 14px 'MVT Pixel', ui-monospace, monospace;
+    /* The corners of the nav's links and tools */
+    --site-nav-radius: 6px;
 
     /*
-     * The nav's colour scheme, kept apart from the page's, so a scheme can be
-     * tried by changing these alone. This one: yellow on a very dark blue.
+     * The nav's colour scheme, kept apart from the page's, and the same in
+     * every theme, as it is on the sites and in the docs. Yellow on a very
+     * dark blue.
      */
     --site-nav-bg: #0a0f2e;
     --site-nav-border: #1e2a63;
@@ -105,7 +108,7 @@ html { touch-action: pan-x pan-y; }
     padding: 6px 12px;
     color: var(--site-nav-text-muted);
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: var(--site-nav-radius);
     transition: color 0.15s, background 0.15s;
     font-size: 14px;
     white-space: nowrap;

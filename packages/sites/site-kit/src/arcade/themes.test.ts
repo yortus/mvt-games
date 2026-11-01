@@ -25,7 +25,6 @@ const PAIRS: readonly (readonly [text: string, under: string, ratio: number])[] 
     ['on-tag', 'tag-era', 4.5],
     ['on-tag', 'tag-genre', 4.5],
     ['on-tag', 'tag-renderer', 4.5],
-    ['nav-text', 'nav-bg', 4.5],
     ['highscore-1', 'highscore-bg', 3],
     ['highscore-2', 'highscore-bg', 3],
     ['highscore-3', 'highscore-bg', 3],

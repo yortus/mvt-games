@@ -23,9 +23,9 @@
 }
 
 /*
- * The names the copies share. Here each takes its value from the theme
- * (`themes.css`, which `arcade.css` brings in); the copies give the Arcade
- * theme's values themselves.
+ * The names the copies share. Here the page's take their values from the
+ * theme (`themes.css`, which `arcade.css` brings in); the copies give the
+ * Arcade theme's values themselves.
  */
 :root {
     --site-bg: var(--theme-bg);
@@ -36,18 +36,23 @@
     --site-font-ui: var(--theme-font-ui);
     --site-nav-height: 48px;
     /* The site's name, in the pixel font, at two pixels to a cell */
-    --site-nav-pixel-font: 14px var(--theme-font-pixel);
+    --site-nav-pixel-font: 14px 'MVT Pixel', ui-monospace, monospace;
+    /* The corners of the nav's links and tools */
+    --site-nav-radius: 6px;
 
     /*
-     * The nav's colour scheme, kept apart from the page's, so a theme can
-     * give the nav colours of its own.
+     * The nav's colour scheme, kept apart from the page's, and the same in
+     * every theme, as it is on the playground and in the docs: the nav ties
+     * the sites together, so it looks the same on each, whatever the page
+     * below it wears. Yellow on a very dark blue. The runner's bar and the
+     * Perfmon take it too.
      */
-    --site-nav-bg: var(--theme-nav-bg);
-    --site-nav-border: var(--theme-nav-border);
-    --site-nav-text: var(--theme-nav-text);
-    --site-nav-text-muted: var(--theme-nav-text-muted);
-    --site-nav-hover-bg: var(--theme-nav-hover-bg);
-    --site-nav-active-bg: var(--theme-nav-active-bg);
+    --site-nav-bg: #0a0f2e;
+    --site-nav-border: #1e2a63;
+    --site-nav-text: #ffd83d;
+    --site-nav-text-muted: rgba(255, 216, 61, 0.68);
+    --site-nav-hover-bg: rgba(255, 216, 61, 0.08);
+    --site-nav-active-bg: rgba(255, 216, 61, 0.15);
 }
 
 /* Whatever the page scrolls into view (a focused box, a card arrowed to) stops below the nav, not under it */
@@ -94,7 +99,7 @@ html { touch-action: pan-x pan-y; }
 }
 
 .site-nav-brand:hover {
-    color: var(--theme-nav-brand-hover);
+    color: #fff3b0;
 }
 
 .site-nav-links {
@@ -112,7 +117,7 @@ html { touch-action: pan-x pan-y; }
     padding: 6px 12px;
     color: var(--site-nav-text-muted);
     text-decoration: none;
-    border-radius: var(--theme-radius-control);
+    border-radius: var(--site-nav-radius);
     transition: color 0.15s, background 0.15s;
     font-size: 14px;
     white-space: nowrap;

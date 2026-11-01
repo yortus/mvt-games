@@ -23,9 +23,10 @@ item can be done on its own, or dropped.
   screen, would suit them better than a fade.
 - **The page's sounds in every theme.** The page plays the Arcade's sounds
   whatever the theme. Softer ones might suit Dark and Light.
-- **The docs' nav following the theme.** The docs keep the Arcade's nav
-  colours. They could read the visitor's choice (`mvt-arcade:theme` in
-  local storage), as the sites do.
+- ~~**The docs' nav following the theme.**~~ Decided the other way
+  (2026-11-01): the sites' nav no longer follows the theme either. It is
+  yellow on dark blue, in the pixel font, on every site and in every theme,
+  so the bar stays put going from one site to another.
 - **Entries reading the theme.** No entry knows the theme. Sudoku could
   draw in ink on paper in Light, say. It would need the theme passed to
   the entry's starter, and a decision on whether entries should change with

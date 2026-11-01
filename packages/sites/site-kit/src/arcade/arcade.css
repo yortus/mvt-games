@@ -1,7 +1,7 @@
 /*
  * The arcade's page. Its colours, fonts, corners and shadows come from the
  * theme (`--theme-*`, in `themes.css`), and the nav's from the nav's own
- * names (`--site-nav-*`, in `nav.css`), which take theirs from the theme.
+ * names (`--site-nav-*`, in `nav.css`), which are the same in every theme.
  *
  * Stacking, bottom to top: the page and its wall; the canvas that burns and
  * develops the cards (30); the Perfmon over the wall (9998), under the nav,
@@ -115,7 +115,7 @@ button { font: inherit; color: inherit; }
     justify-content: center;
     padding: 6px;
     border: none;
-    border-radius: var(--theme-radius-control);
+    border-radius: var(--site-nav-radius);
     background: none;
     color: var(--site-nav-text-muted);
     cursor: pointer;

@@ -327,7 +327,11 @@ property, `--theme-*`. The Arcade's values, the default, are in
 [`theme-light.css`](./theme-light.css) give their own, under
 `:root[data-theme="..."]`, with the few rules that make each its own, such
 as the cards' names in type rather than pixels. The site's name is the
-Arcade's pixel marquee in every theme. `ArcadeView` marks `<html>` with the
+Arcade's pixel marquee in every theme. The nav is the same in every theme
+too, as it is on the playground and in the docs, since it ties the sites
+together: its colours, its corners and its pixel font are its own
+(`--site-nav-*`, in `nav.css`), and the runner's bar and the Perfmon take
+them. `ArcadeView` marks `<html>` with the
 theme as the model's changes (`drawTheme`), and the stylesheet follows. The
 views barely know: each card's plain-text name sits beside its pixel one,
 and each theme shows one.
