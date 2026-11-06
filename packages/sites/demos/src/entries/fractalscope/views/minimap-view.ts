@@ -51,7 +51,7 @@ export function MinimapView(bindings: MinimapViewBindings): Element {
     let colors: PaletteColors = buildPaletteColors(bindings.palette());
 
     const watcher = watch({
-        revision: () => bindings.overview().revision,
+        version: () => bindings.overview().version,
         palette: bindings.palette,
     });
 
@@ -64,7 +64,7 @@ export function MinimapView(bindings: MinimapViewBindings): Element {
         // A test environment has no canvas to draw on.
         if (screen === undefined || paper === undefined) return;
 
-        let isStale = changes.revision.changed || changes.palette.changed;
+        let isStale = changes.version.changed || changes.palette.changed;
         if (overview.cols !== paintedCols || overview.rows !== paintedRows) {
             resizePicture(paper, overview.cols, overview.rows);
             isStale = true;

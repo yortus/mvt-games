@@ -103,31 +103,31 @@ describe('EscapeField', () => {
         expect(escapeNear(field, 0.3, 0)).toBeGreaterThan(escapeNear(field, 0.8, 0));
     });
 
-    it('marks the rows each step changed with the new revision', () => {
+    it('marks the rows each step changed with the new version', () => {
         const field = createField();
-        const before = field.revision;
+        const before = field.version;
         field.advance(1);
 
-        expect(field.revision).toBe(before + 1);
-        expect(field.rowRevisions[0]).toBe(field.revision);
-        expect(field.rowRevisions[COARSEST_BLOCK - 1]).toBe(field.revision);
-        expect(field.rowRevisions[COARSEST_BLOCK]).toBeLessThan(field.revision);
+        expect(field.version).toBe(before + 1);
+        expect(field.rowVersions[0]).toBe(field.version);
+        expect(field.rowVersions[COARSEST_BLOCK - 1]).toBe(field.version);
+        expect(field.rowVersions[COARSEST_BLOCK]).toBeLessThan(field.version);
     });
 
-    it('keeps its revision once complete', () => {
+    it('keeps its version once complete', () => {
         const field = createField();
         complete(field);
-        const before = field.revision;
+        const before = field.version;
         field.advance(1000);
 
-        expect(field.revision).toBe(before);
+        expect(field.version).toBe(before);
     });
 
     it('starts again over a new setting from its old image, moved to fit', () => {
         const field = createField();
         complete(field);
         const before = Array.from(field.escapes);
-        const revision = field.revision;
+        const version = field.version;
         // Panned left by exactly four samples
         const shifted = HOME.centreRe - (4 * HOME.width) / 64;
 
@@ -137,8 +137,8 @@ describe('EscapeField', () => {
         expect(field.maxIterations).toBe(300);
         expect(field.blockSize).toBe(COARSEST_BLOCK);
         expect(field.progress).toBe(0);
-        expect(field.revision).toBeGreaterThan(revision);
-        for (let row = 0; row < 48; row++) expect(field.rowRevisions[row]).toBe(field.revision);
+        expect(field.version).toBeGreaterThan(version);
+        for (let row = 0; row < 48; row++) expect(field.rowVersions[row]).toBe(field.version);
         // Each row holds the old row's samples, four to the right, with the uncovered edge unknown
         const row = 20 * 64;
         expect(field.escapes[row + 3]).toBe(UNKNOWN);
@@ -187,7 +187,7 @@ describe('EscapeField', () => {
         expect(field.cols).toBe(128);
         expect(field.rows).toBe(96);
         expect(field.escapes.length).toBe(128 * 96);
-        expect(field.rowRevisions.length).toBe(96);
+        expect(field.rowVersions.length).toBe(96);
         expect(field.setting).toEqual(HOME);
         expect(field.isComplete).toBe(false);
         expect(escapeNear(field, -1.9, 1.1)).toBe(before);
@@ -196,7 +196,7 @@ describe('EscapeField', () => {
     it('clears, starting again from nothing', () => {
         const field = createField();
         complete(field);
-        const revision = field.revision;
+        const version = field.version;
         const elsewhere = { centreRe: 0, centreIm: 0, width: 3.2 };
 
         field.clear(elsewhere, 250);
@@ -204,7 +204,7 @@ describe('EscapeField', () => {
         expect(field.setting).toEqual(elsewhere);
         expect(field.maxIterations).toBe(250);
         expect(field.progress).toBe(0);
-        expect(field.revision).toBeGreaterThan(revision);
+        expect(field.version).toBeGreaterThan(version);
         expect(field.escapes.every((e) => e === UNKNOWN)).toBe(true);
     });
 

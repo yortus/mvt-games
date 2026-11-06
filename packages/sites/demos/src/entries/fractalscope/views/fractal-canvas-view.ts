@@ -72,8 +72,8 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
     let pixels: Int32Array | undefined;
     let paintedCols = 0;
     let paintedRows = 0;
-    // The field's revision when the picture was last coloured.
-    let paintedRevision = -1;
+    // The field's version when the picture was last coloured.
+    let paintedVersion = -1;
 
     // Where the picture was last drawn on the screen, so that a still view
     // is not drawn again.
@@ -148,25 +148,25 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
         if (isWhole) {
             paintEscapes(pixels, field.escapes, 0, cols * rows, colors);
             context.putImageData(image, 0, 0);
-            paintedRevision = field.revision;
+            paintedVersion = field.version;
             return true;
         }
-        if (field.revision === paintedRevision) return false;
+        if (field.version === paintedVersion) return false;
 
         // Each run of changed rows is coloured, and put, in one go.
-        const revisions = field.rowRevisions;
+        const versions = field.rowVersions;
         let row = 0;
         while (row < rows) {
-            if (revisions[row] <= paintedRevision) {
+            if (versions[row] <= paintedVersion) {
                 row++;
                 continue;
             }
             const from = row;
-            while (row < rows && revisions[row] > paintedRevision) row++;
+            while (row < rows && versions[row] > paintedVersion) row++;
             paintEscapes(pixels, field.escapes, from * cols, row * cols, colors);
             context.putImageData(image, 0, 0, 0, from, cols, row - from);
         }
-        paintedRevision = field.revision;
+        paintedVersion = field.version;
         return true;
     }
 

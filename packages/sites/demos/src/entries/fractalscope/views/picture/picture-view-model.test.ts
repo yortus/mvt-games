@@ -139,7 +139,7 @@ describe('PictureViewModel', () => {
     it('leaves the picture alone after a gesture that moved nothing', async () => {
         const { model, picture } = setup();
         await advanceTime(500, picture);
-        const revision = picture.image.revision;
+        const version = picture.image.version;
         picture.hold();
         model.moveCentre(0, 0);
         model.magnifyAbout(1, -0.6, 0);
@@ -147,7 +147,7 @@ describe('PictureViewModel', () => {
         await advanceTime(100, picture);
 
         expect(picture.image.isComplete).toBe(true);
-        expect(picture.image.revision).toBe(revision);
+        expect(picture.image.version).toBe(version);
     });
 
     it('does less work on a long frame, not more', () => {

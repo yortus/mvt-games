@@ -32,13 +32,13 @@ export interface EscapeGrid {
      */
     readonly escapes: Float32Array;
     /**
-     * The revision each row of samples last changed in, one per row. A
-     * reader that remembers the revision it last read can find every row
+     * The version each row of samples last changed in, one per row. A
+     * reader that remembers the version it last read can find every row
      * changed since, however many steps have passed. Read it, never write it.
      */
-    readonly rowRevisions: Float64Array;
+    readonly rowVersions: Float64Array;
     /** Rises whenever any sample changes. */
-    readonly revision: number;
+    readonly version: number;
     /**
      * How wide the blocks the pass now running fills are, in samples. It is
      * 1 in the last pass, and 0 once every sample is its own.
@@ -121,7 +121,7 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
     let coarseness = new Uint8Array(cols * rows).fill(UNKNOWN_COARSENESS);
     let spareEscapes = new Float32Array(cols * rows);
     let spareCoarseness = new Uint8Array(cols * rows);
-    let rowRevisions = new Float64Array(rows);
+    let rowVersions = new Float64Array(rows);
 
     // The one setting object, written in place, so that reading it every
     // frame allocates nothing.
@@ -137,7 +137,7 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
     let cursorRow = 0;
     let cursorCol = 0;
     let computedCount = 0;
-    let revision = 0;
+    let version = 0;
 
     // What the kernel has spent since `advance` was called.
     let iterationsSpent = 0;
@@ -148,8 +148,8 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
         get setting() { return setting; },
         get maxIterations() { return maxIterations; },
         get escapes() { return escapes; },
-        get rowRevisions() { return rowRevisions; },
-        get revision() { return revision; },
+        get rowVersions() { return rowVersions; },
+        get version() { return version; },
         get blockSize() { return blockSize; },
         get isComplete() { return blockSize === 0; },
         get progress() { return blockSize === 0 ? 1 : computedCount / (cols * rows); },
@@ -171,7 +171,7 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
             coarseness = new Uint8Array(cols * rows);
             spareEscapes = new Float32Array(cols * rows);
             spareCoarseness = new Uint8Array(cols * rows);
-            rowRevisions = new Float64Array(rows);
+            rowVersions = new Float64Array(rows);
             rebuildSamples(source);
         },
 
@@ -182,8 +182,8 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
             maxIterations = nextMaxIterations;
             escapes.fill(UNKNOWN);
             coarseness.fill(UNKNOWN_COARSENESS);
-            revision++;
-            rowRevisions.fill(revision);
+            version++;
+            rowVersions.fill(version);
             startPasses();
         },
 
@@ -191,7 +191,7 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
             iterationsSpent = 0;
             if (blockSize === 0 || !(iterationBudget > 0)) return 0;
             const before = computedCount;
-            const next = revision + 1;
+            const next = version + 1;
             while (iterationsSpent < iterationBudget) {
                 if (cursorRow >= rows) {
                     // The pass is done. The next one halves the blocks, and
@@ -208,7 +208,7 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
                     cursorRow += blockSize;
                 }
             }
-            if (computedCount > before) revision = next;
+            if (computedCount > before) version = next;
             return iterationsSpent;
         },
     };
@@ -233,8 +233,8 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
         coarseness = spareCoarseness;
         spareEscapes = oldEscapes;
         spareCoarseness = oldCoarseness;
-        revision++;
-        rowRevisions.fill(revision);
+        version++;
+        rowVersions.fill(version);
         startPasses();
     }
 
@@ -252,7 +252,7 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
      * already computed at its own point is left as it is, because an earlier
      * pass filled its block from it.
      */
-    function computeBlock(row: number, col: number, nextRevision: number): void {
+    function computeBlock(row: number, col: number, nextVersion: number): void {
         const corner = row * cols + col;
         if (coarseness[corner] === EXACT) return;
 
@@ -275,7 +275,7 @@ export function createEscapeField(options: EscapeFieldOptions): EscapeField {
                     coarseness[i] = blockSize;
                 }
             }
-            rowRevisions[y] = nextRevision;
+            rowVersions[y] = nextVersion;
         }
         escapes[corner] = escape;
         coarseness[corner] = EXACT;
