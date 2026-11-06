@@ -51,6 +51,8 @@ export function createDemoModel(): DemoModel {
         rockets,
         sparks,
         update(deltaMs) {
+            // The first rocket's timer starts at 0, and must not go off before time passes
+            if (deltaMs === 0) return;
             const dt = deltaMs / 1000;
             msToNextLaunch -= deltaMs;
             if (msToNextLaunch <= 0) {

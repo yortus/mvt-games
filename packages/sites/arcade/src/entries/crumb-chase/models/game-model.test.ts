@@ -81,6 +81,12 @@ describe('GameModel', () => {
             expect(loaded.phase).toBe('playing');
         });
 
+        it('eats no crumb until time passes', () => {
+            const model = makeGame();
+            model.update(0);
+            expect(model.score).toBe(0);
+        });
+
         it('saves nothing until the first crumb is eaten, since resuming would only start the game again', () => {
             const model = makeGame();
             expect(model.save()).toBeUndefined();

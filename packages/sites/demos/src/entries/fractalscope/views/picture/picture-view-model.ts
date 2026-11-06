@@ -269,10 +269,12 @@ function copySetting(setting: ScopeSetting): ScopeSetting {
 }
 
 /**
- * How much of a frame's budget a step of `deltaMs` buys. A step longer than
- * one frame buys less, down to `MIN_BUDGET_SHARE`.
+ * How much of a frame's budget a step of `deltaMs` buys. A step of no time
+ * buys none. A step longer than one frame buys less, down to
+ * `MIN_BUDGET_SHARE`.
  */
 function pickBudgetShare(deltaMs: number): number {
+    if (deltaMs === 0) return 0;
     if (!(deltaMs > TARGET_STEP_MS)) return 1;
     return Math.max(MIN_BUDGET_SHARE, TARGET_STEP_MS / deltaMs);
 }

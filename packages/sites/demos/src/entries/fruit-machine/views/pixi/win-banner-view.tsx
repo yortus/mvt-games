@@ -41,8 +41,8 @@ export function WinBannerView(bindings: WinBannerViewBindings): Container {
         const amount = bindings.amount();
         // A new spin clears the win: start again from nothing
         if (amount < shownAmount) shownAmount = 0;
-        const step = Math.max(amount * (deltaMs / COUNT_UP_MS), 1);
-        shownAmount = Math.min(amount, shownAmount + step);
+        const countPerMs = Math.max(amount / COUNT_UP_MS, MIN_COUNT_PER_MS);
+        shownAmount = Math.min(amount, shownAmount + countPerMs * deltaMs);
     }
 }
 
@@ -52,6 +52,8 @@ export function WinBannerView(bindings: WinBannerViewBindings): Container {
 
 /** How long the count takes to reach the win. */
 const COUNT_UP_MS = 700;
+/** The slowest the count goes, so a small win still counts up visibly: about one a frame at 60 frames a second. */
+const MIN_COUNT_PER_MS = 1 / 16;
 const BANNER_WIDTH = 400;
 const BANNER_HEIGHT = 62;
 /** Over the title's banner, which it hides while it shows. */

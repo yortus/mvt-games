@@ -81,6 +81,8 @@ export function GameView(bindings: GameViewBindings): Container {
 
     /** Ages the bubbles, and lets out a new one every so often while the submarine runs: more often while it rises. */
     function updateBubbles(deltaMs: number): void {
+        // The first bubble's timer starts at 0, and must not go off before time passes
+        if (deltaMs === 0) return;
         for (let i = 0; i < bubbles.length; i++) bubbles[i].ageMs += deltaMs;
         msToNextBubble -= deltaMs;
         if (model.phase === 'crashed' || msToNextBubble > 0) return;

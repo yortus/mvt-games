@@ -396,6 +396,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
+            // With no time passing, nothing spawns, and what the player asked for waits
+            if (deltaMs === 0) return;
+
             autoFire.update(deltaMs);
 
             // Take what the player asked for since the last update. What the game can't do now is dropped

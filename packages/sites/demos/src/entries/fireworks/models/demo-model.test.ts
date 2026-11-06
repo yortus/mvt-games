@@ -13,6 +13,12 @@ describe('the fireworks show', () => {
         for (const spark of lit) expect(spark.y).toBeLessThan(WATER_Y);
     });
 
+    it('launches nothing until time passes', () => {
+        const model = createDemoModel();
+        model.update(0);
+        expect(model.rockets.some((rocket) => rocket.isFlying)).toBe(false);
+    });
+
     it('lets each spark fade, and go out', () => {
         const model = createDemoModel();
         run(model, 3000);

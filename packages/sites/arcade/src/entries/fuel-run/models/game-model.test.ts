@@ -145,6 +145,17 @@ describe('GameModel', () => {
             expect(g.rocketsLaunched).toBe(1);
         });
 
+        it('spawns nothing, and keeps a bomb asked for, until time passes', () => {
+            const g = createGameModel({ sections: [{ ...makeSection(100), spawns: [{ col: 1, row: 0, kind: 'fuel-tank' }] }] });
+            g.dropBomb();
+            g.update(0);
+            expect(g.fuelTanks.liveCount).toBe(0);
+            expect(g.bombs.liveCount).toBe(0);
+            g.update(1000 / 60);
+            expect(g.fuelTanks.liveCount).toBe(1);
+            expect(g.bombs.liveCount).toBe(1);
+        });
+
         it('counts a fuel tank destroyed by a bomb as an enemy and as a fuel tank', () => {
             // A row of tanks, one in each slot, under the first bomb's path
             const spawns = Array.from({ length: MAX_FUEL_TANKS }, (_, i) => ({ col: 6 + i, row: 0, kind: 'fuel-tank' as const }));

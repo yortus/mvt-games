@@ -152,6 +152,15 @@ describe('PictureViewModel', () => {
         expect(picture.image.version).toBe(version);
     });
 
+    it('does no work on a step of no time', () => {
+        const { picture } = setup(1000, 800);
+        picture.update(0);
+        picture.update(0);
+
+        expect(picture.image.progress).toBe(0);
+        expect(picture.overview.isComplete).toBe(false);
+    });
+
     it('does less work on a long frame, not more', () => {
         // Big enough that one frame finishes neither
         const steady = setup(1000, 800).picture;

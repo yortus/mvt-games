@@ -198,6 +198,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
+            // With no time passing, the mouse doesn't eat the crumb it starts on, and what was asked for waits
+            if (deltaMs === 0) return;
+
             // A new game is allowed from any non-playing phase. One asked
             // for during play is dropped, not kept for later
             if (isNewRunRequested && gamePhase !== 'playing') {
