@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import { refreshView } from '@mvtjs/html';
-import { createFlockModel } from '../../boids';
 import { FlockPanelView } from './flock-panel-view';
 
 // ---------------------------------------------------------------------------
@@ -9,26 +8,29 @@ import { FlockPanelView } from './flock-panel-view';
 // ---------------------------------------------------------------------------
 
 function setup() {
-    const model = createFlockModel({
-        arenaWidth: 100,
-        arenaHeight: 82,
-        boidCount: 40,
-        separation: 3,
-        alignment: 0.5,
-        cohesion: 3,
-        wander: 9,
-        visionAngle: 4,
-        maxSpeed: 20,
-        minSpeed: 5,
-        perceptionRadius: 16,
-        seed: 1,
+    const flock = { boidCount: 40, separation: 3, alignment: 0.5, cohesion: 3, wander: 9 };
+    const slid: [string, number][] = [];
+    const panel = FlockPanelView({
+        boidCount: () => flock.boidCount,
+        separation: () => flock.separation,
+        alignment: () => flock.alignment,
+        cohesion: () => flock.cohesion,
+        wander: () => flock.wander,
+        onBoidCountSlid: (count) => slid.push(['boidCount', count]),
+        onSeparationSlid: (weight) => slid.push(['separation', weight]),
+        onAlignmentSlid: (weight) => slid.push(['alignment', weight]),
+        onCohesionSlid: (weight) => slid.push(['cohesion', weight]),
+        onWanderSlid: (weight) => slid.push(['wander', weight]),
     });
-    const panel = FlockPanelView({ model });
     document.body.replaceChildren(panel);
     refreshView(panel);
     const slider = (key: string): HTMLInputElement => panel.querySelector(`#flock-${key}`) as HTMLInputElement;
     const shown = (key: string): string => slider(key).parentElement?.querySelector('.range-value')?.textContent ?? '';
-    return { model, panel, slider, shown };
+    const slide = (key: string, value: number): void => {
+        slider(key).valueAsNumber = value;
+        slider(key).dispatchEvent(new Event('input'));
+    };
+    return { flock, slid, panel, slider, shown, slide };
 }
 
 // ---------------------------------------------------------------------------
@@ -45,22 +47,32 @@ describe('FlockPanelView', () => {
         expect(t.shown('alignment')).toBe('0.5');
     });
 
-    it('sets the model when a slider moves', () => {
+    it('reports each slider that moves, and where to', () => {
         const t = setup();
 
-        t.slider('boidCount').valueAsNumber = 120;
-        t.slider('boidCount').dispatchEvent(new Event('input'));
-        refreshView(t.panel);
+        t.slide('boidCount', 120);
+        t.slide('separation', 4);
+        t.slide('alignment', 2);
+        t.slide('cohesion', 5);
+        t.slide('wander', 10);
 
-        expect(t.model.boidCount).toBe(120);
-        expect(t.shown('boidCount')).toBe('120');
+        expect(t.slid).toEqual([['boidCount', 120], ['separation', 4], ['alignment', 2], ['cohesion', 5], ['wander', 10]]);
     });
 
-    it('follows the model when something else changes it', () => {
+    it('shows what it is given, not where a slider was moved to', () => {
+        const t = setup();
+
+        t.slide('boidCount', 120);
+        refreshView(t.panel);
+
+        expect(t.shown('boidCount')).toBe('40');
+    });
+
+    it('follows a setting when something else changes it', () => {
         const t = setup();
 
         // As a click in the three.js scene does
-        t.model.boidCount = 60;
+        t.flock.boidCount = 60;
         refreshView(t.panel);
 
         expect(t.slider('boidCount').valueAsNumber).toBe(60);

@@ -62,7 +62,7 @@ export function MinotaurView(bindings: MinotaurViewBindings): Container {
                     {() => <PuzzleView model={model} />}
                 </Match>
             </Switch>
-            <IntroView intro={model.intro} example={ExampleMazeView({ example: model.example })} text={HOW_TO_PLAY} findPoint={findTargetPoint} />
+            <IntroView intro={model.intro} example={<ExampleMazeView example={model.example} />} text={HOW_TO_PLAY} findPoint={findTargetPoint} />
             <MinotaurAudioView
                 sfx={sfx}
                 passagesMarked={() => model.puzzle?.passagesMarked ?? 0}

@@ -75,7 +75,7 @@ export function ArcadeHeadView(bindings: ArcadeHeadViewBindings): Element {
         >
             <div class="arcade-title" ref={(e) => { title = e; }}>
                 <h1 class="arcade-name">
-                    {WordmarkView({ text: bindings.wordmark, label: bindings.label })}
+                    <WordmarkView text={bindings.wordmark} label={bindings.label} />
                 </h1>
             </div>
             {/* Shut, it takes no room, and nothing in it takes the focus */}

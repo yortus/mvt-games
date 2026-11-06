@@ -72,12 +72,12 @@ export function SidePanelView(bindings: SidePanelViewBindings): Element {
             </label>
 
             <div class="scope-map">
-                {MinimapView({
-                    overview: bindings.overview,
-                    setting: bindings.setting,
-                    aspect: bindings.aspect,
-                    palette: bindings.palette,
-                })}
+                <MinimapView
+                    overview={bindings.overview}
+                    setting={bindings.setting}
+                    aspect={bindings.aspect}
+                    palette={bindings.palette}
+                />
             </div>
 
             <dl class="scope-readout">

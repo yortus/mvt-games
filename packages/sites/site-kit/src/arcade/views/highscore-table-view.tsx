@@ -48,9 +48,9 @@ export function HighscoreTableView(bindings: HighscoreTableViewBindings): Elemen
         const rank = formatRank(index + 1);
         return (
             <li class={() => rowClass(index)}>
-                <span class="hs-rank">{PixelTextView({ text: rank, label: `${index + 1}.` })}</span>
-                <span class="hs-initials">{PixelTextView({ text: () => bindings.rows()[index]?.initials ?? '' })}</span>
-                <span class="hs-score">{PixelTextView({ text: scoreText })}</span>
+                <span class="hs-rank"><PixelTextView text={rank} label={`${index + 1}.`} /></span>
+                <span class="hs-initials"><PixelTextView text={() => bindings.rows()[index]?.initials ?? ''} /></span>
+                <span class="hs-score"><PixelTextView text={scoreText} /></span>
             </li>
         );
     }

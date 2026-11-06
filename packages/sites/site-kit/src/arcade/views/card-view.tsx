@@ -110,7 +110,7 @@ export function CardView(bindings: CardViewBindings): Element {
             onContextMenu={(e) => e.preventDefault()}
         >
             <h3 class="card-name" title={entry.name}>
-                {PixelTextView({ text: entry.name.toUpperCase(), label: entry.name })}
+                <PixelTextView text={entry.name.toUpperCase()} label={entry.name} />
                 {/* The name in the theme's own type, for a theme that sets it so: each theme shows one of the two */}
                 <span class="card-name-text" text={entry.name} ref={(e) => { nameText = e; }} />
             </h3>

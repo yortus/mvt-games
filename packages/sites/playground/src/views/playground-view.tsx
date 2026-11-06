@@ -120,24 +120,24 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         <span class="editor-banner-note" text={keptBarrelNote} />
                         <button type="button" class="editor-banner-button" text="Manage files myself" onClick={() => void stopAutoBarrels()} />
                     </div>
-                    {CodeEditorView({
-                        activePath: () => model.activePath,
-                        textOf: model.textOf,
-                        isReadOnly: (path) => path === model.libraryFile?.path || model.isKeptBarrel(path),
-                        projectsOpened: () => model.projectsOpened,
-                        externalEdits: () => model.externalEdits,
-                        shownPlace: () => model.shownPlace,
-                        placesShown: () => model.placesShown,
-                        typeChecks: () => model.typeChecks,
-                        typeProblemsFor: typeProblemsFor,
-                        theme: () => model.theme,
-                        language: bindings.language,
-                        onTextEdited: (path, text) => model.editFile(path, text),
-                        onDefinitionFound: openDefinition,
-                        onEditsWanted: (edits) => model.applyEdits(edits),
-                        askNewName: (oldName) => dialogs.prompt({ title: 'Rename', message: `Rename ${oldName}, everywhere it is used, to:`, value: oldName, confirmLabel: 'Rename' }),
-                        tell: (message) => void dialogs.tell({ title: 'Cannot rename', message }),
-                    })}
+                    <CodeEditorView
+                        activePath={() => model.activePath}
+                        textOf={model.textOf}
+                        isReadOnly={(path) => path === model.libraryFile?.path || model.isKeptBarrel(path)}
+                        projectsOpened={() => model.projectsOpened}
+                        externalEdits={() => model.externalEdits}
+                        shownPlace={() => model.shownPlace}
+                        placesShown={() => model.placesShown}
+                        typeChecks={() => model.typeChecks}
+                        typeProblemsFor={typeProblemsFor}
+                        theme={() => model.theme}
+                        language={bindings.language}
+                        onTextEdited={(path, text) => model.editFile(path, text)}
+                        onDefinitionFound={openDefinition}
+                        onEditsWanted={(edits) => model.applyEdits(edits)}
+                        askNewName={(oldName) => dialogs.prompt({ title: 'Rename', message: `Rename ${oldName}, everywhere it is used, to:`, value: oldName, confirmLabel: 'Rename' })}
+                        tell={(message) => void dialogs.tell({ title: 'Cannot rename', message })}
+                    />
                 </div>
                 <DividerView orientation="vertical" label="Resize the run" onDragged={(deltaPx) => layout.resizeRun(deltaPx)} />
                 <div class="reference-pane">
@@ -159,17 +159,17 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                         onStepPressed={() => model.step()}
                         onSpeedPressed={(speed) => model.playAt(speed)}
                     />
-                    {PreviewView({
-                        sandboxDocument: () => model.sandboxDocument,
-                        sandboxesStarted: () => model.sandboxesStarted,
-                        isPaused: () => model.isPaused,
-                        steps: () => model.steps,
-                        speed: () => model.speed,
-                        background: () => THEMES[model.theme].palette.background,
-                        isFocusTaken: () => model.isRunByVisitor,
-                        placeholder: () => (model.phase === 'preparing' ? 'Preparing...' : 'Press Normal, or Ctrl+Enter, to run the project'),
-                        onSandboxMessage: (message) => model.reportSandboxMessage(message),
-                    })}
+                    <PreviewView
+                        sandboxDocument={() => model.sandboxDocument}
+                        sandboxesStarted={() => model.sandboxesStarted}
+                        isPaused={() => model.isPaused}
+                        steps={() => model.steps}
+                        speed={() => model.speed}
+                        background={() => THEMES[model.theme].palette.background}
+                        isFocusTaken={() => model.isRunByVisitor}
+                        placeholder={() => (model.phase === 'preparing' ? 'Preparing...' : 'Press Normal, or Ctrl+Enter, to run the project')}
+                        onSandboxMessage={(message) => model.reportSandboxMessage(message)}
+                    />
                     <DividerView orientation="horizontal" label="Resize the console" onDragged={(deltaPx) => layout.resizeConsole(deltaPx)} />
                     <div class="run-tabs">
                         <div class="run-tab-bar" role="tablist">

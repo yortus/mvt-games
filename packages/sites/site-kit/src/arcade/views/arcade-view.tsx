@@ -396,28 +396,28 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         assert(views !== undefined, 'arcade: the audio views are built only once they have loaded');
         return (
             <div class="arcade-audio-views">
-                {views.ArcadeAudioView({
-                    sfx: bindings.pageSfx,
-                    phase: () => model.phase,
-                    isPaused: () => model.isPaused,
-                    isPanelOpen: () => model.infoEntry !== undefined || model.isAboutOpen,
-                    searchText: () => model.searchText,
-                    chosenTagCount: () => model.activeChipCount,
-                    shownCount: () => model.shownCount,
-                    loadFailure: () => model.loadFailure,
-                    transitionPhase: () => transition.phase,
-                    isBeamOn: () => transition.isBeamOn,
-                    wallEffect: () => transition.wallEffect,
-                    cardKeyMoves: () => cardKeyMoves,
-                })}
-                {views.VolumePreviewAudioView({
-                    music: bindings.pageMusic,
-                    sfx: bindings.pageSfx,
+                <views.ArcadeAudioView
+                    sfx={bindings.pageSfx}
+                    phase={() => model.phase}
+                    isPaused={() => model.isPaused}
+                    isPanelOpen={() => model.infoEntry !== undefined || model.isAboutOpen}
+                    searchText={() => model.searchText}
+                    chosenTagCount={() => model.activeChipCount}
+                    shownCount={() => model.shownCount}
+                    loadFailure={() => model.loadFailure}
+                    transitionPhase={() => transition.phase}
+                    isBeamOn={() => transition.isBeamOn}
+                    wallEffect={() => transition.wallEffect}
+                    cardKeyMoves={() => cardKeyMoves}
+                />
+                <views.VolumePreviewAudioView
+                    music={bindings.pageMusic}
+                    sfx={bindings.pageSfx}
                     // The pause menu is open while the entry is paused.
-                    isOpen: () => model.isPaused,
-                    musicVolume: () => model.musicVolume,
-                    sfxVolume: () => model.sfxVolume,
-                })}
+                    isOpen={() => model.isPaused}
+                    musicVolume={() => model.musicVolume}
+                    sfxVolume={() => model.sfxVolume}
+                />
             </div>
         );
     }

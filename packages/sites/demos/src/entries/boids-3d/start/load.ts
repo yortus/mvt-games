@@ -48,7 +48,18 @@ export const load = defineElementLoader(async () => {
             scene.add(FlockView({ model }));
             const picker = createPointerPicker({ domElement: canvas, camera: () => camera, scene });
 
-            const panel = FlockPanelView({ model });
+            const panel = FlockPanelView({
+                boidCount: () => model.boidCount,
+                separation: () => model.separation,
+                alignment: () => model.alignment,
+                cohesion: () => model.cohesion,
+                wander: () => model.wander,
+                onBoidCountSlid: (count) => { model.boidCount = count; },
+                onSeparationSlid: (weight) => { model.separation = weight; },
+                onAlignmentSlid: (weight) => { model.alignment = weight; },
+                onCohesionSlid: (weight) => { model.cohesion = weight; },
+                onWanderSlid: (weight) => { model.wander = weight; },
+            });
             element.append(panel);
 
             const resizeObserver = new ResizeObserver(fit);

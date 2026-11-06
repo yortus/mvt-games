@@ -68,7 +68,7 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
         >
             <div class="pause-menu" visible={bindings.isOpen}>
                 <section class="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pause-title" ref={(e) => { panel = e; }}>
-                    <h2 id="pause-title" class="pause-title">{PixelTextView({ text: bindings.heading })}</h2>
+                    <h2 id="pause-title" class="pause-title"><PixelTextView text={bindings.heading} /></h2>
                     <div class="pause-page">
                         <div class="pause-choices">
                             <ChoiceView

@@ -62,20 +62,20 @@ export function PlacingView(bindings: PlacingViewBindings): Element {
             <div class="placing" visible={() => bindings.placing() !== 'none'}>
                 <section class="placing-panel" role="dialog" aria-modal="true" aria-label="New highscore" tabIndex={-1}>
                     <div class="placing-ask" visible={isAsking}>
-                        <h2 class="placing-title">{PixelTextView({ text: 'NEW HIGHSCORE' })}</h2>
-                        <p class="placing-score">{PixelTextView({ text: scoreText })}</p>
-                        <p class="placing-place">{PixelTextView({ text: placeText })}</p>
+                        <h2 class="placing-title"><PixelTextView text="NEW HIGHSCORE" /></h2>
+                        <p class="placing-score"><PixelTextView text={scoreText} /></p>
+                        <p class="placing-place"><PixelTextView text={placeText} /></p>
                         <div class="initials" role="group" aria-label="Your initials">
                             {cells}
                             <button type="button" class={okClass} aria-label="OK: enter these initials" onClick={pressOk}>
-                                {PixelTextView({ text: 'OK' })}
+                                <PixelTextView text="OK" />
                             </button>
                         </div>
                         <p class="placing-hint" aria-live="polite" text={hintText} />
                         <button type="button" class="placing-skip" text={skipText} disabled={isSending} onClick={pressSkip} />
                     </div>
                     <div class="placing-shown" visible={() => bindings.placing() === 'shown'}>
-                        <h2 class="placing-title">{PixelTextView({ text: 'HIGH SCORES' })}</h2>
+                        <h2 class="placing-title"><PixelTextView text="HIGH SCORES" /></h2>
                         <HighscoreTableView rows={bindings.rows} status={() => 'ready'} highlightRank={bindings.rank} />
                         <p class="placing-message" visible={() => shownMessage() !== ''} text={shownMessage} />
                         <button type="button" class="placing-continue" text="Continue" onClick={() => bindings.onContinuePressed?.()} />
@@ -109,7 +109,7 @@ export function PlacingView(bindings: PlacingViewBindings): Element {
                     disabled={isSending}
                     onClick={() => initials.moveTo(index)}
                 >
-                    {PixelTextView({ text: () => initials.letterAt(index), label: '' })}
+                    <PixelTextView text={() => initials.letterAt(index)} label="" />
                 </button>
                 <button type="button" class="initials-step" aria-label="Next character" text="▼" disabled={isSending} onClick={() => stepAt(index, 1)} />
             </div>

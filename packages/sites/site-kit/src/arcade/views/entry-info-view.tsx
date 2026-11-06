@@ -138,7 +138,7 @@ export function EntryInfoView(bindings: EntryInfoViewBindings): Element {
                             role="tabpanel"
                             visible={() => isTabShown('how-to-play')}
                         >
-                            {HowToPlayView({ howToPlay: () => details()?.howToPlay, deviceKind })}
+                            <HowToPlayView howToPlay={() => details()?.howToPlay} deviceKind={deviceKind} />
                         </div>
                         <div
                             class={() => pageClass('highscores')}

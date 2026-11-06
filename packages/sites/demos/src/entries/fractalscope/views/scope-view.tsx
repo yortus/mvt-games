@@ -44,35 +44,35 @@ export function ScopeView(bindings: ScopeViewBindings): Element {
     return (
         <div class="fractalscope" onUpdate={picture.update}>
             <div class="scope-stage">
-                {FractalCanvasView({
-                    field: () => picture.image,
-                    setting: () => model,
-                    fractal: () => model.fractal,
-                    magnification: () => model.magnification,
-                    palette: () => picture.palette,
-                    photosTaken: () => picture.photosTaken,
-                    onResized: picture.resize,
-                    onGestureBegan: picture.hold,
-                    onGestureEnded: picture.release,
-                    onDragged: model.moveCentre,
-                    onZoomed: model.magnifyAbout,
-                })}
+                <FractalCanvasView
+                    field={() => picture.image}
+                    setting={() => model}
+                    fractal={() => model.fractal}
+                    magnification={() => model.magnification}
+                    palette={() => picture.palette}
+                    photosTaken={() => picture.photosTaken}
+                    onResized={picture.resize}
+                    onGestureBegan={picture.hold}
+                    onGestureEnded={picture.release}
+                    onDragged={model.moveCentre}
+                    onZoomed={model.magnifyAbout}
+                />
             </div>
-            {SidePanelView({
-                fractal: () => model.fractal,
-                setting: () => model,
-                magnification: () => model.magnification,
-                overview: () => picture.overview,
-                aspect: () => picture.image.cols / picture.image.rows,
-                maxIterations: () => picture.image.maxIterations,
-                progress: () => picture.image.progress,
-                palette: () => picture.palette,
-                isPhotoPending: () => picture.isPhotoPending,
-                onFractalChosen: model.chooseFractal,
-                onPaletteChosen: picture.choosePalette,
-                onPhotoPressed: picture.requestPhoto,
-                onResetPressed: model.recentre,
-            })}
+            <SidePanelView
+                fractal={() => model.fractal}
+                setting={() => model}
+                magnification={() => model.magnification}
+                overview={() => picture.overview}
+                aspect={() => picture.image.cols / picture.image.rows}
+                maxIterations={() => picture.image.maxIterations}
+                progress={() => picture.image.progress}
+                palette={() => picture.palette}
+                isPhotoPending={() => picture.isPhotoPending}
+                onFractalChosen={model.chooseFractal}
+                onPaletteChosen={picture.choosePalette}
+                onPhotoPressed={picture.requestPhoto}
+                onResetPressed={model.recentre}
+            />
         </div>
     );
 }

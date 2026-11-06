@@ -50,7 +50,7 @@ export function SudokuView(bindings: SudokuViewBindings): Container {
                     {() => <PuzzleView model={model} />}
                 </Match>
             </Switch>
-            <IntroView intro={model.intro} example={ExampleGridView({ example: model.example })} text={HOW_TO_PLAY} findPoint={findTargetPoint} />
+            <IntroView intro={model.intro} example={<ExampleGridView example={model.example} />} text={HOW_TO_PLAY} findPoint={findTargetPoint} />
             <SudokuAudioView
                 sfx={sfx}
                 answersPlaced={() => model.puzzle?.answersPlaced ?? 0}
