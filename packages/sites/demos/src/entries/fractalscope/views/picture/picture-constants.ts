@@ -55,11 +55,18 @@ export const MAX_ITERATIONS = 4000;
 export const SETTLE_MS = 120;
 
 /**
- * The longest the picture may fall behind a scope that a held control keeps
- * moving. Waiting for it to stop would leave the picture far behind, with
- * nothing on the screen but the backdrop.
+ * The longest the picture may fall behind a scope that is moving by itself.
+ * Waiting for it to stop would leave the picture far behind, with nothing on
+ * the screen but the backdrop.
  */
 export const MAX_STALE_MS = 250;
+
+/**
+ * How far a scope moving by itself may slide from the picture, as a share of
+ * the picture's width, before the picture is taken again at once. A fast
+ * slide would otherwise uncover a wide strip before `MAX_STALE_MS` was up.
+ */
+export const MAX_SLIDE_SHARE = 0.1;
 
 // ---------------------------------------------------------------------------
 // The overview

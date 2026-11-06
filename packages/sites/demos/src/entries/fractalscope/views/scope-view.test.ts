@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { destroyElement, refreshView, updateView } from '@mvtjs/html';
-import { REST_SETTINGS, FRACTAL_KINDS, TRAVEL_RATE } from '../data';
+import { REST_SETTINGS, FRACTAL_KINDS, MAX_RECENTRE_MS, TRAVEL_RATE } from '../data';
 import { createScopeModel } from '../models';
 import { ScopeView } from './scope-view';
 
@@ -180,6 +180,7 @@ describe('ScopeView', () => {
         const t = setup();
         t.model.magnifyAbout(10, -0.75, 0.1);
         t.button('Reset').click();
+        t.model.update(MAX_RECENTRE_MS);
 
         expect(t.model.magnification).toBe(1);
     });
@@ -296,6 +297,7 @@ describe('ScopeView', () => {
             const t = setupKeys();
             t.model.magnifyAbout(4, 0, 0);
             press('r');
+            t.model.update(MAX_RECENTRE_MS);
 
             expect(t.model.magnification).toBe(1);
         });

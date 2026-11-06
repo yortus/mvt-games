@@ -7,6 +7,7 @@ import {
     ITERATIONS_PER_FRAME,
     ITERATIONS_PER_HALVING,
     MAX_ITERATIONS,
+    MAX_SLIDE_SHARE,
     MAX_STALE_MS,
     MIN_BUDGET_SHARE,
     OVERVIEW_COLS,
@@ -32,10 +33,11 @@ import {
  * While the scope's setting changes, the picture holds still, so the view
  * stretches it to fit. Once a gesture has ended, or a moment has passed with
  * nothing moving, the picture is taken again at the scope's new setting. So
- * a run of mouse-wheel notches costs one picture rather than twenty. A held
- * control can keep the scope moving for as long as it likes, so while one
- * does, the picture is taken again every so often, without waiting for it to
- * stop.
+ * a run of mouse-wheel notches costs one picture rather than twenty. A scope
+ * that is moving by itself, as with a held control, can go on for as long as
+ * it likes, so the picture is then taken again every so often, without
+ * waiting for it to stop, and as soon as it stops covering what the scope
+ * takes in.
  *
  * All of it is presentation. No domain outcome depends on any of it, and the
  * model never sees it.
@@ -81,7 +83,7 @@ export interface PictureViewModelOptions {
     readonly magnification: () => number;
     /** The fractal's rest setting, which the overview is taken at. */
     readonly restSetting: () => ScopeSetting;
-    /** Whether a held control is moving the scope, so that it won't stop by itself. */
+    /** Whether the scope is moving by itself, because of a held control or a recentre, so that it won't stop soon. */
     readonly isScopeMoving: () => boolean;
     /** Measures how fast a point escapes under the fractal under the scope. */
     readonly measureEscape: EscapeKernel;
@@ -169,7 +171,7 @@ export function createPictureViewModel(options: PictureViewModelOptions): Pictur
             if (isStale && !isHeld) {
                 settleMs -= deltaMs;
                 staleMs += deltaMs;
-                if (settleMs <= 0 || (options.isScopeMoving() && staleMs >= MAX_STALE_MS)) catchUp();
+                if (settleMs <= 0 || (options.isScopeMoving() && isPictureLeftBehind())) catchUp();
             }
 
             // The work of one frame, shared out: the overview first, because
@@ -212,6 +214,22 @@ export function createPictureViewModel(options: PictureViewModelOptions): Pictur
             isStale = true;
             settleMs = SETTLE_MS;
         }
+    }
+
+    /**
+     * Whether a scope moving by itself has left the picture too far behind:
+     * too long ago, or so far that the picture no longer covers the view. A
+     * scope zooming out needs a new picture every frame, because the old one
+     * shrinks away from the edges of the view at once. The first pass over a
+     * new picture covers the whole view in a frame, so nothing goes blank.
+     */
+    function isPictureLeftBehind(): boolean {
+        if (staleMs >= MAX_STALE_MS) return true;
+        const setting = options.setting();
+        const taken = image.setting;
+        if (setting.width > taken.width) return true;
+        const slide = Math.max(Math.abs(setting.centreRe - taken.centreRe), Math.abs(setting.centreIm - taken.centreIm));
+        return slide > taken.width * MAX_SLIDE_SHARE;
     }
 
     /**

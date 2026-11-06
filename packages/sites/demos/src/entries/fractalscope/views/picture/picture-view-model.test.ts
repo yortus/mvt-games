@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { advanceTime } from '@mvtjs/html';
-import { REST_SETTINGS, TRAVEL_RATE } from '../../data';
+import { MIN_RECENTRE_MS, REST_SETTINGS, TRAVEL_RATE } from '../../data';
 import { createScopeModel, type ScopeModel } from '../../models';
 import { createPictureViewModel, type PictureViewModel } from './picture-view-model';
-import { BASE_ITERATIONS, COARSEST_BLOCK, MAX_ITERATIONS, MAX_STALE_MS, SETTLE_MS } from './picture-constants';
+import { BASE_ITERATIONS, COARSEST_BLOCK, MAX_ITERATIONS, MAX_SLIDE_SHARE, MAX_STALE_MS, SETTLE_MS } from './picture-constants';
+import { UNKNOWN } from './reproject-samples';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -223,6 +224,68 @@ describe('PictureViewModel', () => {
         const travelledInTime = TRAVEL_RATE * HOME_SPAN * (MAX_STALE_MS + stepMs) / 1000;
         expect(furthestBehind).toBeGreaterThan(0);
         expect(furthestBehind).toBeLessThanOrEqual(travelledInTime);
+    });
+
+    it('takes the picture again every frame while the scope zooms out by itself', () => {
+        const { model, picture } = setup();
+        model.magnifyAbout(100, model.centreRe, model.centreIm);
+        picture.update(SETTLE_MS + 16);
+        model.zooming = 'out';
+
+        for (let frame = 0; frame < 5; frame++) {
+            model.update(16);
+            picture.update(16);
+            expect(picture.image.setting.width).toBe(model.width);
+        }
+    });
+
+    it('takes the picture again as soon as a fast slide uncovers too much of the view', () => {
+        const { model, picture } = setup();
+        const takenAt = picture.image.setting.centreRe;
+        model.moveCentre(HOME_SPAN * MAX_SLIDE_SHARE * 2, 0);
+        model.travelRe = 1;
+        picture.update(16);
+
+        expect(picture.image.setting.centreRe).toBeGreaterThan(takenAt);
+    });
+
+    it('lets a slow slide run until the picture is due, so that it can sharpen meanwhile', () => {
+        const { model, picture } = setup();
+        const takenAt = picture.image.setting.centreRe;
+        model.moveCentre(HOME_SPAN * MAX_SLIDE_SHARE / 2, 0);
+        model.travelRe = 1;
+        picture.update(16);
+
+        expect(picture.image.setting.centreRe).toBe(takenAt);
+    });
+
+    it('fills the whole view on the first frame of a new picture', () => {
+        const { model, picture } = setup();
+        model.magnifyAbout(100, model.centreRe, model.centreIm);
+        picture.update(SETTLE_MS + 16);
+        model.zooming = 'out';
+        model.update(16);
+        picture.update(16);
+
+        expect(picture.image.escapes.includes(UNKNOWN)).toBe(false);
+    });
+
+    it('follows a recentre on its way back, without waiting for it to end', () => {
+        const { model, picture } = setup();
+        model.magnifyAbout(1000, model.centreRe, model.centreIm);
+        picture.update(SETTLE_MS + 16);
+        picture.update(16);
+        const takenAt = picture.image.setting.width;
+        model.recentre();
+
+        const stepMs = 16;
+        for (let elapsedMs = 0; elapsedMs < MIN_RECENTRE_MS - stepMs * 2; elapsedMs += stepMs) {
+            model.update(stepMs);
+            picture.update(stepMs);
+        }
+
+        expect(model.isMoving).toBe(true);
+        expect(picture.image.setting.width).toBeGreaterThan(takenAt);
     });
 
     it('stays held by a gesture, however long the scope moves', async () => {

@@ -1,7 +1,9 @@
 import {
     type FractalKind,
     MAX_CENTRE_DRIFT,
+    MAX_RECENTRE_MS,
     MIN_MAGNIFICATION,
+    MIN_RECENTRE_MS,
     MIN_WIDTH,
     REST_SETTINGS,
     type ScopeSetting,
@@ -22,9 +24,10 @@ export type ZoomDirection = 'in' | 'out' | 'none';
  * The fractalscope: an instrument, like a microscope, for looking into a
  * fractal. Its state is its setting, which is the fractal under it, the point
  * of the complex plane it is centred on, and how strongly it magnifies. Its
- * controls move the centre, turn the magnification, recentre, and change
- * the fractal, and each of those takes effect at once. It can also be left
- * travelling or zooming, and then it moves on a little with each update.
+ * controls move the centre, turn the magnification and change the fractal,
+ * and each of those takes effect at once. It can also be left travelling or
+ * zooming, or sent back to its rest setting, and then it moves on a little
+ * with each update.
  *
  * It never sees what it shows. It has no picture, no screen and no colours.
  * It answers one question about the fractal, how fast a point escapes, and
@@ -45,7 +48,7 @@ export interface ScopeModel extends ScopeSetting {
     travelIm: number;
     /** Which way the scope is zooming. */
     zooming: ZoomDirection;
-    /** Whether a held control is moving the scope. */
+    /** Whether the scope is moving by itself, because of a held control or a recentre. */
     readonly isMoving: boolean;
     /** Moves the centre by `deltaRe` and `deltaIm`, in units of the plane, as far as the drift allowed. */
     moveCentre: (deltaRe: number, deltaIm: number) => void;
@@ -56,7 +59,12 @@ export interface ScopeModel extends ScopeSetting {
      * stays put either way.
      */
     magnifyAbout: (factor: number, re: number, im: number) => void;
-    /** Goes back to the fractal's rest setting. */
+    /**
+     * Eases back to the fractal's rest setting. The further in the scope is,
+     * the longer that takes, from `MIN_RECENTRE_MS` to `MAX_RECENTRE_MS`. Any
+     * other move of the scope stops it where it has got to, so the visitor
+     * always has the last word.
+     */
     recentre: () => void;
     /**
      * Puts the fractal `fractal` under the scope, at its rest setting.
@@ -90,6 +98,14 @@ export function createScopeModel(): ScopeModel {
     let travelIm = 0;
     let zooming: ZoomDirection = 'none';
 
+    // Where a recentre set out from, and how long it has been going.
+    let isRecentring = false;
+    let recentreMs = 0;
+    let recentreLengthMs = 0;
+    let fromRe = 0;
+    let fromIm = 0;
+    let fromWidth = 0;
+
     const model: ScopeModel = {
         get fractal() { return fractal; },
         get restSetting() { return restSetting; },
@@ -104,15 +120,17 @@ export function createScopeModel(): ScopeModel {
         set travelIm(value) { travelIm = limitTravel(value); },
         get zooming() { return zooming; },
         set zooming(value) { zooming = value; },
-        get isMoving() { return travelRe !== 0 || travelIm !== 0 || zooming !== 'none'; },
+        get isMoving() { return isRecentring || travelRe !== 0 || travelIm !== 0 || zooming !== 'none'; },
 
         moveCentre(deltaRe, deltaIm) {
+            isRecentring = false;
             centreRe = limitDrift(centreRe + deltaRe, restSetting.centreRe);
             centreIm = limitDrift(centreIm + deltaIm, restSetting.centreIm);
         },
 
         magnifyAbout(factor, re, im) {
             if (!(factor > 0)) return;
+            isRecentring = false;
             const widest = restSetting.width / MIN_MAGNIFICATION;
             const nextWidth = Math.min(widest, Math.max(MIN_WIDTH, width / factor));
             // The factor actually applied, after the limits. The point keeps
@@ -124,9 +142,12 @@ export function createScopeModel(): ScopeModel {
         },
 
         recentre() {
-            centreRe = restSetting.centreRe;
-            centreIm = restSetting.centreIm;
-            width = restSetting.width;
+            isRecentring = true;
+            recentreMs = 0;
+            recentreLengthMs = pickRecentreLength(width, restSetting.width);
+            fromRe = centreRe;
+            fromIm = centreIm;
+            fromWidth = width;
         },
 
         chooseFractal(next) {
@@ -134,7 +155,7 @@ export function createScopeModel(): ScopeModel {
             fractal = next;
             kernel = pickKernel(next);
             restSetting = REST_SETTINGS[next];
-            model.recentre();
+            jumpToRest();
         },
 
         measureEscape(re, im, maxIterations, measure) {
@@ -151,15 +172,52 @@ export function createScopeModel(): ScopeModel {
                 const distance = TRAVEL_RATE * width * seconds;
                 model.moveCentre(travelRe * distance, travelIm * distance);
             }
+            if (isRecentring) easeBack(deltaMs);
         },
     };
 
     return model;
+
+    function jumpToRest(): void {
+        isRecentring = false;
+        centreRe = restSetting.centreRe;
+        centreIm = restSetting.centreIm;
+        width = restSetting.width;
+    }
+
+    /**
+     * Moves a recentre on. Each value is worked out from where the recentre
+     * set out, so it follows the same path at any step size. The width moves
+     * by equal factors rather than equal amounts, which looks like an even
+     * zoom. The centre keeps pace with the width, so the whole journey is one
+     * zoom out from a fixed point. From deep in, the centre must hardly move
+     * at first: a step that is tiny on the plane is a long way on the screen.
+     */
+    function easeBack(deltaMs: number): void {
+        recentreMs += deltaMs;
+        if (recentreMs >= recentreLengthMs) {
+            jumpToRest();
+            return;
+        }
+        const progress = recentreMs / recentreLengthMs;
+        const eased = progress * progress * (3 - 2 * progress);
+        width = fromWidth * (restSetting.width / fromWidth) ** eased;
+        const widthToGo = restSetting.width - fromWidth;
+        const share = widthToGo === 0 ? eased : (width - fromWidth) / widthToGo;
+        centreRe = fromRe + (restSetting.centreRe - fromRe) * share;
+        centreIm = fromIm + (restSetting.centreIm - fromIm) * share;
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** How long a recentre from `width` takes, for a fractal that rests at `restWidth`. */
+function pickRecentreLength(width: number, restWidth: number): number {
+    const depth = Math.log(restWidth / width) / Math.log(restWidth / MIN_WIDTH);
+    return MIN_RECENTRE_MS + (MAX_RECENTRE_MS - MIN_RECENTRE_MS) * Math.max(0, depth);
+}
 
 /** `value`, held between travelling flat out one way and the other. */
 function limitTravel(value: number): number {

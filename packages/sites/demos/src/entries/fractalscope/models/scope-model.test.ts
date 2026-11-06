@@ -1,10 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { advanceTime } from '@mvtjs/html';
-import { MAX_CENTRE_DRIFT, MIN_MAGNIFICATION, MIN_WIDTH, REST_SETTINGS, TRAVEL_RATE, ZOOM_RATE } from '../data';
+import {
+    FRACTAL_KINDS,
+    MAX_CENTRE_DRIFT,
+    MAX_RECENTRE_MS,
+    MIN_MAGNIFICATION,
+    MIN_RECENTRE_MS,
+    MIN_WIDTH,
+    REST_SETTINGS,
+    TRAVEL_RATE,
+    ZOOM_RATE,
+} from '../data';
 import { type EscapeMeasure, INTERIOR } from './fractal-kernels';
-import { createScopeModel } from './scope-model';
+import { createScopeModel, type ScopeModel } from './scope-model';
 
 const REST = REST_SETTINGS['mandelbrot'];
+
+/** How long a recentre takes from `scope`'s setting now, to the millisecond. */
+function timeRecentre(scope: ScopeModel): number {
+    scope.recentre();
+    let elapsedMs = 0;
+    while (scope.isMoving) {
+        scope.update(1);
+        elapsedMs++;
+    }
+    return elapsedMs;
+}
 
 describe('ScopeModel', () => {
     it('starts over the Mandelbrot set, at its rest setting', () => {
@@ -76,16 +97,155 @@ describe('ScopeModel', () => {
         expect(scope.centreIm).toBe(REST.centreIm - MAX_CENTRE_DRIFT);
     });
 
-    it('recentres, keeping the fractal', () => {
+    it('eases back to its rest setting, keeping the fractal', async () => {
         const scope = createScopeModel();
         scope.chooseFractal('phoenix');
         scope.moveCentre(0.2, 0.2);
         scope.magnifyAbout(8, 0.1, 0.1);
+        const magnified = scope.magnification;
         scope.recentre();
 
+        expect(scope.magnification).toBe(magnified);
+        await advanceTime(MIN_RECENTRE_MS / 2, scope);
+        expect(scope.magnification).toBeLessThan(magnified);
+        expect(scope.magnification).toBeGreaterThan(1);
+
+        await advanceTime(MAX_RECENTRE_MS, scope);
         expect(scope.fractal).toBe('phoenix');
         expect(scope.centreIm).toBe(REST_SETTINGS['phoenix'].centreIm);
         expect(scope.magnification).toBe(1);
+    });
+
+    it('is half way back at half time, zooming evenly', () => {
+        const timed = createScopeModel();
+        timed.magnifyAbout(16, REST.centreRe, REST.centreIm);
+        const lengthMs = timeRecentre(timed);
+
+        const scope = createScopeModel();
+        scope.magnifyAbout(16, REST.centreRe, REST.centreIm);
+        scope.recentre();
+        scope.update(lengthMs / 2);
+
+        expect(scope.magnification).toBeCloseTo(4, 1);
+    });
+
+    it('keeps the view steady from deep in, so that the centre waits for the width', () => {
+        const scope = createScopeModel();
+        const re = -0.7436;
+        const im = 0.1318;
+        scope.moveCentre(re - REST.centreRe, im - REST.centreIm);
+        scope.magnifyAbout(1e10, re, im);
+        scope.recentre();
+        const widthAtStart = scope.width;
+        scope.update(MIN_RECENTRE_MS / 4);
+
+        // However far the view has zoomed out, the point it started on is still in it.
+        expect(Math.abs(scope.centreRe - re)).toBeLessThan(scope.width);
+        expect(Math.abs(scope.centreIm - im)).toBeLessThan(scope.width);
+        expect(scope.width).toBeGreaterThan(widthAtStart);
+    });
+
+    it('takes the shortest time to recentre when it isn\'t magnified', () => {
+        const panned = createScopeModel();
+        panned.moveCentre(1, 0);
+        expect(timeRecentre(panned)).toBe(MIN_RECENTRE_MS);
+
+        const pulledBack = createScopeModel();
+        pulledBack.magnifyAbout(MIN_MAGNIFICATION, REST.centreRe, REST.centreIm);
+        expect(timeRecentre(pulledBack)).toBe(MIN_RECENTRE_MS);
+    });
+
+    it('takes the longest time to recentre from the strongest magnification, whichever the fractal', () => {
+        for (const kind of FRACTAL_KINDS) {
+            const scope = createScopeModel();
+            scope.chooseFractal(kind);
+            scope.magnifyAbout(1e30, scope.centreRe, scope.centreIm);
+
+            expect(timeRecentre(scope), kind).toBe(MAX_RECENTRE_MS);
+        }
+    });
+
+    it('adds the same time to a recentre for each halving of the width', () => {
+        const lengthFrom = (magnification: number): number => {
+            const scope = createScopeModel();
+            scope.magnifyAbout(magnification, REST.centreRe, REST.centreIm);
+            return timeRecentre(scope);
+        };
+        const near = lengthFrom(2 ** 10);
+        const further = lengthFrom(2 ** 20);
+        const furthest = lengthFrom(2 ** 30);
+
+        expect(further).toBeGreaterThan(near);
+        expect(Math.abs((furthest - further) - (further - near))).toBeLessThanOrEqual(2);
+    });
+
+    it('recentres the same however the time is cut into steps', () => {
+        const oneStep = createScopeModel();
+        const manySteps = createScopeModel();
+        for (const scope of [oneStep, manySteps]) {
+            scope.magnifyAbout(50, 0.1, 0.2);
+            scope.recentre();
+        }
+
+        oneStep.update(MIN_RECENTRE_MS / 2);
+        for (let i = 0; i < 10; i++) manySteps.update(MIN_RECENTRE_MS / 20);
+
+        expect(manySteps.width).toBeCloseTo(oneStep.width, 9);
+        expect(manySteps.centreRe).toBeCloseTo(oneStep.centreRe, 9);
+    });
+
+    it('recentres along the middle when only the centre has moved', async () => {
+        const scope = createScopeModel();
+        scope.moveCentre(1, 0);
+        scope.recentre();
+        scope.update(MIN_RECENTRE_MS / 2);
+
+        expect(scope.centreRe).toBeCloseTo(REST.centreRe + 0.5);
+        expect(scope.width).toBe(REST.width);
+    });
+
+    it('lets any other move stop a recentre where it has got to', () => {
+        const moves = [
+            (scope: ScopeModel) => { scope.moveCentre(0.01, 0); },
+            (scope: ScopeModel) => { scope.magnifyAbout(1.1, scope.centreRe, scope.centreIm); },
+            (scope: ScopeModel) => { scope.travelRe = 1; },
+            (scope: ScopeModel) => { scope.zooming = 'in'; },
+        ];
+        for (const move of moves) {
+            const scope = createScopeModel();
+            scope.magnifyAbout(16, 0, 0);
+            scope.recentre();
+            scope.update(MIN_RECENTRE_MS / 4);
+            move(scope);
+            scope.update(1);
+            scope.travelRe = 0;
+            scope.zooming = 'none';
+            const magnification = scope.magnification;
+            scope.update(MAX_RECENTRE_MS);
+
+            expect(scope.magnification).toBe(magnification);
+            expect(scope.isMoving).toBe(false);
+        }
+    });
+
+    it('says it is moving until a recentre is done', async () => {
+        const scope = createScopeModel();
+        scope.magnifyAbout(4, 0, 0);
+        scope.recentre();
+        expect(scope.isMoving).toBe(true);
+
+        await advanceTime(MAX_RECENTRE_MS, scope);
+        expect(scope.isMoving).toBe(false);
+    });
+
+    it('jumps to a new fractal at once, abandoning a recentre', () => {
+        const scope = createScopeModel();
+        scope.magnifyAbout(16, 0, 0);
+        scope.recentre();
+        scope.chooseFractal('phoenix');
+
+        expect(scope.magnification).toBe(1);
+        expect(scope.isMoving).toBe(false);
     });
 
     it('changes fractal, going to its rest setting and measuring magnification against it', () => {

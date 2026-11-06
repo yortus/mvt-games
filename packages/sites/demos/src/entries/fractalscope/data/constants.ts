@@ -31,3 +31,11 @@ export const TRAVEL_RATE = 0.3;
 
 /** How fast the scope zooms while a control is held, as the natural log of the magnification per second. */
 export const ZOOM_RATE = 1.1;
+
+/**
+ * How long the scope takes to ease back to its rest setting, in milliseconds,
+ * from no magnification and from the strongest there is. In between, each
+ * halving of the width adds the same time, so the zoom out keeps a steady pace.
+ */
+export const MIN_RECENTRE_MS = 700;
+export const MAX_RECENTRE_MS = 4000;
