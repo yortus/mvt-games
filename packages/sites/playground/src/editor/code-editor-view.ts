@@ -1,6 +1,6 @@
 import { EditorView, basicSetup } from 'codemirror';
 import { javascript } from '@codemirror/lang-javascript';
-import { Compartment, EditorSelection, EditorState, Prec } from '@codemirror/state';
+import { Annotation, Compartment, EditorSelection, EditorState, Prec } from '@codemirror/state';
 import { indentUnit } from '@codemirror/language';
 import { acceptCompletion } from '@codemirror/autocomplete';
 import { indentWithTab } from '@codemirror/commands';
@@ -142,7 +142,8 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
                             tell: bindings.tell,
                         }),
                 EditorView.updateListener.of((update) => {
-                    if (update.docChanged && !isReadOnly) bindings.onTextEdited?.(path, update.state.doc.toString());
+                    const isEdited = update.transactions.some((each) => each.docChanged && each.annotation(fromModel) !== true);
+                    if (isEdited && !isReadOnly) bindings.onTextEdited?.(path, update.state.doc.toString());
                 }),
             ],
         });
@@ -151,7 +152,7 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
     /** Brings each file's editor state up to the model's text, as one change, so undo takes it back in one step. */
     function takeExternalEdits(): void {
         const shownChange = changeTo(editor.state, bindings.textOf(shownPath));
-        if (shownChange !== undefined) editor.dispatch({ changes: shownChange });
+        if (shownChange !== undefined) editor.dispatch({ changes: shownChange, annotations: fromModel.of(true) });
         for (const [path, state] of states) {
             const change = changeTo(state, bindings.textOf(path));
             if (change !== undefined) states.set(path, state.update({ changes: change }).state);
@@ -189,6 +190,9 @@ export function CodeEditorView(bindings: CodeEditorViewBindings): Element {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** Marks a change that came from the model, which is taken in the refresh step, and which the model needn't hear about. */
+const fromModel = Annotation.define<boolean>();
 
 /** The one change that turns a state's text into `text`: what lies between their common start and common end. */
 function changeTo(state: EditorState, text: string): { from: number; to: number; insert: string } | undefined {

@@ -30,6 +30,9 @@ export const KEYPAD_Y = GRID_Y + GRID_SIZE + 14;
 export const KEY_GAP = 4;
 export const KEY_WIDTH = (GRID_SIZE - KEY_GAP * 8) / 9;
 export const KEY_HEIGHT = 52;
+/** How long a key must be held to fill a cell, and how long before its ring starts to show, in ms. */
+export const KEY_HOLD_MS = 450;
+export const KEY_HOLD_QUIET_MS = 100;
 
 /** The buttons under the keypad: undo, and the tutorial. */
 export const TOOL_Y = KEYPAD_Y + KEY_HEIGHT + 12;

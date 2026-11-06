@@ -4,6 +4,7 @@ import type { Container } from 'pixi.js';
 import { setUpdate } from '@mvtjs/pixi';
 import { ACCENT_COLOR, ButtonView, HOLD_RING_RADIUS, HoldRingView } from '../../../shared';
 import { hasDigit } from '../generator';
+import { createKeypadGesturesViewModel } from './keypad-gestures-view-model';
 import { findKeyLeft } from './puzzle-layout';
 import { KEY_HEIGHT, KEY_WIDTH } from './view-constants';
 
@@ -34,13 +35,16 @@ export interface KeypadViewBindings {
  * selected, a key fills the cell with its digit instead, or clears it if
  * the digit is there. While it is held, a ring fills round its digit, as in
  * the walkthrough's demo: blue, or white on a key lit in blue, which is the
- * one that clears. Its origin is its top left corner.
+ * one that clears. What the presses mean is the gestures view model's. Its
+ * origin is its top left corner.
  */
 export function KeypadView(bindings: KeypadViewBindings): Container {
-    // Presentation state: the key held down, if any, for how long, and whether its hold has filled a cell
-    let heldDigit = 0;
-    let heldMs = 0;
-    let isHoldDone = false;
+    const gestures = createKeypadGesturesViewModel({
+        isEnabled: bindings.isEnabled,
+        canFill: bindings.canFill,
+        onTapped: bindings.onTapped,
+        onHeld: bindings.onHeld,
+    });
 
     const keys: Container[] = [];
     for (let digit = 1; digit <= 9; digit++) {
@@ -48,10 +52,10 @@ export function KeypadView(bindings: KeypadViewBindings): Container {
             <container
                 x={findKeyLeft(digit)}
                 y={0}
-                onPointerDown={() => press(digit)}
-                onPointerUp={() => release(digit)}
-                onPointerUpOutside={cancel}
-                onPointerCancel={cancel}
+                onPointerDown={() => gestures.press(digit)}
+                onPointerUp={() => gestures.release(digit)}
+                onPointerUpOutside={gestures.cancel}
+                onPointerCancel={gestures.cancel}
             >
                 <ButtonView
                     x={0}
@@ -67,7 +71,7 @@ export function KeypadView(bindings: KeypadViewBindings): Container {
                 <container x={KEY_WIDTH / 2} y={KEY_HEIGHT / 2}>
                     <HoldRingView
                         radius={HOLD_RING_RADIUS}
-                        progress={() => (heldDigit === digit ? findHoldProgress() : 0)}
+                        progress={() => gestures.holdProgressFor(digit)}
                         color={() => (hasDigit(bindings.digits(), digit) ? 0xffffff : ACCENT_COLOR)}
                     />
                 </container>
@@ -75,47 +79,6 @@ export function KeypadView(bindings: KeypadViewBindings): Container {
         );
     }
     const view = <container>{keys}</container>;
-    setUpdate(view, update);
+    setUpdate(view, gestures.update);
     return view;
-
-    function press(digit: number): void {
-        if (!bindings.isEnabled()) return;
-        heldDigit = digit;
-        heldMs = 0;
-        isHoldDone = false;
-    }
-
-    /** A key let go: a tap, unless it was held long enough to fill a cell. */
-    function release(digit: number): void {
-        const isTap = heldDigit === digit && !isHoldDone;
-        cancel();
-        if (isTap) bindings.onTapped(digit);
-    }
-
-    function cancel(): void {
-        heldDigit = 0;
-        isHoldDone = false;
-    }
-
-    function update(deltaMs: number): void {
-        if (heldDigit === 0 || isHoldDone) return;
-        heldMs += deltaMs;
-        if (heldMs < HOLD_MS || !bindings.canFill()) return;
-        isHoldDone = true;
-        bindings.onHeld(heldDigit);
-    }
-
-    /** How far through the hold the key held is, from 0 to 1. It shows nothing for a moment, so a tap shows no ring. */
-    function findHoldProgress(): number {
-        if (isHoldDone || !bindings.canFill()) return isHoldDone ? 1 : 0;
-        return Math.max(0, Math.min(1, (heldMs - QUIET_MS) / (HOLD_MS - QUIET_MS)));
-    }
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-/** How long a key must be held to fill a cell, and how long before its ring starts to show, in ms. */
-const HOLD_MS = 450;
-const QUIET_MS = 100;

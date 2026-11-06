@@ -101,14 +101,16 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
     }
 
     function rebuild(): void {
-        // Release stale directions before tearing down event handlers
+        // Release stale directions before tearing down event handlers. A
+        // rebuild comes in the refresh step, so the tick is still under way,
+        // and the release is reported once the frame's code has finished.
         if (dpadXDir !== 'none') {
             dpadXDir = 'none';
-            bindings.onXDirectionChanged?.('none');
+            queueMicrotask(() => bindings.onXDirectionChanged?.('none'));
         }
         if (dpadYDir !== 'none') {
             dpadYDir = 'none';
-            bindings.onYDirectionChanged?.('none');
+            queueMicrotask(() => bindings.onYDirectionChanged?.('none'));
         }
 
         destroyChildren(dpadGroup);
