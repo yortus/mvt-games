@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createPerformanceHistory, METRIC_KINDS, type PerformanceSample } from './performance-history';
 
-const SAMPLE: PerformanceSample = { fps: 60, cpuMs: 3, gpuMs: undefined, reads: 100, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 };
+const SAMPLE: PerformanceSample = { fps: 60, missedShare: 0, cpuMs: 3, gpuMs: undefined, reads: 100, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 };
 
 describe('a performance history', () => {
     it('has no values and an empty history before its first sample', () => {

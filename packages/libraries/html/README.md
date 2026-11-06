@@ -69,8 +69,9 @@ A function attribute is read on every refresh; a plain value is set once.
 
 ## A performance monitor
 
-`PerfmonView` shows how fast your game runs: frames per second, the time
-each frame takes, and how much work the views do, each with a small graph.
+`PerfmonView` shows how fast your game runs: frames per second, how many
+were missed, the time each frame takes, and how much work the views do, each
+with a small graph.
 Give it the metrics to show, from `createPerformanceMeter` in
 `@mvtjs/utils`:
 
@@ -87,6 +88,17 @@ A faint line in the CPU and GPU graphs marks the time each frame has. It
 follows your display, from the highest frame rate the panel has seen:
 16.7 ms at 60 FPS, 8.3 ms at 120. If your game holds itself to a lower
 rate, give that frame's time as `frameBudgetMs`.
+
+Watch the Missed row when your frame rate drops and your CPU time doesn't
+explain it. The CPU row only times your code. Your drawing calls often just
+record what to draw, and the browser does the drawing afterwards, off the
+main thread. So drawing that's too much for the browser can drop your frame
+rate while CPU time stays low. Missed is the share of the frames your display
+could have shown that went missing even though your code had time to spare.
+It can't say what held them up, and another busy app can cause it too, but it
+does tell you the time isn't going on your code. It works for every renderer,
+which matters on a 2D canvas: it has no GPU timer, so its GPU row can only be
+n/a.
 
 Some metrics can't always be measured honestly. For example, views that
 draw by hand don't count their reads unless they call `addReads`. List

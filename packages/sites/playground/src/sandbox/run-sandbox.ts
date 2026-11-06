@@ -151,8 +151,8 @@ const MAX_FRAME_MS = 100;
 
 /** The meter's latest values, as a plain object a message can carry. */
 function toSample(meter: PerformanceMeter): PerformanceSample {
-    const { fps, cpuMs, gpuMs, reads, methodCalls, methodListRebuilds, rebuildNodeVisits } = meter;
-    return { fps, cpuMs, gpuMs, reads, methodCalls, methodListRebuilds, rebuildNodeVisits };
+    const { fps, missedShare, cpuMs, gpuMs, reads, methodCalls, methodListRebuilds, rebuildNodeVisits } = meter;
+    return { fps, missedShare, cpuMs, gpuMs, reads, methodCalls, methodListRebuilds, rebuildNodeVisits };
 }
 
 /** Makes the renderer the project asks for. Each is loaded only when a project uses it. */

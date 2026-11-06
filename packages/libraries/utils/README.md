@@ -26,8 +26,9 @@ make common parts of it shorter, and none of them needs a renderer:
   frame-sized step at a time, as a game loop would. A test can then check
   what happens after a few seconds without waiting for them.
 - **Measuring performance:** `createPerformanceMeter` measures frames per
-  second, the time each frame takes, and how much work the views do, from
-  any frame loop that tells it when each frame starts and ends.
+  second, how many were missed, the time each frame takes, and how much work
+  the views do, from any frame loop that tells it when each frame starts and
+  ends.
   `createPerformanceHistory` holds metrics that were measured somewhere
   else, such as in an iframe. `@mvtjs/html`'s `PerfmonView` shows either.
 - **For renderer packages:** `registerRenderer`, which teaches the view tick

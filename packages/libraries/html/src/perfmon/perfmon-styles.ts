@@ -35,6 +35,7 @@ const STYLES = `
     --mvt-perfmon-text: #c9d1d9;
     --mvt-perfmon-muted: #8b949e;
     --mvt-perfmon-fps: #7ee787;
+    --mvt-perfmon-missedShare: #ff9bce;
     --mvt-perfmon-cpuMs: #79c0ff;
     --mvt-perfmon-gpuMs: #ffa657;
     --mvt-perfmon-reads: #d2a8ff;

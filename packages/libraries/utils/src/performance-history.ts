@@ -3,16 +3,27 @@
 // ---------------------------------------------------------------------------
 
 /** A metric that `PerformanceMetrics` tracks, named as its property. */
-export type MetricKind = 'fps' | 'cpuMs' | 'gpuMs' | 'reads' | 'methodCalls' | 'methodListRebuilds' | 'rebuildNodeVisits';
+export type MetricKind = 'fps' | 'missedShare' | 'cpuMs' | 'gpuMs' | 'reads' | 'methodCalls' | 'methodListRebuilds' | 'rebuildNodeVisits';
 
 /** Every metric, in the order a Perfmon shows them. */
-export const METRIC_KINDS: readonly MetricKind[] = ['fps', 'cpuMs', 'gpuMs', 'reads', 'methodCalls', 'methodListRebuilds', 'rebuildNodeVisits'];
+export const METRIC_KINDS: readonly MetricKind[] = ['fps', 'missedShare', 'cpuMs', 'gpuMs', 'reads', 'methodCalls', 'methodListRebuilds', 'rebuildNodeVisits'];
 
 /** One window's values: what `PerformanceMetrics` publishes each time a window closes. */
 export interface PerformanceSample {
     /** Frames per second. */
     readonly fps: number;
-    /** Main-thread milliseconds per frame, from the start of the tick to the end of the draw. */
+    /**
+     * The share of the frames the display could have shown that were missed
+     * though the main thread had time to spare, from 0 to 1. Something else
+     * held them up, such as the browser drawing what a frame asked for, which
+     * `cpuMs` can't see.
+     */
+    readonly missedShare: number;
+    /**
+     * Main-thread milliseconds per frame, from the start of the tick to the
+     * end of the draw. Drawing often only records what to draw, and the
+     * browser does the work later, off the main thread. That isn't counted.
+     */
     readonly cpuMs: number;
     /** GPU milliseconds per frame, or `undefined` where the GPU can't be timed. */
     readonly gpuMs: number | undefined;
@@ -27,9 +38,9 @@ export interface PerformanceSample {
 }
 
 /**
- * Performance metrics for a running game or app: frames per second, CPU and
- * GPU time per frame, and the work of each tick, with a short history of
- * each. The values change together, a few times a second, each time a new
+ * Performance metrics for a running game or app: frames per second, how many
+ * were missed, CPU and GPU time per frame, and the work of each tick, with a
+ * short history of each. The values change together, a few times a second, each time a new
  * sample is published, so a view that shows them can redraw only when
  * `sampleCount` changes.
  *
@@ -82,6 +93,7 @@ export function createPerformanceHistory(options: PerformanceHistoryOptions = {}
     // Ring buffers of published values; `historyStart` is the oldest
     const histories: Readonly<Record<MetricKind, Float64Array>> = {
         fps: new Float64Array(historyLength).fill(NaN),
+        missedShare: new Float64Array(historyLength).fill(NaN),
         cpuMs: new Float64Array(historyLength).fill(NaN),
         gpuMs: new Float64Array(historyLength).fill(NaN),
         reads: new Float64Array(historyLength).fill(NaN),
@@ -94,6 +106,7 @@ export function createPerformanceHistory(options: PerformanceHistoryOptions = {}
     return {
         get sampleCount() { return sampleCount; },
         get fps() { return latest.fps; },
+        get missedShare() { return latest.missedShare; },
         get cpuMs() { return latest.cpuMs; },
         get gpuMs() { return latest.gpuMs; },
         get reads() { return latest.reads; },
@@ -107,6 +120,7 @@ export function createPerformanceHistory(options: PerformanceHistoryOptions = {}
         add(sample) {
             latest = sample;
             histories.fps[historyStart] = sample.fps;
+            histories.missedShare[historyStart] = sample.missedShare;
             histories.cpuMs[historyStart] = sample.cpuMs;
             histories.gpuMs[historyStart] = sample.gpuMs ?? NaN;
             histories.reads[historyStart] = sample.reads;
@@ -127,6 +141,7 @@ const DEFAULT_HISTORY_LENGTH = 60;
 
 const EMPTY_SAMPLE: PerformanceSample = {
     fps: 0,
+    missedShare: 0,
     cpuMs: 0,
     gpuMs: undefined,
     reads: 0,

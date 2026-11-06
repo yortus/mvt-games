@@ -168,7 +168,7 @@ describe('a workspace model', () => {
     it('keeps the performance the sandbox measures, and starts afresh with each run', () => {
         const model = createRunningModel();
         expect(model.performance).toBeUndefined();
-        const sample = { fps: 60, cpuMs: 2.5, gpuMs: undefined, reads: 300, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 };
+        const sample = { fps: 60, missedShare: 0, cpuMs: 2.5, gpuMs: undefined, reads: 300, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 };
         model.reportSandboxMessage({ kind: 'metrics', sample });
         model.reportSandboxMessage({ kind: 'metrics', sample: { ...sample, fps: 58 } });
         expect(model.performance?.sampleCount).toBe(2);

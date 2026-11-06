@@ -2,13 +2,15 @@ import { createPerformanceHistory, type PerformanceHistory, refreshView } from '
 import { htmlTest } from 'v-snap';
 import { PerfmonView } from '../perfmon-view';
 
-/** A history of steady samples, with a slow frame now and then, and a burst of churn. */
+/** A history of steady samples, with a slow frame now and then, a stretch of slow drawing, and a burst of churn. */
 function steadyHistory(): PerformanceHistory {
     const history = createPerformanceHistory();
     for (let i = 0; i < history.historyLength; i++) {
         const isSlow = i % 15 === 7;
+        const isDrawingSlow = i >= 30 && i < 40;
         history.add({
-            fps: isSlow ? 41 : 60,
+            fps: isSlow ? 41 : isDrawingSlow ? 45 : 60,
+            missedShare: isDrawingSlow ? 0.25 : 0,
             cpuMs: isSlow ? 21.4 : 3.2 + (i % 4) * 0.3,
             gpuMs: i % 5 === 0 ? undefined : 1.1,
             reads: 21_000 + (i % 6) * 400,

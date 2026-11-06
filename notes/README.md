@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**091** (085 is taken, by work in a worktree).
+**092** (085 is taken, by work in a worktree).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -153,6 +153,7 @@ deleted.
 | 081 | [Sudoku Digger, a Demo of Making Sudoku Puzzles](tasks/active/081-sudoku-digger-demo.md) | medium | 2026-10-30 |
 | 082 | [Sudoku, a Game of Daily Puzzles with Doodled Notes](tasks/active/082-sudoku-daily-game.md) | medium | 2026-10-30 |
 | 088 | [One Way In for Every Puzzle](tasks/active/088-puzzle-way-in.md) | medium | 2026-11-01 |
+| 091 | [The Perfmon: Frames Missed While the Main Thread Is Free](tasks/active/091-perfmon-missed-frames.md) | medium | 2026-11-06 |
 
 ### Backlog
 

@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { createPerformanceHistory, type MetricKind, refreshView } from '@mvtjs/utils';
+import { createPerformanceHistory, METRIC_KINDS, type MetricKind, refreshView } from '@mvtjs/utils';
 import { PerfmonView } from './perfmon-view';
 
 describe('PerfmonView', () => {
     it('shows n/a for the metrics it is told are not measured, as they change', () => {
         const history = createPerformanceHistory();
-        history.add({ fps: 60, cpuMs: 3, gpuMs: 1, reads: 120, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 });
+        history.add({ fps: 60, missedShare: 0, cpuMs: 3, gpuMs: 1, reads: 120, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 });
         let unmeasured: readonly MetricKind[] = [];
         const view = PerfmonView({ metrics: () => history, unmeasured: () => unmeasured });
 
@@ -24,9 +24,23 @@ describe('PerfmonView', () => {
         expect(valueOf(view, 'Reads')).toBe('120');
     });
 
+    it('shows the share of missed frames as a percentage', () => {
+        const history = createPerformanceHistory();
+        history.add({ fps: 45, missedShare: 0.25, cpuMs: 1.2, gpuMs: undefined, reads: 0, methodCalls: 0, methodListRebuilds: 0, rebuildNodeVisits: 0 });
+        const view = PerfmonView({ metrics: () => history });
+        refreshView(view);
+        expect(valueOf(view, 'Missed')).toBe('25%');
+    });
+
+    it('explains that the CPU figure leaves out the drawing the browser does later', () => {
+        const history = createPerformanceHistory();
+        const view = PerfmonView({ metrics: () => history });
+        expect(view.textContent).toContain('a low number doesn\'t rule out slow drawing');
+    });
+
     it('takes a fixed list of metrics that are not measured', () => {
         const history = createPerformanceHistory();
-        history.add({ fps: 60, cpuMs: 3, gpuMs: 1, reads: 120, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 });
+        history.add({ fps: 60, missedShare: 0, cpuMs: 3, gpuMs: 1, reads: 120, methodCalls: 40, methodListRebuilds: 0, rebuildNodeVisits: 0 });
         const view = PerfmonView({ metrics: () => history, unmeasured: ['gpuMs'] });
         refreshView(view);
         expect(valueOf(view, 'GPU')).toBe('n/a');
@@ -66,7 +80,7 @@ describe('PerfmonView\'s frame budget', () => {
     function historyAt(fps: number): ReturnType<typeof createPerformanceHistory> {
         const history = createPerformanceHistory();
         for (let i = 0; i < history.historyLength; i++) {
-            history.add({ fps, cpuMs: FULL_FRAME_AT_60_MS, gpuMs: undefined, reads: 0, methodCalls: 0, methodListRebuilds: 0, rebuildNodeVisits: 0 });
+            history.add({ fps, missedShare: 0, cpuMs: FULL_FRAME_AT_60_MS, gpuMs: undefined, reads: 0, methodCalls: 0, methodListRebuilds: 0, rebuildNodeVisits: 0 });
         }
         return history;
     }
@@ -77,7 +91,7 @@ const GRAPH_HEIGHT = 12;
 
 /** How far down the CPU graph its budget line is, in the graph's own units. */
 function budgetLineY(view: HTMLElement): number {
-    const graph = view.querySelectorAll('.mvt-perfmon-graph')[1];
+    const graph = view.querySelectorAll('.mvt-perfmon-graph')[METRIC_KINDS.indexOf('cpuMs')];
     const d = graph.querySelector('.mvt-perfmon-budget')!.getAttribute('d') ?? '';
     return Number(/^M0 (\S+)H/.exec(d)?.[1]);
 }

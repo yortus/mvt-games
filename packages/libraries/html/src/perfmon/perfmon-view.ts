@@ -1,4 +1,4 @@
-import { METRIC_KINDS, type MetricKind, type PerformanceMetrics, setRefresh } from '@mvtjs/utils';
+import { estimateFrameBudgetMs, METRIC_KINDS, type MetricKind, type PerformanceMetrics, setRefresh } from '@mvtjs/utils';
 import type { ValueOrGetter } from '@mvtjs/utils/jsx';
 // Registers DOM elements, so the view's refresh method is walked, however the view was imported
 import '../element-mixin';
@@ -48,8 +48,8 @@ export interface PerfmonViewBindings {
 
 /**
  * A panel of performance metrics, each with a small graph of its recent
- * values: frames per second, then CPU and GPU time per frame, and the work
- * of each frame. An (i) button opens an explanation of each one. Given a
+ * values: frames per second and how many were missed, then CPU and GPU time
+ * per frame, and the work of each frame. An (i) button opens an explanation of each one. Given a
  * title, the panel has a title bar, with the (i) at its right end.
  *
  * It fits the space it's given. In a small box, such as a corner of a game,
@@ -119,8 +119,8 @@ export function PerfmonView(bindings: PerfmonViewBindings): HTMLElement {
     let shownSample = -1;
     let shownMetrics: PerformanceMetrics | undefined;
     // The budget the display's frame rate suggests, worked out as each sample arrives
-    let displayBudgetMs = DEFAULT_BUDGET_MS;
-    let shownBudgetMs = DEFAULT_BUDGET_MS;
+    let displayBudgetMs = estimateFrameBudgetMs(undefined);
+    let shownBudgetMs = displayBudgetMs;
     setRefresh(root, refresh);
     return root;
 
@@ -136,7 +136,7 @@ export function PerfmonView(bindings: PerfmonViewBindings): HTMLElement {
         const metrics = bindings.metrics();
         const sample = metrics?.sampleCount ?? -1;
         const isNewSample = sample !== shownSample || metrics !== shownMetrics;
-        if (isNewSample && frameBudgetMs === undefined) displayBudgetMs = budgetForDisplay(metrics);
+        if (isNewSample && frameBudgetMs === undefined) displayBudgetMs = estimateFrameBudgetMs(metrics);
         const budgetMs = frameBudgetMs === undefined
             ? displayBudgetMs
             : typeof frameBudgetMs === 'function' ? frameBudgetMs() : frameBudgetMs;
@@ -180,16 +180,13 @@ interface MetricRow {
 const SVG = 'http://www.w3.org/2000/svg';
 /** The graph's height, in its own units. The graph is stretched to fit its cell. */
 const GRAPH_HEIGHT = 12;
-/** The frame budget before there is a frame rate to go by: 60 FPS. */
-const DEFAULT_BUDGET_MS = 1000 / 60;
-/** The refresh rates displays commonly run at, in frames per second, which a measured rate is rounded to. */
-const REFRESH_RATES = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 175, 240, 360];
 const NO_VALUE = '--';
 const NOT_MEASURED = 'n/a';
 const NONE: readonly MetricKind[] = [];
 
 const LABELS: Readonly<Record<MetricKind, string>> = {
     fps: 'FPS',
+    missedShare: 'Missed',
     cpuMs: 'CPU',
     gpuMs: 'GPU',
     reads: 'Reads',
@@ -250,29 +247,9 @@ function showRow(row: MetricRow, metrics: PerformanceMetrics | undefined, budget
     drawGraph(row, row.isMeasured ? metrics : undefined, budgetMs);
 }
 
-/**
- * The time a frame has on this display: one frame at the highest rate in the
- * recent history, rounded to the nearest common refresh rate. A game that
- * keeps up runs at the display's rate, so the highest rate it reached is
- * the display's, even after it slows.
- */
-function budgetForDisplay(metrics: PerformanceMetrics | undefined): number {
-    if (metrics === undefined) return DEFAULT_BUDGET_MS;
-    let peakFps = 0;
-    for (let i = 0; i < metrics.historyLength; i++) {
-        const fps = metrics.historyAt('fps', i);
-        if (fps > peakFps) peakFps = fps;
-    }
-    if (peakFps === 0) return DEFAULT_BUDGET_MS;
-    let rate = REFRESH_RATES[0];
-    for (let i = 1; i < REFRESH_RATES.length; i++) {
-        if (Math.abs(REFRESH_RATES[i] - peakFps) < Math.abs(rate - peakFps)) rate = REFRESH_RATES[i];
-    }
-    return 1000 / rate;
-}
-
 function formatValue(kind: MetricKind, metrics: PerformanceMetrics): string {
     if (kind === 'fps') return String(Math.round(metrics.fps));
+    if (kind === 'missedShare') return `${Math.round(metrics.missedShare * 100)}%`;
     if (kind === 'cpuMs' || kind === 'gpuMs') {
         const ms = metrics[kind];
         if (ms === undefined) return NOT_MEASURED;
@@ -293,7 +270,8 @@ function formatCount(count: number): string {
 /**
  * Draws a bar for each recent value, as one path. Frame times are scaled to
  * include the frame budget, which a faint line marks. FPS is scaled to at
- * least the rate that budget is for, and counts to their own peak.
+ * least the rate that budget is for, missed frames to every frame, and counts
+ * to their own peak.
  */
 function drawGraph(row: MetricRow, metrics: PerformanceMetrics | undefined, budgetMs: number): void {
     const count = metrics?.historyLength ?? 1;
@@ -305,7 +283,7 @@ function drawGraph(row: MetricRow, metrics: PerformanceMetrics | undefined, budg
     }
     const { kind } = row;
     const isTime = kind === 'cpuMs' || kind === 'gpuMs';
-    let max = kind === 'fps' ? 1000 / budgetMs : isTime ? budgetMs : 0;
+    let max = kind === 'fps' ? 1000 / budgetMs : kind === 'missedShare' ? 1 : isTime ? budgetMs : 0;
     for (let i = 0; i < count; i++) {
         const value = metrics.historyAt(kind, i);
         if (value > max) max = value;
@@ -325,7 +303,8 @@ function drawGraph(row: MetricRow, metrics: PerformanceMetrics | undefined, budg
 /** What each metric means, as the explanation lists them. */
 const MEANINGS: Readonly<Record<MetricKind, string>> = {
     fps: 'How many frames are drawn each second.',
-    cpuMs: 'Milliseconds of main-thread work, from the start of the frame to the end of drawing it. The faint line in its graph marks all the time a frame has at the display\'s frame rate: 16.7 ms at 60 FPS, or 8.3 ms at 120.',
+    missedShare: 'How many of the frames the display could have shown were missed, even though the main thread had time to spare. Your code didn\'t hold them up, so look at what you\'re asking the browser to draw. Another busy app can do this too.',
+    cpuMs: 'Milliseconds of main-thread work, from the start of the frame to the end of its drawing calls. Those calls often only record what to draw, and the browser does the drawing later, which isn\'t counted here. So a low number doesn\'t rule out slow drawing. The faint line in its graph marks all the time a frame has at the display\'s frame rate: 16.7 ms at 60 FPS, or 8.3 ms at 120.',
     gpuMs: 'Milliseconds of work on the graphics card. It can be too high, because some drivers count time spent waiting.',
     reads: 'Values the views read from their bindings. Only views written in JSX, and views that report their reads with addReads, are counted.',
     methodCalls: 'Update and refresh methods called.',

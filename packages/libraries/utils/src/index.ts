@@ -11,6 +11,7 @@ export { createSequence, type Sequence, type StepDef } from './sequence';
 export { createSequenceTracker, type StepHandlers } from './sequence-tracker';
 export { createSlotList, type IndexedSlots, type Slot, type SlotList, type SlotListOptions } from './slot-list';
 export { createOrderedSlotList, type OrderedSlot, type OrderedSlotList } from './slot-list';
+export { estimateFrameBudgetMs } from './estimate-frame-budget-ms';
 export { createPerformanceHistory, METRIC_KINDS, type MetricKind, type PerformanceHistory, type PerformanceHistoryOptions } from './performance-history';
 export type { PerformanceMetrics, PerformanceSample } from './performance-history';
 export { createPerformanceMeter, type PerformanceMeter, type PerformanceMeterOptions } from './performance-meter';

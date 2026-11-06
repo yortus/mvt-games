@@ -72,8 +72,8 @@ A function attribute is read on every refresh; a plain value is set once.
 ## Measuring performance
 
 `createPerformanceMeter`, from `@mvtjs/utils`, measures your frames as your
-game runs: frames per second, the time each frame takes on the CPU and the
-GPU, and how much work the views do. It needs to know when each frame starts
+game runs: frames per second, how many were missed, the time each frame takes
+on the CPU and the GPU, and how much work the views do. It needs to know when each frame starts
 and ends. For an app that runs on Pixi's own ticker, four lines tell it:
 
 ```ts

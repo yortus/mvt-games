@@ -682,6 +682,7 @@ button:disabled {
 /* Deeper colours, which read on a light theme's panel */
 [data-scheme="light"] .run-performance .mvt-perfmon {
     --mvt-perfmon-fps: #1a7f37;
+    --mvt-perfmon-missedShare: #bf3989;
     --mvt-perfmon-cpuMs: #0969da;
     --mvt-perfmon-gpuMs: #bc4c00;
     --mvt-perfmon-reads: #8250df;

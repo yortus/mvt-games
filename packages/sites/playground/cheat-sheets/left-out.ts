@@ -12,6 +12,7 @@ export const LEFT_OUT: Readonly<Record<string, string>> = {
     createPerformanceHistory: "The playground's Performance tab measures a project's performance itself.",
     createPerformanceMeter: "The playground's Performance tab measures a project's performance itself.",
     METRIC_KINDS: "The playground's Performance tab measures a project's performance itself.",
+    estimateFrameBudgetMs: "The playground's Performance tab measures a project's performance itself.",
     createGpuTimer: "The playground's Performance tab measures a project's performance itself.",
     PerfmonView: "The playground's Performance tab shows the same panel.",
     createTextureRegistry: 'Loads a spritesheet from a URL, and a project in the playground has only its code.',
