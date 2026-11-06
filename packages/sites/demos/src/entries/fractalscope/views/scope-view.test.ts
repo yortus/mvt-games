@@ -118,8 +118,16 @@ describe('ScopeView', () => {
         const options = select.querySelectorAll('option');
 
         expect(options.length).toBe(FRACTAL_KINDS.length);
-        expect(options[0].textContent).toBe('Mandelbrot set');
         expect(select.value).toBe('mandelbrot');
+        expect(select.selectedOptions[0].textContent).toBe('Mandelbrot set');
+    });
+
+    it('lists the fractals in alphabetical order', () => {
+        const t = setup();
+        const options = t.view.querySelectorAll('.scope-fractal-select option');
+        const names = Array.from(options, (option) => option.textContent);
+
+        expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
     });
 
     it('switches fractal from the list', () => {
@@ -136,10 +144,10 @@ describe('ScopeView', () => {
 
     it('follows the model when the fractal changes elsewhere', () => {
         const t = setup();
-        t.model.chooseFractal('tricorn');
+        t.model.chooseFractal('circle-lace');
         refreshView(t.view);
 
-        expect((t.view.querySelector('.scope-fractal-select') as HTMLSelectElement).value).toBe('tricorn');
+        expect((t.view.querySelector('.scope-fractal-select') as HTMLSelectElement).value).toBe('circle-lace');
     });
 
     it('chooses a palette', () => {

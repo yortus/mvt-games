@@ -5,29 +5,33 @@
 /**
  * The fractals the visitor chooses between. Each is a rule for following a
  * point of the complex plane, and the image is how fast each point escapes
- * to infinity under it.
+ * to infinity under it. The Newton pinwheel shows how fast each point settles
+ * on a root instead, and the Batik fold how far each point wanders.
  */
 export type FractalKind =
-    | 'mandelbrot'
+    | 'batik-fold'
     | 'burning-ship'
-    | 'tricorn'
-    | 'multibrot'
-    | 'celtic'
+    | 'circle-lace'
     | 'julia-rabbit'
     | 'julia-spiral'
+    | 'mandelbrot'
+    | 'newton-pinwheel'
     | 'phoenix';
 
-/** Every fractal, in the order the panel lists them. The scope starts over the first. */
+/** Every fractal, in the order the panel lists them, which is alphabetical by name. */
 export const FRACTAL_KINDS: readonly FractalKind[] = [
-    'mandelbrot',
+    'batik-fold',
     'burning-ship',
-    'tricorn',
-    'multibrot',
-    'celtic',
+    'circle-lace',
     'julia-rabbit',
     'julia-spiral',
+    'mandelbrot',
+    'newton-pinwheel',
     'phoenix',
 ];
+
+/** The fractal the scope starts over. */
+export const STARTING_FRACTAL: FractalKind = 'mandelbrot';
 
 /**
  * A setting of the scope: the point of the complex plane it is centred on,
@@ -52,9 +56,9 @@ export interface ScopeSetting {
 export const REST_SETTINGS: { readonly [K in FractalKind]: ScopeSetting } = {
     'mandelbrot': { centreRe: -0.6, centreIm: 0, width: 3.2 },
     'burning-ship': { centreRe: -0.45, centreIm: 0.5, width: 4.4 },
-    'tricorn': { centreRe: -0.4, centreIm: 0, width: 4.6 },
-    'multibrot': { centreRe: 0, centreIm: 0, width: 3.8 },
-    'celtic': { centreRe: -0.75, centreIm: 0, width: 5 },
+    'circle-lace': { centreRe: 0, centreIm: 0, width: 3.2 },
+    'batik-fold': { centreRe: 0, centreIm: 0, width: 3 },
+    'newton-pinwheel': { centreRe: 0, centreIm: 0, width: 3.6 },
     'julia-rabbit': { centreRe: 0, centreIm: 0, width: 3.2 },
     'julia-spiral': { centreRe: 0, centreIm: 0, width: 3.6 },
     'phoenix': { centreRe: 0, centreIm: -0.25, width: 3.2 },

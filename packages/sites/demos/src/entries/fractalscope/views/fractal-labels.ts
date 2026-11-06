@@ -8,9 +8,9 @@ import type { FractalKind } from '../data';
 export const FRACTAL_LABELS: { readonly [K in FractalKind]: string } = {
     'mandelbrot': 'Mandelbrot set',
     'burning-ship': 'Burning Ship',
-    'tricorn': 'Tricorn',
-    'multibrot': 'Multibrot (cubic)',
-    'celtic': 'Celtic Mandelbrot',
+    'circle-lace': 'Circle lace',
+    'batik-fold': 'Batik fold',
+    'newton-pinwheel': 'Newton pinwheel',
     'julia-rabbit': 'Julia set (rabbit)',
     'julia-spiral': 'Julia set (spirals)',
     'phoenix': 'Phoenix',

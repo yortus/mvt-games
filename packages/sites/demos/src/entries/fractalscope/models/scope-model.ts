@@ -1,11 +1,11 @@
 import {
-    FRACTAL_KINDS,
     type FractalKind,
     MAX_CENTRE_DRIFT,
     MIN_MAGNIFICATION,
     MIN_WIDTH,
     REST_SETTINGS,
     type ScopeSetting,
+    STARTING_FRACTAL,
 } from '../data';
 import { type EscapeKernel, pickKernel } from './fractal-kernels';
 
@@ -63,9 +63,9 @@ export interface ScopeModel extends ScopeSetting {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates a scope over the first fractal, at its rest setting. */
+/** Creates a scope over the starting fractal, at its rest setting. */
 export function createScopeModel(): ScopeModel {
-    let fractal = FRACTAL_KINDS[0];
+    let fractal = STARTING_FRACTAL;
     let kernel = pickKernel(fractal);
     let restSetting = REST_SETTINGS[fractal];
     let centreRe = restSetting.centreRe;

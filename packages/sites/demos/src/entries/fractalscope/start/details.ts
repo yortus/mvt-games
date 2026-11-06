@@ -6,8 +6,8 @@ import type { EntryDetails } from '@mvtjs/site-kit/entry-types';
 
 /** Fractalscope's long text, for its info panel and the search. The Arcade loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
-    description: 'An explorer of eight fractals: the Mandelbrot set, the Burning Ship, the Tricorn, a cubic Multibrot, the '
-        + 'Celtic Mandelbrot, two Julia sets and the Phoenix. Drag to travel, and pinch, scroll or double tap to '
+    description: 'An explorer of eight fractals: the Mandelbrot set, the Burning Ship, the Circle lace, the Batik fold, the '
+        + 'Newton pinwheel, two Julia sets and the Phoenix. Drag to travel, and pinch, scroll or double tap to '
         + 'close in. The panel has a map of the whole fractal with a mark where you are, your coordinates and '
         + 'zoom, a choice of palettes, and a button that saves what you see.',
     implementation: 'The model is the scope itself, like a microscope: the fractal under it, the point it is centred on, and '

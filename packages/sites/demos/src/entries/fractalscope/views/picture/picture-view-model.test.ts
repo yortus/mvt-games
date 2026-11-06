@@ -164,7 +164,7 @@ describe('PictureViewModel', () => {
         const { model, picture } = setup();
         picture.choosePalette('ice');
         model.recentre();
-        model.chooseFractal('tricorn');
+        model.chooseFractal('circle-lace');
         picture.update(16);
 
         expect(picture.palette).toBe('ice');
