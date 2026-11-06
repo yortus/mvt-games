@@ -13,6 +13,7 @@ import { createCardWallLayout } from './card-wall-layout';
 import { CardWallView, photoPoseIn } from './card-wall-view';
 import { EntryInfoView } from './entry-info-view';
 import { EntryNoticeView } from './entry-notice-view';
+import type { LivePreview } from './live-preview';
 import type { ArcadeAudioViews } from './load-arcade-audio-views';
 import type { Perfmon } from './load-perfmon';
 import { NavPerfmonView } from './nav-perfmon-view';
@@ -46,18 +47,8 @@ export interface ArcadeViewBindings {
     readonly exitFrame: () => HTMLCanvasElement | undefined;
     /** Whether the visitor has asked their system for less motion (`prefers-reduced-motion`). */
     readonly isMotionReduced: () => boolean;
-    /**
-     * The element the page plays an entry live in, on its card (attract
-     * mode), drawn at the entry's play size. Absent where the page plays
-     * none, as on a touch screen.
-     */
-    readonly liveElement?: HTMLElement;
-    /** The entry the page is playing live, if any. */
-    readonly liveEntry: () => ArcadeEntry | undefined;
-    /** Whether the entry playing live has drawn enough to show. */
-    readonly isLiveShowing: () => boolean;
-    /** Reported with the entry whose card wants to play it live, or undefined for none, as it changes. */
-    readonly onLiveWanted?: (entry: ArcadeEntry | undefined) => void;
+    /** Plays an entry live on its card (attract mode). Absent where the page plays none, as on a touch screen. Read once. */
+    readonly livePreview?: LivePreview;
     /**
      * A place in the site's nav for the Arcade's own tools, if the page has
      * one. A magnifier there takes a visitor scrolled down the wall back to
@@ -192,11 +183,8 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         liftedIndex: () => (transition.phase === 'idle' && model.phase === 'browsing' ? -1 : activeIndex()),
         isActive: isWallActive,
         isMotionReduced: bindings.isMotionReduced,
-        canPlayLive: () => bindings.liveElement !== undefined && !bindings.isMotionReduced() && isWallActive(),
-        liveIndex: () => indexOf(bindings.liveEntry()),
-        liveElement: bindings.liveElement,
-        isLiveShowing: bindings.isLiveShowing,
-        onLiveWanted: (index) => bindings.onLiveWanted?.(entries[index]),
+        canPlayLive: () => bindings.livePreview !== undefined && !bindings.isMotionReduced() && isWallActive(),
+        livePreview: bindings.livePreview,
         theme: () => model.theme,
         onLaunchPressed: (index, from) => launch(index, from),
         onInfoPressed: (index) => model.openInfo(entries[index].id),

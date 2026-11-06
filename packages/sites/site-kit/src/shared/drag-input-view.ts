@@ -1,6 +1,4 @@
 import { Container, type FederatedPointerEvent, Rectangle } from 'pixi.js';
-import { createMetronome } from '@mvtjs/utils';
-import { setUpdate } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -33,14 +31,6 @@ export interface DragInputViewBindings {
     onDragged?: (x: number, y: number) => void;
     /** The player let go. */
     onLifted?: () => void;
-    /** How often `onHeld` repeats while a finger stays down, in ms. Read once. */
-    heldRepeatMs?: number;
-    /**
-     * The player is holding a finger down: once as it touches, at the next
-     * update, then each `heldRepeatMs` it stays down. For a ship that fires
-     * while it is steered.
-     */
-    onHeld?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,15 +42,14 @@ export interface DragInputViewBindings {
  * screen. The thing dragged moves as the finger moves, from wherever it was
  * when the finger touched down, so the finger never covers it. A finger that
  * drags it against its limits drags it from there, so it turns back as soon
- * as the finger does. It can also repeat `onHeld` while the finger stays
- * down, and a game that only needs a finger held can listen for that alone,
- * with `onTouched` and `onLifted`. It draws nothing, and relays what it sees
- * as it happens, but for `onHeld`, which its update step repeats.
+ * as the finger does. A game that only needs a finger held can listen for
+ * that alone, with `onTouched` and `onLifted`. It draws nothing, and relays
+ * what it sees as it happens.
  */
 export function DragInputView(bindings: DragInputViewBindings): Container {
     const {
         isEnabled, fromX, fromY, minX = -Infinity, maxX = Infinity, minY = -Infinity, maxY = Infinity, gain = 1,
-        onTouched, onDragged, onLifted, heldRepeatMs = 0, onHeld,
+        onTouched, onDragged, onLifted,
     } = bindings;
     const view = new Container();
     view.label = 'drag-input';
@@ -110,18 +99,5 @@ export function DragInputView(bindings: DragInputViewBindings): Container {
     view.on('pointerupoutside', release);
     view.on('pointercancel', release);
 
-    // Beats while a finger is down, and each beat is a hold
-    const holdBeat = createMetronome();
-    let heldCount = 0;
-    if (onHeld !== undefined && heldRepeatMs > 0) setUpdate(view, update);
-
     return view;
-
-    function update(deltaMs: number): void {
-        holdBeat.periodMs = pointerId === undefined ? 0 : heldRepeatMs;
-        holdBeat.update(deltaMs);
-        if (holdBeat.count === heldCount) return;
-        heldCount = holdBeat.count;
-        onHeld?.();
-    }
 }

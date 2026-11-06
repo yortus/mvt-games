@@ -62,6 +62,19 @@ export const TIME_AND_MOTION_SHEET: CheatSheet = {
                     chapter: 'chapters/18-growing-a-complex-view',
                 },
                 {
+                    name: 'createRepeater',
+                    from: '@mvtjs/utils',
+                    useFor: 'Call a function from a model at a steady rate, such as firing while the trigger is held.',
+                    snippet: [
+                        'const autoFire = createRepeater({',
+                        '    periodMs: () => (model.isAutoFiring ? 200 : 0),',
+                        '    onRepeat: () => model.fire(),',
+                        '});',
+                        "// In the model's update: autoFire.update(deltaMs);",
+                    ].join('\n'),
+                    chapter: 'chapters/06-time-and-phases',
+                },
+                {
                     name: 'createSequence',
                     from: '@mvtjs/utils',
                     signature: 'createSequence(steps: readonly StepDef[]): Sequence',

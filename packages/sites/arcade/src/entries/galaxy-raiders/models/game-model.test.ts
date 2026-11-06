@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WAVES } from '../data';
 import { createGameModel, type GameModel, type SavedGame } from './game-model';
+import { AUTO_FIRE_INTERVAL_MS } from './model-constants';
 
 describe('GameModel', () => {
     it('counts the raiders still alive in this wave', () => {
@@ -11,6 +12,19 @@ describe('GameModel', () => {
         expect(model.enemiesLeft).toBe(waveSize - 1);
         for (const enemy of model.enemies) enemy.kill();
         expect(model.enemiesLeft).toBe(0);
+    });
+
+    it('fires on each beat while auto-firing, from the next update, and stops as it stops', () => {
+        const stepMs = AUTO_FIRE_INTERVAL_MS / 10;
+        const model = createGameModel({ waves: WAVES });
+        model.isAutoFiring = true;
+        model.update(stepMs);
+        expect(model.shotsFired).toBe(1);
+        for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS; ms += stepMs) model.update(stepMs);
+        expect(model.shotsFired).toBe(2);
+        model.isAutoFiring = false;
+        for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS * 2; ms += stepMs) model.update(stepMs);
+        expect(model.shotsFired).toBe(2);
     });
 });
 
@@ -128,10 +142,10 @@ describe('GameModel: saving', () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Ticks the game until `isDone`, firing every 8 ticks if `isFiring`, or for a few minutes at most. */
-function playUntil(model: GameModel, isDone: () => boolean, isFiring: boolean): void {
+/** Ticks the game until `isDone`, firing every 8 ticks if `isAutoFiring`, or for a few minutes at most. */
+function playUntil(model: GameModel, isDone: () => boolean, isAutoFiring: boolean): void {
     for (let i = 0; i * TICK_MS < LONGEST_RUN_MS && !isDone(); i++) {
-        if (isFiring && i % 8 === 0) model.fire();
+        if (isAutoFiring && i % 8 === 0) model.fire();
         model.update(TICK_MS);
     }
 }

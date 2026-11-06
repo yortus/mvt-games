@@ -36,6 +36,9 @@ export const MAX_PLAYER_BULLETS = 2;
 /** Player bullet speed in world-units per second (upward). */
 export const BULLET_SPEED = 350;
 
+/** How often a shot leaves while the ship is auto-firing, in ms. */
+export const AUTO_FIRE_INTERVAL_MS = 250;
+
 /** Maximum simultaneous enemy bullets. */
 export const MAX_ENEMY_BULLETS = 8;
 

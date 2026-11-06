@@ -3,6 +3,7 @@ import { createGameModel, type GameModel, type SavedGame } from './game-model';
 import type { SectionProfile } from '../data';
 import { SECTIONS, VISIBLE_ROWS } from '../data';
 import {
+    AUTO_FIRE_INTERVAL_MS,
     INITIAL_LIVES,
     MAX_FUEL_TANKS,
     RESPAWN_FUEL_AMOUNT,
@@ -78,6 +79,19 @@ describe('GameModel', () => {
             g.update(16);
             g.update(16);
             expect(g.bullets.liveCount).toBe(1);
+        });
+
+        it('fires on each beat while auto-firing, from the next update, and stops as it stops', () => {
+            const stepMs = AUTO_FIRE_INTERVAL_MS / 10;
+            const g = makeGame();
+            g.isAutoFiring = true;
+            g.update(stepMs);
+            expect(g.shotsFired).toBe(1);
+            for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS; ms += stepMs) g.update(stepMs);
+            expect(g.shotsFired).toBe(2);
+            g.isAutoFiring = false;
+            for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS * 2; ms += stepMs) g.update(stepMs);
+            expect(g.shotsFired).toBe(2);
         });
 
         it('fires another bullet when asked again', () => {

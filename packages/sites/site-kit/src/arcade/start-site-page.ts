@@ -18,7 +18,7 @@ import {
     parseSoundSettings,
     parseThemeChoice,
 } from './models';
-import { type ArcadeAudioViews, ArcadeView, loadArcadeAudioViews, loadPerfmon, type Perfmon } from './views';
+import { type ArcadeAudioViews, ArcadeView, type LivePreview, loadArcadeAudioViews, loadPerfmon, type Perfmon } from './views';
 import { SITE_THEMES, type SiteConfig } from './site-config';
 import './nav.css';
 import './arcade.css';
@@ -37,8 +37,8 @@ import './arcade.css';
 // of this page at each one, with the entry's own title and link preview. An
 // info panel that is open, an entry's or the Arcade's, has a history step of
 // its own. The page also
-// plays an entry live on its card (attract mode) when the wall asks, in a
-// second host that takes no input.
+// plays an entry live on its card (attract mode), on a live preview that it
+// passes to the wall, in a second host that takes no input.
 //
 // The page also connects the games to their highscore tables. It watches the
 // running session's `scoring` for the end of a run, and remembers the
@@ -105,6 +105,18 @@ export function startSitePage(site: SiteConfig): void {
     let liveRequests = 0;
     /** The host's preparations, one after another. Two at once could each make a renderer. */
     let livePreparing: Promise<void> = Promise.resolve();
+    const livePreview: LivePreview | undefined = liveElement === undefined
+        ? undefined
+        : {
+                element: liveElement,
+                get entry() {
+                    return liveEntry;
+                },
+                get isShowing() {
+                    return liveFrames >= LIVE_SHOWN_AFTER_FRAMES;
+                },
+                play: playLive,
+            };
 
     // Declared before the model is made, which reads them.
     /** What the page keeps in the browser between visits: the visitor's settings, initials, favourites, hidden notices and saved games. */
@@ -174,11 +186,9 @@ export function startSitePage(site: SiteConfig): void {
         stage,
         exitFrame: () => exitFrame,
         isMotionReduced: () => reducedMotion.matches,
-        liveElement,
+        livePreview,
         navTools: pageElement('site-nav-tools'),
         homeLinks: [...document.querySelectorAll<HTMLElement>('.site-nav-brand, .site-nav-links a.active')],
-        liveEntry: () => liveEntry,
-        isLiveShowing: () => liveFrames >= LIVE_SHOWN_AFTER_FRAMES,
         pageSfx: sound.pageSfx,
         pageMusic: sound.pageMusic,
         audioViews: () => audioViews,
@@ -190,7 +200,6 @@ export function startSitePage(site: SiteConfig): void {
         performance: () => meter,
         perfmon: () => perfmon,
         unmeasuredMetrics,
-        onLiveWanted: playLive,
         playRectFor: (entry, starter) => host.playRectFor({
             screenWidth: entry.screenWidth,
             screenHeight: entry.screenHeight,

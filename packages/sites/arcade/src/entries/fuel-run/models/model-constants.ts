@@ -40,6 +40,9 @@ export const MAX_BULLETS = 4;
 /** Bullet speed in tiles per second (rightward in world space). */
 export const BULLET_SPEED = 15;
 
+/** How often a shot leaves while the ship is auto-firing, in ms. */
+export const AUTO_FIRE_INTERVAL_MS = 200;
+
 // ---------------------------------------------------------------------------
 // Bomb Constants
 // ---------------------------------------------------------------------------

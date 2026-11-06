@@ -1,4 +1,5 @@
 /** @jsxImportSource @mvtjs/html */
+import { createReaction } from '@mvtjs/utils';
 import type { ArcadeEntry } from '../../entry-types';
 import { createAttractViewModel } from './attract-view-model';
 import type { ThemeKind } from '../models';
@@ -6,6 +7,7 @@ import type { PhotoPose } from './card-photo';
 import { cardIn, CardView, isCardLink, isOnCardButton, isOnPolaroid, linkOf, photoPoseOf } from './card-view';
 import { movedPosition, wallMoveFor } from './card-wall-keys';
 import type { CardWallLayout } from './card-wall-layout';
+import type { LivePreview } from './live-preview';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -37,13 +39,8 @@ export interface CardWallViewBindings {
      * the wall is active.
      */
     readonly canPlayLive: () => boolean;
-    /** The card whose entry the page is playing live, or -1, and the element it plays in. */
-    readonly liveIndex: () => number;
-    readonly liveElement: HTMLElement | undefined;
-    /** Whether the live entry has drawn, so its card can show it. */
-    readonly isLiveShowing: () => boolean;
-    /** Reported with the card whose entry should play live, or -1 for none, as it changes. */
-    readonly onLiveWanted?: (index: number) => void;
+    /** Plays a card's entry live (attract mode), if the page can. Read once. */
+    readonly livePreview: LivePreview | undefined;
     /** The theme the page wears, which says how every card shows its photo and its name. */
     readonly theme: () => ThemeKind;
     /** Reported with the card pressed, and where its photo is drawn, for the way into its entry to start from. */
@@ -80,12 +77,12 @@ export interface CardWallViewBindings {
  * focus, and takes it back after.
  *
  * A card that stays selected for a second plays its entry live over its
- * photo, where that is allowed (attract mode). The wall says which card,
- * through an attract view model; the page plays the entry, and the card
- * shows it.
+ * photo, where that is allowed (attract mode). An attract view model says
+ * which card, the wall plays its entry on the page's live preview, and the
+ * card shows it.
  */
 export function CardWallView(bindings: CardWallViewBindings): Element {
-    const { entries, layout } = bindings;
+    const { entries, layout, livePreview } = bindings;
 
     const cards = entries.map((entry, index) => CardView({
         entry,
@@ -98,8 +95,8 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         isLifted: () => bindings.liftedIndex() === index,
         isSelected: () => selected === index && tabStop === index,
         isTabStop: () => tabStop === index,
-        live: () => (bindings.liveIndex() === index ? bindings.liveElement : undefined),
-        isLiveShowing: bindings.isLiveShowing,
+        live: () => (livePreview !== undefined && livePreview.entry === entry ? livePreview.element : undefined),
+        isLiveShowing: () => livePreview?.isShowing ?? false,
         theme: bindings.theme,
         onLaunchPressed: (from) => bindings.onLaunchPressed?.(index, from),
         onInfoPressed: () => bindings.onInfoPressed?.(index),
@@ -120,12 +117,15 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     let tabStop = -1;
 
     // Attract mode: the selected card, once it has stayed selected a while,
-    // plays its entry live. The page plays it; the wall says which.
+    // plays its entry live, on the page's live preview.
     const attract = createAttractViewModel({
         candidate: () => (bindings.canPlayLive() && selected >= 0 && selected === tabStop ? selected : -1),
         delayMs: ATTRACT_DELAY_MS,
     });
-    let wantedLive = -1;
+    const playLivePreviewWhenAttractChanges = createReaction({
+        watch: () => attract.index,
+        react: (index) => livePreview?.play(entries[index]),
+    });
 
     // Sizes are measured as layout settles, and reported to the layout as input
     const observer = new ResizeObserver((records) => {
@@ -154,17 +154,15 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         </section>
     );
 
-    /** Moves the cards, and says which card's entry should play live as that changes. */
+    /** Moves the cards, and the wait before a card plays live. */
     function update(deltaMs: number): void {
         layout.update(deltaMs);
         attract.update(deltaMs);
-        if (attract.index === wantedLive) return;
-        wantedLive = attract.index;
-        bindings.onLiveWanted?.(wantedLive);
     }
 
-    /** Sizes the wall, settles the Tab stop, and hands the focus over as the wall is left and returned to. */
+    /** Sizes the wall, plays the card's entry live, settles the Tab stop, and hands the focus over as the wall is left and returned to. */
     function refresh(wall: Element): void {
+        playLivePreviewWhenAttractChanges();
         drawHeight(wall as HTMLElement);
         tabStop = selectedShown();
         const isActive = bindings.isActive();

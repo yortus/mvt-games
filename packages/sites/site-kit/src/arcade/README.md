@@ -213,10 +213,12 @@ picture.
 
 The page runs a second entry host too, for attract mode: a card that stays
 selected for a second plays its entry live over its photo. The wall's
-attract view model says which card (`onLiveWanted`); the page loads the
-entry and plays it in a host that takes no input (`playLive` in `start-site-page.ts`),
-ticked in the same loop; the card shows it, scaled and cropped as its
-photo. The model never knows: which card plays is presentation.
+attract view model says which card, and a reaction in the wall's refresh
+step plays it on a `LivePreview`, as an audio view plays a sound. The page
+loads the entry and plays it in a host that takes no input (`playLive` in
+`start-site-page.ts`), ticked in the same loop, and the card shows it,
+scaled and cropped as its photo. The model never knows: which card plays is
+presentation.
 
 The page's sound loads late too. Browsers play no sound before the
 visitor's first press, so none of it is in the page's first load. On that

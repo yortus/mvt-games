@@ -12,8 +12,8 @@ make common parts of it shorter, and none of them needs a renderer:
   [Watching for Changes](https://github.com/yortus/mvt-games/blob/main/packages/libraries/utils/src/watch-api/README.md)
   shows all three.
 - **Time-driven state:** tweens (`createBooleanTween`, `createEdgeTween`),
-  sequences (`createSequence`, `createSequenceTracker`) and a metronome
-  (`createMetronome`), all advanced by an `update(deltaMs)` call rather than
+  sequences (`createSequence`, `createSequenceTracker`), a metronome
+  (`createMetronome`) and a repeater (`createRepeater`), all advanced by an `update(deltaMs)` call rather than
   a clock.
 - **Collections:** `createSlotList` and `createOrderedSlotList`, which keep a
   stable slot per item, for views that pool what they draw.

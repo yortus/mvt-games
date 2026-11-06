@@ -33,6 +33,9 @@ export const BULLET_LIFETIME_MS = 800;
 /** Bullet collision radius. */
 export const BULLET_RADIUS = 2;
 
+/** How often a shot leaves while the ship is auto-firing, in ms. */
+export const AUTO_FIRE_INTERVAL_MS = 200;
+
 // ---------------------------------------------------------------------------
 // Asteroid Constants
 // ---------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import { createRepeater } from '@mvtjs/utils';
 import type { WaveConfig } from '../data';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import {
@@ -13,6 +14,7 @@ import {
     SHIP_Y,
     SHIP_SPEED,
     SHIP_HALF_WIDTH,
+    AUTO_FIRE_INTERVAL_MS,
 } from './model-constants';
 import type { Direction, EnemyKind, GamePhase } from './common';
 import { createShipModel, type ShipModel } from './ship-model';
@@ -48,6 +50,12 @@ export interface GameModel {
      * rather than moving the way `direction` says.
      */
     targetX: number | undefined;
+    /**
+     * Whether the ship fires on its own. A shot leaves on each
+     * `AUTO_FIRE_INTERVAL_MS`, from the next update, while the game is playing
+     * and a bullet is free.
+     */
+    isAutoFiring: boolean;
     /** Fires a shot. It leaves at the next update, if the game is playing and a bullet is free. */
     fire: () => void;
     /** Asks for a new game. It starts at the next update, if the last game is over. */
@@ -108,6 +116,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let diveTimer = 0;
     /** Whether a shot was asked for since the last update. */
     let isFireRequested = false;
+    /** Requests a shot at a steady rate, while the ship is auto-firing. */
+    const autoFire = createRepeater({
+        periodMs: () => (model.isAutoFiring ? AUTO_FIRE_INTERVAL_MS : 0),
+        onRepeat: () => model.fire(),
+    });
     /** Whether a new game was asked for since the last update. */
     let isNewRunRequested = false;
     let score = 0;
@@ -161,6 +174,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
         direction: 'none',
         targetX: undefined,
+        isAutoFiring: false,
 
         fire(): void {
             isFireRequested = true;
@@ -202,6 +216,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
+            autoFire.update(deltaMs);
+
             // A new game starts only once the last is over. A request made sooner is dropped
             if (isNewRunRequested) {
                 isNewRunRequested = false;

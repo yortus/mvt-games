@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createSlotList, type Slot, type SlotList } from '@mvtjs/utils';
+import { createRepeater, createSlotList, type Slot, type SlotList } from '@mvtjs/utils';
 import {
     SHIP_ROTATION_SPEED,
     SHIP_THRUST,
@@ -10,6 +10,7 @@ import {
     BULLET_SPEED,
     BULLET_LIFETIME_MS,
     BULLET_RADIUS,
+    AUTO_FIRE_INTERVAL_MS,
     ASTEROID_RADIUS_LARGE,
     ASTEROID_RADIUS_MEDIUM,
     ASTEROID_RADIUS_SMALL,
@@ -70,6 +71,12 @@ export interface GameModel {
     turning: RotationDirection;
     /** Whether the player is running the ship's engine, which pushes it the way it faces. It pushes while the game is playing. */
     isThrusting: boolean;
+    /**
+     * Whether the ship fires on its own. A shot leaves on each
+     * `AUTO_FIRE_INTERVAL_MS`, from the next update, while the game is playing
+     * and a bullet is free.
+     */
+    isAutoFiring: boolean;
     /** Fires a shot. It leaves at the next update, if the game is playing and a bullet is free. */
     fire: () => void;
     /** Asks for a new game. It starts at the next update, if the last game is over. */
@@ -122,6 +129,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let gamePhase: GamePhase = 'playing';
     /** Whether a shot was asked for since the last update. */
     let isFireRequested = false;
+    /** Requests a shot at a steady rate, while the ship is auto-firing. */
+    const autoFire = createRepeater({
+        periodMs: () => (model.isAutoFiring ? AUTO_FIRE_INTERVAL_MS : 0),
+        onRepeat: () => model.fire(),
+    });
     /** Whether a new game was asked for since the last update. */
     let isNewRunRequested = false;
     let score = 0;
@@ -189,6 +201,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
         turning: 'none',
         isThrusting: false,
+        isAutoFiring: false,
 
         fire(): void {
             isFireRequested = true;
@@ -229,6 +242,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
+            autoFire.update(deltaMs);
+
             // A new game starts only once the last is over. A request made sooner is dropped
             if (isNewRunRequested) {
                 isNewRunRequested = false;

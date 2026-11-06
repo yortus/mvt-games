@@ -2,6 +2,7 @@ import { assert } from '@mvtjs/utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ARENA_HEIGHT, ARENA_WIDTH } from '../data';
 import type { AsteroidModel } from './asteroid-model';
+import { AUTO_FIRE_INTERVAL_MS } from './model-constants';
 import { createGameModel, type GameModel, type SavedGame } from './game-model';
 
 const TICK_MS = 1000 / 60;
@@ -19,6 +20,18 @@ describe('GameModel: what it keeps for the views to hear', () => {
     });
     afterEach(() => {
         vi.restoreAllMocks();
+    });
+
+    it('fires on each beat while auto-firing, from the next update, and stops as it stops', () => {
+        const model = createGameModel({ arenaWidth: ARENA_WIDTH, arenaHeight: ARENA_HEIGHT });
+        model.isAutoFiring = true;
+        model.update(TICK_MS);
+        expect(model.shotsFired).toBe(1);
+        for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS; ms += TICK_MS) model.update(TICK_MS);
+        expect(model.shotsFired).toBe(2);
+        model.isAutoFiring = false;
+        for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS * 2; ms += TICK_MS) model.update(TICK_MS);
+        expect(model.shotsFired).toBe(2);
     });
 
     it('counts each shot fired, and starts again at 0 with a new game', () => {

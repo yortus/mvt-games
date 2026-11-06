@@ -57,11 +57,13 @@ export function GameView(bindings: GameViewBindings): Container {
                 maxX={model.ship.maxX}
                 minY={model.ship.y}
                 maxY={model.ship.y}
-                onDragged={(x) => { model.targetX = x; }}
-                onLifted={() => { model.targetX = undefined; }}
                 // The ship fires while a finger steers it, as fast as its two bullets allow
-                heldRepeatMs={AUTO_FIRE_MS}
-                onHeld={model.fire}
+                onTouched={() => { model.isAutoFiring = true; }}
+                onDragged={(x) => { model.targetX = x; }}
+                onLifted={() => {
+                    model.targetX = undefined;
+                    model.isAutoFiring = false;
+                }}
             />
             <GameAudioView
                 music={music}
@@ -135,8 +137,6 @@ export function GameView(bindings: GameViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** How often the ship fires while a finger steers it, in ms. */
-const AUTO_FIRE_MS = 250;
 const PLAYER_BULLET_COLOR = 0xffffff;
 const ENEMY_BULLET_COLOR = 0xff4444;
 

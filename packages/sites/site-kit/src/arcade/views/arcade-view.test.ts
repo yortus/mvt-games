@@ -8,6 +8,7 @@ import { LAUNCH_MS, REVEAL_MS } from '../data';
 import { type ArcadeModel, createArcadeModel, DEFAULT_SOUND_SETTINGS } from '../models';
 import type { SiteConfig } from '../site-config';
 import { ArcadeView } from './arcade-view';
+import type { LivePreview } from './live-preview';
 import { createPerformanceMeter, PerfmonFloatView } from './perfmon-float-view';
 import { NO_RECT } from './rect';
 
@@ -140,6 +141,30 @@ describe('ArcadeView', () => {
         });
     });
 
+    describe('attract mode', () => {
+        it('plays a card selected for a while on the live preview, and stops as the entry launches', async () => {
+            const played: (ArcadeEntry | undefined)[] = [];
+            const livePreview: LivePreview = {
+                element: document.createElement('div'),
+                entry: undefined,
+                isShowing: false,
+                play: (entry) => { played.push(entry); },
+            };
+            const { model, tick, view } = setUp({ livePreview });
+            const polaroid = view.querySelector<HTMLElement>('.card-polaroid')!;
+            polaroid.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+            tick();
+            await advanceTime(LONG_ENOUGH_TO_ATTRACT_MS, view);
+            tick();
+            expect(played).toEqual([ENTRY]);
+            model.launch(ENTRY.id);
+            await advanceTime(1, view);
+            tick();
+            expect(played).toEqual([ENTRY, undefined]);
+            destroyElement(view);
+        });
+    });
+
     describe('the sound', () => {
         it('mutes all the sound with the nav\'s speaker, and unmutes it with each sound at the level it had', () => {
             const { model, navTools, tick, view } = setUp();
@@ -248,7 +273,10 @@ const SITE: SiteConfig = {
 
 const PERFMON = { PerfmonFloatView, createPerformanceMeter };
 
-function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: ArcadeModel; navTools: HTMLElement; view: Element; tick: () => void } {
+/** Far longer than a card waits, while selected, to play live. */
+const LONG_ENOUGH_TO_ATTRACT_MS = 5000;
+
+function setUp(options: { homeLinks?: readonly HTMLElement[]; livePreview?: LivePreview } = {}): { model: ArcadeModel; navTools: HTMLElement; view: Element; tick: () => void } {
     const model = createArcadeModel({
         entries: [ENTRY],
         factsFor: () => undefined,
@@ -264,8 +292,7 @@ function setUp(options: { homeLinks?: readonly HTMLElement[] } = {}): { model: A
         playRectFor: () => NO_RECT,
         exitFrame: () => undefined,
         isMotionReduced: () => false,
-        liveEntry: () => undefined,
-        isLiveShowing: () => false,
+        livePreview: options.livePreview,
         navTools,
         pageSfx: audio80,
         pageMusic: audio80,

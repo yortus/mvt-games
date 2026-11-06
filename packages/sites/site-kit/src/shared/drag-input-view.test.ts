@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Container, FederatedPointerEvent } from 'pixi.js';
-import { updateView } from '@mvtjs/pixi';
 import { DragInputView, type DragInputViewBindings } from './drag-input-view';
 
 // The ship being dragged, and its limits
@@ -84,22 +83,6 @@ describe('DragInputView', () => {
         view.emit('pointerdown', touch(2, 300, 300));
         view.emit('globalpointermove', touch(2, 290, 300));
         expect(onDragged).toHaveBeenCalledWith(shipX - 10, SHIP_Y);
-    });
-
-    it('repeats a hold while a finger stays down, from the moment it touches', () => {
-        const repeatMs = 100;
-        const onHeld = vi.fn();
-        const { view } = makeView({ heldRepeatMs: repeatMs, onHeld });
-        updateView(view, repeatMs);
-        expect(onHeld).not.toHaveBeenCalled();
-        view.emit('pointerdown', touch(1, 100, 100));
-        updateView(view, 1);
-        expect(onHeld).toHaveBeenCalledTimes(1);
-        updateView(view, repeatMs);
-        expect(onHeld).toHaveBeenCalledTimes(2);
-        view.emit('pointerup', touch(1, 100, 100));
-        updateView(view, repeatMs * 3);
-        expect(onHeld).toHaveBeenCalledTimes(2);
     });
 
     it('listens to nothing when not enabled', () => {

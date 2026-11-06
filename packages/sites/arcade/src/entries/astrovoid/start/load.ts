@@ -1,4 +1,5 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
+import { isTouchDevice } from '@mvtjs/site-kit/shared';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
@@ -22,6 +23,8 @@ export const load = definePixiLoader(async () => {
                 arenaWidth: ARENA_WIDTH,
                 arenaHeight: ARENA_HEIGHT,
             });
+            // On a touch screen, the ship fires on its own, so the thumbs are free to fly it
+            gameModel.isAutoFiring = isTouchDevice();
 
             const gameView = GameView({ model: gameModel, sfx });
             stage.addChild(gameView);
@@ -42,7 +45,7 @@ export const load = definePixiLoader(async () => {
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
                 inputConfig: {
-                    // On a touch screen, a left-right pad turns, a button thrusts, and the game view fires
+                    // On a touch screen, a left-right pad turns, a button thrusts, and the ship fires on its own
                     showDpad: true,
                     dpadKind: 'left-right',
                     showSecondary: true,

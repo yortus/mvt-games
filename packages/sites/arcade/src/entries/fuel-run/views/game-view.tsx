@@ -64,6 +64,8 @@ export function GameView(bindings: GameViewBindings): Container {
                 maxX={model.ship.maxScreenCol * TILE_SIZE}
                 minY={model.ship.minRow * TILE_SIZE}
                 maxY={model.ship.maxRow * TILE_SIZE}
+                // The ship fires ahead while a finger flies it, as fast as its bullets allow
+                onTouched={() => { model.isAutoFiring = true; }}
                 onDragged={(x, y) => {
                     model.targetScreenCol = x / TILE_SIZE;
                     model.targetRow = y / TILE_SIZE;
@@ -71,10 +73,8 @@ export function GameView(bindings: GameViewBindings): Container {
                 onLifted={() => {
                     model.targetScreenCol = undefined;
                     model.targetRow = undefined;
+                    model.isAutoFiring = false;
                 }}
-                // The ship fires ahead while a finger flies it, as fast as its bullets allow
-                heldRepeatMs={AUTO_FIRE_MS}
-                onHeld={model.fire}
             />
             <AudioView
                 music={music}
@@ -207,10 +207,3 @@ export function GameView(bindings: GameViewBindings): Container {
         return (worldCol - model.scrollCol) * TILE_SIZE;
     }
 }
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-/** How often the ship fires while a finger flies it, in ms. */
-const AUTO_FIRE_MS = 200;

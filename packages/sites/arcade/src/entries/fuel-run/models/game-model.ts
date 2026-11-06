@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { createSlotList, type Slot, type SlotList } from '@mvtjs/utils';
+import { createRepeater, createSlotList, type Slot, type SlotList } from '@mvtjs/utils';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
 import {
     SCROLL_SPEED,
@@ -41,6 +41,7 @@ import {
     SPEED_INCREASE_PER_LOOP,
     MAX_EXPLOSIONS,
     EXPLOSION_DURATION_MS,
+    AUTO_FIRE_INTERVAL_MS,
 } from './model-constants';
 import type { SectionProfile, SpawnKind } from '../data';
 import type { GamePhase, XDirection, YDirection } from './common';
@@ -120,6 +121,12 @@ export interface GameModel {
     readonly fuelTanksDestroyed: number;
     /** The number of times the base has been destroyed this game. There is one base on each loop of the sections. */
     readonly basesDestroyed: number;
+    /**
+     * Whether the ship fires on its own. A shot leaves on each
+     * `AUTO_FIRE_INTERVAL_MS`, from the next update, while the game is playing
+     * and a bullet is free.
+     */
+    isAutoFiring: boolean;
     /** Fires a shot ahead. It leaves at the next update, if the game is playing and a bullet is free. */
     fire: () => void;
     /** Drops a bomb. It drops at the next update, if the game is playing and a bomb is free. */
@@ -180,6 +187,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let currentScrollSpeed = SCROLL_SPEED;
     /** Whether a shot was asked for since the last update. */
     let isFireRequested = false;
+    /** Requests a shot at a steady rate, while the ship is auto-firing. */
+    const autoFire = createRepeater({
+        periodMs: () => (model.isAutoFiring ? AUTO_FIRE_INTERVAL_MS : 0),
+        onRepeat: () => model.fire(),
+    });
     /** Whether a bomb was asked for since the last update. */
     let isBombRequested = false;
     /** Whether a new game was asked for since the last update. */
@@ -277,6 +289,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         thrustY: 'none',
         targetScreenCol: undefined,
         targetRow: undefined,
+        isAutoFiring: false,
         get isBaseAlive() {
             return isBaseLive();
         },
@@ -383,6 +396,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         },
 
         update(deltaMs: number): void {
+            autoFire.update(deltaMs);
+
             // Take what the player asked for since the last update. What the game can't do now is dropped
             const wasFireAsked = isFireRequested;
             const wasBombAsked = isBombRequested;

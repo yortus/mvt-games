@@ -43,7 +43,7 @@ export interface Metronome {
     /**
      * Moves the metronome on by `deltaMs`. It adds a beat to `count` each
      * time a period passes. A `deltaMs` of 0 or less moves it on by nothing,
-     * and so does one that is not finite. Call it from a view's update step.
+     * and so does one that is not finite. Call it from an update step.
      */
     update: (deltaMs: number) => void;
 }
