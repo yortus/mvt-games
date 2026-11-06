@@ -21,3 +21,13 @@ export const MIN_WIDTH = 1e-13;
  * empty plane and losing the fractal.
  */
 export const MAX_CENTRE_DRIFT = 2.5;
+
+// ---------------------------------------------------------------------------
+// The scope's held controls
+// ---------------------------------------------------------------------------
+
+/** How fast the scope travels while a control is held, in widths of its patch per second. */
+export const TRAVEL_RATE = 0.3;
+
+/** How fast the scope zooms while a control is held, as the natural log of the magnification per second. */
+export const ZOOM_RATE = 1.1;

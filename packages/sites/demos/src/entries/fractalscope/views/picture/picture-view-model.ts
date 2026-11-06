@@ -7,6 +7,7 @@ import {
     ITERATIONS_PER_FRAME,
     ITERATIONS_PER_HALVING,
     MAX_ITERATIONS,
+    MAX_STALE_MS,
     MIN_BUDGET_SHARE,
     OVERVIEW_COLS,
     OVERVIEW_ITERATIONS,
@@ -31,7 +32,10 @@ import {
  * While the scope's setting changes, the picture holds still, so the view
  * stretches it to fit. Once a gesture has ended, or a moment has passed with
  * nothing moving, the picture is taken again at the scope's new setting. So
- * a run of mouse-wheel notches costs one picture rather than twenty.
+ * a run of mouse-wheel notches costs one picture rather than twenty. A held
+ * control can keep the scope moving for as long as it likes, so while one
+ * does, the picture is taken again every so often, without waiting for it to
+ * stop.
  *
  * All of it is presentation. No domain outcome depends on any of it, and the
  * model never sees it.
@@ -77,6 +81,8 @@ export interface PictureViewModelOptions {
     readonly magnification: () => number;
     /** The fractal's rest setting, which the overview is taken at. */
     readonly restSetting: () => ScopeSetting;
+    /** Whether a held control is moving the scope, so that it won't stop by itself. */
+    readonly isScopeMoving: () => boolean;
     /** Measures how fast a point escapes under the fractal under the scope. */
     readonly measureEscape: EscapeKernel;
 }
@@ -121,6 +127,8 @@ export function createPictureViewModel(options: PictureViewModelOptions): Pictur
     // long is left before the picture follows.
     let isStale = false;
     let settleMs = 0;
+    // How long the picture has been behind the scope.
+    let staleMs = 0;
 
     const viewModel: PictureViewModel = {
         get image() { return image; },
@@ -160,7 +168,8 @@ export function createPictureViewModel(options: PictureViewModelOptions): Pictur
             followScope();
             if (isStale && !isHeld) {
                 settleMs -= deltaMs;
-                if (settleMs <= 0) catchUp();
+                staleMs += deltaMs;
+                if (settleMs <= 0 || (options.isScopeMoving() && staleMs >= MAX_STALE_MS)) catchUp();
             }
 
             // The work of one frame, shared out: the overview first, because
@@ -199,6 +208,7 @@ export function createPictureViewModel(options: PictureViewModelOptions): Pictur
         }
         if (setting.centreRe !== seenRe || setting.centreIm !== seenIm || setting.width !== seenWidth) {
             noteSetting(setting);
+            if (!isStale) staleMs = 0;
             isStale = true;
             settleMs = SETTLE_MS;
         }

@@ -6,6 +6,8 @@ import {
     REST_SETTINGS,
     type ScopeSetting,
     STARTING_FRACTAL,
+    TRAVEL_RATE,
+    ZOOM_RATE,
 } from '../data';
 import { type EscapeKernel, pickKernel } from './fractal-kernels';
 
@@ -13,12 +15,16 @@ import { type EscapeKernel, pickKernel } from './fractal-kernels';
 // Interface
 // ---------------------------------------------------------------------------
 
+/** Which way the scope is zooming while a control is held. */
+export type ZoomDirection = 'in' | 'out' | 'none';
+
 /**
  * The fractalscope: an instrument, like a microscope, for looking into a
  * fractal. Its state is its setting, which is the fractal under it, the point
  * of the complex plane it is centred on, and how strongly it magnifies. Its
  * controls move the centre, turn the magnification, recentre, and change
- * the fractal. Every control takes effect at once.
+ * the fractal, and each of those takes effect at once. It can also be left
+ * travelling or zooming, and then it moves on a little with each update.
  *
  * It never sees what it shows. It has no picture, no screen and no colours.
  * It answers one question about the fractal, how fast a point escapes, and
@@ -33,6 +39,14 @@ export interface ScopeModel extends ScopeSetting {
     readonly restSetting: ScopeSetting;
     /** How strongly the scope magnifies, against its rest setting. */
     readonly magnification: number;
+    /** Which way the scope is travelling along the real axis, from -1 to 1. */
+    travelRe: number;
+    /** Which way the scope is travelling along the imaginary axis, from -1 to 1. */
+    travelIm: number;
+    /** Which way the scope is zooming. */
+    zooming: ZoomDirection;
+    /** Whether a held control is moving the scope. */
+    readonly isMoving: boolean;
     /** Moves the centre by `deltaRe` and `deltaIm`, in units of the plane, as far as the drift allowed. */
     moveCentre: (deltaRe: number, deltaIm: number) => void;
     /**
@@ -55,7 +69,7 @@ export interface ScopeModel extends ScopeSetting {
      * writes what it found into `measure`.
      */
     measureEscape: EscapeKernel;
-    /** Nothing about the scope changes with time. It is here for the loop that runs every model. */
+    /** Moves the scope on by `deltaMs`, as its held controls ask. */
     update: (deltaMs: number) => void;
 }
 
@@ -72,6 +86,10 @@ export function createScopeModel(): ScopeModel {
     let centreIm = restSetting.centreIm;
     let width = restSetting.width;
 
+    let travelRe = 0;
+    let travelIm = 0;
+    let zooming: ZoomDirection = 'none';
+
     const model: ScopeModel = {
         get fractal() { return fractal; },
         get restSetting() { return restSetting; },
@@ -79,6 +97,14 @@ export function createScopeModel(): ScopeModel {
         get centreIm() { return centreIm; },
         get width() { return width; },
         get magnification() { return restSetting.width / width; },
+
+        get travelRe() { return travelRe; },
+        set travelRe(value) { travelRe = limitTravel(value); },
+        get travelIm() { return travelIm; },
+        set travelIm(value) { travelIm = limitTravel(value); },
+        get zooming() { return zooming; },
+        set zooming(value) { zooming = value; },
+        get isMoving() { return travelRe !== 0 || travelIm !== 0 || zooming !== 'none'; },
 
         moveCentre(deltaRe, deltaIm) {
             centreRe = limitDrift(centreRe + deltaRe, restSetting.centreRe);
@@ -115,8 +141,16 @@ export function createScopeModel(): ScopeModel {
             kernel(re, im, maxIterations, measure);
         },
 
-        update(_deltaMs) {
-            // Nothing to advance.
+        update(deltaMs) {
+            const seconds = deltaMs / 1000;
+            if (zooming !== 'none') {
+                const factor = Math.exp(ZOOM_RATE * seconds);
+                model.magnifyAbout(zooming === 'in' ? factor : 1 / factor, centreRe, centreIm);
+            }
+            if (travelRe !== 0 || travelIm !== 0) {
+                const distance = TRAVEL_RATE * width * seconds;
+                model.moveCentre(travelRe * distance, travelIm * distance);
+            }
         },
     };
 
@@ -126,6 +160,11 @@ export function createScopeModel(): ScopeModel {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** `value`, held between travelling flat out one way and the other. */
+function limitTravel(value: number): number {
+    return Math.min(1, Math.max(-1, value));
+}
 
 /** `value`, held within the drift allowed either side of `restValue`. */
 function limitDrift(value: number, restValue: number): number {

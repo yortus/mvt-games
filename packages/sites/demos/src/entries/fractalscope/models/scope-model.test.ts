@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_CENTRE_DRIFT, MIN_MAGNIFICATION, MIN_WIDTH, REST_SETTINGS } from '../data';
+import { advanceTime } from '@mvtjs/html';
+import { MAX_CENTRE_DRIFT, MIN_MAGNIFICATION, MIN_WIDTH, REST_SETTINGS, TRAVEL_RATE, ZOOM_RATE } from '../data';
 import { type EscapeMeasure, INTERIOR } from './fractal-kernels';
 import { createScopeModel } from './scope-model';
 
@@ -119,5 +120,86 @@ describe('ScopeModel', () => {
         scope.chooseFractal('julia-rabbit');
         scope.measureEscape(-1.3, 0, 300, measure);
         expect(measure.escape).toBeGreaterThan(0);
+    });
+
+    it('travels across the plane while a control is held, at a rate set by how wide it looks', async () => {
+        const scope = createScopeModel();
+        scope.travelRe = 1;
+        scope.travelIm = -1;
+        await advanceTime(100, scope);
+
+        expect(scope.centreRe).toBeCloseTo(REST.centreRe + TRAVEL_RATE * REST.width * 0.1);
+        expect(scope.centreIm).toBeCloseTo(REST.centreIm - TRAVEL_RATE * REST.width * 0.1);
+
+        const closeIn = createScopeModel();
+        closeIn.magnifyAbout(10, REST.centreRe, REST.centreIm);
+        closeIn.travelRe = 1;
+        await advanceTime(100, closeIn);
+
+        expect(closeIn.centreRe - REST.centreRe).toBeCloseTo(TRAVEL_RATE * REST.width * 0.1 / 10);
+    });
+
+    it('zooms about its centre while a control is held, and back out again', async () => {
+        const scope = createScopeModel();
+        scope.zooming = 'in';
+        await advanceTime(500, scope);
+
+        expect(scope.magnification).toBeCloseTo(Math.exp(ZOOM_RATE * 0.5));
+        expect(scope.centreRe).toBeCloseTo(REST.centreRe);
+
+        scope.zooming = 'out';
+        await advanceTime(500, scope);
+
+        expect(scope.magnification).toBeCloseTo(1);
+    });
+
+    it('zooms the same however the time is cut into steps', () => {
+        const oneStep = createScopeModel();
+        const manySteps = createScopeModel();
+        oneStep.zooming = 'in';
+        manySteps.zooming = 'in';
+
+        oneStep.update(100);
+        for (let i = 0; i < 10; i++) manySteps.update(10);
+
+        expect(manySteps.magnification).toBeCloseTo(oneStep.magnification);
+    });
+
+    it('says whether a held control is moving it', () => {
+        const scope = createScopeModel();
+        expect(scope.isMoving).toBe(false);
+
+        scope.travelIm = -1;
+        expect(scope.isMoving).toBe(true);
+        scope.travelIm = 0;
+        expect(scope.isMoving).toBe(false);
+
+        scope.zooming = 'out';
+        expect(scope.isMoving).toBe(true);
+    });
+
+    it('stays put with no control held', async () => {
+        const scope = createScopeModel();
+        await advanceTime(500, scope);
+
+        expect(scope.centreRe).toBe(REST.centreRe);
+        expect(scope.width).toBe(REST.width);
+    });
+
+    it('holds its travel to one way or the other, flat out', () => {
+        const scope = createScopeModel();
+        scope.travelRe = 5;
+        scope.travelIm = -5;
+
+        expect(scope.travelRe).toBe(1);
+        expect(scope.travelIm).toBe(-1);
+    });
+
+    it('stops travelling at the limit of its drift', async () => {
+        const scope = createScopeModel();
+        scope.travelRe = 1;
+        await advanceTime(10000, scope);
+
+        expect(scope.centreRe).toBeCloseTo(REST.centreRe + MAX_CENTRE_DRIFT);
     });
 });

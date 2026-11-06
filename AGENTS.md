@@ -65,7 +65,7 @@ packages/sites/<site>/              arcade, demos or puzzles
 packages/sites/site-kit/src/       Imported by the sites as @mvtjs/site-kit/<folder>
 ├── arcade/              The page, in HTML JSX: model, views, its own sounds, its styles, and the page's loop (start-site-page.ts, imported as @mvtjs/site-kit/site-page)
 ├── device/              What the visitor's device supports, such as touch
-├── input/               Input that needs no renderer: the keyboard, for the entry host and the Pixi stage
+├── input/               Input that needs no renderer: the keyboard, for the entry host, the Pixi stage, and the entries that listen to it themselves
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound

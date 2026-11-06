@@ -1,8 +1,8 @@
 /** @jsxImportSource @mvtjs/html */
+import { listenToKeys } from '@mvtjs/site-kit/input';
 import { SYMMETRIES } from '../data';
 import type { LabModel } from '../models';
 import { COLOR_MODES } from './color-mode';
-import { listenToKeys } from './listen-to-keys';
 import { createLookViewModel } from './look-view-model';
 import { PALETTE_NAMES } from './palette-name';
 import { TileCanvasView } from './tile-canvas-view';

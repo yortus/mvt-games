@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { destroyElement, refreshView, updateView } from '@mvtjs/html';
-import { REST_SETTINGS, FRACTAL_KINDS } from '../data';
+import { REST_SETTINGS, FRACTAL_KINDS, TRAVEL_RATE } from '../data';
 import { createScopeModel } from '../models';
 import { ScopeView } from './scope-view';
 
@@ -31,9 +31,9 @@ function FakeResizeObserver(callback: () => void): Pick<ResizeObserver, 'observe
     };
 }
 
-function setup() {
+function setup(takesKeys = false) {
     const model = createScopeModel();
-    const view = ScopeView({ model });
+    const view = ScopeView({ model, takesKeys });
     document.body.replaceChildren(view);
     refreshView(view);
     const canvas = view.querySelector('.scope-image') as HTMLCanvasElement;
@@ -192,5 +192,191 @@ describe('ScopeView', () => {
         t.pointer('pointermove', 1, 300, 150);
 
         expect(t.model.centreRe).toBe(before);
+    });
+
+    describe('the keys', () => {
+        let view: Element | undefined;
+
+        afterEach(() => {
+            if (view !== undefined) destroyElement(view);
+            view = undefined;
+        });
+
+        function setupKeys(takesKeys = true) {
+            const t = setup(takesKeys);
+            view = t.view;
+            return t;
+        }
+
+        function press(key: string): void {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+        }
+
+        function release(key: string): void {
+            window.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true }));
+        }
+
+        it('travels while an arrow is held, and stops when it comes up', () => {
+            const t = setupKeys();
+            press('ArrowRight');
+            expect(t.model.travelRe).toBe(1);
+            t.model.update(100);
+
+            expect(t.model.centreRe).toBeCloseTo(REST_SETTINGS['mandelbrot'].centreRe + TRAVEL_RATE * HOME_SPAN * 0.1);
+
+            release('ArrowRight');
+            expect(t.model.travelRe).toBe(0);
+        });
+
+        it('takes up as up the imaginary axis, as the picture is drawn', () => {
+            const t = setupKeys();
+            press('w');
+            expect(t.model.travelIm).toBe(1);
+            release('w');
+            press('ArrowDown');
+            expect(t.model.travelIm).toBe(-1);
+            release('ArrowDown');
+        });
+
+        it('zooms while + or - is held, and not at all with both', () => {
+            const t = setupKeys();
+            press('+');
+            expect(t.model.zooming).toBe('in');
+            press('-');
+            expect(t.model.zooming).toBe('none');
+            release('+');
+            expect(t.model.zooming).toBe('out');
+            release('-');
+            expect(t.model.zooming).toBe('none');
+        });
+
+        it('steps through the fractals with [ and ], going round from one end to the other', () => {
+            const t = setupKeys();
+            const start = FRACTAL_KINDS.indexOf(t.model.fractal);
+            press(']');
+            expect(t.model.fractal).toBe(FRACTAL_KINDS[start + 1]);
+            press('[');
+            press('[');
+            expect(t.model.fractal).toBe(FRACTAL_KINDS[start - 1]);
+
+            t.model.chooseFractal(FRACTAL_KINDS[FRACTAL_KINDS.length - 1]);
+            press(']');
+            expect(t.model.fractal).toBe(FRACTAL_KINDS[0]);
+        });
+
+        it('steps through the palettes with C, and back with Shift', () => {
+            const t = setupKeys();
+            const swatch = (): string | null | undefined => t.view.querySelector('.scope-swatch.chosen')?.getAttribute('aria-label');
+            refreshView(t.view);
+            const first = swatch();
+
+            press('c');
+            refreshView(t.view);
+            expect(swatch()).not.toBe(first);
+
+            press('C');
+            refreshView(t.view);
+            expect(swatch()).toBe(first);
+        });
+
+        it('picks a different fractal and palette for a surprise', () => {
+            const t = setupKeys();
+            refreshView(t.view);
+            const fractal = t.model.fractal;
+            const palette = t.view.querySelector('.scope-swatch.chosen')?.getAttribute('aria-label');
+
+            press('x');
+            refreshView(t.view);
+
+            expect(t.model.fractal).not.toBe(fractal);
+            expect(t.view.querySelector('.scope-swatch.chosen')?.getAttribute('aria-label')).not.toBe(palette);
+        });
+
+        it('recentres with R', () => {
+            const t = setupKeys();
+            t.model.magnifyAbout(4, 0, 0);
+            press('r');
+
+            expect(t.model.magnification).toBe(1);
+        });
+
+        it('hides the panel with H, and brings it back with the same key or the Controls button', () => {
+            const t = setupKeys();
+            const panel = t.view.querySelector('.scope-panel') as HTMLElement;
+            const show = t.view.querySelector('.scope-show') as HTMLButtonElement;
+            const isShowing = (element: HTMLElement): boolean => element.style.display !== 'none' && !element.hidden;
+
+            refreshView(t.view);
+            expect(isShowing(panel)).toBe(true);
+            expect(isShowing(show)).toBe(false);
+
+            press('h');
+            refreshView(t.view);
+            expect(isShowing(panel)).toBe(false);
+            expect(isShowing(show)).toBe(true);
+
+            show.click();
+            refreshView(t.view);
+            expect(isShowing(panel)).toBe(true);
+
+            t.button('Hide').click();
+            refreshView(t.view);
+            expect(isShowing(panel)).toBe(false);
+
+            press('h');
+            refreshView(t.view);
+            expect(isShowing(panel)).toBe(true);
+        });
+
+        it('asks for a photo with P', () => {
+            const t = setupKeys();
+            press('p');
+            refreshView(t.view);
+
+            expect(t.button('Sharpening...').textContent).toBe('Sharpening...');
+        });
+
+        it('lets the keys back to the scope once the mouse has picked from the list', () => {
+            const t = setupKeys();
+            const select = t.view.querySelector('.scope-fractal-select') as HTMLSelectElement;
+            select.focus();
+            select.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            select.value = 'phoenix';
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+
+            expect(t.model.fractal).toBe('phoenix');
+            expect(document.activeElement).not.toBe(select);
+        });
+
+        it('leaves the list its focus while the keyboard works it', () => {
+            const t = setupKeys();
+            const select = t.view.querySelector('.scope-fractal-select') as HTMLSelectElement;
+            select.focus();
+            select.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            select.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+            select.value = 'phoenix';
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+
+            expect(t.model.fractal).toBe('phoenix');
+            expect(document.activeElement).toBe(select);
+        });
+
+        it('takes no keys while the scope plays only to be watched', () => {
+            const t = setupKeys(false);
+            press('ArrowRight');
+            press(']');
+
+            expect(t.model.travelRe).toBe(0);
+            expect(t.model.fractal).toBe('mandelbrot');
+        });
+
+        it('stops taking keys once destroyed', () => {
+            const t = setupKeys();
+            destroyElement(t.view);
+            view = undefined;
+            press('ArrowRight');
+
+            expect(t.model.travelRe).toBe(0);
+        });
     });
 });

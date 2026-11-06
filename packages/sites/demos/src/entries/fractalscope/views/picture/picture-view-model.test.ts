@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { advanceTime } from '@mvtjs/html';
-import { REST_SETTINGS } from '../../data';
+import { REST_SETTINGS, TRAVEL_RATE } from '../../data';
 import { createScopeModel, type ScopeModel } from '../../models';
 import { createPictureViewModel, type PictureViewModel } from './picture-view-model';
-import { BASE_ITERATIONS, COARSEST_BLOCK, MAX_ITERATIONS, SETTLE_MS } from './picture-constants';
+import { BASE_ITERATIONS, COARSEST_BLOCK, MAX_ITERATIONS, MAX_STALE_MS, SETTLE_MS } from './picture-constants';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -18,6 +18,7 @@ function setup(cols = 160, rows = 100): { model: ScopeModel; picture: PictureVie
         setting: () => model,
         magnification: () => model.magnification,
         restSetting: () => model.restSetting,
+        isScopeMoving: () => model.isMoving,
         measureEscape: model.measureEscape,
     });
     picture.resize(cols, rows);
@@ -205,5 +206,32 @@ describe('PictureViewModel', () => {
         await advanceTime(500, picture);
         expect(picture.photosTaken).toBe(1);
         expect(picture.image.setting.width).toBeCloseTo(HOME_SPAN / 2);
+    });
+
+    it('keeps up with a scope that a held control never stops moving', () => {
+        const { model, picture } = setup();
+        model.travelRe = 1;
+        const stepMs = 16;
+        let furthestBehind = 0;
+        for (let elapsedMs = 0; elapsedMs < MAX_STALE_MS * 8; elapsedMs += stepMs) {
+            model.update(stepMs);
+            picture.update(stepMs);
+            furthestBehind = Math.max(furthestBehind, model.centreRe - picture.image.setting.centreRe);
+        }
+
+        // It may lag by what the scope covers in that time, and a frame more.
+        const travelledInTime = TRAVEL_RATE * HOME_SPAN * (MAX_STALE_MS + stepMs) / 1000;
+        expect(furthestBehind).toBeGreaterThan(0);
+        expect(furthestBehind).toBeLessThanOrEqual(travelledInTime);
+    });
+
+    it('stays held by a gesture, however long the scope moves', async () => {
+        const { model, picture } = setup();
+        await advanceTime(500, picture);
+        picture.hold();
+        model.travelRe = 1;
+        await advanceTime(MAX_STALE_MS * 4, model, picture);
+
+        expect(picture.image.setting.centreRe).toBe(REST_SETTINGS['mandelbrot'].centreRe);
     });
 });

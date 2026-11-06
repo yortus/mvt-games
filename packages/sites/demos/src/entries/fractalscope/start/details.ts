@@ -19,16 +19,21 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Choose a fractal from the panel.',
         controls: [
-            { action: 'Move', inputs: ['drag'] },
-            { action: 'Zoom', inputs: ['wheel', 'pinch', 'double-tap'] },
+            { action: 'Move', inputs: ['arrows', 'wasd', 'drag'] },
+            { action: 'Zoom', inputs: ['wheel', 'double-tap'], touchInputs: ['pinch'] },
         ],
-        notes: ['Choose a palette, save a photo once the picture is sharp, or reset to the whole fractal.'],
+        notes: [
+            'Choose a palette, save a photo once the picture is sharp, or reset to the whole fractal.',
+            'Keys for the rest: + and - zoom, [ and ] change the fractal, C steps through the palettes, X picks a surprise, '
+            + 'R resets the view, H hides the panel, and P saves a photo.',
+        ],
     },
     techniques: [
         'The model as an instrument: its setting, its controls, and a query for how fast a point escapes',
         'Gestures in the view, the scope\'s own controls in the model, and the bindings translating between them',
         'The picture as a view model, computed a little each frame on a budget of iterations',
-        'Every control changes the scope at once; the picture follows a step behind, stretched until it catches up',
+        'Every gesture changes the scope at once; the picture follows a step behind, stretched until it catches up',
+        'Held keys as the scope\'s own controls, moving it on with each update, with the picture retaken as it goes',
         'The new image starts from the old one, moved to fit, so it never gets blockier as it sharpens',
         'Only the rows that changed are coloured each frame',
         'Pinch, drag, wheel and double tap turned into moves in the complex plane',

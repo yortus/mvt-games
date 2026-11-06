@@ -54,6 +54,13 @@ export const MAX_ITERATIONS = 4000;
  */
 export const SETTLE_MS = 120;
 
+/**
+ * The longest the picture may fall behind a scope that a held control keeps
+ * moving. Waiting for it to stop would leave the picture far behind, with
+ * nothing on the screen but the backdrop.
+ */
+export const MAX_STALE_MS = 250;
+
 // ---------------------------------------------------------------------------
 // The overview
 // ---------------------------------------------------------------------------

@@ -13,6 +13,8 @@ import { createFixedText, countDigits, formatZoom } from './readouts';
 // ---------------------------------------------------------------------------
 
 export interface SidePanelViewBindings {
+    /** Whether the panel shows. */
+    isShown: () => boolean;
     /** The fractal being explored. */
     fractal: () => FractalKind;
     /** The scope's setting now: where the readouts come from, and the minimap's mark. */
@@ -39,6 +41,8 @@ export interface SidePanelViewBindings {
     onPhotoPressed?: () => void;
     /** The visitor pressed Reset. */
     onResetPressed?: () => void;
+    /** The visitor pressed Hide. */
+    onHidePressed?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,12 +65,20 @@ export function SidePanelView(bindings: SidePanelViewBindings): Element {
     const zoomText = createComputed({ watch: bindings.magnification, compute: formatZoom });
     const iterationsText = createComputed({ watch: bindings.maxIterations, compute: String });
     const progressText = createComputed({ watch: () => Math.round(progress() * 100), compute: describeProgress });
+    // Whether the list was last worked with the mouse or a finger, not the keyboard.
+    let isListPointed = false;
 
     return (
-        <aside class="scope-panel" aria-label="Explorer panel">
+        <aside class="scope-panel" aria-label="Explorer panel" visible={bindings.isShown}>
             <label class="scope-fractal">
                 <span class="scope-group-title" text="Fractal" />
-                <select class="scope-fractal-select" value={bindings.fractal} onInput={chooseFractal}>
+                <select
+                    class="scope-fractal-select"
+                    value={bindings.fractal}
+                    onInput={chooseFractal}
+                    onPointerDown={() => { isListPointed = true; }}
+                    onKeyDown={() => { isListPointed = false; }}
+                >
                     {FRACTAL_KINDS.map((kind) => <option value={kind} text={FRACTAL_LABELS[kind]} />)}
                 </select>
             </label>
@@ -118,11 +130,22 @@ export function SidePanelView(bindings: SidePanelViewBindings): Element {
                     onClick={() => bindings.onPhotoPressed?.()}
                 />
                 <button type="button" class="scope-action" text="Reset" onClick={() => bindings.onResetPressed?.()} />
+                <button
+                    type="button"
+                    class="scope-action"
+                    text="Hide"
+                    title="Hide the controls (H)"
+                    onClick={() => bindings.onHidePressed?.()}
+                />
             </div>
 
             <p
                 class="scope-hint"
                 text="Drag to move. Pinch, scroll or double tap to zoom in. Photo saves the view once it is sharp."
+            />
+            <p
+                class="scope-hint scope-keys"
+                text="Keys: arrows move, + and - zoom, [ and ] change the fractal, C palette, X surprise, R resets the view, H hides this panel, P saves a photo."
             />
         </aside>
     );
@@ -132,9 +155,18 @@ export function SidePanelView(bindings: SidePanelViewBindings): Element {
         return countDigits(bindings.setting().width);
     }
 
-    /** Reports the fractal the visitor picked from the list. */
+    /**
+     * Reports the fractal the visitor picked from the list. A list with the
+     * focus keeps every key for itself, so one picked with the mouse lets the
+     * focus go, and the keys work the scope again. One being worked from the
+     * keyboard keeps it, so that its arrows can go on through the fractals.
+     * The browser can't tell us which it was: `:focus-visible` holds for a
+     * list however it got the focus.
+     */
     function chooseFractal(event: Event): void {
-        const value = (event.currentTarget as HTMLSelectElement).value;
+        const select = event.currentTarget as HTMLSelectElement;
+        const value = select.value;
+        if (isListPointed) select.blur();
         for (let i = 0; i < FRACTAL_KINDS.length; i++) {
             if (FRACTAL_KINDS[i] === value) bindings.onFractalChosen?.(FRACTAL_KINDS[i]);
         }
