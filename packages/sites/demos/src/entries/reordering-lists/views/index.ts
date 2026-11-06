@@ -1,1 +1,1 @@
-export { CardRowView, type CardRowViewBindings } from './card-row-view';
+export { DemoView, type DemoViewBindings } from './demo-view';

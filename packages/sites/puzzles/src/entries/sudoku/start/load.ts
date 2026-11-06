@@ -2,8 +2,8 @@ import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types
 import { createLocalStore, createMemoryStore } from '@mvtjs/site-kit/storage';
 import { toDayNumber } from '../../../shared';
 import { loadSudokuGenerator, type SudokuGenerator } from '../generator';
-import { createSudokuModel, playShowcase, type SudokuModel } from '../models';
-import { SCREEN_HEIGHT, SCREEN_WIDTH, SudokuView } from '../views';
+import { createGameModel, playShowcase, type GameModel } from '../models';
+import { SCREEN_HEIGHT, SCREEN_WIDTH, GameView } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -20,7 +20,7 @@ export const load = definePixiLoader(async () => {
 
         start({ stage, sfx, isInPage }): EntrySession {
             const model = isInPage === true ? createPlayersModel(generate) : createShowcaseModel(generate);
-            const view = SudokuView({ model, sfx });
+            const view = GameView({ model, sfx });
             stage.addChild(view);
 
             return {
@@ -48,10 +48,10 @@ export const load = definePixiLoader(async () => {
  * from the device's clock and time zone, and keeps the player's progress
  * in the browser.
  */
-function createPlayersModel(generate: SudokuGenerator): SudokuModel {
+function createPlayersModel(generate: SudokuGenerator): GameModel {
     const now = new Date();
     const today = toDayNumber({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() });
-    return createSudokuModel({ today, store: createLocalStore(), generate, offersIntro: true });
+    return createGameModel({ today, store: createLocalStore(), generate, offersIntro: true });
 }
 
 /**
@@ -59,8 +59,8 @@ function createPlayersModel(generate: SudokuGenerator): SudokuModel {
  * fixed day, so its picture is the same whenever it is taken. It keeps
  * nothing, and shows a puzzle part played.
  */
-function createShowcaseModel(generate: SudokuGenerator): SudokuModel {
-    const model = createSudokuModel({ today: SHOWCASE_DAY, store: createMemoryStore(), generate, offersIntro: false });
+function createShowcaseModel(generate: SudokuGenerator): GameModel {
+    const model = createGameModel({ today: SHOWCASE_DAY, store: createMemoryStore(), generate, offersIntro: false });
     playShowcase({ model, generate });
     return model;
 }

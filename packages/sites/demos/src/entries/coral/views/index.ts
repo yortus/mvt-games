@@ -1,1 +1,1 @@
-export { CoralView, SCREEN_HEIGHT, SCREEN_WIDTH } from './coral-view';
+export { DemoView, type DemoViewBindings, SCREEN_HEIGHT, SCREEN_WIDTH } from './demo-view';

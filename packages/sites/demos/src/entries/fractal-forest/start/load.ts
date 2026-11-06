@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
-import { createForestModel } from '../models';
-import { ForestView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
+import { createDemoModel } from '../models';
+import { DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -16,8 +16,8 @@ export const load = definePixiLoader(async () => {
         thumbnailAdvanceMs: 36_000,
 
         start({ stage }): EntrySession {
-            const model = createForestModel();
-            const view = ForestView({ model });
+            const model = createDemoModel();
+            const view = DemoView({ model });
             stage.addChild(view);
 
             return {

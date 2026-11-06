@@ -1,5 +1,5 @@
 import { PASSAGE, WALL } from './edge-states';
-import type { MinotaurModel } from './minotaur-model';
+import type { GameModel } from './game-model';
 
 /**
  * Plays some of today's medium puzzle, as a player might: it opens it,
@@ -7,7 +7,7 @@ import type { MinotaurModel } from './minotaur-model';
  * walls the solution has along the far side. For the thumbnail, and the
  * visual tests, which show the game in play.
  */
-export function playShowcase(model: MinotaurModel): void {
+export function playShowcase(model: GameModel): void {
     model.calendar.chooseLevel('medium');
     model.openPuzzle(model.calendar.today);
     const puzzle = model.puzzle;

@@ -401,7 +401,9 @@ packages/sites/<site>/src/entries/<id>/
 
 `start/` is the same in every entry, so the sites, the thumbnail script and
 the benchmarks find each one the same way. Everything else is the entry's
-own: a small demo may have only `models/` and `views/`.
+own: a small demo may have only `models/` and `views/`. The top-level model
+and view are always easy to find: `game-model.ts` and `game-view.ts` in a game
+or a puzzle, and `demo-model.ts` and `demo-view.ts` in a demo.
 
 To add an entry, follow
 [Adding an Entry](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/README.md),

@@ -1,2 +1,1 @@
-export { FlockPanelView, type FlockPanelViewBindings } from './flock-panel-view';
-export { FlockView, type FlockViewBindings } from './flock-view';
+export { DemoView, type DemoViewBindings } from './demo-view';

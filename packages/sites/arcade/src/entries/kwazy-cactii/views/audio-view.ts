@@ -1,0 +1,95 @@
+import { Container } from 'pixi.js';
+import { setRefresh } from '@mvtjs/pixi';
+import { createReaction } from '@mvtjs/utils';
+import type { SfxChip } from '@mvtjs/site-kit/shared';
+import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
+import type { BoardPhase, GamePhase } from '../models';
+import { MIN_CELLS_FOR_BIG_MATCH } from './view-constants';
+
+// ---------------------------------------------------------------------------
+// Bindings
+// ---------------------------------------------------------------------------
+
+/** What the game's audio view reads from the game, and the chip it plays on. */
+export interface AudioViewBindings {
+    /** The chip the sound effects play on. It is the view's output, so the view reads it once. */
+    readonly sfx: SfxChip<'audio80'>;
+    /** The game's phase. The view plays the notes for a new game and for the end as it changes. */
+    readonly gamePhase: () => GamePhase;
+    /** The board's phase. The view plays the moves, the matches and the landings as it changes. */
+    readonly boardPhase: () => BoardPhase;
+    /** Whether the swap now under way makes a line. A swap that will be undone makes no sound of its own. */
+    readonly isSwapMatching: () => boolean;
+    /** The cascade's step. It is 1 for a swap's own match, and 2 or more for each match that follows as the cactii fall. */
+    readonly cascadeStep: () => number;
+    /** How many cactii the current match clears, counting every line in it. */
+    readonly matchedCellCount: () => number;
+}
+
+// ---------------------------------------------------------------------------
+// View
+// ---------------------------------------------------------------------------
+
+/**
+ * The game's sound effects. The game has no music. A swap that makes a line
+ * blips as it starts, and one that makes none says nothing until it knocks
+ * twice as it is undone. Each match whistles, a step higher for each step of
+ * a cascade, and the steps that set off fireworks crackle over the whistle as
+ * they burst, higher again at each step. A match that clears five or more cactii also
+ * sparkles. The cactii tock as they land, and a few notes mark a new board
+ * and the end of the game.
+ *
+ * The view keeps no state. Every sound it plays is a
+ * change in the game's phase or the board's.
+ */
+export function AudioView(bindings: AudioViewBindings): Container {
+    const { sfx } = bindings;
+    const view = new Container();
+    view.label = 'game-audio';
+    const playSoundWhenGameStartsOrEnds = createReaction({ watch: bindings.gamePhase, react: playGamePhase });
+    const playSoundsWhenBoardPhaseChanges = createReaction({ watch: bindings.boardPhase, react: playBoardPhase });
+    // The view is made as the game starts, so it plays a new game's notes now. The board starts idle, so nothing has
+    // happened on it yet
+    playGamePhase(bindings.gamePhase());
+
+    setRefresh(view, refresh);
+    return view;
+
+    function refresh(): void {
+        playSoundWhenGameStartsOrEnds();
+        playSoundsWhenBoardPhaseChanges();
+    }
+
+    function playGamePhase(phase: GamePhase): void {
+        sfx.play(phase === 'playing' ? NEW_GAME : GAME_OVER);
+    }
+
+    function playBoardPhase(phase: BoardPhase, previous: BoardPhase): void {
+        if (previous === 'settling') sfx.play(LAND);
+        switch (phase) {
+            case 'swapping':
+                // A swap that makes no line says nothing here. It knocks as it is undone, which is the answer to the move
+                if (bindings.isSwapMatching()) sfx.play(SWAP);
+                break;
+            case 'reversing':
+                sfx.play(SWAP_BACK);
+                break;
+            case 'matching':
+                playMatch();
+                break;
+            case 'idle':
+            case 'settling':
+                break;
+        }
+    }
+
+    function playMatch(): void {
+        const step = bindings.cascadeStep();
+        const index = Math.min(Math.max(step, 1), CASCADE_WHISTLES.length) - 1;
+        sfx.play(CASCADE_WHISTLES[index]);
+        // The crackle is an effect of its own, so it bursts over the whistle on another voice instead of cutting it off
+        const crackle = CASCADE_CRACKLES[index];
+        if (crackle !== undefined) sfx.play(crackle);
+        if (bindings.matchedCellCount() >= MIN_CELLS_FOR_BIG_MATCH) sfx.play(BIG_MATCH);
+    }
+}

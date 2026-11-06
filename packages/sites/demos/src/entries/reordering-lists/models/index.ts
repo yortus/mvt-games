@@ -1,1 +1,1 @@
-export { type Card, type CardRowModel, createCardRowModel } from './card-row-model';
+export { type Card, createDemoModel, type DemoModel } from './demo-model';

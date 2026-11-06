@@ -3,11 +3,10 @@ import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { createPointerPicker, destroyObject } from '@mvtjs/three';
 import { destroyElement } from '@mvtjs/html';
 import { defineElementLoader, type ElementEntrySession } from '@mvtjs/site-kit/entry-types';
-import { createFruitMachineModel } from '../models';
+import { createDemoModel } from '../models';
 import {
-    BanditView, ControlPanelView, dressBanditScene, frameBanditCamera, loadSymbolArt, MachineAudioView, PixiMachineView, TerminalView,
+    DemoView, DRAG_THRESHOLD_PX, dressBanditScene, findQuadrantBody, frameBanditCamera, loadSymbolArt, SCREEN_HEIGHT, SCREEN_WIDTH,
 } from '../views';
-import { DRAG_THRESHOLD_PX, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 import '../fruit-machine.css';
 
 // ---------------------------------------------------------------------------
@@ -19,10 +18,11 @@ import '../fruit-machine.css';
  * four views of it, in four quadrants. A Pixi machine, a three.js one-armed
  * bandit, an HTML control panel and a text terminal, on three renderers, all
  * following and playing the same machine; and a fifth view, which draws
- * nothing, for its sound. None of them knows the others exist. The host runs
- * each frame the MVT way, once for all five: the model updates, then
- * `updateView` and `refreshView` visit every view (they are the same
- * functions for every renderer), then Pixi and three.js draw.
+ * nothing, for its sound. The demo's view puts them together, and this makes
+ * the renderers they draw on. The host runs each frame the MVT way, once for
+ * all five: the model updates, then `updateView` and `refreshView` visit
+ * every view (they are the same functions for every renderer), then Pixi and
+ * three.js draw.
  */
 export const load = defineElementLoader(async () => {
     const art = await loadSymbolArt();
@@ -32,18 +32,26 @@ export const load = defineElementLoader(async () => {
         soundChip: 'audio80',
         thumbnailAdvanceMs: 500,
         start({ element, music, sfx }): ElementEntrySession {
-            element.classList.add('fruit-machine');
-            element.innerHTML = QUADRANTS_HTML;
-
             // The page picks the seed; the model's random numbers stay its own
-            const model = createFruitMachineModel({ seed: Math.floor(Math.random() * 0x7fffffff) });
+            const model = createDemoModel({ seed: Math.floor(Math.random() * 0x7fffffff) });
+
+            // The renderers. Pixi isn't started: the host's loop drives it, with
+            // everything else. Its stage exists at once, for the views to go on.
+            const pixi = new Application();
+            const threeCanvas = document.createElement('canvas');
+            threeCanvas.classList.add('quadrant-canvas', 'quadrant-fill');
+            const renderer = new WebGLRenderer({ canvas: threeCanvas, antialias: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            const scene = new Scene();
+            dressBanditScene({ scene, renderer });
+            const camera = new PerspectiveCamera(30, 1, 0.1, 100);
+
+            const view = DemoView({ model, art, stage: pixi.stage, scene, dragSurface: threeCanvas, music, sfx });
+            element.append(view);
 
             // --- Pixi.js: the modern machine ---------------------------------
-            // Not started: the host's loop drives it, with everything else. Its
-            // stage exists at once; it draws once its renderer is ready.
-            const pixiHost = quadrant(element, 'pixi');
-            const pixi = new Application();
-            pixi.stage.addChild(PixiMachineView({ model, art }));
+            // It draws once its renderer is ready
+            const pixiHost = findQuadrantBody(view, 'pixi');
             let isPixiReady = false;
             let isDestroyed = false;
             const pixiReady = pixi.init({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, background: 0x2a1766, antialias: true, autoStart: false })
@@ -61,28 +69,10 @@ export const load = defineElementLoader(async () => {
                 });
 
             // --- three.js: the one-armed bandit ------------------------------
-            const threeHost = quadrant(element, 'three');
-            const threeCanvas = document.createElement('canvas');
-            threeCanvas.classList.add('quadrant-canvas', 'quadrant-fill');
+            const threeHost = findQuadrantBody(view, 'three');
             threeHost.append(threeCanvas);
-            const renderer = new WebGLRenderer({ canvas: threeCanvas, antialias: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            const scene = new Scene();
-            dressBanditScene({ scene, renderer });
-            const camera = new PerspectiveCamera(30, 1, 0.1, 100);
-            scene.add(BanditView({ model, art, dragSurface: threeCanvas }));
             // A drag turns the cabinet; the picker drops the click that ends one, so letting go over the lever doesn't pull it
             const picker = createPointerPicker({ domElement: threeCanvas, camera: () => camera, scene, dragThreshold: DRAG_THRESHOLD_PX });
-
-            // --- HTML: the control panel and the terminal --------------------
-            const panel = ControlPanelView({ model, art });
-            quadrant(element, 'panel').append(panel);
-            const terminal = TerminalView({ model });
-            quadrant(element, 'terminal').append(terminal);
-
-            // --- Sound: a fifth view, with no visuals -------------------------
-            // Never added to the page: the host walks it with the other views
-            const audio = MachineAudioView({ model, music, sfx });
 
             // --- Sizing ------------------------------------------------------
             const pixiObserver = new ResizeObserver(fitPixi);
@@ -92,7 +82,7 @@ export const load = defineElementLoader(async () => {
             fitThree();
 
             return {
-                views: [pixi.stage, scene, panel, terminal, audio],
+                views: [pixi.stage, scene, view],
                 ready: pixiReady,
                 update(deltaMs: number): void {
                     model.update(deltaMs);
@@ -112,11 +102,8 @@ export const load = defineElementLoader(async () => {
                     renderer.dispose();
                     // `dispose` keeps the WebGL context until it is collected; a browser allows only so many
                     renderer.forceContextLoss();
-                    destroyElement(panel);
-                    destroyElement(terminal);
-                    destroyElement(audio);
+                    destroyElement(view);
                     element.replaceChildren();
-                    element.classList.remove('fruit-machine');
                 },
             };
 
@@ -142,32 +129,3 @@ export const load = defineElementLoader(async () => {
         },
     };
 });
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-/** The four quadrants, each labelled with its renderer, in the order the grid reads them. */
-const QUADRANTS_HTML = `
-<section class="quadrant" data-quadrant="pixi">
-    <span class="quadrant-label"><b>Pixi.js</b> · the modern machine</span>
-    <div class="quadrant-body"></div>
-</section>
-<section class="quadrant" data-quadrant="terminal">
-    <span class="quadrant-label"><b>HTML</b> · the terminal</span>
-    <div class="quadrant-body"></div>
-</section>
-<section class="quadrant" data-quadrant="panel">
-    <span class="quadrant-label"><b>HTML</b> · the control panel</span>
-    <div class="quadrant-body"></div>
-</section>
-<section class="quadrant" data-quadrant="three">
-    <span class="quadrant-label"><b>Three.js</b> · drag to turn, tap the lever</span>
-    <div class="quadrant-body"></div>
-</section>`;
-
-function quadrant(element: HTMLElement, name: string): HTMLElement {
-    const body = element.querySelector<HTMLElement>(`[data-quadrant="${name}"] .quadrant-body`);
-    if (body === null) throw new Error(`The fruit machine has no ${name} quadrant`);
-    return body;
-}

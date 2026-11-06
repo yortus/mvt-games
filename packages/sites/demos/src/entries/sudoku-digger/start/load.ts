@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
-import { createDiggerModel } from '@mvtjs/puzzles/sudoku-generator/models';
-import { DiggerView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
+import { createDemoModel } from '../models';
+import { DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -18,8 +18,8 @@ export const load = definePixiLoader(async () => {
 
         start({ stage, sfx }): EntrySession {
             // Each visit makes different puzzles. A test page fixes Math.random, so its puzzles are the same each run
-            const model = createDiggerModel({ seed: Math.floor(Math.random() * 2 ** 32) });
-            const view = DiggerView({ model, sfx });
+            const model = createDemoModel({ seed: Math.floor(Math.random() * 2 ** 32) });
+            const view = DemoView({ model, sfx });
             stage.addChild(view);
 
             return {

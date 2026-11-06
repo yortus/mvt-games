@@ -4,5 +4,5 @@ export { playShowcase, type ShowcaseOptions } from './play-showcase';
 export type { GroupNote } from './group-notes';
 export { createPuzzleModel, type PuzzleModel, type PuzzleModelOptions } from './puzzle-model';
 export type { PuzzleSave } from './puzzle-save';
-export { createSudokuModel, type SudokuModel, type SudokuModelOptions, type SudokuPhase } from './sudoku-model';
+export { createGameModel, type GameModel, type GameModelOptions, type SudokuPhase } from './game-model';
 export { SUDOKU_WALKTHROUGH, type SudokuPractice, type SudokuTarget, type SudokuWalkthrough } from './sudoku-walkthrough';

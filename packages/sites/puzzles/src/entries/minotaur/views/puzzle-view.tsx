@@ -3,7 +3,7 @@
 import type { Container } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
 import { ButtonView, DIM_TEXT_COLOR, INK_COLOR, LABEL_STYLE, LEVEL_NAMES, MARGIN, SMALL_STYLE, SOLVED_COLOR, writeDate } from '../../../shared';
-import type { MinotaurModel, PuzzleModel } from '../models';
+import type { GameModel, PuzzleModel } from '../models';
 import { BoardView } from './board-view';
 import {
     BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, HINT_Y, SCREEN_WIDTH, BUTTON_GAP, BUTTON_HEIGHT,
@@ -16,7 +16,7 @@ import {
 
 export interface PuzzleViewBindings {
     /** The game, which has a puzzle open whenever this view shows. */
-    model: MinotaurModel;
+    model: GameModel;
 }
 
 // ---------------------------------------------------------------------------

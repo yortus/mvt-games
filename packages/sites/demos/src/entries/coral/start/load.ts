@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
-import { createCoralModel } from '../models';
-import { CoralView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
+import { createDemoModel } from '../models';
+import { DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -16,8 +16,8 @@ export const load = definePixiLoader(async () => {
         thumbnailAdvanceMs: 15_000,
 
         start({ stage }): EntrySession {
-            const model = createCoralModel();
-            const view = CoralView({ model });
+            const model = createDemoModel();
+            const view = DemoView({ model });
             stage.addChild(view);
 
             return {

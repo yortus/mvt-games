@@ -1,3 +1,5 @@
+export { AudioView, type AudioViewBindings } from './audio-view';
+export { DemoView, type DemoViewBindings } from './demo-view';
 export { ChannelMetersView, type ChannelMetersViewBindings } from './channel-meters-view';
 export { InstrumentsView, type InstrumentsViewBindings } from './instruments-view';
 export { OrderListView, type OrderListViewBindings } from './order-list-view';
@@ -6,7 +8,5 @@ export { PatternView, type PatternViewBindings } from './pattern-view';
 export { createPixelFont, type PixelFont, type PixelFontOptions } from './pixel-font';
 export { SongPanelView, type SongPanelViewBindings } from './song-panel-view';
 export { TitleBarView, type TitleBarViewBindings } from './title-bar-view';
-export { TrackerAudioView, type TrackerAudioViewBindings } from './tracker-audio-view';
-export { TrackerView, type TrackerViewBindings } from './tracker-view';
 export { TuneListView, type TuneListViewBindings } from './tune-list-view';
 export { SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';

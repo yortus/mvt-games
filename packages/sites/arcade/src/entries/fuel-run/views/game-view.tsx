@@ -5,6 +5,7 @@ import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
+import { AudioView } from './audio-view';
 import { TILE_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT, PLAY_HEIGHT } from './view-constants';
 import { TerrainView } from './terrain-view';
 import { ShipView } from './ship-view';
@@ -19,7 +20,6 @@ import { DeathFlashView } from './death-flash-view';
 import { BaseAlertView } from './base-alert-view';
 import { BaseTargetView } from './base-target-view';
 import { HudView } from './hud-view';
-import { GameAudioView } from './game-audio-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -76,7 +76,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 heldRepeatMs={AUTO_FIRE_MS}
                 onHeld={model.fire}
             />
-            <GameAudioView
+            <AudioView
                 music={music}
                 sfx={sfx}
                 phase={() => model.phase}

@@ -1,9 +1,9 @@
 import { Color, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { createPointerPicker, destroyObject, setRefresh, setUpdate } from '@mvtjs/three';
+import { createPointerPicker, destroyObject } from '@mvtjs/three';
 import { destroyElement } from '@mvtjs/html';
 import { defineElementLoader, type ElementEntrySession } from '@mvtjs/site-kit/entry-types';
-import { createFlockModel } from '../../boids';
-import { FlockPanelView, FlockView } from '../views';
+import { createDemoModel } from '../models';
+import { DemoView } from '../views';
 import '../boids-3d.css';
 
 // ---------------------------------------------------------------------------
@@ -30,44 +30,32 @@ export const load = defineElementLoader(async () => {
             const scene = new Scene();
             scene.background = new Color(0x0d1117);
             const camera = new PerspectiveCamera(50, 1, 0.1, 1000);
-            scene.add(OrbitingCameraView({ camera }));
 
-            const model = createFlockModel({
-                arenaWidth: 100,
-                arenaHeight: 82,
-                boidCount: 200,
-                separation: 3.0,
-                alignment: 0.5,
-                cohesion: 3.0,
-                wander: 9.0,
-                visionAngle: 4.0,
-                maxSpeed: 20,
-                minSpeed: 5,
-                perceptionRadius: 16,
+            const model = createDemoModel({
+                flock: {
+                    arenaWidth: 100,
+                    arenaHeight: 82,
+                    boidCount: 200,
+                    separation: 3.0,
+                    alignment: 0.5,
+                    cohesion: 3.0,
+                    wander: 9.0,
+                    visionAngle: 4.0,
+                    maxSpeed: 20,
+                    minSpeed: 5,
+                    perceptionRadius: 16,
+                },
             });
-            scene.add(FlockView({ model }));
+            const view = DemoView({ model, scene, camera });
+            element.append(view);
             const picker = createPointerPicker({ domElement: canvas, camera: () => camera, scene });
-
-            const panel = FlockPanelView({
-                boidCount: () => model.boidCount,
-                separation: () => model.separation,
-                alignment: () => model.alignment,
-                cohesion: () => model.cohesion,
-                wander: () => model.wander,
-                onBoidCountSlid: (count) => { model.boidCount = count; },
-                onSeparationSlid: (weight) => { model.separation = weight; },
-                onAlignmentSlid: (weight) => { model.alignment = weight; },
-                onCohesionSlid: (weight) => { model.cohesion = weight; },
-                onWanderSlid: (weight) => { model.wander = weight; },
-            });
-            element.append(panel);
 
             const resizeObserver = new ResizeObserver(fit);
             resizeObserver.observe(element);
             fit();
 
             return {
-                views: [scene, panel],
+                views: [scene, view],
                 update(deltaMs: number): void {
                     model.update(deltaMs);
                 },
@@ -78,7 +66,7 @@ export const load = defineElementLoader(async () => {
                     resizeObserver.disconnect();
                     picker.dispose();
                     destroyObject(scene);
-                    destroyElement(panel);
+                    destroyElement(view);
                     renderer.dispose();
                     // `dispose` keeps the WebGL context until it is collected; a browser allows only so many
                     renderer.forceContextLoss();
@@ -99,32 +87,3 @@ export const load = defineElementLoader(async () => {
         },
     };
 });
-
-// ---------------------------------------------------------------------------
-// Internals
-// ---------------------------------------------------------------------------
-
-interface OrbitingCameraViewBindings {
-    camera: PerspectiveCamera;
-}
-
-/**
- * The camera, circling the arena slowly: presentation of the page's own, not
- * the model's, so it pauses with the rest of the views.
- */
-function OrbitingCameraView(bindings: OrbitingCameraViewBindings): PerspectiveCamera {
-    const { camera } = bindings;
-    let orbitAngle = 0;
-    setUpdate(camera, (deltaMs) => {
-        orbitAngle += deltaMs * ORBIT_RADIANS_PER_MS;
-    });
-    setRefresh(camera, () => {
-        camera.position.set(Math.sin(orbitAngle) * ORBIT_RADIUS, ORBIT_HEIGHT, Math.cos(orbitAngle) * ORBIT_RADIUS);
-        camera.lookAt(0, 0, 0);
-    });
-    return camera;
-}
-
-const ORBIT_RADIUS = 95;
-const ORBIT_HEIGHT = 70;
-const ORBIT_RADIANS_PER_MS = 0.00006;

@@ -5,8 +5,8 @@ import { createComputed } from '@mvtjs/utils';
 import type { SfxChip } from '@mvtjs/site-kit/shared';
 import { LEVELS } from '@mvtjs/puzzles/sudoku-generator';
 import type { DiggerModel, DiggerPhase, Playback } from '@mvtjs/puzzles/sudoku-generator';
+import { AudioView } from './audio-view';
 import { ButtonView } from './button-view';
-import { DiggerAudioView } from './digger-audio-view';
 import { GridView } from './grid-view';
 import { LineCountsView } from './line-counts-view';
 import { PanelRowView } from './panel-row-view';
@@ -140,7 +140,7 @@ export function DiggerView(bindings: DiggerViewBindings): Container {
                 <ButtonView x={SPEEDS_LEFT + BUTTON_STEP * 3} label="Fast" isLit={isPlayback('fast')} onPressed={choosePlayback('fast')} />
                 <ButtonView x={NEW_LEFT} label="New" isLit={() => false} onPressed={model.makeNewPuzzle} />
             </container>
-            <DiggerAudioView
+            <AudioView
                 sfx={sfx}
                 phase={() => model.phase}
                 seeds={model.filling.seeds}

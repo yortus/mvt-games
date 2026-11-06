@@ -2,9 +2,9 @@ import { Container } from 'pixi.js';
 import { isTouchDevice, OverlayView, type SfxChip } from '@mvtjs/site-kit/shared';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
+import { AudioView } from './audio-view';
 import { CELL_WIDTH_PX, CELL_HEIGHT_PX } from './view-constants';
 import { BoardView } from './board-view';
-import { GameAudioView } from './game-audio-view';
 import { HudView } from './hud-view';
 
 // ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ export function GameView(bindings: GameViewBindings): Container {
         view.addChild(overlayView);
 
         // Sound
-        view.addChild(GameAudioView({
+        view.addChild(AudioView({
             sfx: bindings.sfx,
             gamePhase: () => game.phase,
             boardPhase: () => game.board.phase,

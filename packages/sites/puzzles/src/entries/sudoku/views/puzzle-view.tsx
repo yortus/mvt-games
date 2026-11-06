@@ -3,7 +3,7 @@
 import type { Container } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
 import { ButtonView, DIM_TEXT_COLOR, INK_COLOR, LABEL_STYLE, LEVEL_NAMES, MARGIN, SMALL_STYLE, SOLVED_COLOR, writeDate } from '../../../shared';
-import type { PuzzleModel, SudokuModel } from '../models';
+import type { PuzzleModel, GameModel } from '../models';
 import { BoardView } from './board-view';
 import { KeypadView } from './keypad-view';
 import { BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, GRID_X, GRID_Y, HINT_Y, KEYPAD_Y, SCREEN_WIDTH, TOOL_GAP, TOOL_HEIGHT, TOOL_WIDTH, TOOL_Y } from './view-constants';
@@ -14,7 +14,7 @@ import { BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, GRID_X, GRID_Y, HINT_Y, KEYPAD_Y,
 
 export interface PuzzleViewBindings {
     /** The game, which has a puzzle open whenever this view shows. */
-    model: SudokuModel;
+    model: GameModel;
 }
 
 // ---------------------------------------------------------------------------

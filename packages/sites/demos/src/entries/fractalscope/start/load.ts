@@ -1,7 +1,7 @@
 import { destroyElement } from '@mvtjs/html';
 import { defineElementLoader, type ElementEntrySession } from '@mvtjs/site-kit/entry-types';
-import { createScopeModel } from '../models';
-import { ScopeView } from '../views';
+import { createDemoModel } from '../models';
+import { DemoView } from '../views';
 import '../fractalscope.css';
 
 // ---------------------------------------------------------------------------
@@ -23,8 +23,8 @@ export const load = defineElementLoader(async () => {
         thumbnailAdvanceMs: 1500,
         start({ element, takesInput }): ElementEntrySession {
             element.classList.add('fractalscope-host');
-            const model = createScopeModel();
-            const view = ScopeView({ model, takesKeys: takesInput === true });
+            const model = createDemoModel();
+            const view = DemoView({ model, takesKeys: takesInput === true });
             element.append(view);
 
             return {

@@ -46,10 +46,10 @@ Dense ids and storage indices both make the lookup an array index.
 
 | File | Purpose |
 |------|---------|
-| [`models/card-row-model.ts`](./models/card-row-model.ts) | Domain: the row in both forms, the script, and move-to-front |
+| [`models/demo-model.ts`](./models/demo-model.ts) | Domain: the row in both forms, the script, and move-to-front |
 | [`views/array-row-view-model.ts`](./views/array-row-view-model.ts) | Presentation state for the array row, keyed by card id |
 | [`views/slot-row-view-model.ts`](./views/slot-row-view-model.ts) | Presentation state for the `OrderedSlotList` row, keyed by storage index |
-| [`views/card-row-view.tsx`](./views/card-row-view.tsx) | Both rows, and the card view they share |
+| [`views/demo-view.tsx`](./views/demo-view.tsx) | Both rows, and the card view they share |
 | `*.test.ts` | Both forms stay in step; slide, entrance and exit behaviour of each view model |
 
 See [Lists in Motion](../../../../docs/chapters/19-lists-in-motion.md) for how to

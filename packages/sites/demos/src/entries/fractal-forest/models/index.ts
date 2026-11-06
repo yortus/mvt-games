@@ -1,1 +1,1 @@
-export { createForestModel, type Branch, type ForestModel, type Leaf, type LeafKind, type Season, type Tree } from './forest-model';
+export { createDemoModel, type Branch, type DemoModel, type Leaf, type LeafKind, type Season, type Tree } from './demo-model';

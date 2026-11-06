@@ -6,6 +6,7 @@ import { List } from '@mvtjs/pixi';
 import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
 import { ARENA_WIDTH, textures } from '../data';
 import type { GameModel, GamePhase } from '../models';
+import { AudioView } from './audio-view';
 import { BombFlashView } from './bomb-flash-view';
 import { BossHealthView } from './boss-health-view';
 import { BossView } from './boss-view';
@@ -13,7 +14,6 @@ import { BulletLayerView } from './bullet-layer-view';
 import { CityView } from './city-view';
 import { EnemyView } from './enemy-view';
 import { ExplosionView } from './explosion-view';
-import { GameAudioView } from './game-audio-view';
 import { HitboxView } from './hitbox-view';
 import { HudView } from './hud-view';
 import { ItemView } from './item-view';
@@ -91,7 +91,7 @@ export function GameView(bindings: GameViewBindings): Container {
                     model.targetY = undefined;
                 }}
             />
-            <GameAudioView
+            <AudioView
                 music={music}
                 sfx={sfx}
                 phase={() => model.phase}

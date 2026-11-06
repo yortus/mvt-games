@@ -1,3 +1,4 @@
+export { createDemoModel, type DemoModel, type DemoModelOptions } from './demo-model';
 export { type CelebrationModel, type CelebrationStepKind } from './celebration-model';
 export { computeReturn, type ComputeReturnOptions, type MachineReturn } from './compute-return';
 export { evaluateWays, type EvaluateWaysOptions, type WayWin } from './evaluate-ways';

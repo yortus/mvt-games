@@ -2,7 +2,7 @@ import { advanceTime } from '@mvtjs/html';
 import { htmlTest } from 'v-snap';
 import '../../penrose-tiling.css';
 import { SHIFT_STEP } from '../../data';
-import { createLabModel, createMultigridTiles, type LabModel } from '../../models';
+import { createDemoModel, createMultigridTiles, type DemoModel } from '../../models';
 import type { ColorMode } from '../color-mode';
 import { createLookViewModel, type LookViewModel } from '../look-view-model';
 import type { PaletteName } from '../palette-name';
@@ -25,50 +25,50 @@ htmlTest('three-fold, as cubes, with no gaps', () => pose({ palette: 'ink', colo
 htmlTest('away from the middle, closer in', () => pose({ palette: 'orchard', colorMode: 'rings', centreX: 40, centreY: -25, radius: 5 }));
 
 htmlTest('half way through a dissolve, with some tiles between two places', async () => {
-    const { model, look } = createLab();
+    const { model, look } = createDemo();
     model.scope.radius = 5;
     model.tiling.shift = 2.5 * SHIFT_STEP + 0.3125;
     await advanceTime(16, model);
-    return poseLab(model, look);
+    return poseDemo(model, look);
 });
 
 htmlTest('touching, at the bottom of the slider', () => {
-    const { model, look } = createLab();
+    const { model, look } = createDemo();
     look.gridReveal = 0;
-    return poseLab(model, look);
+    return poseDemo(model, look);
 });
 
 htmlTest('part way back to the grids', () => {
-    const { model, look } = createLab();
+    const { model, look } = createDemo();
     look.gridReveal = 0.5;
-    return poseLab(model, look);
+    return poseDemo(model, look);
 });
 
 htmlTest('nearly back, with the tiles small at their crossings', () => {
-    const { model, look } = createLab();
+    const { model, look } = createDemo();
     look.gridReveal = 0.8;
-    return poseLab(model, look);
+    return poseDemo(model, look);
 });
 
 htmlTest('only the lines, at the top of the slider', () => {
-    const { model, look } = createLab();
+    const { model, look } = createDemo();
     look.gridReveal = 1;
-    return poseLab(model, look);
+    return poseDemo(model, look);
 });
 
 htmlTest('the grids, with a tile picked out', () => {
-    const { model, look } = createLab();
+    const { model, look } = createDemo();
     look.gridReveal = 0.8;
     model.tiling.pickTile(look.findDrawnTile(1, 1));
-    return poseLab(model, look);
+    return poseDemo(model, look);
 });
 
 htmlTest('the grids of the squares, which cross in a plain lattice', async () => {
-    const { model, look } = createLab();
+    const { model, look } = createDemo();
     model.tiling.symmetry = 4;
     look.gridReveal = 1;
     await advanceTime(16, model);
-    return poseLab(model, look);
+    return poseDemo(model, look);
 });
 
 // ---------------------------------------------------------------------------
@@ -111,14 +111,14 @@ function pose(options: Pose): Element {
 }
 
 /** A scope, and how the tiling under it looks. */
-function createLab(): { model: LabModel; look: LookViewModel } {
-    const model = createLabModel({ seed: 1 });
+function createDemo(): { model: DemoModel; look: LookViewModel } {
+    const model = createDemoModel({ seed: 1 });
     const look = createLookViewModel({ tiles: () => model.tiling.tiles, isDrifting: () => model.tiling.isDrifting });
     return { model, look };
 }
 
 /** The canvas, showing what's under the scope as the entry shows it. */
-function poseLab(model: LabModel, look: LookViewModel): Element {
+function poseDemo(model: DemoModel, look: LookViewModel): Element {
     return placeOnStage(TileCanvasView({
         tiles: () => model.tiling.tiles,
         nextTiles: () => model.tiling.nextTiles,

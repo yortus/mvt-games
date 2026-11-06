@@ -1,1 +1,1 @@
-export { createPendulumModel, type PendulumModel, type Playback } from './pendulum-model';
+export { createDemoModel, type DemoModel, type Playback } from './demo-model';

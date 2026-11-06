@@ -5,12 +5,12 @@ import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChi
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
+import { AudioView } from './audio-view';
 import { TILE_SIZE, CAT_COLORS, SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';
 import { MazeView } from './maze-view';
 import { MouseView } from './mouse-view';
 import { CatView } from './cat-view';
 import { HudView } from './hud-view';
-import { GameAudioView } from './game-audio-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -58,7 +58,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 swipeDistance={SWIPE_DISTANCE}
                 onSwiped={(direction) => { model.direction = direction; }}
             />
-            <GameAudioView
+            <AudioView
                 music={music}
                 sfx={sfx}
                 phase={() => model.phase}

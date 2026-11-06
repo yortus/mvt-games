@@ -6,12 +6,12 @@ import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
 import type { GameModel, GamePhase } from '../models';
+import { AudioView } from './audio-view';
 import { BeetleView } from './beetle-view';
 import { DustDevilView } from './dust-devil-view';
 import { FarmFencedView } from './farm-fenced-view';
 import { FarmhandView } from './farmhand-view';
 import { FenceView } from './fence-view';
-import { GameAudioView } from './game-audio-view';
 import { HudView } from './hud-view';
 import { MeadowView } from './meadow-view';
 import { PointsPopupView } from './points-popup-view';
@@ -56,7 +56,7 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container>
-            <GameAudioView
+            <AudioView
                 music={music}
                 sfx={sfx}
                 phase={() => model.phase}

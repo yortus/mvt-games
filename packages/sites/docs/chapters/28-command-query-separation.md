@@ -112,7 +112,7 @@ function update(deltaMs: number) {
 ```
 
 The fruit machine has four readers of that one count. Its
-[audio view](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/views/audio/machine-audio-view.ts)
+[audio view](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/views/audio/audio-view.ts)
 reacts to it exactly this way, to play the lever's sound. The
 [lever view](https://github.com/yortus/mvt-games/blob/main/packages/sites/demos/src/entries/fruit-machine/views/three/lever-view.tsx)
 does the same comparison by hand, to swing the lever. The terminal watches

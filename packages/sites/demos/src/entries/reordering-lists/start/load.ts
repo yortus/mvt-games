@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
-import { createCardRowModel } from '../models';
-import { CardRowView } from '../views';
+import { createDemoModel } from '../models';
+import { DemoView } from '../views';
 
 const SCREEN_WIDTH = 600;
 const SCREEN_HEIGHT = 420;
@@ -18,8 +18,8 @@ export const load = definePixiLoader(async () => {
         thumbnailAdvanceMs: 2200,
 
         start({ stage }): EntrySession {
-            const model = createCardRowModel();
-            const view = CardRowView({ model });
+            const model = createDemoModel();
+            const view = DemoView({ model });
             stage.addChild(view);
 
             return {

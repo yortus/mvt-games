@@ -1,4 +1,4 @@
-export { createLabModel, type LabModel, type LabModelOptions } from './lab-model';
+export { createDemoModel, type DemoModel, type DemoModelOptions } from './demo-model';
 export { createMultigridTiles, type MultigridTiles, type TileSet } from './multigrid-tiles';
 export {
     createScopeModel,

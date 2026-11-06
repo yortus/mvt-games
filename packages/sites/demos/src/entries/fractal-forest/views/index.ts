@@ -1,1 +1,1 @@
-export { ForestView, SCREEN_HEIGHT, SCREEN_WIDTH } from './forest-view';
+export { DemoView, type DemoViewBindings, SCREEN_HEIGHT, SCREEN_WIDTH } from './demo-view';

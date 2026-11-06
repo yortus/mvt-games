@@ -20,8 +20,7 @@ export type MachinePhase = 'idle' | 'spinning' | 'celebrating';
 
 /**
  * The fruit machine: five reels, and the two things a player can do, spin
- * and stop. The demo's one model, which every view reads and any view may
- * act on.
+ * and stop. Every view reads it, and any view may act on it.
  *
  * It keeps no balance. Each spin is measured against a fixed bet, and shows
  * what it pays back, and nothing carries over from one spin to the next.

@@ -1,1 +1,1 @@
-export { createFireworksModel, type FireworksModel, type Rocket, type Spark } from './fireworks-model';
+export { createDemoModel, type DemoModel, type Rocket, type Spark } from './demo-model';

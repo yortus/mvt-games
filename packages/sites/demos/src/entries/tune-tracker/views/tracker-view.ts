@@ -3,6 +3,7 @@ import type { Audio90Sound, Scope } from 'audio90';
 import type { Tune } from '#tunes';
 import type { MusicChip } from '@mvtjs/site-kit/shared';
 import type { TrackerModel } from '../models';
+import { AudioView } from './audio-view';
 import { ChannelMetersView } from './channel-meters-view';
 import { InstrumentsView } from './instruments-view';
 import { OrderListView } from './order-list-view';
@@ -11,7 +12,6 @@ import { PatternView } from './pattern-view';
 import type { PixelFont } from './pixel-font';
 import { SongPanelView } from './song-panel-view';
 import { TitleBarView } from './title-bar-view';
-import { TrackerAudioView } from './tracker-audio-view';
 import { TuneListView } from './tune-list-view';
 import {
     INSTRUMENTS_WIDTH, INSTRUMENTS_X, METERS_HEIGHT, METERS_Y, ORDER_WIDTH, ORDER_X, PANELS_HEIGHT, PANELS_Y, PATTERN_HEIGHT, PATTERN_LINES,
@@ -63,7 +63,7 @@ export function TrackerView(bindings: TrackerViewBindings): Container {
     screen.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
     view.addChild(screen);
 
-    view.addChild(TrackerAudioView({
+    view.addChild(AudioView({
         music,
         songAt: (index) => tunes[index].song,
         tuneIndex: () => model.tuneIndex,

@@ -2,8 +2,8 @@ import { createScope, prepareAudio90Samples } from 'audio90';
 import { INSTRUMENT_NAMES, SAMPLES, TUNES } from '#tunes';
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { textures } from '../data';
-import { createTrackerModel } from '../models';
-import { createPixelFont, SCREEN_HEIGHT, SCREEN_WIDTH, TrackerView } from '../views';
+import { createDemoModel } from '../models';
+import { createPixelFont, DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -33,11 +33,11 @@ export const load = definePixiLoader(async () => {
         },
 
         start({ stage, music }): EntrySession {
-            const model = createTrackerModel({ tuneCount: TUNES.length });
+            const model = createDemoModel({ tuneCount: TUNES.length });
             const font = createPixelFont({ sheet: textures.get().font });
             // A scope costs the audio thread a little, so one is attached only while the Tune Tracker runs
             const scope = createScope(music);
-            const view = TrackerView({ model, music, scope, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font });
+            const view = DemoView({ model, music, scope, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font });
             stage.addChild(view);
 
             return {
@@ -52,13 +52,13 @@ export const load = definePixiLoader(async () => {
                 },
                 inputConfig: {
                     onYDirectionChanged(direction) {
-                        if (direction !== 'none') model.moveChoice(direction === 'up' ? -1 : 1);
+                        if (direction !== 'none') model.tracker.moveChoice(direction === 'up' ? -1 : 1);
                     },
                     onXDirectionChanged(direction) {
-                        if (direction !== 'none') model.moveChoice(direction === 'left' ? -1 : 1);
+                        if (direction !== 'none') model.tracker.moveChoice(direction === 'left' ? -1 : 1);
                     },
                     onPrimaryButtonChanged(isPressed) {
-                        if (isPressed) model.playOrStop();
+                        if (isPressed) model.tracker.playOrStop();
                     },
                 },
             };

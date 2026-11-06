@@ -1,4 +1,4 @@
-export { ScopeView, type ScopeViewBindings } from './scope-view';
+export { DemoView, type DemoViewBindings } from './demo-view';
 export { FRACTAL_LABELS } from './fractal-labels';
 export { FractalCanvasView, type FractalCanvasViewBindings } from './fractal-canvas-view';
 export { MinimapView, type MinimapViewBindings } from './minimap-view';

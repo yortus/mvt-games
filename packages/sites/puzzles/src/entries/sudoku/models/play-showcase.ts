@@ -2,7 +2,7 @@ import { CELL_COUNT, COLUMN_OF, countDigits, findCandidates, pickDigit, ROW_OF, 
 import { findPuzzleSeed } from './find-puzzle-seed';
 import { GENERATOR_LEVELS } from './model-constants';
 import type { PuzzleModel } from './puzzle-model';
-import type { SudokuModel } from './sudoku-model';
+import type { GameModel } from './game-model';
 
 /**
  * Plays some of today's puzzle, as a player might: it opens it, fills in a
@@ -51,7 +51,7 @@ export function playShowcase(options: ShowcaseOptions): void {
 /** What `playShowcase` plays in. */
 export interface ShowcaseOptions {
     /** The game, on the calendar, to open today's puzzle in. */
-    readonly model: SudokuModel;
+    readonly model: GameModel;
     /** The puzzle maker the game was given, for the puzzle's solution. */
     readonly generate: SudokuGenerator;
 }

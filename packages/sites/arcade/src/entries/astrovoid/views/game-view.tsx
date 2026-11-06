@@ -6,12 +6,12 @@ import { isTouchDevice, OverlayView, type SfxChip } from '@mvtjs/site-kit/shared
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
+import { AudioView } from './audio-view';
 import { ShipView } from './ship-view';
 import { AsteroidView } from './asteroid-view';
 import { BulletView } from './bullet-view';
 import { DebrisView } from './debris-view';
 import { HudView } from './hud-view';
-import { GameAudioView } from './game-audio-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -45,7 +45,7 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container onUpdate={fireOnEachBeat}>
-            <GameAudioView
+            <AudioView
                 sfx={sfx}
                 phase={() => model.phase}
                 shotsFired={() => model.shotsFired}

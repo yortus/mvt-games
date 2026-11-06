@@ -1,5 +1,5 @@
 import { canvasTest } from 'v-snap';
-import type { SudokuModel } from '../../models';
+import type { GameModel } from '../../models';
 import { PuzzleView } from '../puzzle-view';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../view-constants';
 import { findEmptyCell, playSome, poseGame, solve, TODAY } from './sudoku-poses.test-support';
@@ -33,8 +33,8 @@ canvasTest('a digit that breaks a rule, in red, with those it clashes with', SIZ
 canvasTest('solved', SIZE, () => pose(solve, 2000));
 
 /** Today's puzzle, after `play` has played in it and `ms` has passed. The view shows only while a puzzle is open. */
-function pose(play: (model: SudokuModel) => void, ms?: number) {
-    const makeView = (model: SudokuModel) => {
+function pose(play: (model: GameModel) => void, ms?: number) {
+    const makeView = (model: GameModel) => {
         model.openPuzzle(TODAY);
         return PuzzleView({ model });
     };

@@ -1,8 +1,8 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { createLocalStore, createMemoryStore } from '@mvtjs/site-kit/storage';
 import { toDayNumber } from '../../../shared';
-import { createMinotaurModel, type MinotaurModel, playShowcase } from '../models';
-import { MinotaurView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
+import { createGameModel, type GameModel, playShowcase } from '../models';
+import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -17,7 +17,7 @@ export const load = definePixiLoader(async () => ({
 
     start({ stage, sfx, isInPage }): EntrySession {
         const model = isInPage === true ? createPlayersModel() : createShowcaseModel();
-        const view = MinotaurView({ model, sfx });
+        const view = GameView({ model, sfx });
         stage.addChild(view);
 
         return {
@@ -44,10 +44,10 @@ export const load = definePixiLoader(async () => ({
  * device's clock and time zone, and keeps the player's progress in the
  * browser.
  */
-function createPlayersModel(): MinotaurModel {
+function createPlayersModel(): GameModel {
     const now = new Date();
     const today = toDayNumber({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() });
-    return createMinotaurModel({ today, store: createLocalStore(), offersIntro: true });
+    return createGameModel({ today, store: createLocalStore(), offersIntro: true });
 }
 
 /**
@@ -55,8 +55,8 @@ function createPlayersModel(): MinotaurModel {
  * fixed day, so its picture is the same whenever it is taken. It keeps
  * nothing, and shows a maze part built.
  */
-function createShowcaseModel(): MinotaurModel {
-    const model = createMinotaurModel({ today: SHOWCASE_DAY, store: createMemoryStore(), offersIntro: false });
+function createShowcaseModel(): GameModel {
+    const model = createGameModel({ today: SHOWCASE_DAY, store: createMemoryStore(), offersIntro: false });
     playShowcase(model);
     return model;
 }

@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
-import { createFlockModel } from '../models';
-import { BoidsView, CHECKBOX_HEIGHT, PANEL_PADDING, SLIDER_SPACING, SLIDER_WIDTH } from '../views';
+import { createDemoModel } from '../models';
+import { CHECKBOX_HEIGHT, DemoView, PANEL_PADDING, SLIDER_SPACING, SLIDER_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -25,54 +25,35 @@ export const load = definePixiLoader(async () => {
         unmeasuredMetrics: ['reads'],
 
         start({ stage }): EntrySession {
-            const model = createFlockModel({
-                arenaWidth: ARENA_WIDTH,
-                arenaHeight: ARENA_HEIGHT,
-                boidCount: 200,
-                separation: 3.0,
-                alignment: 0.5,
-                cohesion: 3.0,
-                wander: 9.0,
-                visionAngle: 4.0,
-                maxSpeed: 20,
-                minSpeed: 5,
-                perceptionRadius: 16,
+            const model = createDemoModel({
+                flock: {
+                    arenaWidth: ARENA_WIDTH,
+                    arenaHeight: ARENA_HEIGHT,
+                    boidCount: 200,
+                    separation: 3.0,
+                    alignment: 0.5,
+                    cohesion: 3.0,
+                    wander: 9.0,
+                    visionAngle: 4.0,
+                    maxSpeed: 20,
+                    minSpeed: 5,
+                    perceptionRadius: 16,
+                },
             });
 
-            let timeScale = 1;
-            let isShowingInfluences = false;
-
-            let view = BoidsView({
-                model,
-                simWidth: layout.simWidth,
-                simHeight: layout.simHeight,
-                isPortrait: layout.isPortrait,
-                timeScale: () => timeScale,
-                onTimeScaleChanged: (v) => { timeScale = v; },
-                isShowingInfluences: () => isShowingInfluences,
-                onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-            });
+            let view = DemoView({ model, ...layout });
             stage.addChild(view);
 
             return {
                 // The host ticks the view with the rest of the stage
                 update(deltaMs: number): void {
-                    model.update(deltaMs * timeScale);
+                    model.update(deltaMs);
                 },
                 resize(): void {
                     stage.removeChild(view);
                     view.destroy({ children: true });
 
-                    view = BoidsView({
-                        model,
-                        simWidth: layout.simWidth,
-                        simHeight: layout.simHeight,
-                        isPortrait: layout.isPortrait,
-                        timeScale: () => timeScale,
-                        onTimeScaleChanged: (v) => { timeScale = v; },
-                        isShowingInfluences: () => isShowingInfluences,
-                        onShowInfluencesToggled: (v) => { isShowingInfluences = v; },
-                    });
+                    view = DemoView({ model, ...layout });
                     stage.addChild(view);
                 },
                 destroy(): void {

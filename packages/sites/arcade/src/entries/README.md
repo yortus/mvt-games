@@ -175,6 +175,21 @@ function createGameModel(options: GameModelOptions): GameModel {
 }
 ```
 
+Every entry's top-level model has the same name, so anyone exploring the code
+knows where to start. In a game or a puzzle it's `GameModel`, in
+`game-model.ts`. In a demo it's `DemoModel`, in `demo-model.ts`.
+
+A small demo, with one model and one view, just names them `DemoModel` and
+`DemoView`, as [Coral](../../../demos/src/entries/coral/models/demo-model.ts) does.
+
+A bigger demo often shows something with a good name of its own, such as a
+flock or a scope. Keep that name for that thing's model, and have `DemoModel`
+hold it, even if that's all `DemoModel` does.
+[Fractalscope's](../../../demos/src/entries/fractalscope/models/demo-model.ts) has
+one property and passes the time on. Anything that isn't the flock's own belongs
+beside it: [the boids demo's](../../../demos/src/entries/boids/models/demo-model.ts)
+also keeps how fast the flock's time runs.
+
 ## Step 3: Create Views (`views/`)
 
 Create leaf views for each presentation entity. A view is a function that
@@ -280,6 +295,11 @@ export function GameView(bindings: GameViewBindings): Container {
 `width={PADDLE_WIDTH}` is a fixed value: `PaddleViewBindings` declares
 `width: number`, so the paddle view reads it once, at construction, and does
 not support it changing.
+
+The top-level view follows the same naming rule as the model: `GameView` in a
+game or a puzzle, and `DemoView` in a demo. A `DemoView` around a model it
+holds can simply return that model's view, as
+[Fractalscope's](../../../demos/src/entries/fractalscope/views/demo-view.ts) does.
 
 ### Text in the Style of an Era
 
@@ -455,6 +475,10 @@ and `SfxChip<'audio80'>`, from `#shared`. They have only what a view
 plays with, such as `play` and `stop`. Pausing the chips and their volumes
 are the host's.
 
+If your entry has one audio view, name it `AudioView`, in `audio-view.ts`. The
+folder already says whose it is. If it has more than one, name each for what it
+plays the sounds of, such as `GameAudioView` and `EnemyAudioView`.
+
 Choose the chip that matches your entry's decade.
 [Using the Audio90](../../../../libraries/audio90/docs/using-the-audio90.md#which-chip)
 compares the two. If your entry plays samples on the Audio90, bounce them
@@ -488,6 +512,12 @@ as the thumbnail script or a visual test, waits for it. See
 [Boids in 3D](../../../demos/src/entries/boids-3d/start/load.ts) for a small one, and the
 [Fruit Machine](../../../demos/src/entries/fruit-machine/start/load.ts) for one model with views on
 three renderers.
+
+A view of one renderer can't hold a view of another, so an entry on several
+renderers still has one top-level view, but it can't return everything. Its
+`start` makes the renderers, and passes the view the Pixi stage or three.js
+scene it needs. The view adds its views to those, and returns the HTML. See the
+[Fruit Machine's `DemoView`](../../../demos/src/entries/fruit-machine/views/demo-view.ts).
 
 ## Step 5: Describe the Entry (`start/entry.ts`)
 
@@ -837,6 +867,8 @@ every game.
 - Models do not reference views or use wall-clock time
 - Views are `XxxView(bindings)` functions; leaf views take query and relay
   bindings, the top-level view takes `{ model }`
+- The top-level model and view are `GameModel` and `GameView`, or `DemoModel`
+  and `DemoView` in a demo
 - Views convert domain units to presentation units (pixels)
 - `start/load.ts` returns a starter whose session's `update` advances only
   the models

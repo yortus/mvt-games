@@ -1,2 +1,2 @@
-export { MinotaurView, type MinotaurViewBindings } from './minotaur-view';
+export { GameView, type GameViewBindings } from './game-view';
 export { SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';

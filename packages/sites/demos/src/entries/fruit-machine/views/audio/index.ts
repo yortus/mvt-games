@@ -1,1 +1,1 @@
-export { MachineAudioView, type MachineAudioViewBindings } from './machine-audio-view';
+export { AudioView, type AudioViewBindings } from './audio-view';
