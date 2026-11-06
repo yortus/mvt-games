@@ -25,6 +25,7 @@ const SIZES: Readonly<Record<string, Size>> = {
     'fruit-machine': { width: 880, height: 550 },
     'boids-3d': { width: 880, height: 550 },
     'fractalscope': { width: 880, height: 550 },
+    'penrose-tiling': { width: 880, height: 550 },
 };
 
 // Each entry's code is loaded before its test is declared. Only then is it

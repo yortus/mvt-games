@@ -8,6 +8,7 @@ import { entry as fireworksEntry } from './fireworks';
 import { entry as fractalForestEntry } from './fractal-forest';
 import { entry as fractalscopeEntry } from './fractalscope';
 import { entry as fruitMachineEntry } from './fruit-machine';
+import { entry as penroseTilingEntry } from './penrose-tiling';
 import { entry as reorderingListsEntry } from './reordering-lists';
 import { entry as sudokuDiggerEntry } from './sudoku-digger';
 import { entry as tuneTrackerEntry } from './tune-tracker';
@@ -33,6 +34,7 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     coralEntry,
     fractalForestEntry,
     sudokuDiggerEntry,
+    penroseTilingEntry,
 ];
 
 /** The entry with `id`, if there is one. */

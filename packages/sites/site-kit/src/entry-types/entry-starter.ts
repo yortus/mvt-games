@@ -214,6 +214,14 @@ export type ElementStartOptions<K extends SoundChoice> = ElementStartBase & Soun
 export interface ElementStartBase extends StartOptions {
     /** The element to build the entry in. */
     readonly element: HTMLElement;
+    /**
+     * Whether the visitor is playing the entry, so that it should take their
+     * input. An entry that listens to the keyboard itself, rather than
+     * through its `inputConfig`, listens only while this is true. It is
+     * false where the entry plays only to be watched, live on its card, and
+     * absent when it is started headless.
+     */
+    readonly takesInput?: boolean;
 }
 
 /** A running entry. */

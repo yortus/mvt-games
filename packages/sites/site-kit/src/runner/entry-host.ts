@@ -352,7 +352,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             return pixiStage.start(next, options);
         }
         entryElement.hidden = false;
-        return startElementEntry(next, { ...options, element: entryElement }, findChip);
+        return startElementEntry(next, { ...options, element: entryElement, takesInput }, findChip);
     }
 
     /**
