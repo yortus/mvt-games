@@ -32,7 +32,6 @@ export function ExampleGridView(bindings: ExampleGridViewBindings): Container {
         puzzlesOpened: () => 0,
         isSolved: () => false,
         changes: () => 0,
-        onSelected: () => undefined,
     }));
     return view;
 }

@@ -4,6 +4,7 @@ import { refreshView, updateView } from '@mvtjs/pixi';
 import { loadSudokuGenerator } from '../generator';
 import { createPuzzleModel } from '../models';
 import { BoardView } from './board-view';
+import { findSelectionAfterTap } from './find-selection-after-tap';
 import { CELL_SIZE } from './view-constants';
 
 // The board is wired to a real puzzle, as the puzzle's screen wires it, and played with pointer events. Positions
@@ -15,6 +16,8 @@ const GIVEN_CELL = givens.findIndex((digit) => digit !== 0);
 /** Two empty cells side by side, and two corner to corner. */
 const PAIR = givens.findIndex((digit, cell) => digit === 0 && cell % 9 < 8 && givens[cell + 1] === 0);
 const DIAGONAL = givens.findIndex((digit, cell) => digit === 0 && cell % 9 < 8 && cell < 72 && givens[cell + 10] === 0);
+/** Three empty cells in a row. */
+const TRIPLE = givens.findIndex((digit, cell) => digit === 0 && cell % 9 < 7 && givens[cell + 1] === 0 && givens[cell + 2] === 0);
 
 describe('BoardView', () => {
     it('selects a cell with a tap, and clears it with another tap, later', () => {
@@ -40,6 +43,16 @@ describe('BoardView', () => {
         const { puzzle, board } = setUp();
         drag(board, middleOf(DIAGONAL), middleOf(DIAGONAL + 10));
         expect(puzzle.selection).toEqual([DIAGONAL, DIAGONAL + 10]);
+    });
+
+    it('takes in every cell a fast drag skips over', () => {
+        const { puzzle, board } = setUp();
+        const from = middleOf(TRIPLE);
+        const to = middleOf(TRIPLE + 2);
+        board.emit('pointerdown', mouse(from.x, from.y));
+        board.emit('globalpointermove', mouse(to.x, to.y));
+        board.emit('pointerup', mouse(to.x, to.y));
+        expect(puzzle.selection).toEqual([TRIPLE, TRIPLE + 1, TRIPLE + 2]);
     });
 
     it('selects the cells of a group note with a tap on its label', () => {
@@ -77,7 +90,9 @@ function setUp() {
         marksAt: puzzle.marksAt,
         groupNotes: () => puzzle.groupNotes,
         selection: () => puzzle.selection,
-        onSelected: puzzle.select,
+        onCellTapped: (cell) => puzzle.select(findSelectionAfterTap(puzzle.selection, cell)),
+        onNoteLabelTapped: (note) => puzzle.select(note.cells),
+        onCellsDragged: puzzle.select,
         puzzlesOpened: () => 1,
         isSolved: () => puzzle.isSolved,
         changes: () => puzzle.changes,

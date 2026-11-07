@@ -426,6 +426,25 @@ every game:
   in Astrovoid. A d-pad gets in the way beside a swipe or a drag, since a
   thumb on the d-pad can start one too, so a game takes one or the other.
 
+A game played by drawing or picking on a board, such as Minotaur, Sudoku
+or Kwazy Cactii, takes taps and drags over its own grid. Two shared pieces
+handle them, so every board follows a finger the same way:
+
+- `listenToPointer`, from `@mvtjs/site-kit/shared`, follows one finger or
+  the mouse over your board's container, from a press until it lets go, and
+  gives you its positions in the container's pixels. A second finger can't
+  take a drag over, and a drag the browser cancels ends.
+- `createGridGesturesViewModel`, from `@mvtjs/site-kit/input`, takes those
+  positions in cells, and reports taps and steps from cell to cell (or
+  corner to corner, for lines drawn between cells). A fast drag steps
+  through every cell it skips, and a drag reaches a cell only near its
+  middle, so it can run past a corner without taking one in.
+
+Neither knows what a tap or a step means. Your board turns steps into your
+game's terms, such as Minotaur's edges, and reports them. The game's rules
+for them, such as whether a drag draws or rubs out, belong where your
+top-level view wires the board to the model.
+
 Swipes and drags listen over the game's own view, so an entry that uses them
 shows no d-pad, which is the default. The host's buttons still work beside
 them, for a game that needs one, such as Astrovoid's Thrust.

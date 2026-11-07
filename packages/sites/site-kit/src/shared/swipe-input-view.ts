@@ -1,4 +1,5 @@
-import { Container, type FederatedPointerEvent, Rectangle } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
+import { listenToPointer } from './listen-to-pointer';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -42,55 +43,41 @@ export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
     view.label = 'swipe-input';
     if (!isEnabled) return view;
 
-    view.eventMode = 'static';
     view.hitArea = new Rectangle(bindings.x, bindings.y, bindings.width, bindings.height);
 
-    // The finger followed, where it touched down, where it last swiped from,
-    // and the way it last swiped
-    let pointerId: number | undefined;
+    // Where the finger touched down, where it last swiped from, and the way it last swiped
     let startX = 0;
     let startY = 0;
     let anchorX = 0;
     let anchorY = 0;
     let swiped: SwipeDirection | undefined;
 
-    view.on('pointerdown', (e: FederatedPointerEvent) => {
-        if (pointerId !== undefined) return;
-        pointerId = e.pointerId;
-        const { x, y } = e.getLocalPosition(view);
-        startX = anchorX = x;
-        startY = anchorY = y;
-        swiped = undefined;
+    listenToPointer({
+        target: view,
+        onPressed(x, y) {
+            startX = anchorX = x;
+            startY = anchorY = y;
+            swiped = undefined;
+        },
+        onMoved(x, y) {
+            const way = findWay(x - anchorX, y - anchorY);
+            if (way === undefined) return;
+            anchorX = x;
+            anchorY = y;
+            if (way === swiped) return;
+            swiped = way;
+            onSwiped?.(way);
+        },
+        onReleased(x, y) {
+            if (swiped === undefined) {
+                // A quick flick may slide its whole way between two moves
+                const way = findWay(x - startX, y - startY);
+                if (way !== undefined) onSwiped?.(way);
+                else onTapped?.();
+            }
+            onLifted?.();
+        },
     });
-
-    // Followed wherever the finger goes, not only over this view
-    view.on('globalpointermove', (e: FederatedPointerEvent) => {
-        if (e.pointerId !== pointerId) return;
-        const { x, y } = e.getLocalPosition(view);
-        const way = findWay(x - anchorX, y - anchorY);
-        if (way === undefined) return;
-        anchorX = x;
-        anchorY = y;
-        if (way === swiped) return;
-        swiped = way;
-        onSwiped?.(way);
-    });
-
-    const release = (e: FederatedPointerEvent): void => {
-        if (e.pointerId !== pointerId) return;
-        pointerId = undefined;
-        if (swiped === undefined) {
-            // A quick flick may slide its whole way between two moves
-            const { x, y } = e.getLocalPosition(view);
-            const way = findWay(x - startX, y - startY);
-            if (way !== undefined) onSwiped?.(way);
-            else onTapped?.();
-        }
-        onLifted?.();
-    };
-    view.on('pointerup', release);
-    view.on('pointerupoutside', release);
-    view.on('pointercancel', release);
 
     return view;
 

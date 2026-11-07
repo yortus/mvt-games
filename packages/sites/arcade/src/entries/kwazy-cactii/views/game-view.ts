@@ -42,7 +42,10 @@ export function GameView(bindings: GameViewBindings): Container {
             settleOriginRows: () => game.board.settleOriginRows,
             matchedCells: () => game.board.matchedCells,
             cascadeStep: () => game.board.cascadeStep,
-            onSwapRequested: (origin, target) => game.trySwap(origin, target),
+            canSwap: (origin, target) => game.canSwap(origin, target),
+            onSwapRequested: (origin, target) => {
+                game.trySwap(origin, target);
+            },
         });
         view.addChild(boardView);
 

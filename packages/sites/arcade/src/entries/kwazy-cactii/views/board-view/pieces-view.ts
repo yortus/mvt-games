@@ -1,4 +1,5 @@
 import { Container } from 'pixi.js';
+import { listenToPointer } from '@mvtjs/site-kit/shared';
 import { watch } from '@mvtjs/utils';
 import type { CactusCell } from '../../models';
 import { CactusView } from '../cactus-view';
@@ -35,13 +36,15 @@ export function PiecesView(bindings: PiecesViewBindings): Container {
         view.sortableChildren = true;
         buildCactii();
 
-        // Input listeners
-        view.eventMode = 'static';
+        // Input, passed to the view model's gestures in cells
         view.hitArea = { contains: (x: number, y: number) => x >= 0 && x < GRID_COLS * CELL_WIDTH_PX && y >= 0 && y < GRID_ROWS * CELL_HEIGHT_PX };
-        view.on('pointerdown', onPointerDown);
-        view.on('globalpointermove', onPointerMove);
-        view.on('pointerup', onPointerUp);
-        view.on('pointerupoutside', onPointerUp);
+        listenToPointer({
+            target: view,
+            onPressed: (x, y) => vm.gestures.press(x / CELL_WIDTH_PX, y / CELL_HEIGHT_PX),
+            onMoved: (x, y) => vm.gestures.move(x / CELL_WIDTH_PX, y / CELL_HEIGHT_PX),
+            onReleased: () => vm.gestures.release(),
+            onCancelled: () => vm.gestures.cancel(),
+        });
     }
 
     function refresh(): void {
@@ -82,22 +85,6 @@ export function PiecesView(bindings: PiecesViewBindings): Container {
                 cactusContainers.push(cactus);
             }
         }
-    }
-
-    // ---- Input handlers ----------------------------------------------------
-
-    function onPointerDown(e: { global: { x: number; y: number } }): void {
-        const local = view.toLocal(e.global);
-        vm.startDrag(local.x, local.y);
-    }
-
-    function onPointerMove(e: { global: { x: number; y: number } }): void {
-        const local = view.toLocal(e.global);
-        vm.dragTo(local.x, local.y);
-    }
-
-    function onPointerUp(): void {
-        vm.endDrag();
     }
 }
 

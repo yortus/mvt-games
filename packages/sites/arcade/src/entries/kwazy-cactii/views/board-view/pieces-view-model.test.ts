@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createSequence } from '@mvtjs/utils';
-import { EMPTY_CELL, type CactusCell } from '../../models';
-import { createPiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
+import { type BoardPhase, EMPTY_CELL, type CactusCell } from '../../models';
+import { createPiecesViewModel, type PiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -51,6 +51,31 @@ function makeFadeSequence() {
     return createSequence([{ name: 'fade', startMs: 0, durationMs: 250 }] as const);
 }
 
+/** A drag on the board: pressed at, moved to and let go over pixel positions, as the view passes them on in cells. */
+function press(vm: PiecesViewModel, x: number, y: number): void {
+    vm.gestures.press(x / CELL_WIDTH, y / CELL_HEIGHT);
+}
+
+function moveTo(vm: PiecesViewModel, x: number, y: number): void {
+    vm.gestures.move(x / CELL_WIDTH, y / CELL_HEIGHT);
+}
+
+/** The model's side of a swap, as stand-in options: it takes up every swap asked for, until `finishSwap`. */
+function takeUpSwaps() {
+    let swap: readonly [CactusCell, CactusCell] | undefined;
+    return {
+        phase: (): BoardPhase => (swap === undefined ? 'idle' : 'swapping'),
+        swapCell1: () => swap?.[0],
+        swapCell2: () => swap?.[1],
+        onSwapRequested: (origin: CactusCell, target: CactusCell) => {
+            swap = [origin, target];
+        },
+        finishSwap: () => {
+            swap = undefined;
+        },
+    };
+}
+
 /** Build options with sensible defaults and controlled overrides. */
 function makeOptions(overrides?: Partial<PiecesViewModelOptions>): PiecesViewModelOptions {
     const cells = fullGrid();
@@ -64,7 +89,8 @@ function makeOptions(overrides?: Partial<PiecesViewModelOptions>): PiecesViewMod
         settleOriginRows: emptySettleOrigins,
         matchedCells: () => [],
         matchSequence: makeFadeSequence,
-        onSwapRequested: () => true,
+        canSwap: (origin, target) => Math.abs(origin.row - target.row) + Math.abs(origin.col - target.col) === 1,
+        onSwapRequested: () => undefined,
         ...overrides,
     };
 }
@@ -105,7 +131,7 @@ describe('PiecesViewModel', () => {
             const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             vm.update(0);
 
-            vm.startDrag(gridX(2), gridY(3));
+            press(vm, gridX(2), gridY(3));
             vm.update(0);
 
             expect(vm.dragOriginCell).toBe(cells[3][2]);
@@ -116,13 +142,13 @@ describe('PiecesViewModel', () => {
             const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             vm.update(0);
 
-            vm.startDrag(gridX(2), gridY(3));
-            vm.dragTo(100, 150);
+            press(vm, gridX(2), gridY(3));
+            moveTo(vm, 100, 150);
             vm.update(0);
 
             const originCell = cells[3][2];
-            expect(vm.xFor(originCell)).toBe(100);
-            expect(vm.yFor(originCell)).toBe(150);
+            expect(vm.xFor(originCell)).toBeCloseTo(100);
+            expect(vm.yFor(originCell)).toBeCloseTo(150);
         });
 
         it('ignores pointer down when not idle', () => {
@@ -131,7 +157,7 @@ describe('PiecesViewModel', () => {
             }));
             vm.update(0);
 
-            vm.startDrag(gridX(2), gridY(3));
+            press(vm, gridX(2), gridY(3));
             vm.update(0);
 
             expect(vm.dragOriginCell).toBeUndefined();
@@ -142,11 +168,11 @@ describe('PiecesViewModel', () => {
             const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
             vm.update(0);
 
-            vm.startDrag(gridX(2), gridY(3));
+            press(vm, gridX(2), gridY(3));
             vm.update(0);
             expect(vm.dragOriginCell).toBe(cells[3][2]);
 
-            vm.endDrag();
+            vm.gestures.release();
             vm.update(0);
             expect(vm.dragOriginCell).toBeUndefined();
         });
@@ -157,42 +183,70 @@ describe('PiecesViewModel', () => {
             const onSwapRequested = vi.fn((origin: CactusCell, target: CactusCell) => {
                 capturedOrigin = origin;
                 capturedTarget = target;
-                return true;
             });
             const vm = createPiecesViewModel(makeOptions({ onSwapRequested }));
             vm.update(0);
 
             // Drag from (3,2) to neighbour (3,3)
-            vm.startDrag(gridX(2), gridY(3));
-            vm.dragTo(gridX(3), gridY(3));
-            vm.endDrag();
+            press(vm, gridX(2), gridY(3));
+            moveTo(vm, gridX(3), gridY(3));
+            vm.gestures.release();
 
             expect(onSwapRequested).toHaveBeenCalledOnce();
             expect(capturedOrigin).toMatchObject({ col: 2, row: 3 });
             expect(capturedTarget).toMatchObject({ col: 3, row: 3 });
         });
-    });
 
-    describe('committed swap', () => {
-        it('holds cells at swapped visual positions during swapping phase', () => {
-            let phase: 'idle' | 'swapping' = 'idle';
-            const onSwapRequested = vi.fn(() => {
-                phase = 'swapping';
-                return true;
-            });
+        it('asks for no swap when a drag is cancelled, or let go over a cell the model could not swap with', () => {
+            const onSwapRequested = vi.fn();
             const cells = fullGrid();
-
+            const blocked = cells[3][3];
             const vm = createPiecesViewModel(makeOptions({
                 cells: () => cells,
-                phase: () => phase,
+                canSwap: (_origin, target) => target !== blocked,
                 onSwapRequested,
             }));
             vm.update(0);
 
+            press(vm, gridX(2), gridY(3));
+            moveTo(vm, gridX(2), gridY(4));
+            vm.gestures.cancel();
+            press(vm, gridX(2), gridY(3));
+            moveTo(vm, gridX(3), gridY(3));
+            vm.update(0);
+            // The cell blocked stays where it is, rather than sliding towards the one dragged
+            expect(vm.xFor(blocked)).toBe(gridX(3));
+            vm.gestures.release();
+
+            expect(onSwapRequested).not.toHaveBeenCalled();
+        });
+
+        it('lets the pieces go back when the model turns down the swap asked for', () => {
+            const cells = fullGrid();
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
+            vm.update(0);
+
+            press(vm, gridX(2), gridY(3));
+            moveTo(vm, gridX(3), gridY(3));
+            vm.update(0);
+            vm.gestures.release();
+            vm.update(0);
+
+            expect(vm.dragOriginCell).toBeUndefined();
+            expect(vm.xFor(cells[3][2])).toBe(gridX(2));
+        });
+    });
+
+    describe('committed swap', () => {
+        it('holds cells at swapped visual positions during swapping phase', () => {
+            const cells = fullGrid();
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells, ...takeUpSwaps() }));
+            vm.update(0);
+
             // Commit a swap from (3,2) to (3,3)
-            vm.startDrag(gridX(2), gridY(3));
-            vm.dragTo(gridX(3), gridY(3));
-            vm.endDrag();
+            press(vm, gridX(2), gridY(3));
+            moveTo(vm, gridX(3), gridY(3));
+            vm.gestures.release();
             vm.update(0);
 
             // During 'swapping', origin cell renders at target position
@@ -202,28 +256,19 @@ describe('PiecesViewModel', () => {
         });
 
         it('clears committed swap when phase leaves swapping', () => {
-            let phase: 'idle' | 'swapping' = 'idle';
-            const onSwapRequested = vi.fn(() => {
-                phase = 'swapping';
-                return true;
-            });
             const cells = fullGrid();
-
-            const vm = createPiecesViewModel(makeOptions({
-                cells: () => cells,
-                phase: () => phase,
-                onSwapRequested,
-            }));
+            const swaps = takeUpSwaps();
+            const vm = createPiecesViewModel(makeOptions({ cells: () => cells, ...swaps }));
             vm.update(0);
 
-            vm.startDrag(gridX(2), gridY(3));
-            vm.dragTo(gridX(3), gridY(3));
-            vm.endDrag();
+            press(vm, gridX(2), gridY(3));
+            moveTo(vm, gridX(3), gridY(3));
+            vm.gestures.release();
             vm.update(0);
             expect(vm.dragOriginCell).toBe(cells[3][2]);
 
             // Phase transitions away from swapping
-            phase = 'idle';
+            swaps.finishSwap();
             vm.update(0);
             expect(vm.dragOriginCell).toBeUndefined();
         });

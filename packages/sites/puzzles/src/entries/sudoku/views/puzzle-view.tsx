@@ -5,6 +5,7 @@ import { createComputed } from '@mvtjs/utils';
 import { ButtonView, DIM_TEXT_COLOR, INK_COLOR, LABEL_STYLE, LEVEL_NAMES, MARGIN, SMALL_STYLE, SOLVED_COLOR, writeDate } from '../../../shared';
 import type { PuzzleModel, GameModel } from '../models';
 import { BoardView } from './board-view';
+import { findSelectionAfterTap } from './find-selection-after-tap';
 import { KeypadView } from './keypad-view';
 import { BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, GRID_X, GRID_Y, HINT_Y, KEYPAD_Y, SCREEN_WIDTH, TOOL_GAP, TOOL_HEIGHT, TOOL_WIDTH, TOOL_Y } from './view-constants';
 
@@ -72,7 +73,9 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
                     marksAt={(cell) => puzzle().marksAt(cell)}
                     groupNotes={() => puzzle().groupNotes}
                     selection={() => puzzle().selection}
-                    onSelected={(cells) => puzzle().select(cells)}
+                    onCellTapped={(cell) => puzzle().select(findSelectionAfterTap(puzzle().selection, cell))}
+                    onNoteLabelTapped={(note) => puzzle().select(note.cells)}
+                    onCellsDragged={(cells) => puzzle().select(cells)}
                     puzzlesOpened={() => model.puzzlesOpened}
                     isSolved={isSolved}
                     changes={() => puzzle().changes}

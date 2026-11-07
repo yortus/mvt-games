@@ -87,7 +87,6 @@ function makeBoard(puzzle: PuzzleModel): Container {
         marksAt: puzzle.marksAt,
         groupNotes: () => puzzle.groupNotes,
         selection: () => puzzle.selection,
-        onSelected: puzzle.select,
         puzzlesOpened: () => 1,
         isSolved: () => puzzle.isSolved,
         changes: () => puzzle.changes,

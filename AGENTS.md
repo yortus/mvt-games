@@ -65,12 +65,12 @@ packages/sites/<site>/              arcade, demos or puzzles
 packages/sites/site-kit/src/       Imported by the sites as @mvtjs/site-kit/<folder>
 ├── arcade/              The page, in HTML JSX: model, views, its own sounds, its styles, and the page's loop (start-site-page.ts, imported as @mvtjs/site-kit/site-page)
 ├── device/              What the visitor's device supports, such as touch
-├── input/               Input that needs no renderer: the keyboard, for the entry host, the Pixi stage, and the entries that listen to it themselves
+├── input/               Input that needs no renderer: the keyboard, for the entry host, the Pixi stage, and the entries that listen to it themselves, and taps and drags over a grid (createGridGesturesViewModel)
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way
-├── shared/              The shared views (overlay, pixel text, input, swipes) and the chip types views play on
+├── shared/              The shared views (overlay, pixel text, input, swipes, drags), listenToPointer (one pointer followed over a Pixi container), and the chip types views play on
 ├── snapshot/            The page generate-thumbnails photographs each entry on
 ├── testing/             describeCatalogue, the checks every site's catalogue passes
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games

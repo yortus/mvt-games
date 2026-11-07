@@ -1,4 +1,5 @@
-import { Container, type FederatedPointerEvent, Graphics, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
+import { listenToPointer } from '@mvtjs/site-kit/shared';
 import { createComputed } from '@mvtjs/utils';
 import { THIN_LINE_COLOR } from '../../../shared';
 import { drawGridLines } from '../generator';
@@ -24,7 +25,7 @@ export interface BoardViewBindings {
     isClashAt: (cell: number) => boolean;
     /** The digits pencilled into `cell`, as a set: bit `d` is set for each digit `d`. */
     marksAt: (cell: number) => number;
-    /** The group notes, drawn over the grid. Tapping one's label selects its cells. */
+    /** The group notes, drawn over the grid, each with a label to tap. */
     groupNotes: () => readonly GroupNote[];
     /** The cells selected, lit: empty cells for notes, or one filled in, to change or clear. */
     selection: () => readonly number[];
@@ -34,8 +35,12 @@ export interface BoardViewBindings {
     isSolved: () => boolean;
     /** A count that rises with every action finished, so the group notes are laid out again only as they may have changed. */
     changes: () => number;
-    /** The player chose these cells, or none, with a tap or a drag. */
-    onSelected: (cells: readonly number[]) => void;
+    /** The player tapped `cell`. */
+    onCellTapped?: (cell: number) => void;
+    /** The player tapped `note`'s label. */
+    onNoteLabelTapped?: (note: GroupNote) => void;
+    /** The player dragged through `cells`, so far, in the order the drag took them in. */
+    onCellsDragged?: (cells: readonly number[]) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,22 +49,22 @@ export interface BoardViewBindings {
 
 /**
  * The grid, its digits, and the notes made in it: pencil marks and group
- * notes. A tap selects a cell, or takes one out of several selected, or
- * clears the one selected. A drag selects every cell it passes through the
- * middle of, so it can run past a cell's corner without taking it in. A tap
- * on a group note's label selects its cells. Its origin is the grid's top
- * left corner.
+ * notes. The player taps a cell or a group note's label, or drags through
+ * cells, and what each does to the selection is up to whoever the board
+ * reports to. A drag takes in every cell it passes through the middle of,
+ * so it can run past a cell's corner without taking it in. Its origin is
+ * the grid's top left corner.
  *
  * It is made of layers: the cells, the lines, the pencil marks, the group
  * notes and the digits. The group notes are laid out once each time they
  * change, and both their layer and the board's test for a tap on a label
- * read that layout. What the taps and drags mean is the gestures view
- * model's to say: the board only turns pointer events into cells.
+ * read that layout. Which cells the taps and drags choose is the gestures
+ * view model's to say: the board only turns pointer events into positions
+ * in cells.
  */
 export function BoardView(bindings: BoardViewBindings): Container {
     const view = new Container();
     view.label = 'board';
-    view.eventMode = 'static';
     view.cursor = 'pointer';
     view.hitArea = new Rectangle(0, 0, GRID_SIZE, GRID_SIZE);
 
@@ -69,9 +74,10 @@ export function BoardView(bindings: BoardViewBindings): Container {
         compute: () => layOutGroupNotes(bindings.groupNotes(), isFilledAt),
     });
     const gestures = createBoardGesturesViewModel({
-        selection: bindings.selection,
         labelNoteAt: findLabelNoteAt,
-        onSelected: bindings.onSelected,
+        onCellTapped: (cell) => bindings.onCellTapped?.(cell),
+        onNoteLabelTapped: (note) => bindings.onNoteLabelTapped?.(note),
+        onCellsDragged: (cells) => bindings.onCellsDragged?.(cells),
     });
 
     // The group notes go under the digits, so a note's line passes behind a filled cell's digit. Their labels never cover one
@@ -90,11 +96,13 @@ export function BoardView(bindings: BoardViewBindings): Container {
         BoardDigitsView({ digitAt: bindings.digitAt, isGivenAt: bindings.isGivenAt, isClashAt: bindings.isClashAt }),
     );
 
-    view.on('pointerdown', (e) => gestures.press(e.pointerId, ...toGrid(e)));
-    view.on('globalpointermove', (e) => gestures.move(e.pointerId, ...toGrid(e)));
-    view.on('pointerup', (e) => gestures.release(e.pointerId));
-    view.on('pointerupoutside', (e) => gestures.release(e.pointerId));
-    view.on('pointercancel', (e) => gestures.release(e.pointerId));
+    listenToPointer({
+        target: view,
+        onPressed: (x, y) => gestures.press(x / CELL_SIZE, y / CELL_SIZE),
+        onMoved: (x, y) => gestures.move(x / CELL_SIZE, y / CELL_SIZE),
+        onReleased: () => gestures.release(),
+        onCancelled: () => gestures.cancel(),
+    });
     return view;
 
     /** The group note whose label is at (`x`, `y`), in cells, if one is shown there: the last drawn, if they overlap. */
@@ -106,12 +114,6 @@ export function BoardView(bindings: BoardViewBindings): Container {
             if (Math.abs(x - labelX) < reachX && Math.abs(y - labelY) < LABEL_REACH_Y) return note;
         }
         return undefined;
-    }
-
-    /** Where the pointer is on the grid, in cells, across and down. */
-    function toGrid(e: FederatedPointerEvent): [x: number, y: number] {
-        const { x, y } = e.getLocalPosition(view);
-        return [x / CELL_SIZE, y / CELL_SIZE];
     }
 }
 

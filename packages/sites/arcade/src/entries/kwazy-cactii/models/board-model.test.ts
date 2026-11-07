@@ -123,6 +123,22 @@ describe('BoardModel', () => {
         });
     });
 
+    describe('canSwap', () => {
+        it('says a swap could be made between neighbours across or down, while the board is idle, and never changes it', () => {
+            const board = makeBoard();
+            const { cells } = board;
+            expect(board.canSwap(cells[1][1], cells[1][2])).toBe(true);
+            expect(board.canSwap(cells[1][1], cells[2][1])).toBe(true);
+            expect(board.canSwap(cells[1][1], cells[2][2])).toBe(false);
+            expect(board.canSwap(cells[1][1], cells[1][1])).toBe(false);
+            expect(board.canSwap(cells[1][1], EMPTY_CELL)).toBe(false);
+            expect(board.phase).toBe('idle');
+            const [c1, c2] = findSwappablePair(board)!;
+            board.trySwap(c1, c2);
+            expect(board.canSwap(c1, c2)).toBe(false);
+        });
+    });
+
     describe('swapping phase', () => {
         it('enters swapping phase on successful trySwap', () => {
             const board = makeBoard();

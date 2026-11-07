@@ -55,6 +55,8 @@ export interface BoardModel {
      * NaN when the cell is stationary. Meaningful only during 'settling' phase.
      */
     readonly settleOriginRows: DeepReadonly<number[][]>;
+    /** Whether two cells could be swapped now: they are next to each other, across or down, both hold a cactus, and the board is idle. */
+    canSwap: (cell1: CactusCell, cell2: CactusCell) => boolean;
     /** Attempt to swap two cells. Returns true if accepted (cells adjacent, occupied, board idle). */
     trySwap: (cell1: CactusCell, cell2: CactusCell) => boolean;
     /** True when the board has settled and no valid moves remain. */
@@ -161,14 +163,10 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
         get settleOriginRows() { return settleOriginRows; },
         get isGameOver() { return isGameOver; },
 
+        canSwap,
+
         trySwap(cell1: CactusCell, cell2: CactusCell): boolean {
-            if (boardPhase !== 'idle') return false;
-            if (cell1 === EMPTY_CELL || cell2 === EMPTY_CELL) return false;
-
-            const dr = Math.abs(cell2.row - cell1.row);
-            const dc = Math.abs(cell2.col - cell1.col);
-            if (!((dr === 1 && dc === 0) || (dr === 0 && dc === 1))) return false;
-
+            if (!canSwap(cell1, cell2)) return false;
             beginSwap(cell1, cell2);
             return true;
         },
@@ -185,6 +183,14 @@ export function createBoardModel(options: BoardModelOptions = {}): BoardModel {
     return model;
 
     // ---- Swap --------------------------------------------------------------
+
+    function canSwap(cell1: CactusCell, cell2: CactusCell): boolean {
+        if (boardPhase !== 'idle') return false;
+        if (cell1 === EMPTY_CELL || cell2 === EMPTY_CELL) return false;
+        const dr = Math.abs(cell2.row - cell1.row);
+        const dc = Math.abs(cell2.col - cell1.col);
+        return (dr === 1 && dc === 0) || (dr === 0 && dc === 1);
+    }
 
     function beginSwap(cell1: CactusCell, cell2: CactusCell): void {
         boardPhase = 'swapping';

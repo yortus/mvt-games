@@ -16,10 +16,10 @@
 | [`src/arcade/`](./src/arcade/README.md) | The page each site runs: its model, its views, its styles, and its loop | `@mvtjs/site-kit/arcade`, and `@mvtjs/site-kit/site-page` for `startSitePage` |
 | [`src/entry-types/`](./src/entry-types/) | What an entry is, and how it starts | `@mvtjs/site-kit/entry-types` |
 | [`src/runner/`](./src/runner/) | The entry host, which runs one entry of any renderer, and the page's sound | `@mvtjs/site-kit/runner` |
-| [`src/shared/`](./src/shared/) | The views entries share (overlay, pixel text, input, swipes) and the chip types views play on | `@mvtjs/site-kit/shared` |
+| [`src/shared/`](./src/shared/) | The views entries share (overlay, pixel text, input, swipes, drags), `listenToPointer`, and the chip types views play on | `@mvtjs/site-kit/shared` |
 | [`src/pixel-glyphs/`](./src/pixel-glyphs/) | Every printable character as rows of cells, which entries draw their own way | `@mvtjs/site-kit/pixel-glyphs` |
 | [`src/highscores/`](./src/highscores/) | The highscore tables' rules, and the page's stores | `@mvtjs/site-kit/highscores` |
-| [`src/storage/`](./src/storage/), [`src/device/`](./src/device/), [`src/input/`](./src/input/) | What the page keeps between visits, what the device supports, and the keyboard | `@mvtjs/site-kit/storage` and so on |
+| [`src/storage/`](./src/storage/), [`src/device/`](./src/device/), [`src/input/`](./src/input/) | What the page keeps between visits, what the device supports, and input with no renderer: the keyboard, and taps and drags over a grid | `@mvtjs/site-kit/storage` and so on |
 | [`src/snapshot/`](./src/snapshot/) | The page `generate-thumbnails` photographs each entry on | `@mvtjs/site-kit/snapshot` |
 | [`src/testing/`](./src/testing/) | `describeCatalogue`: the checks every site's catalogue passes | `@mvtjs/site-kit/testing` |
 | [`scripts/`](./scripts/) | `defineSiteConfig`, which each site's `vite.config.ts` exports, its plugins, the one dev server, and the thumbnail, texture and pixel-font scripts | `@mvtjs/site-kit/vite` |

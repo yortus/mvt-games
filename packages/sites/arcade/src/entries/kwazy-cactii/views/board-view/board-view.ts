@@ -25,7 +25,10 @@ export interface BoardViewBindings {
     settleOriginRows: () => DeepReadonly<number[][]>;
     matchedCells: () => readonly CactusCell[];
     cascadeStep: () => number;
-    onSwapRequested?: (origin: CactusCell, target: CactusCell) => boolean;
+    /** Whether two cells could be swapped now, so the one dragged over slides towards the one dragged. */
+    canSwap: (origin: CactusCell, target: CactusCell) => boolean;
+    /** The player dragged `origin` onto `target`, a neighbour, and let go. */
+    onSwapRequested?: (origin: CactusCell, target: CactusCell) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,6 +64,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
         settleOriginRows: bindings.settleOriginRows,
         matchedCells: bindings.matchedCells,
         matchSequence: () => matchSequence,
+        canSwap: bindings.canSwap,
         onSwapRequested: bindings.onSwapRequested,
     });
 

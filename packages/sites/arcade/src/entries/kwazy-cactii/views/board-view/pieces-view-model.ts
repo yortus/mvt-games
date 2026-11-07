@@ -1,4 +1,5 @@
 import gsap, { Bounce, Power1 } from 'gsap';
+import { createGridGesturesViewModel, type GridGesturesViewModel } from '@mvtjs/site-kit/input';
 import type { DeepReadonly, Sequence } from '@mvtjs/utils';
 import { EMPTY_CELL, type BoardPhase, type CactusCell } from '../../models';
 import { GRID_ROWS, GRID_COLS } from '../../data';
@@ -21,12 +22,12 @@ export interface PiecesViewModel {
     rotationFor: (cell: CactusCell) => number;
     /** The cell whose sprite should render on top, or undefined if none. */
     readonly dragOriginCell: CactusCell | undefined;
-    /** Begin a drag gesture at the given local pixel position. Only effective when idle. */
-    startDrag: (localX: number, localY: number) => void;
-    /** Update the drag pointer to the given local pixel position. */
-    dragTo: (localX: number, localY: number) => void;
-    /** End the current drag gesture, committing a swap if valid. */
-    endDrag: () => void;
+    /**
+     * The drags over the board, in cells, for the view to pass its pointer
+     * to. A press counts only while the board is idle. Letting go over a
+     * neighbour the model could swap asks for the swap.
+     */
+    readonly gestures: GridGesturesViewModel;
     update: (deltaMs: number) => void;
 }
 
@@ -44,7 +45,10 @@ export interface PiecesViewModelOptions {
     settleOriginRows: () => DeepReadonly<number[][]>;
     matchedCells: () => readonly CactusCell[];
     matchSequence: () => Sequence<'fade'>;
-    onSwapRequested?: (origin: CactusCell, target: CactusCell) => boolean;
+    /** Whether two cells could be swapped now, so the one dragged over slides towards the one dragged. */
+    canSwap: (origin: CactusCell, target: CactusCell) => boolean;
+    /** The player dragged `origin` onto `target`, a neighbour, and let go. */
+    onSwapRequested?: (origin: CactusCell, target: CactusCell) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -71,11 +75,20 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
     let returningCell: CactusCell | undefined;
     const dragTimeline = gsap.timeline({ paused: true, autoRemoveChildren: true });
 
-    // Drag gesture state
+    // Drag gesture state, as the last update found it, and the swap the last drag asked for
+    const gestures = createGridGesturesViewModel({
+        rows: GRID_ROWS,
+        cols: GRID_COLS,
+        lattice: 'cells',
+        steps: 'four-way',
+        isEnabled: () => options.phase() === 'idle',
+        onDragFinished: requestSwap,
+    });
     let isDragActive = false;
     let dragOriginCell: CactusCell | undefined;
     let dragTargetCell: CactusCell | undefined;
-    const dragPointer = { x: 0, y: 0 };
+    let requestedOrigin: CactusCell | undefined;
+    let requestedTarget: CactusCell | undefined;
 
     return {
         xFor,
@@ -84,9 +97,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         scaleFor,
         rotationFor,
         get dragOriginCell() { return getDragOriginCell(); },
-        startDrag,
-        dragTo,
-        endDrag,
+        gestures,
         update,
     };
 
@@ -107,7 +118,9 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
             matchedFlags[mc.row * GRID_COLS + mc.col] = 1;
         }
 
-        // Update drag presentation (candidate tracking, committed swap clearing)
+        // Follow the drag, and hold the pieces where it left them while the swap it asked for plays out
+        followDrag();
+        commitRequestedSwap();
         updateDragPresentation();
     }
 
@@ -128,7 +141,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 
         // Active drag: origin follows pointer, candidate follows tween
         if (isDragActive) {
-            if (cell === dragOriginCell) return dragPointer.x;
+            if (cell === dragOriginCell) return gestures.x * CELL_WIDTH_PX;
             if (cell === candidateCell) return candidateVisual.x;
         }
 
@@ -164,7 +177,7 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 
         // Active drag: origin follows pointer, candidate follows tween
         if (isDragActive) {
-            if (cell === dragOriginCell) return dragPointer.y;
+            if (cell === dragOriginCell) return gestures.y * CELL_HEIGHT_PX;
             if (cell === candidateCell) return candidateVisual.y;
         }
 
@@ -229,33 +242,14 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
 
     // ---- Input handlers ----------------------------------------------------
 
-    function startDrag(localX: number, localY: number): void {
-        if (options.phase() !== 'idle') return;
-        const cell = resolveGridCell(localX, localY);
-        if (!cell) return;
-        isDragActive = true;
-        dragOriginCell = cell;
-        dragTargetCell = undefined;
-        dragPointer.x = localX;
-        dragPointer.y = localY;
-    }
-
-    function dragTo(localX: number, localY: number): void {
-        if (!isDragActive) return;
-        dragPointer.x = localX;
-        dragPointer.y = localY;
-        dragTargetCell = resolveGridCell(localX, localY);
-    }
-
-    function endDrag(): void {
-        if (!isDragActive) return;
-        if (dragTargetCell && options.onSwapRequested?.(dragOriginCell!, dragTargetCell)) {
-            isCommittedSwap = true;
-            swapOriginCell = dragOriginCell;
-            swapTargetCell = dragTargetCell;
-        }
-        isDragActive = false;
-        dragTargetCell = undefined;
+    /** Asks for a swap with the neighbour the drag let go over, if the model could make one. */
+    function requestSwap(): void {
+        const origin = findCellAt(gestures.pressedPlace);
+        const target = findCandidate(origin, gestures.place);
+        if (origin === undefined || target === undefined) return;
+        requestedOrigin = origin;
+        requestedTarget = target;
+        options.onSwapRequested?.(origin, target);
     }
 
     // ---- Drag presentation helpers -----------------------------------------
@@ -273,6 +267,25 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
             }
         }
         return maxDist;
+    }
+
+    function followDrag(): void {
+        isDragActive = gestures.isPressed;
+        dragOriginCell = isDragActive ? findCellAt(gestures.pressedPlace) : undefined;
+        dragTargetCell = findCandidate(dragOriginCell, gestures.place);
+        if (dragOriginCell === undefined) isDragActive = false;
+    }
+
+    /** Holds the pieces swapped if the model took up the swap the drag asked for, and forgets the request either way. */
+    function commitRequestedSwap(): void {
+        if (requestedOrigin === undefined) return;
+        if (options.phase() === 'swapping' && options.swapCell1() === requestedOrigin && options.swapCell2() === requestedTarget) {
+            isCommittedSwap = true;
+            swapOriginCell = requestedOrigin;
+            swapTargetCell = requestedTarget;
+        }
+        requestedOrigin = undefined;
+        requestedTarget = undefined;
     }
 
     function updateDragPresentation(): void {
@@ -326,18 +339,17 @@ export function createPiecesViewModel(options: PiecesViewModelOptions): PiecesVi
         returningCell = undefined;
     }
 
-    function resolveGridCell(x: number, y: number): CactusCell | undefined {
-        const col = Math.floor(x / CELL_WIDTH_PX);
-        const row = Math.floor(y / CELL_HEIGHT_PX);
-        if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return undefined;
-        const cell = options.cells()[row][col];
-        if (isDragActive) {
-            if (cell === dragOriginCell) return undefined;
-            const dr = Math.abs(row - dragOriginCell!.row);
-            const dc = Math.abs(col - dragOriginCell!.col);
-            if (!((dr === 1 && dc === 0) || (dr === 0 && dc === 1))) return undefined;
-        }
-        return cell;
+    /** The cell at `place`, numbered row by row, or undefined for -1. */
+    function findCellAt(place: number): CactusCell | undefined {
+        if (place < 0) return undefined;
+        return options.cells()[Math.floor(place / GRID_COLS)][place % GRID_COLS];
+    }
+
+    /** The cell at `place`, if it's a neighbour that `origin` could be swapped with. */
+    function findCandidate(origin: CactusCell | undefined, place: number): CactusCell | undefined {
+        const target = findCellAt(place);
+        if (origin === undefined || target === undefined || target === origin) return undefined;
+        return options.canSwap(origin, target) ? target : undefined;
     }
 
     function slideCandidate(fromX: number, fromY: number, toX: number, toY: number): void {

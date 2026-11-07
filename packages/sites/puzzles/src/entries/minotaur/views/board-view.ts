@@ -1,12 +1,14 @@
-import { Container, type FederatedPointerEvent, Graphics, Rectangle, Text } from 'pixi.js';
+import { Container, Graphics, Rectangle, Text } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
+import type { GridGesturesViewModel } from '@mvtjs/site-kit/input';
+import { listenToPointer } from '@mvtjs/site-kit/shared';
 import { watch } from '@mvtjs/utils';
 import {
     ANSWER_COLOR, CARD_COLOR, CLASH_CELL_COLOR, CLASH_COLOR, DIM_TEXT_COLOR, FONT_FAMILY, INK_COLOR, SOLVED_COLOR, SOLVED_GLOW_COLOR,
     THIN_LINE_COLOR,
 } from '../../../shared';
 import type { ClueState, EdgeMark, MazePuzzle } from '../models';
-import { type BoardGesturesViewModel, createBoardGesturesViewModel } from './board-gestures-view-model';
+import { createBoardGesturesViewModel, type DrawnMark } from './board-gestures-view-model';
 import { type BoardLayout, layOutBoard, measureClueWidth } from './board-layout';
 
 // ---------------------------------------------------------------------------
@@ -31,10 +33,14 @@ export interface BoardViewBindings {
     changes: () => number;
     /** A count that rises as each puzzle opens, so a fresh copy of the same maze, started again, is redrawn too. */
     puzzlesOpened: () => number;
-    /** The player began a stroke, marked an edge in it, and finished it. Without them, the board takes no input. */
-    onStrokeStarted?: () => void;
-    onEdgeMarked?: (edge: number, mark: EdgeMark) => void;
-    onStrokeFinished?: () => void;
+    /**
+     * The player dragged over `edge`: across it from cell to cell, drawing
+     * the path, or along it from corner to corner, drawing walls. Without it,
+     * the board takes no input.
+     */
+    onDraggedOver?: (edge: number, mark: DrawnMark) => void;
+    /** The player let go, after dragging over an edge or more. */
+    onDragFinished?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,18 +57,16 @@ export interface BoardViewBindings {
  *
  * It is made of layers: the card, a glow for when it is solved, the grid's
  * lines, the marks, then the border and the ends, and the clues. The marks
- * are drawn again only as they change. What the drags mean is the
- * gestures view model's to say: the board only turns pointer events into
- * positions in cells.
+ * are drawn again only as they change. Which edges a drag goes over is the
+ * gestures view model's to say, and what it does to them is up to whoever
+ * the board reports to: the board only turns pointer events into positions
+ * in cells.
  */
 export function BoardView(bindings: BoardViewBindings): Container {
     const view = new Container();
     view.label = 'board';
-    const isInteractive = bindings.onEdgeMarked !== undefined;
-    if (isInteractive) {
-        view.eventMode = 'static';
-        view.cursor = 'crosshair';
-    }
+    const isInteractive = bindings.onDraggedOver !== undefined;
+    if (isInteractive) view.cursor = 'crosshair';
     const watcher = watch({ changes: bindings.changes, isSolved: bindings.isSolved, opened: bindings.puzzlesOpened });
 
     // The maze shown, and what was built for it
@@ -72,18 +76,20 @@ export function BoardView(bindings: BoardViewBindings): Container {
     let marks = new Graphics();
     let clueTexts: Text[] = [];
     let clueLines: number[] = [];
-    let gestures: BoardGesturesViewModel | undefined;
+    let gestures: GridGesturesViewModel | undefined;
     // The glow's time, from the moment the maze is solved, and whether the maze shown is solved
     let glowMs = 0;
     let isShowingSolved = false;
     build(bindings.maze());
 
     if (isInteractive) {
-        view.on('pointerdown', (e) => gestures?.press(e.pointerId, ...toGrid(e)));
-        view.on('globalpointermove', (e) => gestures?.move(e.pointerId, ...toGrid(e)));
-        view.on('pointerup', (e) => gestures?.release(e.pointerId));
-        view.on('pointerupoutside', (e) => gestures?.release(e.pointerId));
-        view.on('pointercancel', (e) => gestures?.release(e.pointerId));
+        listenToPointer({
+            target: view,
+            onPressed: (x, y) => gestures?.press(toGridX(x), toGridY(y)),
+            onMoved: (x, y) => gestures?.move(toGridX(x), toGridY(y)),
+            onReleased: () => gestures?.release(),
+            onCancelled: () => gestures?.cancel(),
+        });
     }
     setUpdate(view, update);
     setRefresh(view, refresh);
@@ -140,10 +146,8 @@ export function BoardView(bindings: BoardViewBindings): Container {
             view.hitArea = new Rectangle(gridX - reach, gridY - reach, cols * cellSize + reach * 2, rows * cellSize + reach * 2);
             gestures = createBoardGesturesViewModel({
                 grid,
-                markAt: bindings.markAt,
-                onStrokeStarted: () => bindings.onStrokeStarted?.(),
-                onEdgeMarked: (edge, mark) => bindings.onEdgeMarked?.(edge, mark),
-                onStrokeFinished: () => bindings.onStrokeFinished?.(),
+                onDraggedOver: (edge, mark) => bindings.onDraggedOver?.(edge, mark),
+                onDragFinished: () => bindings.onDragFinished?.(),
             });
         }
         // A maze solved already shows solved at once, with no glow rising
@@ -236,10 +240,13 @@ export function BoardView(bindings: BoardViewBindings): Container {
         }
     }
 
-    /** Where the pointer is on the maze, in cells, across and down from its top left corner. */
-    function toGrid(e: FederatedPointerEvent): [x: number, y: number] {
-        const { x, y } = e.getLocalPosition(view);
-        return [(x - layout.gridX) / layout.cellSize, (y - layout.gridY) / layout.cellSize];
+    /** Where a point on the board is on the maze, in cells, across and down from its top left corner. */
+    function toGridX(x: number): number {
+        return (x - layout.gridX) / layout.cellSize;
+    }
+
+    function toGridY(y: number): number {
+        return (y - layout.gridY) / layout.cellSize;
     }
 }
 

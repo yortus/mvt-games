@@ -225,9 +225,10 @@ export default tseslint.config(
         ignores: ['**/*.test.{ts,tsx}'],
         ...mvt.configs.architecture,
     },
-    // A view model is part of a view, which is where a control's keys and presses are handled
+    // A view model is part of a view, which is where a control's keys and presses are handled. The site kit's
+    // input view models are shared by entries' views
     {
-        files: ['packages/sites/**/views/**/*-model.ts'],
+        files: ['packages/sites/**/views/**/*-model.ts', 'packages/sites/site-kit/src/input/**/*-view-model.ts'],
         rules: { '@mvtjs/no-control-names': 'off' },
     },
     // Using `watch`, `createReaction` and `createComputed` from @mvtjs/utils: each made one is used, none is

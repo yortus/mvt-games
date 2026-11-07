@@ -15,6 +15,8 @@ export interface GameModel {
     readonly clockMs: number;
     /** Asks for a new game. It starts at the next update, if the last game is over. */
     startNewRun: () => void;
+    /** Whether two cells could be swapped now: in play, on a board at rest, next to each other, both holding a cactus. */
+    canSwap: (cell1: CactusCell, cell2: CactusCell) => boolean;
     /** Attempt to swap two cells. Returns true if accepted. */
     trySwap: (cell1: CactusCell, cell2: CactusCell) => boolean;
     /** Reset the game to initial state. */
@@ -73,6 +75,10 @@ export function createGameModel(options: GameModelOptions = {}): GameModel {
 
         startNewRun(): void {
             isNewRunRequested = true;
+        },
+
+        canSwap(cell1: CactusCell, cell2: CactusCell): boolean {
+            return gamePhase === 'playing' && board.canSwap(cell1, cell2);
         },
 
         trySwap(cell1: CactusCell, cell2: CactusCell): boolean {

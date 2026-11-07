@@ -1,4 +1,5 @@
-import { Container, type FederatedPointerEvent, Rectangle } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
+import { listenToPointer } from './listen-to-pointer';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -55,49 +56,35 @@ export function DragInputView(bindings: DragInputViewBindings): Container {
     view.label = 'drag-input';
     if (!isEnabled) return view;
 
-    view.eventMode = 'static';
     view.hitArea = new Rectangle(bindings.x, bindings.y, bindings.width, bindings.height);
 
-    // The finger followed, and where the thing would be with the finger back where it touched down
-    let pointerId: number | undefined;
+    // Where the finger touched down, and where the thing would be with the finger back there
     let startX = 0;
     let startY = 0;
     let anchorX = 0;
     let anchorY = 0;
 
-    view.on('pointerdown', (e: FederatedPointerEvent) => {
-        if (pointerId !== undefined) return;
-        pointerId = e.pointerId;
-        const { x, y } = e.getLocalPosition(view);
-        startX = x;
-        startY = y;
-        anchorX = fromX?.() ?? 0;
-        anchorY = fromY?.() ?? 0;
-        onTouched?.();
+    listenToPointer({
+        target: view,
+        onPressed(x, y) {
+            startX = x;
+            startY = y;
+            anchorX = fromX?.() ?? 0;
+            anchorY = fromY?.() ?? 0;
+            onTouched?.();
+        },
+        onMoved(x, y) {
+            // Past a limit, the finger drags from the limit
+            const slidX = (x - startX) * gain;
+            const slidY = (y - startY) * gain;
+            const toX = Math.max(minX, Math.min(maxX, anchorX + slidX));
+            const toY = Math.max(minY, Math.min(maxY, anchorY + slidY));
+            anchorX = toX - slidX;
+            anchorY = toY - slidY;
+            onDragged?.(toX, toY);
+        },
+        onReleased: () => onLifted?.(),
     });
-
-    // Followed wherever the finger goes, not only over this view
-    view.on('globalpointermove', (e: FederatedPointerEvent) => {
-        if (e.pointerId !== pointerId) return;
-        const { x, y } = e.getLocalPosition(view);
-        // Past a limit, the finger drags from the limit
-        const slidX = (x - startX) * gain;
-        const slidY = (y - startY) * gain;
-        const toX = Math.max(minX, Math.min(maxX, anchorX + slidX));
-        const toY = Math.max(minY, Math.min(maxY, anchorY + slidY));
-        anchorX = toX - slidX;
-        anchorY = toY - slidY;
-        onDragged?.(toX, toY);
-    });
-
-    const release = (e: FederatedPointerEvent): void => {
-        if (e.pointerId !== pointerId) return;
-        pointerId = undefined;
-        onLifted?.();
-    };
-    view.on('pointerup', release);
-    view.on('pointerupoutside', release);
-    view.on('pointercancel', release);
 
     return view;
 }

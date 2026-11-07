@@ -12,8 +12,10 @@
  * above the other. A grid line runs between two rows or two columns of
  * cells: the lines between columns come first, left to right, each read top
  * to bottom, then the lines between rows, top to bottom, each read left to
- * right. Every array is made once, so a solver or a view can read them as
- * often as it likes.
+ * right. The corners, where the grid lines meet, the border's included,
+ * are numbered row by row from the top left too, `cols + 1` to a row. Every
+ * array is made once, so a solver or a view can read them as often as it
+ * likes.
  */
 export interface MazeGrid {
     readonly rows: number;
@@ -36,6 +38,8 @@ export interface MazeGrid {
     readonly isEdgeBetweenColumns: (edge: number) => boolean;
     /** The edge between two cells next to each other, or -1 if they aren't. */
     readonly edgeBetween: (cell: number, other: number) => number;
+    /** The edge along the grid line between two corners next to each other, or -1 if they aren't, or the line is the border. */
+    readonly edgeAlong: (corner: number, other: number) => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,14 +112,31 @@ export function createMazeGrid(options: MazeGridOptions): MazeGrid {
         lineEdges,
         edgeLine,
         isEdgeBetweenColumns: (edge) => edge < acrossCount,
-        edgeBetween(cell, other) {
-            for (let side = 0; side < 4; side++) {
-                const edge = cellEdges[cell * 4 + side];
-                if (edge >= 0 && (edgeCellA[edge] === other || edgeCellB[edge] === other)) return edge;
+        edgeBetween,
+        edgeAlong(corner, other) {
+            const low = Math.min(corner, other);
+            const row = Math.floor(low / (cols + 1));
+            const col = low % (cols + 1);
+            const gap = Math.abs(other - corner);
+            if (gap === 1 && col < cols) {
+                // Along a line between rows, over the cell below it
+                return row > 0 && row < rows ? edgeBetween((row - 1) * cols + col, row * cols + col) : -1;
+            }
+            if (gap === cols + 1) {
+                // Along a line between columns, beside the cell to its right
+                return col > 0 && col < cols && row < rows ? edgeBetween(row * cols + col - 1, row * cols + col) : -1;
             }
             return -1;
         },
     };
+
+    function edgeBetween(cell: number, other: number): number {
+        for (let side = 0; side < 4; side++) {
+            const edge = cellEdges[cell * 4 + side];
+            if (edge >= 0 && (edgeCellA[edge] === other || edgeCellB[edge] === other)) return edge;
+        }
+        return -1;
+    }
 }
 
 // ---------------------------------------------------------------------------
