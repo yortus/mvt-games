@@ -284,7 +284,7 @@ a conclusion, and appendices.
 | VI. Performance | 23 Why Performance Matters, 24 Hot Paths |
 | VII. Principles Behind MVT | 25 The Eight Principles, then one chapter for each principle: 26 SoC, 27 SSOT, 28 CQS, 29 DIP, 30 CRP, 31 DbC, 32 MISU, 33 DfT, and 34 Using the Principles |
 | Conclusion | `chapters/conclusion.md`, which isn't numbered |
-| Appendices | A MVT on One Page, B Glossary, C Measurements, D Measuring Performance, E Timelines with GSAP, F Troubleshooting, G API Cheat Sheets, H MVT Beyond the Web |
+| Appendices | A MVT on One Page, B Glossary, C Measurements, D Measuring Performance, E Timelines with GSAP, F Troubleshooting, G API Cheat Sheets, H MVT Beyond the Web, I Why Update and Refresh |
 
 The order is set by what each chapter needs. A chapter may use only what
 an earlier chapter has taught. If it must mention something taught later,
@@ -343,23 +343,23 @@ point to its home. Each says what it is, and keeps it short.
 | The browser's building blocks, and what engines, renderers and UI frameworks leave open | Chapter 1 |
 | The frame sequence | Chapter 2 (the picture), Chapter 5 (the detail) |
 | Two kinds of state | Chapter 2 |
-| The `update(deltaMs)` contract, domain coordinates, model trees | Chapter 4 |
-| Actions that say what the player means, not the control | Chapter 4 |
+| The `update(deltaMs)` contract, `update(0)`, domain coordinates, model trees | Chapter 4 (a view's `update(0)`: Chapter 11) |
+| Actions that say what the player means, not the control, and async work in an action | Chapter 4 |
 | State at module level, collections of models, the release delay | Chapter 4 |
 | The tick, the delta cap, time control | Chapter 5 |
-| Input between ticks, why models delegate but views are walked | Chapter 5 |
+| Input between ticks, the rule that models never change while views update or refresh, why models delegate but views are walked | Chapter 5 |
 | Phases and progress, steps of different sizes | Chapter 6 (a view's own phases: Chapter 11) |
 | The `refresh()` contract, immediate-mode data and retained-mode output, walking the view tree (`updateView`, `refreshView`, `SKIP_DESCENDANTS`) | Chapter 7 |
-| Query and relay bindings, fixed and changeable values, the access patterns, wiring a view's bindings | Chapter 8 (where a tree's wiring sits: Chapter 13) |
+| Query and relay bindings, when a relay binding fires, fixed and changeable values, the access patterns, wiring a view's bindings | Chapter 8 (where a tree's wiring sits: Chapter 13) |
 | Reactions, watchers, computed values, counts | Chapter 9 |
 | Continuous, discrete and static state, and when change detection is worth using | Chapter 9 |
-| Presentation state, the delete-the-view test, watching for a change in a view's update step | Chapter 11 |
+| Presentation state, the delete-the-view test, why it's private, watching for a change in a view's update step | Chapter 11 |
 | JSX, and how declarative it is | Chapter 12 |
 | `<List>` and `SlotList` | Chapter 14 (the model's side: Chapter 4) |
 | The principles | Chapter 25 (in brief), Chapters 26 to 33 (one each), Chapter 34 (using them) |
 | Shared values, and why the JSX runtimes don't have context; why views never forward `update` and `refresh` | Chapter 13 |
 | Why views poll, consumer-defined events, the drawbacks of polling and their figures | Chapter 10 (the figures from Appendix C) |
-| View models, the metronome, sequences | Chapter 18 |
+| View models, recognised gestures, the metronome, sequences | Chapter 18 |
 | Testing a model, `advanceTime` | Chapter 15 |
 | Testing an audio view | Chapter 20 |
 | Reference images and reviewing them | Chapter 17 |
@@ -368,6 +368,7 @@ point to its home. Each says what it is, and keeps it short.
 | GSAP timelines in a model | Appendix E |
 | The rules, as one table | Appendix A |
 | MVT inside an engine, in other languages, and outside games | Appendix H |
+| Why MVT has two updates and two view steps, compared with engines | Appendix I |
 | What MVT gives and doesn't, looking back, and where to go next | Conclusion |
 
 When you add an idea, give it one home, and add it to this table.

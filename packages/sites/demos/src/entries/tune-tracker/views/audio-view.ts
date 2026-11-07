@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import type { Audio90Song } from 'audio90';
-import { setUpdate } from '@mvtjs/pixi';
+import { setRefresh } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
 import type { MusicChip } from '@mvtjs/site-kit/shared';
 
@@ -26,11 +26,10 @@ export interface AudioViewBindings {
 
 /**
  * Plays what the tracker says. It starts the tune chosen from its beginning
- * each time a tune starts, and stops it when the tracker stops. Which tune
- * plays is presentation state, so the view starts and stops it in its update
- * step, on the chip. The chip's own sequencer keeps the tune's place, and the
- * pattern view reads the chip to show the row being heard. The view draws
- * nothing.
+ * each time a tune starts, and stops it when the tracker stops. The chip is
+ * this view's output, so the view plays on it in its refresh step. The chip's
+ * own sequencer keeps the tune's place, and the pattern view reads the chip to
+ * show the row being heard. The view draws nothing.
  */
 export function AudioView(bindings: AudioViewBindings): Container {
     const { music } = bindings;
@@ -39,10 +38,10 @@ export function AudioView(bindings: AudioViewBindings): Container {
     // A tune already playing as the view is made starts now
     if (bindings.isPlaying()) music.play(bindings.songAt(bindings.tuneIndex()));
 
-    setUpdate(view, update);
+    setRefresh(view, refresh);
     return view;
 
-    function update(): void {
+    function refresh(): void {
         const w = watcher.poll();
         if (!w.isPlaying.current) {
             if (w.isPlaying.changed) music.stop();

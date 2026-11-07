@@ -36,6 +36,13 @@ Read the sections you need, by anchor:
 - Time arrives only as `deltaMs`. No `setTimeout`, `setInterval`,
   `requestAnimationFrame`, `Date.now()`, `performance.now()`, or a GSAP
   tween or timeline that isn't paused.
+- `update` is synchronous, and accepts a `deltaMs` of 0: nothing measured in
+  time moves, and per-tick work doesn't run, such as drawing a random number.
+  It may apply a request or notice a change, so a second `update(0)` changes
+  nothing.
+- An action may start async work, such as a load. Its result lands between
+  frames. Never use async code (such as a `delay(ms: number): Promise<void>`
+  helper) to wait for real time to pass: count a delay down from `deltaMs`.
 - No module-level `let`: every model that the file creates would share it. State
   lives in the factory's closure.
 - No import of a view, a renderer or the ticker.

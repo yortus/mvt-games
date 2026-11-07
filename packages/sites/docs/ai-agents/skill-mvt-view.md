@@ -58,8 +58,11 @@ Read the sections you need, by anchor:
 
 - Every getter binding is read in `refresh()`, never kept from
   construction. A value read once is declared `T`.
-- `refresh()` only writes output: it never changes a model or starts a
-  timer. It's idempotent.
+- `refresh()` only writes output, worked out from current state with no
+  time involved. It never changes a model or starts a timer. It's idempotent,
+  and it may remember what it drew.
+- Never read back what you wrote. Keep state in variables, not on display
+  objects. A measurement is input: read one on a change, in either step.
 - Display objects are made once, at construction or in `refresh()`, never
   in `update()`. Properties change in `refresh()`.
 - Never forward `update` or `refresh` to child views. `updateView` and
@@ -67,6 +70,16 @@ Read the sections you need, by anchor:
 - Skip a hidden subtree with `SKIP_DESCENDANTS` (or a `visible` getter in
   JSX). `visible = false` alone doesn't skip anything.
 - Don't use Pixi's `onRender` for refresh.
+
+**Relays and input**
+
+- `update` and `refresh` never change a model, directly or through a relay.
+- A relay fires outside the frame: from an event the browser delivers, or
+  from `queueMicrotask` for something noticed during a tick. An event your
+  own code causes during a tick, such as `.focus()`, must not fire one.
+- A gesture such as a long press goes in a view model, which times it in
+  game time and reports it. The view only ticks it
+  ([Chapter 18](../chapters/18-growing-a-complex-view.md#example-a-press-that-turns-into-a-hold)).
 
 **Change detection**
 
@@ -82,8 +95,12 @@ Read the sections you need, by anchor:
 
 - Only cosmetic state that the model doesn't track. Advanced in the view's
   `update(deltaMs)`, set with `setUpdate` or `onUpdate`. Never hardcode a
-  frame delta, or read a clock.
+  frame delta, or read a clock or a shared ticker.
+- `update` accepts a `deltaMs` of 0: nothing measured in time moves, and a
+  second `update(0)` changes nothing.
 - Valid from construction, from the bindings if it depends on them.
+- Private to the view. A view sees another's only if the owner passes it
+  down through a binding, and the owner moves it on.
 - Tween a plain state object, and apply it in `refresh()`. More than one
   value, or logic worth testing, goes into a view model (named like
   bindings), or a helper from `@mvtjs/utils`.

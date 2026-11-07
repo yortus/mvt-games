@@ -199,7 +199,10 @@ use GSAP, or an `await`, inside its own update, in the narrow way that
 follows an `await` doesn't run until the code that's running now returns.
 A plain loop of `update` calls never returns between steps, so that work
 would all pile up until the loop ended. Waiting after each step lets each
-tick start from a settled model, just as it would in the game. The
+tick start from a settled model, just as it would in the game. The wait
+also lets a view call a relay binding from a microtask, as
+[Chapter 8](08-bindings.md#relay-bindings-and-input-handling) describes,
+between one step and the next. The
 waiting doesn't use a real timer, so the test stays exactly repeatable.
 
 Because it waits, `advanceTime` returns a `Promise`. Always `await` it, and

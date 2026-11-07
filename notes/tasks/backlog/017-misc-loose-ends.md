@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-11-01 |
+| Updated  | 2026-11-07 |
 
 ## Description
 
@@ -320,6 +320,8 @@ falling-sand demo. Each is a new variant, measured with
 - [ ] Import and export layout, and line length, enforced by lint
 - [ ] `<List>` builds list items straight into a list element, with no wrapper
 - [ ] 089's cheat sheet follow-ups each built or dropped, and F1 checked in Firefox and Safari
+- [x] The win banner's count scaled by `deltaMs` alone
+- [x] `arcade-view.tsx` moves its own `layout` on
 
 ## Progress Log
 
@@ -407,3 +409,7 @@ falling-sand demo. Each is a new variant, measured with
   parked item was never ticked. Moved to 017a.
 - 2026-11-01: Archived 089 (API cheat sheets) and took in its open
   questions 2 to 4, and checking F1 in Firefox and Safari (Decide).
+- 2026-11-06: Archived 092 (update and refresh, or update alone) and took in
+  its two loose ends, the win banner's step and the card wall's `layout` (Fix).
+- 2026-11-07: Fixed the win banner's step, with the other sites that moved at a
+  `deltaMs` of 0, and moved the card wall's `layout` on from `arcade-view.tsx`.

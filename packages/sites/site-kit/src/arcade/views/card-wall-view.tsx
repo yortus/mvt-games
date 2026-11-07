@@ -16,7 +16,7 @@ import type { LivePreview } from './live-preview';
 export interface CardWallViewBindings {
     /** Every entry, shown or not, in a fixed order: card `i` always shows entry `i`. */
     readonly entries: readonly ArcadeEntry[];
-    /** Where each card goes, shared with the Arcade's view, which reads where the cards are as a transition starts. */
+    /** Where each card goes. The Arcade's view makes it, moves it on, and reads where the cards are as a transition starts. */
     readonly layout: CardWallLayout;
     /** The address of card `index`'s entry, for the card's link. Read once for each card. */
     readonly hrefAt: (index: number) => string;
@@ -154,9 +154,8 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         </section>
     );
 
-    /** Moves the cards, and the wait before a card plays live. */
+    /** Moves on the wait before a card plays live. */
     function update(deltaMs: number): void {
-        layout.update(deltaMs);
         attract.update(deltaMs);
     }
 

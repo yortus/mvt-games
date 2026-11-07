@@ -61,10 +61,12 @@ const SITES: readonly Site[] = [
     {
         name: 'docs',
         // VitePress makes its server again when its config changes, which the
-        // mount below follows
+        // mount below follows. It brings its own, older Vite, which reads this
+        // option as `hmr`, not `ws`. Given `ws`, it would use port 24678 instead,
+        // and a page would reload for ever if another server already held that port.
         create: (hmrServer: Server) => createVitePressServer(
             join(SITES_DIR, 'docs'),
-            { middlewareMode: true, ws: { server: hmrServer } },
+            { middlewareMode: true, hmr: { server: hmrServer } },
             () => remount('docs'),
         ),
     },

@@ -1,0 +1,338 @@
+diff --git a/packages/libraries/utils/src/view-tick-api/view-tick-api.ts b/packages/libraries/utils/src/view-tick-api/view-tick-api.ts
+index 9f6ac42a..78059e92 100644
+--- a/packages/libraries/utils/src/view-tick-api/view-tick-api.ts
++++ b/packages/libraries/utils/src/view-tick-api/view-tick-api.ts
+@@ -3,6 +3,8 @@ import '../one-copy';
+ import type { View } from './renderer-views';
+ import { SKIP_DESCENDANTS } from './skip-descendants';
+ import { tickCounter } from './tick-counter';
++import { MERGE_MODE } from './merge-mode';
++import './merge-probe';
+ import type { RefreshMethod, UpdateMethod } from './tick-methods';
+ 
+ // ---------------------------------------------------------------------------
+@@ -403,15 +405,96 @@ function createRenderer<N extends object>(options: RegisterRendererOptions<N>):
+     // Catching up needs them, as well as its own list, to know what ran.
+     const nestedInvocations: MethodList<N>[] = [];
+ 
++    let mergedDepth = 0;
++    let probePending: N | undefined;
++    let probeBefore: unknown;
++
+     return {
+-        update: (node, deltaMs) => updateSubtree(node as N, deltaMs),
+-        refresh: (node) => refreshSubtree(node as N),
++        update: (node, deltaMs) => (MERGE_MODE === 'off' ? updateSubtree(node as N, deltaMs) : mergedWalk(node as N, deltaMs)),
++        refresh: (node) => {
++            if (mergedDepth > 0) refreshSubtree(node as N);
++            else if (probePending === node) { probePending = undefined; probeRefresh(node as N); }
++            else if (MERGE_MODE === 'update0') mergedWalk(node as N, 0);
++            else refreshSubtree(node as N);
++        },
+         invalidate: (node) => invalidate(node as N),
+         invalidateUpdate: (node) => invalidateUpdate(node as N),
+         invalidateRefresh: (node) => invalidateRefresh(node as N),
+         subtreeHasUpdate: (node) => peekHasUpdate(node as N),
+     };
+ 
++    /** The spike: one walk, each node's update and then its refresh. */
++    function mergedWalk(root: N, deltaMs: number): void {
++        if (DEV) assertFiniteDeltaMs(root, deltaMs);
++        flushChanges?.(root);
++        const existing = new Set<N>();
++        collect(root);
++        const seen = new Set<N>();
++        const joinSkips = MERGE_MODE !== 'order';
++        mergedDepth++;
++        try {
++            visit(root, false, false);
++        }
++        finally {
++            mergedDepth--;
++        }
++        flushChanges?.(root);
++        if (mergedDepth === 0 && deltaMs !== 0) {
++            const hook = (globalThis as { __mergeProbe?: { snapshot: (n: object, kids: (n: object) => ArrayLike<object>) => unknown } }).__mergeProbe;
++            if (hook !== undefined) {
++                probePending = root;
++                probeBefore = hook.snapshot(root, children as (n: object) => ArrayLike<object>);
++                void Promise.resolve().then(() => { probePending = undefined; });
++            }
++        }
++
++        function collect(node: N): void {
++            existing.add(node);
++            const kids = children(node);
++            for (let i = 0; i < kids.length; i++) collect(kids[i]);
++        }
++
++        function visit(node: N, noUpdate: boolean, noRefresh: boolean): void {
++            if (seen.has(node)) return;
++            seen.add(node);
++            const fields = fieldsOf(node);
++            let skipUpdate = noUpdate;
++            let skipRefresh = noRefresh;
++            const update = fields._mvtUpdateMethod;
++            if (!noUpdate && update !== undefined) {
++                if (tickCounter.isCounting) tickCounter.methodCalls++;
++                if (noRefresh) (globalThis as { __noteHiddenUpdate?: (n: object) => void }).__noteHiddenUpdate?.(node);
++                // A view made during this walk has no time to catch up on
++                if (update(existing.has(node) ? deltaMs : 0) === SKIP_DESCENDANTS) skipUpdate = true;
++            }
++            const refresh = fields._mvtRefreshMethod;
++            if (!noRefresh && refresh !== undefined) {
++                if (tickCounter.isCounting) tickCounter.methodCalls++;
++                if (refresh() === SKIP_DESCENDANTS) skipRefresh = true;
++            }
++            if (joinSkips && (skipUpdate || skipRefresh)) return;
++            if (skipUpdate && skipRefresh) return;
++            let changed = true;
++            while (changed) {
++                changed = false;
++                const kids = Array.from(children(node));
++                for (let i = 0; i < kids.length; i++) {
++                    const kid = kids[i];
++                    if (seen.has(kid) || parent(kid) !== node) continue;
++                    visit(kid, skipUpdate, skipRefresh);
++                    changed = true;
++                }
++            }
++        }
++    }
++
++    /** The probe: refreshes everything once more, and reports what a settled refresh changed. */
++    function probeRefresh(root: N): void {
++        refreshSubtree(root);
++        const hook = (globalThis as { __mergeProbe?: { compare: (a: unknown, n: object, kids: (n: object) => ArrayLike<object>) => void } }).__mergeProbe;
++        hook?.compare(probeBefore, root, children as (n: object) => ArrayLike<object>);
++    }
++
+     /**
+      * `updateView` on this renderer: invokes the update method list for
+      * `node`'s subtree, cached on `node` itself and cleared when the tree
+diff --git a/packages/sites/arcade/src/entries/visual-tests/canvas-entries.test.tsx b/packages/sites/arcade/src/entries/visual-tests/canvas-entries.test.tsx
+index e876aa23..90f5c142 100644
+--- a/packages/sites/arcade/src/entries/visual-tests/canvas-entries.test.tsx
++++ b/packages/sites/arcade/src/entries/visual-tests/canvas-entries.test.tsx
+@@ -61,6 +61,8 @@ interface Crop {
+ }
+ 
+ function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefined): Container {
++    (globalThis as { __probeContext?: string }).__probeContext = entry.id;
++    onTestFinished(() => { console.log('[PROBE-TOTAL]', entry.id, JSON.stringify((globalThis as unknown as { __probeStats?: Map<string, unknown> }).__probeStats?.get(entry.id))); });
+     const stage = new Container();
+     // A headless chip makes no sound.
+     const sound = createHeadlessSound(starter);
+@@ -68,7 +70,7 @@ function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefi
+     // This runs after the stage is rendered to an image and destroyed.
+     // Destroying a Pixi object twice is harmless.
+     onTestFinished(() => session.destroy());
+-    advanceHeadless({ session, views: [stage], chips: sound.chips, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
++    advanceHeadless({ session, views: [stage], chips: sound.chips, totalMs: 20000, input: (s, ms) => { starter.thumbnailInput?.(s, ms); const c = s.inputConfig; if (c === undefined) return; const n = Math.floor(ms / 400); c.onPrimaryButtonChanged?.(n % 3 !== 0); c.onSecondaryButtonChanged?.(n % 7 === 3); c.onRestartButtonChanged?.(n % 25 === 1); c.onXDirectionChanged?.(n % 5 < 2 ? 'left' : n % 5 < 4 ? 'right' : 'none'); c.onYDirectionChanged?.(n % 7 < 3 ? 'up' : n % 7 < 6 ? 'down' : 'none'); } });
+     if (crop === undefined) return stage;
+     const cropped = new Container();
+     stage.position.set(-crop.x, -crop.y);
+diff --git a/packages/sites/demos/src/entries/visual-tests/canvas-entries.test.tsx b/packages/sites/demos/src/entries/visual-tests/canvas-entries.test.tsx
+index ce7d6e96..ea0410b7 100644
+--- a/packages/sites/demos/src/entries/visual-tests/canvas-entries.test.tsx
++++ b/packages/sites/demos/src/entries/visual-tests/canvas-entries.test.tsx
+@@ -56,6 +56,8 @@ interface Crop {
+ }
+ 
+ function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefined): Container {
++    (globalThis as { __probeContext?: string }).__probeContext = entry.id;
++    onTestFinished(() => { console.log('[PROBE-TOTAL]', entry.id, JSON.stringify((globalThis as unknown as { __probeStats?: Map<string, unknown> }).__probeStats?.get(entry.id))); });
+     const stage = new Container();
+     // A headless chip makes no sound.
+     const sound = createHeadlessSound(starter);
+@@ -63,7 +65,7 @@ function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefi
+     // This runs after the stage is rendered to an image and destroyed.
+     // Destroying a Pixi object twice is harmless.
+     onTestFinished(() => session.destroy());
+-    advanceHeadless({ session, views: [stage], chips: sound.chips, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
++    advanceHeadless({ session, views: [stage], chips: sound.chips, totalMs: 20000, input: (s, ms) => { starter.thumbnailInput?.(s, ms); const c = s.inputConfig; if (c === undefined) return; const n = Math.floor(ms / 400); c.onPrimaryButtonChanged?.(n % 3 !== 0); c.onSecondaryButtonChanged?.(n % 7 === 3); c.onRestartButtonChanged?.(n % 25 === 1); c.onXDirectionChanged?.(n % 5 < 2 ? 'left' : n % 5 < 4 ? 'right' : 'none'); c.onYDirectionChanged?.(n % 7 < 3 ? 'up' : n % 7 < 6 ? 'down' : 'none'); } });
+     if (crop === undefined) return stage;
+     const cropped = new Container();
+     stage.position.set(-crop.x, -crop.y);
+diff --git a/packages/sites/demos/src/entries/visual-tests/html-entries.test.tsx b/packages/sites/demos/src/entries/visual-tests/html-entries.test.tsx
+index f31daec2..19070589 100644
+--- a/packages/sites/demos/src/entries/visual-tests/html-entries.test.tsx
++++ b/packages/sites/demos/src/entries/visual-tests/html-entries.test.tsx
+@@ -47,6 +47,7 @@ interface Size {
+ }
+ 
+ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element> {
++    (globalThis as { __probeContext?: string }).__probeContext = 'html-entry';
+     const element = document.createElement('div');
+     element.style.cssText = `width:${size.width}px;height:${size.height}px;background:#000;`;
+     // The element is in the page while the entry starts, so the entry can
+@@ -61,7 +62,7 @@ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element>
+     await session.ready;
+     // An entry that sizes itself to its element learns its size here.
+     await waitForLayout();
+-    advanceHeadless({ session, views: session.views, chips: sound.chips, totalMs: findThumbnailAdvanceMs(starter) });
++    advanceHeadless({ session, views: session.views, chips: sound.chips, totalMs: 20000 });
+     session.render();
+     return element;
+ }
+diff --git a/packages/sites/puzzles/src/entries/visual-tests/canvas-entries.test.tsx b/packages/sites/puzzles/src/entries/visual-tests/canvas-entries.test.tsx
+index ce7d6e96..ea0410b7 100644
+--- a/packages/sites/puzzles/src/entries/visual-tests/canvas-entries.test.tsx
++++ b/packages/sites/puzzles/src/entries/visual-tests/canvas-entries.test.tsx
+@@ -56,6 +56,8 @@ interface Crop {
+ }
+ 
+ function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefined): Container {
++    (globalThis as { __probeContext?: string }).__probeContext = entry.id;
++    onTestFinished(() => { console.log('[PROBE-TOTAL]', entry.id, JSON.stringify((globalThis as unknown as { __probeStats?: Map<string, unknown> }).__probeStats?.get(entry.id))); });
+     const stage = new Container();
+     // A headless chip makes no sound.
+     const sound = createHeadlessSound(starter);
+@@ -63,7 +65,7 @@ function pose(entry: ArcadeEntry, starter: PixiEntryStarter, crop: Crop | undefi
+     // This runs after the stage is rendered to an image and destroyed.
+     // Destroying a Pixi object twice is harmless.
+     onTestFinished(() => session.destroy());
+-    advanceHeadless({ session, views: [stage], chips: sound.chips, totalMs: findThumbnailAdvanceMs(starter), input: starter.thumbnailInput });
++    advanceHeadless({ session, views: [stage], chips: sound.chips, totalMs: 20000, input: (s, ms) => { starter.thumbnailInput?.(s, ms); const c = s.inputConfig; if (c === undefined) return; const n = Math.floor(ms / 400); c.onPrimaryButtonChanged?.(n % 3 !== 0); c.onSecondaryButtonChanged?.(n % 7 === 3); c.onRestartButtonChanged?.(n % 25 === 1); c.onXDirectionChanged?.(n % 5 < 2 ? 'left' : n % 5 < 4 ? 'right' : 'none'); c.onYDirectionChanged?.(n % 7 < 3 ? 'up' : n % 7 < 6 ? 'down' : 'none'); } });
+     if (crop === undefined) return stage;
+     const cropped = new Container();
+     stage.position.set(-crop.x, -crop.y);
+diff --git a/packages/libraries/utils/src/view-tick-api/merge-mode.ts b/packages/libraries/utils/src/view-tick-api/merge-mode.ts
+new file mode 100644
+index 0000000..bc68833
+--- /dev/null
++++ b/packages/libraries/utils/src/view-tick-api/merge-mode.ts
+@@ -0,0 +1 @@
++export const MERGE_MODE: string = 'off';
+diff --git a/packages/libraries/utils/src/view-tick-api/merge-probe.ts b/packages/libraries/utils/src/view-tick-api/merge-probe.ts
+new file mode 100644
+index 0000000..a262723
+--- /dev/null
++++ b/packages/libraries/utils/src/view-tick-api/merge-probe.ts
+@@ -0,0 +1,72 @@
++// Spike only. Snapshots a tree's presentation output, so a tick's merged walk can be compared with a settled refresh.
++type Kids = (n: object) => ArrayLike<object>;
++type Snap = Map<string, string>;
++interface ProbeState { frames: number; staleFrames: number; }
++const g = globalThis as unknown as { __mergeProbe?: unknown; __probeContext?: string; __probeStats?: Map<string, ProbeState>; __vitest_worker__?: { current?: { name?: string; file?: { name?: string } } }; __noteHiddenUpdate?: (n: object) => void };
++function contextNow(): string {
++    if (g.__probeContext !== undefined) return g.__probeContext;
++    const current = g.__vitest_worker__?.current;
++    return `${String(current?.file?.name ?? '?').replace(/^.*[\/]/, '')} > ${String(current?.name ?? '?')}`.replace(/\s+/g, '_');
++}
++const hiddenSeen = new Set<string>();
++g.__noteHiddenUpdate = (node: object): void => {
++    const key = `${contextNow()} ${describe(node as Record<string, unknown>)}`;
++    if (hiddenSeen.has(key)) return;
++    hiddenSeen.add(key);
++    console.log(`[HIDDEN-UPDATE] ${key}`);
++};
++const seen = new Set<string>();
++g.__probeStats = new Map();
++
++function describe(node: Record<string, unknown>): string {
++    const label = node.label ?? node.name ?? node.tagName ?? (node.constructor as { name?: string } | undefined)?.name;
++    return String(label === '' || label === undefined ? 'node' : label);
++}
++function read(node: any): string {
++    const p = node.position;
++    const r = node.rotation;
++    const s = node.scale;
++    const parts = [
++        p?.x, p?.y, p?.z,
++        typeof r === 'number' ? r : r?.x, r?.y, r?.z,
++        s?.x, s?.y, s?.z,
++        node.alpha, node.visible, node.tint, node.text, node.texture?.uid, node.material?.opacity,
++        typeof node.getAttribute === 'function' ? node.getAttribute('style') : undefined,
++        typeof node.getAttribute === 'function' ? node.getAttribute('class') : undefined,
++        node.nodeType !== undefined ? node.textContent?.slice(0, 80) : undefined,
++    ];
++    return parts.map((v) => (typeof v === 'number' ? Math.round(v * 1e4) / 1e4 : String(v))).join('|');
++}
++function walk(node: any, kids: Kids, path: string, out: Snap): void {
++    out.set(path, read(node));
++    const list = kids(node);
++    out.set(`${path}#kids`, String(list.length));
++    for (let i = 0; i < list.length; i++) walk(list[i], kids, `${path}/${describe(list[i] as Record<string, unknown>)}[${i}]`, out);
++}
++g.__mergeProbe = {
++    snapshot(root: object, kids: Kids): Snap {
++        const out: Snap = new Map();
++        walk(root, kids, describe(root as Record<string, unknown>), out);
++        return out;
++    },
++    compare(before: Snap, root: object, kids: Kids): void {
++        const after: Snap = new Map();
++        walk(root, kids, describe(root as Record<string, unknown>), after);
++        const context = contextNow();
++        let stats = g.__probeStats!.get(context);
++        if (stats === undefined) g.__probeStats!.set(context, stats = { frames: 0, staleFrames: 0 });
++        stats.frames++;
++        let isStale = false;
++        for (const [path, value] of after) {
++            const was = before.get(path);
++            if (was === value) continue;
++            isStale = true;
++            const key = `${context} ${path.replace(/\[\d+\]/g, '')}`;
++            if (seen.has(key)) continue;
++            seen.add(key);
++            console.log(`[PROBE] ${context} frame=${stats.frames} ${path} :: ${was} => ${value}`);
++        }
++        if (isStale) stats.staleFrames++;
++    },
++};
++export {};
+diff --git a/packages/libraries/pixi/src/merge-control.test.ts b/packages/libraries/pixi/src/merge-control.test.ts
+new file mode 100644
+index 0000000..a98c626
+--- /dev/null
++++ b/packages/libraries/pixi/src/merge-control.test.ts
+@@ -0,0 +1,48 @@
++// Spike only: the positive controls for the merged walk's staleness probe.
++import { Container } from 'pixi.js';
++import { expect, it } from 'vitest';
++import { refreshView, setRefresh, setUpdate, updateView } from './index';
++
++const stats = (): Map<string, { frames: number; staleFrames: number }> =>
++    (globalThis as unknown as { __probeStats: Map<string, { frames: number; staleFrames: number }> }).__probeStats;
++const setContext = (name: string): void => { (globalThis as { __probeContext?: string }).__probeContext = name; };
++
++it('sees a parent that shows its child\'s presentation state', () => {
++    setContext('control-parent-reads-child');
++    const parent = new Container();
++    const child = new Container();
++    parent.addChild(child);
++    let childMs = 0;
++    setUpdate(child, (deltaMs) => { childMs += deltaMs; });
++    setRefresh(parent, () => { parent.x = childMs; });
++    for (let i = 0; i < 10; i++) { updateView(parent, 16); refreshView(parent); }
++    console.log('[CONTROL]', JSON.stringify(stats().get('control-parent-reads-child')));
++    expect(stats().get('control-parent-reads-child')?.staleFrames).toBeGreaterThan(0);
++});
++
++it('sees a command from a later view, read by an earlier one', () => {
++    setContext('control-relay-mid-walk');
++    const root = new Container();
++    const board = new Container();
++    const keypad = new Container();
++    root.addChild(board, keypad);
++    const model = { digit: 0 };
++    setRefresh(board, () => { board.x = model.digit; });
++    setUpdate(keypad, () => { model.digit++; });
++    for (let i = 0; i < 10; i++) { updateView(root, 16); refreshView(root); }
++    console.log('[CONTROL]', JSON.stringify(stats().get('control-relay-mid-walk')));
++    expect(stats().get('control-relay-mid-walk')?.staleFrames).toBeGreaterThan(0);
++});
++
++it('stays quiet for a parent\'s state, which its children read after it updates', () => {
++    setContext('control-child-reads-parent');
++    const parent = new Container();
++    const child = new Container();
++    parent.addChild(child);
++    let parentMs = 0;
++    setUpdate(parent, (deltaMs) => { parentMs += deltaMs; });
++    setRefresh(child, () => { child.x = parentMs; });
++    for (let i = 0; i < 10; i++) { updateView(parent, 16); refreshView(parent); }
++    console.log('[CONTROL]', JSON.stringify(stats().get('control-child-reads-parent')));
++    expect(stats().get('control-child-reads-parent')?.staleFrames).toBe(0);
++});

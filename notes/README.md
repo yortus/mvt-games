@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**092** (085 is taken, by work in a worktree).
+**094** (085 is taken, by work in a worktree).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -179,6 +179,7 @@ deleted.
 | 076 | [audio90: Gaps in the API](tasks/backlog/076-audio90-api-gaps.md) | low | 2026-10-29 |
 | 086 | [The Three Sites and Their Themes: Follow-Ons](tasks/backlog/086-site-and-theme-follow-ons.md) | low | 2026-11-01 |
 | 090 | [The Book: Follow-Ons](tasks/backlog/090-book-follow-ons.md) | low | 2026-11-01 |
+| 093 | [Enforce the Tick Rules](tasks/backlog/093-enforce-the-tick-rules.md) | low | 2026-11-07 |
 
 ## Archive
 
@@ -236,6 +237,7 @@ deleted.
 | 084 | [Proposal: three sites, and themes for them](archive/084-three-sites-and-themes.md) (the Arcade split into `packages/sites/arcade/` (its games), `demos/` and `puzzles/`, sharing `packages/sites/site-kit/`; one flat list of tags; one dev server for everything; three themes, Arcade, Dark and Light, one setting for every site, with each site's own as the default. Follow-ons in task 086) | 2026-11-01 |
 | 087 | [Proposal: a wall maze puzzle for the puzzles site](archive/087-wall-maze-puzzle.md) (Minotaur, a maze to build each day, from wall-length clues: the genre known as Build a Maze or Labyrinth; playtested) | 2026-11-01 |
 | 089 | [Proposal: API cheat sheets](archive/089-api-cheat-sheets.md) (short guides to the APIs a project can use, arranged by task, chosen and written by hand, with signatures and summaries generated from the libraries' declarations, and a test that fails on a stale name or an export on no sheet; shown over the run in the playground, as a drawer in the book's embeds that opens on what the example imports, and as the book's Appendix G, its groups numbered and found by the docs' search. Its follow-ups are in task 017) | 2026-11-01 |
+| 092 | [Decision: update and refresh, or update alone?](archive/092-update-and-refresh-or-update-alone/decision.md) (decided: keep both, by a thin margin. A spike ran `refresh` as the last step of `update` across the whole test suite and nothing real broke. The rules that matter most apply in either design, and update-only's mistakes are quiet where today's are loud. Records the rules it led to, `update(0)`, relays outside the frame, the gotchas, Unity's `LateUpdate`, update-only as a house style, a second evaluation, and what would reopen it, with the spike's patch and scripts. The book's version is Appendix I. Enforcement is in task 093, and naming in 072) | 2026-11-07 |
 
 ## Elsewhere
 

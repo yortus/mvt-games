@@ -94,6 +94,28 @@ That one rule gives you three guarantees:
   left it. The model doesn't use timers, so a timer can't fire and change
   it halfway through a frame.
 
+`deltaMs` can be 0. A ticker usually passes 0 on its first tick, because it
+doesn't have a last frame to measure from. A test may also pass 0, to let a
+model act on what it has been asked to do. So every `update` must accept a
+`deltaMs` of 0, which is rule
+[T-zero](../appendices/a-mvt-on-one-page.md#ticker-rules). At 0, nothing
+measured in time moves, and work that would otherwise run once a tick
+doesn't run. A model may still act on something that has already happened,
+such as a request or a change. It does that only once, so a second
+`update(0)` changes nothing.
+
+Most models follow this rule without any code, because they multiply what
+moves by `deltaMs`. A model needs a guard when it does work that doesn't
+scale with time, such as drawing a random number for each boid in a flock:
+
+```ts
+function update(deltaMs: number): void {
+    // Each draw would change the flock's future with no time passing
+    if (deltaMs === 0) return;
+    for (let i = 0; i < boids.length; i++) steer(boids[i], deltaMs);
+}
+```
+
 MVT has two requirements for a model. It moves forward in time only through
 `update(deltaMs)`, and it never refers to a view or a renderer. Everything
 else, such as whether you write it as a class or a function, and how you
@@ -308,6 +330,14 @@ model in `models/ship-model.ts` never references keys or touches.
 An action also enforces the model's rules. A chest's `open()` opens the
 chest only if it's closed, so a caller can't open it twice. The view
 decides what a button does, and the model decides whether it's allowed.
+
+An action may start work that finishes later, such as loading a level. The
+result reaches the model between ticks, as the player's input does, so the
+model still holds still while views read it. That's the job that async
+code does in a model. A model never uses it to wait for real time to pass,
+such as with a `delay(ms: number): Promise<void>` helper, because that wait
+would carry on through a pause. Count a delay down from `deltaMs` in
+`update` instead.
 
 ## State That Views Can Notice
 

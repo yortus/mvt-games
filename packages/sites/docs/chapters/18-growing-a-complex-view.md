@@ -381,6 +381,12 @@ interface FlashOverlayViewBindings {
 A `Sequence` with more steps fits this binding, since it has every member
 the binding requires.
 
+The view that makes the sequence is also the view that moves it on. Keep to
+that for anything a parent shares with its children. The parent's update
+step runs first, so every child reads this tick's value. If one child moved
+the sequence on instead, the children that ran before it would read last
+tick's value, and the children that ran after it would read this tick's.
+
 ### Tracking a sequence's steps
 
 Some effects also need something done once, at a moment, such as placing
@@ -720,6 +726,72 @@ place. That's logic enough to deserve tests of its own. See
 [`pieces-view-model.ts`](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/kwazy-cactii/views/board-view/pieces-view-model.ts)
 and its
 [tests](https://github.com/yortus/mvt-games/blob/main/packages/sites/arcade/src/entries/kwazy-cactii/views/board-view/pieces-view-model.test.ts).
+
+### Example: a press that turns into a hold
+
+A puzzle's keypad fills in a digit when the player taps a key, and does
+something else when the player holds the key down. The browser reports a
+press and a release, but it doesn't report a hold, so the view has to notice
+the hold itself. It has to time the hold in game time, so that a hold
+doesn't finish while the game is paused. That means noticing it in an update
+step. But an update step must never change a model, because other views are
+still reading the model in the same tick.
+
+A view model solves both problems. It times the press, and it reports the
+hold after the frame:
+
+```ts
+export function createLongPressViewModel(
+    options: LongPressViewModelOptions,
+): LongPressViewModel {
+    const { onTapped, onHeld } = options;
+    let isDown = false;
+    let isHoldDone = false;
+    let heldMs = 0;
+
+    return {
+        press() {
+            isDown = true;
+            isHoldDone = false;
+            heldMs = 0;
+        },
+        release() {
+            const isTap = isDown && !isHoldDone;
+            isDown = false;
+            if (isTap) onTapped();
+        },
+        update(deltaMs) {
+            if (!isDown || isHoldDone) return;
+            heldMs += deltaMs;
+            if (heldMs < HOLD_MS) return;
+            isHoldDone = true;
+            // Other views are still reading the model in this tick
+            queueMicrotask(onHeld);
+        },
+        get holdProgress() {
+            return isDown ? Math.min(1, heldMs / HOLD_MS) : 0;
+        },
+    };
+}
+```
+
+`queueMicrotask` runs its function once the code that's running has
+finished. A frame's code runs in one call from the browser, so `onHeld` runs
+after the whole frame, at the point where a click would arrive. A release, which is an
+ordinary event, calls `onTapped` straight away.
+
+The view's own code stays small. It passes its pointer events to `press()`
+and `release()`, ticks the view model with `setUpdate(view, gestures.update)`,
+and draws a ring from `holdProgress`. It passes its own relay bindings to
+the view model as options, so the view never calls a relay binding from a
+step.
+
+The timer looks like presentation state, but it isn't, because it affects the
+game. It decides when the view reports the hold, just as the browser decides
+when to report a click, so it's part of handling input. It stays in the view,
+because what a control does is a view's concern. Where the timing is part
+of the game logic, such as how fast a ship fires while the button is held,
+it's domain state, and it goes in the model.
 
 ### Testing a view model
 

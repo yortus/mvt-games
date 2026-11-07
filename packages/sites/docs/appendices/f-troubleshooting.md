@@ -49,7 +49,7 @@ to.
 | --- | --- |
 | A sprite runs too fast on a fast screen, keeps moving while the game is paused, or ends up somewhere other than the model's position. | [§](../chapters/07-views.md#a-sprite-that-runs-ahead-of-the-model) |
 | The game behaves differently depending on which views exist, or the order they refresh in. | [§](../chapters/07-views.md#a-game-that-depends-on-which-views-exist) |
-| Two views disagree for a frame. | [§](../chapters/05-the-tick.md#a-view-that-changes-a-model-while-it-refreshes) |
+| Two views disagree for a frame. | [§](../chapters/05-the-tick.md#a-view-that-changes-a-model-during-a-tick) |
 | An animation runs at double speed, or a view deep in the tree never moves. | [§](../chapters/13-composing-views.md#a-view-that-runs-twice-or-never) |
 | Code that hooks Pixi's `onRender` runs a different number of times from the ticks, or not at all in a test. | [§](../chapters/07-views.md#why-not-pixi-s-onrender) |
 | A view is right at first, then shows a stale value after a restart or a new level. | [§](../chapters/08-bindings.md#a-view-that-shows-a-stale-value-after-a-restart) |
@@ -57,7 +57,7 @@ to.
 | A view quietly falls back to `0` or `''`, and hides a wiring mistake. | [§](../chapters/08-bindings.md#a-view-that-hides-a-wiring-mistake) |
 | A reusable view works in one game, but can't be used in another, or tested without a real model. | [§](../chapters/08-bindings.md#a-reusable-view-that-only-works-with-one-model) |
 | The game behaves differently, or breaks, when a view is removed or replaced. | [§](../chapters/11-presentation-state.md#a-game-that-changes-when-a-view-is-removed) |
-| A view looks right in the game, but is missing pieces in a test or a thumbnail. | [§](../chapters/11-presentation-state.md#a-view-that-s-missing-pieces-in-a-test) |
+| A view looks right in the game, but is missing pieces in a test. | [§](../chapters/11-presentation-state.md#a-view-that-s-missing-pieces-in-a-test) |
 | Something flashes into the wrong state for one frame as its view appears. | [§](../chapters/11-presentation-state.md#a-view-that-flashes-the-wrong-state-as-it-appears) |
 | A text field overwrites what the player is typing. | [§](../chapters/11-presentation-state.md#controls-that-are-both-output-and-input) |
 | The model receives input for a change that the game made itself, such as a `scroll` or `popstate` event after the view wrote to the page. | [§](../chapters/11-presentation-state.md#controls-that-are-both-output-and-input) |

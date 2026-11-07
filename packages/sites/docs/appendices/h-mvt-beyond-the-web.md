@@ -91,6 +91,8 @@ Unity calls the `Update` of each script in an order that you'd have to
 set by hand. With one ticker, the order is the one in the code, and it's
 the same every frame. Godot works the same way: one node's
 `_process(delta)` is the ticker, and the models are plain classes.
+[Appendix I](i-why-update-and-refresh.md) compares MVT's steps with Unity's
+`Update` and `LateUpdate`.
 
 One thing needs a decision. An engine's physics moves its objects on its
 own, so if collisions decide what happens in your game, the engine is

@@ -10,7 +10,8 @@ MVT splits applications into three layers:
 - **Model** - owns state and domain logic. Advances only via update(deltaMs).
   No wall-clock time, no view references, no presentation values.
 - **View** - reads state, writes presentation output. Stateless (no domain
-  state). refresh() runs each frame, must be idempotent and side-effect free.
+  state). refresh() runs each frame, must be idempotent and side-effect free,
+  and works with no time involved.
 - **Ticker** - drives the loop each frame: model.update(deltaMs) then
   view.update(deltaMs) (views with state) then view.refresh() then render.
   One turn is a tick: the ticker ticks the models, then the views. In this
@@ -22,7 +23,7 @@ MVT splits applications into three layers:
   first. Views never forward these calls by hand.
 - **Bindings** - contract between view and model. Query bindings read state
   (a function called each frame, or a fixed value read once); relay bindings
-  report user input out of the view. In this repo, query bindings are named
+  report input out of the view, and always fire outside the frame. In this repo, query bindings are named
   for what they return (score, isAlive) and relay bindings are on*() members.
   Reusable views take query and relay bindings; a top-level view's binding
   is the model itself, a fixed value.
@@ -30,18 +31,25 @@ MVT splits applications into three layers:
 ## Frame Sequence
 
 Every frame: compute deltaMs, cap it, update models, advance view
-presentation state, refresh views, render. Models settle before views read.
+presentation state, refresh views, render. Models settle before views read,
+and models never change while views update or refresh.
 
 ## Key Rules
 
 - Models: all state through update(deltaMs) only. No setTimeout, Date.now(),
   auto-playing tweens. Domain-level coordinates (tiles, world-units), not
-  pixels. Parent delegates update() to children.
-- Views: no domain state. refresh() is idempotent, read-only. Re-read
+  pixels. Parent delegates update() to children. Every update() accepts a
+  deltaMs of 0: nothing measured in time moves. An action may start async
+  work, but a model never uses async code (such as a delay(ms: number):
+  Promise<void> helper) to wait for real time to pass.
+- Views: no domain state. update() and refresh() never change a model,
+  directly or through a relay. refresh() is idempotent, read-only. A view
+  never reads back what it wrote. Re-read
   every changing value every frame (never cache it at construction); only a
   query binding declared as a fixed value may be read once. May hold cosmetic
-  presentation state (gains update(deltaMs), set with setUpdate). Extract complex presentation
-  logic to a view model.
+  presentation state (gains update(deltaMs), set with setUpdate), which is
+  private to it. Extract complex presentation
+  logic to a view model, and a gesture's timing too.
 - Ticker: strict sequence (update models, update views, refresh views,
   render). Cap deltaMs. No domain
   logic or rendering code.

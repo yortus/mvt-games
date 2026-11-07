@@ -135,13 +135,20 @@ The order guarantees three things for every view.
   and the lives view from the opening example now both show the hit, on
   the same frame, wherever they are in the list.
 - **Data flows one way.** A view never changes a model while it
-  refreshes. It only reads. So the state that one view reads can't be
-  changed by another view earlier in the same frame. The models produce
-  state, and the views show it.
+  updates or refreshes. It only reads. So the state that one view reads
+  can't be changed by another view earlier in the same frame. The models
+  produce state, and the views show it.
 
 The order doesn't depend on how the views are arranged, or on which one
 happens to refresh first. This is why adding a view can never break
 another.
+
+All three guarantees rest on one rule: **models never change while views
+update or refresh.** Every step in a tick is synchronous, so each step
+finishes before the next begins. The guarantees come from the split between
+the models and the views. The split between a view's two steps does a
+different job, which [Appendix I](../appendices/i-why-update-and-refresh.md)
+describes.
 
 ## Input Between Ticks
 
@@ -160,8 +167,11 @@ at a fixed point and clears it. A pump asked for between frames takes
 effect at the same point in the update as one asked for at any other
 time.
 
-Either way, input never reaches a model while views are refreshing, so
-the three guarantees hold.
+Either way, input never reaches a model while views update or refresh, so
+the three guarantees hold. A view sometimes notices input during a tick,
+such as a long press that ends when enough game time has passed. It reports
+that input after the tick, so it reaches the model between ticks too
+([Chapter 8](08-bindings.md#relay-bindings-and-input-handling) shows how).
 
 ## The Delta Cap
 
@@ -190,6 +200,10 @@ the cap, and never has to handle a bigger step. The next chapter, in
 requires of a model. Choose the cap for the most sensitive model in the
 game, such as the fastest object and the thinnest wall it mustn't pass
 through.
+
+The smallest step is 0, because a ticker usually passes 0 on its first
+tick. [§](04-models.md#the-update-deltams-contract) says what an `update`
+does at 0.
 
 In [§](#try-delta-cap), two balls roll between thin walls. The button,
 "Take one 3-second step", passes each ball's model one big step between
@@ -261,10 +275,9 @@ PAUSED sign keeps pulsing, because the menu runs in real time.
 
 <TryIt example="pause-and-slow-motion" file="main.ts" />
 
-Notice that the models and the views are ticked separately, so you can
-also tick the models many times and then refresh once. That's how you
-fast-forward a game to make a thumbnail of it: a hundred updates, one
-refresh, one draw.
+Notice that the models and the views are ticked separately. So a test can
+tick the models many times, and refresh the views once at the end, to look
+at a game a minute into its play.
 
 ## Trees: The Ticker Calls Only the Roots
 
@@ -274,17 +287,20 @@ and views differ:
 
 - **Models delegate by hand.** Each parent calls its children's `update`
   itself, as [Chapter 4](04-models.md#trees-of-models) showed, because the
-  order of their updates is part of the game's rules. A parent decides
+  order of their updates is part of the game logic. A parent decides
   which child moves first, whether a child moves at all, and when to
   check for collisions. A function that walked the model tree would make
-  those decisions for the parent, in an order that the game's rules
+  those decisions for the parent, in an order that the game logic
   didn't choose.
 - **Views don't need to.** By the time any view runs, every model has
-  finished updating, and views only read. A view's work never depends on
-  another view having run first, so the order of views doesn't matter. A
-  parent view could forward the tick to its children, but forwarding it
-  doesn't gain anything. A function can walk the view tree instead, and
-  call every view's steps, parents before children.
+  finished updating, and views only read. The order of views never changes
+  what they read from the models. Only one order can matter: a parent
+  before its children, when the parent shares some of its own state with
+  them, as [Chapter 18](18-growing-a-complex-view.md) shows. A walk
+  guarantees that order for every view. A parent view could forward the
+  tick to its children, but forwarding it doesn't gain anything. A function
+  can walk the view tree instead, and call every view's steps, parents
+  before children.
 
 In this book, `updateView` and `refreshView`, which you met in
 [Chapter 3](03-a-first-game.md#the-loop), are that walk.
@@ -297,14 +313,16 @@ shows what to avoid there.
 
 ## Common Mistakes
 
-### A view that changes a model while it refreshes
+### A view that changes a model during a tick
 
 Two views disagree for a frame, or a view's output depends on which views
-refreshed before it. A refresh step is calling a model action, or setting
-model state, so the views after it read a different world from the views
-before it. A refresh step should only read. Pass input on from event
-handlers, which run between ticks, and let the model act on it in its
-next `update`.
+ran before it. An update or refresh step is calling a model action, or
+setting model state, directly or through a relay binding. So the views
+after it read a different world from the views before it. Both steps should
+only read the models. Pass input on from event handlers, which run between
+ticks, and let the model act on it in its next `update`. If a view notices
+input during a tick, it reports it after the tick, as
+[Chapter 8](08-bindings.md#relay-bindings-and-input-handling) shows.
 
 ### An uncapped `deltaMs`
 

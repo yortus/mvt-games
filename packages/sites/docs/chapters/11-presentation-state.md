@@ -175,8 +175,10 @@ Run [§](#try-door-slide) to see `DoorView` beside a door that snaps, both
 showing a door that opens and shuts on its own. Click, or press Space, to
 open or shut it sooner, and do it twice quickly to see the slide turn
 round. Then press Step, which pauses it, click, and press Step a few more
-times. The snapping door follows the model as soon as you click, but the
-slide moves only when a tick passes it time. Press View code, and change
+times. A paused example draws nothing until a step, so neither door moves on
+the click. On the first Step, the snapping door jumps straight to its new
+state, but the slide moves only as far as one tick allows. Press View code, and
+change
 `SLIDE_MS` to slow it down.
 
 <TryIt example="door-slide" file="views/door-view.ts" />
@@ -199,9 +201,9 @@ output's structure: adding or removing child views and display objects is
 output, so it happens in `refresh()`, or when the view is made, never in
 `update()`. There are three reasons:
 
-- **A view refreshed without an update still shows everything.** Tests and
-  thumbnails often refresh a view once without updating it. Output written
-  in `update()`, such as a child view created there, would be missing.
+- **A view refreshed without an update still shows everything.** Tests
+  often refresh a view once without updating it. Output written in
+  `update()`, such as a child view created there, would be missing.
 - **The output stays idempotent.** `refresh()` can run any number of times
   with the same result. Output written as a side effect of moving time on
   can't.
@@ -212,6 +214,42 @@ output, so it happens in `refresh()`, or when the view is made, never in
 A view that spawns short-lived effects, such as particles, follows the same
 split. `update()` moves a pool of particle records on, and `refresh()`
 shows the pool as display objects.
+
+A view's only source of time is the `deltaMs` passed to its `update()`.
+Like a model's, a view's `update()` must accept a `deltaMs` of 0
+([§](04-models.md#the-update-deltams-contract)). No time passes at 0, so a
+timer mustn't fire then. This view lets out a bubble each time a wait runs
+out, and the first wait starts at 0, so it returns early at 0. The early
+return is safe, because `update()` doesn't write any output:
+
+```ts
+function update(deltaMs: number): void {
+    // The wait for the first bubble starts at 0
+    if (deltaMs === 0) return;
+    msToNextBubble -= deltaMs;
+    if (msToNextBubble > 0) return;
+    msToNextBubble = BUBBLE_GAP_MS;
+    letOutBubble();
+}
+```
+
+### Why a view has two steps, not one
+
+If you've used a game engine, you might expect a single step, which moves an
+object on and then sets what's on screen. That works too, and many games are
+built that way. [Appendix I](../appendices/i-why-update-and-refresh.md)
+compares the two, and says why MVT keeps both.
+
+### Presentation state is private
+
+A view's presentation state lives in the view's own variables, and the view
+returns only its container, so other views can't reach it. That's on
+purpose. A view sees another's presentation state only if the owner passes
+it down through a binding, never up or sideways.
+[Chapter 18](18-growing-a-complex-view.md#sharing-one-sequence-across-sub-views)
+shows a parent sharing a sequence this way. The owner is also the view that
+moves that state on. Its update step runs before its children's, so every
+child reads this tick's value.
 
 ### Watching for a change in `update`
 
@@ -239,10 +277,10 @@ function update(deltaMs: number): void {
 ```
 
 Less of the state is final in a view's update step than in its refresh
-step. Every model has updated, so the models' state is final. So is the
-presentation state of the view's ancestors, because the ticker updates
-parents before their children. But the view's own presentation state
-isn't final yet, and neither is its children's, so watch those in
+step. Every model has updated, so the models' state is final. So is any
+presentation state that the view's parent shares with it, because the
+ticker updates parents before their children. But the view's own
+presentation state isn't final until its update step ends, so watch that in
 `refresh()`.
 
 ### Start valid: the first refresh may come before the first update
@@ -256,8 +294,7 @@ before its first `update()`:
   the frame it appears. Its first update is on the next frame. The update
   step moves on the views that existed when the frame began, and a view
   made after that doesn't have any time to catch up on.
-- **Tests and thumbnails** often refresh a view once without updating it
-  at all.
+- **Tests** often refresh a view once without updating it at all.
 
 So set presentation state up when the view is made, from its bindings if
 it depends on them. Never write a `refresh()` that's correct only once
@@ -507,8 +544,8 @@ ticker passes to it.
 
 ### A view that's missing pieces in a test
 
-A view looks right in the game, but is missing pieces in a test or a
-thumbnail, which refresh without updating. Some of its output is written
+A view looks right in the game, but is missing pieces in a test, which
+refreshes without updating. Some of its output is written
 in `update()`. Move every write to the output, including adding and
 removing children, into `refresh()`.
 

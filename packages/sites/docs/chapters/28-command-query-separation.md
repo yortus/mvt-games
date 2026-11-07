@@ -142,10 +142,9 @@ player does something.
   model. The fruit machine's views call `spin()` when the player presses
   SPIN.
 
-Input events are handled between ticks. A view can also report something
-from its own `update` step, such as a release it was waiting to send.
-Either way, commands never run while views are refreshing, which is when
-it would matter.
+Input events are handled between ticks. A view that notices input during a
+tick, such as a long press, reports it after the tick. Either way, commands
+never run while views update or refresh.
 
 ### The tick: commands, then queries
 
@@ -153,8 +152,7 @@ The ticker runs the two kinds of operation in two phases. First, every
 model updates: the commands. Then every view refreshes: the queries, each
 view reading the models and writing its own output. Views with
 [presentation state](11-presentation-state.md)
-update in between, changing their own state, or reporting input through a
-relay binding.
+update in between, changing only their own state.
 
 Because queries never change state, the views can refresh in any order,
 and each one reads the same finished state. Views never see a world that
@@ -247,11 +245,13 @@ Questions to ask of a design, or in a review:
 
 | Rule | How it follows |
 | --- | --- |
-| [V-readonly](../appendices/a-mvt-on-one-page.md#view-rules) | `refresh()` reads the models through queries, so it never changes them |
+| [V-readonly](../appendices/a-mvt-on-one-page.md#view-rules) | A view's steps read the models through queries, so they never change them |
+| [V-one-way](../appendices/a-mvt-on-one-page.md#view-rules) | A view's output is written, and never queried for state |
 | [V-idempotent](../appendices/a-mvt-on-one-page.md#view-rules) | Queries never change state, so refreshing twice from the same state gives the same output |
 | [V-refresh](../appendices/a-mvt-on-one-page.md#view-rules) | Views read after all models have updated: the query phase follows the command phase |
 | [T-sequence](../appendices/a-mvt-on-one-page.md#ticker-rules) | Commands finish before queries begin, so views never see a half-updated world |
 | [B-contract](../appendices/a-mvt-on-one-page.md#binding-rules) | Query bindings return values and relay bindings report input, and the bindings type says which is which |
+| [B-outside](../appendices/a-mvt-on-one-page.md#binding-rules) | Input turns into commands only between frames, so commands never run while views are reading |
 
 ## Further Reading
 

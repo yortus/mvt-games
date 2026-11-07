@@ -153,7 +153,8 @@ such as `HudViewBindings`, and the parameter is always `bindings`, never
 
 A relay binding is always a function, but not a getter. The view calls it
 when the player does something, with the details of what happened, such
-as where a tap landed:
+as where a tap landed. A button's view calls `onClicked` when the player
+clicks it:
 
 ```ts
 interface ButtonViewBindings {
@@ -162,6 +163,9 @@ interface ButtonViewBindings {
     onClicked?: () => void;
 }
 ```
+
+A few relay bindings report something else from outside the game that only
+the view can see, such as the browser reporting a new size.
 
 The view only reports the input. The code that wired the relay binding
 decides what the input means. So **name a relay binding for what the
@@ -180,12 +184,36 @@ reset. The button only reports the click.
 
 <TryIt example="stopwatch-buttons" file="views/stopwatch-view.ts" />
 
-The wiring decides what the input means, and passes the model that
-meaning, never the control, as
-[Chapter 4](04-models.md#actions-say-what-the-player-means) explains. The
-view calls a relay binding as the input arrives, never from `refresh()`,
-which only reads, and the model chooses whether to act on it at once or
-at its next update ([Chapter 5](05-the-tick.md#input-between-ticks)).
+The wiring decides what each input means. It calls the model's action for
+that meaning, such as `startNewRun()`, and never tells the model which
+control the player used
+([Chapter 4](04-models.md#actions-say-what-the-player-means) explains why).
+The view calls a relay binding as the input arrives, and the model chooses
+whether to act on it at once or at its next update
+([Chapter 5](05-the-tick.md#input-between-ticks)).
+
+A view calls its relay bindings only between frames, so that models never
+change while views update or refresh
+([§](05-the-tick.md#why-the-tick-s-order-matters)). This is rule
+[B-outside](../appendices/a-mvt-on-one-page.md#binding-rules), and a view
+has three ways to keep to it:
+
+- **Call it from an event that the browser delivers,** such as a click or a
+  key press. The browser delivers these between frames, so most relay
+  bindings need nothing more.
+- **Call it from a microtask, for something noticed during a tick.** A long
+  press ends when enough game time has passed, so an update step notices
+  it. `queueMicrotask` runs a function once the code that's running has
+  finished, which is after the frame
+  ([§](18-growing-a-complex-view.md#example-a-press-that-turns-into-a-hold)).
+- **Let a helper call it,** such as a view model that does one of these.
+  The view passes its relay binding to the helper, and only ticks the
+  helper.
+
+One kind of event needs care. An event that your own code causes during a
+tick arrives straight away, while the frame is still running. For example,
+calling `.focus()` in a refresh step fires `focusin` at once, so the
+`focusin` handler must not call a relay binding.
 
 ## Fixed Values and Getters
 

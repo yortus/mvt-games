@@ -175,7 +175,7 @@ in [Chapter 5](05-the-tick.md#trees-the-ticker-calls-only-the-roots).
 The ticker calls each view's `refresh()` once per frame, after every
 model has updated (see [Chapter 5](05-the-tick.md)). So a view always reads
 state that has finished changing for this frame. In return, `refresh()`
-must follow three rules.
+must follow five rules.
 
 **It's reactive.** Every value that may change between frames is read
 again in `refresh()`. It's never read once, when the view is made, and
@@ -186,18 +186,32 @@ whose bindings type says the view reads it once, which
 
 **It's idempotent.** Calling `refresh()` twice with the same state
 produces the same output as calling it once. This is why a test can
-refresh a view and look at it, and a thumbnail can be drawn from one
-refresh, without worrying about how many refreshes came before. A `+=` in
-`refresh()` is the usual way this rule breaks.
+refresh a view and look at it, without worrying about how many refreshes
+came before. A `+=` in `refresh()` is the usual way this rule breaks. A
+refresh step may still remember what it drew, so that it can skip slow work
+when nothing has changed. That's allowed, because remembering doesn't change
+the output.
 
 **It's free of side effects.** `refresh()` reads state and writes the
-presentation output. It doesn't change a model, send an event, or start a
-transition. If it did, the picture on the screen would depend on when the
-views happened to run, and one view could change what the next one reads in the
-same frame.
+presentation output. It doesn't change a model, call a relay binding, send
+an event, or start a transition. If it did, the picture on the screen would
+depend on when the views happened to run, and one view could change what the
+next one reads in the same frame.
 
-These three are rules V-reactive, V-idempotent and V-readonly in
-[Appendix A](../appendices/a-mvt-on-one-page.md#view-rules).
+**It works from state, with no time involved.** `refresh()` doesn't receive
+`deltaMs`. It works out the output from the state as it is now, so a paused
+game refreshes in the same way as a running one.
+
+**It never reads back what it wrote.** Keep a view's own state in
+variables, work each output value out from that state, and assign it. Writing
+`sprite.alpha -= 0.1` reads the output back, which makes the display object
+hold the state. Rounding, another effect or a rebuild can then change that
+state without any warning. A measurement that the renderer works out, such
+as the width of a text, is different. It's input, and
+[Chapter 21](21-reading-layout-back.md) shows how to read one.
+
+These five are rules V-reactive, V-idempotent, V-readonly, V-refresh and
+V-one-way in [Appendix A](../appendices/a-mvt-on-one-page.md#view-rules).
 
 ## Immediate-Mode Data Flow, Retained-Mode Output
 
@@ -439,9 +453,9 @@ renderer.
   the steps in the tree, and finds them again only when a view is added or
   removed. So hiding a subtree is faster than taking it out of the tree
   and putting it back.
-- **Updates and refreshes are separate calls.** A loop can call
-  `updateView` many times and `refreshView` once, which is how a
-  thumbnail is made. The code that runs the loop can pause a game by
+- **Updates and refreshes are separate calls.** A test can call
+  `updateView` many times and `refreshView` once. The code that runs the
+  loop can pause a game by
   leaving its container out of `updateView`, and still refresh it, as the
   pause in [§](05-the-tick.md#time-control) does.
 

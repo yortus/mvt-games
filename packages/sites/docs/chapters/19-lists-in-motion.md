@@ -126,7 +126,9 @@ function createHandViewModel(options: HandViewModelOptions): HandViewModel {
     // Each position's state, copied from its card's once per update
     const xAtIndex: number[] = [];
     const alphaAtIndex: number[] = [];
-    let frame = 0;
+    // Which cards were in the hand at the last update, by id, and at this one
+    let wasInHand: boolean[] = [];
+    let isInHand: boolean[] = [];
     update(0); // so the first refresh has state to read
 
     return {
@@ -136,7 +138,7 @@ function createHandViewModel(options: HandViewModelOptions): HandViewModel {
     };
 
     function update(deltaMs: number): void {
-        frame += 1;
+        isInHand.fill(false);
         const n = count();
         const ease = 1 - Math.exp(-deltaMs / SMOOTH_MS);
         for (let i = 0; i < n; i++) {
@@ -144,22 +146,26 @@ function createHandViewModel(options: HandViewModelOptions): HandViewModel {
             const targetX = i * PITCH;
             let cosmetic = cosmetics[id];
             if (cosmetic === undefined) {
-                cosmetic = { x: targetX, alpha: 0, seenFrame: -1 };
+                cosmetic = { x: targetX, alpha: 0 };
                 cosmetics[id] = cosmetic;
             }
-            // Not in the hand last frame, so it's arriving: start it in
+            // Not in the hand last time, so it's arriving: start it in
             // its place, transparent, not wherever it last was
-            if (cosmetic.seenFrame !== frame - 1) {
+            if (wasInHand[id] !== true) {
                 cosmetic.x = targetX;
                 cosmetic.alpha = 0;
             }
-            cosmetic.seenFrame = frame;
+            isInHand[id] = true;
 
             cosmetic.x += (targetX - cosmetic.x) * ease;
             cosmetic.alpha += (1 - cosmetic.alpha) * ease;
             xAtIndex[i] = cosmetic.x;
             alphaAtIndex[i] = cosmetic.alpha;
         }
+
+        const lastHand = wasInHand;
+        wasInHand = isInHand;
+        isInHand = lastHand;
     }
 }
 ```

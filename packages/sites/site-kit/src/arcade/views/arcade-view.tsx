@@ -410,8 +410,10 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         );
     }
 
-    /** Starts the transition in or out as the phase changes, then advances it. */
+    /** Moves the wall's layout on, starts the transition in or out as the phase changes, then advances it. */
     function update(deltaMs: number): void {
+        // First, so this view's measurements and every card read this tick's layout
+        layout.update(deltaMs);
         const { phase } = phaseWatcher.poll();
         if (phase.changed) {
             if (phase.previous === 'browsing') {

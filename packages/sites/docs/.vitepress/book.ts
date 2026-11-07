@@ -94,6 +94,7 @@ const BOOK: readonly SidebarGroup[] = [
             'appendices/f-troubleshooting',
             'appendices/g-api-cheat-sheets',
             'appendices/h-mvt-beyond-the-web',
+            'appendices/i-why-update-and-refresh',
         ],
     },
     {

@@ -23,9 +23,8 @@ import type { RefreshMethod, UpdateMethod } from './tick-methods';
  *
  * `view` can be any view, at any time: a whole stage, a single view under
  * test, or one branch of a stage that is also updated. Nothing here touches a
- * renderer or a ticker, which is what lets a view be stepped in a test,
- * fast-forwarded (many updates, then one refresh), or stepped to produce a
- * thumbnail.
+ * renderer or a ticker, which is what lets a view be stepped in a test, or
+ * stepped to produce a thumbnail.
  *
  * A method may return `SKIP_DESCENDANTS` to skip its descendants for that
  * call; the view itself has already run, so it can stop skipping next time.

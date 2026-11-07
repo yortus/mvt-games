@@ -12,7 +12,8 @@
 [The Tick](../chapters/05-the-tick.md) ·
 [The Eight Principles](../chapters/25-the-eight-principles.md) ·
 [Glossary](b-glossary.md) ·
-[MVT Beyond the Web](h-mvt-beyond-the-web.md)
+[MVT Beyond the Web](h-mvt-beyond-the-web.md) ·
+[Why Update and Refresh](i-why-update-and-refresh.md)
 
 This page summarises the book. It doesn't teach anything that the
 chapters don't, and each rule links to the chapter where you'll find it
@@ -25,11 +26,12 @@ apply it to the new case.
 | Part | Owns | Its inputs | Never does |
 | --- | --- | --- | --- |
 | **Model** | The game's domain state, and the rules that change it | `deltaMs` from the ticker, and the player's actions | References views or the ticker, or reads the clock |
-| **View** | How the state is presented, and any presentation state of its own | The state, through its bindings | Keeps domain state, changes a model while it refreshes, or keeps its own clock |
+| **View** | How the state is presented, and any presentation state of its own | The state, through its bindings | Keeps domain state, changes a model while it updates or refreshes, or keeps its own clock |
 | **Ticker** | Time: how much has passed, and when each part runs | A callback from the platform each frame | Holds game rules, or presents anything |
 
 **Bindings** connect a view to the rest of the game. Query bindings carry
-state into the view. Relay bindings carry the player's input out of it.
+state into the view. Relay bindings carry input out of it, which is usually
+what the player did.
 The view depends only on its bindings, never on where they lead.
 
 ## Two Kinds of State
@@ -69,9 +71,10 @@ each frame:
     draw the frame
 ```
 
-Every model has finished its update before any view reads it. A paused
-game leaves out the two `update` steps, and still refreshes and draws, so
-it shows frozen. Slow motion passes a smaller `deltaMs`. The models
+Every model has finished its update before any view reads it, and models
+never change while views update or refresh. A paused game leaves out the
+two `update` steps, and still refreshes and draws, so it shows frozen. Slow
+motion passes a smaller `deltaMs`. The models
 don't need any code for either. [Chapter 5](../chapters/05-the-tick.md) follows
 a tick through in detail.
 
@@ -79,7 +82,7 @@ a tick through in detail.
 
 | Rule | What it says | Serves | Taught in |
 | --- | --- | --- | --- |
-| **M-time** | All state moves forward only through `update(deltaMs)`. A model doesn't read a clock or start a timer of its own. Time reaches it only as the ticker's `deltaMs`, so the same inputs always produce the same result. | [SoC](../chapters/26-separation-of-concerns.md), [DIP](../chapters/29-dependency-inversion.md), [DfT](../chapters/33-design-for-testability.md) | [Chapter 4](../chapters/04-models.md), [Chapter 6](../chapters/06-time-and-phases.md) |
+| **M-time** | All state moves forward only through `update(deltaMs)`. A model doesn't read a clock or start a timer of its own. Time reaches it only as the ticker's `deltaMs`, so the same inputs always produce the same result. An action may start async work, such as a load, and the result arrives between ticks. A model never uses async code, such as a `delay(ms: number): Promise<void>` helper, to wait for real time to pass. | [SoC](../chapters/26-separation-of-concerns.md), [DIP](../chapters/29-dependency-inversion.md), [DfT](../chapters/33-design-for-testability.md) | [Chapter 4](../chapters/04-models.md), [Chapter 6](../chapters/06-time-and-phases.md) |
 | **M-isolation** | A model doesn't refer to any view, renderer or ticker. It can be built, run and tested without anything else around it. | [SoC](../chapters/26-separation-of-concerns.md), [DIP](../chapters/29-dependency-inversion.md), [DfT](../chapters/33-design-for-testability.md) | [Chapter 4](../chapters/04-models.md) |
 | **M-domain** | A model's state is in the game's own terms, not the presentation's. Positions are in tiles, metres or world units, not pixels. States are named values, such as `'alive'` and `'exploding'`, not colour values or textures. | [SoC](../chapters/26-separation-of-concerns.md), [MISU](../chapters/32-make-illegal-states-unrepresentable.md) | [Chapter 4](../chapters/04-models.md) |
 | **M-composition** | A parent model passes `update(deltaMs)` to its children. The parent handles the work that spans several children, such as collisions or a change of phase, after its children have updated. | [SSOT](../chapters/27-single-source-of-truth.md), [CRP](../chapters/30-composite-reuse.md) | [Chapter 4](../chapters/04-models.md) |
@@ -89,11 +92,12 @@ a tick through in detail.
 | Rule | What it says | Serves | Taught in |
 | --- | --- | --- | --- |
 | **V-stateless** | A view doesn't hold any domain state. It reads state and writes presentation output, and doesn't have any game logic of its own. Replacing a view never changes what happens in the game. | [SoC](../chapters/26-separation-of-concerns.md), [SSOT](../chapters/27-single-source-of-truth.md) | [Chapter 7](../chapters/07-views.md) |
-| **V-refresh** | `refresh()` runs once a frame, after every model has updated, so views never see a half-updated world. | [CQS](../chapters/28-command-query-separation.md) | [Chapter 7](../chapters/07-views.md) |
-| **V-idempotent** | Calling `refresh()` twice with the same state produces the same output. State doesn't build up from one frame to the next. | [CQS](../chapters/28-command-query-separation.md), [DfT](../chapters/33-design-for-testability.md) | [Chapter 7](../chapters/07-views.md) |
-| **V-readonly** | `refresh()` never changes a model. A view reports the player's input through relay bindings, and doesn't act on it while it refreshes. | [CQS](../chapters/28-command-query-separation.md) | [Chapter 5](../chapters/05-the-tick.md), [Chapter 7](../chapters/07-views.md), [Chapter 8](../chapters/08-bindings.md) |
+| **V-refresh** | `refresh()` runs once a frame, after every model has updated, so views never see a half-updated world. It works out the output from the current state, with no time involved. | [CQS](../chapters/28-command-query-separation.md) | [Chapter 7](../chapters/07-views.md) |
+| **V-idempotent** | Calling `refresh()` twice with the same state produces the same output. State doesn't build up from one frame to the next. A refresh may remember what it drew, so that it can skip work. | [CQS](../chapters/28-command-query-separation.md), [DfT](../chapters/33-design-for-testability.md) | [Chapter 7](../chapters/07-views.md) |
+| **V-readonly** | A view's `update()` and `refresh()` never change a model, directly or through a relay binding. Both steps are synchronous, and neither sets up a change to a model to happen later. The one exception is input that a view notices during a tick, which it reports after the tick, as B-outside describes. | [CQS](../chapters/28-command-query-separation.md) | [Chapter 5](../chapters/05-the-tick.md), [Chapter 7](../chapters/07-views.md), [Chapter 8](../chapters/08-bindings.md) |
+| **V-one-way** | Data flows one way through a view: from its state to its output, never back. A view never reads back what it wrote to its output. It keeps its state in variables, and works each output value out from that state. A measurement that the renderer works out, such as a text's width, is input, and a view may read one in either step, when something has changed. | [SSOT](../chapters/27-single-source-of-truth.md), [CQS](../chapters/28-command-query-separation.md) | [Chapter 7](../chapters/07-views.md), [Chapter 21](../chapters/21-reading-layout-back.md) |
 | **V-reactive** | A query binding given as a function, a getter, is read again in every `refresh()`, and never kept from when the view was built. A value the view reads only once is declared as a fixed value, so the bindings say so. A getter with arguments doesn't have a fixed form, so a view that calls one less often says so in the binding's documentation. | [SSOT](../chapters/27-single-source-of-truth.md), [DbC](../chapters/31-design-by-contract.md) | [Chapter 7](../chapters/07-views.md), [Chapter 8](../chapters/08-bindings.md) |
-| **V-presentation** | A view may hold presentation state that the model doesn't track. Such a view gains an `update(deltaMs)` step, which moves its presentation state on and doesn't write any output. `refresh()` writes all of the output, including adding and removing elements. Presentation state is valid from the moment the view is built, since a view's first `refresh()` may come before its first `update()`. Complex presentation logic can move into a view model. Presentation state never affects what happens in the game. | [SSOT](../chapters/27-single-source-of-truth.md) | [Chapter 11](../chapters/11-presentation-state.md), [Chapter 18](../chapters/18-growing-a-complex-view.md) |
+| **V-presentation** | A view may hold presentation state that the model doesn't track. Such a view gains an `update(deltaMs)` step, which moves its presentation state on and doesn't write any output. `refresh()` writes all of the output, including adding and removing elements. Presentation state is valid from the moment the view is built, since a view's first `refresh()` may come before its first `update()`. `deltaMs` is a view's only source of time. Presentation state is private: a view sees another's only if the owner passes it down through a binding, never up or sideways. Complex presentation logic can move into a view model. Presentation state never affects what happens in the game. A recognised gesture's timer isn't presentation state: it decides when the view reports the gesture, so it's part of handling input. | [SSOT](../chapters/27-single-source-of-truth.md) | [Chapter 11](../chapters/11-presentation-state.md), [Chapter 18](../chapters/18-growing-a-complex-view.md) |
 | **V-output** | A view can write to any kind of output: a canvas, the DOM, sound, a terminal or a test. MVT isn't tied to a renderer. | [SoC](../chapters/26-separation-of-concerns.md) | [Chapter 7](../chapters/07-views.md), [Chapter 20](../chapters/20-sound-and-music.md) |
 | **V-tree** | The tree of views doesn't need to match the tree of models. How the game is shown and how it's built are separate concerns, and bindings connect the two. | [SoC](../chapters/26-separation-of-concerns.md), [CRP](../chapters/30-composite-reuse.md) | [Chapter 13](../chapters/13-composing-views.md) |
 
@@ -101,8 +105,9 @@ a tick through in detail.
 
 | Rule | What it says | Serves | Taught in |
 | --- | --- | --- | --- |
-| **T-sequence** | Each frame runs in a fixed order: update the models, update the views' presentation state, refresh the views, draw. The order never changes, and steps are never interleaved, so models finish updating before views read them. A paused game leaves out the update steps, and keeps the order of the rest. | [CQS](../chapters/28-command-query-separation.md) | [Chapter 5](../chapters/05-the-tick.md) |
+| **T-sequence** | Each frame runs in a fixed order: update the models, update the views' presentation state, refresh the views, draw. The order never changes, and steps are never interleaved, so models finish updating before views read them. Every step is synchronous, and models never change while views update or refresh. A paused game leaves out the update steps, and keeps the order of the rest. | [CQS](../chapters/28-command-query-separation.md) | [Chapter 5](../chapters/05-the-tick.md) |
 | **T-cap** | `deltaMs` is capped at a safe maximum. A long gap, from a lost focus, a slow load or a slow device, would otherwise reach models built for short steps. | [DbC](../chapters/31-design-by-contract.md) | [Chapter 5](../chapters/05-the-tick.md) |
+| **T-zero** | `deltaMs` may be 0, as it usually is on the first tick, and every `update` accepts it. At 0, nothing measured in time moves, and work that would otherwise run once a tick, such as drawing a random number, doesn't run. An `update` may still act on a request or a change that has already happened. It does that only once, so a second `update(0)` changes nothing. | [DbC](../chapters/31-design-by-contract.md) | [Chapter 4](../chapters/04-models.md), [Chapter 11](../chapters/11-presentation-state.md) |
 | **T-minimal** | The ticker doesn't hold any game rules or drawing code. It only keeps time and calls the other parts in order. | [SoC](../chapters/26-separation-of-concerns.md) | [Chapter 2](../chapters/02-why-mvt.md) |
 | **T-control** | The ticker may pause, slow down, speed up or single-step time. Models stay correct, because their only input from the ticker is `deltaMs`. | [DfT](../chapters/33-design-for-testability.md) | [Chapter 5](../chapters/05-the-tick.md) |
 
@@ -111,6 +116,7 @@ a tick through in detail.
 | Rule | What it says | Serves | Taught in |
 | --- | --- | --- | --- |
 | **B-contract** | A view's bindings are its contract with the rest of the game. Query bindings carry state in, from model to view. Relay bindings carry input out, from view to model. The bindings' type lists everything the view depends on. | [CQS](../chapters/28-command-query-separation.md), [DIP](../chapters/29-dependency-inversion.md), [DbC](../chapters/31-design-by-contract.md) | [Chapter 8](../chapters/08-bindings.md) |
+| **B-outside** | A view calls its relay bindings only between frames: from an event that the browser delivers, from a microtask for something noticed during a tick and timed in game time, or through a helper that does one of these. An event that your own code causes during a tick arrives while the frame is still running, so its handler never calls a relay binding. | [CQS](../chapters/28-command-query-separation.md) | [Chapter 8](../chapters/08-bindings.md), [Chapter 18](../chapters/18-growing-a-complex-view.md) |
 | **B-reusable** | A reusable leaf view takes query and relay bindings. A top-level view may take its model as one binding, a fixed value, since it's specific to its game, and a binding for each property wouldn't gain anything. | [DIP](../chapters/29-dependency-inversion.md), [CRP](../chapters/30-composite-reuse.md) | [Chapter 8](../chapters/08-bindings.md) |
 | **B-optional** | Relay bindings are usually optional, so a view can be used where its input isn't needed. | [DbC](../chapters/31-design-by-contract.md) | [Chapter 8](../chapters/08-bindings.md) |
 | **B-wiring** | Bindings are wired where the view is built. The view's code doesn't depend on how it's connected to the rest of the game. | [DIP](../chapters/29-dependency-inversion.md) | [Chapter 8](../chapters/08-bindings.md), [Chapter 13](../chapters/13-composing-views.md) |
@@ -156,8 +162,11 @@ where its link leads.
   work that spans them
   ([Chapter 4](../chapters/04-models.md#siblings-interact-through-their-parent)).
 - **A layout measurement is the view's input, not model state.** The
-  view reads it back and uses it on the next frame
+  view reads it on a change, and uses it on the next frame
   ([Chapter 21](../chapters/21-reading-layout-back.md#measurements-are-input)).
+- **A view model times a recognised gesture,** such as a long press, and
+  reports it after the frame
+  ([Chapter 18](../chapters/18-growing-a-complex-view.md#example-a-press-that-turns-into-a-hold)).
 - **State never lives at module level,** where every model that a file
   creates would share it
   ([Chapter 4](../chapters/04-models.md#state-at-module-level-is-shared)).

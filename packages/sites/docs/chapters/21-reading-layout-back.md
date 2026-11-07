@@ -153,6 +153,7 @@ reads the card's place once more, to fly back.
 | Reading a pose once, to start presentation state | Reading the pose every frame, to follow an element the view itself moves |
 | Measurements kept in a view or a view model | Measurements kept in the model, which then holds pixels that depend on the screen |
 | An estimate until the first measurement arrives | Waiting for a measurement before drawing anything |
+| Measuring on a change, in an update or a refresh step | Reading back a value that the view itself wrote |
 
 The rule underneath is the same as for presentation state. A measurement
 may change how something looks. It must never change what happens in the
