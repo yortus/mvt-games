@@ -55,8 +55,10 @@ export function createArrayRowViewModel(options: ArrayRowViewModelOptions): Arra
     const indexAlpha: number[] = [];
     const indexScale: number[] = [];
 
-    // Counts updates, so a card can tell whether it was in the row last frame.
-    let frame = 0;
+    // Which cards were in the row at the last update, by id, and which are in
+    // it at this one, so a card can tell that it is entering.
+    let wasInRow: boolean[] = [];
+    let isInRow: boolean[] = [];
     // A step of no time starts the cards already in the row entering, so the
     // first refresh, which can come before the first update, has state to read.
     update(0);
@@ -69,7 +71,7 @@ export function createArrayRowViewModel(options: ArrayRowViewModelOptions): Arra
     };
 
     function update(deltaMs: number): void {
-        frame += 1;
+        isInRow.fill(false);
         const count = options.count();
         const ease = 1 - Math.exp(-deltaMs / SMOOTH_MS);
 
@@ -79,18 +81,18 @@ export function createArrayRowViewModel(options: ArrayRowViewModelOptions): Arra
 
             let cosmetic = cosmetics[id];
             if (cosmetic === undefined) {
-                cosmetic = { x: 0, alpha: 0, scale: 0, seenFrame: -1 };
+                cosmetic = { x: 0, alpha: 0, scale: 0 };
                 cosmetics[id] = cosmetic;
             }
 
-            // Not in the row last frame, so it is entering: start it at its
+            // Not in the row last time, so it is entering: start it at its
             // target, small and transparent, rather than wherever it last was.
-            if (cosmetic.seenFrame !== frame - 1) {
+            if (wasInRow[id] !== true) {
                 cosmetic.x = targetX;
                 cosmetic.alpha = 0;
                 cosmetic.scale = ENTRANCE_SCALE;
             }
-            cosmetic.seenFrame = frame;
+            isInRow[id] = true;
 
             cosmetic.x += (targetX - cosmetic.x) * ease;
             cosmetic.alpha += (1 - cosmetic.alpha) * ease;
@@ -100,6 +102,10 @@ export function createArrayRowViewModel(options: ArrayRowViewModelOptions): Arra
             indexAlpha[i] = cosmetic.alpha;
             indexScale[i] = cosmetic.scale;
         }
+
+        const lastRow = wasInRow;
+        wasInRow = isInRow;
+        isInRow = lastRow;
     }
 }
 
@@ -111,8 +117,6 @@ interface CardCosmetic {
     x: number;
     alpha: number;
     scale: number;
-    /** The last frame this card was in the row. */
-    seenFrame: number;
 }
 
 const SMOOTH_MS = 110;

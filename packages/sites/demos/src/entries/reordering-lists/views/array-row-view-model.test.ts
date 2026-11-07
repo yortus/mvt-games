@@ -35,6 +35,15 @@ describe('array row view model', () => {
         expect(vm.scaleAt(2)).toBeLessThan(1);
     });
 
+    it('leaves a card as it is on a second step of no time', () => {
+        const { vm } = setup([0, 1, 2]);
+        vm.update(FRAME_MS);
+        const alpha = vm.alphaAt(2);
+        vm.update(0);
+        vm.update(0);
+        expect(vm.alphaAt(2)).toBe(alpha);
+    });
+
     it('starts an entering card at its position, transparent, and fades it in', () => {
         const { vm } = setup([0, 1, 2]);
 

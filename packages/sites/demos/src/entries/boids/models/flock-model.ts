@@ -128,6 +128,8 @@ export function createFlockModel(options: FlockModelOptions): FlockModel {
     // ---- Update ------------------------------------------------------------
 
     function update(deltaMs: number): void {
+        // Steering draws a random number for each boid, which would change the flock's future with no time passing
+        if (deltaMs === 0) return;
         const dt = deltaMs / 1000;
         const count = boids.length;
         if (count === 0) return;

@@ -28,6 +28,18 @@ function defaultOptions() {
 // ---------------------------------------------------------------------------
 
 describe('FlockModel', () => {
+    it('flies on as it would have after a step of no time', () => {
+        const options = { ...defaultOptions(), wander: 1 };
+        const steady = createFlockModel(options);
+        const paused = createFlockModel(options);
+        paused.update(0);
+        for (let i = 0; i < 60; i++) {
+            steady.update(16);
+            paused.update(16);
+        }
+        expect(paused.boids.map((boid) => boid.position.x)).toEqual(steady.boids.map((boid) => boid.position.x));
+    });
+
     it('initialises with the requested number of boids', () => {
         const model = createFlockModel(defaultOptions());
         expect(model.boidCount).toBe(20);

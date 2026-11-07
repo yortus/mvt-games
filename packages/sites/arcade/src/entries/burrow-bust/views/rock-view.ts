@@ -1,8 +1,8 @@
-import { Container, Sprite, Ticker, type Texture } from 'pixi.js';
+import { Container, Sprite, type Texture } from 'pixi.js';
 import { createReaction } from '@mvtjs/utils';
 import { textures } from '../data';
 import type { RockPhase } from '../models';
-import { setRefresh } from '@mvtjs/pixi';
+import { setRefresh, setUpdate } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -14,7 +14,6 @@ export interface RockViewBindings {
     phase: () => RockPhase;
     isAlive: () => boolean;
     tileSize: () => number;
-    clock?: () => number;
 }
 
 // ---------------------------------------------------------------------------
@@ -22,9 +21,10 @@ export interface RockViewBindings {
 // ---------------------------------------------------------------------------
 
 export function RockView(bindings: RockViewBindings): Container {
-    const clock = bindings.clock ?? (() => Ticker.shared.lastTime);
     const rockTextures = textures.get().rock;
     let sprite: Sprite;
+    // Presentation state: how long the rock has been wobbling
+    let wobbleMs = 0;
 
     const updateTextureWhenPhaseChanges = createReaction({
         watch: bindings.phase,
@@ -35,12 +35,17 @@ export function RockView(bindings: RockViewBindings): Container {
 
     const view = new Container();
     initialiseView();
+    setUpdate(view, update);
     setRefresh(view, refresh);
     return view;
 
     function initialiseView(): void {
         sprite = new Sprite({ texture: textureFor(bindings.phase()), anchor: 0.5 });
         view.addChild(sprite);
+    }
+
+    function update(deltaMs: number): void {
+        wobbleMs = bindings.phase() === 'wobbling' ? wobbleMs + deltaMs : 0;
     }
 
     function refresh(): void {
@@ -56,15 +61,18 @@ export function RockView(bindings: RockViewBindings): Container {
         view.position.set(x, y);
         sprite.scale.set(ts / 20);
 
-        // Wobble (presentation-only state)
-        if (bindings.phase() === 'wobbling') {
-            const time = clock();
-            const wobbleOffset = Math.sin(time * 0.05) * 2;
-            view.position.x = x + wobbleOffset;
-        }
+        if (bindings.phase() === 'wobbling') view.position.x = x + Math.sin(wobbleMs * WOBBLE_RATE) * WOBBLE_PIXELS;
     }
 
     function textureFor(phase: RockPhase): Texture {
         return phase === 'shattered' ? rockTextures.shattered : rockTextures.normal;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How fast a rock wobbles, in radians a millisecond, and how far either way. */
+const WOBBLE_RATE = 0.05;
+const WOBBLE_PIXELS = 2;
