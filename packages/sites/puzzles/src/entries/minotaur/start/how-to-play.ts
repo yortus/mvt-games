@@ -14,7 +14,7 @@ export const HOW_TO_PLAY: HowToPlayText = {
     controls: [
         { action: 'Draw the path', inputs: ['drag'], note: 'Start in the middle of a cell, and drag through the cells' },
         { action: 'Draw walls', inputs: ['drag'], note: 'Start at a corner, and drag along the lines' },
-        { action: 'Rub out', inputs: ['tap'], note: 'Tap a wall, or the path' },
+        { action: 'Rub out', inputs: ['drag'], note: 'Drag over a wall, or the path, again' },
         { action: 'Undo', inputs: [{ button: 'Undo' }], note: 'Takes back the last thing you did' },
     ],
     notes: [

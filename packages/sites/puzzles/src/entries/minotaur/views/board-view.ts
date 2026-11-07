@@ -49,7 +49,7 @@ export interface BoardViewBindings {
  *
  * It is made of layers: the card, a glow for when it is solved, the grid's
  * lines, the marks, then the border and the ends, and the clues. The marks
- * are drawn again only as they change. What the taps and drags mean is the
+ * are drawn again only as they change. What the drags mean is the
  * gestures view model's to say: the board only turns pointer events into
  * positions in cells.
  */
@@ -88,7 +88,6 @@ export function BoardView(bindings: BoardViewBindings): Container {
     return view;
 
     function update(deltaMs: number): void {
-        gestures?.update(deltaMs);
         // The glow rises from the moment the maze is solved
         const isSolved = bindings.isSolved();
         if (isSolved !== isShowingSolved) {

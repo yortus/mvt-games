@@ -22,7 +22,7 @@ describe('BoardGesturesViewModel', () => {
         expect(board.passages()).toEqual([grid.edgeBetween(0, 1), grid.edgeBetween(1, 2)].sort(byNumber));
     });
 
-    it('leaves what a drag drew as it goes back over it: only a tap rubs out', () => {
+    it('leaves what a drag drew as it goes back over it', () => {
         const board = createBoard();
         drag(board, [[0.5, 0.5], [1.5, 0.5], [2.5, 0.5], [1.5, 0.5]]);
         expect(board.passages()).toEqual([grid.edgeBetween(0, 1), grid.edgeBetween(1, 2)].sort(byNumber));
@@ -49,30 +49,45 @@ describe('BoardGesturesViewModel', () => {
         expect(path.passages()).toEqual([grid.edgeBetween(0, 1)]);
     });
 
-    it('rubs out the wall or the passage a tap is on, as a stroke of its own, and nothing where there is none', () => {
+    it('rubs out the passages a drag from a cell\'s middle steps over, when the first is drawn already, as one stroke', () => {
         const board = createBoard();
-        const wall = grid.edgeBetween(0, 1);
-        const passage = grid.edgeBetween(cols, 2 * cols);
-        board.marks.set(wall, 'wall');
-        board.marks.set(passage, 'passage');
-        tap(board, 0.95, 0.3);
-        expect(board.marks.get(wall)).toBe('unknown');
-        // On the path's line, inside the cell above the side it crosses
-        tap(board, 0.55, 1.75);
-        expect(board.marks.get(passage)).toBe('unknown');
-        expect(board.strokes).toEqual(['start', 'finish', 'start', 'finish']);
-        tap(board, 2.95, 2.5);
-        expect(board.strokes.length).toBe(4);
+        const drawn = [grid.edgeBetween(0, 1), grid.edgeBetween(1, 2)];
+        for (const edge of drawn) board.marks.set(edge, 'passage');
+        // On into a cell with no passage to it, which stays that way
+        drag(board, [[0.5, 0.5], [1.5, 0.5], [2.5, 0.5], [3.5, 0.5]]);
+        expect(board.passages()).toEqual([]);
+        expect(board.marks.has(grid.edgeBetween(2, 3))).toBe(false);
+        expect(board.strokes).toEqual(['start', 'finish']);
     });
 
-    it('takes a slow press for no tap', () => {
+    it('rubs out the walls a drag from a corner runs along, when the first is drawn already, and leaves the path', () => {
+        const board = createBoard();
+        const passage = grid.edgeBetween(2 * cols, 2 * cols + 1);
+        board.marks.set(grid.edgeBetween(0, 1), 'wall');
+        board.marks.set(grid.edgeBetween(cols, cols + 1), 'wall');
+        board.marks.set(passage, 'passage');
+        // Down the line between the first two columns, over the passage crossing it in the third row
+        drag(board, [[1, 0], [1, 1], [1, 2], [1, 3]]);
+        expect(board.walls()).toEqual([]);
+        expect(board.passages()).toEqual([passage]);
+    });
+
+    it('draws over marks already there, when the first edge it steps over has none', () => {
+        const board = createBoard();
+        const drawn = grid.edgeBetween(1, 2);
+        board.marks.set(drawn, 'passage');
+        drag(board, [[0.5, 0.5], [1.5, 0.5], [2.5, 0.5]]);
+        expect(board.passages()).toEqual([grid.edgeBetween(0, 1), drawn].sort(byNumber));
+    });
+
+    it('does nothing for a press let go where it went down', () => {
         const board = createBoard();
         const wall = grid.edgeBetween(0, 1);
         board.marks.set(wall, 'wall');
         board.gestures.press(1, 0.95, 0.5);
-        board.gestures.update(1000);
         board.gestures.release(1);
         expect(board.marks.get(wall)).toBe('wall');
+        expect(board.strokes).toEqual([]);
     });
 });
 
@@ -101,12 +116,6 @@ function createBoard(): TestBoard {
 function drag(board: TestBoard, points: readonly (readonly [number, number])[]): void {
     board.gestures.press(1, points[0][0], points[0][1]);
     for (let i = 1; i < points.length; i++) board.gestures.move(1, points[i][0], points[i][1]);
-    board.gestures.release(1);
-}
-
-function tap(board: TestBoard, x: number, y: number): void {
-    board.gestures.press(1, x, y);
-    board.gestures.update(50);
     board.gestures.release(1);
 }
 

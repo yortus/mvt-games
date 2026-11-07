@@ -108,5 +108,5 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
 /** The line of help, for what is going on. */
 function writeHint(isSolved: boolean): string {
     if (isSolved) return 'Built! It\'s ticked off on the calendar.';
-    return 'Drag through cells for the path, along lines for walls. Tap to rub out.';
+    return 'Drag through cells for the path, along lines for walls. Drag again to rub out.';
 }

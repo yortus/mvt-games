@@ -9,8 +9,8 @@ import type { PuzzleModel } from './puzzle-model';
 
 /**
  * What the walkthrough's arrow touches: a point on the maze, in cells,
- * across and down from its top left corner, such as a cell's middle, a
- * corner of the grid, or the middle of a side, or the Undo button.
+ * across and down from its top left corner, such as a cell's middle or a
+ * corner of the grid, or the Undo button.
  */
 export type MinotaurTarget = { readonly on: 'maze'; readonly x: number; readonly y: number } | { readonly on: 'undo' };
 
@@ -23,7 +23,7 @@ export type MinotaurWalkthrough = Pick<IntroModelOptions<PuzzleModel, MinotaurTa
  *
  * - `path`: draw two passages or more, with a drag from a cell's middle.
  * - `wall`: draw a wall, with a drag from a corner.
- * - `rub-out`: rub a mark out, with a tap on it.
+ * - `rub-out`: rub a mark out, with a drag over it again.
  * - `undo`: take back the last thing done.
  * - `done`: nothing more to do.
  *
@@ -34,7 +34,7 @@ export const MINOTAUR_WALKTHROUGH: MinotaurWalkthrough = {
     steps: [
         {
             name: 'path',
-            text: 'Start a drag in the middle of the S cell, and drag through the cells to draw the path. This is a practice maze, so try anything you like.',
+            text: 'Start a drag in the middle of the S cell, and drag through the cells to draw the path. This is a practice maze, so try anything.',
             isDone: (puzzle) => puzzle.passagesMarked >= 2,
             findDemo: findPathDemo,
         },
@@ -46,7 +46,7 @@ export const MINOTAUR_WALKTHROUGH: MinotaurWalkthrough = {
         },
         {
             name: 'rub-out',
-            text: 'Tap a wall, or the path, to rub it out.',
+            text: 'Drag over a wall, or the path, again to rub it out.',
             isDone: (puzzle) => puzzle.marksCleared >= 1,
             findDemo: findRubOutDemo,
         },
@@ -124,32 +124,28 @@ function findWallDemo(puzzle: PuzzleModel): Demo<MinotaurTarget> {
     return NO_DEMO;
 }
 
-/** A tap on the middle of a wall drawn, or failing one, of a passage drawn. */
+/**
+ * A drag along a wall drawn, from corner to corner, or failing one, across
+ * a passage drawn, from one cell's middle to the other's.
+ */
 function findRubOutDemo(puzzle: PuzzleModel): Demo<MinotaurTarget> {
     const { grid } = puzzle.maze;
     let passage = -1;
     for (let edge = 0; edge < grid.edgeCount; edge++) {
         const mark = puzzle.markAt(edge);
-        if (mark === 'wall') return [tapOn(toSideMiddle(grid, edge))];
+        if (mark === 'wall') return [dragOver(toCornerAlong(grid, edge, 0), toCornerAlong(grid, edge, 1))];
         if (mark === 'passage' && passage < 0) passage = edge;
     }
-    return passage < 0 ? NO_DEMO : [tapOn(toSideMiddle(grid, passage))];
+    if (passage < 0) return NO_DEMO;
+    return [dragOver(toCellMiddle(grid, grid.edgeCellA[passage]), toCellMiddle(grid, grid.edgeCellB[passage]))];
 }
 
-function tapOn(target: MinotaurTarget): DemoTouch<MinotaurTarget> {
-    return { kind: 'tap', targets: [target] };
+function dragOver(from: MinotaurTarget, to: MinotaurTarget): DemoTouch<MinotaurTarget> {
+    return { kind: 'drag', targets: [from, to] };
 }
 
 function toCellMiddle(grid: MazeGrid, cell: number): MinotaurTarget {
     return { on: 'maze', x: (cell % grid.cols) + 0.5, y: Math.floor(cell / grid.cols) + 0.5 };
-}
-
-/** The middle of the side `edge` is, where a wall along it and a passage across it meet. */
-function toSideMiddle(grid: MazeGrid, edge: number): MinotaurTarget {
-    const cell = grid.edgeCellA[edge];
-    const col = cell % grid.cols;
-    const row = Math.floor(cell / grid.cols);
-    return grid.isEdgeBetweenColumns(edge) ? { on: 'maze', x: col + 1, y: row + 0.5 } : { on: 'maze', x: col + 0.5, y: row + 1 };
 }
 
 /** The corner `steps` sides along the line from the start of `edge`: down a line between columns, or across a line between rows. */
