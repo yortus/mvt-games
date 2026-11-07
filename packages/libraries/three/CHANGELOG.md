@@ -1,5 +1,13 @@
 # @mvtjs/three
 
+## 0.9.0
+
+### Patch Changes
+
+- Updated dependencies [446eb59]
+- Updated dependencies [8830b12]
+  - @mvtjs/utils@0.9.0
+
 ## 0.8.0
 
 ### Patch Changes

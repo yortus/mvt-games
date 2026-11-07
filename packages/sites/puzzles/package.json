@@ -15,9 +15,9 @@
         "generate-thumbnails": "tsx ../site-kit/scripts/generate-thumbnails.ts"
     },
     "dependencies": {
-        "@mvtjs/pixi": "^0.8.0",
+        "@mvtjs/pixi": "^0.9.0",
         "@mvtjs/site-kit": "*",
-        "@mvtjs/utils": "^0.8.0",
+        "@mvtjs/utils": "^0.9.0",
         "audio90": "^0.8.0",
         "pixi.js": "^8.16.0"
     },
