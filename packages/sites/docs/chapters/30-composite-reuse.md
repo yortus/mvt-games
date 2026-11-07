@@ -120,8 +120,7 @@ dependency.
 Views compose the same way. A parent view holds its child views, and wires
 each one's bindings. The fruit machine's Pixi view is a backdrop, a
 paytable, marquee lights, the reels, the win path, a juice burst, meters, a
-win banner, the spin button and a game-over overlay, each a leaf view of
-its own.
+win banner and the spin button, each a leaf view of its own.
 
 Leaf views written for one game are reused in others, by composing them
 into a new tree, never by extending them. The website's shared overlay
@@ -143,7 +142,7 @@ Models compose to fit the domain; views compose to fit the screen. The two
 trees don't need to match ([V-tree](../appendices/a-mvt-on-one-page.md#view-rules)).
 The fruit machine has one machine model and four view trees (Pixi,
 three.js, an HTML panel and a terminal), each built from different leaf
-views. Burrow Bust's HUD
+views, and an audio view for its sound. Burrow Bust's HUD
 shows a score and lives held by the game model, and doesn't have a model
 of its own. [Composing Views](13-composing-views.md) gives
 more cases. Bindings make this possible: a view reads the state it shows,

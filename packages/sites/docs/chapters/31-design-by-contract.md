@@ -46,7 +46,7 @@ it. Suppose the [fruit machine](https://github.com/yortus/mvt-games/blob/main/pa
 ```ts
 spin() {
     if (phase !== 'idle') return; // returns quietly, without doing anything
-    // ...take the bet, decide the result, start the reels
+    // ...decide the result, and start the reels
 }
 ```
 
@@ -87,15 +87,15 @@ The real fruit machine states both sides of every action in its interface:
 /** True when `spin()` may be called: when idle. */
 readonly canSpin: boolean;
 /**
- * Take the bet, decide the result, and spin. Resolves with the result
- * once the machine is idle again (or the game is over): after the
- * reels land and any celebration ends. ...Needs `canSpin`.
+ * Decide the result, and spin. Resolves with the result once the machine
+ * is idle again: after the reels land and any celebration ends. ...Needs
+ * `canSpin`.
  */
-spin: () => Promise<SpinOutcome>;
+spin: (options?: SpinOptions) => Promise<SpinOutcome>;
 ```
 
-The requirement is `canSpin`. The guarantee is the rest: take the bet,
-decide the result, and resolve when the machine is idle again.
+The requirement is `canSpin`. The guarantee is the rest: decide the result,
+spin, and resolve when the machine is idle again.
 
 ### A broken requirement throws
 
