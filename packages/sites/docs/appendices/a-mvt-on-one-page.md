@@ -12,8 +12,7 @@
 [The Tick](../chapters/05-the-tick.md) ·
 [The Eight Principles](../chapters/25-the-eight-principles.md) ·
 [Glossary](b-glossary.md) ·
-[MVT Beyond the Web](h-mvt-beyond-the-web.md) ·
-[Why Update and Refresh](i-why-update-and-refresh.md)
+[MVT Beyond the Web](h-mvt-beyond-the-web.md)
 
 This page summarises the book. It doesn't teach anything that the
 chapters don't, and each rule links to the chapter where you'll find it

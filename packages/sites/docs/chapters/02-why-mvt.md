@@ -208,7 +208,7 @@ of them, this table shows where it fits, and where MVT differs.
 
 | If you know | In MVT | How it differs |
 | --- | --- | --- |
-| The game loop of an engine such as Unity or Godot | The **ticker** | The same idea ([Appendix I](../appendices/i-why-update-and-refresh.md) compares them). MVT adds a fixed order: every model, then every view |
+| The game loop of an engine such as Unity or Godot | The **ticker** | The same idea ([Appendix H](../appendices/h-mvt-beyond-the-web.md#mvt-inside-a-game-engine) compares them). MVT adds a fixed order: every model, then every view |
 | The model in MVC | The **model** | The same idea: state and rules, which don't reference views |
 | The controller in MVC | Split between the view and the ticker | The view reports input to the model through its bindings, and the ticker keeps time |
 | Data binding in MVVM | **Bindings** | MVT's bindings are plain functions and values that the view reads every frame, not subscriptions that push changes |

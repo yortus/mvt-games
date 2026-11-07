@@ -284,7 +284,7 @@ a conclusion, and appendices.
 | VI. Performance | 23 Why Performance Matters, 24 Hot Paths |
 | VII. Principles Behind MVT | 25 The Eight Principles, then one chapter for each principle: 26 SoC, 27 SSOT, 28 CQS, 29 DIP, 30 CRP, 31 DbC, 32 MISU, 33 DfT, and 34 Using the Principles |
 | Conclusion | `chapters/conclusion.md`, which isn't numbered |
-| Appendices | A MVT on One Page, B Glossary, C Measurements, D Measuring Performance, E Timelines with GSAP, F Troubleshooting, G API Cheat Sheets, H MVT Beyond the Web, I Why Update and Refresh |
+| Appendices | A MVT on One Page, B Glossary, C Measurements, D Measuring Performance, E Timelines with GSAP, F Troubleshooting, G API Cheat Sheets, H MVT Beyond the Web |
 
 The order is set by what each chapter needs. A chapter may use only what
 an earlier chapter has taught. If it must mention something taught later,
@@ -367,8 +367,8 @@ point to its home. Each says what it is, and keeps it short.
 | Performance figures | Appendix C, its short version |
 | GSAP timelines in a model | Appendix E |
 | The rules, as one table | Appendix A |
-| MVT inside an engine, in other languages, and outside games | Appendix H |
-| Why MVT has two updates and two view steps, compared with engines | Appendix I |
+| MVT inside an engine, Unity's `Update` and `LateUpdate`, in other languages, and outside games | Appendix H |
+| Choosing between two designs that both work, and why a view has two steps | Chapter 34 |
 | What MVT gives and doesn't, looking back, and where to go next | Conclusion |
 
 When you add an idea, give it one home, and add it to this table.

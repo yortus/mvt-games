@@ -91,8 +91,17 @@ Unity calls the `Update` of each script in an order that you'd have to
 set by hand. With one ticker, the order is the one in the code, and it's
 the same every frame. Godot works the same way: one node's
 `_process(delta)` is the ticker, and the models are plain classes.
-[Appendix I](i-why-update-and-refresh.md) compares MVT's steps with Unity's
-`Update` and `LateUpdate`.
+
+Unity has its own way to run code after everything has moved.
+[`LateUpdate`](https://docs.unity.com/en-us/engine/current/script-reference/unityengine/monobehaviour/lateupdate)
+runs after every object's `Update` has finished, so a camera that follows the
+player in `LateUpdate` reads where the player is now, not where it was. MVT's
+split between models and views is similar, with a model's `update` in the part
+of `Update` and a view's steps in the part of `LateUpdate`. But Unity's split is
+only in time. A `LateUpdate` can still change the game, and it usually sits on
+the same object as the game logic. MVT also splits code by what it may change,
+because views never change models. That's why the models run without views, and
+why adding a view never changes what another view reads.
 
 One thing needs a decision. An engine's physics moves its objects on its
 own, so if collisions decide what happens in your game, the engine is

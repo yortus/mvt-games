@@ -94,7 +94,6 @@ const BOOK: readonly SidebarGroup[] = [
             'appendices/f-troubleshooting',
             'appendices/g-api-cheat-sheets',
             'appendices/h-mvt-beyond-the-web',
-            'appendices/i-why-update-and-refresh',
         ],
     },
     {
@@ -414,6 +413,7 @@ export function createSidebar(printedBookHref: string): DefaultTheme.SidebarItem
 
 /** Where each page that has moved now lives, as paths from the docs' root without `.md`. */
 const REDIRECTS: Readonly<Record<string, string>> = {
+    'appendices/i-why-update-and-refresh': 'chapters/34-using-the-principles',
     'architecture/index': 'chapters/02-why-mvt',
     'architecture/models': 'chapters/04-models',
     'architecture/views': 'chapters/07-views',

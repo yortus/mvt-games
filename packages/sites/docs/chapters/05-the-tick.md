@@ -147,8 +147,8 @@ All three guarantees rest on one rule: **models never change while views
 update or refresh.** Every step in a tick is synchronous, so each step
 finishes before the next begins. The guarantees come from the split between
 the models and the views. The split between a view's two steps does a
-different job, which [Appendix I](../appendices/i-why-update-and-refresh.md)
-describes.
+different job, which
+[Chapter 34](34-using-the-principles.md#choosing-between-two-designs-that-both-work) describes.
 
 ## Input Between Ticks
 

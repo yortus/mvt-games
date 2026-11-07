@@ -237,7 +237,7 @@ function update(deltaMs: number): void {
 
 If you've used a game engine, you might expect a single step, which moves an
 object on and then sets what's on screen. That works too, and many games are
-built that way. [Appendix I](../appendices/i-why-update-and-refresh.md)
+built that way. [Chapter 34](34-using-the-principles.md#choosing-between-two-designs-that-both-work)
 compares the two, and says why MVT keeps both.
 
 ### Presentation state is private

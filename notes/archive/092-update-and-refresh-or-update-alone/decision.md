@@ -12,14 +12,14 @@
 **Status:** Decided 2026-11-06: keep `update` and `refresh`. Revised 2026-11-07,
 with the rules that closed the gaps this record found (sections 5 and 7), a
 second independent evaluation (section 9) and the examples in the book's
-Appendix I. Do not reopen without new information (section 11).
+Chapter 34. Do not reopen without new information (section 11).
 
 **Written:** 2026-11-06. The spike ran on `e92f9bce`. The code it cites was read
 that day, and every path below was checked at `d26092a1`. The revision was
 checked at `e0be2b81`. Counts and line-level detail will drift, so check them
 before relying on them.
 
-**Related:** [Appendix I, Why Update and Refresh](../../../packages/sites/docs/appendices/i-why-update-and-refresh.md)
+**Related:** [Chapter 34, "Choosing Between Two Designs That Both Work"](../../../packages/sites/docs/chapters/34-using-the-principles.md#choosing-between-two-designs-that-both-work)
 (the version for the book's readers, with the five examples) · [Chapter 5, The Tick](../../../packages/sites/docs/chapters/05-the-tick.md) ·
 [Chapter 28, Command-Query Separation](../../../packages/sites/docs/chapters/28-command-query-separation.md) ·
 [Appendix A](../../../packages/sites/docs/appendices/a-mvt-on-one-page.md) ·
@@ -502,7 +502,7 @@ Bust's rock, and the reordering lists.
   are the 55 product `onRefresh` uses, such as `drawCave`. There are 126 `.tsx` view
   files and 122 `.ts`, so the "one verb" gain reaches about half of them.
 
-**Five examples and a counterexample.** Appendix I gives the five: early return, JSX
+**Five examples and a counterexample.** Chapter 34 gives the five: early return, JSX
 ordering, a hidden binding, state on the output, and lint. The counterexample, Juice
 Burst, where one step is simpler, is recorded only here. The one-step Juice Burst matched the real view tick for tick over 600 ticks.
 It was faster too, but that's mostly plain TypeScript against JSX, and both are tiny
@@ -593,7 +593,7 @@ cost in section 9 still applies to this repo.
 
 Done with this record:
 
-- [Appendix I, Why Update and Refresh](../../../packages/sites/docs/appendices/i-why-update-and-refresh.md),
+- [Chapter 34, "Choosing Between Two Designs That Both Work"](../../../packages/sites/docs/chapters/34-using-the-principles.md#choosing-between-two-designs-that-both-work),
   the version for readers.
 - The rules in sections 5 and 7, in Appendix A, the chapters that teach them, the
   glossary, `AGENTS.md`, the skills and `llms.txt`.
