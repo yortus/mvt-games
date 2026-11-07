@@ -79,7 +79,11 @@ export interface EntryHost {
      * any session already running, and passes `options` on to the entry.
      */
     start: (starter: EntryStarter, options?: StartOptions) => void;
-    /** Ends the session, and starts a new one of the same entry, with the same options. */
+    /**
+     * Ends the session, and starts a new one of the same entry, with the
+     * same options. A session that restarts itself (`restart`) does so, and
+     * goes on.
+     */
     restart: () => void;
     /**
      * Ends the session. Returns a copy of its last frame's play area, where
@@ -256,7 +260,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
 
         restart() {
             if (starter === undefined) return;
-            host.start(starter, startOptions);
+            if (session?.restart !== undefined) session.restart();
+            else host.start(starter, startOptions);
         },
 
         stop() {

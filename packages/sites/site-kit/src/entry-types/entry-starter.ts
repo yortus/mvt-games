@@ -133,6 +133,13 @@ export interface PixiEntryStarterFields<K extends SoundChoice> {
     /** Whether a desktop host scales by whole numbers only (1x, 2x, 3x...), for crisp pixel art. */
     readonly integerScale?: boolean;
     /**
+     * The colour the host fills the canvas with before the entry draws, as
+     * a number such as `0xf3eee3`. It shows around the play area, where the
+     * play area's shape doesn't match the screen's, so an entry with a light
+     * background of its own names it here. Black by default.
+     */
+    readonly backgroundColor?: number;
+    /**
      * How long to advance the entry before taking its thumbnail. Defaults to
      * one frame. An entry that takes a while to assemble asks for more.
      */
@@ -255,6 +262,21 @@ export interface EntrySession {
      * session plays on as it started.
      */
     readonly loadGame?: (saved: unknown) => boolean;
+    /**
+     * The question the visitor confirms before the pause menu's Restart
+     * takes effect, for an entry where restarting loses something worth keeping,
+     * such as "Clear this puzzle and start it again?". Returns undefined
+     * when nothing would be lost, and Restart takes effect at once, as it
+     * does for an entry without it.
+     */
+    readonly restartQuestion?: () => string | undefined;
+    /**
+     * Starts the entry again in place, for an entry that keeps its own
+     * progress, such as a puzzle that saves every move. A new session of it
+     * would carry on where this one was, so the host calls this instead.
+     * Without it, a restart ends the session and starts a new one.
+     */
+    readonly restart?: () => void;
 }
 
 /**

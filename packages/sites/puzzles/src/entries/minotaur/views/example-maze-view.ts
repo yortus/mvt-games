@@ -29,5 +29,6 @@ export function ExampleMazeView(bindings: ExampleMazeViewBindings): Container {
         clueStateAt: () => 'open',
         isSolved: () => true,
         changes: () => 0,
+        puzzlesOpened: () => 0,
     });
 }

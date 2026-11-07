@@ -303,6 +303,7 @@ function setUp(options: { homeLinks?: readonly HTMLElement[]; livePreview?: Live
         docsHref: '/docs/',
         performance: () => undefined,
         unmeasuredMetrics: () => [],
+        restartQuestion: () => undefined,
         // As loaded, so the panel is built
         perfmon: () => PERFMON,
         homeLinks: options.homeLinks,

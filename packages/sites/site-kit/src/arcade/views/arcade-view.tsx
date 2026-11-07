@@ -101,6 +101,12 @@ export interface ArcadeViewBindings {
     /** The metrics the page can't measure as things stand, such as the GPU's time for an entry not drawn with Pixi. The Perfmon shows them as n/a. */
     readonly unmeasuredMetrics: () => readonly MetricKind[];
     /**
+     * The question the entry playing has the visitor confirm before it
+     * restarts, for an entry where restarting loses something, or undefined
+     * when it restarts at once.
+     */
+    readonly restartQuestion: () => string | undefined;
+    /**
      * The Perfmon's panel, once the page has loaded it. It is undefined until
      * then. The page loads it the first time the Perfmon opens, so its first
      * load holds none of it.
@@ -323,7 +329,11 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                     closeInfo();
                     model.isPaused = false;
                 }}
-                onRestartPressed={model.restart}
+                // An entry that would lose something requests a restart, and the menu shows its question for the visitor to confirm
+                onRestartPressed={() => (bindings.restartQuestion() === undefined ? model.restart() : model.requestRestart())}
+                restartQuestion={() => (model.isRestartRequested ? bindings.restartQuestion() : undefined)}
+                onRestartConfirmed={model.restart}
+                onRestartCancelled={model.cancelRestart}
             />
             <Switch>
                 <Match when={() => bindings.perfmon() !== undefined}>{PerfmonPanelView}</Match>
@@ -550,14 +560,16 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     }
 
     /**
-     * Escape closes the info panel, pauses or resumes the entry playing (a
-     * game or a demo, alike), or leaves one still on its way in. Not while a score
+     * Escape closes the info panel, cancels a restart requested in the
+     * pause menu, pauses or resumes the entry playing (a game or a
+     * demo, alike), or leaves one still on its way in. Not while a score
      * places, while an entry's notice shows, or while a saved game is
      * offered: their views have the keys then.
      */
     function stepBack(e: KeyboardEvent): void {
         if (highscores.placing !== 'none' || model.isNoticeShown || model.isResumeOffered) return;
         if (model.infoEntry !== undefined) closeInfo();
+        else if (model.isRestartRequested) model.cancelRestart();
         else if (model.phase === 'playing') model.isPaused = !model.isPaused;
         else if (model.phase !== 'browsing') model.exit();
         else return;

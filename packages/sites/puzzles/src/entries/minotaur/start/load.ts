@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { createLocalStore, createMemoryStore } from '@mvtjs/site-kit/storage';
-import { toDayNumber } from '../../../shared';
+import { PAPER_COLOR, toDayNumber } from '../../../shared';
 import { createGameModel, type GameModel, playShowcase } from '../models';
 import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
@@ -14,6 +14,8 @@ export const load = definePixiLoader(async () => ({
     soundChip: 'audio90',
     screenWidth: SCREEN_WIDTH,
     screenHeight: SCREEN_HEIGHT,
+    // The paper goes on past the play area, to the screen's edges
+    backgroundColor: PAPER_COLOR,
 
     start({ stage, sfx, isInPage }): EntrySession {
         const model = isInPage === true ? createPlayersModel() : createShowcaseModel();
@@ -31,6 +33,9 @@ export const load = definePixiLoader(async () => ({
                 stage.removeChild(view);
                 view.destroy({ children: true });
             },
+            // The player's marks are kept as they go, so a restart clears the maze open, once the player is sure
+            restartQuestion: () => (model.canRestartPuzzle ? writeRestartQuestion(model.puzzle?.isSolved === true) : undefined),
+            restart: model.restartPuzzle,
         };
     },
 }));
@@ -62,3 +67,8 @@ function createShowcaseModel(): GameModel {
 }
 
 const SHOWCASE_DAY = toDayNumber({ year: 2026, month: 10, day: 30 });
+
+/** The question the player confirms before a restart clears the maze open. */
+function writeRestartQuestion(isSolved: boolean): string {
+    return isSolved ? 'Clear this maze and build it again? It stays ticked off on the calendar.' : 'Clear this maze and start it again?';
+}

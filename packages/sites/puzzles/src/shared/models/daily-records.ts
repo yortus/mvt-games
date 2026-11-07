@@ -24,6 +24,12 @@ export interface DailyRecords<L extends string> {
     readonly readPuzzle: (day: number, level: L) => unknown;
     /** Keeps the puzzle's progress, as plain values, and counts it as started. */
     readonly writePuzzle: (day: number, level: L, save: unknown) => void;
+    /**
+     * Forgets the puzzle's progress, as when the player starts it again, so
+     * it no longer counts as started. A puzzle solved stays solved, and so
+     * still counts as started.
+     */
+    readonly forgetPuzzle: (day: number, level: L) => void;
     /** The level the player chose last, on this visit or one before, if any. */
     readonly chosenLevel: L | undefined;
     readonly rememberLevel: (level: L) => void;
@@ -97,6 +103,16 @@ export function createDailyRecords<L extends string>(options: DailyRecordsOption
             store.writeJson(puzzleKey + toName(day, level), save);
             if (started.has(toKey(day, level))) return;
             started.add(toKey(day, level));
+            writeIndex();
+        },
+        forgetPuzzle(day, level) {
+            store.remove(puzzleKey + toName(day, level));
+            // What was kept under a former name would be read in its place
+            for (const name in formerLevelNames) {
+                if (formerLevelNames[name] === level) store.remove(puzzleKey + toName(day, name));
+            }
+            if (!started.has(toKey(day, level)) || solved.has(toKey(day, level))) return;
+            started.delete(toKey(day, level));
             writeIndex();
         },
         get chosenLevel() { return chosenLevel; },

@@ -49,6 +49,11 @@ export interface RunnerViewBindings {
     readonly onResumePressed?: () => void;
     /** Reported as the pause menu's Restart is pressed. */
     readonly onRestartPressed?: () => void;
+    /** The question for the visitor to confirm in the pause menu, while a restart is requested. */
+    readonly restartQuestion?: () => string | undefined;
+    /** Reported as the question's Restart, or Cancel, is pressed. */
+    readonly onRestartConfirmed?: () => void;
+    readonly onRestartCancelled?: () => void;
     /** Reported with the new volume, from 0 to 1, as the music's slider moves. */
     readonly onMusicVolumeChanged?: (volume: number) => void;
     /** Reported as the music's icon is pressed. */
@@ -218,6 +223,9 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
                 onSfxIconPressed={bindings.onSfxIconPressed}
                 onResumePressed={bindings.onResumePressed}
                 onRestartPressed={bindings.onRestartPressed}
+                restartQuestion={bindings.restartQuestion}
+                onRestartConfirmed={bindings.onRestartConfirmed}
+                onRestartCancelled={bindings.onRestartCancelled}
                 onExitPressed={bindings.onBackPressed}
             />
         </div>

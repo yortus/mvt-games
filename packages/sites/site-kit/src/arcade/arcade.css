@@ -1040,6 +1040,10 @@ button { font: inherit; color: inherit; }
  */
 .pause-page { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; margin: -4px; padding: 4px; }
 
+/* The question to confirm a restart that loses something, in place of the page, with Restart and Cancel under it */
+.pause-question { display: flex; flex-direction: column; gap: 16px; }
+.pause-question-text { margin: 0; font-size: 15px; line-height: 1.4; text-align: center; color: var(--theme-text-strong); }
+
 .pause-sound {
     display: flex;
     flex-direction: column;

@@ -78,7 +78,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     await app.init({
         width: 1,
         height: 1,
-        background: 0x000000,
+        background: DEFAULT_BACKGROUND_COLOR,
         antialias: !isPixelArt,
         roundPixels: isPixelArt,
         // It is not started, because the host's loop steps it once a frame
@@ -187,6 +187,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             starter = next;
             // This applies to the textures the entry makes as it starts, such as text
             TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
+            // The stage outlives each entry, so each entry's colour is set as it starts
+            app.renderer.background.color = next.backgroundColor ?? DEFAULT_BACKGROUND_COLOR;
             const session = startPixiEntry(next, {
                 ...startOptions,
                 stage: entryContainer,
@@ -278,6 +280,9 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** The colour the canvas is filled with before an entry draws, unless the entry names its own. */
+const DEFAULT_BACKGROUND_COLOR = 0x000000;
 
 /** The longest step a frame advances by. */
 const MAX_STEP_MS = 50;

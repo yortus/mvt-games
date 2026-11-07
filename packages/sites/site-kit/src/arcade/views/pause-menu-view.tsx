@@ -21,6 +21,17 @@ export interface PauseMenuViewBindings {
     readonly onResumePressed?: () => void;
     /** Reported as Restart, or R, is pressed. */
     readonly onRestartPressed?: () => void;
+    /**
+     * The question for the visitor to confirm, while a restart is
+     * requested, such as "Clear this puzzle and start it again?". It shows
+     * with Restart and Cancel under it, in place of the menu's choices and
+     * volumes.
+     */
+    readonly restartQuestion?: () => string | undefined;
+    /** Reported as the question's Restart, or R, is pressed. */
+    readonly onRestartConfirmed?: () => void;
+    /** Reported as the question's Cancel is pressed. The page cancels on Escape too, as it resumes on Escape otherwise. */
+    readonly onRestartCancelled?: () => void;
     /** Reported as Exit, or X, is pressed. */
     readonly onExitPressed?: () => void;
     /** Reported with the new volume, from 0 to 1, as the music's slider moves. */
@@ -49,28 +60,46 @@ export interface PauseMenuViewBindings {
  * row, round, so Left then Enter leaves. Up and Down, or W and S, move from
  * the row to each slider, round. Three keys act at once, and each is shown
  * on its button. Escape resumes, R restarts and X leaves.
+ *
+ * An entry where restarting loses something has the visitor confirm the
+ * restart first. Its question shows in place of the choices and volumes,
+ * with Restart and Cancel under it, and Cancel has the focus, so Enter
+ * cancels. R again restarts, and Escape cancels.
  */
 export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
-    // Enter resumes
+    const question = bindings.restartQuestion ?? (() => undefined);
+    const isConfirming = (): boolean => question() !== undefined;
+    // Enter resumes, or, while a restart waits to be confirmed, cancels
     const focusResume = focusOnOpen({
-        isOpen: bindings.isOpen,
+        isOpen: () => bindings.isOpen() && !isConfirming(),
         target: (layer) => layer.querySelector<HTMLElement>('.pause-resume') ?? undefined,
     });
+    const focusCancel = focusOnOpen({
+        isOpen: () => bindings.isOpen() && isConfirming(),
+        target: (layer) => layer.querySelector<HTMLElement>('.pause-cancel') ?? undefined,
+    });
+    const focusOnChange = (layer: Element): void => {
+        focusResume(layer);
+        focusCancel(layer);
+    };
     let panel: HTMLElement | undefined;
+    // The row of choices, and the question's row, which shows in its place
+    let menuRow: HTMLElement | undefined;
+    let questionRow: HTMLElement | undefined;
     window.addEventListener('keydown', onKeyDown);
 
     return (
         // The steps are on a wrapper that is never hidden, so they see the menu close
         <div
             class="pause-layer"
-            onRefresh={focusResume}
+            onRefresh={focusOnChange}
             onDestroyed={() => window.removeEventListener('keydown', onKeyDown)}
         >
             <div class="pause-menu" visible={bindings.isOpen}>
                 <section class="pause-panel" role="dialog" aria-modal="true" aria-labelledby="pause-title" ref={(e) => { panel = e; }}>
                     <h2 id="pause-title" class="pause-title"><PixelTextView text={bindings.heading} /></h2>
-                    <div class="pause-page">
-                        <div class="pause-choices">
+                    <div class="pause-page" visible={() => !isConfirming()}>
+                        <div class="pause-choices" ref={(e) => { menuRow = e; }}>
                             <ChoiceView
                                 label="Resume"
                                 keyText="Esc"
@@ -113,17 +142,37 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
                             />
                         </div>
                     </div>
+                    <div class="pause-question" visible={isConfirming}>
+                        <p class="pause-question-text" text={() => question() ?? ''} />
+                        <div class="pause-choices" ref={(e) => { questionRow = e; }}>
+                            <ChoiceView
+                                label="Restart"
+                                keyText="R"
+                                keyShortcut="R"
+                                className="pause-confirm"
+                                onPressed={() => bindings.onRestartConfirmed?.()}
+                            />
+                            <ChoiceView
+                                label="Cancel"
+                                keyText="Esc"
+                                keyShortcut="Escape"
+                                className="pause-cancel"
+                                onPressed={() => bindings.onRestartCancelled?.()}
+                            />
+                        </div>
+                    </div>
                 </section>
             </div>
         </div>
     );
 
     /**
-     * Handles the menu's keys while it is open. R restarts and X leaves,
-     * wherever the focus is. Left and Right move along the row of choices,
-     * round, but not on a slider, which they move. Up and Down move from the
-     * row to each slider, round, and back to the row at Resume. Enter and
-     * Space press the focused button, as they always do.
+     * Handles the menu's keys while it is open. R restarts, or while a
+     * restart waits to be confirmed, confirms it, and X leaves, wherever the focus is. Left
+     * and Right move along the row of choices, round, but not on a slider,
+     * which they move. Up and Down move from the row to each slider, round,
+     * and back to the row at Resume. Enter and Space press the focused
+     * button, as they always do.
      */
     function onKeyDown(e: KeyboardEvent): void {
         if (!bindings.isOpen() || panel === undefined || e.ctrlKey || e.metaKey || e.altKey) return;
@@ -132,11 +181,13 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
             e.preventDefault();
             // Held down, a key repeats. One press is one restart.
             if (e.repeat) return;
-            if (shortcut === 'restart') bindings.onRestartPressed?.();
-            else bindings.onExitPressed?.();
+            if (shortcut === 'exit') bindings.onExitPressed?.();
+            else if (isConfirming()) bindings.onRestartConfirmed?.();
+            else bindings.onRestartPressed?.();
             return;
         }
-        const choices = [...panel.querySelectorAll<HTMLElement>('.pause-choices button')];
+        const row = isConfirming() ? questionRow : menuRow;
+        const choices = row === undefined ? [] : [...row.querySelectorAll<HTMLElement>('button')];
         const sliders = [...panel.querySelectorAll<HTMLElement>('.pause-sound input')];
         if (choices.length === 0) return;
         const focused = document.activeElement;
@@ -148,7 +199,8 @@ export function PauseMenuView(bindings: PauseMenuViewBindings): Element {
             e.preventDefault();
             return;
         }
-        const step = toMenuStep(e.key);
+        // The question has no sliders to move to
+        const step = isConfirming() ? 0 : toMenuStep(e.key);
         if (step === 0) return;
         // The stops, top to bottom: the row of choices, then each slider
         const stops = sliders.length + 1;

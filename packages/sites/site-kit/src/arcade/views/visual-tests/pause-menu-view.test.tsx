@@ -17,6 +17,14 @@ htmlTest('open', { viewport: { width: 480, height: 420 }, width: 480, height: 42
 
 htmlTest('open on a phone, with the music off', { viewport: { width: 360, height: 420 }, width: 360, height: 420 }, () => open(0));
 
+htmlTest('confirming a restart', { viewport: { width: 480, height: 420 }, width: 480, height: 420 }, () => PauseMenuView({
+    isOpen: () => true,
+    heading: () => 'GAME PAUSED',
+    musicVolume: () => 0.7,
+    sfxVolume: () => 0.5,
+    restartQuestion: () => 'Clear this maze and start it again?',
+}));
+
 htmlTest('open, in the Dark theme', { viewport: { width: 480, height: 420 }, width: 480, height: 420 }, () => {
     wearTheme('dark');
     return open(0.7);

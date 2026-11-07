@@ -136,6 +136,17 @@ export interface ArcadeModel {
     readonly launch: (id: string, options?: LaunchOptions) => void;
     /** Starts the entry started again, from the beginning. */
     readonly restart: () => void;
+    /**
+     * Whether a restart has been requested, and waits for the visitor to
+     * confirm it in the pause menu, for an entry where restarting loses
+     * something. Only a paused entry can have one. Resuming, restarting or
+     * leaving withdraws it.
+     */
+    readonly isRestartRequested: boolean;
+    /** Requests a restart, for the visitor to confirm or cancel. Does nothing unless the entry is paused. */
+    readonly requestRestart: () => void;
+    /** Withdraws the request, and leaves the entry paused. */
+    readonly cancelRestart: () => void;
     /** Leaves the entry, whether it is loading or running, and goes back to the wall. */
     readonly exit: () => void;
     /** Forgets the last launch's failure. */
@@ -361,6 +372,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     let loadFailure: string | undefined;
     let isPaused = false;
     let restartCount = 0;
+    let isRestartRequested = false;
     let isResumeOffered = false;
     let isNoticeShown = false;
     let hiddenNoticeIds: readonly string[] = (options.hiddenNoticeIds ?? []).filter((id, i, ids) => ids.indexOf(id) === i && indexById.has(id));
@@ -463,6 +475,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         set isPaused(value) {
             isPaused = isEntryStarted() && highscores.placing === 'none' && !isNoticeShown && !isResumeOffered && value;
+            if (!isPaused) isRestartRequested = false;
         },
         get isEntryFrozen() {
             return phase === 'revealing' || isPaused || isNoticeShown || isResumeOffered || highscores.placing !== 'none';
@@ -546,9 +559,19 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         restart() {
             if (!isEntryStarted()) return;
             isPaused = false;
+            isRestartRequested = false;
             isResumeOffered = false;
             highscores.close();
             restartCount++;
+        },
+        get isRestartRequested() {
+            return isRestartRequested;
+        },
+        requestRestart() {
+            if (isPaused) isRestartRequested = true;
+        },
+        cancelRestart() {
+            isRestartRequested = false;
         },
         exit() {
             if (phase === 'browsing') return;
@@ -557,6 +580,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             enter('browsing');
             starter = undefined;
             isPaused = false;
+            isRestartRequested = false;
             isNoticeShown = false;
             isResumeOffered = false;
             highscores.close();

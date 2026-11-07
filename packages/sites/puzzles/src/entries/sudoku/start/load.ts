@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { createLocalStore, createMemoryStore } from '@mvtjs/site-kit/storage';
-import { toDayNumber } from '../../../shared';
+import { PAPER_COLOR, toDayNumber } from '../../../shared';
 import { loadSudokuGenerator, type SudokuGenerator } from '../generator';
 import { createGameModel, playShowcase, type GameModel } from '../models';
 import { SCREEN_HEIGHT, SCREEN_WIDTH, GameView } from '../views';
@@ -17,6 +17,8 @@ export const load = definePixiLoader(async () => {
         soundChip: 'audio90',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        // The paper goes on past the play area, to the screen's edges
+        backgroundColor: PAPER_COLOR,
 
         start({ stage, sfx, isInPage }): EntrySession {
             const model = isInPage === true ? createPlayersModel(generate) : createShowcaseModel(generate);
@@ -34,6 +36,9 @@ export const load = definePixiLoader(async () => {
                     stage.removeChild(view);
                     view.destroy({ children: true });
                 },
+                // The player's answers and notes are kept as they go, so a restart clears the puzzle open, once the player is sure
+                restartQuestion: () => (model.canRestartPuzzle ? writeRestartQuestion(model.puzzle?.isSolved === true) : undefined),
+                restart: model.restartPuzzle,
             };
         },
     };
@@ -66,3 +71,8 @@ function createShowcaseModel(generate: SudokuGenerator): GameModel {
 }
 
 const SHOWCASE_DAY = toDayNumber({ year: 2026, month: 10, day: 30 });
+
+/** The question the player confirms before a restart clears the puzzle open. */
+function writeRestartQuestion(isSolved: boolean): string {
+    return isSolved ? 'Clear this puzzle and solve it again? It stays ticked off on the calendar.' : 'Clear this puzzle and start it again?';
+}

@@ -91,6 +91,41 @@ describe('GameModel', () => {
         expect(next.puzzlesSolved).toBe(0);
     });
 
+    it('starts a puzzle again, kept cleared and no longer started, but still ticked off if it was solved, and not the practice puzzle', () => {
+        const store = createMemoryStore();
+        const model = createGameModel({ today: TODAY, store, generate, offersIntro: false });
+        expect(model.canRestartPuzzle).toBe(false);
+        model.openPuzzle(TODAY - 3);
+        const givens = listDigits(model.puzzle);
+        solve(model);
+        model.update(16);
+        const opened = model.puzzlesOpened;
+        model.restartPuzzle();
+        expect(listDigits(model.puzzle)).toBe(givens);
+        expect(model.puzzle?.isSolved).toBe(false);
+        expect(model.puzzle?.undoCount).toBe(0);
+        expect(model.puzzlesOpened).toBe(opened + 1);
+        expect(model.calendar.isSolved(TODAY - 3)).toBe(true);
+        // One not solved, started again and left, is no longer started
+        model.closePuzzle();
+        model.openPuzzle(TODAY - 4);
+        const puzzle = openedPuzzle(model.puzzle);
+        puzzle.select([findEmptyCell(puzzle)]);
+        puzzle.toggleNote(4);
+        model.update(16);
+        model.restartPuzzle();
+        model.closePuzzle();
+        expect(model.calendar.isStarted(TODAY - 4)).toBe(false);
+
+        const next = createGameModel({ today: TODAY, store, generate, offersIntro: false });
+        expect(next.calendar.isStarted(TODAY - 4)).toBe(false);
+        next.openPuzzle(TODAY - 3);
+        expect(listDigits(next.puzzle)).toBe(givens);
+        next.intro.showCard();
+        next.intro.startWalkthrough();
+        expect(next.canRestartPuzzle).toBe(false);
+    });
+
     it('keeps a puzzle\'s progress at the puzzle\'s own level, whatever level the calendar comes to show', () => {
         const store = createMemoryStore();
         const model = createGameModel({ today: TODAY, store, generate, offersIntro: false });

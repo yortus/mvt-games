@@ -17,6 +17,21 @@ describe('DailyRecords', () => {
         expect(records.readPuzzle(TODAY - 1, 'easy')).toEqual({ marks: '012' });
     });
 
+    it('forgets a puzzle\'s progress, so it is no longer started, unless it is solved', () => {
+        const store = createMemoryStore();
+        const records = createDailyRecords({ store, gameId: 'test', levels: LEVELS });
+        records.writePuzzle(TODAY - 1, 'easy', { marks: '012' });
+        records.writePuzzle(TODAY, 'easy', { marks: '345' });
+        records.markSolved(TODAY, 'easy');
+        records.forgetPuzzle(TODAY - 1, 'easy');
+        records.forgetPuzzle(TODAY, 'easy');
+        expect(records.readPuzzle(TODAY - 1, 'easy')).toBeUndefined();
+        expect(records.readPuzzle(TODAY, 'easy')).toBeUndefined();
+        expect(records.isStarted(TODAY - 1, 'easy')).toBe(false);
+        expect(records.isStarted(TODAY, 'easy')).toBe(true);
+        expect(store.readJson('mvt-arcade:test:records')).toEqual({ solved: ['2026-10-30/easy'], started: ['2026-10-30/easy'] });
+    });
+
     it('skips names it cannot read, as an older version might have left', () => {
         const store = createMemoryStore();
         store.writeJson('mvt-arcade:test:records', { solved: ['2026-10-30/hardest', 'yesterday', 3, '2026-10-29/fiendish'], started: 'all' });
@@ -55,5 +70,15 @@ describe('DailyRecords, with a level renamed', () => {
         expect(store.readJson('mvt-arcade:test:records')).toEqual({
             solved: ['2026-10-30/expert', '2026-10-29/expert'], started: ['2026-10-29/expert', '2026-10-30/expert'],
         });
+    });
+
+    it('forgets what was kept under the level\'s former name too, so it is not read in its place', () => {
+        const store = createMemoryStore();
+        store.writeJson('mvt-arcade:test:records', { solved: [], started: ['2026-10-29/hardest'] });
+        store.writeJson('mvt-arcade:test:puzzle:2026-10-29/hardest', { marks: '012' });
+        const records = createDailyRecords({ store, gameId: 'test', levels: ['easy', 'expert'], formerLevelNames: { hardest: 'expert' } });
+        records.forgetPuzzle(TODAY - 1, 'expert');
+        expect(records.readPuzzle(TODAY - 1, 'expert')).toBeUndefined();
+        expect(records.isStarted(TODAY - 1, 'expert')).toBe(false);
     });
 });

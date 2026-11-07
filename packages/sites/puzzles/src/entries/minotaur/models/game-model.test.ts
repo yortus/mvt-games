@@ -86,6 +86,41 @@ describe('GameModel', () => {
         expect([model.phase, model.intro.phase]).toEqual(['calendar', 'hidden']);
     });
 
+    it('starts a puzzle again, kept cleared and no longer started, but still ticked off if it was solved, and not the practice maze', () => {
+        const store = createMemoryStore();
+        const model = createModel(store);
+        expect(model.canRestartPuzzle).toBe(false);
+        model.openPuzzle(TODAY - 2);
+        solve(model);
+        model.update(16);
+        const solved = model.puzzle;
+        const opened = model.puzzlesOpened;
+        model.restartPuzzle();
+        expect(model.puzzle).not.toBe(solved);
+        expect(model.puzzle?.maze).toBe(solved?.maze);
+        expect(model.puzzle?.isSolved).toBe(false);
+        expect(model.puzzle?.undoCount).toBe(0);
+        expect(model.puzzlesOpened).toBe(opened + 1);
+        expect(model.calendar.isSolved(TODAY - 2)).toBe(true);
+        // One not solved, started again and left, is no longer started
+        model.closePuzzle();
+        model.openPuzzle(TODAY - 3);
+        model.puzzle!.mark(0, 'wall');
+        model.update(16);
+        model.restartPuzzle();
+        model.closePuzzle();
+        expect(model.calendar.isStarted(TODAY - 3)).toBe(false);
+
+        const next = createModel(store);
+        expect(next.calendar.isStarted(TODAY - 3)).toBe(false);
+        next.openPuzzle(TODAY - 2);
+        const { edgeCount } = next.puzzle!.maze.grid;
+        expect(Array.from({ length: edgeCount }, (_, edge) => next.puzzle!.markAt(edge)).every((mark) => mark === 'unknown')).toBe(true);
+        next.intro.showCard();
+        next.intro.startWalkthrough();
+        expect(next.canRestartPuzzle).toBe(false);
+    });
+
     it('walks through drawing on a practice maze, which gives way to the puzzle open as it ends, and is never kept', () => {
         const model = createModel();
         model.openPuzzle(TODAY);

@@ -432,8 +432,10 @@ them, for a game that needs one, such as Astrovoid's Thrust.
 
 The starter's other options say how the host should show the entry:
 `pixelArt` (nearest-neighbour textures, no antialiasing), `integerScale`
-(scale by whole numbers only, for crisp pixels), `fitTo` (for an entry that
-lays itself out for the area it is given, as Boids does), and
+(scale by whole numbers only, for crisp pixels), `backgroundColor` (the
+colour around the play area, where its shape doesn't match the screen's,
+black unless you name one, as the puzzles do for their paper), `fitTo` (for
+an entry that lays itself out for the area it is given, as Boids does), and
 `thumbnailAdvanceMs` (how far to run the entry before taking its thumbnail).
 
 ### Sound
@@ -808,6 +810,31 @@ game's start, so it saves nothing. Astrovoid is the simplest example. Its
 Fenceline also saves the state of its random numbers as the round began, so
 a resumed round is laid out as it was, and leaving cannot deal a new one.
 
+### Restarting a Game That Keeps Its Own Progress
+
+The pause menu's Restart normally ends the session and starts a new one.
+That doesn't work for a game that keeps its own progress, such as a puzzle
+that saves every move: the new session would carry on where the old one
+was. Such a game gives `restart`, and the host calls it instead of
+starting a new session.
+
+A restart that throws away the player's work should have the player
+confirm it first. Give `restartQuestion`, which returns the question the
+pause menu shows, with Restart and Cancel under it. It returns undefined when there is nothing to
+lose, and then Restart takes effect at once:
+
+```ts
+return {
+    // update and destroy, as before
+    restartQuestion: () => (model.canRestartPuzzle ? 'Clear this puzzle and start it again?' : undefined),
+    restart: model.restartPuzzle,
+};
+```
+
+Any game can give `restartQuestion`, with or without `restart`. A long
+game with no saves, where a stray R would cost the player an hour, is a
+good place for it.
+
 ## A Puzzle's Day and Its Way In
 
 Every game on the puzzles site has a puzzle for each day, at each of its
@@ -851,6 +878,16 @@ game's `puzzle` is the practice puzzle, and it is never kept. Its `phase`
 is `playing` then, even for a walkthrough started from the calendar, so
 the walkthrough plays on the puzzle's screen. As it ends, the player is
 back where they started.
+
+**Restarting.** A puzzle keeps every move, so it restarts itself (see
+[Restarting a Game That Keeps Its Own Progress](#restarting-a-game-that-keeps-its-own-progress)).
+Give the game model a `restartPuzzle` action that clears the open puzzle
+and forgets its progress with the records' `forgetPuzzle`, so the calendar
+no longer shows it started. Give it `canRestartPuzzle` too, which says
+whether one of the calendar's puzzles is open. The practice puzzle isn't
+one. A puzzle solved already stays ticked off on the calendar. The player
+confirms before the open puzzle is cleared, and on the calendar, Restart
+does nothing.
 
 **The screen.** Put a **How to play** button beside Undo, which shows the
 card. Then put `IntroView` last in the game's whole screen, over the

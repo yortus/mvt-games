@@ -29,6 +29,8 @@ export interface BoardViewBindings {
     isSolved: () => boolean;
     /** A count that rises with every change to the marks, so the board is redrawn only as they change. */
     changes: () => number;
+    /** A count that rises as each puzzle opens, so a fresh copy of the same maze, started again, is redrawn too. */
+    puzzlesOpened: () => number;
     /** The player began a stroke, marked an edge in it, and finished it. Without them, the board takes no input. */
     onStrokeStarted?: () => void;
     onEdgeMarked?: (edge: number, mark: EdgeMark) => void;
@@ -61,7 +63,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
         view.eventMode = 'static';
         view.cursor = 'crosshair';
     }
-    const watcher = watch({ changes: bindings.changes, isSolved: bindings.isSolved });
+    const watcher = watch({ changes: bindings.changes, isSolved: bindings.isSolved, opened: bindings.puzzlesOpened });
 
     // The maze shown, and what was built for it
     let maze: MazePuzzle | undefined;
@@ -101,7 +103,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
         const next = bindings.maze();
         if (next !== maze) build(next);
         const w = watcher.poll();
-        if (w.changes.changed || w.isSolved.changed) drawMarks();
+        if (w.changes.changed || w.isSolved.changed || w.opened.changed) drawMarks();
         glow.alpha = isShowingSolved ? GLOW_ALPHA * Math.min(1, glowMs / GLOW_MS) : 0;
     }
 

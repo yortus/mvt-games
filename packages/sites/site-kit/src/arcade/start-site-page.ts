@@ -200,6 +200,7 @@ export function startSitePage(site: SiteConfig): void {
         performance: () => meter,
         perfmon: () => perfmon,
         unmeasuredMetrics,
+        restartQuestion: () => host.session?.restartQuestion?.(),
         playRectFor: (entry, starter) => host.playRectFor({
             screenWidth: entry.screenWidth,
             screenHeight: entry.screenHeight,

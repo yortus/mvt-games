@@ -120,11 +120,19 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
         return !isSolved() && puzzle().selection.length === 1;
     }
 
-    /** What holding a digit's key does: fills the cell selected with it, or clears the cell if the digit is there already. */
+    /**
+     * What holding a digit's key does: fills the cell selected with it, and
+     * lets the cell go, since it's done with, or clears the cell if the digit
+     * is there already, and keeps it selected, for notes.
+     */
     function fillOrClear(digit: number): void {
         const cell = puzzle().selection[0];
-        if (puzzle().digitAt(cell) === digit) puzzle().clearCell(cell);
-        else puzzle().fillCell(cell, digit);
+        if (puzzle().digitAt(cell) === digit) {
+            puzzle().clearCell(cell);
+            return;
+        }
+        puzzle().fillCell(cell, digit);
+        puzzle().select([]);
     }
 }
 

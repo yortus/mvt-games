@@ -67,6 +67,7 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
                     clueStateAt={(line) => puzzle().clueStateAt(line)}
                     isSolved={isSolved}
                     changes={() => puzzle().changes}
+                    puzzlesOpened={() => model.puzzlesOpened}
                     onStrokeStarted={() => puzzle().startStroke()}
                     onEdgeMarked={(edge, mark) => puzzle().mark(edge, mark)}
                     onStrokeFinished={() => puzzle().finishStroke()}

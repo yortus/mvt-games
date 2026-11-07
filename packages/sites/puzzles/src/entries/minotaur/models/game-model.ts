@@ -44,11 +44,20 @@ export interface GameModel {
     /** Puzzles opened, and solved, on this visit. */
     readonly puzzlesOpened: number;
     readonly puzzlesSolved: number;
+    /** Whether there is a puzzle to start again: one of the calendar's, open, and not the walkthrough's practice puzzle. */
+    readonly canRestartPuzzle: boolean;
 
     /** Opens `day`'s puzzle at the calendar's level, as it was left, if the day has one. */
     openPuzzle: (day: number) => void;
     /** Puts the way in away, keeps the puzzle's progress, and goes back to the calendar. */
     closePuzzle: () => void;
+    /**
+     * Starts the open puzzle again, with nothing in it, and forgets its
+     * progress, so it no longer counts as started until the next move. Its
+     * undo history goes too. A puzzle solved already stays ticked off on the
+     * calendar. Does nothing unless `canRestartPuzzle`.
+     */
+    restartPuzzle: () => void;
     /** Keeps the puzzle's progress now, if it changed since it was last kept, and ticks it off once it is solved. */
     keepProgress: () => void;
     update: (deltaMs: number) => void;
@@ -97,6 +106,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get puzzleLevel() { return puzzleLevel; },
         get puzzlesOpened() { return puzzlesOpened; },
         get puzzlesSolved() { return puzzlesSolved; },
+        get canRestartPuzzle() { return phase === 'playing' && puzzle !== undefined && intro.practice === undefined; },
         openPuzzle(day) {
             if (phase !== 'calendar' || !calendar.isPlayable(day)) return;
             puzzleDay = day;
@@ -114,6 +124,15 @@ export function createGameModel(options: GameModelOptions): GameModel {
             model.keepProgress();
             puzzle = undefined;
             phase = 'calendar';
+        },
+        restartPuzzle() {
+            if (puzzle === undefined || !model.canRestartPuzzle) return;
+            // A fresh copy of the same maze counts as opened, so the views draw it afresh
+            puzzle = createPuzzleModel({ maze: puzzle.maze });
+            // Nothing is kept until the player's next move, so the calendar no longer shows it started
+            records.forgetPuzzle(puzzleDay, puzzleLevel);
+            keptChanges = puzzle.changes;
+            puzzlesOpened++;
         },
         keepProgress() {
             if (puzzle === undefined || puzzle.changes === keptChanges) return;

@@ -353,6 +353,31 @@ describe('ArcadeModel', () => {
             expect(model.phase).toBe('browsing');
         });
 
+        it('takes a restart request only while paused, and withdraws it as the entry resumes, restarts or is left', async () => {
+            const model = createArcadeModel(options());
+            await play(model, 'maze-game');
+            model.requestRestart();
+            expect(model.isRestartRequested).toBe(false);
+            model.isPaused = true;
+            model.requestRestart();
+            expect(model.isRestartRequested).toBe(true);
+            model.cancelRestart();
+            expect(model.isRestartRequested).toBe(false);
+            expect(model.isPaused).toBe(true);
+            model.requestRestart();
+            model.isPaused = false;
+            expect(model.isRestartRequested).toBe(false);
+            model.isPaused = true;
+            model.requestRestart();
+            model.restart();
+            expect(model.isRestartRequested).toBe(false);
+            expect(model.restartCount).toBe(1);
+            model.isPaused = true;
+            model.requestRestart();
+            model.exit();
+            expect(model.isRestartRequested).toBe(false);
+        });
+
         it('closes the info panels on launch', () => {
             const model = createArcadeModel(options());
             model.openInfo('sim-demo');
