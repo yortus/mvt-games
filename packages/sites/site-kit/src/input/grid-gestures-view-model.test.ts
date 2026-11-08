@@ -45,7 +45,7 @@ describe('GridGesturesViewModel', () => {
         expect(fourWay.events).toEqual(['step 0-1', 'step 1-2', 'finish']);
     });
 
-    it('follows corners from a press nearer a corner than a cell\'s middle, when told to find the nearest', () => {
+    it('follows corners from a press nearer a corner than a cell\'s middle, when set to find the nearest', () => {
         const grid = createGrid({ lattice: 'nearest' });
         const corner = (row: number, col: number): number => row * (COLS + 1) + col;
         // Down the line between the first two columns, then along the line below the second row

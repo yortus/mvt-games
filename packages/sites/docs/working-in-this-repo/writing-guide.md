@@ -136,17 +136,18 @@ on its own.
 
 ### Say it literally
 
-- **Use the verbs that describe code.** Code calls, passes, returns,
-  reads, writes, stores, checks and requires. It doesn't give, hand,
-  promise, ask, want, know, trust, care or agree. Those verbs make code
-  sound like a person, and they hide what really happens: a reader can't
-  tell whether "the loop gives it the time" means an argument, a return
-  value or a field. This includes idioms that are common in software
-  writing, such as "knows about" and "is aware of": a model doesn't know
-  about views, it doesn't reference them, or doesn't import them.
-  People can still want and know things: the player, the reader and you.
-  A function still takes parameters, since that's the standard term, but
-  it doesn't "take the keys".
+- **Use the verbs that describe code.** Code calls, passes, receives,
+  returns, reads, writes, stores, checks, notifies and requires. It doesn't
+  give, take, hand, tell, promise, ask, want, know, trust, care or agree.
+  Those verbs make code sound like a person, and they hide what really
+  happens: a reader can't tell whether "the loop gives it the time" means
+  an argument, a return value or a field. This includes idioms that are
+  common in software writing, such as "knows about" and "is aware of": a
+  model doesn't know about views, it doesn't reference them, or doesn't
+  import them. People can still want, know and tell things: the player,
+  the reader and you. A function still takes parameters, since that's the
+  standard term, but it doesn't "take the keys", and a model is notified
+  of a change, not told of it.
 - **Say "guarantees" or "requires", not "promises".** Design by Contract's
   words are exact, and a "promise" in a TypeScript book reads as a
   `Promise`.
@@ -162,6 +163,7 @@ on its own.
 | a model must give the same game at any step | a model must produce the same results at any step size |
 | the time the game loop gives it | the `deltaMs` that the ticker passes to `update` |
 | It knows nothing about how it's shown. | It doesn't reference any view. |
+| where a model must be told of a release | where a model must be notified of a release |
 | That's part of what `update(deltaMs)` promises. | `update(deltaMs)` guarantees it. |
 
 ### Use the plainest grammar

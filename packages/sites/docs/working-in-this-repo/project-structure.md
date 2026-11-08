@@ -76,7 +76,7 @@ laid out by area. A site imports each folder by its package name, as
 packages/sites/site-kit/src/
 ├── arcade/              The page each site runs, in HTML JSX: model, views, its own sounds, its styles, and the page's loop (start-site-page.ts)
 ├── device/              What the visitor's device supports, such as touch
-├── input/               Input that doesn't need a renderer: the keyboard, for the entry host and the Pixi stage, and taps and drags over a grid
+├── input/               Input that doesn't need a renderer: the arcade controls the entry host creates for a game, the keyboard, and taps and drags over a grid
 │   └── pixi/            Input on a Pixi stage: a pointer followed over a container, and the touch, swipe and drag views
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/

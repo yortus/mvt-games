@@ -2,7 +2,7 @@
 
 > 094 split drags on a grid into three layers: following a pointer,
 > recognising a gesture, and saying what it means. This proposal surveys
-> every other way the sites take input, the keyboard and the arcade's touch
+> every other way the sites receive input, the keyboard and the arcade's touch
 > controls included, and extends the same split to all of it. The arcade
 > games get one set of arcade controls, with their keys in a table that can change, and
 > their wiring moves into each game's top-level view beside its gestures.
@@ -11,7 +11,11 @@
 > renderer-specific pieces in a subpath named for the renderer.
 
 **Status:** being implemented, a step at a time (section 11). Step 1, the
-site kit's layout, is done.
+site kit's layout, is done. Step 2, the arcade controls on `listenToKeys`,
+is done, and found one more bug: `listenToKeys` released a hold as soon as
+one of its keys came up, though another of its keys was still down (←
+and A, in Penrose Tiling and Fractalscope, and the arcade's keys). It now
+counts the keys down for each hold.
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
 from a survey of every entry and the site kit. Line numbers are from that
@@ -92,9 +96,9 @@ field, slider or button, releases every hold when the window loses focus,
 and calls `preventDefault` only for the keys it uses. `listenToKeyboard`
 does none of these (section 2.4).
 
-The host's element-entry path is dead code. No element entry gives an
+The host's element-entry path is dead code. No element entry's session has an
 `inputConfig`, so the entry host's `listenToKeyboard` never reports. But it
-is installed whenever an entry takes input, so a Pixi game has two listeners
+is installed whenever an entry accepts input, so a Pixi game has two listeners
 on `window`, one of them always inactive.
 
 ### 2.2 The arcade games' wiring
@@ -117,7 +121,7 @@ two files, and the starter half is not in a view at all, though the book
 | Galaxy Raiders | X → `direction`; Space → `fire()` | Drag → `targetX`; auto-fire while touching |
 | Garden Snake | X and Y → `direction`, ignoring `'none'` (as Crumb Chase) | Swipes |
 | Kwazy Cactii | Restart only | 094's grid gestures |
-| Neon Monsoon | X → `headingX`, Y → `headingY`; Space → `dropBomb()`; Shift held → `isFocusing`, let go → `releaseVolley()` | Drag, with a gain |
+| Neon Monsoon | X → `headingX`, Y → `headingY`; Space held → `isFocusing`, let go → `releaseVolley()`; Shift → `dropBomb()` (swapped on 2026-11-08: Space was Bomb, so a player pressing Space by habit wasted a bomb) | Drag, with a gain |
 
 Every game also has the same Restart line,
 `onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); }`,
@@ -129,7 +133,7 @@ Patterns that repeat:
 
 - **Press once:** `if (isDown) model.fire()` in six places.
 - **Two controls holding one thing:** Astrovoid (Up and Shift → thrust) and
-  Deep Dive (Space and Up → rise). Letting go of one lets go of the thing,
+  Deep Dive (Space and Up → rise). Letting go of one releases the thing,
   though the other is still held.
 - **Two axes making one way:** Burrow Bust and Fenceline, written twice,
   differently, and `listenToKeyboard` has a third version for one axis.
@@ -155,14 +159,14 @@ Beyond 094's three entries and the shared drag and swipe views:
 
 | Gesture | Where | Follows one pointer? | Cancel? | Moves off the object? |
 | --- | --- | --- | --- | --- |
-| Slider drag | Boids `SliderView` | No: a second finger takes over | No | No: `pointermove` on a 22-pixel strip |
+| Slider drag | Boids `SliderView` | No: a second finger replaces the first | No | No: `pointermove` on a 22-pixel strip |
 | Paint stroke, double tap | Coral `DemoView` | No: a second finger paints too | No | Full-screen sprite |
 | Pour stroke, hover | Falling Sand `TankView` | No: any pointer steers the pour | Yes | Yes |
 | Joystick | `TouchInputView` | Yes | Yes | No: `pointermove` on its area |
 | D-pad | `TouchInputView` | Yes | Yes | Yes |
-| Held buttons | `TouchInputView` | No: the first lift lets go | Yes | n/a |
-| Press and hold | Sudoku `KeypadView` | No: a second key takes over | Yes | n/a |
-| Cabinet turn | Fruit Machine `BanditView` (DOM) | No: a second finger takes over | Yes | Pointer capture |
+| Held buttons | `TouchInputView` | No: the first lift releases every button | Yes | n/a |
+| Press and hold | Sudoku `KeypadView` | No: a second key replaces the first | Yes | n/a |
+| Cabinet turn | Fruit Machine `BanditView` (DOM) | No: a second finger replaces the first | Yes | Pointer capture |
 | Panel drag | `PerfmonFloatView` (DOM) | Yes | Yes | Pointer capture |
 | Pan, pinch, twist, wheel, taps | Penrose `gesture-tracker.ts` (DOM, 275 lines) | Two fingers | Yes | Pointer capture |
 | Pan, pinch, wheel, double tap | Fractalscope `pinch-tracker.ts` (DOM, 261 lines) | Two fingers | Yes | Pointer capture |
@@ -201,11 +205,11 @@ Read from the code. The ones marked *inferred* were not reproduced.
    `blur` listener. Switch tabs while holding a key, and the ship keeps
    turning until the next key event.
 3. **`preventDefault` on every key**, used or not, but Enter and Shift.
-4. **Two controls holding one thing let go together** (section 2.2).
+4. **Two controls holding one thing are released together** (section 2.2).
 5. **A pause can release Neon Monsoon's volley** *(inferred)*. A key pressed
-   while paused releases every held key, so Shift held into a pause sends
+   while paused releases every held key, so Focus held into a pause sends
    `releaseVolley()`, which the model applies on resuming.
-6. **A second finger takes over** the Boids slider, Coral's painting, Falling
+6. **A second finger replaces the first** in the Boids slider, Coral's painting, Falling
    Sand's pour, Sudoku's keypad, the touch buttons and the Fruit Machine's
    cabinet.
 7. **A cancelled touch leaves a drag or a hold** in the Boids slider, Coral,
@@ -215,9 +219,9 @@ Read from the code. The ones marked *inferred* were not reproduced.
 9. **Allocations on every move:** the Boids slider, Coral, `TouchInputView`
    (`getLocalPosition` with no point to fill).
 10. **Coral's double tap counts the start of a drag** as a tap.
-11. **Burrow Bust's "LEVEL CLEAR!" overlay takes a tap and does nothing**
+11. **Burrow Bust's "LEVEL CLEAR!" overlay accepts a tap and does nothing**
     *(inferred)*: its model restarts only after game over.
-12. **Stopping `listenToKeys` reports during a frame.** Its stop lets go of
+12. **Stopping `listenToKeys` reports during a frame.** Its stop releases
     every hold at once (`listen-to-keys.ts:49`), which calls `onHeldChanged`.
     Penrose Tiling and Fractalscope stop it as their top-level views are
     destroyed (`onDestroyed={stopListening}`), and their `onHeldChanged`
@@ -230,14 +234,14 @@ Read from the code. The ones marked *inferred* were not reproduced.
 ## 3. Principles
 
 - **Report, recognise, mean**, as in section 1.
-- **The top-level view says what every control means**, keys, touch controls
+- **The top-level view defines what every control means**, keys, touch controls
   and gestures alike, in one place.
 - **One shared helper for each kind of gesture**, with no renderer where it
   can manage without one, and one way to follow a pointer for each renderer.
 - **A helper follows one pointer, handles a cancel and a lost focus, and
   allocates nothing per move.** These are the bugs that recur, so they are
   fixed once, in the helper.
-- **Every relay fires between frames.** A report reaches a model only from
+- **Every relay fires between frames.** A relay is called only from
   an event the browser delivers, or from a microtask for something noticed
   during a tick ([B-outside](../../packages/sites/docs/appendices/a-mvt-on-one-page.md#binding-rules),
   [Chapter 8](../../packages/sites/docs/chapters/08-bindings.md#relay-bindings-and-input-handling)).
@@ -269,7 +273,7 @@ These happen inside the frame, so nothing reports from them:
 - **Making or destroying a view.** A refresh can do either: a `<Show>` or a
   `<List>` making a child, or a view rebuilding its display objects. So a
   helper reports nothing as it starts listening. As it stops, it reports
-  nothing, or, where a model must hear a let go, reports it from a
+  nothing, or, where a model must be notified of a release, reports it from a
   microtask.
 - **An event that our own code causes,** such as `.focus()` in a refresh
   (the page's menus do this), or `releasePointerCapture`.
@@ -282,17 +286,17 @@ These happen inside the frame, so nothing reports from them:
   `advanceTime` does (`advance-time.ts:46`).
 
 Each helper that can be stopped or ticked has a test that does so and checks
-that nothing reaches its relays until a microtask has run
+that none of its relays is called until a microtask has run
 (`await Promise.resolve()`), as Sudoku's keypad tests do now.
 
 ## 4. The arcade controls
 
 ### 4.1 Keep the arcade controls
 
-The host gives every arcade game a set of arcade controls: a d-pad, two
+The host passes every arcade game a set of arcade controls: a d-pad, two
 buttons and Restart, like the stick and buttons on an arcade cabinet. They
 are virtual. The keyboard and the host's on-screen d-pad and buttons both
-report to them, and a game says what each control means. This is a good
+report to them, and a game defines what each control means. This is a good
 split, and it is the one a player knows from a cabinet or a console: keys
 to controls belong to the host (and one day the visitor, and a gamepad),
 and controls to meanings belong to the game. A game that needs more keys
@@ -302,7 +306,7 @@ Penrose Tiling does.
 The alternative, each game listening to its own keys with `listenToKeys`,
 would put every key in the game's own table. But the touch controls the host
 draws beside the game would still need a host-side contract, pausing would
-need every game to ask the host, and remapping keys for the visitor, or
+need every game to call the host, and remapping keys for the visitor, or
 adding a gamepad, would mean changing eleven games. So no.
 
 ### 4.2 Its keys, as a table
@@ -335,26 +339,26 @@ listener, and the three copies of the relay lambdas go.
 
 Bug 5 goes too, and the arcade controls do nothing as the host pauses to fix
 it. `listenToKeys` ignores a key pressed while it is inactive, where
-`listenToKeyboard` let go of everything, and it still reports a key let go,
+`listenToKeyboard` released everything, and it still reports a key let go,
 from its `keyup` (`listen-to-keys.ts:76-79`, which reads no `isActive`). So
-Shift held across a pause stays held, and Shift let go during a pause is a
+Focus held across a pause stays held, and Focus let go during a pause is a
 real let go, reported from the event as it happens. The arcade controls
-must not let go of what is held as the host pauses, though that looks tidy. The
+must not release what is held as the host pauses, though that looks tidy. The
 page pauses the host from inside its frame
 (`host.isPaused = model.isEntryFrozen`, in `followModel`,
-`start-site-page.ts:335`), so a let go reported there would change the
+`start-site-page.ts:335`), so a release reported there would change the
 game's model during a tick.
 
 The touch controls hide while the host is paused
 (`pixi-stage.ts:133`, in a refresh). A finger on one as it hides must still
 be let go. If Pixi delivers the finger's `pointerupoutside` to a hidden
-object, that event does it. If not, the touch controls let go from a
+object, that event does it. If not, the touch controls release it from a
 microtask as they hide, as their rebuild does now
 (`touch-input-view.ts:107-114`). Step 6 checks which.
 
 The arcade controls' listener starts as the session starts, and stops as it
 ends, both inside the page's frame. Starting reports nothing, since nothing
-is held yet. Stopping lets go of every hold, and `listenToKeys`' stop
+is held yet. Stopping releases every hold, and `listenToKeys`' stop
 changes to do that from a microtask (bug 12), so it is safe wherever it is
 called. Penrose Tiling and Fractalscope get the same fix.
 
@@ -384,7 +388,7 @@ arcade controls to the game, and the top-level view wires it, as Chapter 13's
 `ArcadeControlsInputView` (Pixi, in `input/pixi/`) listens to the arcade
 controls while it exists. It reports each button both ways, `onPrimaryButtonChanged`
 for a game that holds it and `onPrimaryPressed` for one that presses it, so
-the six `if (isDown)` wrappers go. Every control a game takes is now in one
+the six `if (isDown)` wrappers go. Every control a game responds to is now in one
 file. `thumbnailInput` drives the same arcade controls, between headless steps,
 so thumbnails keep working.
 
@@ -407,7 +411,7 @@ the wiring, as Astrovoid's and Neon Monsoon's do.
 ## 5. Helpers for meanings games repeat
 
 Both are renderer-free, in `input/`, and both report what they work out. A
-game still says what it means.
+game still defines what each means.
 
 - **`createHold`**: several controls holding one thing. Each reports its
   hold under its own name, and the hold is held while any of them is.
@@ -446,14 +450,14 @@ Every report `listenToPointer` makes comes from a Pixi pointer event, so it
 needs no microtask. That includes the `pointermove` Pixi sends itself for a
 still mouse (section 3.1). It reports nothing as its target is destroyed in
 the middle of a press. A view that rebuilds its targets in a refresh, and
-whose model must hear the let go, reports it from a microtask, as
+whose model must be notified of the release, reports it from a microtask, as
 `TouchInputView` does now.
 
 ### 6.2 One press behaviour for Pixi buttons
 
 `listenToPress({ target, isEnabled, onPressed })`, in `input/pixi/`: it
 follows one pointer, reports a press as a tap (let go over the target), and
-lets go on a cancel. It returns `{ readonly isHeld: boolean }`, which the
+releases on a cancel. It returns `{ readonly isHeld: boolean }`, which the
 button's refresh reads to show the hold. So nothing is called during a
 frame to show a hold, and the one report, `onPressed`, comes from the
 `pointerup`. It reads `isEnabled` as the pointer lifts, so a button disabled
@@ -475,7 +479,7 @@ as Chapter 18 teaches (`keypad-gestures-view-model.ts:77` does this now). A
 tap is reported from the `pointerup` itself. Its tests wait for a microtask
 after each tick, or use `advanceTime`, which does. It follows one pointer,
 which fixes the keypad's second finger. The puzzles' walkthrough already
-shows holds, so other puzzles will want it.
+shows holds, so other puzzles will use it.
 
 ### 6.4 One pan-and-zoom tracker
 
@@ -515,7 +519,7 @@ before the browser can send the event.
 
 ### 7.1 Why it is the way it is
 
-`input/` says "input that needs no renderer", and `shared/` holds the
+`input/` means "input that needs no renderer", and `shared/` contains the
 Pixi views entries share. So the folders are split by renderer, not by what
 the code is for: `listenToKeys` needs no renderer, and `listenToPointer`
 needs Pixi. The split has a reason. The page imports from `input/` (the
@@ -528,7 +532,7 @@ Other things that blur it:
 
 - `shared/` and `runner/` both re-export `isTouchDevice` from `device/`,
   and no entry imports `@mvtjs/site-kit/device`.
-- `shared/` holds the sound chips' types, `MusicChip` and `SfxChip`, which
+- `shared/` contains the sound chips' types, `MusicChip` and `SfxChip`, which
   have nothing to do with Pixi, and which the starter types, the page and
   about 40 files import.
 - `KeyboardInputView` is in `shared/` for one importer, the host.
@@ -602,10 +606,10 @@ Do not reopen without new information.
   is a high punch" is the game's rule, as a fighting game's moves are. Its
   50 ms settle for diagonals is timed in game time, in the model, so
   replays stay exact. Its leans are named for what the fighter does, as the
-  model convention asks.
+  model convention requires.
 - **The models' names for held ways stay as they are.** `turning`,
-  `headingX` and `thrustX` each say what the game means, and that is what
-  the convention asks. Shared direction types would couple games that
+  `headingX` and `thrustX` each describe what the game means, and that is what
+  the convention requires. Shared direction types would couple games that
   should be free to differ.
 - **The sites keep their own looks for buttons.** Only the behaviour is
   shared (6.2).
@@ -635,7 +639,7 @@ Do not reopen without new information.
 - **A check for relays during a frame.** The tests in section 3.1 cover the
   shared helpers. An entry's own relays are covered only by review. A
   development-only check could catch them: the page marks its frame, and a
-  model action called inside it logs a warning. It would need a way to know
+  model action called inside it logs a warning. It would need a way to distinguish
   which calls are actions.
 - **`shared/`'s name**, once input has left it.
 - **The puzzles' Restart and the arcade overlay.** Fire on a tap (6.2), or
@@ -653,7 +657,7 @@ changes what a player feels.
    from `device/`. Moves and imports only, no change in behaviour.
 2. The arcade controls on `listenToKeys` (4.2): `ARCADE_CONTROL_KEYS`,
    `createArcadeControls`, one listener per session, nothing reported as the
-   host pauses. `listenToKeys`' stop lets go from a microtask (bug 12).
+   host pauses. `listenToKeys`' stop releases from a microtask (bug 12).
    Remove `listenToKeyboard` and `KeyboardInputView`. Tests for bugs 1, 2,
    3, 5 and 12, and that starting, pausing and stopping a session report
    nothing until a microtask has run.

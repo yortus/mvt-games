@@ -1,6 +1,7 @@
 import { Application, Container, TextureSource } from 'pixi.js';
 import { createGpuTimer, type GpuTimer, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
-import { KeyboardInputView, TouchInputView } from '#input/pixi';
+import { TouchInputView } from '#input/pixi';
+import type { ArcadeControls } from '../input';
 import { type EntryInputConfig, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
 
@@ -10,7 +11,7 @@ import { fitPlayArea, type PlayArea } from './play-area';
 
 /**
  * The entry host's Pixi side. It is one Pixi application, whose stage holds
- * the entry's container, the on-screen touch controls and the keyboard input.
+ * the entry's container and the on-screen touch controls.
  * The host loads this module, and Pixi with it, the first time it prepares a
  * Pixi entry.
  */
@@ -58,6 +59,8 @@ export interface PixiStageOptions {
     readonly takesInput: boolean;
     /** The session running, which the host owns. */
     readonly session: () => EntrySession | undefined;
+    /** The session's arcade controls, which the touch controls set, if the session has an input config. */
+    readonly controls: () => ArcadeControls | undefined;
     /** Whether the session is paused. */
     readonly isPaused: () => boolean;
     /** Whether the page has turned the canvas a quarter turn clockwise, with a CSS transform on an ancestor. */
@@ -148,25 +151,12 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             primaryLabel: () => inputConfig()?.primaryLabel ?? 'A',
             secondaryLabel: () => inputConfig()?.secondaryLabel ?? 'B',
             isJoystickFloating: () => inputConfig()?.floatingJoystick ?? false,
-            onXDirectionChanged: (dir) => inputConfig()?.onXDirectionChanged?.(dir),
-            onYDirectionChanged: (dir) => inputConfig()?.onYDirectionChanged?.(dir),
-            onPrimaryButtonChanged: (pressed) => inputConfig()?.onPrimaryButtonChanged?.(pressed),
-            onSecondaryButtonChanged: (pressed) => inputConfig()?.onSecondaryButtonChanged?.(pressed),
+            onXDirectionChanged: (dir) => options.controls()?.setXDirection('touch', dir),
+            onYDirectionChanged: (dir) => options.controls()?.setYDirection('touch', dir),
+            onPrimaryButtonChanged: (pressed) => options.controls()?.setHeld('touch', 'primary', pressed),
+            onSecondaryButtonChanged: (pressed) => options.controls()?.setHeld('touch', 'secondary', pressed),
         }));
         app.stage.addChild(touchLayer);
-    }
-
-    if (takesInput) {
-        app.stage.addChild(KeyboardInputView({
-            // The stage outlives each entry, so only handle key events while an entry that takes input is
-            // running, and not held: a key that closes a menu or prompt over it must not reach it too
-            isActive: () => inputConfig() !== undefined && !options.isPaused(),
-            onXDirectionChanged: (dir) => inputConfig()?.onXDirectionChanged?.(dir),
-            onYDirectionChanged: (dir) => inputConfig()?.onYDirectionChanged?.(dir),
-            onPrimaryButtonChanged: (pressed) => inputConfig()?.onPrimaryButtonChanged?.(pressed),
-            onSecondaryButtonChanged: (pressed) => inputConfig()?.onSecondaryButtonChanged?.(pressed),
-            onRestartButtonChanged: (pressed) => inputConfig()?.onRestartButtonChanged?.(pressed),
-        }));
     }
 
     // Each step of the ticker runs the MVT order for the stage. First the

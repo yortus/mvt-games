@@ -31,13 +31,21 @@ export interface KeysOptions<H extends string> {
  * Listens to the keyboard, and returns a function that stops listening. It
  * only reports. What each key means is up to whoever calls it.
  *
+ * It reports from the browser's key events, and from the window losing
+ * focus, all of which come between frames. Stopping releases every hold,
+ * and reports that from a microtask, once the code running has finished, so
+ * it is safe to stop during a frame.
+ *
  * A focused slider or button keeps the keys it uses itself, such as the
  * arrows and Space. So does an open dialog, such as the page's pause menu.
  */
 export function listenToKeys<H extends string>(options: KeysOptions<H>): () => void {
     const { pressed, repeating, held } = options;
-    const holds = new Set<H>();
-    const isHeld = (hold: H): boolean => holds.has(hold);
+    // The keys down, as the table names them, and how many are down for each
+    // hold. Several keys can be for one hold, which stays held while any of them is down
+    const keysDown = new Set<string>();
+    const holdCounts = new Map<H, number>();
+    const isHeld = (hold: H): boolean => (holdCounts.get(hold) ?? 0) > 0;
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
@@ -46,19 +54,24 @@ export function listenToKeys<H extends string>(options: KeysOptions<H>): () => v
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
         window.removeEventListener('blur', releaseAll);
-        releaseAll();
+        // A view may stop listening as it is destroyed, during a frame, so
+        // what was held is released once the frame's code has finished
+        queueMicrotask(releaseAll);
     };
 
     function onKeyDown(event: KeyboardEvent): void {
         if (!options.isActive() || event.ctrlKey || event.metaKey || event.altKey) return;
         if (isTakenByTarget(event) || isDialogOpen()) return;
 
-        const hold = lookUp(held, event.key);
-        if (hold !== undefined) {
+        const heldKey = findKey(held, event.key);
+        if (heldKey !== undefined) {
             event.preventDefault();
-            if (holds.has(hold)) return;
-            holds.add(hold);
-            options.onHeldChanged(isHeld);
+            if (keysDown.has(heldKey)) return;
+            keysDown.add(heldKey);
+            const hold = held[heldKey];
+            const count = holdCounts.get(hold) ?? 0;
+            holdCounts.set(hold, count + 1);
+            if (count === 0) options.onHeldChanged(isHeld);
             return;
         }
         const repeated = lookUp(repeating, event.key);
@@ -74,14 +87,19 @@ export function listenToKeys<H extends string>(options: KeysOptions<H>): () => v
     }
 
     function onKeyUp(event: KeyboardEvent): void {
-        const hold = lookUp(held, event.key);
-        if (hold !== undefined && holds.delete(hold)) options.onHeldChanged(isHeld);
+        const heldKey = findKey(held, event.key);
+        if (heldKey === undefined || !keysDown.delete(heldKey)) return;
+        const hold = held[heldKey];
+        const count = (holdCounts.get(hold) ?? 1) - 1;
+        holdCounts.set(hold, count);
+        if (count === 0) options.onHeldChanged(isHeld);
     }
 
-    /** Lets go of everything, as when the window loses focus and the keys' releases would go astray. */
+    /** Releases everything, as when the window loses focus and the keys' releases would go astray. */
     function releaseAll(): void {
-        if (holds.size === 0) return;
-        holds.clear();
+        if (keysDown.size === 0) return;
+        keysDown.clear();
+        holdCounts.clear();
         options.onHeldChanged(isHeld);
     }
 }
@@ -99,7 +117,14 @@ function lookUp<T>(table: Readonly<Record<string, T>>, key: string): T | undefin
     return table[key] ?? table[key.toLowerCase()];
 }
 
-/** Whether the key belongs to the control it was pressed in: a text field takes every key, a slider its arrows, and a button Space and Enter. */
+/** The name that `table` uses for `key`: the key itself, or its lower case, if the table has either. */
+function findKey(table: Readonly<Record<string, unknown>>, key: string): string | undefined {
+    if (table[key] !== undefined) return key;
+    const lower = key.toLowerCase();
+    return table[lower] === undefined ? undefined : lower;
+}
+
+/** Whether the key belongs to the control it was pressed in: a text field handles every key, a slider its arrows, and a button Space and Enter. */
 function isTakenByTarget(event: KeyboardEvent): boolean {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return false;

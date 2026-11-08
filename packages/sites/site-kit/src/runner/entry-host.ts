@@ -3,7 +3,7 @@ import {
     type ElementEntrySession, type EntrySession, type EntryStarter, type PixiEntryStarter, type SessionChips, type SoundChipFinder,
     type SoundChipKind, type SoundChipsByKind, startElementEntry, type StartOptions,
 } from '../entry-types';
-import { listenToKeyboard } from '../input';
+import { ARCADE_CONTROL_KEYS, type ArcadeControls, createArcadeControls } from '../input';
 import { createPageSound, type PageSound } from './page-sound';
 import { fitPlayArea, type PlayArea } from './play-area';
 import type { PixiStage } from './pixi-stage';
@@ -172,18 +172,9 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     // The chip the session plays on, or undefined for a session that makes no sound
     let sessionChips: SessionChips<SoundChipKind> | undefined;
 
-    // The Pixi stage listens to the keyboard for a Pixi entry. The host listens for an element entry, with no
-    // renderer, and passes the keys to its session's controls while it runs and is not paused
-    const stopKeyboard = takesInput
-        ? listenToKeyboard({
-                isActive: () => starter?.kind === 'element' && session?.inputConfig !== undefined && !isPaused,
-                onXDirectionChanged: (direction) => session?.inputConfig?.onXDirectionChanged?.(direction),
-                onYDirectionChanged: (direction) => session?.inputConfig?.onYDirectionChanged?.(direction),
-                onPrimaryButtonChanged: (pressed) => session?.inputConfig?.onPrimaryButtonChanged?.(pressed),
-                onSecondaryButtonChanged: (pressed) => session?.inputConfig?.onSecondaryButtonChanged?.(pressed),
-                onRestartButtonChanged: (pressed) => session?.inputConfig?.onRestartButtonChanged?.(pressed),
-            })
-        : undefined;
+    // The session's arcade controls, for a session that has an input config.
+    // The keys and the Pixi stage's touch controls set what is held
+    let controls: ArcadeControls | undefined;
 
     // The element an element entry mounts into. The host ticks the entry's
     // views itself, so the page's walk skips this subtree.
@@ -256,6 +247,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             sessionChips?.music.resume();
             sessionChips?.sfx.resume();
             session = startSession(next, options);
+            controls = startControls(session);
         },
 
         restart() {
@@ -267,6 +259,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         stop() {
             if (session === undefined || starter === undefined) return undefined;
             const frame = starter.kind === 'pixi' ? pixiStage?.captureFrame() : undefined;
+            controls?.destroy();
+            controls = undefined;
             session.destroy();
             stopChips(sessionChips);
             if (starter.kind === 'pixi') pixiStage?.hide();
@@ -312,7 +306,6 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
 
         destroy() {
             host.stop();
-            stopKeyboard?.();
             resizeObserver.disconnect();
             pixiStage?.destroy();
             pixiStage = undefined;
@@ -342,12 +335,28 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             isTouch,
             takesInput,
             session: () => session,
+            controls: () => controls,
             isPaused: () => isPaused,
             isTurned: () => isTurned,
             findChip,
         });
         pixiStage.fit(areaRect.width, areaRect.height);
         pixiStage.isGpuTimed = isGpuTimed;
+    }
+
+    /**
+     * Creates the arcade controls for a session that has an input config,
+     * reporting to it. The page starts sessions during its frame, so they
+     * report nothing as they start. They ignore key presses while the host
+     * is paused, and still count a key released, so a key held across a
+     * pause stays held.
+     */
+    function startControls(next: EntrySession): ArcadeControls | undefined {
+        const config = next.inputConfig;
+        if (!takesInput || config === undefined) return undefined;
+        const made = createArcadeControls({ keys: ARCADE_CONTROL_KEYS, isActive: () => !isPaused });
+        made.listen(config);
+        return made;
     }
 
     function startSession(next: EntryStarter, options: StartOptions): EntrySession {

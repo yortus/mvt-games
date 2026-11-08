@@ -45,19 +45,20 @@ export const load = definePixiLoader(async () => {
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
                 inputConfig: {
-                    // On a touch screen, a drag over the game view steers, so only Bomb and Focus are drawn
+                    // On a touch screen, a drag over the game view steers, so only Focus and Bomb are drawn.
+                    // Focus is held often, and a bomb is dropped rarely, so Focus is the primary button
                     showPrimary: true,
                     showSecondary: true,
-                    primaryLabel: 'Bomb',
-                    secondaryLabel: 'Focus',
+                    primaryLabel: 'Focus',
+                    secondaryLabel: 'Bomb',
                     onXDirectionChanged: (dir) => { gameModel.headingX = dir; },
                     onYDirectionChanged: (dir) => { gameModel.headingY = dir; },
-                    onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.dropBomb(); },
                     // Letting go of Focus also releases the volley, if it is locked on
-                    onSecondaryButtonChanged: (isDown) => {
+                    onPrimaryButtonChanged: (isDown) => {
                         gameModel.isFocusing = isDown;
                         if (!isDown) gameModel.releaseVolley();
                     },
+                    onSecondaryButtonChanged: (isDown) => { if (isDown) gameModel.dropBomb(); },
                     onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };

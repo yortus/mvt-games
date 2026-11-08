@@ -132,6 +132,60 @@ describe('createEntryHost', () => {
         expect([music.stopAllCount, sfx.stopAllCount]).toEqual([2, 2]);
         destroyAll(host, sound);
     });
+
+    describe('the arcade controls', () => {
+        it('reports the keys to the input config of the game playing', async () => {
+            const { sound, host } = createHostWithSound();
+            const game = createFakeControlledGame();
+            await host.prepare(game.starter);
+            host.start(game.starter);
+            sendKey('keydown', 'ArrowLeft');
+            sendKey('keydown', ' ');
+            expect(game.reports).toEqual(['x left', 'primary true']);
+            destroyAll(host, sound);
+        });
+
+        it('ignores key presses during a pause, keeps a key held across it, and reports one released during it', async () => {
+            const { sound, host } = createHostWithSound();
+            const game = createFakeControlledGame();
+            await host.prepare(game.starter);
+            host.start(game.starter);
+            sendKey('keydown', 'Shift');
+            sendKey('keydown', 'ArrowUp');
+            host.isPaused = true;
+            await Promise.resolve();
+            sendKey('keydown', ' ');
+            sendKey('keyup', 'ArrowUp');
+            host.isPaused = false;
+            await Promise.resolve();
+            expect(game.reports).toEqual(['secondary true', 'y up', 'y none']);
+            destroyAll(host, sound);
+        });
+
+        it('reports nothing as a session starts or stops, even with keys held, since the page does both during its frame', async () => {
+            const { sound, host } = createHostWithSound();
+            const first = createFakeControlledGame();
+            const second = createFakeControlledGame();
+            await host.prepare(first.starter);
+            host.start(first.starter);
+            sendKey('keydown', 'ArrowRight');
+            host.start(second.starter);
+            await Promise.resolve();
+            host.stop();
+            await Promise.resolve();
+            expect([first.reports, second.reports]).toEqual([['x right'], []]);
+            destroyAll(host, sound);
+        });
+
+        it('creates no controls for a game with no input config, and leaves the keys to the page', async () => {
+            const { sound, host } = createHostWithSound();
+            const game = createFakeGame();
+            await host.prepare(game.starter);
+            host.start(game.starter);
+            expect(sendKey('keydown', 'ArrowLeft').defaultPrevented).toBe(false);
+            destroyAll(host, sound);
+        });
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -182,6 +236,34 @@ function createFakeGame() {
         },
     };
     return { starter };
+}
+
+/** Creates an element entry with an input config, which keeps everything the arcade controls report, in order. */
+function createFakeControlledGame() {
+    const reports: string[] = [];
+    const starter: ElementEntryStarter = {
+        kind: 'element',
+        start: () => ({
+            views: [],
+            update: () => {},
+            render: () => {},
+            destroy: () => {},
+            inputConfig: {
+                onXDirectionChanged: (direction) => reports.push(`x ${direction}`),
+                onYDirectionChanged: (direction) => reports.push(`y ${direction}`),
+                onPrimaryButtonChanged: (pressed) => reports.push(`primary ${pressed}`),
+                onSecondaryButtonChanged: (pressed) => reports.push(`secondary ${pressed}`),
+            },
+        }),
+    };
+    return { starter, reports };
+}
+
+/** Sends a key event to the window, and returns it. */
+function sendKey(kind: 'keydown' | 'keyup', key: string): KeyboardEvent {
+    const event = new KeyboardEvent(kind, { key, bubbles: true, cancelable: true });
+    window.dispatchEvent(event);
+    return event;
 }
 
 /** Creates an element entry that makes no sound. It keeps whether it was given chips anyway. */

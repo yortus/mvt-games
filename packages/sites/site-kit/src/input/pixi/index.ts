@@ -4,7 +4,6 @@
 // paint. Input that needs no renderer is in the folder above.
 
 export { DragInputView, type DragInputViewBindings } from './drag-input-view';
-export { KeyboardInputView, type KeyboardInputViewBindings } from './keyboard-input-view';
 export { listenToPointer, type PointerOptions } from './listen-to-pointer';
 export { type SwipeDirection, SwipeInputView, type SwipeInputViewBindings } from './swipe-input-view';
 export { type DpadKind, TouchInputView, type TouchInputViewBindings } from './touch-input-view';

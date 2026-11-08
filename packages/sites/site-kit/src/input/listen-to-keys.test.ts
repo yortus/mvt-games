@@ -73,6 +73,16 @@ describe('listenToKeys', () => {
         expect(held).toEqual([true, false]);
     });
 
+    it('keeps a hold while any of its keys is down', () => {
+        const { held } = setup();
+        send('keydown', 'ArrowLeft');
+        send('keydown', 'a');
+        send('keyup', 'ArrowLeft');
+        expect(held).toEqual([true]);
+        send('keyup', 'a');
+        expect(held).toEqual([true, false]);
+    });
+
     it('lets a letter go whichever case it comes up in', () => {
         const { held } = setup();
         send('keydown', 'A');
@@ -119,5 +129,30 @@ describe('listenToKeys', () => {
         stopListening();
         send('keydown', 'c');
         expect(calls).toEqual([]);
+    });
+
+    it('releases what is held as it stops, once the code running has finished, so it can stop during a frame', async () => {
+        const { held } = setup();
+        send('keydown', 'a');
+        stopListening();
+        expect(held).toEqual([true]);
+        await Promise.resolve();
+        expect(held).toEqual([true, false]);
+    });
+
+    it('still counts a key released while it isn\'t active, so none stays held', () => {
+        let isActive = true;
+        const held: boolean[] = [];
+        stopListening = listenToKeys({
+            isActive: () => isActive,
+            pressed: {},
+            repeating: {},
+            held: { a: 'left' },
+            onHeldChanged: (isHeld) => held.push(isHeld('left')),
+        });
+        send('keydown', 'a');
+        isActive = false;
+        send('keyup', 'a');
+        expect(held).toEqual([true, false]);
     });
 });

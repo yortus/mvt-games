@@ -384,8 +384,13 @@ while paused, it stops calling `update()` and leaves the entry's view out of
 `updateView`, so an entry needs no pause logic of its own. `destroy()`
 removes the view and cleans up.
 
-A game gives an `inputConfig`: the controls it takes. The host turns the
-keyboard, and touch controls on a touch screen, into the calls it lists.
+A game's session has an `inputConfig`: the controls it responds to. The
+host creates the arcade controls for it, a d-pad, two buttons and Restart,
+and turns the keyboard, and touch controls on a touch screen, into calls to
+its callbacks. The keys are listed in one table, `ARCADE_CONTROL_KEYS` (the
+arrows or WASD, Space, Shift and Enter). A control stays held while any of
+its keys, or a touch on it, is held. While the game is paused, the host
+ignores key presses, but still counts a key released.
 Its callbacks are named for the controls (`onPrimaryButtonChanged`), and
 the wiring is where you say what each one means. Give the model the
 meaning, never the control. A button held to steer sets state named for
