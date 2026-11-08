@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
-import type { SfxChip } from '@mvtjs/site-kit/shared';
+import type { SfxChip } from '@mvtjs/site-kit/sound';
 import { CLASHED, RUBBED, SOLVED, STEPPED, UNDONE, WALLED } from '../data';
 
 // ---------------------------------------------------------------------------

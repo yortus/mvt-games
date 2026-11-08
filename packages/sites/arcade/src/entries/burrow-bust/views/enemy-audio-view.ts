@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
 import { createReaction, increased } from '@mvtjs/utils';
-import type { SfxChip } from '@mvtjs/site-kit/shared';
+import type { SfxChip } from '@mvtjs/site-kit/sound';
 import { FIRE, FIRE_WARNING, GHOST, POP, PUMP_1, PUMP_2, PUMP_3, PUMP_4, SQUASH } from '../data';
 import type { EnemyPhase, InflationStage } from '../models';
 

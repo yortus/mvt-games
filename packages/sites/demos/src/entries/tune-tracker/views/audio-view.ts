@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import type { Audio90Song } from 'audio90';
 import { setRefresh } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
-import type { MusicChip } from '@mvtjs/site-kit/shared';
+import type { MusicChip } from '@mvtjs/site-kit/sound';
 
 // ---------------------------------------------------------------------------
 // Bindings

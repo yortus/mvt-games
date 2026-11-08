@@ -1,6 +1,6 @@
 import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
-import type { SfxChip } from '#shared';
+import type { SfxChip } from '../../sound';
 import {
     BURN, CARD_TICK, DEVELOP, KEY_TICK_HIGH, KEY_TICK_LOW, LAUNCH, LOAD_FAILED, NO_RESULTS, PANEL_CLOSE, PANEL_OPEN, PAUSE, POWER_OFF,
     POWER_ON, RESUME, TAG_ADD, TAG_REMOVE,

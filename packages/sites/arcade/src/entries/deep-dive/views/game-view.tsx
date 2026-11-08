@@ -3,7 +3,9 @@
 import type { Container, Graphics } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
-import { DragInputView, isTouchDevice, OverlayView } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { DragInputView } from '@mvtjs/site-kit/input/pixi';
+import { OverlayView } from '@mvtjs/site-kit/shared';
 import { CAVE_HEIGHT, SUB_X, VIEW_WIDTH } from '../data';
 import type { GameModel } from '../models';
 

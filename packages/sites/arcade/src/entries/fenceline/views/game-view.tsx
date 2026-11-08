@@ -3,7 +3,10 @@
 import type { Container } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
-import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
+import { OverlayView } from '@mvtjs/site-kit/shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { AudioView } from './audio-view';

@@ -5,5 +5,4 @@ export {
     startPixiHeadless, type StartPixiHeadlessOptions, waitForLayout,
 } from './headless';
 export { createPageSound, type PageSound, type PageSoundOptions, type SoundSettings } from './page-sound';
-export { isTouchDevice } from '../device';
 export { fitPlayArea, type PlayArea, type PlayAreaOptions } from './play-area';

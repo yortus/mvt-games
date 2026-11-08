@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
-import type { MusicChip, SfxChip } from '#shared';
+import type { MusicChip, SfxChip } from '../sound';
 import {
     defineElementLoader, definePixiLoader, type ElementEntrySession, type ElementEntryStarter, type PixiEntryStarter,
     type PixiStartOptions, type SessionChips, type SoundChipFinder, startPixiEntry,

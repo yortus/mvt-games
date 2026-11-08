@@ -1,7 +1,7 @@
 import { Container, Graphics, Rectangle, Text } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import type { GridGesturesViewModel } from '@mvtjs/site-kit/input';
-import { listenToPointer } from '@mvtjs/site-kit/shared';
+import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 import { watch } from '@mvtjs/utils';
 import {
     ANSWER_COLOR, CARD_COLOR, CLASH_CELL_COLOR, CLASH_COLOR, DIM_TEXT_COLOR, FONT_FAMILY, INK_COLOR, SOLVED_COLOR, SOLVED_GLOW_COLOR,

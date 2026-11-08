@@ -1,5 +1,7 @@
 import { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { OverlayView } from '@mvtjs/site-kit/shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';
 import type { GameModel } from '../models';
 import { ArenaView } from './arena-view';

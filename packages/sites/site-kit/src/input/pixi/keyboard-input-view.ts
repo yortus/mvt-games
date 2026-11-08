@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { type KeyboardInputBindings, listenToKeyboard } from '../input';
+import { type KeyboardInputBindings, listenToKeyboard } from '../keyboard-input';
 
 // ---------------------------------------------------------------------------
 // Bindings

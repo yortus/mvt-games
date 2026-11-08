@@ -1,6 +1,6 @@
 import type { Container } from 'pixi.js';
 import type { Scene } from 'three';
-import type { MusicChip, SfxChip } from '@mvtjs/site-kit/shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import type { DemoModel } from '../models';
 import type { SymbolArt } from './art';
 import { AudioView } from './audio';

@@ -110,7 +110,7 @@ Read the sections you need, by anchor:
 - Plays in `refresh()`, on a change (a phase changing, a count rising
   with `when: increased`), never on a state.
 - Takes its chips as fixed values, `MusicChip<'audio80'>` and
-  `SfxChip<'audio80'>` from `@mvtjs/site-kit/shared`. Music: `play`, `queue`, `stop` and
+  `SfxChip<'audio80'>` from `@mvtjs/site-kit/sound`. Music: `play`, `queue`, `stop` and
   `tempoScale` on the music chip. A jingle is no longer than its phase.
 - In a `<List>`, a `when` that a newly arrived item can't trigger
   (`changedFrom(true)`). An item removed in the tick it finishes is

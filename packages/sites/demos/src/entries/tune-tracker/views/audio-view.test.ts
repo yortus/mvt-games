@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Audio90Song } from 'audio90';
 import { refreshView, updateView } from '@mvtjs/pixi';
-import type { MusicChip } from '@mvtjs/site-kit/shared';
+import type { MusicChip } from '@mvtjs/site-kit/sound';
 import { AudioView } from './audio-view';
 
 describe('AudioView', () => {

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setRefresh } from '@mvtjs/html';
 import { createAudio80Sound } from 'audio90';
-import type { MusicChip } from '#shared';
+import type { MusicChip } from '../sound';
 import type { ElementEntryStarter } from '../entry-types';
 import { createEntryHost, type EntryHost } from './entry-host';
 import { type FakeChip, type FakeWebAudio, installFakeWebAudio, uninstallFakeWebAudio } from './fake-web-audio';

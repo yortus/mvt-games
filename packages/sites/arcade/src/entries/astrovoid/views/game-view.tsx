@@ -1,7 +1,9 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container, Graphics } from 'pixi.js';
-import { isTouchDevice, OverlayView, type SfxChip } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { OverlayView } from '@mvtjs/site-kit/shared';
+import type { SfxChip } from '@mvtjs/site-kit/sound';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';

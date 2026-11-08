@@ -1,7 +1,8 @@
 import type { Container } from 'pixi.js';
 import type { MetricKind, View } from '@mvtjs/pixi';
 import type { Audio80, Audio90 } from 'audio90';
-import type { DpadKind, MusicChip, SfxChip } from '#shared';
+import type { DpadKind } from '#input/pixi';
+import type { MusicChip, SfxChip } from '../sound';
 
 // ---------------------------------------------------------------------------
 // Interface

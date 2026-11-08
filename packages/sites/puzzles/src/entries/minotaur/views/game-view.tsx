@@ -2,7 +2,7 @@
 
 import type { Container } from 'pixi.js';
 import { Match, Switch } from '@mvtjs/pixi';
-import type { SfxChip } from '@mvtjs/site-kit/shared';
+import type { SfxChip } from '@mvtjs/site-kit/sound';
 import { CalendarView, IntroView, LEVEL_NAMES, MARGIN, PAPER_COLOR, type ScreenPoint } from '../../../shared';
 import type { GameModel, MinotaurTarget } from '../models';
 import { HOW_TO_PLAY } from '../start';

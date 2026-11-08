@@ -1,5 +1,5 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
-import { isTouchDevice } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
 import { createGameModel } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';

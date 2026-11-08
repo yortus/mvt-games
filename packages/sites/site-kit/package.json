@@ -9,12 +9,14 @@
         "./entry-types": "./src/entry-types/index.ts",
         "./highscores": "./src/highscores/index.ts",
         "./input": "./src/input/index.ts",
+        "./input/pixi": "./src/input/pixi/index.ts",
         "./pixel-glyphs": "./src/pixel-glyphs/index.ts",
         "./runner": "./src/runner/index.ts",
         "./shared": "./src/shared/index.ts",
         "./site-config": "./src/arcade/site-config.ts",
         "./site-page": "./src/arcade/start-site-page.ts",
         "./snapshot": "./src/snapshot/index.ts",
+        "./sound": "./src/sound/index.ts",
         "./storage": "./src/storage/index.ts",
         "./testing": "./src/testing/index.ts",
         "./virtual-entry-facts": "./src/virtual-entry-facts.d.ts",
@@ -23,6 +25,7 @@
     },
     "imports": {
         "#highscores": "./src/highscores/index.ts",
+        "#input/pixi": "./src/input/pixi/index.ts",
         "#shared": "./src/shared/index.ts",
         "#pixel-glyphs": "./src/pixel-glyphs/index.ts"
     },

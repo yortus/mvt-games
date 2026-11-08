@@ -2,7 +2,7 @@
 
 import { destroyElement, Match, Switch } from '@mvtjs/html';
 import { assert, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
-import type { MusicChip, SfxChip } from '#shared';
+import type { MusicChip, SfxChip } from '../../sound';
 import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';
 import type { ArcadeModel, ThemeKind } from '../models';
 import { SITE_THEMES, type SiteConfig } from '../site-config';

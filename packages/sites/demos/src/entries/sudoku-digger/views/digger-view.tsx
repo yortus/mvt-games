@@ -2,7 +2,7 @@
 
 import type { Container } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
-import type { SfxChip } from '@mvtjs/site-kit/shared';
+import type { SfxChip } from '@mvtjs/site-kit/sound';
 import { LEVELS } from '@mvtjs/puzzles/sudoku-generator';
 import type { DiggerModel, DiggerPhase, Playback } from '@mvtjs/puzzles/sudoku-generator';
 import { AudioView } from './audio-view';

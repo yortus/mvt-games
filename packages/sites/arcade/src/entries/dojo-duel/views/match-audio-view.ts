@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import { watch } from '@mvtjs/utils';
-import type { MusicChip, SfxChip } from '@mvtjs/site-kit/shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import {
     FIGHT_THEME, type GamePhase, GONG, MATCH_LOST, MATCH_WON, POINT_LOST, POINT_WON, ROUND_LOST, ROUND_WON, TICK,
 } from '../data';

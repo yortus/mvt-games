@@ -1,7 +1,10 @@
 /** @jsxImportSource @mvtjs/pixi */
 
 import type { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView, SwipeInputView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
+import { OverlayView } from '@mvtjs/site-kit/shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';

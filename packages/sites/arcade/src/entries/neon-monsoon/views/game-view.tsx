@@ -3,7 +3,10 @@
 import { type Container, Graphics } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
-import { DragInputView, isTouchDevice, OverlayView, type MusicChip, type SfxChip } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { DragInputView } from '@mvtjs/site-kit/input/pixi';
+import { OverlayView } from '@mvtjs/site-kit/shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { ARENA_WIDTH, textures } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { AudioView } from './audio-view';

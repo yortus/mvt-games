@@ -1,5 +1,7 @@
 import { Container } from 'pixi.js';
-import { isTouchDevice, OverlayView, type SfxChip } from '@mvtjs/site-kit/shared';
+import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { OverlayView } from '@mvtjs/site-kit/shared';
+import type { SfxChip } from '@mvtjs/site-kit/sound';
 import type { GameModel } from '../models';
 import { GRID_ROWS, GRID_COLS } from '../data';
 import { AudioView } from './audio-view';

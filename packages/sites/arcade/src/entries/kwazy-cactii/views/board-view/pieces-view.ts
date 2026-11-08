@@ -1,5 +1,5 @@
 import { Container } from 'pixi.js';
-import { listenToPointer } from '@mvtjs/site-kit/shared';
+import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 import { watch } from '@mvtjs/utils';
 import type { CactusCell } from '../../models';
 import { CactusView } from '../cactus-view';

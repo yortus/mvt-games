@@ -1,7 +1,7 @@
 import { setRefresh, setUpdate } from '@mvtjs/html';
 import type { Audio80Sound } from 'audio90';
 import { createMetronome, createReaction, increased } from '@mvtjs/utils';
-import type { MusicChip, SfxChip } from '@mvtjs/site-kit/shared';
+import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import {
     BIG_WIN, COIN, LEVER, NO_WIN, REEL_CLICK, REEL_STOP, WAY_OF_3, WAY_OF_4, WAY_OF_5, WIN,
 } from '../../data';

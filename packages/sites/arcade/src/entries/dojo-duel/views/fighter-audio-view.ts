@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
 import { createReaction } from '@mvtjs/utils';
-import type { SfxChip } from '@mvtjs/site-kit/shared';
+import type { SfxChip } from '@mvtjs/site-kit/sound';
 import { BLOCK, type FighterPhase, HIT, KICK_SWISH, LEAP_SWISH, type MoveKind, PUNCH_SWISH } from '../data';
 
 // ---------------------------------------------------------------------------

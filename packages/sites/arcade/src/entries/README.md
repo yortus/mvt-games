@@ -403,7 +403,7 @@ moment one is pressed. The host reports a button only when it goes down or
 up, never again as a key repeats.
 
 On a touch screen, choose the controls that suit how your game steers. Each
-one is a shared view from `#shared`, so the same gesture feels the same in
+one is a shared view from `@mvtjs/site-kit/input/pixi`, so the same gesture feels the same in
 every game:
 
 - **Swipe** (`SwipeInputView`), for a game on a grid, where the player keeps
@@ -430,7 +430,7 @@ A game played by drawing or picking on a board, such as Minotaur, Sudoku
 or Kwazy Cactii, takes taps and drags over its own grid. Two shared pieces
 handle them, so every board follows a finger the same way:
 
-- `listenToPointer`, from `@mvtjs/site-kit/shared`, follows one finger or
+- `listenToPointer`, from `@mvtjs/site-kit/input/pixi`, follows one finger or
   the mouse over your board's container, from a press until it lets go, and
   gives you its positions in the container's pixels. A second finger can't
   take a drag over, and a drag the browser cancels ends.
@@ -492,7 +492,7 @@ export const load = definePixiLoader(async () => {
 ```
 
 A view takes the chips it plays on as bindings, typed `MusicChip<'audio80'>`
-and `SfxChip<'audio80'>`, from `#shared`. They have only what a view
+and `SfxChip<'audio80'>`, from `@mvtjs/site-kit/sound`. They have only what a view
 plays with, such as `play` and `stop`. Pausing the chips and their volumes
 are the host's.
 

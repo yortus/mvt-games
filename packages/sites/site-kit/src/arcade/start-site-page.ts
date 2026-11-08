@@ -3,8 +3,8 @@ import { createFetchHighscoreStore, createMemoryHighscoreStore, GAMES, type High
 import { refreshView, updateView } from '@mvtjs/html';
 import { assert, type MetricKind, type PerformanceMeter, watch } from '@mvtjs/utils';
 import type { ArcadeEntry, EntryStarter } from '../entry-types';
-import { isHandheldDevice } from '../device';
-import { createEntryHost, createPageSound, isTouchDevice } from '../runner';
+import { isHandheldDevice, isTouchDevice } from '../device';
+import { createEntryHost, createPageSound } from '../runner';
 import { createLocalStore } from '../storage';
 import {
     type ArcadeSoundSettings,

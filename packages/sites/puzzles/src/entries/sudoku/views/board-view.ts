@@ -1,5 +1,5 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { listenToPointer } from '@mvtjs/site-kit/shared';
+import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 import { createComputed } from '@mvtjs/utils';
 import { THIN_LINE_COLOR } from '../../../shared';
 import { drawGridLines } from '../generator';

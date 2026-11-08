@@ -77,11 +77,13 @@ packages/sites/site-kit/src/
 ├── arcade/              The page each site runs, in HTML JSX: model, views, its own sounds, its styles, and the page's loop (start-site-page.ts)
 ├── device/              What the visitor's device supports, such as touch
 ├── input/               Input that doesn't need a renderer: the keyboard, for the entry host and the Pixi stage, and taps and drags over a grid
+│   └── pixi/            Input on a Pixi stage: a pointer followed over a container, and the touch, swipe and drag views
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── pixel-glyphs/        The pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way
-├── shared/              The shared views (overlay, pixel text, input, swipes, drags), a pointer followed over a container, and the chip types views play on
+├── shared/              The Pixi views entries share: the overlay and pixel text
+├── sound/               The chip types views play on
 ├── snapshot/            The page `generate-thumbnails` photographs each entry on
 ├── testing/             The checks every site's catalogue passes
 └── storage/             What the site keeps in the visitor's browser between visits: settings, favourites, saved games
@@ -149,7 +151,8 @@ public API.
 | `models/` | Model interfaces, options types, factory functions, domain types | `ScoreModel`, `createScoreModel`, `Direction`, `TileKind` |
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `createReaction`, `createComputed`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
-| `packages/sites/site-kit/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView`, `KeyboardInputView`, `SwipeInputView`, `listenToPointer` |
+| `packages/sites/site-kit/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView` |
+| `packages/sites/site-kit/src/input/pixi/` | Input on a Pixi stage                  | `listenToPointer`, `SwipeInputView`, `DragInputView`, `TouchInputView` |
 | `packages/sites/site-kit/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 
 ::: info Data directories are not MVT layers
@@ -357,7 +360,10 @@ The rules above apply inside each package. Between packages:
 The sites import the kit by its name: its shared views as
 `@mvtjs/site-kit/shared`, and the pixel glyphs that entries set their text
 in as `@mvtjs/site-kit/pixel-glyphs`. Inside the kit, they are aliases
-(`#shared`, `#pixel-glyphs`) that its `package.json` defines. The demos
+(`#shared`, `#pixel-glyphs`, `#input/pixi`) that its `package.json` defines.
+What needs a renderer sits in a folder named for it, inside the area it
+belongs to, such as `input/pixi/`, so a folder the page imports before its
+first paint loads no renderer. The demos
 keep the tunes two of them play as `#tunes`. Sudoku's puzzle maker and grid
 are in Sudoku's own folder, in the puzzles, and Sudoku Digger, a demo that
 shows the maker at work, imports them as `@mvtjs/puzzles/sudoku-generator`.

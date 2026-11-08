@@ -1,7 +1,7 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 import type { Audio90Sound, Scope } from 'audio90';
 import type { Tune } from '#tunes';
-import type { MusicChip } from '@mvtjs/site-kit/shared';
+import type { MusicChip } from '@mvtjs/site-kit/sound';
 import type { TrackerModel } from '../models';
 import { AudioView } from './audio-view';
 import { ChannelMetersView } from './channel-meters-view';
