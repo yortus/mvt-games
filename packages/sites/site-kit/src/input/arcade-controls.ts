@@ -8,8 +8,12 @@ import { listenToKeys } from './listen-to-keys';
 /** One of the arcade controls: a way on the d-pad, one of the two buttons, or Restart. */
 export type ArcadeControl = 'left' | 'right' | 'up' | 'down' | 'primary' | 'secondary' | 'restart';
 
-/** Where a control is held from. Each source is counted apart, so a control stays held while it is held from any source. */
-export type ArcadeControlSource = 'keyboard' | 'touch';
+/**
+ * Where a control is held from: the keyboard, the touch controls, or a
+ * script, such as a thumbnail's input. Each source is counted apart, so a
+ * control stays held while it is held from any source.
+ */
+export type ArcadeControlSource = 'keyboard' | 'touch' | 'script';
 
 /** Where the arcade controls report. Each control is reported only as it changes. */
 export interface ArcadeControlsListener {
@@ -198,7 +202,7 @@ export function createArcadeControls(options: ArcadeControlsOptions = {}): Arcad
 const CONTROLS: readonly ArcadeControl[] = ['left', 'right', 'up', 'down', 'primary', 'secondary', 'restart'];
 
 /** Each source's bit in a control's holders. */
-const SOURCE_BITS: Readonly<Record<ArcadeControlSource, number>> = { keyboard: 1 << 0, touch: 1 << 1 };
+const SOURCE_BITS: Readonly<Record<ArcadeControlSource, number>> = { keyboard: 1 << 0, touch: 1 << 1, script: 1 << 2 };
 
 /** The keys' table turned round, for `listenToKeys`: the control for each key. */
 function toHeldTable(keys: ArcadeControlKeys): Record<string, ArcadeControl> {

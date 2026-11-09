@@ -2,7 +2,8 @@
 
 import type { Container, Graphics } from 'pixi.js';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { DragInputView } from '@mvtjs/site-kit/input/pixi';
+import type { ArcadeControls } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, DragInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { List } from '@mvtjs/pixi';
@@ -26,6 +27,8 @@ export interface GameViewBindings {
     music: MusicChip<'audio80'>;
     /** The chip the game's sound effects play on, read once as `music` is. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -33,20 +36,27 @@ export interface GameViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Draws the whole game and plays its sound. It draws a star backdrop, the
- * raiders, the ship's and the raiders' bullets, and the ship, with the HUD
- * below and the overlay above. Each collection is a `<List>`, whose item views
+ * Draws the whole game, plays its sound, and wires its controls. It draws a
+ * star backdrop, the raiders, the ship's and the raiders' bullets, and the
+ * ship, with the HUD below and the overlay above. Each collection is a `<List>`, whose item views
  * are reused as the collection changes. Each enemy's slot holds its
  * `EnemyView` and an `EnemyAudioView`, which plays its sounds.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, music, sfx } = bindings;
+    const { model, music, sfx, controls } = bindings;
     const isTouch = isTouchDevice();
     const restartHint = isTouch ? 'Tap to restart' : 'Press Enter to restart';
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
+            {/* The keys, or the host's touch controls: left and right steer, the primary button fires */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => { model.direction = direction; }}
+                onPrimaryPressed={model.fire}
+                onRestartPressed={model.startNewRun}
+            />
             {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
             <DragInputView
                 isEnabled={isTouch}

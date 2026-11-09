@@ -1,7 +1,7 @@
 // `pixi-stage.ts` is not exported. The host imports it the first time it needs Pixi.
 export { createEntryHost, type EntryHost, type EntryHostOptions, type PlayTarget, type Rect } from './entry-host';
 export {
-    advanceHeadless, type AdvanceHeadlessOptions, createHeadlessSound, findThumbnailAdvanceMs, FRAME_MS, type HeadlessSound,
+    advanceHeadless, type AdvanceHeadlessOptions, createHeadlessControls, createHeadlessSound, findThumbnailAdvanceMs, FRAME_MS, type HeadlessSound,
     startPixiHeadless, type StartPixiHeadlessOptions, waitForLayout,
 } from './headless';
 export { createPageSound, type PageSound, type PageSoundOptions, type SoundSettings } from './page-sound';

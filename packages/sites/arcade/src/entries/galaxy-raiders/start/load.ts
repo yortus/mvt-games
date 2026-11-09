@@ -18,19 +18,21 @@ export const load = definePixiLoader(async () => {
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
+        // On a touch screen, the game view's drag steers and fires, so no touch controls are drawn
+        arcadeControls: 'keys-only',
         thumbnailAdvanceMs: THUMBNAIL_ADVANCE_MS,
         // Two shots on their way up as the thumbnail is taken
-        thumbnailInput: (session, elapsedMs) => {
+        thumbnailInput: (controls, elapsedMs) => {
             const isPressed = THUMBNAIL_SHOTS_MS.some((at) => elapsedMs >= at && elapsedMs < at + THUMBNAIL_PRESS_MS);
-            session.inputConfig?.onPrimaryButtonChanged?.(isPressed);
+            controls.setHeld('script', 'primary', isPressed);
         },
 
-        start({ stage, music, sfx }): EntrySession {
+        start({ stage, music, sfx, controls }): EntrySession {
             const gameModel = createGameModel({
                 waves: WAVES,
             });
 
-            const gameView = GameView({ model: gameModel, music, sfx });
+            const gameView = GameView({ model: gameModel, music, sfx, controls });
             stage.addChild(gameView);
 
             return {
@@ -48,12 +50,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    // On a touch screen, the game view's drag steers and fires, so no controls are drawn
-                    onXDirectionChanged: (dir) => { gameModel.direction = dir; },
-                    onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.fire(); },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

@@ -172,8 +172,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     // The chip the session plays on, or undefined for a session that makes no sound
     let sessionChips: SessionChips<SoundChipKind> | undefined;
 
-    // The session's arcade controls, for a session that has an input config.
-    // The keys and the Pixi stage's touch controls set what is held
+    // The session's arcade controls. The keys and the Pixi stage's touch
+    // controls set what is held
     let controls: ArcadeControls | undefined;
 
     // The element an element entry mounts into. The host ticks the entry's
@@ -246,8 +246,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             stopChips(sessionChips);
             sessionChips?.music.resume();
             sessionChips?.sfx.resume();
-            session = startSession(next, options);
-            controls = startControls(session);
+            controls = createControls();
+            session = startSession(next, options, controls);
         },
 
         restart() {
@@ -345,28 +345,35 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     }
 
     /**
-     * Creates the arcade controls for a session that has an input config,
-     * reporting to it. The page starts sessions during its frame, so they
-     * report nothing as they start. They ignore key presses while the host
-     * is paused, and still count a key released, so a key held across a
-     * pause stays held.
+     * Creates the arcade controls for the next session, before it starts, so
+     * they can be passed to it if its starter declares `arcadeControls`. The
+     * page starts sessions during its frame, so they report nothing as they
+     * are created. They handle the keys only while the entry uses them, as
+     * its starter's `arcadeControls` or its session's input config declares,
+     * so the keys of an entry that listens to the keyboard itself are left to
+     * it. They ignore key presses while the host is paused, and still count a
+     * key released, so a key held across a pause stays held.
+     *
+     * Every session gets them for now, though, since some games still wire an
+     * `inputConfig` in their starters, which the controls call, and a session
+     * has that only once it has started. Once no game does, only an entry
+     * that declares `arcadeControls` gets them.
      */
-    function startControls(next: EntrySession): ArcadeControls | undefined {
-        const config = next.inputConfig;
-        if (!takesInput || config === undefined) return undefined;
-        const made = createArcadeControls({ keys: ARCADE_CONTROL_KEYS, isActive: () => !isPaused });
-        made.listen(config);
-        return made;
+    function createControls(): ArcadeControls {
+        return createArcadeControls({
+            keys: takesInput ? ARCADE_CONTROL_KEYS : undefined,
+            isActive: () => !isPaused && (starter?.arcadeControls !== undefined || session?.inputConfig !== undefined),
+        });
     }
 
-    function startSession(next: EntryStarter, options: StartOptions): EntrySession {
+    function startSession(next: EntryStarter, options: StartOptions, nextControls: ArcadeControls): EntrySession {
         if (next.kind === 'pixi') {
             if (pixiStage === undefined) throw new Error('entry host: prepare a Pixi entry before starting it');
             fitStarter(next);
-            return pixiStage.start(next, options);
+            return pixiStage.start(next, { ...options, controls: nextControls });
         }
         entryElement.hidden = false;
-        return startElementEntry(next, { ...options, element: entryElement, takesInput }, findChip);
+        return startElementEntry(next, { ...options, controls: nextControls, element: entryElement, takesInput }, findChip);
     }
 
     /**

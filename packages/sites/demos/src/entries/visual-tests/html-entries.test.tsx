@@ -10,7 +10,7 @@
 import { onTestFinished } from 'vitest';
 import { htmlTest } from 'v-snap';
 import { type ElementEntryStarter, startElementEntry } from '@mvtjs/site-kit/entry-types';
-import { advanceHeadless, createHeadlessSound, findThumbnailAdvanceMs, waitForLayout } from '@mvtjs/site-kit/runner';
+import { advanceHeadless, createHeadlessControls, createHeadlessSound, findThumbnailAdvanceMs, waitForLayout } from '@mvtjs/site-kit/runner';
 import { CATALOGUE } from '../catalogue';
 
 /**
@@ -55,7 +55,7 @@ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element> 
     document.body.append(element);
     // A headless chip makes no sound.
     const sound = createHeadlessSound(starter);
-    const session = startElementEntry(starter, { element }, sound.findChips);
+    const session = startElementEntry(starter, { element, controls: createHeadlessControls(starter) }, sound.findChips);
     // This runs after the element is captured and destroyed. Destroying a
     // view twice is harmless.
     onTestFinished(() => session.destroy());

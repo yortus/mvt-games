@@ -15,7 +15,12 @@ site kit's layout, is done. Step 2, the arcade controls on `listenToKeys`,
 is done, and found one more bug: `listenToKeys` released a hold as soon as
 one of its keys came up, though another of its keys was still down (←
 and A, in Penrose Tiling and Fractalscope, and the arcade's keys). It now
-counts the keys down for each hold.
+counts the keys down for each hold. Step 3 is under way: a starter
+requests the arcade controls with `arcadeControls` (a touch layout, or
+`'keys-only'`), and only then is its session passed `controls`, typed as
+`definePixiLoader` types the sound chips. Galaxy Raiders wires them in its
+game view with `ArcadeControlsInputView`. The other games still use `inputConfig`,
+whose callbacks the arcade controls call until every game has moved.
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
 from a survey of every entry and the site kit. Line numbers are from that

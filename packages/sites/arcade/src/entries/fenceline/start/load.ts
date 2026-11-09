@@ -18,12 +18,11 @@ export const load = definePixiLoader(async () => {
         integerScale: true,
         // Long enough to fence off one paddock and start on another
         thumbnailAdvanceMs: THUMBNAIL_ADVANCE_MS,
-        thumbnailInput: (session, elapsedMs) => {
+        thumbnailInput: (controls, elapsedMs) => {
             let move = THUMBNAIL_MOVES[0];
             for (let i = 1; i < THUMBNAIL_MOVES.length && THUMBNAIL_MOVES[i].atMs <= elapsedMs; i++) move = THUMBNAIL_MOVES[i];
-            const input = session.inputConfig;
-            input?.onXDirectionChanged?.(move.x);
-            input?.onYDirectionChanged?.(move.y);
+            controls.setXDirection('script', move.x);
+            controls.setYDirection('script', move.y);
         },
 
         start({ stage, music, sfx }): EntrySession {

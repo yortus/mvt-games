@@ -2,7 +2,7 @@ import { Application, Container, TextureSource } from 'pixi.js';
 import { createGpuTimer, type GpuTimer, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 import { TouchInputView } from '#input/pixi';
 import type { ArcadeControls } from '../input';
-import { type EntryInputConfig, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
+import { type ArcadeControlsLayout, type ArcadeControlsUse, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
 import { fitPlayArea, type PlayArea } from './play-area';
 
 // ---------------------------------------------------------------------------
@@ -19,7 +19,7 @@ export interface PixiStage {
     /** Whether it draws pixel art, which is fixed when its renderer is made. */
     readonly isPixelArt: boolean;
     /** Starts a session on the stage, passing `options` on to the entry, and shows the canvas. */
-    start: (starter: PixiEntryStarter, options: StartOptions) => EntrySession;
+    start: (starter: PixiEntryStarter, options: PixiStageStartOptions) => EntrySession;
     /** Hides the canvas, once the session has ended. */
     hide: () => void;
     /** Runs one frame. It steps the application's ticker, which updates, refreshes and renders the stage. */
@@ -59,7 +59,7 @@ export interface PixiStageOptions {
     readonly takesInput: boolean;
     /** The session running, which the host owns. */
     readonly session: () => EntrySession | undefined;
-    /** The session's arcade controls, which the touch controls set, if the session has an input config. */
+    /** The session's arcade controls, which the touch controls set. */
     readonly controls: () => ArcadeControls | undefined;
     /** Whether the session is paused. */
     readonly isPaused: () => boolean;
@@ -67,6 +67,11 @@ export interface PixiStageOptions {
     readonly isTurned: () => boolean;
     /** Finds the chip of a kind, for a session that plays on one. */
     readonly findChip: SoundChipFinder;
+}
+
+/** How to start a session on the stage: the page's start options, and the arcade controls the host has created for the session, if any. */
+export interface PixiStageStartOptions extends StartOptions {
+    readonly controls?: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,7 +138,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         const touchLayer = new Container();
         touchLayer.label = 'touch-controls';
         setRefresh(touchLayer, () => {
-            touchLayer.visible = inputConfig() !== undefined && !options.isPaused();
+            touchLayer.visible = layout() !== undefined && !options.isPaused();
             return touchLayer.visible ? undefined : SKIP_DESCENDANTS;
         });
         touchLayer.addChild(TouchInputView({
@@ -144,13 +149,13 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             gameWidth: () => starter?.screenWidth ?? 0,
             gameHeight: () => starter?.screenHeight ?? 0,
             scale: () => area.scale,
-            hasDpad: () => inputConfig()?.showDpad ?? false,
-            dpadKind: () => inputConfig()?.dpadKind ?? 'four-way',
-            hasPrimaryButton: () => inputConfig()?.showPrimary ?? false,
-            hasSecondaryButton: () => inputConfig()?.showSecondary ?? false,
-            primaryLabel: () => inputConfig()?.primaryLabel ?? 'A',
-            secondaryLabel: () => inputConfig()?.secondaryLabel ?? 'B',
-            isJoystickFloating: () => inputConfig()?.floatingJoystick ?? false,
+            hasDpad: () => layout()?.showDpad ?? false,
+            dpadKind: () => layout()?.dpadKind ?? 'four-way',
+            hasPrimaryButton: () => layout()?.showPrimary ?? false,
+            hasSecondaryButton: () => layout()?.showSecondary ?? false,
+            primaryLabel: () => layout()?.primaryLabel ?? 'A',
+            secondaryLabel: () => layout()?.secondaryLabel ?? 'B',
+            isJoystickFloating: () => layout()?.floatingJoystick ?? false,
             onXDirectionChanged: (dir) => options.controls()?.setXDirection('touch', dir),
             onYDirectionChanged: (dir) => options.controls()?.setYDirection('touch', dir),
             onPrimaryButtonChanged: (pressed) => options.controls()?.setHeld('touch', 'primary', pressed),
@@ -185,8 +190,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
                 isInPage: true,
             }, findChip);
             canvas.hidden = false;
-            // The session's controls are known now, and they can change the fit
-            fitTo(areaWidth, areaHeight, session.inputConfig);
+            // A session's input config is known only now, and it can change the fit
+            fitTo(areaWidth, areaHeight, toLayout(next.arcadeControls) ?? session.inputConfig);
             return session;
         },
 
@@ -200,7 +205,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         },
 
         fit(width, height) {
-            fitTo(width, height, inputConfig());
+            fitTo(width, height, layout());
         },
 
         captureFrame() {
@@ -243,11 +248,12 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 
     return stage;
 
-    function inputConfig(): EntryInputConfig | undefined {
-        return starter === undefined ? undefined : options.session()?.inputConfig;
+    /** How the entry running lays out its touch controls, if it uses the arcade controls. */
+    function layout(): ArcadeControlsLayout | undefined {
+        return starter === undefined ? undefined : toLayout(starter.arcadeControls) ?? options.session()?.inputConfig;
     }
 
-    function fitTo(width: number, height: number, config: EntryInputConfig | undefined): void {
+    function fitTo(width: number, height: number, config: ArcadeControlsLayout | undefined): void {
         areaWidth = width;
         areaHeight = height;
         if (starter === undefined || width <= 0 || height <= 0) return;
@@ -270,6 +276,14 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** The touch layout for an entry's use of the arcade controls: none drawn, for the keys only. */
+function toLayout(use: ArcadeControlsUse | undefined): ArcadeControlsLayout | undefined {
+    return use === 'keys-only' ? KEYS_ONLY_LAYOUT : use;
+}
+
+/** The layout of an entry that uses the arcade controls from the keys only: every touch control left out. */
+const KEYS_ONLY_LAYOUT: ArcadeControlsLayout = {};
 
 /** The colour the canvas is filled with before an entry draws, unless the entry names its own. */
 const DEFAULT_BACKGROUND_COLOR = 0x000000;

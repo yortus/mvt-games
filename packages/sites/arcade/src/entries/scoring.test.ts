@@ -1,7 +1,7 @@
 import { Container, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 import { startPixiEntry } from '@mvtjs/site-kit/entry-types';
-import { createHeadlessSound } from '@mvtjs/site-kit/runner';
+import { createHeadlessControls, createHeadlessSound } from '@mvtjs/site-kit/runner';
 import { CATALOGUE } from './catalogue';
 
 // Loading a spritesheet needs a browser. Every texture becomes Pixi's 1x1
@@ -36,7 +36,7 @@ describe('each game with a highscore table', () => {
         it(`${entry.id} reports its score, and a run not yet over`, async () => {
             const starter = await entry.load();
             if (starter.kind !== 'pixi') throw new Error(`${entry.id}: only Pixi games are checked here`);
-            const session = startPixiEntry(starter, { stage: new Container() }, createHeadlessSound(starter).findChips);
+            const session = startPixiEntry(starter, { stage: new Container(), controls: createHeadlessControls(starter) }, createHeadlessSound(starter).findChips);
             try {
                 expect(session.scoring).toBeDefined();
                 for (let elapsed = 0; elapsed < SETTLE_MS; elapsed += FRAME_MS) session.update(FRAME_MS);

@@ -2,6 +2,7 @@ import type { Container } from 'pixi.js';
 import type { MetricKind, View } from '@mvtjs/pixi';
 import type { Audio80, Audio90 } from 'audio90';
 import type { DpadKind } from '#input/pixi';
+import type { ArcadeControls } from '../input';
 import type { MusicChip, SfxChip } from '../sound';
 
 // ---------------------------------------------------------------------------
@@ -90,16 +91,84 @@ export interface GivenNoSound {
 /** Finds the chips of a kind, for a session that plays on them. */
 export type SoundChipFinder = <K extends SoundChipKind>(kind: K) => SessionChips<K>;
 
+/** How a starter uses the arcade controls, or undefined for a starter that doesn't use them. */
+export type ControlsChoice = ArcadeControlsUse | undefined;
+
+/**
+ * What a starter declares about the arcade controls. A starter that uses
+ * them declares how, and one that doesn't declares nothing.
+ */
+export type ControlsField<C extends ControlsChoice> = C extends ArcadeControlsUse ? UsesArcadeControls<C> : UsesNoArcadeControls;
+
+/** A starter that uses the arcade controls as `C` says. */
+export interface UsesArcadeControls<C extends ArcadeControlsUse> {
+    /**
+     * Requests the arcade controls, and says how the host draws them on a
+     * touch screen: a layout, or `'keys-only'`, for an entry whose own view
+     * handles touch, so the host draws no touch controls. The host passes the
+     * session its controls as `controls`, and handles their keys while the
+     * entry plays.
+     */
+    readonly arcadeControls: C;
+}
+
+/**
+ * A starter's `arcadeControls`, as `definePixiLoader` reads it to work out
+ * `C`: how it uses the arcade controls, or not at all.
+ */
+export interface NamedArcadeControls<C extends ControlsChoice> {
+    readonly arcadeControls?: C;
+}
+
+/** A starter that doesn't use the arcade controls. */
+export interface UsesNoArcadeControls {
+    /** Absent, since the entry doesn't use the arcade controls. Its sessions are passed none. */
+    readonly arcadeControls?: undefined;
+}
+
+/** The `controls` start option that goes with a starter's use of the arcade controls. A starter that doesn't use them is passed none. */
+export type ControlsOption<C extends ControlsChoice> = C extends ArcadeControlsUse ? WithArcadeControls : WithoutArcadeControls;
+
+/** The start options of a session that uses the arcade controls. */
+export interface WithArcadeControls {
+    /**
+     * The session's arcade controls. A game's top-level view listens to them
+     * with `ArcadeControlsInputView`. In the page, the host sets what is held
+     * from the keys and the touch controls. Started headless, they are held
+     * only from `thumbnailInput`, or from a test's own script.
+     */
+    readonly controls: ArcadeControls;
+}
+
+/** The start options of a session that doesn't use the arcade controls. */
+export interface WithoutArcadeControls {
+    /** Absent, since the entry doesn't use the arcade controls. */
+    readonly controls?: undefined;
+}
+
+/**
+ * The arcade controls that a host has created for a session. The host passes
+ * them to `startPixiEntry` or `startElementEntry`, which pass them on only to
+ * an entry that uses them.
+ */
+export interface ControlsFromHost {
+    readonly controls?: ArcadeControls;
+}
+
 /**
  * An entry drawn with Pixi on the host's stage, which plays on chips of kind
- * `K`, or makes no sound. Without `K`, it is any Pixi entry, and TypeScript
- * tells them apart by `soundChip`. An entry makes its `load` with
+ * `K`, or makes no sound, and uses the arcade controls as `C` says, or not at
+ * all. Without `K` and `C`, it is any Pixi entry, and TypeScript
+ * distinguishes them by `soundChip` and `arcadeControls`. An entry makes its `load` with
  * `definePixiLoader`, which works out `K` from the `soundChip` its starter
- * names, so that the `music` and `sfx` its sessions are given are of that
- * kind.
+ * names, so that the `music` and `sfx` its sessions are passed are of that
+ * kind, and `C` from its `arcadeControls`, so that its sessions are passed
+ * `controls` only if it uses them.
  */
-export type PixiEntryStarter<K extends SoundChoice = SoundChoice> = K extends unknown
-    ? PixiEntryStarterFields<K> & SoundChipField<K>
+export type PixiEntryStarter<K extends SoundChoice = SoundChoice, C extends ControlsChoice = ControlsChoice> = K extends unknown
+    ? C extends unknown
+        ? PixiEntryStarterFields<K, C> & SoundChipField<K> & ControlsField<C>
+        : never
     : never;
 
 /**
@@ -108,7 +177,7 @@ export type PixiEntryStarter<K extends SoundChoice = SoundChoice> = K extends un
  * entry by leaving its container out of `updateView`. It can also start the
  * entry headless, on a bare container, as thumbnails and benchmarks do.
  */
-export interface PixiEntryStarterFields<K extends SoundChoice> {
+export interface PixiEntryStarterFields<K extends SoundChoice, C extends ControlsChoice> {
     readonly kind: 'pixi';
     /**
      * The play area, in the entry's own pixels. An entry that fits itself to
@@ -146,12 +215,13 @@ export interface PixiEntryStarterFields<K extends SoundChoice> {
      */
     readonly thumbnailAdvanceMs?: number;
     /**
-     * Plays the entry's controls while its thumbnail is set up, for a picture
-     * of it in action. It is called before each step of the advance, with the
-     * time advanced so far. It presses or releases controls through the
-     * session's `inputConfig`.
+     * Plays the arcade controls while the entry's thumbnail is set up, for a
+     * picture of it in action. It is called before each step of the advance,
+     * with the session's arcade controls and the time advanced so far, and
+     * only for an entry that has controls. It sets what is held from the
+     * `'script'` source.
      */
-    readonly thumbnailInput?: (session: EntrySession, elapsedMs: number) => void;
+    readonly thumbnailInput?: (controls: ArcadeControls, elapsedMs: number) => void;
     /**
      * The metrics the Arcade's Perfmon can't measure honestly while the entry
      * runs, which it shows as n/a. For example, `reads`, for an entry whose
@@ -160,13 +230,13 @@ export interface PixiEntryStarterFields<K extends SoundChoice> {
      */
     readonly unmeasuredMetrics?: readonly MetricKind[];
     /** Starts a session, adding the entry's view to `stage`. */
-    readonly start: (options: PixiStartOptions<K>) => EntrySession;
+    readonly start: (options: PixiStartOptions<K, C>) => EntrySession;
 }
 
-/** How to start a Pixi entry that plays on chip `K`, or makes no sound. */
-export type PixiStartOptions<K extends SoundChoice> = PixiStartBase & SoundOption<K>;
+/** How to start a Pixi entry that plays on chip `K`, or makes no sound, and uses the arcade controls as `C` says, or not at all. */
+export type PixiStartOptions<K extends SoundChoice, C extends ControlsChoice = undefined> = PixiStartBase & SoundOption<K> & ControlsOption<C>;
 
-/** How to start a Pixi entry, but for its sound. */
+/** How to start a Pixi entry, but for its sound and its arcade controls. */
 export interface PixiStartBase extends StartOptions {
     /** The container to add the entry's view to. */
     readonly stage: Container;
@@ -194,8 +264,10 @@ export interface StartOptions {
  * An entry makes its `load` with `defineElementLoader`, as a Pixi entry does
  * with `definePixiLoader`.
  */
-export type ElementEntryStarter<K extends SoundChoice = SoundChoice> = K extends unknown
-    ? ElementEntryStarterFields<K> & SoundChipField<K>
+export type ElementEntryStarter<K extends SoundChoice = SoundChoice, C extends ControlsChoice = ControlsChoice> = K extends unknown
+    ? C extends unknown
+        ? ElementEntryStarterFields<K, C> & SoundChipField<K> & ControlsField<C>
+        : never
     : never;
 
 /**
@@ -205,20 +277,20 @@ export type ElementEntryStarter<K extends SoundChoice = SoundChoice> = K extends
  * order. It calls the session's `update`, then `updateView` and `refreshView`
  * over its `views`, then its `render`.
  */
-export interface ElementEntryStarterFields<K extends SoundChoice> {
+export interface ElementEntryStarterFields<K extends SoundChoice, C extends ControlsChoice> {
     readonly kind: 'element';
     /** As for a Pixi entry: how long to advance before taking the thumbnail. */
     readonly thumbnailAdvanceMs?: number;
     /** As for a Pixi entry: the metrics the Arcade's Perfmon can't measure honestly while the entry runs. */
     readonly unmeasuredMetrics?: readonly MetricKind[];
     /** Starts a session, building the entry inside `element`, which it fills. */
-    readonly start: (options: ElementStartOptions<K>) => ElementEntrySession;
+    readonly start: (options: ElementStartOptions<K, C>) => ElementEntrySession;
 }
 
-/** How to start an element entry that plays on chip `K`, or makes no sound. */
-export type ElementStartOptions<K extends SoundChoice> = ElementStartBase & SoundOption<K>;
+/** How to start an element entry, as a Pixi entry's `PixiStartOptions` says. */
+export type ElementStartOptions<K extends SoundChoice, C extends ControlsChoice = undefined> = ElementStartBase & SoundOption<K> & ControlsOption<C>;
 
-/** How to start an element entry, but for its sound. */
+/** How to start an element entry, but for its sound and its arcade controls. */
 export interface ElementStartBase extends StartOptions {
     /** The element to build the entry in. */
     readonly element: HTMLElement;
@@ -311,8 +383,14 @@ export interface ElementEntrySession extends EntrySession {
     readonly ready?: Promise<void>;
 }
 
-/** The controls an entry takes, and where the host reports them. */
-export interface EntryInputConfig {
+/**
+ * How an entry uses the arcade controls: with touch controls laid out as
+ * the layout says, or from the keys only, with no touch controls drawn.
+ */
+export type ArcadeControlsUse = ArcadeControlsLayout | 'keys-only';
+
+/** How the host draws the arcade controls on a touch screen. Every part is left out by default. */
+export interface ArcadeControlsLayout {
     /**
      * Whether a touch screen shows a d-pad. Off by default: a game that
      * steers by swiping or dragging over its own view shows none.
@@ -325,6 +403,15 @@ export interface EntryInputConfig {
     readonly primaryLabel?: string;
     readonly secondaryLabel?: string;
     readonly floatingJoystick?: boolean;
+}
+
+/**
+ * The arcade controls' touch layout and callbacks, for a game whose wiring
+ * is still in its starter. The arcade controls call these callbacks as they
+ * change. A game that has moved its wiring into its top-level view sets
+ * `arcadeControls` on its starter instead, and this goes once every game has.
+ */
+export interface EntryInputConfig extends ArcadeControlsLayout {
     readonly onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
     readonly onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
     readonly onPrimaryButtonChanged?: (pressed: boolean) => void;
@@ -343,44 +430,66 @@ export interface EntryInputConfig {
  * are of that kind, or none for a starter that names no chip. A chip that does not exist
  * is an error, and nothing needs a type written.
  */
-export function definePixiLoader<K extends SoundChoice = undefined>(
-    load: () => Promise<PixiEntryStarterFields<K> & NamedSoundChip<K>>,
-): () => Promise<PixiEntryStarter<K>> {
-    // `K` is worked out from `soundChip`, so a starter whose `K` is a chip names it
-    return load as () => Promise<PixiEntryStarter<K>>;
+export function definePixiLoader<K extends SoundChoice = undefined, C extends ControlsChoice = undefined>(
+    load: () => Promise<PixiEntryStarterFields<K, C> & NamedSoundChip<K> & NamedArcadeControls<C>>,
+): () => Promise<PixiEntryStarter<K, C>> {
+    // `K` is worked out from `soundChip`, and `C` from `arcadeControls`, so a starter whose `K` is a chip names it,
+    // and one whose `C` is a use of the controls declares it
+    return load as () => Promise<PixiEntryStarter<K, C>>;
 }
 
-/** Returns `load`, typed for the chip its starter names, as `definePixiLoader` does. */
-export function defineElementLoader<K extends SoundChoice = undefined>(
-    load: () => Promise<ElementEntryStarterFields<K> & NamedSoundChip<K>>,
-): () => Promise<ElementEntryStarter<K>> {
-    return load as () => Promise<ElementEntryStarter<K>>;
+/** Returns `load`, typed for the chip its starter names and its use of the arcade controls, as `definePixiLoader` does. */
+export function defineElementLoader<K extends SoundChoice = undefined, C extends ControlsChoice = undefined>(
+    load: () => Promise<ElementEntryStarterFields<K, C> & NamedSoundChip<K> & NamedArcadeControls<C>>,
+): () => Promise<ElementEntryStarter<K, C>> {
+    return load as () => Promise<ElementEntryStarter<K, C>>;
 }
 
 /**
  * Starts a session of a Pixi entry with `options`. An entry that plays on a
- * chip is also given the music and sound effects chips of its kind, from
- * `findChips`. One that makes no sound is given none.
+ * chip is also passed the music and sound effects chips of its kind, from
+ * `findChips`. One that makes no sound is passed none. An entry that uses
+ * the arcade controls is passed `options.controls`, and one that doesn't is
+ * passed none. A session with an `inputConfig` has its callbacks called by
+ * `options.controls`.
  */
-export function startPixiEntry(starter: PixiEntryStarter, options: PixiStartBase, findChips: SoundChipFinder): EntrySession {
-    switch (starter.soundChip) {
-        case undefined:
-            return starter.start(options);
-        case 'audio80':
-            return starter.start({ ...options, ...findChips('audio80') });
-        case 'audio90':
-            return starter.start({ ...options, ...findChips('audio90') });
-    }
+export function startPixiEntry(starter: PixiEntryStarter, options: PixiStartBase & ControlsFromHost, findChips: SoundChipFinder): EntrySession {
+    const { controls, ...base } = options;
+    const chips = starter.soundChip === undefined ? {} : findChips(starter.soundChip);
+    // TypeScript can't follow a starter's chip and its use of the controls into the options its `start` accepts,
+    // which `definePixiLoader` worked out from them. The chips and the controls passed here are the ones it named
+    const start = starter.start as (options: PixiStartBase & Partial<SessionChips<SoundChipKind>> & ControlsFromHost) => EntrySession;
+    const session = start({ ...base, ...chips, ...pickControls(starter.arcadeControls, controls) });
+    return listenWithInputConfig(session, controls);
 }
 
-/** Starts a session of an element entry with `options`, and its chips, as `startPixiEntry` does. */
-export function startElementEntry(starter: ElementEntryStarter, options: ElementStartBase, findChips: SoundChipFinder): ElementEntrySession {
-    switch (starter.soundChip) {
-        case undefined:
-            return starter.start(options);
-        case 'audio80':
-            return starter.start({ ...options, ...findChips('audio80') });
-        case 'audio90':
-            return starter.start({ ...options, ...findChips('audio90') });
-    }
+/** Starts a session of an element entry with `options`, and its chips and controls, as `startPixiEntry` does. */
+export function startElementEntry(
+    starter: ElementEntryStarter,
+    options: ElementStartBase & ControlsFromHost,
+    findChips: SoundChipFinder,
+): ElementEntrySession {
+    const { controls, ...base } = options;
+    const chips = starter.soundChip === undefined ? {} : findChips(starter.soundChip);
+    // As for a Pixi entry, TypeScript can't follow the chip and the controls into the options
+    const start = starter.start as (options: ElementStartBase & Partial<SessionChips<SoundChipKind>> & ControlsFromHost) => ElementEntrySession;
+    const session = start({ ...base, ...chips, ...pickControls(starter.arcadeControls, controls) });
+    return listenWithInputConfig(session, controls);
+}
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** The `controls` option for an entry that uses the arcade controls, and none for one that doesn't. */
+function pickControls(use: ControlsChoice, controls: ArcadeControls | undefined): ControlsFromHost {
+    if (use === undefined) return {};
+    if (controls === undefined) throw new Error('entry types: an entry that uses the arcade controls must be passed them');
+    return { controls };
+}
+
+/** Has `controls` call the callbacks of `session`'s input config, for a game whose wiring is still in its starter. */
+function listenWithInputConfig<S extends EntrySession>(session: S, controls: ArcadeControls | undefined): S {
+    if (session.inputConfig !== undefined) controls?.listen(session.inputConfig);
+    return session;
 }

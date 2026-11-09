@@ -28,8 +28,8 @@ export const load = definePixiLoader(async () => {
         // The thumbnail shows the first tune a few bars in
         thumbnailAdvanceMs: THUMBNAIL_ADVANCE_MS,
         // Play is pressed once, as the advance starts: a second press would stop the tune
-        thumbnailInput: (session, elapsedMs) => {
-            if (elapsedMs === 0) session.inputConfig?.onPrimaryButtonChanged?.(true);
+        thumbnailInput: (controls, elapsedMs) => {
+            if (elapsedMs === 0) controls.setHeld('script', 'primary', true);
         },
 
         start({ stage, music }): EntrySession {

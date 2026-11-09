@@ -15,9 +15,9 @@ export const load = definePixiLoader(async () => {
         // Long enough for the snake to wind across the garden
         thumbnailAdvanceMs: 2400,
         // Right, then down, then back left
-        thumbnailInput: (session, elapsedMs) => {
-            if (elapsedMs >= 1500) session.inputConfig?.onXDirectionChanged?.('left');
-            else if (elapsedMs >= 900) session.inputConfig?.onYDirectionChanged?.('down');
+        thumbnailInput: (controls, elapsedMs) => {
+            if (elapsedMs >= 1500) controls.setXDirection('script', 'left');
+            else if (elapsedMs >= 900) controls.setYDirection('script', 'down');
         },
 
         start({ stage }): EntrySession {

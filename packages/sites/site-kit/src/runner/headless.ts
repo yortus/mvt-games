@@ -5,6 +5,7 @@ import {
     type ArcadeEntry, type EntrySession, type EntryStarter, type PixiEntryStarter, type SoundChipFinder,
     type SessionChips, type SoundChipKind, startPixiEntry,
 } from '../entry-types';
+import { type ArcadeControls, createArcadeControls } from '../input';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -30,6 +31,8 @@ export interface StartPixiHeadlessOptions {
     readonly stage: Container;
     /** The chips that the entry plays on, from `createHeadlessSound`. */
     readonly sound: HeadlessSound;
+    /** The session's arcade controls, from `createHeadlessControls`, for an entry that uses them. */
+    readonly controls?: ArcadeControls;
 }
 
 export interface AdvanceHeadlessOptions {
@@ -39,8 +42,14 @@ export interface AdvanceHeadlessOptions {
     /** The chips that the session plays on, if any. */
     readonly chips: readonly (HeadlessAudio80 | HeadlessAudio90)[];
     readonly totalMs: number;
-    /** Plays the entry's controls before each step, as `PixiEntryStarter.thumbnailInput` does. */
-    readonly input?: (session: EntrySession, elapsedMs: number) => void;
+    /** The session's arcade controls, if it has them, for `input` to play. */
+    readonly controls?: ArcadeControls;
+    /**
+     * Plays the arcade controls before each step, with the time advanced so
+     * far, as a starter's `thumbnailInput` does. It is called only for a
+     * session that has controls.
+     */
+    readonly input?: (controls: ArcadeControls, elapsedMs: number) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,6 +76,19 @@ export function createHeadlessSound(starter: EntryStarter): HeadlessSound {
 }
 
 /**
+ * Creates the arcade controls that `starter` uses, with no keys, so they are
+ * held only from a script, such as its `thumbnailInput`. For an entry that
+ * doesn't use them, it creates none.
+ *
+ * Every entry gets them for now, though, since some games still wire an
+ * `inputConfig` in their starters, which the controls call. Once no game
+ * does, only an entry that declares `arcadeControls` gets them.
+ */
+export function createHeadlessControls(_starter: EntryStarter): ArcadeControls | undefined {
+    return createArcadeControls();
+}
+
+/**
  * Starts a Pixi entry headless, on a bare container with no host. The
  * thumbnail page and the visual tests start entries this way. If the entry
  * lays itself out, it is laid out for the play area that its metadata
@@ -74,9 +96,9 @@ export function createHeadlessSound(starter: EntryStarter): HeadlessSound {
  * again to the same size changes nothing.
  */
 export function startPixiHeadless(options: StartPixiHeadlessOptions): EntrySession {
-    const { entry, starter, stage, sound } = options;
+    const { entry, starter, stage, sound, controls } = options;
     starter.fitTo?.(entry.screenWidth, entry.screenHeight);
-    return startPixiEntry(starter, { stage }, sound.findChips);
+    return startPixiEntry(starter, { stage, controls }, sound.findChips);
 }
 
 /**
@@ -105,11 +127,11 @@ export async function waitForLayout(): Promise<void> {
  * from then.
  */
 export function advanceHeadless(options: AdvanceHeadlessOptions): void {
-    const { session, views, chips, totalMs, input } = options;
+    const { session, views, chips, totalMs, controls, input } = options;
     let remaining = totalMs;
     while (remaining > 0) {
         const step = Math.min(FRAME_MS, remaining);
-        input?.(session, totalMs - remaining);
+        if (controls !== undefined) input?.(controls, totalMs - remaining);
         session.update(step);
         for (let i = 0; i < chips.length; i++) chips[i].update(step);
         for (let i = 0; i < views.length; i++) updateView(views[i], step);

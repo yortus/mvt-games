@@ -1,6 +1,6 @@
 import { Application, TextureSource } from 'pixi.js';
 import { type ArcadeEntry, startElementEntry, thumbnailCropOf } from '../entry-types';
-import { advanceHeadless, createHeadlessSound, findThumbnailAdvanceMs, startPixiHeadless, waitForLayout } from '../runner';
+import { advanceHeadless, createHeadlessControls, createHeadlessSound, findThumbnailAdvanceMs, startPixiHeadless, waitForLayout } from '../runner';
 
 // This is the snapshot page (`snapshot.html`), which each site has, with
 // its own entries. Only `scripts/generate-thumbnails.ts` uses it. The dev server serves it, and the
@@ -94,8 +94,9 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
         root.append(app.canvas);
         // The entry runs headless, with no host and a silent chip, as when it is measured
         const sound = createHeadlessSound(starter);
-        const session = startPixiHeadless({ entry, starter, stage: app.stage, sound });
-        advanceHeadless({ session, views: [app.stage], chips: sound.chips, totalMs, input: starter.thumbnailInput });
+        const controls = createHeadlessControls(starter);
+        const session = startPixiHeadless({ entry, starter, stage: app.stage, sound, controls });
+        advanceHeadless({ session, views: [app.stage], chips: sound.chips, totalMs, controls, input: starter.thumbnailInput });
         app.render();
         return;
     }
@@ -103,7 +104,7 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     root.style.width = `${entry.screenWidth}px`;
     root.style.height = `${entry.screenHeight}px`;
     const sound = createHeadlessSound(starter);
-    const session = startElementEntry(starter, { element: root }, sound.findChips);
+    const session = startElementEntry(starter, { element: root, controls: createHeadlessControls(starter) }, sound.findChips);
     // Some renderers start asynchronously, so this waits until they can draw,
     // and until an entry that sizes itself to its element knows its size.
     await session.ready;

@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
+import { type ArcadeControls, createArcadeControls } from '../input';
 import type { MusicChip, SfxChip } from '../sound';
 import {
     defineElementLoader, definePixiLoader, type ElementEntrySession, type ElementEntryStarter, type PixiEntryStarter,
@@ -26,7 +27,7 @@ describe('a starter\'s sound chips', () => {
                 return SESSION;
             },
         }));
-        expectTypeOf(load).returns.resolves.toEqualTypeOf<PixiEntryStarter<'audio80'>>();
+        expectTypeOf(load).returns.resolves.toEqualTypeOf<PixiEntryStarter<'audio80', undefined>>();
         startPixiEntry(await load(), { stage: new Container() }, findIn('audio80', chips));
         expect(given).toEqual([chips.music, chips.sfx]);
     });
@@ -70,7 +71,7 @@ describe('a starter\'s sound chips', () => {
                 return SESSION;
             },
         }));
-        expectTypeOf(load).returns.resolves.toEqualTypeOf<PixiEntryStarter<undefined>>();
+        expectTypeOf(load).returns.resolves.toEqualTypeOf<PixiEntryStarter<undefined, undefined>>();
         startPixiEntry(await load(), { stage: new Container() }, refuseChip);
         expect(options).not.toHaveProperty('music');
         expect(options).not.toHaveProperty('sfx');
@@ -86,7 +87,7 @@ describe('a starter\'s sound chips', () => {
                 return ELEMENT_SESSION;
             },
         }));
-        expectTypeOf(load).returns.resolves.toEqualTypeOf<ElementEntryStarter<'audio90'>>();
+        expectTypeOf(load).returns.resolves.toEqualTypeOf<ElementEntryStarter<'audio90', undefined>>();
         expect((await load()).soundChip).toBe('audio90');
     });
 
@@ -94,10 +95,61 @@ describe('a starter\'s sound chips', () => {
         // @ts-expect-error There is no Audio70
         const unknown = definePixiLoader(async () => ({ ...PIXI_FIELDS, soundChip: 'audio70', start: () => SESSION }));
         // @ts-expect-error A loader for the Audio80 is not one for the Audio90
-        const wrong: () => Promise<PixiEntryStarter<'audio90'>> = definePixiLoader(async () => ({ ...PIXI_FIELDS, soundChip: 'audio80', start: () => SESSION }));
+        const wrong: () => Promise<PixiEntryStarter<'audio90', undefined>> = definePixiLoader(async () => ({ ...PIXI_FIELDS, soundChip: 'audio80', start: () => SESSION }));
         // @ts-expect-error A starter typed for the Audio80 must say so in `soundChip`
         const unnamed: PixiEntryStarter<'audio80'> = { ...PIXI_FIELDS, start: () => SESSION };
         expect([unknown, wrong, unnamed]).toHaveLength(3);
+    });
+});
+
+describe('the arcade controls of a starter', () => {
+    it('passes the host controls to a starter that declares the arcade controls', async () => {
+        const controls = createArcadeControls();
+        let passed: ArcadeControls | undefined;
+        const load = definePixiLoader(async () => ({
+            ...PIXI_FIELDS,
+            arcadeControls: 'keys-only',
+            start: (options) => {
+                expectTypeOf(options.controls).toEqualTypeOf<ArcadeControls>();
+                passed = options.controls;
+                return SESSION;
+            },
+        }));
+        expectTypeOf(load).returns.resolves.toEqualTypeOf<PixiEntryStarter<undefined, 'keys-only'>>();
+        startPixiEntry(await load(), { stage: new Container(), controls }, refuseChip);
+        expect(passed).toBe(controls);
+    });
+
+    it('passes a starter that declares no arcade controls none, even when the host has created them', async () => {
+        let passedOptions: object | undefined;
+        const load = definePixiLoader(async () => ({
+            ...PIXI_FIELDS,
+            start: (options) => {
+                expectTypeOf(options.controls).toEqualTypeOf<undefined>();
+                passedOptions = options;
+                return SESSION;
+            },
+        }));
+        startPixiEntry(await load(), { stage: new Container(), controls: createArcadeControls() }, refuseChip);
+        expect(passedOptions).not.toHaveProperty('controls');
+    });
+
+    it('works out the controls of an element entry the same way, from a touch layout', async () => {
+        const load = defineElementLoader(async () => ({
+            kind: 'element',
+            arcadeControls: { showDpad: true },
+            start: ({ controls }) => {
+                expectTypeOf(controls).toEqualTypeOf<ArcadeControls>();
+                return ELEMENT_SESSION;
+            },
+        }));
+        expect((await load()).arcadeControls).toEqual({ showDpad: true });
+    });
+
+    it('fails to start an entry that declares the arcade controls when the host passes none', async () => {
+        const load = definePixiLoader(async () => ({ ...PIXI_FIELDS, arcadeControls: 'keys-only', start: () => SESSION }));
+        const starter = await load();
+        expect(() => startPixiEntry(starter, { stage: new Container() }, refuseChip)).toThrow(/must be passed them/);
     });
 });
 

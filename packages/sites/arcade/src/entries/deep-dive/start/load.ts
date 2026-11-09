@@ -15,8 +15,8 @@ export const load = definePixiLoader(async () => {
         // Far enough into the cave for it to have wound about
         thumbnailAdvanceMs: 2000,
         // Rise and sink in turn, so the submarine holds about level
-        thumbnailInput: (session, elapsedMs) => {
-            session.inputConfig?.onPrimaryButtonChanged?.((elapsedMs + 75) % 300 < 150);
+        thumbnailInput: (controls, elapsedMs) => {
+            controls.setHeld('script', 'primary', (elapsedMs + 75) % 300 < 150);
         },
 
         start({ stage }): EntrySession {

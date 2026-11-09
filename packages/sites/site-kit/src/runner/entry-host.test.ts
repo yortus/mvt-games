@@ -177,7 +177,19 @@ describe('createEntryHost', () => {
             destroyAll(host, sound);
         });
 
-        it('creates no controls for a game with no input config, and leaves the keys to the page', async () => {
+        it('passes the arcade controls to a game that declares them, and handles their keys', async () => {
+            const { sound, host } = createHostWithSound();
+            const game = createFakeDeclaredGame();
+            await host.prepare(game.starter);
+            host.start(game.starter);
+            const event = sendKey('keydown', 'ArrowDown');
+            sendKey('keydown', 'Enter');
+            expect(event.defaultPrevented).toBe(true);
+            expect(game.reports).toEqual(['y down', 'restart true']);
+            destroyAll(host, sound);
+        });
+
+        it('leaves the keys to the page for an entry that uses no arcade controls', async () => {
             const { sound, host } = createHostWithSound();
             const game = createFakeGame();
             await host.prepare(game.starter);
@@ -264,6 +276,23 @@ function sendKey(kind: 'keydown' | 'keyup', key: string): KeyboardEvent {
     const event = new KeyboardEvent(kind, { key, bubbles: true, cancelable: true });
     window.dispatchEvent(event);
     return event;
+}
+
+/** Creates an element entry that declares the arcade controls on its starter, and listens to them as a game view does. */
+function createFakeDeclaredGame() {
+    const reports: string[] = [];
+    const starter: ElementEntryStarter = {
+        kind: 'element',
+        arcadeControls: 'keys-only',
+        start: ({ controls }) => {
+            const stop = controls.listen({
+                onYDirectionChanged: (direction) => reports.push(`y ${direction}`),
+                onRestartButtonChanged: (pressed) => reports.push(`restart ${pressed}`),
+            });
+            return { views: [], update: () => {}, render: () => {}, destroy: stop };
+        },
+    };
+    return { starter, reports };
 }
 
 /** Creates an element entry that makes no sound. It keeps whether it was given chips anyway. */

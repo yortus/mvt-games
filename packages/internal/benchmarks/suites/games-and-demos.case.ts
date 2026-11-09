@@ -2,8 +2,9 @@ import { Container } from 'pixi.js';
 import { findEntry as findGame } from '@mvtjs/arcade/entries';
 import { findEntry as findDemo } from '@mvtjs/demos/entries';
 import {
-    type EntryInputConfig, type PixiEntryStarter, type SessionChips, type SoundChipFinder, type SoundChipKind, startPixiEntry,
+    type PixiEntryStarter, type SessionChips, type SoundChipFinder, type SoundChipKind, startPixiEntry,
 } from '@mvtjs/site-kit/entry-types';
+import { type ArcadeControls, createArcadeControls } from '@mvtjs/site-kit/input';
 import { hasRefresh, hasUpdate, refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, createHeadlessAudio90 } from 'audio90/headless';
 import { allocationPerFrame, gcDuring, readParams, report } from '../harness/measure';
@@ -48,13 +49,15 @@ const music = starter.soundChip === 'audio90' ? createHeadlessAudio90() : create
 const sfx = starter.soundChip === 'audio90' ? createHeadlessAudio90() : createHeadlessAudio80();
 // A starter asks only for the kind of chip it names, which these are. TypeScript can't follow that into their type
 const findChips: SoundChipFinder = <K extends SoundChipKind>() => ({ music, sfx }) as unknown as SessionChips<K>;
-const session = startPixiEntry(starter, { stage }, findChips);
+// The arcade controls listen to no keys here. The script below sets what is held
+const controls = createArcadeControls();
+const session = startPixiEntry(starter, { stage, controls }, findChips);
 const sessionChips = starter.soundChip === undefined ? [] : [music, sfx];
 /** Advances the session's chips' clocks, as the host does each frame. */
 const updateChips = (deltaMs: number): void => {
     for (let i = 0; i < sessionChips.length; i++) sessionChips[i].update(deltaMs);
 };
-const input = createInputScript(session.inputConfig);
+const input = createInputScript(controls, starter.arcadeControls !== undefined || session.inputConfig !== undefined);
 let frameIndex = 0;
 
 const frame = (): void => {
@@ -120,17 +123,17 @@ async function loadPixiStarter(id: string): Promise<PixiEntryStarter> {
  * plays the same way. The horizontal direction changes every half second,
  * and the vertical every 0.7 seconds. The primary and secondary buttons are
  * pressed briefly every second and every 1.5 seconds. Only changes are sent,
- * as real input would be. Demos have no `inputConfig`, so they get none.
+ * as real input would be. Demos don't use the arcade controls, so they get none.
  */
-function createInputScript(config: EntryInputConfig | undefined): (frame: number) => void {
+function createInputScript(controls: ArcadeControls, usesControls: boolean): (frame: number) => void {
     return (f) => {
-        if (config === undefined) return;
-        if (f % 30 === 0) config.onXDirectionChanged?.(X_PATTERN[(f / 30) % X_PATTERN.length]);
-        if (f % 42 === 0) config.onYDirectionChanged?.(Y_PATTERN[(f / 42) % Y_PATTERN.length]);
-        if (f % 60 === 0) config.onPrimaryButtonChanged?.(true);
-        if (f % 60 === 5) config.onPrimaryButtonChanged?.(false);
-        if (f % 90 === 20) config.onSecondaryButtonChanged?.(true);
-        if (f % 90 === 25) config.onSecondaryButtonChanged?.(false);
+        if (!usesControls) return;
+        if (f % 30 === 0) controls.setXDirection('script', X_PATTERN[(f / 30) % X_PATTERN.length]);
+        if (f % 42 === 0) controls.setYDirection('script', Y_PATTERN[(f / 42) % Y_PATTERN.length]);
+        if (f % 60 === 0) controls.setHeld('script', 'primary', true);
+        if (f % 60 === 5) controls.setHeld('script', 'primary', false);
+        if (f % 90 === 20) controls.setHeld('script', 'secondary', true);
+        if (f % 90 === 25) controls.setHeld('script', 'secondary', false);
     };
 }
 
