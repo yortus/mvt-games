@@ -23,6 +23,13 @@ game view with `ArcadeControlsInputView`, and so do Crumb Chase, Garden
 Snake, Dojo Duel, Fuel Run, Kwazy Cactii, Neon Monsoon and the Tune
 Tracker. The other games still use `inputConfig`,
 whose callbacks the arcade controls call until every game has moved.
+Step 4 is done, ahead of the rest of step 3: How to play names the arcade
+controls (`{ control: 'primary' }`, and `'left-right'`, `'up-down'` and
+`'dpad'` for sets of ways), the page shows the keys the table has for each,
+and the games' "Press Enter" comes from `describeControl('restart')`. The
+touch buttons' labels stay in `touchInputs`, as written: the info panel
+shows How to play before the starter, which holds the touch layout, has
+loaded. The key names no entry uses any more left `ControlKey`.
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
 from a survey of every entry and the site kit. Line numbers are from that

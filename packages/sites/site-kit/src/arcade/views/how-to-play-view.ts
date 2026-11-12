@@ -1,6 +1,7 @@
 import { setRefresh } from '@mvtjs/html';
 import type { DeviceKind } from '../../device';
-import type { ControlButton, ControlGesture, ControlInput, ControlKey, ControlRow, HowToPlay } from '../../entry-types';
+import type { ArcadeControlInput, ControlButton, ControlGesture, ControlInput, ControlKey, ControlRow, HowToPlay } from '../../entry-types';
+import { ARCADE_CONTROL_KEYS, type ArcadeControl, describeKey } from '../../input';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -21,7 +22,8 @@ export interface HowToPlayViewBindings {
  * Shows how to play an entry: what to aim for, then its controls as a table,
  * then anything else worth knowing. The table has a row for each action,
  * with its keys in one column, as key caps, and its gestures and on-screen
- * buttons in the next, each with an icon. It shows only the controls the
+ * buttons in the next, each with an icon. An arcade control shows as the
+ * keys the arcade controls' table has for it. It shows only the controls the
  * device has: the keyboard and the mouse on a desktop, touch on a phone or a
  * tablet, and all of them on a laptop with a touch screen. A row, or a
  * column, shows only where it has something in it.
@@ -131,27 +133,43 @@ function headerCell(text: string): HTMLElement {
     return cell;
 }
 
-/** A cell of inputs, any one of which does the action, with "or" between them. */
+/** A cell of inputs, any one of which does the action, with "or" between them. An arcade control with two keys is two of them. */
 function inputsCell(inputs: readonly ControlInput[]): HTMLElement {
+    const views: HTMLElement[] = [];
+    for (const input of inputs) {
+        if (isArcadeControlInput(input)) {
+            for (const caps of capsOfControl(input)) views.push(capsView(caps));
+        }
+        else {
+            views.push(inputView(input));
+        }
+    }
     const cell = element('td');
     const list = element('span', 'how-inputs');
-    for (let i = 0; i < inputs.length; i++) {
+    for (let i = 0; i < views.length; i++) {
         if (i > 0) list.append(element('span', 'how-or', 'or'));
-        list.append(inputView(inputs[i]));
+        list.append(views[i]);
     }
     cell.append(list);
     return cell;
 }
 
-/** One input: key caps, keys (or a button and keys) pressed together with "+" between, a gesture with its icon, or an on-screen button. */
-function inputView(input: ControlInput): HTMLElement {
-    if (typeof input === 'string') return isKey(input) ? keyView(input) : gestureView(input);
+/**
+ * One input: key caps, controls and keys (or a button and keys) pressed
+ * together with "+" between, a gesture with its icon, or an on-screen
+ * button. Pressed together with others, an arcade control shows as its
+ * first key.
+ */
+function inputView(input: Exclude<ControlInput, ArcadeControlInput>): HTMLElement {
+    if (typeof input === 'string') return isKey(input) ? capsView(KEYS[input]) : gestureView(input);
     if ('button' in input) return buttonView(input);
     const combo = element('span', 'how-combo');
     for (let i = 0; i < input.length; i++) {
         if (i > 0) combo.append(element('span', 'how-plus', '+'));
         const part = input[i];
-        combo.append(typeof part === 'string' ? keyView(part) : buttonView(part));
+        if (typeof part === 'string') combo.append(capsView(KEYS[part]));
+        else if ('button' in part) combo.append(buttonView(part));
+        else combo.append(capsView(capsOfControl(part)[0]));
     }
     return combo;
 }
@@ -164,8 +182,7 @@ function buttonView(input: ControlButton): HTMLElement {
 }
 
 /** A key, or a set of keys, as key caps, named for assistive technology. */
-function keyView(key: ControlKey): HTMLElement {
-    const { caps, name } = KEYS[key];
+function capsView({ caps, name }: Caps): HTMLElement {
     const group = element('span', 'how-keys');
     group.setAttribute('aria-label', name);
     for (const cap of caps) {
@@ -183,11 +200,49 @@ function gestureView(gesture: ControlGesture): HTMLElement {
     return chip;
 }
 
-/** Whether an input is for the keyboard: a key, or keys pressed together with no button among them. */
+/** Whether an input is for the keyboard: an arcade control, a key, or controls and keys pressed together with no button among them. */
 function isKeyInput(input: ControlInput): boolean {
     if (typeof input === 'string') return isKey(input);
-    if ('button' in input) return false;
-    return input.every((part) => typeof part === 'string');
+    if (!isCombo(input)) return !('button' in input);
+    return input.every((part) => typeof part === 'string' || !('button' in part));
+}
+
+function isCombo(input: ControlInput): input is Extract<ControlInput, readonly unknown[]> {
+    return Array.isArray(input);
+}
+
+function isArcadeControlInput(input: ControlInput): input is ArcadeControlInput {
+    return typeof input === 'object' && !isCombo(input) && 'control' in input;
+}
+
+/**
+ * An arcade control's keys, from the table, as one set of key caps for each
+ * key it has: for Left, Left then A, and for all four ways, the arrows then
+ * W A S D.
+ */
+function capsOfControl({ control }: ArcadeControlInput): Caps[] {
+    const controls = CONTROLS_OF[control];
+    const sets: Caps[] = [];
+    for (let i = 0; ; i++) {
+        const keys: string[] = [];
+        for (const each of controls) {
+            const key = ARCADE_CONTROL_KEYS[each][i] as string | undefined;
+            if (key !== undefined) keys.push(key);
+        }
+        if (keys.length === 0) return sets;
+        sets.push({ caps: keys.map(capOf), name: listInWords(keys.map(describeKey)) });
+    }
+}
+
+/** A key's cap: an arrow as its arrow, and any other key in words. */
+function capOf(key: string): string {
+    return ARROWS[key] ?? describeKey(key);
+}
+
+/** Names as a list in words: `'Left and Right'`, or `'W, A, S and D'`. */
+function listInWords(names: readonly string[]): string {
+    if (names.length < 2) return names.join('');
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
 /** Whether an input needs a mouse: a click, or the wheel. */
@@ -213,23 +268,38 @@ const UP = textArrow('↑');
 const RIGHT = textArrow('→');
 const DOWN = textArrow('↓');
 
+/** A key, or keys used as one, as key caps, and its name for assistive technology. */
+interface Caps {
+    readonly caps: readonly string[];
+    readonly name: string;
+}
+
+/** The arrow keys' caps, by the name `KeyboardEvent.key` has for each. */
+const ARROWS: Readonly<Record<string, string | undefined>> = { ArrowLeft: LEFT, ArrowUp: UP, ArrowRight: RIGHT, ArrowDown: DOWN };
+
+/** The arcade controls in each control input, in the order their caps show: the d-pad's in reading order, as W A S D is. */
+const CONTROLS_OF: Readonly<Record<ArcadeControlInput['control'], readonly ArcadeControl[]>> = {
+    'dpad': ['up', 'left', 'down', 'right'],
+    'left-right': ['left', 'right'],
+    'up-down': ['up', 'down'],
+    'left': ['left'],
+    'right': ['right'],
+    'up': ['up'],
+    'down': ['down'],
+    'primary': ['primary'],
+    'secondary': ['secondary'],
+    'restart': ['restart'],
+};
+
 /** Each key's caps, and its name for assistive technology. */
-const KEYS: Readonly<Record<ControlKey, { readonly caps: readonly string[]; readonly name: string }>> = {
+const KEYS: Readonly<Record<ControlKey, Caps>> = {
     'arrows': { caps: [LEFT, UP, DOWN, RIGHT], name: 'the arrow keys' },
     'wasd': { caps: ['W', 'A', 'S', 'D'], name: 'W A S D' },
-    'left-right': { caps: [LEFT, RIGHT], name: 'Left and Right' },
-    'a-d': { caps: ['A', 'D'], name: 'A and D' },
-    'up-down': { caps: [UP, DOWN], name: 'Up and Down' },
     'up': { caps: [UP], name: 'Up' },
     'down': { caps: [DOWN], name: 'Down' },
-    'left': { caps: [LEFT], name: 'Left' },
-    'right': { caps: [RIGHT], name: 'Right' },
     'forward': { caps: ['Fwd'], name: 'Forward, toward the opponent' },
     'back': { caps: ['Back'], name: 'Back, away from the opponent' },
-    'w': { caps: ['W'], name: 'W' },
     'space': { caps: ['Space'], name: 'Space' },
-    'shift': { caps: ['Shift'], name: 'Shift' },
-    'enter': { caps: ['Enter'], name: 'Enter' },
 };
 
 /** Each gesture's name, shown beside its icon. */

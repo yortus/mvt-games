@@ -6,6 +6,7 @@ import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
 import { DragInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { CAVE_HEIGHT, SUB_X, VIEW_WIDTH } from '../data';
 import type { GameModel } from '../models';
 
@@ -33,7 +34,8 @@ export function GameView(bindings: GameViewBindings): Container {
     const bestText = createComputed({ watch: () => Math.floor(model.best), compute: (metres) => `BEST ${metres} m` });
     const isTouch = isTouchDevice();
     const hint = isTouch ? 'Hold anywhere to rise' : 'Hold Space to rise';
-    const crashText = `CRASHED\n\n${isTouch ? 'Tap' : 'Press Enter'} to dive again`;
+    const restartHint = isTouch ? 'Tap to dive again' : `Press ${describeControl('restart')} to dive again`;
+    const crashText = `CRASHED\n\n${restartHint}`;
 
     // Presentation state: bubbles let out from the propeller, in cave units, so
     // they stay where they were let out as the cave scrolls by. The rock hides

@@ -12,10 +12,10 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Shoot every rock to clear the wave. A hit rock splits in two, smaller and faster; the smallest are worth the most.',
         controls: [
-            { action: 'Turn', inputs: ['left-right', 'a-d'], touchInputs: ['joystick'] },
-            { action: 'Thrust', inputs: ['up', 'w'], touchInputs: [{ button: 'Thrust' }] },
-            { action: 'Shoot', inputs: ['space'], touchNote: 'Your ship fires on its own' },
-            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'] },
+            { action: 'Turn', inputs: [{ control: 'left-right' }], touchInputs: ['joystick'] },
+            { action: 'Thrust', inputs: [{ control: 'up' }, { control: 'secondary' }], touchInputs: [{ button: 'Thrust' }] },
+            { action: 'Shoot', inputs: [{ control: 'primary' }], touchNote: 'Your ship fires on its own' },
+            { action: 'Restart', inputs: [{ control: 'restart' }], touchInputs: ['tap'] },
         ],
         notes: [
             'The arena wraps: what leaves one edge comes back at the other.',

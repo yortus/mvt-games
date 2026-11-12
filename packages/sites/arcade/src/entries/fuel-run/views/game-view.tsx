@@ -6,6 +6,7 @@ import type { ArcadeControls } from '@mvtjs/site-kit/input';
 import { ArcadeControlsInputView, DragInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { VISIBLE_COLS, VISIBLE_ROWS } from '../data';
@@ -52,7 +53,8 @@ export interface GameViewBindings {
 export function GameView(bindings: GameViewBindings): Container {
     const { model, music, sfx, controls } = bindings;
     const isTouch = isTouchDevice();
-    const gameOverText = `GAME OVER\n\n${isTouch ? 'Tap to restart' : 'Press Enter to restart'}`;
+    const restartHint = isTouch ? 'Tap to restart' : `Press ${describeControl('restart')} to restart`;
+    const gameOverText = `GAME OVER\n\n${restartHint}`;
     const playMask = new Graphics().rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
 
     return (

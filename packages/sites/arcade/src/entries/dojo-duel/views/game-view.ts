@@ -4,6 +4,7 @@ import type { ArcadeControls } from '@mvtjs/site-kit/input';
 import { ArcadeControlsInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';
 import type { GameModel } from '../models';
 import { ArenaView } from './arena-view';
@@ -125,7 +126,7 @@ export function GameView(bindings: GameViewBindings): Container {
     );
 
     // Overlay
-    const restartHint = isTouchDevice() ? 'Tap to restart' : 'Press Enter to restart';
+    const restartHint = isTouchDevice() ? 'Tap to restart' : `Press ${describeControl('restart')} to restart`;
     view.addChild(
         OverlayView({
             font: 'pixel',

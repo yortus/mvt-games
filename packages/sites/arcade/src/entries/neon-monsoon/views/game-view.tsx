@@ -8,6 +8,7 @@ import type { ArcadeControls } from '@mvtjs/site-kit/input';
 import { ArcadeControlsInputView, DragInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { ARENA_WIDTH, textures } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { AudioView } from './audio-view';
@@ -346,7 +347,7 @@ export function GameView(bindings: GameViewBindings): Container {
 /** How many times as far as the finger slides a drag flies the ship, so the finger needn't cross the whole arena. */
 const DRAG_GAIN = 1.5;
 
-const RESTART_PROMPT = isTouchDevice() ? 'Tap to play again' : 'Press Enter to play again';
+const RESTART_PROMPT = isTouchDevice() ? 'Tap to play again' : `Press ${describeControl('restart')} to play again`;
 
 function describePhase(phase: GamePhase, tallyBonus: number): string {
     switch (phase) {

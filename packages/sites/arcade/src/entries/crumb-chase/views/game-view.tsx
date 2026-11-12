@@ -6,6 +6,7 @@ import type { ArcadeControls } from '@mvtjs/site-kit/input';
 import { ArcadeControlsInputView, SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { MAZE_ROWS, MAZE_COLS } from '../data';
@@ -48,7 +49,7 @@ export function GameView(bindings: GameViewBindings): Container {
     const canvasW = MAZE_COLS * TILE_SIZE;
     const canvasH = MAZE_ROWS * TILE_SIZE;
     const isTouch = isTouchDevice();
-    const restartHint = isTouch ? 'Tap to restart' : 'Press Enter to restart';
+    const restartHint = isTouch ? 'Tap to restart' : `Press ${describeControl('restart')} to restart`;
     const gameOverText = `GAME OVER\n\n${restartHint}`;
     const winText = `YOU WIN!\n\n${restartHint}`;
 

@@ -11,9 +11,9 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Shoot down every raider to clear the stage.',
         controls: [
-            { action: 'Move', inputs: ['left-right', 'a-d'], touchInputs: ['drag'] },
-            { action: 'Shoot', inputs: ['space'], touchInputs: ['hold'], note: 'Two shots in the air at most', touchNote: 'A finger held to steer fires too' },
-            { action: 'Restart', inputs: ['enter'], touchInputs: ['tap'] },
+            { action: 'Move', inputs: [{ control: 'left-right' }], touchInputs: ['drag'] },
+            { action: 'Shoot', inputs: [{ control: 'primary' }], touchInputs: ['hold'], note: 'Two shots in the air at most', touchNote: 'A finger held to steer fires too' },
+            { action: 'Restart', inputs: [{ control: 'restart' }], touchInputs: ['tap'] },
         ],
         notes: [
             'Raiders fly in, take their place in the ranks, then peel off to dive at you, firing as they come. A raider shot as it dives is worth more.',

@@ -33,8 +33,8 @@ export const details: EntryDetails = {
     howToPlay: {
         intro: 'Choose a tune and press Play.',
         controls: [
-            { action: 'Choose a tune', inputs: ['up-down', 'left-right'] },
-            { action: 'Play or stop', inputs: ['space'] },
+            { action: 'Choose a tune', inputs: [{ control: 'dpad' }] },
+            { action: 'Play or stop', inputs: [{ control: 'primary' }] },
             { action: 'Play a tune', inputs: ['click', 'tap'] },
         ],
     },

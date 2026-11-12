@@ -7,6 +7,8 @@ export {
     type ArcadeControl, type ArcadeControls, type ArcadeControlsListener, type ArcadeControlsOptions, type ArcadeControlSource,
     createArcadeControls,
 } from './arcade-controls';
+export { describeControl } from './describe-control';
+export { describeKey } from './describe-key';
 export {
     createGridGesturesViewModel, type GridGesturesViewModel, type GridGesturesViewModelOptions, type GridLattice, type GridSteps,
 } from './grid-gestures-view-model';

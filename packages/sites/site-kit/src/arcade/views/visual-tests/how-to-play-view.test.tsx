@@ -6,24 +6,24 @@ import { HowToPlayView } from '../how-to-play-view';
 import { wearTheme } from './wear-theme.test-support';
 
 /**
- * A game's controls: keys, and touch, with a note under an action, a note for
- * touch only, keys pressed together, on-screen buttons, and actions for one
- * kind of device only.
+ * A game's controls: the arcade controls, as the table's keys, and touch, with
+ * a note under an action, a note for touch only, controls and keys pressed
+ * together, on-screen buttons, and actions for one kind of device only.
  */
 const GAME: HowToPlay = {
     intro: 'Fly over the land, keep your fuel up, and destroy the base at the end of the run.',
     controls: [
-        { action: 'Move', inputs: ['arrows', 'wasd'], touchInputs: ['joystick'] },
+        { action: 'Move', inputs: [{ control: 'dpad' }], touchInputs: ['joystick'] },
         {
             action: 'Shoot',
-            inputs: ['space'],
+            inputs: [{ control: 'primary' }],
             touchInputs: [{ button: 'Fire' }],
             note: 'Two shots in the air at most',
             touchNote: 'A finger held down fires too',
         },
-        { action: 'Somersault', inputs: [['space', 'up', 'forward']], touchInputs: [[{ button: 'Atk' }, 'up', 'forward']] },
+        { action: 'Somersault', inputs: [[{ control: 'primary' }, { control: 'up' }, 'forward']], touchInputs: [[{ button: 'Atk' }, 'up', 'forward']] },
         { action: 'Stop', touchInputs: ['tap'] },
-        { action: 'Restart', inputs: ['enter'] },
+        { action: 'Restart', inputs: [{ control: 'restart' }] },
     ],
     notes: ['A rock that hits you costs a ship; you have 3.'],
 };

@@ -1,3 +1,4 @@
+import type { ArcadeControl } from '../input';
 import type { EntryStarter } from './entry-starter';
 
 // ---------------------------------------------------------------------------
@@ -117,10 +118,11 @@ export interface ControlRow {
     /** What it does, in a word or two: `'Move'`, `'Shoot'`. */
     readonly action: string;
     /**
-     * The inputs that do it on any device that has them: keys, which show in
-     * the keyboard's column, and gestures and buttons that work with a mouse
-     * or a finger, as an entry's own buttons and pointer gestures do. Of
-     * these, a click and the wheel show only where there is a mouse.
+     * The inputs that do it on any device that has them: the arcade controls
+     * and keys, which show in the keyboard's column, and gestures and buttons
+     * that work with a mouse or a finger, as an entry's own buttons and
+     * pointer gestures do. Of these, a click and the wheel show only where
+     * there is a mouse.
      */
     readonly inputs?: readonly ControlInput[];
     /**
@@ -136,22 +138,36 @@ export interface ControlRow {
 }
 
 /**
- * An input: a key, or a pair of keys for two ways (`'left-right'`), or keys
- * pressed together (`['space', 'up']`), a button among them on a touch screen
- * (`[{ button: 'Atk' }, 'up']`, with the joystick's way as a key). Or, for
- * touch and the mouse, a gesture, or a button on the screen
+ * An input: one of the arcade controls (`{ control: 'primary' }`), a key, or
+ * a set of keys used as one (`'arrows'`), or controls and keys pressed
+ * together (`[{ control: 'primary' }, 'forward']`), a button among them on a
+ * touch screen (`[{ button: 'Atk' }, 'up']`, with the joystick's way as a
+ * key). Or, for touch and the mouse, a gesture, or a button on the screen
  * (`{ button: 'Fire' }`).
  */
-export type ControlInput = ControlKey | readonly (ControlKey | ControlButton)[] | ControlGesture | ControlButton;
+export type ControlInput =
+    | ArcadeControlInput | ControlKey | readonly (ArcadeControlInput | ControlKey | ControlButton)[] | ControlGesture | ControlButton;
 
 /**
- * A key, or a set the player uses as one: all four arrows, or WASD. Forward
- * and back are the arrows that point toward the opponent, and away.
+ * One of the arcade controls, or a set of the d-pad's ways the player uses
+ * as one: left and right, up and down, or all four. It shows as the keys the
+ * arcade controls' table has for it, so the keys shown are the keys that
+ * work. A control with two keys, such as Left and A, shows as two sets of
+ * keys, either of which does the action. Pressed together with others, it
+ * shows as its first key. An entry that uses the arcade controls names them
+ * this way, rather than by their keys.
  */
-export type ControlKey =
-    | 'arrows' | 'wasd' | 'left-right' | 'a-d' | 'up-down'
-    | 'up' | 'down' | 'left' | 'right' | 'forward' | 'back' | 'w'
-    | 'space' | 'shift' | 'enter';
+export interface ArcadeControlInput {
+    readonly control: ArcadeControl | 'left-right' | 'up-down' | 'dpad';
+}
+
+/**
+ * A key, or a set the player uses as one, for an entry that listens to the
+ * keyboard itself: all four arrows, or WASD. Forward and back are the ways
+ * toward the opponent and away, on the keyboard or the joystick, for moves
+ * that depend on which way a fighter faces.
+ */
+export type ControlKey = 'arrows' | 'wasd' | 'up' | 'down' | 'forward' | 'back' | 'space';
 
 /**
  * A gesture, on a touch screen or with a mouse. The joystick is the one a game

@@ -7,6 +7,7 @@ import { isTouchDevice } from '@mvtjs/site-kit/device';
 import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { AudioView } from './audio-view';
@@ -206,7 +207,7 @@ export function GameView(bindings: GameViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-const RESTART_PROMPT = isTouchDevice() ? 'Tap to play again' : 'Press Enter to play again';
+const RESTART_PROMPT = isTouchDevice() ? 'Tap to play again' : `Press ${describeControl('restart')} to play again`;
 
 /** How to steer, shown as each round starts on a touch screen, where there are no controls to see. */
 const STEERING_HINT = isTouchDevice() ? '\n\nSwipe to steer, tap to stop' : '';

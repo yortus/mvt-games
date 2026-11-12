@@ -7,6 +7,7 @@ import { isTouchDevice } from '@mvtjs/site-kit/device';
 import type { ArcadeControls } from '@mvtjs/site-kit/input';
 import { ArcadeControlsInputView, SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { COLS, ROWS } from '../data';
 import type { GameModel } from '../models';
 
@@ -35,7 +36,8 @@ export function GameView(bindings: GameViewBindings): Container {
     const { model, controls } = bindings;
     const scoreText = createComputed({ watch: () => model.score, compute: (score) => `SCORE ${score}` });
     const isTouch = isTouchDevice();
-    const gameOverText = `GAME OVER\n\n${isTouch ? 'Tap' : 'Press Enter'} to play again`;
+    const restartHint = isTouch ? 'Tap to play again' : `Press ${describeControl('restart')} to play again`;
+    const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>

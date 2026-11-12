@@ -5,6 +5,7 @@ import { isTouchDevice } from '@mvtjs/site-kit/device';
 import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
+import { describeControl } from '@mvtjs/site-kit/input';
 import { List } from '@mvtjs/pixi';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
@@ -44,7 +45,7 @@ export function GameView(bindings: GameViewBindings): Container {
     const canvasW = FIELD_COLS * TILE_SIZE;
     const canvasH = FIELD_ROWS * TILE_SIZE;
     const isTouch = isTouchDevice();
-    const restartHint = isTouch ? 'Tap to restart' : 'Press Enter to restart';
+    const restartHint = isTouch ? 'Tap to restart' : `Press ${describeControl('restart')} to restart`;
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
