@@ -27,17 +27,19 @@ export const load = definePixiLoader(async () => {
         screenHeight: SCREEN_HEIGHT,
         // The thumbnail shows the first tune a few bars in
         thumbnailAdvanceMs: THUMBNAIL_ADVANCE_MS,
+        // No touch controls are drawn. The tracker's own screen handles touch
+        arcadeControls: 'keys-only',
         // Play is pressed once, as the advance starts: a second press would stop the tune
         thumbnailInput: (controls, elapsedMs) => {
             if (elapsedMs === 0) controls.setHeld('script', 'primary', true);
         },
 
-        start({ stage, music }): EntrySession {
+        start({ stage, music, controls }): EntrySession {
             const model = createDemoModel({ tuneCount: TUNES.length });
             const font = createPixelFont({ sheet: textures.get().font });
             // A scope costs the audio thread a little, so one is attached only while the Tune Tracker runs
             const scope = createScope(music);
-            const view = DemoView({ model, music, scope, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font });
+            const view = DemoView({ model, music, scope, tunes: TUNES, instrumentNames: INSTRUMENT_NAMES, font, controls });
             stage.addChild(view);
 
             return {
@@ -49,17 +51,6 @@ export const load = definePixiLoader(async () => {
                     scope.destroy();
                     stage.removeChild(view);
                     view.destroy({ children: true });
-                },
-                inputConfig: {
-                    onYDirectionChanged(direction) {
-                        if (direction !== 'none') model.tracker.moveChoice(direction === 'up' ? -1 : 1);
-                    },
-                    onXDirectionChanged(direction) {
-                        if (direction !== 'none') model.tracker.moveChoice(direction === 'left' ? -1 : 1);
-                    },
-                    onPrimaryButtonChanged(isPressed) {
-                        if (isPressed) model.tracker.playOrStop();
-                    },
                 },
             };
         },

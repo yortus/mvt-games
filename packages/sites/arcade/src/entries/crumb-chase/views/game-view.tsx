@@ -2,7 +2,8 @@
 
 import type { Container } from 'pixi.js';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
+import type { ArcadeControls } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { List } from '@mvtjs/pixi';
@@ -26,6 +27,8 @@ export interface GameViewBindings {
     music: MusicChip<'audio80'>;
     /** The chip the game's sound effects play on, read once as `music` is. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,7 +44,7 @@ export interface GameViewBindings {
  * the next corner that opens that way. The overlay's own taps come first.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, music, sfx } = bindings;
+    const { model, music, sfx, controls } = bindings;
     const canvasW = MAZE_COLS * TILE_SIZE;
     const canvasH = MAZE_ROWS * TILE_SIZE;
     const isTouch = isTouchDevice();
@@ -51,6 +54,13 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container>
+            {/* The keys steer the mouse, and a way let go of leaves it heading the same way */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => { if (direction !== 'none') model.direction = direction; }}
+                onYDirectionChanged={(direction) => { if (direction !== 'none') model.direction = direction; }}
+                onRestartPressed={model.startNewRun}
+            />
             {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
             <SwipeInputView
                 isEnabled={isTouch}

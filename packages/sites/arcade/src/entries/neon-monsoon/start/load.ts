@@ -22,10 +22,13 @@ export const load = definePixiLoader(async () => {
         integerScale: true,
         // Long enough for the first kites to fly in.
         thumbnailAdvanceMs: 9000,
+        // On a touch screen, a drag over the game view steers, so only Focus and Bomb are drawn.
+        // Focus is held often, and a bomb is dropped rarely, so Focus is the primary button
+        arcadeControls: { showPrimary: true, showSecondary: true, primaryLabel: 'Focus', secondaryLabel: 'Bomb' },
 
-        start({ stage, music, sfx, bestScore }): EntrySession {
+        start({ stage, music, sfx, bestScore, controls }): EntrySession {
             const gameModel = createGameModel({ events: STAGE_EVENTS, bossAttacks: BOSS_ATTACKS });
-            const gameView = GameView({ model: gameModel, music, sfx, bestScore });
+            const gameView = GameView({ model: gameModel, music, sfx, bestScore, controls });
             stage.addChild(gameView);
 
             return {
@@ -44,23 +47,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    // On a touch screen, a drag over the game view steers, so only Focus and Bomb are drawn.
-                    // Focus is held often, and a bomb is dropped rarely, so Focus is the primary button
-                    showPrimary: true,
-                    showSecondary: true,
-                    primaryLabel: 'Focus',
-                    secondaryLabel: 'Bomb',
-                    onXDirectionChanged: (dir) => { gameModel.headingX = dir; },
-                    onYDirectionChanged: (dir) => { gameModel.headingY = dir; },
-                    // Letting go of Focus also releases the volley, if it is locked on
-                    onPrimaryButtonChanged: (isDown) => {
-                        gameModel.isFocusing = isDown;
-                        if (!isDown) gameModel.releaseVolley();
-                    },
-                    onSecondaryButtonChanged: (isDown) => { if (isDown) gameModel.dropBomb(); },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

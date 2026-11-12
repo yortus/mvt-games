@@ -1,5 +1,7 @@
 import { Container } from 'pixi.js';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
+import type { ArcadeControls } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { SfxChip } from '@mvtjs/site-kit/sound';
 import type { GameModel } from '../models';
@@ -17,6 +19,8 @@ export interface GameViewBindings {
     model: GameModel;
     /** The chip the game's sound effects play on, read once as `music` is. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -33,6 +37,9 @@ export function GameView(bindings: GameViewBindings): Container {
     return view;
 
     function initialiseView(): void {
+        // The keys: only Restart
+        view.addChild(ArcadeControlsInputView({ controls: bindings.controls, onRestartPressed: game.startNewRun }));
+
         // Read game.board in each binding, not once here: a restart replaces the board
         const boardView = BoardView({
             phase: () => game.board.phase,

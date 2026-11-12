@@ -17,14 +17,16 @@ export const load = definePixiLoader(async () => {
         pixelArt: true,
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        // Only Restart is a key. The board handles its own taps and drags, in the game view
+        arcadeControls: 'keys-only',
 
-        start({ stage, sfx }): EntrySession {
+        start({ stage, sfx, controls }): EntrySession {
             const gameModel = createGameModel({
                 rowCount: GRID_ROWS,
                 colCount: GRID_COLS,
             });
 
-            const gameView = GameView({ model: gameModel, sfx });
+            const gameView = GameView({ model: gameModel, sfx, controls });
             stage.addChild(gameView);
 
             return {
@@ -42,9 +44,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

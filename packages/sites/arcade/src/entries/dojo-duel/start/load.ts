@@ -15,10 +15,11 @@ export const load = definePixiLoader(async () => {
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         thumbnailAdvanceMs: 2000,
+        arcadeControls: { showDpad: true, showPrimary: true, primaryLabel: 'Atk' },
 
-        start({ stage, music, sfx }): EntrySession {
+        start({ stage, music, sfx, controls }): EntrySession {
             const gameModel = createGameModel();
-            const gameView = GameView({ model: gameModel, music, sfx });
+            const gameView = GameView({ model: gameModel, music, sfx, controls });
             stage.addChild(gameView);
 
             return {
@@ -30,16 +31,6 @@ export const load = definePixiLoader(async () => {
                 destroy(): void {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
-                },
-
-                inputConfig: {
-                    showDpad: true,
-                    showPrimary: true,
-                    primaryLabel: 'Atk',
-                    onXDirectionChanged: (dir) => { gameModel.horizontalLean = dir; },
-                    onYDirectionChanged: (dir) => { gameModel.verticalLean = dir; },
-                    onPrimaryButtonChanged: (isDown) => { gameModel.isAttacking = isDown; },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

@@ -4,7 +4,8 @@ import { type Container, Graphics } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
 import { List } from '@mvtjs/pixi';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { DragInputView } from '@mvtjs/site-kit/input/pixi';
+import type { ArcadeControls } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, DragInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { ARENA_WIDTH, textures } from '../data';
@@ -45,6 +46,8 @@ export interface GameViewBindings {
      * is higher. Absent outside the Arcade: "HI" is this session's best.
      */
     bestScore?: () => number;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -63,7 +66,7 @@ export interface GameViewBindings {
  * `BulletLayerView`, reading its field by index.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, music, sfx, bestScore = () => 0 } = bindings;
+    const { model, music, sfx, bestScore = () => 0, controls } = bindings;
     const { scoring, ship, boss, stage, volley, enemyBullets, playerShots, gems } = model;
     const tex = textures.get();
     const arenaMask = new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(0xffffff);
@@ -71,6 +74,18 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container>
+            {/* The keys, or the host's Focus and Bomb buttons. Letting go of Focus also releases the volley, if it is locked on */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => { model.headingX = direction; }}
+                onYDirectionChanged={(direction) => { model.headingY = direction; }}
+                onPrimaryButtonChanged={(pressed) => {
+                    model.isFocusing = pressed;
+                    if (!pressed) model.releaseVolley();
+                }}
+                onSecondaryPressed={model.dropBomb}
+                onRestartPressed={model.startNewRun}
+            />
             {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the touch controls' space */}
             <DragInputView
                 isEnabled={isTouchDevice()}

@@ -1,6 +1,7 @@
 import { createHeadlessAudio90 } from 'audio90/headless';
 import { advanceTime } from '@mvtjs/pixi';
 import { canvasTest } from 'v-snap';
+import { createArcadeControls } from '@mvtjs/site-kit/input';
 import { BOSS_ATTACKS, type StageEvent, textures } from '../../data';
 import { createGameModel, type GameModel } from '../../models';
 import { GameView } from '../game-view';
@@ -22,7 +23,7 @@ async function poseVolley(focusMs: number, afterMs = 0) {
     await textures.load();
     const model = createGameModel({ events: GUNSHIP_AHEAD, bossAttacks: BOSS_ATTACKS });
     // A headless chip makes no sound, and an image does not depend on what plays.
-    const view = GameView({ model, music: createHeadlessAudio90(), sfx: createHeadlessAudio90() });
+    const view = GameView({ model, music: createHeadlessAudio90(), sfx: createHeadlessAudio90(), controls: createArcadeControls() });
     model.volley.addGrazeTime(Infinity);
     model.isFocusing = true;
     await advanceTime(focusMs, model, view);

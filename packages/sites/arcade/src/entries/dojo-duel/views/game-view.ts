@@ -1,5 +1,7 @@
 import { Container } from 'pixi.js';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
+import type { ArcadeControls } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { SCREEN_WIDTH, SCREEN_HEIGHT, HUD_HEIGHT, PLAYER_ACCENT_COLOR, OPPONENT_ACCENT_COLOR } from './view-constants';
@@ -20,6 +22,8 @@ export interface GameViewBindings {
     music: MusicChip<'audio80'>;
     /** The chip the game's sound effects play on, read once as `music` is. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -30,6 +34,17 @@ export function GameView(bindings: GameViewBindings): Container {
     const game = bindings.model;
     const view = new Container();
     view.label = 'dojo-duel-game';
+
+    // The d-pad leans the fighter, the primary button attacks, and the model turns the two into a move
+    view.addChild(
+        ArcadeControlsInputView({
+            controls: bindings.controls,
+            onXDirectionChanged: (direction) => { game.horizontalLean = direction; },
+            onYDirectionChanged: (direction) => { game.verticalLean = direction; },
+            onPrimaryButtonChanged: (pressed) => { game.isAttacking = pressed; },
+            onRestartPressed: game.startNewRun,
+        }),
+    );
 
     // HUD at top
     view.addChild(

@@ -24,8 +24,10 @@ export const load = definePixiLoader(async () => {
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
+        // On a touch screen, the game view's swipes steer, so no touch controls are drawn
+        arcadeControls: 'keys-only',
 
-        start({ stage, music, sfx }): EntrySession {
+        start({ stage, music, sfx, controls }): EntrySession {
             const gameModel = createGameModel({
                 grid: MAZE_DATA,
                 mouseSpawn: MOUSE_SPAWN,
@@ -33,7 +35,7 @@ export const load = definePixiLoader(async () => {
                 penExit: PEN_EXIT,
             });
 
-            const gameView = GameView({ model: gameModel, music, sfx });
+            const gameView = GameView({ model: gameModel, music, sfx, controls });
             stage.addChild(gameView);
 
             return {
@@ -52,12 +54,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    // On a touch screen, the game view's swipes steer, so no controls are drawn
-                    onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
-                    onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

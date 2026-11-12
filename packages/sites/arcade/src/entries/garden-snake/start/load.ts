@@ -12,6 +12,8 @@ export const load = definePixiLoader(async () => {
         kind: 'pixi',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        // A touch screen steers by swiping, in the view, so no touch controls are drawn
+        arcadeControls: 'keys-only',
         // Long enough for the snake to wind across the garden
         thumbnailAdvanceMs: 2400,
         // Right, then down, then back left
@@ -20,9 +22,9 @@ export const load = definePixiLoader(async () => {
             else if (elapsedMs >= 900) controls.setYDirection('script', 'down');
         },
 
-        start({ stage }): EntrySession {
+        start({ stage, controls }): EntrySession {
             const gameModel = createGameModel();
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, controls });
             stage.addChild(gameView);
 
             return {
@@ -37,13 +39,6 @@ export const load = definePixiLoader(async () => {
                 scoring: {
                     score: () => gameModel.score,
                     isOver: () => gameModel.phase === 'game-over',
-                },
-                inputConfig: {
-                    // A touch screen steers by swiping, in the view, so no controls are drawn
-                    // A direction held stays the snake's way until another is pressed
-                    onXDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
-                    onYDirectionChanged: (dir) => { if (dir !== 'none') gameModel.direction = dir; },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

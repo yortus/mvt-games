@@ -20,13 +20,15 @@ export const load = definePixiLoader(async () => {
         integerScale: true,
         // Long enough for the section's banner to have faded
         thumbnailAdvanceMs: 3000,
+        // On a touch screen, the game view's drag flies and fires, so only Bomb is drawn
+        arcadeControls: { showSecondary: true, secondaryLabel: 'Bomb' },
 
-        start({ stage, music, sfx }): EntrySession {
+        start({ stage, music, sfx, controls }): EntrySession {
             const gameModel = createGameModel({
                 sections: SECTIONS,
             });
 
-            const gameView = GameView({ model: gameModel, music, sfx });
+            const gameView = GameView({ model: gameModel, music, sfx, controls });
             stage.addChild(gameView);
 
             return {
@@ -44,16 +46,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    // On a touch screen, the game view's drag flies and fires, so only Bomb is drawn
-                    showSecondary: true,
-                    secondaryLabel: 'Bomb',
-                    onXDirectionChanged: (dir) => { gameModel.thrustX = dir; },
-                    onYDirectionChanged: (dir) => { gameModel.thrustY = dir; },
-                    onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.fire(); },
-                    onSecondaryButtonChanged: (isDown) => { if (isDown) gameModel.dropBomb(); },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

@@ -2,7 +2,8 @@
 
 import { type Container, Graphics } from 'pixi.js';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { DragInputView } from '@mvtjs/site-kit/input/pixi';
+import type { ArcadeControls } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, DragInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
 import { List } from '@mvtjs/pixi';
@@ -34,6 +35,8 @@ export interface GameViewBindings {
     music: MusicChip<'audio80'>;
     /** The chip the game's sound effects play on, read once as `music` is. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -47,13 +50,22 @@ export interface GameViewBindings {
  * empty slots hide themselves.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, music, sfx } = bindings;
+    const { model, music, sfx, controls } = bindings;
     const isTouch = isTouchDevice();
     const gameOverText = `GAME OVER\n\n${isTouch ? 'Tap to restart' : 'Press Enter to restart'}`;
     const playMask = new Graphics().rect(0, 0, SCREEN_WIDTH, PLAY_HEIGHT).fill(0xffffff);
 
     return (
         <container>
+            {/* The keys, or the host's Bomb button: the d-pad thrusts, the primary button fires, the secondary drops a bomb */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => { model.thrustX = direction; }}
+                onYDirectionChanged={(direction) => { model.thrustY = direction; }}
+                onPrimaryPressed={model.fire}
+                onSecondaryPressed={model.dropBomb}
+                onRestartPressed={model.startNewRun}
+            />
             {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the touch controls' space */}
             <DragInputView
                 isEnabled={isTouch}

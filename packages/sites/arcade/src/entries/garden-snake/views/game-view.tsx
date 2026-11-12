@@ -4,7 +4,8 @@ import type { Container, Graphics } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
+import type { ArcadeControls } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import { COLS, ROWS } from '../data';
 import type { GameModel } from '../models';
@@ -15,6 +16,8 @@ import type { GameModel } from '../models';
 
 export interface GameViewBindings {
     model: GameModel;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -29,13 +32,20 @@ export const SCREEN_HEIGHT = ROWS * CELL + HUD_HEIGHT;
 
 /** The whole game: the score bar, the garden, the berry, the snake, and the game-over panel. */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model } = bindings;
+    const { model, controls } = bindings;
     const scoreText = createComputed({ watch: () => model.score, compute: (score) => `SCORE ${score}` });
     const isTouch = isTouchDevice();
     const gameOverText = `GAME OVER\n\n${isTouch ? 'Tap' : 'Press Enter'} to play again`;
 
     return (
         <container>
+            {/* The keys steer, and a direction stays the snake's way until another is pressed */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => { if (direction !== 'none') model.direction = direction; }}
+                onYDirectionChanged={(direction) => { if (direction !== 'none') model.direction = direction; }}
+                onRestartPressed={model.startNewRun}
+            />
             {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
             <SwipeInputView
                 isEnabled={isTouch}

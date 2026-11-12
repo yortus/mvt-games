@@ -19,7 +19,9 @@ counts the keys down for each hold. Step 3 is under way: a starter
 requests the arcade controls with `arcadeControls` (a touch layout, or
 `'keys-only'`), and only then is its session passed `controls`, typed as
 `definePixiLoader` types the sound chips. Galaxy Raiders wires them in its
-game view with `ArcadeControlsInputView`. The other games still use `inputConfig`,
+game view with `ArcadeControlsInputView`, and so do Crumb Chase, Garden
+Snake, Dojo Duel, Fuel Run, Kwazy Cactii, Neon Monsoon and the Tune
+Tracker. The other games still use `inputConfig`,
 whose callbacks the arcade controls call until every game has moved.
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
