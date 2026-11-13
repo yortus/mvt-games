@@ -20,7 +20,8 @@ function setup(initialMode: SpinButtonMode) {
     refreshView(view);
     const label = (): string => findText(view)?.text ?? '';
     const press = (): void => {
-        view.emit('pointertap', undefined as never);
+        view.emit('pointerdown', POINTER);
+        view.emit('pointerup', POINTER);
     };
     return {
         view,
@@ -33,6 +34,9 @@ function setup(initialMode: SpinButtonMode) {
         },
     };
 }
+
+/** A pointer event from the first finger. */
+const POINTER = { pointerId: 1 } as never;
 
 function findText(container: Container): Text | undefined {
     for (const child of container.children) {
@@ -62,6 +66,21 @@ describe('SpinButtonView', () => {
         t.press();
 
         expect(t.presses()).toBe(1);
+    });
+
+    it('sinks while held, and rises again as the browser cancels the touch, which presses nothing', () => {
+        const t = setup('spin');
+        const face = t.view.children[1];
+        const restingY = face.y;
+
+        t.view.emit('pointerdown', POINTER);
+        refreshView(t.view);
+        expect(face.y).toBeGreaterThan(restingY);
+
+        t.view.emit('pointercancel', POINTER);
+        refreshView(t.view);
+        expect(face.y).toBe(restingY);
+        expect(t.presses()).toBe(0);
     });
 
     it('ignores a press while disabled', () => {

@@ -19,7 +19,11 @@ export interface OverlayViewBindings {
      * Read once. Defaults to `'system'`.
      */
     font?: 'system' | 'pixel';
-    /** The overlay was pressed. A game wires it to what a press means there, such as starting a new run. */
+    /**
+     * The overlay was pressed. It fires on a tap, as the pointer lets go over
+     * it, so a finger that lands by mistake can slide off. A game wires it to
+     * what a press means there, such as starting a new run.
+     */
     onPressed?: () => void;
 }
 
@@ -62,7 +66,7 @@ export function OverlayView(bindings: OverlayViewBindings): Container {
     /** The backdrop's pointer handlers: none, so it is not interactive, without a relay binding to call. */
     function pressHandlers(): PressHandlers {
         if (onPressed === undefined) return {};
-        return { cursor: 'pointer', onPointerDown: () => onPressed() };
+        return { cursor: 'pointer', onPointerTap: () => onPressed() };
     }
 }
 
@@ -88,5 +92,5 @@ function drawBackdrop(g: Graphics, width: number, height: number): void {
 
 interface PressHandlers {
     cursor?: Cursor;
-    onPointerDown?: () => void;
+    onPointerTap?: () => void;
 }

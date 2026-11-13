@@ -34,6 +34,13 @@ The games' "Press Enter" comes from `describeControl('restart')`. The
 touch buttons' labels stay in `touchInputs`, as written. The info panel
 shows How to play before the starter has loaded, and the starter holds the
 touch layout. The key names no entry uses any more left `ControlKey`.
+Step 5 is done. Every button fires on a tap. The overlay, Boids'
+checkbox, and Double Pendulum's and Sudoku Digger's buttons fired as the
+finger went down. They now use Pixi's `onPointerTap`, as the other buttons
+already did. `listenToPress` is in `input/pixi/`, for a button that shows
+its hold. Falling Sand's action buttons and Fruit Machine's spin button use
+it. So the spin button no longer stays down after a cancelled touch (bug
+7). The other buttons kept `onPointerTap` (section 6.2).
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
 from a survey of every entry and the site kit. Line numbers are from that
@@ -483,6 +490,14 @@ whose model must be notified of the release, reports it from a microtask, as
 
 ### 6.2 One press behaviour for Pixi buttons
 
+*As built:* only the buttons that show their hold use `listenToPress`. A
+button that shows nothing while held fires on Pixi's own `pointertap`. It
+gets nearly all of `listenToPress` from that one attribute. A cancel sends
+no `pointerup`, so it can't fire, and its handler reads `isEnabled` as the
+pointer lifts anyway. What it lacks is following one pointer, and two
+fingers tapping a button together hardly matter. `listenToPress` would
+cost those buttons a `ref`, an import and a return value they ignore.
+
 `listenToPress({ target, isEnabled, onPressed })`, in `input/pixi/`: it
 follows one pointer, reports a press as a tap (let go over the target), and
 releases on a cancel. It returns `{ readonly isHeld: boolean }`, which the
@@ -493,7 +508,7 @@ while it is held fires nothing. Each site keeps its own look. Only the
 behaviour is shared.
 
 The rule: **a button fires on a tap**, so a finger that lands on it by
-mistake can slide off. That changes the five buttons that fire on press,
+mistake can slide off. That changes the four buttons that fire on press,
 `OverlayView` among them. The exceptions are controls that are held, such
 as the touch controls' buttons and the keypad, which report as they go
 down.
@@ -613,14 +628,14 @@ touch most of them. An open question (section 10).
 | Astrovoid, Deep Dive | Their action worked out from what the controls hold (5) |
 | Burrow Bust, Fenceline | One direction from the two axes, in their wiring (5) |
 | The 4 swipe and 4 drag games | Shared swipe distance and area (5) |
-| Tune Tracker | Arcade controls in its top-level view; its play button and list through `listenToPress` |
-| Boids | Slider on `listenToPointer`, checkbox on `listenToPress` |
+| Tune Tracker | Arcade controls in its top-level view |
+| Boids | Slider on `listenToPointer`, checkbox fires on a tap |
 | Coral | Painting on `listenToPointer`; double tap counts only taps |
-| Falling Sand | Pour on `listenToPointer` with `onHovered`; toolbar on `listenToPress` |
-| Double Pendulum, Sudoku Digger, Reordering Lists | Buttons on `listenToPress` |
+| Falling Sand | Pour on `listenToPointer` with `onHovered`; action buttons on `listenToPress` |
+| Double Pendulum, Sudoku Digger | Buttons fire on a tap |
 | Fruit Machine | Spin button on `listenToPress`; cabinet on `listenToElementPointer` |
 | Penrose Tiling, Fractalscope | `createPanZoomTracker` |
-| Sudoku, the puzzles' buttons and days | Keypad on the shared press view model; buttons on `listenToPress` |
+| Sudoku | Keypad on the shared press view model |
 | The site kit | `TouchInputView` on `listenToPointer`, its buttons' hold shown; the page's close-on-press-outside helper |
 
 ## 9. Settled here
@@ -695,7 +710,7 @@ changes what a player feels.
    (4.3), a game at a time, starting with Galaxy Raiders (the smallest).
    Tests that making and destroying it report nothing.
 4. How to play names controls, and restart text from the table (4.4).
-5. `listenToPress` (6.2), then the buttons, a site at a time.
+5. Every button fires on a tap, and `listenToPress` for those that show their hold (6.2).
 6. `listenToPointer` everywhere it fits (6.1), and `TouchInputView`'s fixes,
    including a finger on the touch controls as they hide for a pause (4.2).
 7. The press-and-hold view model (6.3).

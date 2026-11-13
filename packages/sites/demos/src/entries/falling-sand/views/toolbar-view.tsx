@@ -2,6 +2,7 @@
 
 import { type Container, type Graphics, Rectangle } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
+import { listenToPress } from '@mvtjs/site-kit/input/pixi';
 import { type GrainStorageKind, TANK_SIZES, type TankSizeKind, type ToolKind } from '../models';
 import { lookUpShade } from './grain-colors';
 import type { GrainsViewKind } from './tank-view';
@@ -226,29 +227,25 @@ interface ActionButtonViewBindings {
 function ActionButtonView(bindings: ActionButtonViewBindings): Container {
     const { label, width } = bindings;
     const isEnabled = (): boolean => bindings.isEnabled?.() ?? true;
-    // Presentation state: held down, for the press dip.
-    let isHeld = false;
 
-    return (
+    const view = (
         <container
             x={width / 2}
             y={BUTTON_SIZE / 2}
             pivotX={width / 2}
             pivotY={BUTTON_SIZE / 2}
-            scale={() => (isHeld ? 0.94 : 1)}
+            scale={() => (press.isHeld ? 0.94 : 1)}
             alpha={() => (isEnabled() ? 1 : 0.45)}
             cursor="pointer"
             hitArea={new Rectangle(0, 0, width, BUTTON_SIZE)}
-            onPointerDown={() => { isHeld = true; }}
-            onPointerUp={() => { isHeld = false; }}
-            onPointerUpOutside={() => { isHeld = false; }}
-            onPointerCancel={() => { isHeld = false; }}
-            onPointerTap={() => { if (isEnabled()) bindings.onPressed?.(); }}
         >
             <graphics ref={(g) => drawButton(g, width, BUTTON_FILL)} />
             <text text={label} x={width / 2} y={BUTTON_SIZE / 2} anchor={0.5} style={ACTION_LABEL_STYLE} />
         </container>
     );
+    // Whether it is held down, for the press dip
+    const press = listenToPress({ target: view, isEnabled, onPressed: () => bindings.onPressed?.() });
+    return view;
 }
 
 function drawButton(g: Graphics, width: number, fill: number): void {

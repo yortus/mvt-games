@@ -39,7 +39,7 @@ export function CheckboxView(bindings: CheckboxViewBindings): Container {
     let prevIsChecked: boolean | undefined;
     let prevLabel: string | undefined;
 
-    hitArea.on('pointerdown', () => {
+    hitArea.on('pointertap', () => {
         bindings.onToggled?.(!bindings.isChecked());
     });
 

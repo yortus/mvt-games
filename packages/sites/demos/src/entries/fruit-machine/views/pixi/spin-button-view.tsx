@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/pixi */
 import type { Container, Graphics } from 'pixi.js';
+import { listenToPress } from '@mvtjs/site-kit/input/pixi';
 import { FONT_FAMILY, WHITE } from './pixi-layout';
 
 // ---------------------------------------------------------------------------
@@ -27,28 +28,20 @@ export interface SpinButtonViewBindings {
  */
 export function SpinButtonView(bindings: SpinButtonViewBindings): Container {
     const { radius } = bindings;
-    let isHeld = false;
+    const isEnabled = (): boolean => bindings.mode() !== 'disabled';
 
-    return (
-        <container
-            cursor={() => (bindings.mode() === 'disabled' ? 'default' : 'pointer')}
-            onPointerDown={() => { isHeld = true; }}
-            onPointerUp={() => { isHeld = false; }}
-            onPointerUpOutside={() => { isHeld = false; }}
-            onPointerTap={press}
-        >
+    const view = (
+        <container cursor={() => (isEnabled() ? 'pointer' : 'default')}>
             <graphics y={PRESS_DEPTH} ref={(g) => drawDisc(g, radius)} tint={() => STYLES[bindings.mode()].shade} />
-            <container y={() => (isHeld && bindings.mode() !== 'disabled' ? PRESS_DEPTH : 0)}>
+            <container y={() => (press.isHeld && isEnabled() ? PRESS_DEPTH : 0)}>
                 <graphics ref={(g) => drawDisc(g, radius)} tint={() => STYLES[bindings.mode()].face} />
                 <graphics ref={(g) => drawRing(g, radius)} alpha={0.35} />
                 <text text={() => STYLES[bindings.mode()].label} anchor={0.5} style={LABEL_STYLE} />
             </container>
         </container>
     );
-
-    function press(): void {
-        if (bindings.mode() !== 'disabled') bindings.onPressed?.();
-    }
+    const press = listenToPress({ target: view, isEnabled, onPressed: () => bindings.onPressed?.() });
+    return view;
 }
 
 // ---------------------------------------------------------------------------

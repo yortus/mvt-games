@@ -467,6 +467,14 @@ game's terms, such as Minotaur's edges, and reports them. The game's rules
 for them, such as whether a drag draws or rubs out, belong where your
 top-level view wires the board to the model.
 
+A button in your own view, such as one on a toolbar, fires on a tap, with
+`onPointerTap`. It fires as the finger lets go over the button. So a finger
+that lands on it by mistake can slide off, and nothing happens. A button
+that sinks or dips while it is held uses `listenToPress`, from
+`@mvtjs/site-kit/input/pixi`, instead. It fires on a tap too, and returns
+`isHeld`, which your view's refresh reads to show the hold. A control that
+is held, such as the d-pad, reports as it goes down instead.
+
 Swipes and drags listen over the game's own view, so an entry that uses them
 shows no d-pad, which is the default. The host's buttons still work beside
 them, for a game that needs one, such as Astrovoid's Thrust.

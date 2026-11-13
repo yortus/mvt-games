@@ -66,7 +66,7 @@ packages/sites/site-kit/src/       Imported by the sites as @mvtjs/site-kit/<fol
 ├── arcade/              The page, in HTML JSX: model, views, its own sounds, its styles, and the page's loop (start-site-page.ts, imported as @mvtjs/site-kit/site-page)
 ├── device/              What the visitor's device supports, such as touch
 ├── input/               Input that needs no renderer: the arcade controls the entry host creates for a game (createArcadeControls, ARCADE_CONTROL_KEYS), the keyboard for the entries that listen to it themselves (listenToKeys), and taps and drags over a grid (createGridGesturesViewModel)
-│   └── pixi/            Input on a Pixi stage, imported as @mvtjs/site-kit/input/pixi: listenToPointer (one pointer followed over a Pixi container), and the touch, swipe and drag views
+│   └── pixi/            Input on a Pixi stage, imported as @mvtjs/site-kit/input/pixi: listenToPointer (one pointer followed over a Pixi container), listenToPress (a button that shows when it is held), and the touch, swipe and drag views
 ├── entry-types/         What an entry is: ArcadeEntry, its tags, the starters and sessions
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound

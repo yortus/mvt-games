@@ -118,7 +118,7 @@ interface ButtonViewBindings {
 /** A button along the bottom of the screen, brighter while what it chose is in force. */
 function ButtonView(bindings: ButtonViewBindings): Container {
     return (
-        <container x={BUTTON_LEFT + bindings.column * (BUTTON_WIDTH + BUTTON_GAP)} y={SCREEN_HEIGHT - BUTTON_HEIGHT - 10} cursor="pointer" onPointerDown={bindings.onPressed}>
+        <container x={BUTTON_LEFT + bindings.column * (BUTTON_WIDTH + BUTTON_GAP)} y={SCREEN_HEIGHT - BUTTON_HEIGHT - 10} cursor="pointer" onPointerTap={bindings.onPressed}>
             <graphics
                 ref={(g) => g.roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 6).fill(0xffffff)}
                 tint={() => (bindings.isLit() ? 0x2f81f7 : 0x30363d)}

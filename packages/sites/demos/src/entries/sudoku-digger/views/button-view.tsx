@@ -23,7 +23,7 @@ export interface ButtonViewBindings {
 /** A button in the row along the bottom of the screen, lit while what it chose is in force. */
 export function ButtonView(bindings: ButtonViewBindings): Container {
     return (
-        <container x={bindings.x} cursor="pointer" onPointerDown={bindings.onPressed}>
+        <container x={bindings.x} cursor="pointer" onPointerTap={bindings.onPressed}>
             <graphics
                 ref={(g) => g.roundRect(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT, 6).fill(0xffffff)}
                 tint={() => (bindings.isLit() ? LIT_COLOR : UNLIT_COLOR)}

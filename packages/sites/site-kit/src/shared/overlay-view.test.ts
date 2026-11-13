@@ -19,19 +19,18 @@ describe('OverlayView', () => {
         return { view, backdrop: view.children[0], presses: () => presses };
     }
 
-    it('relays a press at once, and nothing as it is let go', () => {
+    it('relays a tap, and nothing as the pointer goes down', () => {
         const { backdrop, presses } = createOverlay();
         backdrop.emit('pointerdown', {} as never);
-        expect(presses()).toBe(1);
-        backdrop.emit('pointerup', {} as never);
+        expect(presses()).toBe(0);
+        backdrop.emit('pointertap', {} as never);
         expect(presses()).toBe(1);
     });
 
-    it('relays each press', () => {
+    it('relays each tap', () => {
         const { backdrop, presses } = createOverlay();
-        backdrop.emit('pointerdown', {} as never);
-        backdrop.emit('pointerup', {} as never);
-        backdrop.emit('pointerdown', {} as never);
+        backdrop.emit('pointertap', {} as never);
+        backdrop.emit('pointertap', {} as never);
         expect(presses()).toBe(2);
     });
 
