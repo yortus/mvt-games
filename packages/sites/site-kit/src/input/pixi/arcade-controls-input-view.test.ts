@@ -11,7 +11,7 @@ describe('ArcadeControlsInputView', () => {
         expect(reports).toEqual(['primary true', 'primary pressed', 'primary false', 'restart pressed']);
     });
 
-    it('reports the d-pad\'s ways as they change', () => {
+    it('reports the d-pad\'s directions as they change', () => {
         const { controls, reports } = setup();
         controls.setXDirection('script', 'left');
         controls.setYDirection('script', 'down');

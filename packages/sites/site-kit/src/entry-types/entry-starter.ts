@@ -104,10 +104,10 @@ export type ControlsField<C extends ControlsChoice> = C extends ArcadeControlsUs
 export interface UsesArcadeControls<C extends ArcadeControlsUse> {
     /**
      * Requests the arcade controls, and says how the host draws them on a
-     * touch screen: a layout, or `'keys-only'`, for an entry whose own view
-     * handles touch, so the host draws no touch controls. The host passes the
-     * session its controls as `controls`, and handles their keys while the
-     * entry plays.
+     * touch screen. It is a layout, or `'keys-only'`. An entry whose own view
+     * handles touch uses `'keys-only'`, and the host then draws no touch
+     * controls. The host passes the session its controls as `controls`. It
+     * handles their keys while the entry plays.
      */
     readonly arcadeControls: C;
 }
@@ -384,19 +384,20 @@ export interface ElementEntrySession extends EntrySession {
 }
 
 /**
- * How an entry uses the arcade controls: with touch controls laid out as
- * the layout says, or from the keys only, with no touch controls drawn.
+ * How an entry uses the arcade controls. A layout says how the touch
+ * controls are laid out. With `'keys-only'`, the entry uses the keys only,
+ * and no touch controls are drawn.
  */
 export type ArcadeControlsUse = ArcadeControlsLayout | 'keys-only';
 
 /** How the host draws the arcade controls on a touch screen. Every part is left out by default. */
 export interface ArcadeControlsLayout {
     /**
-     * Whether a touch screen shows a d-pad. Off by default: a game that
-     * steers by swiping or dragging over its own view shows none.
+     * Whether a touch screen shows a d-pad. It is off by default. A game
+     * that steers by swiping or dragging over its own view shows none.
      */
     readonly showDpad?: boolean;
-    /** Which ways the d-pad goes: all four, or, for a game that only needs them, left and right. Four by default. */
+    /** Which directions the d-pad goes. It goes all four by default. A game that needs only left and right can choose those. */
     readonly dpadKind?: DpadKind;
     readonly showPrimary?: boolean;
     readonly showSecondary?: boolean;

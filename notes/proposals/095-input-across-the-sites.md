@@ -21,8 +21,12 @@ requests the arcade controls with `arcadeControls` (a touch layout, or
 `definePixiLoader` types the sound chips. Galaxy Raiders wires them in its
 game view with `ArcadeControlsInputView`, and so do Crumb Chase, Garden
 Snake, Dojo Duel, Fuel Run, Kwazy Cactii, Neon Monsoon and the Tune
-Tracker. The other games still use `inputConfig`,
-whose callbacks the arcade controls call until every game has moved.
+Tracker. So do Astrovoid and Deep Dive. Each works its action out from
+what the controls hold, which fixes bug 4 (section 5). So do Burrow Bust
+and Fenceline. The axis that changes wins. When it is let go, they fall
+back to the other axis, read from the controls (section 5). Their swipes
+still go straight to the model. No game uses `inputConfig` now, and part
+4 of step 3 removes it.
 Step 4 is done, ahead of the rest of step 3: How to play names the arcade
 controls (`{ control: 'primary' }`, and `'left-right'`, `'up-down'` and
 `'dpad'` for sets of ways), the page shows the keys the table has for each,
@@ -277,7 +281,7 @@ So a helper in this proposal reports from one of four places, and no other:
 | A browser event: a key, a pointer, the window's `blur` | The browser delivers events between frames | `listenToKeys`, `listenToPointer`, `listenToElementPointer`, `listenToPress`, the pan-and-zoom tracker, the page's close-on-press-outside |
 | Pixi's own `pointermove`, which it sends for a mouse that stands still while the scene moves under it | Pixi sends it as a DOM event from its own animation frame callback (`Ticker.system`, `EventTicker.mjs:39`, `:67`), not from the page's frame | `listenToPointer`'s `onMoved` and `onHovered` |
 | A microtask, for something noticed in an update or refresh step, or as a session starts or stops | It runs once the frame's code has finished | The press-and-hold view model's hold (6.3), `TouchInputView`'s let go as it rebuilds (as now), `listenToKeys` letting go as it stops (4.2) |
-| The caller's report, passed straight on | It is between frames whenever its caller's is | `createArcadeControls`, `ArcadeControlsInputView`, `createHold`, `createLatestWay`, 094's grid gestures view model |
+| The caller's report, passed straight on | It is between frames whenever its caller's is | `createArcadeControls`, `ArcadeControlsInputView`, 094's grid gestures view model |
 
 These happen inside the frame, so nothing reports from them:
 
@@ -424,24 +428,34 @@ the wiring, as Astrovoid's and Neon Monsoon's do.
 
 ## 5. Helpers for meanings games repeat
 
-Both are renderer-free, in `input/`, and both report what they work out. A
-game still defines what each means.
+- **Several controls holding one thing** need no helper. Astrovoid's thrust
+  (Up, Shift) and Deep Dive's rise (Space, Up, a finger held) are each
+  worked out afresh as any of their controls changes, from what the arcade
+  controls hold: `controls.yDirection === 'up' || controls.isHeld('secondary')`.
+  That fixes bug 4, and keeps the rule in one line. A helper that kept its
+  own set of holders, `createHold`, was tried and dropped: it copied state
+  the arcade controls already keep, named its holders with strings nothing
+  checks, and spread the rule across separate calls. A gesture that isn't
+  one of the controls, such as Deep Dive's finger, keeps one boolean of its
+  own.
+- **One direction from two axes** needs no helper either. Burrow Bust and
+  Fenceline need one of four directions. The axis pressed last wins. When
+  it is let go, the other axis wins again. The relay that fires already
+  says which axis changed. So a press goes to the model as it is. A
+  release falls back to the other axis, read from the controls:
+  `direction !== 'none' ? direction : controls.yDirection`. A helper that
+  kept the order of presses, `createLatestDirection`, was tried and
+  dropped. It named its inputs with strings nothing checks, and it gave
+  the same direction as these two lines for every change. Their swipes go
+  straight to the model, as before. A key and a swipe meet only on a touch
+  screen with a keyboard. There, a release hands the direction to the
+  input that changed last. The arcade controls offer no four-way reading
+  of their own. Reading two axes as one direction is what the controls
+  mean in a maze game, and a game's wiring decides what they mean.
 
-- **`createHold`**: several controls holding one thing. Each reports its
-  hold under its own name, and the hold is held while any of them is.
-  Astrovoid's thrust (Up, Shift) and Deep Dive's rise (Space, Up, a finger
-  held) use it, which fixes bug 4.
-- **`createLatestWay`**: two axes making one way, up, down, left or right,
-  the latest axis pressed winning, and falling back to the other as it is
-  let go. Burrow Bust and Fenceline use it, and their swipes go through it
-  too, so a swipe and a key can't disagree. Their two versions differ, so
-  playtest both (section 10).
-
-Neither has an update step, and neither reports as it is made. Each
-reports from inside the relay that fed it, so its reports fire between
-frames whenever its callers' do. A helper of this kind that ever needs time,
-such as a hold that must last a moment before it counts, is a view model
-instead, and reports from a microtask (6.3).
+A helper for a meaning games repeat that ever needs time, such as a hold
+that must last a moment before it counts, is a view model, and reports
+from a microtask (6.3).
 
 Crumb Chase's and Garden Snake's "ignore `'none'`" is one line, and stays
 in their wiring. So does auto-fire while a finger is down (Fuel Run, Galaxy
@@ -558,8 +572,8 @@ named for it:
 
 ```
 src/
-├── input/       @mvtjs/site-kit/input        No renderer: listenToKeys, the arcade controls and their keys, createHold,
-│                                             createLatestWay, the grid, press and pan-and-zoom view models,
+├── input/       @mvtjs/site-kit/input        No renderer: listenToKeys, the arcade controls and their keys,
+│                                             the grid, press and pan-and-zoom view models,
 │                                             listenToElementPointer (the DOM is not a renderer here)
 │   └── pixi/    @mvtjs/site-kit/input/pixi   Pixi: listenToPointer, listenToPress, ArcadeControlsInputView,
 │                                             TouchInputView, SwipeInputView, DragInputView
@@ -596,8 +610,8 @@ touch most of them. An open question (section 10).
 | Entry | Changes |
 | --- | --- |
 | The 11 arcade games | Arcade controls wired in the game view (4.3); How to play names controls (4.4); Overlay fires on a tap (6.2) |
-| Astrovoid, Deep Dive | `createHold` (5) |
-| Burrow Bust, Fenceline | `createLatestWay`, their swipes through it (5) |
+| Astrovoid, Deep Dive | Their action worked out from what the controls hold (5) |
+| Burrow Bust, Fenceline | One direction from the two axes, in their wiring (5) |
 | The 4 swipe and 4 drag games | Shared swipe distance and area (5) |
 | Tune Tracker | Arcade controls in its top-level view; its play button and list through `listenToPress` |
 | Boids | Slider on `listenToPointer`, checkbox on `listenToPress` |
@@ -637,9 +651,11 @@ Do not reopen without new information.
 
 ## 10. Open questions
 
-- **Burrow Bust's and Fenceline's "latest axis wins"** are written
-  differently. Which behaviour `createLatestWay` keeps needs a playtest of
-  each.
+- **Burrow Bust's and Fenceline's "latest axis wins"** were written
+  differently. But they give the same direction for every change the
+  arcade controls report, since the controls report only changes. Their
+  new wiring keeps that behaviour. A playtest of each game should confirm
+  it.
 - **Event timestamps for taps.** The DOM trackers time double taps with
   `event.timeStamp`. A position from an event is input data, and arguably so
   is its time. But a replay driven by ticks alone could not reproduce a
@@ -677,8 +693,7 @@ changes what a player feels.
    nothing until a microtask has run.
 3. `ArcadeControlsInputView` and the games' wiring moved into their game views
    (4.3), a game at a time, starting with Galaxy Raiders (the smallest).
-   Tests that making and destroying it report nothing. `createHold` and
-   `createLatestWay` (5) as their games move.
+   Tests that making and destroying it report nothing.
 4. How to play names controls, and restart text from the table (4.4).
 5. `listenToPress` (6.2), then the buttons, a site at a time.
 6. `listenToPointer` everywhere it fits (6.1), and `TouchInputView`'s fixes,

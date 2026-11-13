@@ -2,10 +2,10 @@
 
 import type { Container } from 'pixi.js';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
+import { type ArcadeControls, describeControl } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
-import { describeControl } from '@mvtjs/site-kit/input';
 import { List } from '@mvtjs/pixi';
 import { FIELD_ROWS, FIELD_COLS, DEPTH_LAYERS } from '../data';
 import { TILE_SIZE } from './view-constants';
@@ -29,6 +29,8 @@ export interface GameViewBindings {
     music: MusicChip<'audio80'>;
     /** The chip the game's sound effects play on, read once as `music` is. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,12 +38,13 @@ export interface GameViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The whole game: the field, the digger, the enemies and the rocks, then the
- * HUD below and the overlay above. The enemies and rocks are each a `<List>`,
+ * The whole game. It draws the field, the digger, the enemies and the rocks.
+ * The HUD is below, and the overlay is above. It also plays the game's
+ * sound, and wires its controls. The enemies and rocks are each a `<List>`,
  * whose item views are reused as the collection changes.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, music, sfx } = bindings;
+    const { model, music, sfx, controls } = bindings;
     const canvasW = FIELD_COLS * TILE_SIZE;
     const canvasH = FIELD_ROWS * TILE_SIZE;
     const isTouch = isTouchDevice();
@@ -50,6 +53,19 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container>
+            {/*
+                The keys, or the host's touch controls. The d-pad digs. The axis pressed last wins.
+                When it is let go, the digger digs in the direction the other axis holds, if any.
+                The primary button pumps as it is pressed, and keeps the harpoon out while held
+            */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => { model.direction = direction !== 'none' ? direction : controls.yDirection; }}
+                onYDirectionChanged={(direction) => { model.direction = direction !== 'none' ? direction : controls.xDirection; }}
+                onPrimaryButtonChanged={(pressed) => { model.isHarpoonOut = pressed; }}
+                onPrimaryPressed={model.pump}
+                onRestartPressed={model.startNewRun}
+            />
             {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
             <SwipeInputView
                 isEnabled={isTouch}

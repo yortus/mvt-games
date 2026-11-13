@@ -6,7 +6,7 @@ import { setRefresh } from '@mvtjs/pixi';
 // Bindings
 // ---------------------------------------------------------------------------
 
-/** Which ways a d-pad goes: all four, and between them, or only left and right. */
+/** Which directions a d-pad goes. A four-way d-pad also goes diagonally. */
 export type DpadKind = 'four-way' | 'left-right';
 
 export interface TouchInputViewBindings {
@@ -38,10 +38,10 @@ export interface TouchInputViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * On-screen controls for touch devices: a d-pad or floating joystick, and up
- * to two buttons, beside or below the game. Written in plain TypeScript: it
- * rebuilds its controls when their configuration changes, and lays them out by
- * hand each frame, at the canvas's scale.
+ * On-screen controls for touch devices. There is a d-pad or a floating
+ * joystick, and up to two buttons, beside or below the game. The view is
+ * written in plain TypeScript. It rebuilds its controls when their layout
+ * changes. It lays them out by hand each frame, at the canvas's scale.
  */
 export function TouchInputView(bindings: TouchInputViewBindings): Container {
     const view = new Container();
@@ -50,7 +50,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
     let dpadXDir: 'left' | 'none' | 'right' = 'none';
     let dpadYDir: 'up' | 'none' | 'down' = 'none';
 
-    // Element groups - rebuilt on structural changes, repositioned every frame
+    // The groups of display objects. They are rebuilt when the layout changes, and placed again every frame
     const dpadGroup = new Container();
     const primaryBtnGroup = new Container();
     const secondaryBtnGroup = new Container();
@@ -101,9 +101,9 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
     }
 
     function rebuild(): void {
-        // Release stale directions before tearing down event handlers. A
-        // rebuild comes in the refresh step, so the tick is still under way,
-        // and the release is reported once the frame's code has finished.
+        // Release any direction held before the event handlers go. A rebuild
+        // happens in the refresh step, during the tick. So the release is
+        // reported from a microtask, after the frame's code has finished.
         if (dpadXDir !== 'none') {
             dpadXDir = 'none';
             queueMicrotask(() => bindings.onXDirectionChanged?.('none'));

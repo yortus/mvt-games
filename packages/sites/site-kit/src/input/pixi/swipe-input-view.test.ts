@@ -19,7 +19,7 @@ function touch(pointerId: number, x: number, y: number): FederatedPointerEvent {
 }
 
 describe('SwipeInputView', () => {
-    it('swipes the way a finger mostly slid, once it slides far enough', () => {
+    it('swipes in the direction a finger mostly slid, once it slides far enough', () => {
         const { view, onSwiped } = makeView();
         view.emit('pointerdown', touch(1, 100, 100));
         view.emit('globalpointermove', touch(1, 104, 102));
@@ -30,7 +30,7 @@ describe('SwipeInputView', () => {
         expect(onSwiped).toHaveBeenCalledTimes(1);
     });
 
-    it('swipes again each time a sliding finger turns, but not again the same way', () => {
+    it('swipes again each time a sliding finger turns, but not again in the same direction', () => {
         const { view, onSwiped } = makeView();
         view.emit('pointerdown', touch(1, 100, 100));
         view.emit('globalpointermove', touch(1, 100, 88));

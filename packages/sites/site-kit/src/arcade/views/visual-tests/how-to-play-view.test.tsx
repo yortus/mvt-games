@@ -6,9 +6,10 @@ import { HowToPlayView } from '../how-to-play-view';
 import { wearTheme } from './wear-theme.test-support';
 
 /**
- * A game's controls: the arcade controls, as the table's keys, and touch, with
- * a note under an action, a note for touch only, controls and keys pressed
- * together, on-screen buttons, and actions for one kind of device only.
+ * A game's controls, for the keyboard and for touch. The arcade controls show
+ * as their keys from the table. One action has a note, and one has a note
+ * for touch only. One action uses inputs pressed together. Some use buttons
+ * on the screen, and some are for one kind of device only.
  */
 const GAME: HowToPlay = {
     intro: 'Fly over the land, keep your fuel up, and destroy the base at the end of the run.',

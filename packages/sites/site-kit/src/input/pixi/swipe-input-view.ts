@@ -5,7 +5,7 @@ import { listenToPointer } from './listen-to-pointer';
 // Bindings
 // ---------------------------------------------------------------------------
 
-/** The way a swipe went. */
+/** The direction a swipe went. */
 export type SwipeDirection = 'up' | 'down' | 'left' | 'right';
 
 export interface SwipeInputViewBindings {
@@ -18,7 +18,7 @@ export interface SwipeInputViewBindings {
     height: number;
     /** How far a finger must slide, in the view's pixels, to swipe. Read once. */
     swipeDistance: number;
-    /** The player swiped `direction`, the way the slide mostly went. */
+    /** The player swiped `direction`, the direction the slide mostly went. */
     onSwiped?: (direction: SwipeDirection) => void;
     /** The player tapped, touching and letting go without sliding. */
     onTapped?: () => void;
@@ -31,11 +31,12 @@ export interface SwipeInputViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Swipes and taps anywhere over an area, for steering on a touch screen. A
- * finger that slides `swipeDistance` swipes the way it slid most. A finger
- * that keeps sliding swipes again each time it turns, so one touch can steer
- * round several corners. A touch let go without sliding is a tap. It draws
- * nothing, and relays what it sees as it happens.
+ * Reports swipes and taps anywhere over an area, for steering on a touch
+ * screen. A finger that slides `swipeDistance` swipes in the direction it
+ * slid most. If it keeps sliding, it swipes again each time it turns. So one
+ * touch can steer round several corners. A touch let go without sliding is
+ * a tap. The view draws nothing. It calls its relays as each swipe or tap
+ * happens.
  */
 export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
     const { isEnabled, swipeDistance, onSwiped, onTapped, onLifted } = bindings;
@@ -45,11 +46,13 @@ export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
 
     view.hitArea = new Rectangle(bindings.x, bindings.y, bindings.width, bindings.height);
 
-    // Where the finger touched down, where it last swiped from, and the way it last swiped
+    // Where the finger touched down
     let startX = 0;
     let startY = 0;
+    // Where the finger last swiped from
     let anchorX = 0;
     let anchorY = 0;
+    // The direction the finger last swiped
     let swiped: SwipeDirection | undefined;
 
     listenToPointer({
@@ -60,19 +63,19 @@ export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
             swiped = undefined;
         },
         onMoved(x, y) {
-            const way = findWay(x - anchorX, y - anchorY);
-            if (way === undefined) return;
+            const direction = findDirection(x - anchorX, y - anchorY);
+            if (direction === undefined) return;
             anchorX = x;
             anchorY = y;
-            if (way === swiped) return;
-            swiped = way;
-            onSwiped?.(way);
+            if (direction === swiped) return;
+            swiped = direction;
+            onSwiped?.(direction);
         },
         onReleased(x, y) {
             if (swiped === undefined) {
                 // A quick flick may slide its whole way between two moves
-                const way = findWay(x - startX, y - startY);
-                if (way !== undefined) onSwiped?.(way);
+                const direction = findDirection(x - startX, y - startY);
+                if (direction !== undefined) onSwiped?.(direction);
                 else onTapped?.();
             }
             onLifted?.();
@@ -81,8 +84,8 @@ export function SwipeInputView(bindings: SwipeInputViewBindings): Container {
 
     return view;
 
-    /** The way a slide of (dx, dy) went, if it was far enough to swipe. */
-    function findWay(dx: number, dy: number): SwipeDirection | undefined {
+    /** Returns the direction a slide of (dx, dy) went, if it was far enough to swipe. */
+    function findDirection(dx: number, dy: number): SwipeDirection | undefined {
         if (Math.max(Math.abs(dx), Math.abs(dy)) < swipeDistance) return undefined;
         if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 'right' : 'left';
         return dy > 0 ? 'down' : 'up';

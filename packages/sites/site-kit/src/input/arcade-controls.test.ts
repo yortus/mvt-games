@@ -55,7 +55,7 @@ describe('createArcadeControls', () => {
         expect(reports).toEqual(['primary true', 'primary false']);
     });
 
-    it('turns to the way pressed last, and back to the other as it is let go', () => {
+    it('turns to the direction pressed last, and back to the other when it is let go', () => {
         const { reports } = setup();
         send('keydown', 'ArrowLeft');
         send('keydown', 'd');
@@ -64,7 +64,7 @@ describe('createArcadeControls', () => {
         expect(reports).toEqual(['x left', 'x right', 'x left', 'x none']);
     });
 
-    it('keeps a way held while either of its keys is', () => {
+    it('keeps a direction held while either of its keys is', () => {
         const { reports } = setup();
         send('keydown', 'ArrowUp');
         send('keydown', 'w');
@@ -131,7 +131,7 @@ describe('createArcadeControls', () => {
         expect(reports).toEqual(['primary true', 'primary false']);
     });
 
-    it('turns straight from one way to the other as a d-pad does, without stopping between', () => {
+    it('turns straight from one direction to the other, without stopping between, as a d-pad does', () => {
         const { controls, reports } = setup();
         controls.setXDirection('touch', 'left');
         controls.setXDirection('touch', 'right');

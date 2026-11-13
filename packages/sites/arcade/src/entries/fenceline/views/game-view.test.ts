@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { type Container, type FederatedPointerEvent, Text } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80 } from 'audio90/headless';
+import { createArcadeControls } from '@mvtjs/site-kit/input';
 import { FIELD_COLS, FIELD_ROWS, type RoundConfig, ROUNDS, SHEEP_POINTS } from '../data';
 import { createGameModel, type GameModel, type HeldDirection } from '../models';
 import { GameView } from './game-view';
@@ -13,7 +14,7 @@ describe('GameView', () => {
     it('shows a whole game, from the first round to game over, and the next game', () => {
         const game = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS, seed: 5 });
         const chip = createHeadlessAudio80();
-        const view = GameView({ model: game, music: chip, sfx: chip });
+        const view = GameView({ model: game, music: chip, sfx: chip, controls: createArcadeControls() });
         const tick = (): void => {
             game.update(STEP_MS);
             chip.update(STEP_MS);
@@ -47,7 +48,7 @@ describe('GameView', () => {
 
     it('shows lives past the three hats that fit as a count', () => {
         const game = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS, startLives: 5 });
-        const view = GameView({ model: game, music: createHeadlessAudio80(), sfx: createHeadlessAudio80() });
+        const view = GameView({ model: game, music: createHeadlessAudio80(), sfx: createHeadlessAudio80(), controls: createArcadeControls() });
         updateView(view, STEP_MS);
         refreshView(view);
         expect(listTexts(view)).toContain('x5');
@@ -67,7 +68,7 @@ describe('GameView', () => {
         };
         const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
         const chip = createHeadlessAudio80();
-        const view = GameView({ model: game, music: chip, sfx: chip });
+        const view = GameView({ model: game, music: chip, sfx: chip, controls: createArcadeControls() });
         const tick = (): void => {
             game.update(STEP_MS);
             chip.update(STEP_MS);
@@ -100,7 +101,7 @@ describe('GameView', () => {
         };
         const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
         const chip = createHeadlessAudio80();
-        const view = GameView({ model: game, music: chip, sfx: chip });
+        const view = GameView({ model: game, music: chip, sfx: chip, controls: createArcadeControls() });
         const tick = (): void => {
             game.update(STEP_MS);
             chip.update(STEP_MS);
@@ -130,6 +131,26 @@ describe('GameView', () => {
         view.destroy({ children: true });
     });
 
+    it('steers the direction pressed last, and the other axis\'s direction once it is let go', () => {
+        const game = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS });
+        const orders: HeldDirection[] = [];
+        vi.spyOn(game, 'steer').mockImplementation((direction) => orders.push(direction));
+        vi.spyOn(game, 'stop').mockImplementation(() => orders.push('none'));
+        const controls = createArcadeControls();
+        const chip = createHeadlessAudio80();
+        const view = GameView({ model: game, music: chip, sfx: chip, controls });
+
+        controls.setXDirection('keyboard', 'left');
+        controls.setYDirection('keyboard', 'up');
+        controls.setYDirection('keyboard', 'none');
+        controls.setYDirection('keyboard', 'down');
+        controls.setXDirection('keyboard', 'right');
+        controls.setXDirection('keyboard', 'none');
+        controls.setYDirection('keyboard', 'none');
+        expect(orders).toEqual(['left', 'up', 'left', 'down', 'right', 'down', 'none']);
+        view.destroy({ children: true });
+    });
+
     it('steers the farmhand the way swiped on a touch screen, and stops them on a tap', () => {
         // A touch screen, where the view takes swipes and taps
         vi.stubGlobal('ontouchstart', vi.fn());
@@ -137,7 +158,7 @@ describe('GameView', () => {
             const round: RoundConfig = { ...ROUNDS[0], devilSpeed: 0, startBeetles: 0, maxBeetles: 0 };
             const game = createGameModel({ rounds: [round], rows: FIELD_ROWS, cols: FIELD_COLS });
             const chip = createHeadlessAudio80();
-            const view = GameView({ model: game, music: chip, sfx: chip });
+            const view = GameView({ model: game, music: chip, sfx: chip, controls: createArcadeControls() });
             const tick = (): void => {
                 game.update(STEP_MS);
                 chip.update(STEP_MS);

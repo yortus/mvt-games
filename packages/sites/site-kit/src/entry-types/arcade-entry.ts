@@ -93,13 +93,13 @@ export interface EntryDetails {
 }
 
 /**
- * How to play an entry: what to do, the controls, and anything else worth
- * knowing. The info panel shows the controls as a table, an action to a row,
- * with a column for the keyboard and one for the mouse or touch, so they are
- * data rather than text. It shows only the controls of the device it is on:
- * the keyboard and the mouse on a desktop, touch on a phone or a tablet, and
- * all of them on a laptop with a touch screen. Give at least one of the
- * three.
+ * How to play an entry. It says what to do, what the controls are, and
+ * anything else worth knowing. Give at least one of the three. The info
+ * panel shows the controls as a table, with one action to a row. It has a
+ * column for the keyboard and one for the mouse or touch. So the controls
+ * are data rather than text. The panel shows only the controls of the
+ * device it is on. A desktop shows the keyboard and the mouse, and a phone
+ * or tablet shows touch. A laptop with a touch screen shows all of them.
  */
 export interface HowToPlay {
     /** What to aim for, or what to do, in a sentence or two. */
@@ -111,61 +111,65 @@ export interface HowToPlay {
 }
 
 /**
- * One thing the player does, and the inputs that do it: any one of them. A
- * row shows only where the device has some way to do it, or a note about it.
+ * One thing the player does, and the inputs that do it. Any one of the
+ * inputs does it. A row shows only where the device has some way to do it,
+ * or a note about it.
  */
 export interface ControlRow {
-    /** What it does, in a word or two: `'Move'`, `'Shoot'`. */
+    /** What it does, in a word or two, such as `'Move'` or `'Shoot'`. */
     readonly action: string;
     /**
-     * The inputs that do it on any device that has them: the arcade controls
-     * and keys, which show in the keyboard's column, and gestures and buttons
-     * that work with a mouse or a finger, as an entry's own buttons and
-     * pointer gestures do. Of these, a click and the wheel show only where
-     * there is a mouse.
+     * The inputs that do it on any device that has them. The arcade controls
+     * and keys show in the keyboard's column. Gestures and buttons that work
+     * with a mouse or a finger show in the next column, such as an entry's
+     * own buttons. A click and the wheel show only where there is a mouse.
      */
     readonly inputs?: readonly ControlInput[];
     /**
-     * The inputs that do it on a touch screen only: the touch controls the
-     * host draws, such as its joystick and buttons, and the gestures a game
-     * takes only on a touch screen, such as a swipe over its view.
+     * The inputs that do it on a touch screen only. These are the touch
+     * controls the host draws, such as its joystick and buttons. They are
+     * also the gestures a game handles only on a touch screen, such as a
+     * swipe over its view.
      */
     readonly touchInputs?: readonly ControlInput[];
-    /** More about it, shown under the action: `'Hold to rise, let go to sink'`. */
+    /** More about it, shown under the action, such as `'Hold to rise, let go to sink'`. */
     readonly note?: string;
     /** More about it on a touch screen, shown under the action there only. */
     readonly touchNote?: string;
 }
 
 /**
- * An input: one of the arcade controls (`{ control: 'primary' }`), a key, or
- * a set of keys used as one (`'arrows'`), or controls and keys pressed
- * together (`[{ control: 'primary' }, 'forward']`), a button among them on a
- * touch screen (`[{ button: 'Atk' }, 'up']`, with the joystick's way as a
- * key). Or, for touch and the mouse, a gesture, or a button on the screen
- * (`{ button: 'Fire' }`).
+ * An input. It can be one of the arcade controls, such as
+ * `{ control: 'primary' }`. It can be a key, or a set of keys used as one,
+ * such as `'arrows'`. Inputs pressed together are a list, such as
+ * `[{ control: 'primary' }, 'forward']`. On a touch screen, the list can
+ * hold a button, with the joystick's direction as a key:
+ * `[{ button: 'Atk' }, 'up']`. For touch and the mouse, an input can also
+ * be a gesture, or a button on the screen, such as `{ button: 'Fire' }`.
  */
 export type ControlInput =
     | ArcadeControlInput | ControlKey | readonly (ArcadeControlInput | ControlKey | ControlButton)[] | ControlGesture | ControlButton;
 
 /**
- * One of the arcade controls, or a set of the d-pad's ways the player uses
- * as one: left and right, up and down, or all four. It shows as the keys the
- * arcade controls' table has for it, so the keys shown are the keys that
- * work. A control with two keys, such as Left and A, shows as two sets of
- * keys, either of which does the action. Pressed together with others, it
- * shows as its first key. An entry that uses the arcade controls names them
- * this way, rather than by their keys.
+ * One of the arcade controls. It can also be a set of the d-pad's
+ * directions that the player uses as one: left and right, up and down, or
+ * all four. It shows as the keys that the arcade controls' table has for
+ * it. So the keys shown are the keys that work. A control with two keys,
+ * such as Left and A, shows as two sets of keys, and either one does the
+ * action. In a list of inputs pressed together, it shows as its first key.
+ * An entry that uses the arcade controls names them this way, not by their
+ * keys.
  */
 export interface ArcadeControlInput {
     readonly control: ArcadeControl | 'left-right' | 'up-down' | 'dpad';
 }
 
 /**
- * A key, or a set the player uses as one, for an entry that listens to the
- * keyboard itself: all four arrows, or WASD. Forward and back are the ways
- * toward the opponent and away, on the keyboard or the joystick, for moves
- * that depend on which way a fighter faces.
+ * A key, or a set of keys that the player uses as one, such as all four
+ * arrows. An entry that listens to the keyboard itself names its keys this
+ * way. Forward and back are the directions toward the opponent and away
+ * from them. A fighting game's moves use them, since the moves depend on
+ * which way a fighter faces.
  */
 export type ControlKey = 'arrows' | 'wasd' | 'up' | 'down' | 'forward' | 'back' | 'space';
 
@@ -175,7 +179,7 @@ export type ControlKey = 'arrows' | 'wasd' | 'up' | 'down' | 'forward' | 'back' 
  */
 export type ControlGesture = 'joystick' | 'swipe' | 'tap' | 'double-tap' | 'hold' | 'drag' | 'pinch' | 'click' | 'wheel';
 
-/** A button on the screen, by its label: one an entry draws, or one of the touch controls the host draws beside it. */
+/** A button on the screen, by its label. An entry can draw it, or it can be one of the host's touch controls. */
 export interface ControlButton {
     readonly button: string;
 }

@@ -18,8 +18,10 @@ export const load = definePixiLoader(async () => {
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
+        // On a touch screen, a swipe held over the game view steers, so only Pump is drawn
+        arcadeControls: { showPrimary: true, primaryLabel: 'Pump' },
 
-        start({ stage, music, sfx }): EntrySession {
+        start({ stage, music, sfx, controls }): EntrySession {
             const gameModel = createGameModel({
                 levels: LEVELS,
                 fieldCols: FIELD_COLS,
@@ -28,11 +30,8 @@ export const load = definePixiLoader(async () => {
                 diggerSpawn: DIGGER_SPAWN,
             });
 
-            const gameView = GameView({ model: gameModel, music, sfx });
+            const gameView = GameView({ model: gameModel, music, sfx, controls });
             stage.addChild(gameView);
-
-            let lastXDir: 'left' | 'none' | 'right' = 'none';
-            let lastYDir: 'up' | 'none' | 'down' = 'none';
 
             return {
                 // The host ticks the view with the rest of the stage
@@ -49,33 +48,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    // On a touch screen, a swipe held over the game view steers, so only Pump is drawn
-                    showPrimary: true,
-                    primaryLabel: 'Pump',
-                    onXDirectionChanged: (dir) => {
-                        lastXDir = dir;
-                        if (dir === 'left') gameModel.direction = 'left';
-                        else if (dir === 'right') gameModel.direction = 'right';
-                        else if (lastYDir === 'up') gameModel.direction = 'up';
-                        else if (lastYDir === 'down') gameModel.direction = 'down';
-                        else gameModel.direction = 'none';
-                    },
-                    onYDirectionChanged: (dir) => {
-                        lastYDir = dir;
-                        if (dir === 'up') gameModel.direction = 'up';
-                        else if (dir === 'down') gameModel.direction = 'down';
-                        else if (lastXDir === 'left') gameModel.direction = 'left';
-                        else if (lastXDir === 'right') gameModel.direction = 'right';
-                        else gameModel.direction = 'none';
-                    },
-                    // Holding the button keeps the harpoon out, and each press pumps
-                    onPrimaryButtonChanged: (isDown) => {
-                        gameModel.isHarpoonOut = isDown;
-                        if (isDown) gameModel.pump();
-                    },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

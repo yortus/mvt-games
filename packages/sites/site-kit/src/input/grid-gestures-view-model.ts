@@ -2,25 +2,25 @@
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What a drag over a grid follows: its cells, or the corners where its lines meet. */
+/** What a drag over a grid follows. It is the grid's cells, or the corners where its lines meet. */
 export type GridLattice = 'cells' | 'corners';
 
-/** How a drag steps from one place to the next: only across and down, or diagonally too. */
+/** How a drag steps from one place to the next. A four-way drag steps only across and down. An eight-way drag steps diagonally too. */
 export type GridSteps = 'four-way' | 'eight-way';
 
 /**
  * Taps and drags over a grid, as steps from place to place. A place is a
  * cell, or a corner where the grid's lines meet. A press let go without a
- * step is a tap. A drag reaches a place by passing near its middle, and
- * steps there from the place it reached last, one neighbour at a time, so a
- * fast drag skips nothing.
+ * step is a tap. A drag reaches a place by passing near its middle. It steps
+ * there from the place it reached last, one neighbour at a time. So a fast
+ * drag skips nothing.
  *
- * It follows one finger or the mouse, and knows nothing of what a step
- * means: that is up to whoever it reports to. Positions are in cells,
- * across and down from the grid's top left corner, so it knows nothing of
- * pixels or of a renderer, and a test can play it directly. Places are
- * numbered row by row from the top left: `cols` to a row for cells, and
- * `cols + 1` for corners.
+ * It follows one finger or the mouse. It doesn't decide what a step means.
+ * The code it reports to decides that. Positions are in cells, across and
+ * down from the grid's top left corner. So it works without pixels or a
+ * renderer, and a test can drive it directly. Places are numbered row by row
+ * from the top left. A row of cells has `cols` places, and a row of corners
+ * has `cols + 1`.
  */
 export interface GridGesturesViewModel {
     /** A finger, or the mouse, went down at (`x`, `y`). */

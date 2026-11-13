@@ -124,7 +124,11 @@ function findKey(table: Readonly<Record<string, unknown>>, key: string): string 
     return table[lower] === undefined ? undefined : lower;
 }
 
-/** Whether the key belongs to the control it was pressed in: a text field handles every key, a slider its arrows, and a button Space and Enter. */
+/**
+ * Whether the key belongs to the control it was pressed in. A text field
+ * handles every key. A slider handles its arrows, and a button handles Space
+ * and Enter.
+ */
 function isTakenByTarget(event: KeyboardEvent): boolean {
     const target = event.target;
     if (!(target instanceof HTMLElement)) return false;

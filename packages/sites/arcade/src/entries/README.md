@@ -618,17 +618,19 @@ export const details: EntryDetails = {
   the info panel shows on its How to Play tab, and which the runner's (i)
   opens over the game as it plays. It has an `intro` (what to aim for), the
   `controls`, and any `notes`. Each control is an action and the inputs
-  that do it. Its `inputs` work on any device that has them: the arcade
-  controls (`{ control: 'primary' }`, or `{ control: 'dpad' }` for all four
-  ways), keys, for an entry that listens to the keyboard itself (`'arrows'`,
-  `'space'`), or controls and keys pressed together, such as
-  `[{ control: 'primary' }, { control: 'up' }]`, and gestures and buttons
-  that work with a mouse or a finger, such as a drag in a puzzle. Name the
-  arcade controls rather than their keys: the panel shows the keys their
-  table has, so How to play can't name a key that does nothing. Text in
-  your game can do the same with `describeControl`, from
-  `@mvtjs/site-kit/input`: `` `Press ${describeControl('restart')} to restart` ``. Its `touchInputs` work on a touch
-  screen only: the touch controls the host draws (`'joystick'`,
+  that do it. Its `inputs` work on any device that has them. An input can
+  be one of the arcade controls, such as `{ control: 'primary' }`, and
+  `{ control: 'dpad' }` stands for all four directions. An entry that listens to
+  the keyboard itself names keys instead, such as `'arrows'` or `'space'`.
+  Inputs pressed together go in a list, such as
+  `[{ control: 'primary' }, { control: 'up' }]`. Gestures and buttons that
+  work with a mouse or a finger go in `inputs` too, such as a drag in a
+  puzzle. Name the arcade controls, not their keys. The panel then shows the
+  keys from the controls' table, so How to play can't name a key that does
+  nothing. Text in your game can do the same with `describeControl`, from
+  `@mvtjs/site-kit/input`:
+  `` `Press ${describeControl('restart')} to restart` ``. Its `touchInputs`
+  work on a touch screen only: the touch controls the host draws (`'joystick'`,
   `{ button: 'Fire' }`), and the gestures your game takes only there, such
   as a swipe over its view. A `touchNote` says more, on a touch screen only.
   The panel draws them as a table, with a column for the keyboard and one

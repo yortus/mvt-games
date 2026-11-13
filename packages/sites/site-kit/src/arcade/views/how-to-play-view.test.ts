@@ -7,12 +7,12 @@ import { ARCADE_CONTROL_KEYS, describeKey } from '../../input';
 import { HowToPlayView } from './how-to-play-view';
 
 describe('HowToPlayView', () => {
-    it('shows an arcade control as the keys the table has for it, one set of caps for each', () => {
+    it('shows an arcade control as its keys from the table, with one set of caps for each key', () => {
         const view = show([{ action: 'Jump', inputs: [{ control: 'up' }] }], 'desktop');
         expect(keyNames(view)).toEqual(ARCADE_CONTROL_KEYS.up.map(describeKey));
     });
 
-    it('shows two ways of the d-pad as their first keys, then their second keys', () => {
+    it('shows two directions of the d-pad as their first keys, then their second keys', () => {
         const view = show([{ action: 'Turn', inputs: [{ control: 'left-right' }] }], 'desktop');
         const [left, right] = [ARCADE_CONTROL_KEYS.left.map(describeKey), ARCADE_CONTROL_KEYS.right.map(describeKey)];
         expect(keyNames(view)).toEqual([`${left[0]} and ${right[0]}`, `${left[1]} and ${right[1]}`]);
@@ -30,14 +30,14 @@ describe('HowToPlayView', () => {
     });
 });
 
-/** The view of `controls`, as a device of `deviceKind` shows it, refreshed once. */
+/** Returns the view of `controls` on a device of `deviceKind`, refreshed once. */
 function show(controls: readonly ControlRow[], deviceKind: DeviceKind): HTMLElement {
     const view = HowToPlayView({ howToPlay: () => ({ controls }), deviceKind });
     refreshView(view);
     return view;
 }
 
-/** The names of the sets of key caps shown, in order, as assistive technology reads them. */
+/** Returns the names of the sets of key caps shown, in order. These are the names assistive technology reads. */
 function keyNames(view: HTMLElement): (string | undefined)[] {
     return [...view.querySelectorAll('.how-keys')].map((keys) => keys.getAttribute('aria-label') ?? undefined);
 }

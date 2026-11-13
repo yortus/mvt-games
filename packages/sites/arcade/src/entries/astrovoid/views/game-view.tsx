@@ -2,9 +2,10 @@
 
 import type { Container, Graphics } from 'pixi.js';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
+import { type ArcadeControls, describeControl } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { SfxChip } from '@mvtjs/site-kit/sound';
-import { describeControl } from '@mvtjs/site-kit/input';
 import { List } from '@mvtjs/pixi';
 import type { GameModel } from '../models';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
@@ -21,8 +22,10 @@ import { HudView } from './hud-view';
 
 export interface GameViewBindings {
     model: GameModel;
-    /** The chip the game's sound effects play on, read once as `music` is. */
+    /** The chip the game's sound effects play on, read once. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -30,19 +33,30 @@ export interface GameViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The whole game: a star backdrop, the asteroids, the bullets, the ship and
- * its debris, then the HUD below and the overlay above. The asteroids are a
- * `<List>` over their `SlotList`, whose empty slots hide themselves; the
- * bullets are a `<List>` over their array.
+ * The whole game. It draws a star backdrop, the asteroids, the bullets, and
+ * the ship and its debris. The HUD is below, and the overlay is above. The
+ * asteroids are a `<List>` over their `SlotList`, whose empty slots hide
+ * themselves. The bullets are a `<List>` over their array. It also plays
+ * the game's sound, and wires its controls.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, sfx } = bindings;
+    const { model, sfx, controls } = bindings;
     const isTouch = isTouchDevice();
+    const isThrusting = (): boolean => controls.yDirection === 'up' || controls.isHeld('secondary');
     const restartHint = isTouch ? 'Tap to restart' : `Press ${describeControl('restart')} to restart`;
     const gameOverText = `GAME OVER\n\n${restartHint}`;
 
     return (
         <container>
+            {/* The keys, or the host's touch controls. Left and right turn, and Up or the secondary button thrusts. The primary button fires */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => { model.turning = direction; }}
+                onYDirectionChanged={() => { model.isThrusting = isThrusting(); }}
+                onPrimaryPressed={model.fire}
+                onSecondaryButtonChanged={() => { model.isThrusting = isThrusting(); }}
+                onRestartPressed={model.startNewRun}
+            />
             <AudioView
                 sfx={sfx}
                 phase={() => model.phase}

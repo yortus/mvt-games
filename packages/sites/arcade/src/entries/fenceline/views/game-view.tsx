@@ -4,10 +4,10 @@ import type { Container } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { SwipeInputView } from '@mvtjs/site-kit/input/pixi';
+import { type ArcadeControls, describeControl } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, SwipeInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
 import type { MusicChip, SfxChip } from '@mvtjs/site-kit/sound';
-import { describeControl } from '@mvtjs/site-kit/input';
 import { BLOW_OUT_POINTS, FIELD_COLS, FIELD_ROWS, SHEEP_POINTS } from '../data';
 import type { GameModel, GamePhase } from '../models';
 import { AudioView } from './audio-view';
@@ -35,6 +35,8 @@ export interface GameViewBindings {
     music: MusicChip<'audio80'>;
     /** The chip the game's sound effects play on, read once as `music` is. */
     sfx: SfxChip<'audio80'>;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -50,16 +52,30 @@ export interface GameViewBindings {
  * devils, which tower over everything, and the points come last. The HUD
  * runs across the top, and the overlay covers the meadow between rounds.
  * When a whole farm is fenced, its celebration covers the meadow instead.
- * Each farm's dry grass has its own colours. On a touch screen, a swipe
- * anywhere on the screen sets the farmhand going that way, and a tap stops
- * them, but the overlay's own taps come first.
+ * Each farm's dry grass has its own colours.
+ *
+ * Holding a direction on the keys steers the farmhand that way. The axis
+ * pressed last wins, so a new press turns at once. When it is let go, the
+ * farmhand goes in the direction the other axis holds. Letting go of every
+ * direction stops the farmhand. On a touch screen, a swipe anywhere sets
+ * the farmhand going that way, and a tap stops them. The overlay's own taps
+ * come first. A swipe is an order, not a hold, so it goes straight to the
+ * model. Then a second swipe in the same direction still sets the farmhand
+ * going after they are caught.
  */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model, music, sfx } = bindings;
+    const { model, music, sfx, controls } = bindings;
     const overlayText = createComputed({ watch: () => model.phase, compute: (phase) => describePhase(phase, model) });
 
     return (
         <container>
+            {/* The keys. The d-pad steers, and Restart starts a new run */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onXDirectionChanged={(direction) => steerOrStop(direction !== 'none' ? direction : controls.yDirection)}
+                onYDirectionChanged={(direction) => steerOrStop(direction !== 'none' ? direction : controls.xDirection)}
+                onRestartPressed={model.startNewRun}
+            />
             <AudioView
                 music={music}
                 sfx={sfx}
@@ -201,6 +217,11 @@ export function GameView(bindings: GameViewBindings): Container {
             />
         </container>
     );
+
+    function steerOrStop(direction: 'up' | 'down' | 'left' | 'right' | 'none'): void {
+        if (direction === 'none') model.stop();
+        else model.steer(direction);
+    }
 }
 
 // ---------------------------------------------------------------------------

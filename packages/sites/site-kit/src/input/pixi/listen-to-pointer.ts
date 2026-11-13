@@ -26,9 +26,10 @@ export interface PointerOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Follows one pointer at a time over a Pixi container: a finger, or the
- * mouse, from a press on the container until it lets go. A second finger
- * that touches down meanwhile is ignored, so it can't take the drag over.
+ * Follows one pointer at a time over a Pixi container. The pointer is a
+ * finger or the mouse. It is followed from a press on the container until
+ * it lets go. A second finger that touches down meanwhile is ignored, so it
+ * can't take the drag over.
  * It only reports. What a press or a drag means is up to whoever calls it.
  *
  * The listeners go when the container is destroyed.

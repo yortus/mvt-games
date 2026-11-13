@@ -69,7 +69,7 @@ export interface PixiStageOptions {
     readonly findChip: SoundChipFinder;
 }
 
-/** How to start a session on the stage: the page's start options, and the arcade controls the host has created for the session, if any. */
+/** How to start a session on the stage. It adds the session's arcade controls, if the host created any, to the page's start options. */
 export interface PixiStageStartOptions extends StartOptions {
     readonly controls?: ArcadeControls;
 }
@@ -277,12 +277,12 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 // Internals
 // ---------------------------------------------------------------------------
 
-/** The touch layout for an entry's use of the arcade controls: none drawn, for the keys only. */
+/** Returns the touch layout for an entry's use of the arcade controls. The keys only means no touch controls. */
 function toLayout(use: ArcadeControlsUse | undefined): ArcadeControlsLayout | undefined {
     return use === 'keys-only' ? KEYS_ONLY_LAYOUT : use;
 }
 
-/** The layout of an entry that uses the arcade controls from the keys only: every touch control left out. */
+/** The layout of an entry that uses the arcade controls from the keys only. It leaves out every touch control. */
 const KEYS_ONLY_LAYOUT: ArcadeControlsLayout = {};
 
 /** The colour the canvas is filled with before an entry draws, unless the entry names its own. */

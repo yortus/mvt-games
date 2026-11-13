@@ -7,7 +7,7 @@ import { type DpadKind, TouchInputView } from './touch-input-view';
 const LEFT_OF_MIDDLE = { x: -50, y: 0 };
 
 describe('TouchInputView', () => {
-    it('reports a held direction let go by a rebuild once the frame has finished, not during its refresh', async () => {
+    it('reports a rebuild\'s release of a held direction after the frame, not during its refresh', async () => {
         const { view, onXDirectionChanged, changeControls, pressDpad } = setUp();
         pressDpad();
         expect(onXDirectionChanged).toHaveBeenCalledExactlyOnceWith('left');

@@ -4,9 +4,9 @@ import type { Container, Graphics } from 'pixi.js';
 import { List } from '@mvtjs/pixi';
 import { createComputed } from '@mvtjs/utils';
 import { isTouchDevice } from '@mvtjs/site-kit/device';
-import { DragInputView } from '@mvtjs/site-kit/input/pixi';
+import { type ArcadeControls, describeControl } from '@mvtjs/site-kit/input';
+import { ArcadeControlsInputView, DragInputView } from '@mvtjs/site-kit/input/pixi';
 import { OverlayView } from '@mvtjs/site-kit/shared';
-import { describeControl } from '@mvtjs/site-kit/input';
 import { CAVE_HEIGHT, SUB_X, VIEW_WIDTH } from '../data';
 import type { GameModel } from '../models';
 
@@ -16,6 +16,8 @@ import type { GameModel } from '../models';
 
 export interface GameViewBindings {
     model: GameModel;
+    /** The arcade controls, which the host passes to the game as it starts. */
+    controls: ArcadeControls;
 }
 
 // ---------------------------------------------------------------------------
@@ -27,13 +29,20 @@ export const SCALE = 20;
 export const SCREEN_WIDTH = VIEW_WIDTH * SCALE;
 export const SCREEN_HEIGHT = CAVE_HEIGHT * SCALE;
 
-/** The whole game: the water, the cave scrolling by, the submarine and its bubbles, the distance, and the crash panel. */
+/**
+ * The whole game. It draws the water, the cave scrolling by, the submarine
+ * and its bubbles, the distance, and the crash panel. It also wires the
+ * game's controls.
+ */
 export function GameView(bindings: GameViewBindings): Container {
-    const { model } = bindings;
+    const { model, controls } = bindings;
     const distanceText = createComputed({ watch: () => Math.floor(model.distance), compute: (metres) => `${metres} m` });
     const bestText = createComputed({ watch: () => Math.floor(model.best), compute: (metres) => `BEST ${metres} m` });
     const isTouch = isTouchDevice();
-    const hint = isTouch ? 'Hold anywhere to rise' : 'Hold Space to rise';
+    const hint = isTouch ? 'Hold anywhere to rise' : `Hold ${describeControl('primary')} to rise`;
+    // A finger held down, the primary button and Up all blow the tanks. Let go of one, and the tanks keep blowing while another is held
+    let isFingerDown = false;
+    const isBlowingTanks = (): boolean => isFingerDown || controls.isHeld('primary') || controls.yDirection === 'up';
     const restartHint = isTouch ? 'Tap to dive again' : `Press ${describeControl('restart')} to dive again`;
     const crashText = `CRASHED\n\n${restartHint}`;
 
@@ -46,6 +55,13 @@ export function GameView(bindings: GameViewBindings): Container {
 
     return (
         <container onUpdate={updateBubbles}>
+            {/* The keys. The primary button or Up rises */}
+            <ArcadeControlsInputView
+                controls={controls}
+                onYDirectionChanged={() => { model.isBlowingTanks = isBlowingTanks(); }}
+                onPrimaryButtonChanged={() => { model.isBlowingTanks = isBlowingTanks(); }}
+                onRestartPressed={model.startNewRun}
+            />
             {/* Behind everything, so the overlay takes its own taps; it reaches past the screen, to the space round it */}
             <DragInputView
                 isEnabled={isTouch}
@@ -53,8 +69,14 @@ export function GameView(bindings: GameViewBindings): Container {
                 y={-SCREEN_HEIGHT}
                 width={SCREEN_WIDTH * 5}
                 height={SCREEN_HEIGHT * 4}
-                onTouched={() => { model.isBlowingTanks = true; }}
-                onLifted={() => { model.isBlowingTanks = false; }}
+                onTouched={() => {
+                    isFingerDown = true;
+                    model.isBlowingTanks = isBlowingTanks();
+                }}
+                onLifted={() => {
+                    isFingerDown = false;
+                    model.isBlowingTanks = isBlowingTanks();
+                }}
             />
             <graphics ref={drawWater} />
             <List items={bubbles}>

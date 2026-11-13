@@ -1,6 +1,6 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
 import { FIELD_COLS, FIELD_ROWS, ROUNDS } from '../data';
-import { createGameModel, type HeldDirection } from '../models';
+import { createGameModel } from '../models';
 import { GameView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
 // ---------------------------------------------------------------------------
@@ -16,6 +16,9 @@ export const load = definePixiLoader(async () => {
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
+        // On a touch screen, the game view's swipes and taps steer, so no touch controls are drawn.
+        // Pushing off a fence strings wire, so there is no button
+        arcadeControls: 'keys-only',
         // Long enough to fence off one paddock and start on another
         thumbnailAdvanceMs: THUMBNAIL_ADVANCE_MS,
         thumbnailInput: (controls, elapsedMs) => {
@@ -25,25 +28,10 @@ export const load = definePixiLoader(async () => {
             controls.setYDirection('script', move.y);
         },
 
-        start({ stage, music, sfx }): EntrySession {
+        start({ stage, music, sfx, controls }): EntrySession {
             const gameModel = createGameModel({ rounds: ROUNDS, rows: FIELD_ROWS, cols: FIELD_COLS });
-            const gameView = GameView({ model: gameModel, music, sfx });
+            const gameView = GameView({ model: gameModel, music, sfx, controls });
             stage.addChild(gameView);
-
-            // The way held is the latest of the two axes pressed, so a new press turns at once.
-            // Holding a way steers the farmhand that way, and letting go of every way stops them.
-            let xDirection: HeldDirection = 'none';
-            let yDirection: HeldDirection = 'none';
-            let isYLatest = false;
-            let heldDirection: HeldDirection = 'none';
-            const updateDirection = (): void => {
-                const latest = isYLatest ? yDirection : xDirection;
-                const held = latest !== 'none' ? latest : isYLatest ? xDirection : yDirection;
-                if (held === heldDirection) return;
-                heldDirection = held;
-                if (held === 'none') gameModel.stop();
-                else gameModel.steer(held);
-            };
 
             return {
                 // The host ticks the view with the rest of the stage
@@ -61,21 +49,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    // On a touch screen, the game view's swipes and taps steer, so no controls are drawn.
-                    // Pushing off a fence strings wire, so there is no button.
-                    onXDirectionChanged: (direction) => {
-                        if (direction !== xDirection && direction !== 'none') isYLatest = false;
-                        xDirection = direction;
-                        updateDirection();
-                    },
-                    onYDirectionChanged: (direction) => {
-                        if (direction !== yDirection && direction !== 'none') isYLatest = true;
-                        yDirection = direction;
-                        updateDirection();
-                    },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

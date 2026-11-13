@@ -12,6 +12,8 @@ export const load = definePixiLoader(async () => {
         kind: 'pixi',
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        // On a touch screen, a finger held anywhere on the game view rises, so no touch controls are drawn
+        arcadeControls: 'keys-only',
         // Far enough into the cave for it to have wound about
         thumbnailAdvanceMs: 2000,
         // Rise and sink in turn, so the submarine holds about level
@@ -19,9 +21,9 @@ export const load = definePixiLoader(async () => {
             controls.setHeld('script', 'primary', (elapsedMs + 75) % 300 < 150);
         },
 
-        start({ stage }): EntrySession {
+        start({ stage, controls }): EntrySession {
             const gameModel = createGameModel();
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, controls });
             stage.addChild(gameView);
 
             return {
@@ -37,13 +39,6 @@ export const load = definePixiLoader(async () => {
                 scoring: {
                     score: () => Math.floor(gameModel.distance),
                     isOver: () => gameModel.phase === 'crashed',
-                },
-                inputConfig: {
-                    // On a touch screen, a finger held anywhere on the game view rises, so no controls are drawn.
-                    // Space, or up, blows the tanks for as long as it is held
-                    onPrimaryButtonChanged: (isDown) => { gameModel.isBlowingTanks = isDown; },
-                    onYDirectionChanged: (dir) => { gameModel.isBlowingTanks = dir === 'up'; },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
                 },
             };
         },

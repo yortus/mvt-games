@@ -19,16 +19,18 @@ export interface HowToPlayViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Shows how to play an entry: what to aim for, then its controls as a table,
- * then anything else worth knowing. The table has a row for each action,
- * with its keys in one column, as key caps, and its gestures and on-screen
- * buttons in the next, each with an icon. An arcade control shows as the
- * keys the arcade controls' table has for it. It shows only the controls the
- * device has: the keyboard and the mouse on a desktop, touch on a phone or a
- * tablet, and all of them on a laptop with a touch screen. A row, or a
- * column, shows only where it has something in it.
+ * Shows how to play an entry. It shows what to aim for, then the controls as
+ * a table, then anything else worth knowing. The table has a row for each
+ * action. Its keys are in one column, as key caps. Its gestures and
+ * on-screen buttons are in the next, each with an icon. An arcade control
+ * shows as the keys that the arcade controls' table has for it.
  *
- * It builds its content as the entry shown changes, and only then.
+ * It shows only the controls the device has. A desktop shows the keyboard
+ * and the mouse, and a phone or tablet shows touch. A laptop with a touch
+ * screen shows all of them. A row, or a column, shows only where it has
+ * something in it.
+ *
+ * It builds its content when the entry shown changes, and only then.
  */
 export function HowToPlayView(bindings: HowToPlayViewBindings): HTMLElement {
     const { deviceKind } = bindings;
@@ -60,7 +62,7 @@ function contentOf(howToPlay: HowToPlay, deviceKind: DeviceKind): HTMLElement[] 
     return content;
 }
 
-/** A row as the device shows it: its keys, its gestures and buttons, and its notes. */
+/** A row as the device shows it. It has its keys, its gestures and buttons, and its notes. */
 interface ShownRow {
     readonly action: string;
     readonly keys: readonly ControlInput[];
@@ -89,7 +91,7 @@ function rowsShownOn(rows: readonly ControlRow[], deviceKind: DeviceKind): Shown
     return shown;
 }
 
-/** A table of the controls: the action, then its keys, then its gestures and buttons. */
+/** Returns a table of the controls. Each row has the action, then its keys, then its gestures and buttons. */
 function controlsTable(rows: readonly ShownRow[], deviceKind: DeviceKind): HTMLElement {
     const hasKeys = rows.some((row) => row.keys.length > 0);
     const hasPointer = rows.some((row) => row.pointer.length > 0);
@@ -120,7 +122,10 @@ function controlsTable(rows: readonly ShownRow[], deviceKind: DeviceKind): HTMLE
     return table;
 }
 
-/** The heading of the column of gestures and buttons: for the mouse, for touch, or for both where a row needs a mouse. */
+/**
+ * Returns the heading of the column of gestures and buttons. It names the
+ * mouse or touch. It names both where a row needs a mouse on a touch device.
+ */
 function pointerHeading(deviceKind: DeviceKind, needsMouse: boolean): string {
     if (deviceKind === 'desktop') return 'Mouse';
     if (deviceKind === 'handheld') return 'Touch';
@@ -133,7 +138,10 @@ function headerCell(text: string): HTMLElement {
     return cell;
 }
 
-/** A cell of inputs, any one of which does the action, with "or" between them. An arcade control with two keys is two of them. */
+/**
+ * A cell of inputs, with "or" between them, since any one of them does the
+ * action. An arcade control with two keys shows as two inputs.
+ */
 function inputsCell(inputs: readonly ControlInput[]): HTMLElement {
     const views: HTMLElement[] = [];
     for (const input of inputs) {
@@ -155,10 +163,10 @@ function inputsCell(inputs: readonly ControlInput[]): HTMLElement {
 }
 
 /**
- * One input: key caps, controls and keys (or a button and keys) pressed
- * together with "+" between, a gesture with its icon, or an on-screen
- * button. Pressed together with others, an arcade control shows as its
- * first key.
+ * One input. A key shows as key caps, and a gesture as its icon. An
+ * on-screen button shows as its label. Inputs pressed together show with
+ * "+" between them, and an arcade control among them shows as its first
+ * key.
  */
 function inputView(input: Exclude<ControlInput, ArcadeControlInput>): HTMLElement {
     if (typeof input === 'string') return isKey(input) ? capsView(KEYS[input]) : gestureView(input);
@@ -200,7 +208,10 @@ function gestureView(gesture: ControlGesture): HTMLElement {
     return chip;
 }
 
-/** Whether an input is for the keyboard: an arcade control, a key, or controls and keys pressed together with no button among them. */
+/**
+ * Whether an input is for the keyboard. An arcade control and a key are.
+ * So are inputs pressed together, unless a button is among them.
+ */
 function isKeyInput(input: ControlInput): boolean {
     if (typeof input === 'string') return isKey(input);
     if (!isCombo(input)) return !('button' in input);
@@ -216,9 +227,9 @@ function isArcadeControlInput(input: ControlInput): input is ArcadeControlInput 
 }
 
 /**
- * An arcade control's keys, from the table, as one set of key caps for each
- * key it has: for Left, Left then A, and for all four ways, the arrows then
- * W A S D.
+ * An arcade control's keys, from the table. Each key it has makes one set of
+ * key caps. Left shows as Left, then A. All four directions show as the
+ * arrows, then W A S D.
  */
 function capsOfControl({ control }: ArcadeControlInput): Caps[] {
     const controls = CONTROLS_OF[control];
@@ -234,18 +245,18 @@ function capsOfControl({ control }: ArcadeControlInput): Caps[] {
     }
 }
 
-/** A key's cap: an arrow as its arrow, and any other key in words. */
+/** A key's cap. An arrow key shows its arrow, and any other key shows in words. */
 function capOf(key: string): string {
     return ARROWS[key] ?? describeKey(key);
 }
 
-/** Names as a list in words: `'Left and Right'`, or `'W, A, S and D'`. */
+/** Joins names into a list in words, such as `'Left and Right'` or `'W, A, S and D'`. */
 function listInWords(names: readonly string[]): string {
     if (names.length < 2) return names.join('');
     return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-/** Whether an input needs a mouse: a click, or the wheel. */
+/** Whether an input needs a mouse. A click and the wheel do. */
 function isMouseOnly(input: ControlInput): boolean {
     return input === 'click' || input === 'wheel';
 }
@@ -268,16 +279,19 @@ const UP = textArrow('↑');
 const RIGHT = textArrow('→');
 const DOWN = textArrow('↓');
 
-/** A key, or keys used as one, as key caps, and its name for assistive technology. */
+/** The key caps for a key, or for keys used as one. The name is for assistive technology. */
 interface Caps {
     readonly caps: readonly string[];
     readonly name: string;
 }
 
-/** The arrow keys' caps, by the name `KeyboardEvent.key` has for each. */
+/** The caps of the arrow keys. Each is listed under its `KeyboardEvent.key` name. */
 const ARROWS: Readonly<Record<string, string | undefined>> = { ArrowLeft: LEFT, ArrowUp: UP, ArrowRight: RIGHT, ArrowDown: DOWN };
 
-/** The arcade controls in each control input, in the order their caps show: the d-pad's in reading order, as W A S D is. */
+/**
+ * The arcade controls in each control input, in the order their caps show.
+ * The d-pad's directions are in reading order, as W A S D is.
+ */
 const CONTROLS_OF: Readonly<Record<ArcadeControlInput['control'], readonly ArcadeControl[]>> = {
     'dpad': ['up', 'left', 'down', 'right'],
     'left-right': ['left', 'right'],

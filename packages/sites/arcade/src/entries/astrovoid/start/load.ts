@@ -17,8 +17,10 @@ export const load = definePixiLoader(async () => {
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
         integerScale: true,
+        // On a touch screen, a left-right pad turns and a button thrusts. The ship fires on its own
+        arcadeControls: { showDpad: true, dpadKind: 'left-right', showSecondary: true, secondaryLabel: 'Thrust' },
 
-        start({ stage, sfx }): EntrySession {
+        start({ stage, sfx, controls }): EntrySession {
             const gameModel = createGameModel({
                 arenaWidth: ARENA_WIDTH,
                 arenaHeight: ARENA_HEIGHT,
@@ -26,7 +28,7 @@ export const load = definePixiLoader(async () => {
             // On a touch screen, the ship fires on its own, so the thumbs are free to fly it
             gameModel.isAutoFiring = isTouchDevice();
 
-            const gameView = GameView({ model: gameModel, sfx });
+            const gameView = GameView({ model: gameModel, sfx, controls });
             stage.addChild(gameView);
 
             return {
@@ -44,18 +46,6 @@ export const load = definePixiLoader(async () => {
                 },
                 saveGame: gameModel.save,
                 loadGame: gameModel.load,
-                inputConfig: {
-                    // On a touch screen, a left-right pad turns, a button thrusts, and the ship fires on its own
-                    showDpad: true,
-                    dpadKind: 'left-right',
-                    showSecondary: true,
-                    secondaryLabel: 'Thrust',
-                    onXDirectionChanged: (dir) => { gameModel.turning = dir; },
-                    onYDirectionChanged: (dir) => { gameModel.isThrusting = dir === 'up'; },
-                    onPrimaryButtonChanged: (isDown) => { if (isDown) gameModel.fire(); },
-                    onSecondaryButtonChanged: (isDown) => { gameModel.isThrusting = isDown; },
-                    onRestartButtonChanged: (isDown) => { if (isDown) gameModel.startNewRun(); },
-                },
             };
         },
     };

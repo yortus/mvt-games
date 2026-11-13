@@ -15,7 +15,7 @@ export type ArcadeControlKeys = Readonly<Record<ArcadeControl, readonly string[]
 // Constants
 // ---------------------------------------------------------------------------
 
-/** The keys for the arcade controls: the arrows or WASD, Space, Shift and Enter. */
+/** The keys for the arcade controls. They are the arrows or WASD, then Space, Shift and Enter. */
 export const ARCADE_CONTROL_KEYS: ArcadeControlKeys = {
     left: ['ArrowLeft', 'a'],
     right: ['ArrowRight', 'd'],

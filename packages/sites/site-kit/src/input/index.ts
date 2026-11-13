@@ -1,5 +1,6 @@
-// Input that needs no renderer: the keyboard, the arcade controls that the
-// entry host creates for a game, and taps and drags over a grid, in cells.
+// Input that needs no renderer. It holds the keyboard, and the arcade
+// controls that the entry host creates for a game. It also handles taps and
+// drags over a grid, in cells.
 // Input on a Pixi stage is in ./pixi/.
 
 export { ARCADE_CONTROL_KEYS, type ArcadeControlKeys } from './arcade-control-keys';
