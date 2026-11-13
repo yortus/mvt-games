@@ -348,10 +348,12 @@ export const load = definePixiLoader(async () => {
         integerScale: true,
         screenWidth: SCREEN_WIDTH,
         screenHeight: SCREEN_HEIGHT,
+        // The paddle moves left and right, so the touch d-pad goes only those ways
+        arcadeControls: { showDpad: true, dpadKind: 'left-right' },
 
-        start({ stage }): EntrySession {
+        start({ stage, controls }): EntrySession {
             const gameModel = createGameModel({ /* options */ });
-            const gameView = GameView({ model: gameModel });
+            const gameView = GameView({ model: gameModel, controls });
             stage.addChild(gameView);
 
             return {
@@ -362,10 +364,6 @@ export const load = definePixiLoader(async () => {
                 destroy(): void {
                     stage.removeChild(gameView);
                     gameView.destroy({ children: true });
-                },
-                inputConfig: {
-                    showDpad: true,
-                    onXDirectionChanged: (dir) => { gameModel.paddle.direction = dir; },
                 },
             };
         },
@@ -384,28 +382,47 @@ while paused, it stops calling `update()` and leaves the entry's view out of
 `updateView`, so an entry needs no pause logic of its own. `destroy()`
 removes the view and cleans up.
 
-A game's session has an `inputConfig`: the controls it responds to. The
-host creates the arcade controls for it, a d-pad, two buttons and Restart,
-and turns the keyboard, and touch controls on a touch screen, into calls to
-its callbacks. The keys are listed in one table, `ARCADE_CONTROL_KEYS` (the
-arrows or WASD, Space, Shift and Enter). A control stays held while any of
-its keys, or a touch on it, is held. While the game is paused, the host
-ignores key presses, but still counts a key released.
-Its callbacks are named for the controls (`onPrimaryButtonChanged`), and
-the wiring is where you say what each one means. Give the model the
-meaning, never the control. A button held to steer sets state named for
-what it does (`paddle.direction`, `ship.isThrusting`), and a press that asks
-for something once calls an action:
+A game that uses the **arcade controls** says so with `arcadeControls` on
+its starter. The arcade controls are a d-pad, two buttons and Restart, like
+the stick and buttons on an arcade cabinet. The host creates them for each
+session, and passes them to `start` as `controls`. An entry that doesn't
+declare `arcadeControls` isn't passed any, and its keys are its own.
 
-```ts
-onRestartButtonChanged: (isDown) => {
-    if (isDown) gameModel.startNewRun();
-},
+The host holds the controls from the keyboard. On a touch screen, it also
+draws touch controls beside the game. The keys are listed in one table,
+`ARCADE_CONTROL_KEYS`. They are the arrows or WASD, Space, Shift and Enter.
+A control stays held while any of its keys, or a touch on it, is held.
+While the game is paused, the host ignores key presses. It still counts a
+key released, so a key held across a pause stays held.
+
+`arcadeControls` also says which touch controls the host draws. It is a
+layout, such as `{ showDpad: true }`. If your own view handles touch, use
+`'keys-only'`, and the host doesn't draw any.
+
+Your game's top-level view wires the controls, with
+`ArcadeControlsInputView` from `@mvtjs/site-kit/input/pixi`. Its relays are
+named for the controls, such as `onPrimaryButtonChanged`. The wiring is
+where you say what each one means. Give the model the meaning, never the
+control. A control held to steer sets state named for what it does, such
+as `paddle.direction` or `ship.isThrusting`. A press that asks for
+something once calls an action:
+
+```tsx
+<ArcadeControlsInputView
+    controls={controls}
+    onXDirectionChanged={(direction) => { model.paddle.direction = direction; }}
+    onRestartPressed={model.startNewRun}
+/>
 ```
 
 So the model never knows there is a button, and never watches for the
-moment one is pressed. The host reports a button only when it goes down or
-up, never again as a key repeats.
+moment one is pressed. The controls report a button only when it goes down
+or up, never again as a key repeats.
+
+A starter that uses the arcade controls can also play them for its
+thumbnail, with `thumbnailInput`. It is called before each step as the
+thumbnail is set up, so the picture shows the game in action, as Galaxy
+Raiders' does.
 
 On a touch screen, choose the controls that suit how your game steers. Each
 one is a shared view from `@mvtjs/site-kit/input/pixi`, so the same gesture feels the same in
@@ -753,7 +770,7 @@ members are query bindings, which the Arcade reads every frame. It watches
 
 ```ts
 return {
-    // update, destroy and inputConfig, as before
+    // update and destroy, as before
     scoring: {
         score: () => gameModel.score,
         // True from the run's end until the game starts another
@@ -794,7 +811,7 @@ so `loadGame` checks the value's shape first:
 
 ```ts
 return {
-    // update, destroy, inputConfig and scoring, as before
+    // update, destroy and scoring, as before
     saveGame: gameModel.save,
     loadGame: gameModel.load,
 };

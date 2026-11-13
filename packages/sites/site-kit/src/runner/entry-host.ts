@@ -246,7 +246,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             stopChips(sessionChips);
             sessionChips?.music.resume();
             sessionChips?.sfx.resume();
-            controls = createControls();
+            controls = next.arcadeControls === undefined ? undefined : createControls();
             session = startSession(next, options, controls);
         },
 
@@ -346,27 +346,21 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
 
     /**
      * Creates the arcade controls for the next session, before it starts, so
-     * they can be passed to it if its starter declares `arcadeControls`. The
-     * page starts sessions during its frame, so they report nothing as they
-     * are created. They handle the keys only while the entry uses them, as
-     * its starter's `arcadeControls` or its session's input config declares,
-     * so the keys of an entry that listens to the keyboard itself are left to
-     * it. They ignore key presses while the host is paused, and still count a
-     * key released, so a key held across a pause stays held.
-     *
-     * Every session gets them for now, though, since some games still wire an
-     * `inputConfig` in their starters, which the controls call, and a session
-     * has that only once it has started. Once no game does, only an entry
-     * that declares `arcadeControls` gets them.
+     * they can be passed to it. Only an entry whose starter declares
+     * `arcadeControls` gets them. So the keys of an entry that listens to the
+     * keyboard itself are left to it. The page starts sessions during its
+     * frame, so the controls don't report anything as they are created. They ignore
+     * key presses while the host is paused. They still count a key released,
+     * so a key held across a pause stays held.
      */
     function createControls(): ArcadeControls {
         return createArcadeControls({
             keys: takesInput ? ARCADE_CONTROL_KEYS : undefined,
-            isActive: () => !isPaused && (starter?.arcadeControls !== undefined || session?.inputConfig !== undefined),
+            isActive: () => !isPaused,
         });
     }
 
-    function startSession(next: EntryStarter, options: StartOptions, nextControls: ArcadeControls): EntrySession {
+    function startSession(next: EntryStarter, options: StartOptions, nextControls: ArcadeControls | undefined): EntrySession {
         if (next.kind === 'pixi') {
             if (pixiStage === undefined) throw new Error('entry host: prepare a Pixi entry before starting it');
             fitStarter(next);

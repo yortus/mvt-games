@@ -55,14 +55,15 @@ async function pose(starter: ElementEntryStarter, size: Size): Promise<Element> 
     document.body.append(element);
     // A headless chip makes no sound.
     const sound = createHeadlessSound(starter);
-    const session = startElementEntry(starter, { element, controls: createHeadlessControls(starter) }, sound.findChips);
+    const controls = createHeadlessControls(starter);
+    const session = startElementEntry(starter, { element, controls }, sound.findChips);
     // This runs after the element is captured and destroyed. Destroying a
     // view twice is harmless.
     onTestFinished(() => session.destroy());
     await session.ready;
     // An entry that sizes itself to its element learns its size here.
     await waitForLayout();
-    advanceHeadless({ session, views: session.views, chips: sound.chips, totalMs: findThumbnailAdvanceMs(starter) });
+    advanceHeadless({ session, views: session.views, chips: sound.chips, totalMs: findThumbnailAdvanceMs(starter), controls, input: starter.thumbnailInput });
     session.render();
     return element;
 }

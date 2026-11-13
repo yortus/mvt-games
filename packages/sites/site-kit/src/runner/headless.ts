@@ -78,14 +78,10 @@ export function createHeadlessSound(starter: EntryStarter): HeadlessSound {
 /**
  * Creates the arcade controls that `starter` uses, with no keys, so they are
  * held only from a script, such as its `thumbnailInput`. For an entry that
- * doesn't use them, it creates none.
- *
- * Every entry gets them for now, though, since some games still wire an
- * `inputConfig` in their starters, which the controls call. Once no game
- * does, only an entry that declares `arcadeControls` gets them.
+ * doesn't use them, it doesn't create any.
  */
-export function createHeadlessControls(_starter: EntryStarter): ArcadeControls | undefined {
-    return createArcadeControls();
+export function createHeadlessControls(starter: EntryStarter): ArcadeControls | undefined {
+    return starter.arcadeControls === undefined ? undefined : createArcadeControls();
 }
 
 /**

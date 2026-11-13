@@ -15,25 +15,25 @@ site kit's layout, is done. Step 2, the arcade controls on `listenToKeys`,
 is done, and found one more bug: `listenToKeys` released a hold as soon as
 one of its keys came up, though another of its keys was still down (←
 and A, in Penrose Tiling and Fractalscope, and the arcade's keys). It now
-counts the keys down for each hold. Step 3 is under way: a starter
-requests the arcade controls with `arcadeControls` (a touch layout, or
-`'keys-only'`), and only then is its session passed `controls`, typed as
-`definePixiLoader` types the sound chips. Galaxy Raiders wires them in its
-game view with `ArcadeControlsInputView`, and so do Crumb Chase, Garden
-Snake, Dojo Duel, Fuel Run, Kwazy Cactii, Neon Monsoon and the Tune
-Tracker. So do Astrovoid and Deep Dive. Each works its action out from
-what the controls hold, which fixes bug 4 (section 5). So do Burrow Bust
-and Fenceline. The axis that changes wins. When it is let go, they fall
-back to the other axis, read from the controls (section 5). Their swipes
-still go straight to the model. No game uses `inputConfig` now, and part
-4 of step 3 removes it.
-Step 4 is done, ahead of the rest of step 3: How to play names the arcade
-controls (`{ control: 'primary' }`, and `'left-right'`, `'up-down'` and
-`'dpad'` for sets of ways), the page shows the keys the table has for each,
-and the games' "Press Enter" comes from `describeControl('restart')`. The
-touch buttons' labels stay in `touchInputs`, as written: the info panel
-shows How to play before the starter, which holds the touch layout, has
-loaded. The key names no entry uses any more left `ControlKey`.
+counts the keys down for each hold. Step 3 is done. A starter requests
+the arcade controls with `arcadeControls`, which is a touch layout or
+`'keys-only'`. Only then does the host create controls for its session,
+and pass them as `controls`. They are typed as `definePixiLoader` types
+the sound chips. So is `thumbnailInput`, which only such a starter can
+have. Every arcade game and the Tune Tracker wires the controls in its
+game view with `ArcadeControlsInputView`. Astrovoid and Deep Dive work
+their actions out from what the controls hold, which fixes bug 4 (section
+5). When Burrow Bust's and Fenceline's players let go of one axis, they
+fall back to the other, read from the controls (section 5). Their swipes
+still go straight to the model. `inputConfig` and `EntryInputConfig` are
+gone.
+Step 4 is done too. How to play names the arcade controls, such as
+`{ control: 'primary' }`. Sets of directions are `'left-right'`,
+`'up-down'` and `'dpad'`. The page shows the keys the table has for each.
+The games' "Press Enter" comes from `describeControl('restart')`. The
+touch buttons' labels stay in `touchInputs`, as written. The info panel
+shows How to play before the starter has loaded, and the starter holds the
+touch layout. The key names no entry uses any more left `ControlKey`.
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
 from a survey of every entry and the site kit. Line numbers are from that
@@ -45,7 +45,7 @@ day.
 [`listenToKeyboard`](../../packages/sites/site-kit/src/input/keyboard-input.ts),
 [the Pixi stage](../../packages/sites/site-kit/src/runner/pixi-stage.ts) and
 [the entry host](../../packages/sites/site-kit/src/runner/entry-host.ts),
-[`EntryInputConfig`](../../packages/sites/site-kit/src/entry-types/entry-starter.ts),
+[the starter's `arcadeControls`](../../packages/sites/site-kit/src/entry-types/entry-starter.ts),
 [Adding an Entry: input](../../packages/sites/arcade/src/entries/README.md),
 [Chapter 8](../../packages/sites/docs/chapters/08-bindings.md#relay-bindings-and-input-handling)
 and [Chapter 13](../../packages/sites/docs/chapters/13-composing-views.md)

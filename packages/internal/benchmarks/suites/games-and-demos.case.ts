@@ -49,15 +49,16 @@ const music = starter.soundChip === 'audio90' ? createHeadlessAudio90() : create
 const sfx = starter.soundChip === 'audio90' ? createHeadlessAudio90() : createHeadlessAudio80();
 // A starter asks only for the kind of chip it names, which these are. TypeScript can't follow that into their type
 const findChips: SoundChipFinder = <K extends SoundChipKind>() => ({ music, sfx }) as unknown as SessionChips<K>;
-// The arcade controls listen to no keys here. The script below sets what is held
-const controls = createArcadeControls();
+// An entry that uses the arcade controls is passed controls that don't listen to the keys.
+// The script below sets what is held
+const controls = starter.arcadeControls === undefined ? undefined : createArcadeControls();
 const session = startPixiEntry(starter, { stage, controls }, findChips);
 const sessionChips = starter.soundChip === undefined ? [] : [music, sfx];
 /** Advances the session's chips' clocks, as the host does each frame. */
 const updateChips = (deltaMs: number): void => {
     for (let i = 0; i < sessionChips.length; i++) sessionChips[i].update(deltaMs);
 };
-const input = createInputScript(controls, starter.arcadeControls !== undefined || session.inputConfig !== undefined);
+const input = createInputScript(controls);
 let frameIndex = 0;
 
 const frame = (): void => {
@@ -125,9 +126,9 @@ async function loadPixiStarter(id: string): Promise<PixiEntryStarter> {
  * pressed briefly every second and every 1.5 seconds. Only changes are sent,
  * as real input would be. Demos don't use the arcade controls, so they get none.
  */
-function createInputScript(controls: ArcadeControls, usesControls: boolean): (frame: number) => void {
+function createInputScript(controls: ArcadeControls | undefined): (frame: number) => void {
     return (f) => {
-        if (!usesControls) return;
+        if (controls === undefined) return;
         if (f % 30 === 0) controls.setXDirection('script', X_PATTERN[(f / 30) % X_PATTERN.length]);
         if (f % 42 === 0) controls.setYDirection('script', Y_PATTERN[(f / 42) % Y_PATTERN.length]);
         if (f % 60 === 0) controls.setHeld('script', 'primary', true);

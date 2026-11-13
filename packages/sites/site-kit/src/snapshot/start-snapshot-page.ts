@@ -104,12 +104,13 @@ async function start(entry: ArcadeEntry, root: HTMLElement): Promise<void> {
     root.style.width = `${entry.screenWidth}px`;
     root.style.height = `${entry.screenHeight}px`;
     const sound = createHeadlessSound(starter);
-    const session = startElementEntry(starter, { element: root, controls: createHeadlessControls(starter) }, sound.findChips);
+    const controls = createHeadlessControls(starter);
+    const session = startElementEntry(starter, { element: root, controls }, sound.findChips);
     // Some renderers start asynchronously, so this waits until they can draw,
     // and until an entry that sizes itself to its element knows its size.
     await session.ready;
     await waitForLayout();
-    advanceHeadless({ session, views: session.views, chips: sound.chips, totalMs });
+    advanceHeadless({ session, views: session.views, chips: sound.chips, totalMs, controls, input: starter.thumbnailInput });
     session.render();
 }
 

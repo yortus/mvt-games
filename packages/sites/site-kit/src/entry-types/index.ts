@@ -4,7 +4,7 @@ export {
 } from './arcade-entry';
 export {
     type ArcadeControlsLayout, type ArcadeControlsUse, defineElementLoader, definePixiLoader, type ElementEntrySession, type ElementEntryStarter, type ElementEntryStarterFields, type ElementStartBase,
-    type ElementStartOptions, type EntryInputConfig, type EntryScoring, type EntrySession, type EntryStarter,
+    type ElementStartOptions, type EntryScoring, type EntrySession, type EntryStarter,
     type GivenNoSound, type GivenSound, type HasNoSoundChip, type HasSoundChip, type NamedSoundChip, type PixiEntryStarter, type PixiEntryStarterFields, type PixiStartBase,
     type PixiStartOptions, type SessionChips, type SoundChipField, type SoundChipFinder, type SoundChipKind, type SoundChipsByKind, type SoundChoice,
     type SoundOption, startElementEntry, startPixiEntry, type StartOptions,

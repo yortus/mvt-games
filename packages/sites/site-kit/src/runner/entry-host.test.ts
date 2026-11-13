@@ -134,7 +134,7 @@ describe('createEntryHost', () => {
     });
 
     describe('the arcade controls', () => {
-        it('reports the keys to the input config of the game playing', async () => {
+        it('reports the keys to the game playing', async () => {
             const { sound, host } = createHostWithSound();
             const game = createFakeControlledGame();
             await host.prepare(game.starter);
@@ -179,7 +179,7 @@ describe('createEntryHost', () => {
 
         it('passes the arcade controls to a game that declares them, and handles their keys', async () => {
             const { sound, host } = createHostWithSound();
-            const game = createFakeDeclaredGame();
+            const game = createFakeControlledGame();
             await host.prepare(game.starter);
             host.start(game.starter);
             const event = sendKey('keydown', 'ArrowDown');
@@ -250,23 +250,26 @@ function createFakeGame() {
     return { starter };
 }
 
-/** Creates an element entry with an input config, which keeps everything the arcade controls report, in order. */
+/**
+ * Creates an element entry that declares the arcade controls on its starter.
+ * It listens to them as a game view does, and keeps everything they report,
+ * in order.
+ */
 function createFakeControlledGame() {
     const reports: string[] = [];
     const starter: ElementEntryStarter = {
         kind: 'element',
-        start: () => ({
-            views: [],
-            update: () => {},
-            render: () => {},
-            destroy: () => {},
-            inputConfig: {
+        arcadeControls: 'keys-only',
+        start: ({ controls }) => {
+            const stop = controls.listen({
                 onXDirectionChanged: (direction) => reports.push(`x ${direction}`),
                 onYDirectionChanged: (direction) => reports.push(`y ${direction}`),
                 onPrimaryButtonChanged: (pressed) => reports.push(`primary ${pressed}`),
                 onSecondaryButtonChanged: (pressed) => reports.push(`secondary ${pressed}`),
-            },
-        }),
+                onRestartButtonChanged: (pressed) => reports.push(`restart ${pressed}`),
+            });
+            return { views: [], update: () => {}, render: () => {}, destroy: stop };
+        },
     };
     return { starter, reports };
 }
@@ -276,23 +279,6 @@ function sendKey(kind: 'keydown' | 'keyup', key: string): KeyboardEvent {
     const event = new KeyboardEvent(kind, { key, bubbles: true, cancelable: true });
     window.dispatchEvent(event);
     return event;
-}
-
-/** Creates an element entry that declares the arcade controls on its starter, and listens to them as a game view does. */
-function createFakeDeclaredGame() {
-    const reports: string[] = [];
-    const starter: ElementEntryStarter = {
-        kind: 'element',
-        arcadeControls: 'keys-only',
-        start: ({ controls }) => {
-            const stop = controls.listen({
-                onYDirectionChanged: (direction) => reports.push(`y ${direction}`),
-                onRestartButtonChanged: (pressed) => reports.push(`restart ${pressed}`),
-            });
-            return { views: [], update: () => {}, render: () => {}, destroy: stop };
-        },
-    };
-    return { starter, reports };
 }
 
 /** Creates an element entry that makes no sound. It keeps whether it was given chips anyway. */

@@ -190,8 +190,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
                 isInPage: true,
             }, findChip);
             canvas.hidden = false;
-            // A session's input config is known only now, and it can change the fit
-            fitTo(areaWidth, areaHeight, toLayout(next.arcadeControls) ?? session.inputConfig);
+            // The new entry's touch controls can change the fit
+            fitTo(areaWidth, areaHeight, toLayout(next.arcadeControls));
             return session;
         },
 
@@ -250,7 +250,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 
     /** How the entry running lays out its touch controls, if it uses the arcade controls. */
     function layout(): ArcadeControlsLayout | undefined {
-        return starter === undefined ? undefined : toLayout(starter.arcadeControls) ?? options.session()?.inputConfig;
+        return toLayout(starter?.arcadeControls);
     }
 
     function fitTo(width: number, height: number, config: ArcadeControlsLayout | undefined): void {
