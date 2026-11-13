@@ -2,8 +2,8 @@ import { Container, Graphics, GraphicsContext, Rectangle } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 import type { GlassWindow, TilePatch } from '../models';
+import { type BoardShapes, createBoardShapes } from './board-shapes';
 import { measureTurn } from './measure-turn';
-import { layOutPicture } from './picture-layout';
 import { GodRaysView } from './god-rays-view';
 import { SunlightView } from './sunlight-view';
 import { createSwapGesturesViewModel, type SwapGesturesViewModel } from './swap-gestures-view-model';
@@ -147,25 +147,21 @@ export function BoardView(bindings: BoardViewBindings): Container {
     let poseScale = 1;
     let poseLift = 0;
 
-    // What is built for the puzzle shown, and what was drawn last
+    // What is built for the puzzle shown, and what was drawn last. The shapes are the puzzle's, as createBoardShapes
+    // describes them
     let builtPuzzle: GlassWindow | undefined;
     let builtOpened = -1;
     let scale = 1;
     let centreX = 0;
     let centreY = 0;
-    let insets: number[][] = [];
-    // Each piece's glass as it is drawn off its tile: a trimmed tile's whole rhombus, part of it hidden by the frame
-    // while it is home, or the glass on the tile
-    let pieceShapes: number[][] = [];
-    // Each tile's outline, through the middle of its lead
-    let outers: number[][] = [];
-    // The tile across each side of each tile, numbered as its corners are, the side from a corner to the next, or -1
-    // at the frame
-    let sideNeighbours = new Int32Array(0);
-    let sweepPlaces = new Float64Array(0);
+    let windowTop = 0;
+    let outers: BoardShapes['outers'] = [];
+    let insets: BoardShapes['insets'] = [];
+    let pieceShapes: BoardShapes['pieceShapes'] = [];
+    let sideNeighbours: BoardShapes['sideNeighbours'] = new Int32Array(0);
+    let sweepPlaces: BoardShapes['sweepPlaces'] = new Float64Array(0);
     // The window's layers, together, so it can pulse and step back as one, about the middle of its top
     let windowLayer = new Container();
-    let windowTop = 0;
     let rim = new Graphics();
     let lead = new Graphics();
     // The solved window's glow: a line of light along each side two pieces share, made the first time the window shows
@@ -502,8 +498,12 @@ export function BoardView(bindings: BoardViewBindings): Container {
         builtPuzzle = puzzle;
         builtOpened = bindings.puzzlesOpened();
         const { patch } = puzzle;
-        const { count, cornerStarts, cornerXs, cornerYs, middleXs, middleYs, halfWidth, halfHeight } = patch;
-        ({ scale, centreX, centreY } = layOutPicture({ halfWidth, halfHeight, width: bindings.width, height: bindings.height }));
+        const { count, halfWidth, halfHeight } = patch;
+        ({ scale, centreX, centreY, windowTop, outers, insets, pieceShapes, sideNeighbours, sweepPlaces } = createBoardShapes({
+            patch,
+            width: bindings.width,
+            height: bindings.height,
+        }));
 
         lifted.removeFromParent();
         for (const child of view.removeChildren()) child.destroy({ children: true });
@@ -512,42 +512,9 @@ export function BoardView(bindings: BoardViewBindings): Container {
         // window
         rim = new Graphics();
         lead = new Graphics();
-        insets = [];
-        pieceShapes = [];
-        outers = [];
-        let leftmost = Infinity;
-        let rightmost = -Infinity;
         for (let t = 0; t < count; t++) {
-            const outer: number[] = [];
-            for (let c = cornerStarts[t]; c < cornerStarts[t + 1]; c++) outer.push(centreX + cornerXs[c] * scale, centreY + cornerYs[c] * scale);
-            rim.poly(outer).stroke({ color: LEAD_COLOR, width: RIM_WIDTH * 2, join: 'round' });
-            lead.poly(outer).fill(0xffffff);
-            outers.push(outer);
-            insets.push(insetPolygon(outer, LEAD_HALF_WIDTH));
-            if (patch.trims[t] === 1) {
-                const rhombus: number[] = [];
-                for (let k = 0; k < 4; k++) rhombus.push(centreX + patch.rhombusXs[t * 4 + k] * scale, centreY + patch.rhombusYs[t * 4 + k] * scale);
-                pieceShapes.push(insetPolygon(rhombus, LEAD_HALF_WIDTH));
-            }
-            else pieceShapes.push(insets[t]);
-            leftmost = Math.min(leftmost, middleXs[t] + middleYs[t] * SWEEP_SLANT);
-            rightmost = Math.max(rightmost, middleXs[t] + middleYs[t] * SWEEP_SLANT);
-        }
-        // Where each tile is along the light's sweep, from 0 to 1: across, and a little down
-        sweepPlaces = new Float64Array(count);
-        for (let t = 0; t < count; t++) sweepPlaces[t] = (middleXs[t] + middleYs[t] * SWEEP_SLANT - leftmost) / (rightmost - leftmost || 1);
-
-        sideNeighbours = new Int32Array(cornerStarts[count]).fill(-1);
-        for (let t = 0; t < count; t++) {
-            const near = patch.neighboursOf(t);
-            for (let c = cornerStarts[t]; c < cornerStarts[t + 1]; c++) {
-                const next = c + 1 < cornerStarts[t + 1] ? c + 1 : cornerStarts[t];
-                for (let i = 0; i < near.length; i++) {
-                    if (!hasCorner(patch, near[i], cornerXs[c], cornerYs[c]) || !hasCorner(patch, near[i], cornerXs[next], cornerYs[next])) continue;
-                    sideNeighbours[c] = near[i];
-                    break;
-                }
-            }
+            rim.poly(outers[t]).stroke({ color: LEAD_COLOR, width: RIM_WIDTH * 2, join: 'round' });
+            lead.poly(outers[t]).fill(0xffffff);
         }
 
         glass = new Graphics();
@@ -578,7 +545,6 @@ export function BoardView(bindings: BoardViewBindings): Container {
         godRays = undefined;
         windowLayer = new Container();
         windowLayer.addChild(rim, lead, glass, locks, rings, glowLayer, outlines, light, groupLayer, frameMask, flying, dropping, lifted, celebration);
-        windowTop = centreY - halfHeight * scale;
         windowLayer.pivot.set(centreX, windowTop);
         windowLayer.position.set(centreX, windowTop);
         view.addChild(windowLayer);
@@ -1170,8 +1136,6 @@ const GOD_RAY_REACH = 1.55;
 const SWEEP_MS = 1100;
 const LIGHT_BAND = 0.22;
 const LIGHT_ALPHA = 0.55;
-/** How far down the sweep slants as it goes across. */
-const SWEEP_SLANT = 0.4;
 /**
  * The solved window's glow: a warm white light, laid along the middle of the
  * lead in strokes from wide and faint to narrow and bright, each a width in
@@ -1225,46 +1189,6 @@ const LIFT_MS = 120;
 const LIFT_RAISE = 6;
 const SHADOW_OFFSET = 4;
 const SHADOW_ALPHA = 0.28;
-
-/** Whether tile `tile` of `patch` has a corner at (`x`, `y`). */
-function hasCorner(patch: TilePatch, tile: number, x: number, y: number): boolean {
-    for (let c = patch.cornerStarts[tile]; c < patch.cornerStarts[tile + 1]; c++) {
-        if (Math.abs(patch.cornerXs[c] - x) < CORNER_TOLERANCE && Math.abs(patch.cornerYs[c] - y) < CORNER_TOLERANCE) return true;
-    }
-    return false;
-}
-
-/** How close two corners are, in tile edges, to be taken as the same. */
-const CORNER_TOLERANCE = 1e-6;
-
-/**
- * The corners of a polygon, given as x, y pairs, round it the way every
- * tile goes, each moved inwards so every side moves `distance` in: the
- * glass inside its lead.
- */
-function insetPolygon(points: readonly number[], distance: number): number[] {
-    const n = points.length / 2;
-    const inset: number[] = [];
-    for (let k = 0; k < n; k++) {
-        const px = points[((k + n - 1) % n) * 2];
-        const py = points[((k + n - 1) % n) * 2 + 1];
-        const cx = points[k * 2];
-        const cy = points[k * 2 + 1];
-        const nx = points[((k + 1) % n) * 2];
-        const ny = points[((k + 1) % n) * 2 + 1];
-        const [n1x, n1y] = inwardNormal(px, py, cx, cy);
-        const [n2x, n2y] = inwardNormal(cx, cy, nx, ny);
-        const along = distance / (1 + n1x * n2x + n1y * n2y);
-        inset.push(cx + (n1x + n2x) * along, cy + (n1y + n2y) * along);
-    }
-    return inset;
-}
-
-/** The unit normal of the side from (ax, ay) to (bx, by) that points into its tile, given the way every tile goes round. */
-function inwardNormal(ax: number, ay: number, bx: number, by: number): [number, number] {
-    const length = Math.hypot(bx - ax, by - ay) || 1;
-    return [-(by - ay) / length, (bx - ax) / length];
-}
 
 /** A colour partway from `a` to `b`, each 0xRRGGBB, mixed channel by channel. */
 function mixColours(a: number, b: number, t: number): number {

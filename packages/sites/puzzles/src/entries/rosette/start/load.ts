@@ -17,14 +17,22 @@ export const load = definePixiLoader(async () => ({
     // The paper goes on past the play area, to the screen's edges
     backgroundColor: PAPER_COLOR,
 
+    // The showcase's window mended, its celebration over, and the sun up behind it
+    thumbnailAdvanceMs: SHOWCASE_CELEBRATED_MS,
+
     start({ stage, sfx, isInPage }): EntrySession {
-        const model = isInPage === true ? createPlayersModel() : createShowcaseModel();
+        const isShowcase = isInPage !== true;
+        const model = isShowcase ? createShowcaseModel() : createPlayersModel();
         const view = GameView({ model, sfx });
         stage.addChild(view);
+        // The showcase's window is mended in the game's second frame, once its view has drawn it jumbled, so it celebrates
+        let framesUntilMend = isShowcase ? 1 : -1;
 
         return {
             // The host ticks the view with the rest of the stage
             update(deltaMs: number): void {
+                if (framesUntilMend === 0) playShowcase({ model, placedShare: 1 });
+                if (framesUntilMend >= 0) framesUntilMend--;
                 model.update(deltaMs);
             },
             destroy(): void {
@@ -58,15 +66,19 @@ function createPlayersModel(): GameModel {
 /**
  * Started headless, for the thumbnail or a visual test, the game is on a
  * fixed day, so its picture is the same whenever it is taken. It keeps
- * nothing, and shows a window mostly mended.
+ * nothing, and opens a window mostly mended, which the session mends.
  */
 function createShowcaseModel(): GameModel {
     const model = createGameModel({ today: SHOWCASE_DAY, store: createMemoryStore(), offersIntro: false });
-    playShowcase(model);
+    playShowcase({ model });
     return model;
 }
 
-const SHOWCASE_DAY = toDayNumber({ year: 2026, month: 11, day: 7 });
+/** The showcase's day: Friday 6 November 2026, whose windows are pointed arches. */
+const SHOWCASE_DAY = toDayNumber({ year: 2026, month: 11, day: 6 });
+
+/** How long a medium window's celebration takes, at most, until the sun is all the way up: its ripple, then the sunrise. */
+const SHOWCASE_CELEBRATED_MS = 4000;
 
 /** The question the player confirms before a restart jumbles the window open. */
 function writeRestartQuestion(isSolved: boolean): string {

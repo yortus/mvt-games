@@ -21,7 +21,11 @@ export function keepBlurred(shape: Graphics, strength: number): Container {
         .fill({ color: 0x000000, alpha: CLEAR_ALPHA });
     const kept = new Container();
     kept.addChild(room, shape);
-    kept.cacheAsTexture(true);
+    // Antialiased, as the game's renderer is, so its texture never comes from the pool's plain textures. Pixi 8's
+    // text returns its textures there marked as not premultiplied, and a texture kept for a container is handed one
+    // without that mark being reset, so it would be drawn darker. A renderer without antialiasing, as in a visual
+    // test, would hand one out if a test before had freed text of the same size
+    kept.cacheAsTexture({ antialias: true });
     return kept;
 }
 

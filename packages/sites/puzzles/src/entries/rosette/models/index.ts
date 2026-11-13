@@ -4,7 +4,7 @@ export { findPuzzleSeed } from './find-puzzle-seed';
 export { type LevelSettings, LEVEL_SETTINGS } from './levels';
 export { type GlassWindow, createGlassWindow, type GlassWindowOptions } from './glass-window';
 export { FIRST_DAY } from './model-constants';
-export { playShowcase } from './play-showcase';
+export { playShowcase, type ShowcaseOptions } from './play-showcase';
 export { createPuzzleModel, type PuzzleModel, type PuzzleModelOptions } from './puzzle-model';
 export type { PuzzleSave } from './puzzle-save';
 export { ROSETTE_WALKTHROUGH, type RosetteTarget, type RosetteWalkthrough } from './rosette-walkthrough';

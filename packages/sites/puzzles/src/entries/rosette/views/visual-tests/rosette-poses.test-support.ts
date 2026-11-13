@@ -125,5 +125,5 @@ function findTileOf(puzzle: NonNullable<GameModel['puzzle']>, piece: number): nu
 
 /** Plays some of today's medium puzzle, as the thumbnail shows it. */
 export function playSome(model: GameModel): void {
-    playShowcase(model);
+    playShowcase({ model });
 }
