@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { PASSAGE } from './edge-states';
 import { LEVEL_SETTINGS } from './levels';
-import { makeMazePuzzle, type MazePuzzle } from './make-maze-puzzle';
+import { createMazePuzzle, type MazePuzzle } from './maze-puzzle';
 import { MOST_UNDOS } from './model-constants';
 import { createPuzzleModel } from './puzzle-model';
 
-const maze = makeMazePuzzle({ seed: 1, settings: LEVEL_SETTINGS.easy });
+const maze = createMazePuzzle({ seed: 1, settings: LEVEL_SETTINGS.easy });
 const { grid } = maze;
 
 describe('PuzzleModel', () => {
@@ -117,7 +117,7 @@ describe('PuzzleModel', () => {
         expect([restored.markAt(first), restored.markAt(second)]).toEqual(['passage', 'wall']);
         expect(restored.undoCount).toBe(0);
 
-        const other = makeMazePuzzle({ seed: 2, settings: LEVEL_SETTINGS.easy });
+        const other = createMazePuzzle({ seed: 2, settings: LEVEL_SETTINGS.easy });
         expect(createPuzzleModel({ maze: other, saved }).markAt(first)).toBe('unknown');
         for (const bad of [undefined, 'text', { maze: 'x', marks: '' }, { ...puzzle.save(), marks: '3'.repeat(grid.edgeCount) }]) {
             expect(createPuzzleModel({ maze, saved: bad }).markAt(first)).toBe('unknown');

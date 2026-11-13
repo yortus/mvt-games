@@ -1,4 +1,4 @@
-import type { MazePuzzle } from './make-maze-puzzle';
+import type { MazePuzzle } from './maze-puzzle';
 
 // A puzzle's marks, kept as plain values for storage, and read back. What is
 // read back comes from the visitor's browser, so it is checked first:

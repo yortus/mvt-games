@@ -27,7 +27,7 @@ export interface MazePuzzle {
 // Options
 // ---------------------------------------------------------------------------
 
-export interface MakeMazePuzzleOptions {
+export interface MazePuzzleOptions {
     /** Any whole number. The same seed always makes the same puzzle. */
     readonly seed: number;
     /** The puzzle's size, and what it must take to solve. */
@@ -39,13 +39,13 @@ export interface MakeMazePuzzleOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Makes a puzzle from `seed`. It draws a random path through every cell,
+ * Creates a puzzle from `seed`. It draws a random path through every cell,
  * reads the clues off the walls it leaves, and keeps the puzzle only if it
  * can be solved without guessing, which means it has one solution, and
  * takes the reasoning asked for. Otherwise it draws another. Most paths
  * make a puzzle with one solution, so it rarely draws more than a few.
  */
-export function makeMazePuzzle(options: MakeMazePuzzleOptions): MazePuzzle {
+export function createMazePuzzle(options: MazePuzzleOptions): MazePuzzle {
     const { size, reasoning } = options.settings;
     const grid = createMazeGrid({ rows: size, cols: size });
     const random = createRandom({ seed: options.seed });

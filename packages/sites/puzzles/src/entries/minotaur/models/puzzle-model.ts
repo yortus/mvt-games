@@ -1,6 +1,6 @@
 import { PASSAGE, UNKNOWN, WALL } from './edge-states';
 import { createLinePattern, type LinePattern } from './line-pattern';
-import type { MazePuzzle } from './make-maze-puzzle';
+import type { MazePuzzle } from './maze-puzzle';
 import { MOST_UNDOS } from './model-constants';
 import { type PuzzleSave, readPuzzleSave, writePuzzleSave } from './puzzle-save';
 import { createUndoHistory } from './undo-history';

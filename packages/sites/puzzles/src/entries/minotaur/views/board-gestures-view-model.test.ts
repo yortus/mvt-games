@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { LEVEL_SETTINGS, makeMazePuzzle } from '../models';
+import { LEVEL_SETTINGS, createMazePuzzle } from '../models';
 import { createBoardGesturesViewModel } from './board-gestures-view-model';
 
 // Positions are in cells from the maze's top left corner: (0.5, 0.5) is the middle of the top left cell, and (1, 1) its bottom right corner.
 
-const { grid } = makeMazePuzzle({ seed: 1, settings: LEVEL_SETTINGS.easy });
+const { grid } = createMazePuzzle({ seed: 1, settings: LEVEL_SETTINGS.easy });
 const { cols } = grid;
 
 describe('BoardGesturesViewModel', () => {

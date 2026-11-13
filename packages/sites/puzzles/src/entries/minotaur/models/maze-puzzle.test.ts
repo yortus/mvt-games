@@ -3,7 +3,7 @@ import { PUZZLE_LEVELS } from '../../../shared';
 import { drawRandomPath } from './draw-random-path';
 import { PASSAGE } from './edge-states';
 import { LEVEL_SETTINGS } from './levels';
-import { makeMazePuzzle, type MazePuzzle } from './make-maze-puzzle';
+import { createMazePuzzle, type MazePuzzle } from './maze-puzzle';
 import { createMazeGrid } from './maze-grid';
 import { createMazeSolver } from './maze-solver';
 import { createRandom } from './random';
@@ -37,12 +37,12 @@ describe('drawRandomPath', () => {
     });
 });
 
-describe('makeMazePuzzle', () => {
+describe('createMazePuzzle', () => {
     for (const level of PUZZLE_LEVELS) {
         it(`makes a ${level} puzzle of its size, with one solution, that takes its reasoning`, () => {
             const settings = LEVEL_SETTINGS[level];
             for (let seed = 0; seed < 3; seed++) {
-                const puzzle = makeMazePuzzle({ seed, settings });
+                const puzzle = createMazePuzzle({ seed, settings });
                 expect([puzzle.grid.rows, puzzle.grid.cols]).toEqual([settings.size, settings.size]);
                 expectPathFromStartToEnd(puzzle);
                 expect(readClues(puzzle.grid, puzzle.solution)).toEqual(puzzle.clues);
@@ -55,8 +55,8 @@ describe('makeMazePuzzle', () => {
 
     it('makes the same puzzle from the same seed', () => {
         const settings = LEVEL_SETTINGS.medium;
-        expect(toParts(makeMazePuzzle({ seed: 9, settings }))).toEqual(toParts(makeMazePuzzle({ seed: 9, settings })));
-        expect(toParts(makeMazePuzzle({ seed: 9, settings }))).not.toEqual(toParts(makeMazePuzzle({ seed: 10, settings })));
+        expect(toParts(createMazePuzzle({ seed: 9, settings }))).toEqual(toParts(createMazePuzzle({ seed: 9, settings })));
+        expect(toParts(createMazePuzzle({ seed: 9, settings }))).not.toEqual(toParts(createMazePuzzle({ seed: 10, settings })));
     });
 
     /** What the puzzle is: its ends, its clues and its solution. */

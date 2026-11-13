@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createWalkthroughModel, type WalkthroughModel } from '../../../shared';
 import { PASSAGE, WALL } from './edge-states';
-import { makeMazePuzzle } from './make-maze-puzzle';
+import { createMazePuzzle } from './maze-puzzle';
 import type { MazeGrid } from './maze-grid';
 import { MINOTAUR_WALKTHROUGH, type MinotaurTarget } from './minotaur-walkthrough';
 import { PRACTICE_SEED, PRACTICE_SETTINGS } from './model-constants';
@@ -48,7 +48,7 @@ describe('Minotaur\'s walkthrough', () => {
 });
 
 function setUp(): { puzzle: PuzzleModel; walkthrough: WalkthroughModel<MinotaurTarget> } {
-    const puzzle = createPuzzleModel({ maze: makeMazePuzzle({ seed: PRACTICE_SEED, settings: PRACTICE_SETTINGS }) });
+    const puzzle = createPuzzleModel({ maze: createMazePuzzle({ seed: PRACTICE_SEED, settings: PRACTICE_SETTINGS }) });
     return { puzzle, walkthrough: createWalkthroughModel({ practice: puzzle, ...MINOTAUR_WALKTHROUGH }) };
 }
 

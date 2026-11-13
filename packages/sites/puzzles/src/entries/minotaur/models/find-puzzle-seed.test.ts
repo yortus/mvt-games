@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PUZZLE_LEVELS, toDayNumber } from '../../../shared';
 import { findPuzzleSeed } from './find-puzzle-seed';
 import { LEVEL_SETTINGS } from './levels';
-import { makeMazePuzzle } from './make-maze-puzzle';
+import { createMazePuzzle } from './maze-puzzle';
 import { FIRST_DAY } from './model-constants';
 import { describeMaze } from './puzzle-save';
 
@@ -15,7 +15,7 @@ describe('findPuzzleSeed', () => {
         const mazes: Record<string, string> = {};
         for (const [name, day] of Object.entries(days)) {
             for (const level of PUZZLE_LEVELS) {
-                mazes[`${name}, ${level}`] = describeMaze(makeMazePuzzle({ seed: findPuzzleSeed(day, level), settings: LEVEL_SETTINGS[level] }));
+                mazes[`${name}, ${level}`] = describeMaze(createMazePuzzle({ seed: findPuzzleSeed(day, level), settings: LEVEL_SETTINGS[level] }));
             }
         }
         expect(mazes).toMatchInlineSnapshot(`

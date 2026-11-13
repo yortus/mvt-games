@@ -37,19 +37,36 @@ export interface PointerOptions {
  * can't take the drag over.
  * It only reports. What a press or a drag means is up to whoever calls it.
  *
+ * A pointer's release can go missing, if it happens where the page doesn't
+ * hear it. Then the next press would be taken for a second finger, and
+ * ignored, and so would every press after it. So a press by the primary
+ * pointer of the kind followed, which the browser marks as the only one of
+ * its kind down, ends the one followed, as a cancel, and is followed
+ * instead.
+ *
  * The listeners go when the container is destroyed.
  */
 export function listenToPointer(options: PointerOptions): void {
     const { target, onPressed, onMoved, onHovered, onReleased, onCancelled } = options;
     target.eventMode = 'static';
-    // The pointer followed, and a point to measure it into
+    // The pointer followed, its kind, where it was last, and a point to measure it into
     let pointerId: number | undefined;
+    let pointerType = '';
+    let lastX = 0;
+    let lastY = 0;
     const point = new Point();
 
     target.on('pointerdown', (e: FederatedPointerEvent) => {
-        if (pointerId !== undefined) return;
+        if (pointerId !== undefined) {
+            // The pointer followed is no longer down, if this one is the only one of its kind that is
+            if (e.isPrimary !== true || e.pointerType !== pointerType) return;
+            cancel();
+        }
         pointerId = e.pointerId;
+        pointerType = e.pointerType;
         const { x, y } = e.getLocalPosition(target, point);
+        lastX = x;
+        lastY = y;
         onPressed?.(x, y);
     });
     // Followed wherever it goes, not only over the target
@@ -62,6 +79,8 @@ export function listenToPointer(options: PointerOptions): void {
         }
         if (e.pointerId !== pointerId) return;
         const { x, y } = e.getLocalPosition(target, point);
+        lastX = x;
+        lastY = y;
         onMoved?.(x, y);
     });
     target.on('pointerup', release);
@@ -72,8 +91,7 @@ export function listenToPointer(options: PointerOptions): void {
             release(e);
             return;
         }
-        pointerId = undefined;
-        onCancelled();
+        cancel();
     });
 
     function release(e: FederatedPointerEvent): void {
@@ -81,5 +99,12 @@ export function listenToPointer(options: PointerOptions): void {
         pointerId = undefined;
         const { x, y } = e.getLocalPosition(target, point);
         onReleased?.(x, y);
+    }
+
+    /** Stops following the pointer, as a cancel, or as letting go where it was last, when nothing listens for a cancel. */
+    function cancel(): void {
+        pointerId = undefined;
+        if (onCancelled === undefined) onReleased?.(lastX, lastY);
+        else onCancelled();
     }
 }

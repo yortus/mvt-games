@@ -24,6 +24,21 @@ describe('listenToPointer', () => {
         expect(events).toEqual(['press 10,20', 'release 15,25', 'press 90,90']);
     });
 
+    it('ends the pointer followed, if its release went missing, as the only pointer of its kind presses', () => {
+        const { target, events } = listen();
+        target.emit('pointerdown', touch(1, 10, 20, true));
+        // The first finger's release went missing, so the next finger down is the only one, and primary
+        target.emit('pointerdown', touch(2, 90, 90, true));
+        target.emit('pointerup', touch(2, 95, 95));
+        expect(events).toEqual(['press 10,20', 'cancel', 'press 90,90', 'release 95,95']);
+        // A mouse pressed again, its release missed, ends the press before, where it was last, when nothing listens for a cancel
+        const released = listen({ onCancelled: undefined });
+        released.target.emit('pointerdown', touch(1, 10, 20, true, 'mouse'));
+        released.target.emit('globalpointermove', touch(1, 30, 40));
+        released.target.emit('pointerdown', touch(1, 50, 60, true, 'mouse'));
+        expect(released.events).toEqual(['press 10,20', 'move 30,40', 'release 30,40', 'press 50,60']);
+    });
+
     it('reports a cancel as one, or as letting go when nothing listens for a cancel', () => {
         const cancelled = listen();
         cancelled.target.emit('pointerdown', touch(1, 10, 20));
@@ -59,7 +74,10 @@ function listen(more: Partial<PointerOptions> = {}): { target: Container; events
     return { target, events };
 }
 
-/** A pointer event from finger `pointerId`, at (x, y) in the target's pixels. */
-function touch(pointerId: number, x: number, y: number): FederatedPointerEvent {
-    return { pointerId, getLocalPosition: () => ({ x, y }) } as unknown as FederatedPointerEvent;
+/**
+ * A pointer event from finger `pointerId`, at (x, y) in the target's pixels.
+ * A primary pointer is the only one of its kind down.
+ */
+function touch(pointerId: number, x: number, y: number, isPrimary = false, pointerType = 'touch'): FederatedPointerEvent {
+    return { pointerId, isPrimary, pointerType, getLocalPosition: () => ({ x, y }) } as unknown as FederatedPointerEvent;
 }

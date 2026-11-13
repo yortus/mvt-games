@@ -29,7 +29,8 @@ export interface HowToPlayCardViewBindings {
  * How to play, on a card over the screen, the same in every game: a small
  * example at the top, then the rules, then the controls, and the ways on,
  * to be shown how or to play. The screen behind is faded, and takes no
- * taps while the card shows. It is laid out in the screen's pixels.
+ * taps while the card shows. It is laid out in the screen's pixels, and
+ * shrunk to fit the screen if it holds too much to.
  */
 export function HowToPlayCardView(bindings: HowToPlayCardViewBindings): Container {
     const view = new Container();
@@ -65,10 +66,13 @@ export function HowToPlayCardView(bindings: HowToPlayCardViewBindings): Containe
         rowY += Math.max(action.height, note.height) + ROW_GAP;
     }
 
-    // The buttons go under the controls, and the card is as tall as all it holds, in the middle of the screen
+    // The buttons go under the controls, and the card is as tall as all it holds, in the middle of the screen. A card
+    // too tall for the screen is shrunk to fit, so its buttons always show
     const buttonY = controls.y + rowY + GAP;
     const height = buttonY + BUTTON_HEIGHT + PADDING;
-    const card = new Container({ x: MARGIN, y: Math.max(MARGIN, (SCREEN_HEIGHT - height) / 2) });
+    const fit = Math.min(1, (SCREEN_HEIGHT - MARGIN * 2) / height);
+    const card = new Container({ x: MARGIN + (PAGE_WIDTH * (1 - fit)) / 2, y: Math.max(MARGIN, (SCREEN_HEIGHT - height * fit) / 2) });
+    card.scale.set(fit);
     card.addChild(new Graphics().roundRect(0, 0, PAGE_WIDTH, height, 14).fill(CARD_COLOR).stroke({ color: THIN_LINE_COLOR, width: 1.5 }));
     const showMe = ButtonView({
         x: PAGE_WIDTH / 2 - BUTTON_GAP / 2 - BUTTON_WIDTH, y: buttonY, width: BUTTON_WIDTH, height: BUTTON_HEIGHT, label: 'Show me',

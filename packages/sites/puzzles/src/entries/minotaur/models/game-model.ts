@@ -4,7 +4,7 @@ import {
 } from '../../../shared';
 import { findPuzzleSeed } from './find-puzzle-seed';
 import { LEVEL_SETTINGS } from './levels';
-import { makeMazePuzzle, type MazePuzzle } from './make-maze-puzzle';
+import { createMazePuzzle, type MazePuzzle } from './maze-puzzle';
 import { MINOTAUR_WALKTHROUGH, type MinotaurTarget } from './minotaur-walkthrough';
 import { EXAMPLE_SEED, EXAMPLE_SETTINGS, FIRST_DAY, PRACTICE_SEED, PRACTICE_SETTINGS, STARTING_LEVEL } from './model-constants';
 import { createPuzzleModel, type PuzzleModel } from './puzzle-model';
@@ -85,7 +85,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     const records = createDailyRecords({ store: options.store, gameId: 'minotaur', levels: PUZZLE_LEVELS });
     const calendar = createDailyCalendar({ today: options.today, firstDay: FIRST_DAY, levels: PUZZLE_LEVELS, startingLevel: STARTING_LEVEL, records });
     const intro = createIntroModel({ records, createPractice, ...MINOTAUR_WALKTHROUGH });
-    const example = makeMazePuzzle({ seed: EXAMPLE_SEED, settings: EXAMPLE_SETTINGS });
+    const example = createMazePuzzle({ seed: EXAMPLE_SEED, settings: EXAMPLE_SETTINGS });
 
     let phase: MinotaurPhase = 'calendar';
     let puzzle: PuzzleModel | undefined;
@@ -111,7 +111,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
             if (phase !== 'calendar' || !calendar.isPlayable(day)) return;
             puzzleDay = day;
             puzzleLevel = calendar.level;
-            const maze = makeMazePuzzle({ seed: findPuzzleSeed(day, puzzleLevel), settings: LEVEL_SETTINGS[puzzleLevel] });
+            const maze = createMazePuzzle({ seed: findPuzzleSeed(day, puzzleLevel), settings: LEVEL_SETTINGS[puzzleLevel] });
             puzzle = createPuzzleModel({ maze, saved: records.readPuzzle(day, puzzleLevel) });
             keptChanges = puzzle.changes;
             puzzlesOpened++;
@@ -153,6 +153,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     /** A new practice maze, the same every time, for the walkthrough. It is never kept. */
     function createPractice(): PuzzleModel {
-        return createPuzzleModel({ maze: makeMazePuzzle({ seed: PRACTICE_SEED, settings: PRACTICE_SETTINGS }) });
+        return createPuzzleModel({ maze: createMazePuzzle({ seed: PRACTICE_SEED, settings: PRACTICE_SETTINGS }) });
     }
 }

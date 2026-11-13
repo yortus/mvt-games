@@ -2,7 +2,7 @@ export { PASSAGE, UNKNOWN, WALL } from './edge-states';
 export type { MazeReasoning } from './maze-solver';
 export { findPuzzleSeed } from './find-puzzle-seed';
 export { type LevelSettings, LEVEL_SETTINGS } from './levels';
-export { makeMazePuzzle, type MakeMazePuzzleOptions, type MazePuzzle } from './make-maze-puzzle';
+export { createMazePuzzle, type MazePuzzleOptions, type MazePuzzle } from './maze-puzzle';
 export type { MazeGrid } from './maze-grid';
 export { createGameModel, type GameModel, type GameModelOptions, type MinotaurPhase } from './game-model';
 export { MINOTAUR_WALKTHROUGH, type MinotaurTarget, type MinotaurWalkthrough } from './minotaur-walkthrough';
