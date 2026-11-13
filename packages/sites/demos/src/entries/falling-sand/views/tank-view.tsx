@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/pixi */
 
-import { type Container, type FederatedPointerEvent, type Graphics, Point, Rectangle } from 'pixi.js';
+import { type Container, type Graphics, Rectangle } from 'pixi.js';
+import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 import type { Grains } from '../models';
 import { GrainPixelsView } from './grain-pixels-view';
 import { GrainSpritesView } from './grain-sprites-view';
@@ -49,9 +50,9 @@ export interface TankViewBindings {
     brushRadius: () => number;
     /** The pointer went down on the tank, at this point in cells. */
     onPressed?: (col: number, row: number) => void;
-    /** The pointer moved, anywhere on the canvas, to this point in cells (possibly outside the tank). */
+    /** The pointer that went down moved, anywhere on the canvas, to this point in cells (possibly outside the tank). */
     onMoved?: (col: number, row: number) => void;
-    /** The pointer went up, or the browser cancelled it. */
+    /** The pointer that went down went up. */
     onReleased?: () => void;
 }
 
@@ -96,9 +97,6 @@ export function TankView(bindings: TankViewBindings): Container {
     // The radius the brush ring was last drawn at.
     let drawnRadius = -1;
 
-    let content: Container | undefined;
-    const pointer = new Point();
-
     return (
         <container
             label="tank"
@@ -109,16 +107,11 @@ export function TankView(bindings: TankViewBindings): Container {
             scale={() => scaleToFitRotated(width, height, getTankAngle())}
         >
             <container
-                ref={(el) => { content = el; }}
+                ref={listenToPour}
                 x={-width / 2}
                 y={-height / 2}
                 hitArea={new Rectangle(0, 0, width, height)}
                 cursor="crosshair"
-                onPointerDown={onPointerDown}
-                onGlobalPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onPointerUpOutside={onPointerUp}
-                onPointerCancel={onPointerUp}
                 onPointerOver={() => { isPointerOver = true; }}
                 onPointerOut={() => { isPointerOver = false; }}
             >
@@ -158,26 +151,30 @@ export function TankView(bindings: TankViewBindings): Container {
 
     // --- Input --------------------------------------------------------------
 
-    function onPointerDown(e: FederatedPointerEvent): void {
-        trackPointer(e);
-        bindings.onPressed?.(pointerX / cellSize, pointerY / cellSize);
+    /**
+     * Follows one pointer over the tank, in the upright tank's pixels, through
+     * its rotation and scale. A second finger can't steer the pour. A mouse
+     * hovering moves the brush ring, and pours nothing.
+     */
+    function listenToPour(content: Container): void {
+        listenToPointer({
+            target: content,
+            onPressed: (x, y) => {
+                followPointer(x, y);
+                bindings.onPressed?.(x / cellSize, y / cellSize);
+            },
+            onMoved: (x, y) => {
+                followPointer(x, y);
+                bindings.onMoved?.(x / cellSize, y / cellSize);
+            },
+            onHovered: followPointer,
+            onReleased: () => bindings.onReleased?.(),
+        });
     }
 
-    function onPointerMove(e: FederatedPointerEvent): void {
-        trackPointer(e);
-        bindings.onMoved?.(pointerX / cellSize, pointerY / cellSize);
-    }
-
-    function onPointerUp(): void {
-        bindings.onReleased?.();
-    }
-
-    /** Pointer position in the upright tank's pixels, through the tank's rotation and scale. */
-    function trackPointer(e: FederatedPointerEvent): void {
-        if (content === undefined) return;
-        e.getLocalPosition(content, pointer);
-        pointerX = pointer.x;
-        pointerY = pointer.y;
+    function followPointer(x: number, y: number): void {
+        pointerX = x;
+        pointerY = y;
     }
 
     // --- Brush ring ---------------------------------------------------------

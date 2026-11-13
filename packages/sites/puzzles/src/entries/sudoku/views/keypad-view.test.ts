@@ -8,6 +8,10 @@ import { KEY_HOLD_MS } from './view-constants';
 
 // The keypad is wired to a real puzzle, as the puzzle's screen wires it, and its keys are pressed, then let go or held.
 
+/** The first finger, and a second. */
+const FINGER = { pointerId: 1 } as FederatedPointerEvent;
+const OTHER_FINGER = { pointerId: 2 } as FederatedPointerEvent;
+
 const generateSudoku = await loadSudokuGenerator();
 const { givens, solution } = generateSudoku({ seed: 1, level: 'easy' });
 /** Two empty cells side by side. */
@@ -36,9 +40,9 @@ describe('KeypadView', () => {
     it('takes a press let go before it is held long enough for a tap', async () => {
         const { puzzle, keyOf, tick } = setUp();
         puzzle.select([CELL]);
-        keyOf(4).emit('pointerdown', {} as FederatedPointerEvent);
+        keyOf(4).emit('pointerdown', FINGER);
         await tick(KEY_HOLD_MS / 2);
-        keyOf(4).emit('pointerup', {} as FederatedPointerEvent);
+        keyOf(4).emit('pointerup', FINGER);
         expect(puzzle.digitAt(CELL)).toBe(0);
         expect(puzzle.marksAt(CELL)).toBe(1 << 4);
     });
@@ -51,11 +55,22 @@ describe('KeypadView', () => {
         expect(puzzle.groupNotes.length).toBe(1);
     });
 
+    it('ignores a second finger on another key while the first is down', async () => {
+        const { puzzle, keyOf, tick } = setUp();
+        puzzle.select([CELL]);
+        keyOf(4).emit('pointerdown', FINGER);
+        keyOf(5).emit('pointerdown', OTHER_FINGER);
+        keyOf(5).emit('pointerup', OTHER_FINGER);
+        await tick(KEY_HOLD_MS / 2);
+        keyOf(4).emit('pointerup', FINGER);
+        expect(puzzle.marksAt(CELL)).toBe(1 << 4);
+    });
+
     it('drops a press that slides off its key', async () => {
         const { puzzle, keyOf, tick } = setUp();
         puzzle.select([CELL]);
-        keyOf(4).emit('pointerdown', {} as FederatedPointerEvent);
-        keyOf(4).emit('pointerupoutside', {} as FederatedPointerEvent);
+        keyOf(4).emit('pointerdown', FINGER);
+        keyOf(4).emit('pointerupoutside', FINGER);
         await tick(KEY_HOLD_MS * 2);
         expect(puzzle.digitAt(CELL)).toBe(0);
         expect(puzzle.marksAt(CELL)).toBe(0);
@@ -77,14 +92,14 @@ function setUp() {
     };
     const keyOf = (digit: number): Container => keypad.children[digit - 1] as Container;
     const tapKey = async (digit: number): Promise<void> => {
-        keyOf(digit).emit('pointerdown', {} as FederatedPointerEvent);
+        keyOf(digit).emit('pointerdown', FINGER);
         await tick(KEY_HOLD_MS / 2);
-        keyOf(digit).emit('pointerup', {} as FederatedPointerEvent);
+        keyOf(digit).emit('pointerup', FINGER);
     };
     const holdKey = async (digit: number): Promise<void> => {
-        keyOf(digit).emit('pointerdown', {} as FederatedPointerEvent);
+        keyOf(digit).emit('pointerdown', FINGER);
         await tick(KEY_HOLD_MS * 2);
-        keyOf(digit).emit('pointerup', {} as FederatedPointerEvent);
+        keyOf(digit).emit('pointerup', FINGER);
     };
     refreshView(keypad);
     return { puzzle, keyOf, tick, tapKey, holdKey };

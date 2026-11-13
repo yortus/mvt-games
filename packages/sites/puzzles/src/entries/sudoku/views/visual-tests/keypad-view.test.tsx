@@ -21,7 +21,7 @@ async function pose(digits: number, heldDigit: number): Promise<Container> {
     });
     keypad.position.set(10, 10);
     view.addChild(keypad);
-    (keypad.children[heldDigit - 1] as Container).emit('pointerdown', {} as FederatedPointerEvent);
+    (keypad.children[heldDigit - 1] as Container).emit('pointerdown', { pointerId: 1 } as FederatedPointerEvent);
     await advanceTime(300, view);
     return view;
 }

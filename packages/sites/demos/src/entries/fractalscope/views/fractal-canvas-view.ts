@@ -1,12 +1,12 @@
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
+import { listenToPanZoom } from '@mvtjs/site-kit/input';
 import type { FractalKind, ScopeSetting } from '../data';
 import type { PaletteName } from './palette-name';
 import type { EscapeGrid } from './picture';
 import { buildPaletteColors, paintEscapes, type PaletteColors } from './palettes';
-import { createPinchTracker } from './pinch-tracker';
 import { countDigits } from './readouts';
-import { BACKDROP_COLOR, MAX_SAMPLE_DENSITY, MAX_SAMPLES } from './view-constants';
+import { BACKDROP_COLOR, MAX_SAMPLE_DENSITY, MAX_SAMPLES, ZOOM_PER_DOUBLE_TAP, ZOOM_PER_WHEEL_NOTCH } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -94,8 +94,10 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
         photos: bindings.photosTaken,
     });
 
-    const tracker = createPinchTracker({
+    const stopPanZoom = listenToPanZoom({
         element: canvas,
+        zoomPerWheelNotch: ZOOM_PER_WHEEL_NOTCH,
+        zoomPerDoubleTap: ZOOM_PER_DOUBLE_TAP,
         onGestureBegan: () => bindings.onGestureBegan?.(),
         onGestureEnded: () => bindings.onGestureEnded?.(),
         onDragged: reportDrag,
@@ -109,7 +111,7 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
     setRefresh(canvas, refresh);
     onDestroyed(canvas, () => {
         resizeObserver.disconnect();
-        tracker.destroy();
+        stopPanZoom();
         if (photoUrl !== undefined) URL.revokeObjectURL(photoUrl);
     });
     return canvas;

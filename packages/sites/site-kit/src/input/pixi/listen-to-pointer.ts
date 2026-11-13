@@ -12,6 +12,11 @@ export interface PointerOptions {
     readonly onPressed?: (x: number, y: number) => void;
     /** The pointer followed moved, anywhere on the stage, not only over the target. */
     readonly onMoved?: (x: number, y: number) => void;
+    /**
+     * A pointer moved anywhere on the stage while none is followed. That is
+     * a mouse hovering, since a finger moves only while it is down.
+     */
+    readonly onHovered?: (x: number, y: number) => void;
     /** The pointer followed was let go, over the target or not. */
     readonly onReleased?: (x: number, y: number) => void;
     /**
@@ -35,7 +40,7 @@ export interface PointerOptions {
  * The listeners go when the container is destroyed.
  */
 export function listenToPointer(options: PointerOptions): void {
-    const { target, onPressed, onMoved, onReleased, onCancelled } = options;
+    const { target, onPressed, onMoved, onHovered, onReleased, onCancelled } = options;
     target.eventMode = 'static';
     // The pointer followed, and a point to measure it into
     let pointerId: number | undefined;
@@ -49,6 +54,12 @@ export function listenToPointer(options: PointerOptions): void {
     });
     // Followed wherever it goes, not only over the target
     target.on('globalpointermove', (e: FederatedPointerEvent) => {
+        if (pointerId === undefined) {
+            if (onHovered === undefined) return;
+            const { x, y } = e.getLocalPosition(target, point);
+            onHovered(x, y);
+            return;
+        }
         if (e.pointerId !== pointerId) return;
         const { x, y } = e.getLocalPosition(target, point);
         onMoved?.(x, y);

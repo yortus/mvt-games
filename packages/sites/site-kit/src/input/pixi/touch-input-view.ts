@@ -1,6 +1,7 @@
-import { Container, Graphics, Text, type FederatedPointerEvent } from 'pixi.js';
+import { Container, Graphics, Text } from 'pixi.js';
 import { watch } from '@mvtjs/utils';
 import { setRefresh } from '@mvtjs/pixi';
+import { listenToPointer } from './listen-to-pointer';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -42,13 +43,30 @@ export interface TouchInputViewBindings {
  * joystick, and up to two buttons, beside or below the game. The view is
  * written in plain TypeScript. It rebuilds its controls when their layout
  * changes. It lays them out by hand each frame, at the canvas's scale.
+ *
+ * Each control follows one finger, from where it lands until it lets go. So
+ * a thumb that slides off the d-pad still steers, and a finger lifted from
+ * one button doesn't let go of the other. A finger let go while the controls
+ * are hidden, as they are while the game is paused, still releases its
+ * control. That's because Pixi sends `pointerupoutside` to a hidden object
+ * too.
  */
 export function TouchInputView(bindings: TouchInputViewBindings): Container {
     const view = new Container();
     view.label = 'touch-input';
 
+    // The direction the d-pad or the joystick holds
     let dpadXDir: 'left' | 'none' | 'right' = 'none';
     let dpadYDir: 'up' | 'none' | 'down' = 'none';
+    // Whether each button is held
+    let isPrimaryHeld = false;
+    let isSecondaryHeld = false;
+    // The floating joystick, while a thumb holds it. Where the thumb landed, and where its knob is now
+    let isJoystickHeld = false;
+    let joystickX = 0;
+    let joystickY = 0;
+    let knobX = 0;
+    let knobY = 0;
 
     // The groups of display objects. They are rebuilt when the layout changes, and placed again every frame
     const dpadGroup = new Container();
@@ -56,8 +74,13 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
     const secondaryBtnGroup = new Container();
     view.addChild(dpadGroup, primaryBtnGroup, secondaryBtnGroup);
 
+    // What the refresh shows a hold on. They are rebuilt with the controls
     let primaryText: Text | undefined;
     let secondaryText: Text | undefined;
+    let primaryHeldFill: Graphics | undefined;
+    let secondaryHeldFill: Graphics | undefined;
+    let joystickBase: Graphics | undefined;
+    let joystickKnob: Graphics | undefined;
 
     const watcher = watch({
         showDpad: bindings.hasDpad,
@@ -98,26 +121,21 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         }
 
         layout();
+        showHolds();
     }
 
     function rebuild(): void {
-        // Release any direction held before the event handlers go. A rebuild
-        // happens in the refresh step, during the tick. So the release is
-        // reported from a microtask, after the frame's code has finished.
-        if (dpadXDir !== 'none') {
-            dpadXDir = 'none';
-            queueMicrotask(() => bindings.onXDirectionChanged?.('none'));
-        }
-        if (dpadYDir !== 'none') {
-            dpadYDir = 'none';
-            queueMicrotask(() => bindings.onYDirectionChanged?.('none'));
-        }
+        releaseAll();
 
         destroyChildren(dpadGroup);
         destroyChildren(primaryBtnGroup);
         destroyChildren(secondaryBtnGroup);
         primaryText = undefined;
         secondaryText = undefined;
+        primaryHeldFill = undefined;
+        secondaryHeldFill = undefined;
+        joystickBase = undefined;
+        joystickKnob = undefined;
 
         if (bindings.hasDpad()) {
             if (bindings.isJoystickFloating()) {
@@ -129,21 +147,57 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         }
 
         if (bindings.hasPrimaryButton()) {
-            primaryText = buildActionButton(
-                primaryBtnGroup,
-                bindings.primaryLabel(),
-                COLOR_PRIMARY,
-                (pressed) => bindings.onPrimaryButtonChanged?.(pressed),
-            );
+            const button = buildActionButton({
+                parent: primaryBtnGroup,
+                label: bindings.primaryLabel(),
+                color: COLOR_PRIMARY,
+                onChanged: (pressed) => {
+                    isPrimaryHeld = pressed;
+                    bindings.onPrimaryButtonChanged?.(pressed);
+                },
+            });
+            primaryText = button.text;
+            primaryHeldFill = button.heldFill;
         }
 
         if (bindings.hasSecondaryButton()) {
-            secondaryText = buildActionButton(
-                secondaryBtnGroup,
-                bindings.secondaryLabel(),
-                COLOR_SECONDARY,
-                (pressed) => bindings.onSecondaryButtonChanged?.(pressed),
-            );
+            const button = buildActionButton({
+                parent: secondaryBtnGroup,
+                label: bindings.secondaryLabel(),
+                color: COLOR_SECONDARY,
+                onChanged: (pressed) => {
+                    isSecondaryHeld = pressed;
+                    bindings.onSecondaryButtonChanged?.(pressed);
+                },
+            });
+            secondaryText = button.text;
+            secondaryHeldFill = button.heldFill;
+        }
+    }
+
+    /**
+     * Releases every control held, since their event handlers are about to
+     * go. A rebuild happens in the refresh step, during the tick. So each
+     * release is reported from a microtask, after the frame's code has
+     * finished.
+     */
+    function releaseAll(): void {
+        isJoystickHeld = false;
+        if (dpadXDir !== 'none') {
+            dpadXDir = 'none';
+            queueMicrotask(() => bindings.onXDirectionChanged?.('none'));
+        }
+        if (dpadYDir !== 'none') {
+            dpadYDir = 'none';
+            queueMicrotask(() => bindings.onYDirectionChanged?.('none'));
+        }
+        if (isPrimaryHeld) {
+            isPrimaryHeld = false;
+            queueMicrotask(() => bindings.onPrimaryButtonChanged?.(false));
+        }
+        if (isSecondaryHeld) {
+            isSecondaryHeld = false;
+            queueMicrotask(() => bindings.onSecondaryButtonChanged?.(false));
         }
     }
 
@@ -216,7 +270,18 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         }
     }
 
-    // ---- Shared direction helper -------------------------------------------
+    /** Shows each button held down, and the floating joystick where the thumb holds it. */
+    function showHolds(): void {
+        if (primaryHeldFill !== undefined) primaryHeldFill.visible = isPrimaryHeld;
+        if (secondaryHeldFill !== undefined) secondaryHeldFill.visible = isSecondaryHeld;
+        if (joystickBase === undefined || joystickKnob === undefined) return;
+        joystickBase.visible = isJoystickHeld;
+        joystickKnob.visible = isJoystickHeld;
+        joystickBase.position.set(joystickX, joystickY);
+        joystickKnob.position.set(knobX, knobY);
+    }
+
+    // ---- Shared direction helpers ------------------------------------------
 
     function setDirection(
         newX: 'left' | 'none' | 'right',
@@ -232,10 +297,20 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         }
     }
 
+    /** Steers towards a thumb (dx, dy) from the middle, in one of eight zones. Inside the dead zone, it steers nowhere. */
+    function steerTowards(dx: number, dy: number): void {
+        if (dx * dx + dy * dy < DEAD_ZONE_RADIUS * DEAD_ZONE_RADIUS) {
+            setDirection('none', 'none');
+            return;
+        }
+        const zone = ((Math.floor((Math.atan2(dy, dx) + ZONE_SIZE / 2) / ZONE_SIZE) % 8) + 8) % 8;
+        setDirection(ZONE_X[zone], ZONE_Y[zone]);
+    }
+
     // ---- Floating joystick builder -----------------------------------------
 
     function buildFloatingJoystick(parent: Container): void {
-        const thumbRadius = Math.round(DPAD_CSS_RADIUS * 0.4);
+        const knobRadius = Math.round(DPAD_CSS_RADIUS * 0.4);
 
         // Invisible hit area covering the d-pad region (CSS-pixel coords)
         const hitArea = new Graphics();
@@ -245,70 +320,45 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
             DPAD_CSS_RADIUS * 3,
             DPAD_CSS_RADIUS * 3,
         ).fill({ color: 0x000000, alpha: 0.01 });
-        hitArea.eventMode = 'static';
         parent.addChild(hitArea);
 
-        const base = new Graphics();
-        base.circle(0, 0, DPAD_CSS_RADIUS).fill({ color: 0xffffff, alpha: 0.1 });
-        base.circle(0, 0, DPAD_CSS_RADIUS).stroke({ color: 0xffffff, alpha: 0.15, width: 2 });
-        base.visible = false;
-        parent.addChild(base);
+        joystickBase = new Graphics();
+        joystickBase.circle(0, 0, DPAD_CSS_RADIUS).fill({ color: 0xffffff, alpha: 0.1 });
+        joystickBase.circle(0, 0, DPAD_CSS_RADIUS).stroke({ color: 0xffffff, alpha: 0.15, width: 2 });
+        joystickBase.visible = false;
+        parent.addChild(joystickBase);
 
-        const thumb = new Graphics();
-        thumb.circle(0, 0, thumbRadius).fill({ color: 0xffffff, alpha: 0.25 });
-        thumb.visible = false;
-        parent.addChild(thumb);
+        joystickKnob = new Graphics();
+        joystickKnob.circle(0, 0, knobRadius).fill({ color: 0xffffff, alpha: 0.25 });
+        joystickKnob.visible = false;
+        parent.addChild(joystickKnob);
 
-        let trackingId: number | undefined;
-        let originX = 0;
-        let originY = 0;
-
-        hitArea.on('pointerdown', (e: FederatedPointerEvent) => {
-            if (trackingId !== undefined) return;
-            trackingId = e.pointerId;
-            originX = e.getLocalPosition(parent).x;
-            originY = e.getLocalPosition(parent).y;
-            base.position.set(originX, originY);
-            thumb.position.set(originX, originY);
-            base.visible = true;
-            thumb.visible = true;
-        });
-
-        hitArea.on('pointermove', (e: FederatedPointerEvent) => {
-            if (e.pointerId !== trackingId) return;
-            const pos = e.getLocalPosition(parent);
-            let dx = pos.x - originX;
-            let dy = pos.y - originY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist > DPAD_CSS_RADIUS) {
-                dx = dx / dist * DPAD_CSS_RADIUS;
-                dy = dy / dist * DPAD_CSS_RADIUS;
-            }
-            thumb.position.set(originX + dx, originY + dy);
-
-            if (dist < DPAD_CSS_RADIUS * DEAD_ZONE) {
+        // The hit area sits at the group's origin, unscaled, so its pixels are the group's.
+        // The thumb is followed wherever it goes, so one that slides off the area still steers
+        listenToPointer({
+            target: hitArea,
+            onPressed: (x, y) => {
+                isJoystickHeld = true;
+                joystickX = x;
+                joystickY = y;
+                knobX = x;
+                knobY = y;
+            },
+            onMoved: (x, y) => {
+                const dx = x - joystickX;
+                const dy = y - joystickY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                // The knob stays within the base's rim
+                const reach = distance > DPAD_CSS_RADIUS ? DPAD_CSS_RADIUS / distance : 1;
+                knobX = joystickX + dx * reach;
+                knobY = joystickY + dy * reach;
+                steerTowards(dx, dy);
+            },
+            onReleased: () => {
+                isJoystickHeld = false;
                 setDirection('none', 'none');
-            }
-            else {
-                const angle = Math.atan2(dy, dx);
-                const shifted = angle + ZONE_SIZE / 2;
-                const zone = ((Math.floor(shifted / ZONE_SIZE) % 8) + 8) % 8;
-                setDirection(ZONE_X[zone], ZONE_Y[zone]);
-            }
+            },
         });
-
-        const release = (e: FederatedPointerEvent): void => {
-            if (e.pointerId !== trackingId) return;
-            trackingId = undefined;
-            base.visible = false;
-            thumb.visible = false;
-            setDirection('none', 'none');
-        };
-
-        hitArea.on('pointerup', release);
-        hitArea.on('pointerupoutside', release);
-        hitArea.on('pointercancel', release);
     }
 
     // ---- Fixed D-pad builder -----------------------------------------------
@@ -325,52 +375,24 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
 
         const dpadHit = new Graphics();
         dpadHit.circle(0, 0, DPAD_CSS_RADIUS).fill({ color: 0x000000, alpha: 0.01 });
-        dpadHit.eventMode = 'static';
         dpadHit.cursor = 'pointer';
         parent.addChild(dpadHit);
 
-        let dpadTrackingId: number | undefined;
-
-        dpadHit.on('pointerdown', (e: FederatedPointerEvent) => {
-            if (dpadTrackingId !== undefined) return;
-            dpadTrackingId = e.pointerId;
-            updateDpadDirection(e.getLocalPosition(dpadHit));
-        });
-
         // Followed wherever the thumb goes, so one that drifts off the d-pad still steers
-        dpadHit.on('globalpointermove', (e: FederatedPointerEvent) => {
-            if (e.pointerId !== dpadTrackingId) return;
-            updateDpadDirection(e.getLocalPosition(dpadHit));
+        listenToPointer({
+            target: dpadHit,
+            onPressed: steer,
+            onMoved: steer,
+            onReleased: () => setDirection('none', 'none'),
         });
 
-        const releaseDpad = (e: FederatedPointerEvent): void => {
-            if (e.pointerId !== dpadTrackingId) return;
-            dpadTrackingId = undefined;
-            setDirection('none', 'none');
-        };
-
-        dpadHit.on('pointerup', releaseDpad);
-        dpadHit.on('pointerupoutside', releaseDpad);
-        dpadHit.on('pointercancel', releaseDpad);
-
-        function updateDpadDirection(local: { x: number; y: number }): void {
-            const { x, y } = local;
-            const dist = Math.sqrt(x * x + y * y);
-
-            if (dist < DPAD_CSS_RADIUS * DEAD_ZONE) {
-                setDirection('none', 'none');
+        function steer(x: number, y: number): void {
+            if (kind === 'four-way') {
+                steerTowards(x, y);
                 return;
             }
-
-            if (kind === 'left-right') {
-                setDirection(x < 0 ? 'left' : 'right', 'none');
-                return;
-            }
-
-            const angle = Math.atan2(y, x);
-            const shifted = angle + ZONE_SIZE / 2;
-            const zone = ((Math.floor(shifted / ZONE_SIZE) % 8) + 8) % 8;
-            setDirection(ZONE_X[zone], ZONE_Y[zone]);
+            if (x * x + y * y < DEAD_ZONE_RADIUS * DEAD_ZONE_RADIUS) setDirection('none', 'none');
+            else setDirection(x < 0 ? 'left' : 'right', 'none');
         }
     }
 }
@@ -382,13 +404,17 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
 const DPAD_CSS_RADIUS = 60;
 const BTN_CSS_RADIUS = 30;
 const MARGIN_CSS = 12;
+/** How far from the middle a thumb must be to steer, as a share of the d-pad's radius, and in pixels. */
 const DEAD_ZONE = 0.2;
+const DEAD_ZONE_RADIUS = DPAD_CSS_RADIUS * DEAD_ZONE;
 const ZONE_SIZE = Math.PI / 4;
 const ZONE_X: readonly ('left' | 'none' | 'right')[] = ['right', 'right', 'none', 'left', 'left', 'left', 'none', 'right'];
 const ZONE_Y: readonly ('up' | 'none' | 'down')[] = ['none', 'down', 'down', 'down', 'none', 'up', 'up', 'up'];
 const ARROW_ALPHA = 0.3;
 const COLOR_PRIMARY = 0x58a6ff;
 const COLOR_SECONDARY = 0xf0883e;
+/** How strongly a held button's fill shows, over its resting fill. */
+const HELD_ALPHA = 0.35;
 
 function destroyChildren(container: Container): void {
     while (container.children.length > 0) {
@@ -407,20 +433,30 @@ function drawDpadArrows(gfx: Graphics, radius: number, kind: DpadKind): void {
     gfx.moveTo(0, r).lineTo(-s, r - s).lineTo(s, r - s).closePath().fill({ color: 0xffffff, alpha: 1.0 });
 }
 
-function buildActionButton(
-    parent: Container,
-    label: string,
-    color: number,
-    onChanged: (pressed: boolean) => void,
-): Text {
+interface ActionButtonOptions {
+    readonly parent: Container;
+    readonly label: string;
+    readonly color: number;
+    /** The button was pressed or let go, by the one finger it follows. */
+    readonly onChanged: (pressed: boolean) => void;
+}
+
+/** Builds a round button. It returns its label, and the fill that shows it held down. */
+function buildActionButton(options: ActionButtonOptions): { readonly text: Text; readonly heldFill: Graphics } {
+    const { parent, label, color, onChanged } = options;
     const bg = new Graphics();
     bg.circle(0, 0, BTN_CSS_RADIUS).fill({ color, alpha: 0.25 });
     bg.circle(0, 0, BTN_CSS_RADIUS).stroke({ color, alpha: 0.5, width: 2 });
     parent.addChild(bg);
 
+    // Shown only while the button is held, over its resting look
+    const heldFill = new Graphics();
+    heldFill.circle(0, 0, BTN_CSS_RADIUS).fill({ color, alpha: HELD_ALPHA });
+    heldFill.visible = false;
+    parent.addChild(heldFill);
+
     const hit = new Graphics();
     hit.circle(0, 0, BTN_CSS_RADIUS * 1.15).fill({ color: 0x000000, alpha: 0.01 });
-    hit.eventMode = 'static';
     hit.cursor = 'pointer';
     parent.addChild(hit);
 
@@ -438,21 +474,14 @@ function buildActionButton(
     fitLabel(text);
     parent.addChild(text);
 
-    hit.on('pointerdown', () => {
-        onChanged(true);
-        bg.alpha = 1.0;
+    // One finger at a time, so another finger lifting elsewhere doesn't let the button go
+    listenToPointer({
+        target: hit,
+        onPressed: () => onChanged(true),
+        onReleased: () => onChanged(false),
     });
 
-    const release = (): void => {
-        onChanged(false);
-        bg.alpha = 1.0;
-    };
-
-    hit.on('pointerup', release);
-    hit.on('pointerupoutside', release);
-    hit.on('pointercancel', release);
-
-    return text;
+    return { text, heldFill };
 }
 
 /** Shrinks a button's label, if it must, to fit inside the button. */

@@ -34,6 +34,15 @@ describe('listenToPointer', () => {
         released.target.emit('pointercancel', touch(1, 12, 22));
         expect(released.events).toEqual(['press 10,20', 'release 12,22']);
     });
+
+    it('reports a pointer moving while none is followed as hovering, and not once one is', () => {
+        const { target, events } = listen({ onHovered: (x, y) => events.push(`hover ${x},${y}`) });
+        target.emit('globalpointermove', touch(1, 5, 5));
+        target.emit('pointerdown', touch(1, 10, 20));
+        target.emit('globalpointermove', touch(1, 30, 40));
+        target.emit('globalpointermove', touch(2, 70, 70));
+        expect(events).toEqual(['hover 5,5', 'press 10,20', 'move 30,40']);
+    });
 });
 
 function listen(more: Partial<PointerOptions> = {}): { target: Container; events: string[] } {

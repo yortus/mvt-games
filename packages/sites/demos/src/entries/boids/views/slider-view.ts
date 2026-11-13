@@ -1,5 +1,6 @@
 import { Container, Graphics, Text } from 'pixi.js';
 import { setRefresh } from '@mvtjs/pixi';
+import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -49,14 +50,12 @@ export function SliderView(bindings: SliderViewBindings): Container {
 
     // Hit area covers the full track for click-to-seek
     const hitArea = new Graphics();
-    hitArea.eventMode = 'static';
     hitArea.cursor = 'pointer';
 
     view.addChild(track, fill, hitArea, knob, nameText, valueText, minText, maxText);
 
-    // Interaction state
+    // Whether a pointer is dragging the knob
     let isDragging = false;
-    let trackingPointerId = -1;
 
     // What was last drawn. Redrawing a Graphics or reformatting a label
     // allocates, so refresh does nothing until one of these changes.
@@ -69,10 +68,18 @@ export function SliderView(bindings: SliderViewBindings): Container {
     let drawnLabel: string | undefined;
     let drawnIsDragging = false;
 
-    hitArea.on('pointerdown', onPointerDown);
-    hitArea.on('pointermove', onPointerMove);
-    hitArea.on('pointerup', onPointerUp);
-    hitArea.on('pointerupoutside', onPointerUp);
+    // One pointer at a time, followed off the strip, so a drag doesn't end as it slips off. The hit area's pixels are the view's
+    listenToPointer({
+        target: hitArea,
+        onPressed: (x) => {
+            isDragging = true;
+            seek(x);
+        },
+        onMoved: seek,
+        onReleased: () => {
+            isDragging = false;
+        },
+    });
 
     setRefresh(view, refresh);
     return view;
@@ -154,31 +161,14 @@ export function SliderView(bindings: SliderViewBindings): Container {
 
     // ---- Interaction -------------------------------------------------------
 
-    function onPointerDown(e: { pointerId: number; getLocalPosition: (target: Container) => { x: number } }): void {
-        isDragging = true;
-        trackingPointerId = e.pointerId;
-        applyPointerPosition(e);
-    }
-
-    function onPointerMove(e: { pointerId: number; getLocalPosition: (target: Container) => { x: number } }): void {
-        if (!isDragging || e.pointerId !== trackingPointerId) return;
-        applyPointerPosition(e);
-    }
-
-    function onPointerUp(e: { pointerId: number }): void {
-        if (e.pointerId !== trackingPointerId) return;
-        isDragging = false;
-        trackingPointerId = -1;
-    }
-
-    function applyPointerPosition(e: { getLocalPosition: (target: Container) => { x: number } }): void {
+    /** Reports the value at `x` along the track, in the view's pixels. */
+    function seek(x: number): void {
         const w = bindings.width?.() ?? DEFAULT_WIDTH;
         const trackLeft = KNOB_RADIUS;
         const trackRight = w - KNOB_RADIUS;
         const trackWidth = trackRight - trackLeft;
 
-        const local = e.getLocalPosition(view);
-        const rawT = Math.max(0, Math.min(1, (local.x - trackLeft) / trackWidth));
+        const rawT = Math.max(0, Math.min(1, (x - trackLeft) / trackWidth));
 
         const min = bindings.min();
         const max = bindings.max();

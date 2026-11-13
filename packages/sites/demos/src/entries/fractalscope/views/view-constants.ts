@@ -22,26 +22,8 @@ export const BACKDROP_COLOR = 0x05060a;
 /** How much one notch of the mouse wheel magnifies the view. */
 export const ZOOM_PER_WHEEL_NOTCH = 1.25;
 
-/** How much a trackpad pinch magnifies the view for each point it is spread. */
-export const ZOOM_PER_PINCH_POINT = 0.01;
-
-/** The most one wheel event may magnify or shrink the view, however big its delta. */
-export const MAX_WHEEL_ZOOM = 4;
-
 /** How much a double click or a double tap magnifies the view. */
 export const ZOOM_PER_DOUBLE_TAP = 2.5;
-
-/** The furthest a finger may travel, in CSS pixels, and still count as a tap. */
-export const TAP_SLOP = 10;
-
-/** The longest a finger may stay down, in milliseconds, and still count as a tap. */
-export const TAP_MAX_MS = 300;
-
-/** The longest gap between two taps of a double tap, in milliseconds, from the first's lift to the second's. */
-export const DOUBLE_TAP_GAP_MS = 350;
-
-/** How far apart the two taps of a double tap may land, in CSS pixels. */
-export const DOUBLE_TAP_SLOP = 30;
 
 // ---------------------------------------------------------------------------
 // The minimap

@@ -1,5 +1,6 @@
-import { BufferImageSource, Container, type FederatedPointerEvent, Sprite, Text, Texture } from 'pixi.js';
+import { BufferImageSource, Container, Sprite, Text, Texture } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
+import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 import { COLS, ROWS } from '../data';
 import type { DemoModel, CoralPattern } from '../models';
 
@@ -40,31 +41,47 @@ export function DemoView(bindings: DemoViewBindings): Container {
     const view = new Container();
     view.addChild(sprite, caption);
 
-    // Presentation state: how long the colour schemes have been running, the
-    // pattern the caption names and how long it has shown, and how long since
-    // the last tap, to tell a double tap
+    // Presentation state: how long the colour schemes have been running, and
+    // the pattern the caption names and how long it has shown
     const shades = new Uint32Array(256);
     let paletteMs = 0;
     let shadesFor = -1;
     let captionFor = model.pattern;
     let captionMs = 0;
     let isFirstCaption = true;
+    // Handling input: how long since the last tap, in game time, to tell a
+    // double tap, and where the press landed, and whether it has moved from
+    // there, since a drag is no tap
     let msSinceTap = DOUBLE_TAP_MS;
-    let isPainting = false;
+    let pressX = 0;
+    let pressY = 0;
+    let hasMoved = false;
 
-    sprite.eventMode = 'static';
     sprite.cursor = 'crosshair';
-    sprite.on('pointerdown', (e: FederatedPointerEvent) => {
-        isPainting = true;
-        if (msSinceTap < DOUBLE_TAP_MS) model.nextPattern();
-        msSinceTap = 0;
-        paint(e);
+    // One pointer at a time, so a second finger neither paints nor taps. The sprite's pixels are the grid's cells
+    listenToPointer({
+        target: sprite,
+        onPressed: (x, y) => {
+            pressX = x;
+            pressY = y;
+            hasMoved = false;
+            paint(x, y);
+        },
+        onMoved: (x, y) => {
+            if ((x - pressX) ** 2 + (y - pressY) ** 2 > TAP_SLOP_CELLS ** 2) hasMoved = true;
+            paint(x, y);
+        },
+        onReleased: () => {
+            if (hasMoved) return;
+            // A tap, which makes a double tap if it comes soon after the last
+            if (msSinceTap < DOUBLE_TAP_MS) {
+                model.nextPattern();
+                msSinceTap = DOUBLE_TAP_MS;
+                return;
+            }
+            msSinceTap = 0;
+        },
     });
-    sprite.on('pointermove', (e: FederatedPointerEvent) => {
-        if (isPainting) paint(e);
-    });
-    sprite.on('pointerup', stopPainting);
-    sprite.on('pointerupoutside', stopPainting);
     // A sprite does not destroy its texture unless told to
     sprite.on('destroyed', () => texture.destroy(true));
 
@@ -72,12 +89,9 @@ export function DemoView(bindings: DemoViewBindings): Container {
     setRefresh(view, refresh);
     return view;
 
-    function stopPainting(): void {
-        isPainting = false;
-    }
-
-    function paint(e: FederatedPointerEvent): void {
-        const { x, y } = e.getLocalPosition(sprite);
+    /** Paints growth at cell (x, y). A drag can stray off the grid, and paints nothing there. */
+    function paint(x: number, y: number): void {
+        if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return;
         model.seedAt(Math.floor(x), Math.floor(y));
     }
 
@@ -131,6 +145,8 @@ const THICKEST = 0.4;
 const PALETTE_MS = 37_000;
 /** How soon a second tap must follow the first to make a double tap. */
 const DOUBLE_TAP_MS = 300;
+/** How far a press may move, in cells, and still be a tap. Further, and it is a drag. */
+const TAP_SLOP_CELLS = 3;
 /** How long a caption shows, and how long it takes to fade at the end. */
 const CAPTION_MS = 3500;
 const CAPTION_FADE_MS = 1000;

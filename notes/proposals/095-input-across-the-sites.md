@@ -41,6 +41,29 @@ already did. `listenToPress` is in `input/pixi/`, for a button that shows
 its hold. Falling Sand's action buttons and Fruit Machine's spin button use
 it. So the spin button no longer stays down after a cancelled touch (bug
 7). The other buttons kept `onPointerTap` (section 6.2).
+Step 6 is done. `listenToPointer` gained `onHovered`. Boids' slider,
+Coral's painting and Falling Sand's pour use it, which fixes bugs 6 to 9
+there. Coral's double tap counts only taps (bug 10). `TouchInputView` uses
+it for its joystick, its d-pad and each button. So the joystick follows a
+thumb off its area, and a finger lifted from one button no longer lets go
+of the other. The buttons show their hold, and the joystick and the holds
+are drawn in refresh. A rebuild releases a held button too, not only a held
+direction. A finger let go while the touch controls hide for a pause still
+releases its control. A test that runs Pixi's own event boundary shows
+that Pixi sends `pointerupoutside` to a hidden object, so no microtask is
+needed (4.2). Step 6 also found that Pixi 8 never listens for the DOM's
+`pointercancel`. So the Pixi helpers' cancel handling never runs (section
+10).
+Step 7 is done. Sudoku's keypad gestures view model is the site kit's
+`createPressGesturesViewModel`, in `input/`. It takes any kind of key, and
+its hold times as options. It follows one pointer, which fixes the keypad's
+second finger.
+Step 8 is done. Penrose's and Fractalscope's trackers are one
+`listenToPanZoom`, in `input/`, with their two differing zooms as
+options, and one set of tests. `listenToElementPointer`, in `input/`,
+follows one pointer over a DOM element, with pointer capture. The Fruit
+Machine's cabinet uses it, which fixes its second finger, and so does the
+Perfmon's panel.
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
 from a survey of every entry and the site kit. Line numbers are from that
@@ -526,6 +549,10 @@ shows holds, so other puzzles will use it.
 
 ### 6.4 One pan-and-zoom tracker
 
+*As built:* it is `listenToPanZoom`, which returns a function that stops
+it, as the other `listenTo` helpers do. It has no state to read, so it
+needs no object.
+
 Penrose's and Fractalscope's trackers become one, `createPanZoomTracker`
 (DOM, no renderer), with the twist, the tap and the begin and end as
 optional reports, and the two differing constants as options. Their tests
@@ -634,7 +661,7 @@ touch most of them. An open question (section 10).
 | Falling Sand | Pour on `listenToPointer` with `onHovered`; action buttons on `listenToPress` |
 | Double Pendulum, Sudoku Digger | Buttons fire on a tap |
 | Fruit Machine | Spin button on `listenToPress`; cabinet on `listenToElementPointer` |
-| Penrose Tiling, Fractalscope | `createPanZoomTracker` |
+| Penrose Tiling, Fractalscope | `listenToPanZoom` |
 | Sudoku | Keypad on the shared press view model |
 | The site kit | `TouchInputView` on `listenToPointer`, its buttons' hold shown; the page's close-on-press-outside helper |
 
@@ -665,6 +692,18 @@ Do not reopen without new information.
   `primary`, which is how How to play names them (4.4).
 
 ## 10. Open questions
+
+- **Pixi 8 never reports a cancelled pointer.** Its event system listens
+  for no DOM `pointercancel` (Pixi 8.21, `EventSystem.mjs`). After a
+  cancel, the browser sends no `pointerup` either. So a helper that follows
+  one pointer, such as `listenToPointer`, `listenToPress` or the touch
+  controls, keeps following a pointer that has gone, and ignores new
+  presses on its target until that pointer's id comes back. The canvas
+  sets `touch-action: none`, so the browser's own gestures can't cancel a
+  touch. But the system can, as when a notification is pulled down. The
+  entry host could pass the canvas's `pointercancel` on to Pixi as a
+  `pointerupoutside`, or each helper could forget a pointer when a new one
+  presses after a gap.
 
 - **Burrow Bust's and Fenceline's "latest axis wins"** were written
   differently. But they give the same direction for every change the
@@ -714,7 +753,7 @@ changes what a player feels.
 6. `listenToPointer` everywhere it fits (6.1), and `TouchInputView`'s fixes,
    including a finger on the touch controls as they hide for a pause (4.2).
 7. The press-and-hold view model (6.3).
-8. `createPanZoomTracker` (6.4) and `listenToElementPointer` (6.5).
+8. `listenToPanZoom` (6.4) and `listenToElementPointer` (6.5).
 9. A task for `@mvtjs/three`'s picker (6.6).
 10. Docs: Adding an Entry (input), AGENTS.md's site kit folders, Project
     Structure, the site kit's README, and the cheat sheets if a moved export

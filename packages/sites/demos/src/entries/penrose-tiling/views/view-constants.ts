@@ -45,26 +45,8 @@ export const MAX_PIXEL_DENSITY = 2;
 /** How much one notch of the mouse wheel zooms in. */
 export const ZOOM_PER_WHEEL_NOTCH = 1.2;
 
-/** How much a trackpad pinch zooms for each point it is spread. */
-export const ZOOM_PER_PINCH_POINT = 0.01;
-
-/** The most one wheel event may zoom in or out, however big its delta. */
-export const MAX_WHEEL_ZOOM = 4;
-
 /** How much a double click or a double tap zooms in. */
 export const ZOOM_PER_DOUBLE_TAP = 1.8;
-
-/** The furthest a finger may travel, in CSS pixels, and still count as a tap. */
-export const TAP_SLOP = 10;
-
-/** The longest a finger may stay down, in milliseconds, and still count as a tap. */
-export const TAP_MAX_MS = 300;
-
-/** The longest gap between two taps of a double tap, in milliseconds, from the first's lift to the second's. */
-export const DOUBLE_TAP_GAP_MS = 350;
-
-/** How far apart the two taps of a double tap may land, in CSS pixels. */
-export const DOUBLE_TAP_SLOP = 30;
 
 // ---------------------------------------------------------------------------
 // Keys

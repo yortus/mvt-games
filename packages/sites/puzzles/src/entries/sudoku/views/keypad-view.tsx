@@ -2,11 +2,11 @@
 
 import type { Container } from 'pixi.js';
 import { setUpdate } from '@mvtjs/pixi';
+import { createPressGesturesViewModel } from '@mvtjs/site-kit/input';
 import { ACCENT_COLOR, ButtonView, HOLD_RING_RADIUS, HoldRingView } from '../../../shared';
 import { hasDigit } from '../generator';
-import { createKeypadGesturesViewModel } from './keypad-gestures-view-model';
 import { findKeyLeft } from './puzzle-layout';
-import { KEY_HEIGHT, KEY_WIDTH } from './view-constants';
+import { KEY_HEIGHT, KEY_HOLD_MS, KEY_HOLD_QUIET_MS, KEY_WIDTH } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -35,13 +35,15 @@ export interface KeypadViewBindings {
  * selected, a key fills the cell with its digit instead, or clears it if
  * the digit is there. While it is held, a ring fills round its digit, as in
  * the walkthrough's demo: blue, or white on a key lit in blue, which is the
- * one that clears. What the presses mean is the gestures view model's. Its
- * origin is its top left corner.
+ * one that clears. What the presses mean is the gestures view model's. It
+ * follows one finger at a time. Its origin is its top left corner.
  */
 export function KeypadView(bindings: KeypadViewBindings): Container {
-    const gestures = createKeypadGesturesViewModel({
+    const gestures = createPressGesturesViewModel({
+        holdMs: KEY_HOLD_MS,
+        quietMs: KEY_HOLD_QUIET_MS,
         isEnabled: bindings.isEnabled,
-        canFill: bindings.canFill,
+        canHold: bindings.canFill,
         onTapped: bindings.onTapped,
         onHeld: bindings.onHeld,
     });
@@ -52,10 +54,9 @@ export function KeypadView(bindings: KeypadViewBindings): Container {
             <container
                 x={findKeyLeft(digit)}
                 y={0}
-                onPointerDown={() => gestures.press(digit)}
-                onPointerUp={() => gestures.release(digit)}
-                onPointerUpOutside={gestures.cancel}
-                onPointerCancel={gestures.cancel}
+                onPointerDown={(e) => gestures.press(digit, e.pointerId)}
+                onPointerUp={(e) => gestures.release(digit, e.pointerId)}
+                onPointerUpOutside={(e) => gestures.cancel(e.pointerId)}
             >
                 <ButtonView
                     x={0}

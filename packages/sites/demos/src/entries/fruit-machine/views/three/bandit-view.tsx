@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/three */
 import type { Object3D } from 'three';
+import { listenToElementPointer } from '@mvtjs/site-kit/input';
 import { ROW_COUNT } from '../../data';
 import type { FruitMachineModel } from '../../models';
 import type { SymbolArt } from '../art';
@@ -52,10 +53,23 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
     let isLeverHovered = false;
     let shownCursor = '';
 
-    dragSurface.addEventListener('pointerdown', onPointerDown);
-    dragSurface.addEventListener('pointermove', onPointerMove);
-    dragSurface.addEventListener('pointerup', onPointerUp);
-    dragSurface.addEventListener('pointercancel', onPointerUp);
+    // One pointer at a time, so a second finger can't take the turn over
+    const stopDragging = listenToElementPointer({
+        element: dragSurface,
+        onPressed: (x) => {
+            drag = { startX: x, startYaw: dragYaw };
+            isTurning = false;
+        },
+        onMoved: (x) => {
+            if (drag === undefined) return;
+            const dx = x - drag.startX;
+            if (Math.abs(dx) > DRAG_THRESHOLD_PX) isTurning = true;
+            if (isTurning) dragYaw = drag.startYaw + dx * DRAG_RADIANS_PER_PX;
+        },
+        onReleased: () => {
+            drag = undefined;
+        },
+    });
 
     return (
         <group onUpdate={(deltaMs) => { swayMs += deltaMs; }} onRefresh={refreshCursor} onDestroyed={release}>
@@ -115,29 +129,8 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
         dragSurface.style.cursor = cursor;
     }
 
-    function onPointerDown(event: PointerEvent): void {
-        drag = { pointerId: event.pointerId, startX: event.clientX, startYaw: dragYaw };
-        isTurning = false;
-        dragSurface.setPointerCapture(event.pointerId);
-    }
-
-    function onPointerMove(event: PointerEvent): void {
-        if (drag === undefined || event.pointerId !== drag.pointerId) return;
-        const dx = event.clientX - drag.startX;
-        if (Math.abs(dx) > DRAG_THRESHOLD_PX) isTurning = true;
-        if (isTurning) dragYaw = drag.startYaw + dx * DRAG_RADIANS_PER_PX;
-    }
-
-    function onPointerUp(event: PointerEvent): void {
-        if (drag === undefined || event.pointerId !== drag.pointerId) return;
-        drag = undefined;
-    }
-
     function release(): void {
-        dragSurface.removeEventListener('pointerdown', onPointerDown);
-        dragSurface.removeEventListener('pointermove', onPointerMove);
-        dragSurface.removeEventListener('pointerup', onPointerUp);
-        dragSurface.removeEventListener('pointercancel', onPointerUp);
+        stopDragging();
         kit.release();
     }
 }
@@ -146,8 +139,8 @@ export function BanditView(bindings: BanditViewBindings): Object3D {
 // Internals
 // ---------------------------------------------------------------------------
 
+/** A drag in progress: where it was pressed, in the viewport's pixels, and how far the cabinet was turned then. */
 interface Drag {
-    readonly pointerId: number;
     readonly startX: number;
     readonly startYaw: number;
 }

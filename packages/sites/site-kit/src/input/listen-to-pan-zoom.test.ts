@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { createPinchTracker } from './pinch-tracker';
-import { ZOOM_PER_DOUBLE_TAP, ZOOM_PER_WHEEL_NOTCH } from './view-constants';
+import { listenToPanZoom, TAP_MAX_MS, TAP_SLOP } from './listen-to-pan-zoom';
+
+const ZOOM_PER_WHEEL_NOTCH = 1.25;
+const ZOOM_PER_DOUBLE_TAP = 2.5;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -13,12 +15,18 @@ function setup() {
     const calls: string[] = [];
     const drags: [number, number][] = [];
     const zooms: [number, number, number][] = [];
-    const tracker = createPinchTracker({
+    const turns: [number, number, number][] = [];
+    const taps: [number, number][] = [];
+    const stop = listenToPanZoom({
         element,
+        zoomPerWheelNotch: ZOOM_PER_WHEEL_NOTCH,
+        zoomPerDoubleTap: ZOOM_PER_DOUBLE_TAP,
         onGestureBegan: () => calls.push('began'),
         onGestureEnded: () => calls.push('ended'),
         onDragged: (x, y) => drags.push([x, y]),
         onZoomed: (factor, x, y) => zooms.push([factor, x, y]),
+        onTurned: (angle, x, y) => turns.push([angle, x, y]),
+        onTapped: (x, y) => taps.push([x, y]),
     });
     /** Sends a pointer event. A time, in milliseconds, takes the place of the event's own time stamp. */
     const pointer = (kind: string, id: number, x: number, y: number, extra: PointerEventInit = {}, atMs?: number): void => {
@@ -31,9 +39,9 @@ function setup() {
     /** A tap: down and up at one spot, at `atMs`. */
     const tap = (x: number, y: number, atMs: number, pointerType = 'touch'): void => {
         pointer('pointerdown', 9, x, y, { pointerType }, atMs);
-        pointer('pointerup', 9, x, y, { pointerType }, atMs + 50);
+        pointer('pointerup', 9, x, y, { pointerType }, atMs + TAP_MAX_MS / 6);
     };
-    return { element, tracker, calls, drags, zooms, pointer, tap };
+    return { element, stop, calls, drags, zooms, turns, taps, pointer, tap };
 }
 
 /** The sum of the drags reported, as one. */
@@ -51,8 +59,8 @@ function totalOf(drags: readonly [number, number][]): [number, number] {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('createPinchTracker', () => {
-    it('drags with one finger, as one gesture', () => {
+describe('listenToPanZoom', () => {
+    it('drags with one finger, as one gesture, which is no tap', () => {
         const t = setup();
         t.pointer('pointerdown', 1, 100, 100);
         t.pointer('pointermove', 1, 110, 95);
@@ -62,6 +70,7 @@ describe('createPinchTracker', () => {
         expect(t.calls).toEqual(['began', 'ended']);
         expect(t.drags).toEqual([[10, -5], [20, -5]]);
         expect(t.zooms).toEqual([]);
+        expect(t.taps).toEqual([]);
     });
 
     it('zooms about the middle of two fingers as they spread', () => {
@@ -79,6 +88,25 @@ describe('createPinchTracker', () => {
         // The middle moved right by 50
         expect(totalOf(t.drags)).toEqual([50, 0]);
         expect(t.calls).toEqual(['began']);
+    });
+
+    it('reports two fingers twisting as a turn about their middle', () => {
+        const t = setup();
+        t.pointer('pointerdown', 1, 100, 100);
+        t.pointer('pointerdown', 2, 200, 100);
+        // The first finger swings a quarter turn round the second, clockwise on the screen
+        t.pointer('pointermove', 1, 200, 0);
+        const [angle] = t.turns[0];
+        expect(angle).toBeCloseTo(Math.PI / 2);
+    });
+
+    it('never spins a whole turn as two fingers pass the left of each other', () => {
+        const t = setup();
+        t.pointer('pointerdown', 1, 100, 101);
+        t.pointer('pointerdown', 2, 200, 100);
+        t.pointer('pointermove', 1, 100, 99);
+        const [angle] = t.turns[0];
+        expect(Math.abs(angle)).toBeLessThan(0.1);
     });
 
     it('drags with whichever finger is left when one of a pinch lifts', () => {
@@ -121,6 +149,23 @@ describe('createPinchTracker', () => {
         expect(event.defaultPrevented).toBe(true);
     });
 
+    it('reports a tap where it landed, and a click of the mouse as a tap', () => {
+        const t = setup();
+        t.tap(40, 60, 0);
+        t.tap(80, 20, 1000, 'mouse');
+        expect(t.taps).toEqual([[40, 60], [80, 20]]);
+    });
+
+    it('takes neither a long press nor a slide for a tap', () => {
+        const t = setup();
+        t.pointer('pointerdown', 1, 40, 60, {}, 0);
+        t.pointer('pointerup', 1, 40, 60, {}, TAP_MAX_MS * 2);
+        t.pointer('pointerdown', 1, 40, 60, {}, TAP_MAX_MS * 3);
+        t.pointer('pointermove', 1, 40 + TAP_SLOP * 2, 60, {}, TAP_MAX_MS * 3);
+        t.pointer('pointerup', 1, 40 + TAP_SLOP * 2, 60, {}, TAP_MAX_MS * 3 + 10);
+        expect(t.taps).toEqual([]);
+    });
+
     it('zooms in on a double click', () => {
         const t = setup();
         t.tap(12, 34, 0, 'mouse');
@@ -129,12 +174,13 @@ describe('createPinchTracker', () => {
         expect(t.zooms).toEqual([[ZOOM_PER_DOUBLE_TAP, 12, 34]]);
     });
 
-    it('zooms in on a double tap, once, whether or not the browser adds a double click', () => {
+    it('zooms in on a double tap, once, whether or not the browser adds a double click, as well as reporting each tap', () => {
         const t = setup();
         t.tap(50, 60, 0);
         t.tap(52, 61, 200);
         t.element.dispatchEvent(new MouseEvent('dblclick', { clientX: 52, clientY: 61 }));
 
+        expect(t.taps.length).toBe(2);
         expect(t.zooms).toEqual([[ZOOM_PER_DOUBLE_TAP, 52, 61]]);
     });
 
@@ -182,9 +228,9 @@ describe('createPinchTracker', () => {
         expect(t.calls).toEqual(['began', 'ended']);
     });
 
-    it('stops watching when destroyed', () => {
+    it('stops watching when stopped', () => {
         const t = setup();
-        t.tracker.destroy();
+        t.stop();
         t.pointer('pointerdown', 1, 100, 100);
         t.pointer('pointermove', 1, 120, 100);
 

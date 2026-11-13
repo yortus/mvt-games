@@ -1,11 +1,11 @@
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
+import { listenToPanZoom } from '@mvtjs/site-kit/input';
 import type { TileSet } from '../models';
 import type { ColorMode } from './color-mode';
-import { createGestureTracker } from './gesture-tracker';
 import type { PaletteName } from './palette-name';
 import { buildPaletteFills, type PaletteFills } from './palettes';
-import { MAX_PIXEL_DENSITY, RAMP_SIZE, RING_WIDTH, SPIRAL_WIDTH, TONES } from './view-constants';
+import { MAX_PIXEL_DENSITY, RAMP_SIZE, RING_WIDTH, SPIRAL_WIDTH, TONES, ZOOM_PER_DOUBLE_TAP, ZOOM_PER_WHEEL_NOTCH } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -137,8 +137,10 @@ export function TileCanvasView(bindings: TileCanvasViewBindings): HTMLCanvasElem
         pictures: bindings.picturesAsked,
     });
 
-    const tracker = createGestureTracker({
+    const stopPanZoom = listenToPanZoom({
         element: canvas,
+        zoomPerWheelNotch: ZOOM_PER_WHEEL_NOTCH,
+        zoomPerDoubleTap: ZOOM_PER_DOUBLE_TAP,
         onDragged: reportDrag,
         onZoomed: reportZoom,
         onTurned: reportTurn,
@@ -151,7 +153,7 @@ export function TileCanvasView(bindings: TileCanvasViewBindings): HTMLCanvasElem
     setRefresh(canvas, refresh);
     onDestroyed(canvas, () => {
         resizeObserver.disconnect();
-        tracker.destroy();
+        stopPanZoom();
         if (pictureUrl !== undefined) URL.revokeObjectURL(pictureUrl);
     });
     return canvas;

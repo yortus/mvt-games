@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 import { PerfmonView } from '@mvtjs/html';
 import type { MetricKind, PerformanceMetrics } from '@mvtjs/utils';
+import { listenToElementPointer } from '../../input';
 
 // The meter goes with the panel, so the page loads it with the panel, the
 // first time the Perfmon opens (`loadPerfmon`), and its first load holds neither
@@ -45,6 +46,7 @@ export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
     let drawnX: number | undefined;
     let drawnY = 0;
     let isDragDrawn = false;
+    let stopDragging: (() => void) | undefined;
     window.addEventListener('resize', keepInView);
 
     const panel = PerfmonView({ metrics: bindings.metrics, unmeasured: bindings.unmeasured, title: 'Performance', infoNote: NOTE });
@@ -53,17 +55,12 @@ export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
         <div
             class="perfmon-float"
             visible={bindings.isOpen}
-            ref={(e) => {
-                root = e;
-                // However the drag ends, even where its pointerup never arrives, it lets go of the pointer
-                e.addEventListener('lostpointercapture', endDrag);
-            }}
-            onPointerDown={startDrag}
-            onPointerMove={moveDrag}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
+            ref={listenToDrags}
             onRefresh={place}
-            onDestroyed={() => window.removeEventListener('resize', keepInView)}
+            onDestroyed={() => {
+                window.removeEventListener('resize', keepInView);
+                stopDragging?.();
+            }}
         >
             {panel}
         </div>
@@ -84,26 +81,29 @@ export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
         e.style.top = `${y}px`;
     }
 
-    /** A press anywhere on the panel starts a drag, but on a button, or on the explanation's text, which scrolls. */
-    function startDrag(e: PointerEvent): void {
-        if (root === undefined || drag !== undefined || e.button !== 0 || !(e.target instanceof Element)) return;
-        if (e.target.closest('button') !== null || e.target.closest('.mvt-perfmon-info-body') !== null) return;
-        e.preventDefault();
-        root.setPointerCapture(e.pointerId);
-        const { left, top } = placeOf(root);
-        drag = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, fromX: left, fromY: top };
-    }
-
-    function moveDrag(e: PointerEvent): void {
-        if (drag === undefined || e.pointerId !== drag.pointerId) return;
-        x = drag.fromX + e.clientX - drag.startX;
-        y = drag.fromY + e.clientY - drag.startY;
-        keepInView();
-    }
-
-    function endDrag(e: PointerEvent): void {
-        if (drag === undefined || e.pointerId !== drag.pointerId) return;
-        drag = undefined;
+    /**
+     * Follows one pointer at a time over the panel. A drag ends however the
+     * pointer lets go, even where its pointerup never arrives.
+     */
+    function listenToDrags(e: HTMLElement): void {
+        root = e;
+        stopDragging = listenToElementPointer({
+            element: e,
+            isPressFollowed: isOnDragArea,
+            onPressed: (pointerX, pointerY) => {
+                const { left, top } = placeOf(e);
+                drag = { startX: pointerX, startY: pointerY, fromX: left, fromY: top };
+            },
+            onMoved: (pointerX, pointerY) => {
+                if (drag === undefined) return;
+                x = drag.fromX + pointerX - drag.startX;
+                y = drag.fromY + pointerY - drag.startY;
+                keepInView();
+            },
+            onReleased: () => {
+                drag = undefined;
+            },
+        });
     }
 
     /**
@@ -129,9 +129,8 @@ export function PerfmonFloatView(bindings: PerfmonFloatViewBindings): Element {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** A drag in progress: the pointer making it, where it was pressed, and where the panel was then. */
+/** A drag in progress: where it was pressed, and where the panel was then. */
 interface Drag {
-    readonly pointerId: number;
     readonly startX: number;
     readonly startY: number;
     readonly fromX: number;
@@ -140,6 +139,12 @@ interface Drag {
 
 /** What the explanation says first, about the panel itself. */
 const NOTE = 'Drag this panel to move it. To close it, press the gauge at the top of the page.';
+
+/** Whether a press lands where it drags the panel. That is anywhere but a button, or the explanation's text, which scrolls. */
+function isOnDragArea(e: PointerEvent): boolean {
+    if (!(e.target instanceof Element)) return false;
+    return e.target.closest('button') === null && e.target.closest('.mvt-perfmon-info-body') === null;
+}
 
 /**
  * How far to move a span from `start` to `end` to bring it inside `min` to
