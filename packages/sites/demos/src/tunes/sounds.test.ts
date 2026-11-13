@@ -11,8 +11,9 @@ import { TUNES } from './tunes';
 // that changes a sound makes that sound's test fail. Listen to the new sound
 // first, then update the snapshot with `vitest -u`.
 
-// Each tune is rendered whole, which takes a few seconds on a busy machine
-describe('tunes', { timeout: 30_000 }, () => {
+// Each tune is rendered whole. That takes a few seconds, and Long Exposure,
+// the longest, took 32 seconds on a busy CI runner.
+describe('tunes', { timeout: 120_000 }, () => {
     it('bounces its samples within the chip\'s sample memory', () => {
         expect(SAMPLES.reduce((total, sample) => total + sample.length, 0)).toBeLessThanOrEqual(AUDIO90_SAMPLE_MEMORY);
         expect(() => prepareAudio90Samples(SAMPLES)).not.toThrow();
