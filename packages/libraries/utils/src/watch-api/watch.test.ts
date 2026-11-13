@@ -201,13 +201,17 @@ describe('watch', () => {
     describe('in production', () => {
         afterEach(() => {
             vi.unstubAllEnvs();
-            vi.resetModules();
         });
 
         it('returns the reading itself on every poll, so polling allocates nothing', async () => {
             vi.stubEnv('DEV', false);
-            vi.resetModules();
-            const { watch: watchInProduction } = await import('./watch');
+            // A fresh instance of the module, which reads DEV as it loads. A
+            // query string makes Vite load it again, while its own imports
+            // resolve to the instances already loaded. Resetting every module
+            // instead would make the test files after this one, which share
+            // its worker, load a second copy of the library.
+            const path = './watch.ts?production';
+            const { watch: watchInProduction } = await import(/* @vite-ignore */ path) as typeof import('./watch');
             let score = 1;
             const watcher = watchInProduction({ score: () => score });
             const first = watcher.poll();

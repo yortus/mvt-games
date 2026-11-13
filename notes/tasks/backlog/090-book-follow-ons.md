@@ -79,7 +79,7 @@ dropped.
   `book/pause-and-slow-motion` (Chapter 5) hides its game layer from that
   and updates it itself, with the scaled time. An option for a project to
   run its own view updates would remove the workaround.
-- **Text measured in an example.** `book-examples.test.ts` runs in Node,
+- **Text measured in an example.** `book-examples.slow.test.ts` runs in Node,
   where Pixi can't measure text, so Chapter 21 has one example, not one for
   "Measurements Are Input". Running that test in the browser would allow
   one.

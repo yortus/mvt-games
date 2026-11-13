@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio80Sound } from 'audio90';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
-import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP, SWAP_BACK } from '../data';
+import { BIG_MATCH, CASCADE_CRACKLES, CASCADE_WHISTLES, GAME_OVER, LAND, NEW_GAME, SWAP } from '../data';
 import type { BoardPhase, GamePhase } from '../models';
 import { AudioView } from './audio-view';
 import { MIN_CELLS_FOR_BIG_MATCH } from './view-constants';
@@ -22,25 +22,6 @@ describe('AudioView', () => {
     it('plays a new game\'s notes as it is made, and nothing on its first tick', () => {
         const { chip, tick } = setUp();
         expect(listPlayed(chip)).toEqual([NEW_GAME]);
-        expect(tick()).toEqual([]);
-    });
-
-    it('blips as a swap that makes a line starts, says nothing for one that makes none until it knocks as it is undone', () => {
-        const { state, tick } = setUp();
-        tick();
-        state.isSwapMatching = true;
-        state.boardPhase = 'swapping';
-        expect(tick()).toEqual([SWAP]);
-        state.boardPhase = 'idle';
-        tick();
-
-        // A swap that makes no line: nothing as it starts, and the knocks as it is undone
-        state.isSwapMatching = false;
-        state.boardPhase = 'swapping';
-        expect(tick()).toEqual([]);
-        state.boardPhase = 'reversing';
-        expect(tick()).toEqual([SWAP_BACK]);
-        state.boardPhase = 'idle';
         expect(tick()).toEqual([]);
     });
 

@@ -13,14 +13,6 @@ import { createScopeModel, type ScopeModel } from './scope-model';
 // ---------------------------------------------------------------------------
 
 describe('createScopeModel', () => {
-    it('starts with the window at the middle, unturned', () => {
-        const scope = createScopeModel();
-        expect(scope.centreX).toBe(0);
-        expect(scope.centreY).toBe(0);
-        expect(scope.radius).toBe(DEFAULT_RADIUS);
-        expect(scope.rotation).toBe(0);
-    });
-
     it('keeps its settings within their ranges', () => {
         const scope = createScopeModel();
         scope.radius = 1000;

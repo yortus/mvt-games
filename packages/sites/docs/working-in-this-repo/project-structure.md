@@ -141,6 +141,18 @@ describes the package for its users, and its
 [CONTRIBUTING.md](https://github.com/yortus/mvt-games/blob/main/packages/libraries/v-snap/CONTRIBUTING.md)
 describes how it is laid out, tested and published.
 
+Unit tests sit beside the code they test, named for its file, such as
+`score-model.test.ts`, and run in Node. They're the check you run while
+working, so they're kept fast: each one has a budget of 2 seconds, set as
+its timeout in the root `vitest.config.ts`, and most take a few
+milliseconds. A test that needs longer, such as one that type-checks a
+whole program, starts every game, or searches every case of a puzzle,
+goes in a `*.slow.test.ts` file instead, usually beside a unit test that
+checks a sample. `npm run test:slow` runs those, and CI runs them on every
+push. The unit tests' files share their workers' modules, which halves
+the run, so a test file must leave no global state changed for the files
+after it. CI runs them in a shuffled order to catch one that does.
+
 Every directory under a package's `src/` is a **module** with a specific
 responsibility. Each module has a barrel file (`index.ts`) that defines its
 public API.

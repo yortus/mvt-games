@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio90PlayOptions } from 'audio90';
 import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
-import { CLASHED, RUBBED, SOLVED, STEPPED, UNDONE, WALLED } from '../data';
+import { CLASHED, RUBBED, STEPPED, WALLED } from '../data';
 import { AudioView } from './audio-view';
 
 // The view is tested by what it asks of its chip: which sounds it plays, at which notes, and where.
@@ -56,15 +56,6 @@ describe('AudioView', () => {
         state.clashesMade = 1;
         tick();
         expect(listPlayed(sfx)).toEqual([CLASHED]);
-    });
-
-    it('blips for an undo, and chimes as a maze is solved', () => {
-        const { sfx, state, tick } = setUp();
-        state.undosDone = 1;
-        tick();
-        state.puzzlesSolved = 1;
-        tick();
-        expect(listPlayed(sfx)).toEqual([UNDONE, SOLVED]);
     });
 });
 

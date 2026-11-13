@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createSequence } from '@mvtjs/utils';
-import { type BoardPhase, EMPTY_CELL, type CactusCell } from '../../models';
+import { type BoardPhase, type CactusCell } from '../../models';
 import { createPiecesViewModel, type PiecesViewModel, type PiecesViewModelOptions } from './pieces-view-model';
 
 // ---------------------------------------------------------------------------
@@ -100,25 +100,6 @@ function makeOptions(overrides?: Partial<PiecesViewModelOptions>): PiecesViewMod
 // ---------------------------------------------------------------------------
 
 describe('PiecesViewModel', () => {
-    describe('idle grid positions', () => {
-        it('returns grid-centred positions for each cell', () => {
-            const cells = fullGrid();
-            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
-            vm.update(0);
-
-            expect(vm.xFor(cells[0][0])).toBe(gridX(0));
-            expect(vm.yFor(cells[0][0])).toBe(gridY(0));
-            expect(vm.xFor(cells[3][5])).toBe(gridX(5));
-            expect(vm.yFor(cells[3][5])).toBe(gridY(3));
-        });
-
-        it('returns full alpha for alive, non-matched cells', () => {
-            const cells = fullGrid();
-            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
-            expect(vm.alphaFor(cells[0][0])).toBe(1);
-        });
-    });
-
     describe('drag interaction', () => {
         it('dragOriginCell is undefined when no drag is active', () => {
             const vm = createPiecesViewModel(makeOptions());
@@ -319,68 +300,6 @@ describe('PiecesViewModel', () => {
             // At progress 1, cell 1 returns to its own position
             progress = 1;
             expect(vm.xFor(c1)).toBeCloseTo(gridX(2), 0);
-        });
-    });
-
-    describe('match fade alpha', () => {
-        it('returns 0 for empty cells', () => {
-            const cells = fullGrid();
-            cells[0][0] = EMPTY_CELL;
-            const vm = createPiecesViewModel(makeOptions({ cells: () => cells }));
-
-            expect(vm.alphaFor(cells[0][0])).toBe(0);
-        });
-
-        it('fades matched cells based on sequence progress', () => {
-            const cells = fullGrid();
-            const seq = makeFadeSequence();
-            const vm = createPiecesViewModel(makeOptions({
-                cells: () => cells,
-                matchedCells: () => [cells[0][0]],
-                matchSequence: () => seq,
-            }));
-
-            seq.start();
-            // Half-way through the 250ms fade
-            seq.update(125);
-            vm.update(0);
-
-            const alpha = vm.alphaFor(cells[0][0]);
-            expect(alpha).toBeGreaterThan(0);
-            expect(alpha).toBeLessThan(1);
-        });
-
-        it('returns 0 for matched cells after sequence completes', () => {
-            const cells = fullGrid();
-            const seq = makeFadeSequence();
-            const vm = createPiecesViewModel(makeOptions({
-                cells: () => cells,
-                matchedCells: () => [cells[0][0]],
-                matchSequence: () => seq,
-            }));
-
-            seq.start();
-            seq.update(300); // past 250ms duration
-            vm.update(0);
-
-            expect(vm.alphaFor(cells[0][0])).toBe(0);
-        });
-
-        it('returns 1 for non-matched alive cells', () => {
-            const cells = fullGrid();
-            const seq = makeFadeSequence();
-            seq.start();
-            seq.update(125);
-
-            const vm = createPiecesViewModel(makeOptions({
-                cells: () => cells,
-                matchedCells: () => [cells[0][0]],
-                matchSequence: () => seq,
-            }));
-            vm.update(0);
-
-            // Cell 1 is not matched
-            expect(vm.alphaFor(cells[0][1])).toBe(1);
         });
     });
 

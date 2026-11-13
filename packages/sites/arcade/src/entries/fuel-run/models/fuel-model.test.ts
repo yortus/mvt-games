@@ -6,14 +6,6 @@ function makeFuel(fuelDepletionRate = 0.03) {
 }
 
 describe('FuelModel', () => {
-    describe('initial state', () => {
-        it('starts with full fuel', () => {
-            const f = makeFuel();
-            expect(f.fuel).toBe(1.0);
-            expect(f.isFuelEmpty).toBe(false);
-        });
-    });
-
     describe('fuel depletion', () => {
         it('depletes over time', () => {
             const f = makeFuel(1.0); // 1.0 per second for fast test

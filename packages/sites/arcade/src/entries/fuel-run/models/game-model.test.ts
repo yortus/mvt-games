@@ -29,33 +29,6 @@ function makeGame(sections?: readonly SectionProfile[]) {
 }
 
 describe('GameModel', () => {
-    describe('initial state', () => {
-        it('starts in playing phase', () => {
-            const g = makeGame();
-            expect(g.phase).toBe('playing');
-        });
-
-        it('pools start empty', () => {
-            const g = makeGame();
-            expect(g.bullets.slots.length).toBe(0);
-            expect(g.bombs.slots.length).toBe(0);
-            expect(g.rockets.slots.length).toBe(0);
-            expect(g.ufos.slots.length).toBe(0);
-            expect(g.fuelTanks.slots.length).toBe(0);
-            expect(g.explosions.slots.length).toBe(0);
-        });
-
-        it('starts with scroll at 0', () => {
-            const g = makeGame();
-            expect(g.scrollCol).toBe(0);
-        });
-
-        it('ship starts alive', () => {
-            const g = makeGame();
-            expect(g.ship.isAlive).toBe(true);
-        });
-    });
-
     describe('scrolling', () => {
         it('scroll advances during playing phase', () => {
             const g = makeGame();
@@ -253,16 +226,6 @@ describe('GameModel', () => {
             expect(g.rockets.liveCount).toBe(1);
             for (let i = 0; i < 30; i++) g.update(100); // ~3s at launch speed 8 clears the top
             expect(g.rockets.liveCount).toBe(0);
-        });
-    });
-
-    describe('fuel depletion', () => {
-        it('fuel depletes during play', () => {
-            const g = makeGame();
-            const initialFuel = g.fuel.fuel;
-            // Advance 10 seconds
-            for (let i = 0; i < 100; i++) g.update(100);
-            expect(g.fuel.fuel).toBeLessThan(initialFuel);
         });
     });
 

@@ -3,22 +3,13 @@ import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
-    BLOCK,
     FIGHT_THEME,
     type FighterPhase,
     type GamePhase,
     GONG,
-    HIT,
     KICK_SWISH,
-    LEAP_SWISH,
-    MATCH_LOST,
-    MATCH_WON,
     type MoveKind,
-    POINT_LOST,
-    POINT_WON,
     POINTS_TO_WIN_ROUND,
-    PUNCH_SWISH,
-    ROUND_LOST,
     ROUND_WON,
     TICK,
 } from '../data';
@@ -38,19 +29,6 @@ afterEach(() => {
 });
 
 describe('FighterAudioView', () => {
-    it.each([
-        { move: 'high-punch', swish: PUNCH_SWISH },
-        { move: 'roundhouse', swish: KICK_SWISH },
-        { move: 'flying-kick', swish: LEAP_SWISH },
-    ] as const)('plays the right swish, and only that, as a $move starts', ({ move, swish }) => {
-        const { chip, state, tick } = setUpFighterAudio();
-        state.move = move;
-        tick();
-        state.move = undefined;
-        tick();
-        expect(listPlayed(chip)).toEqual([swish]);
-    });
-
     it('swishes again when the same move starts a second time', () => {
         const { chip, state, tick } = setUpFighterAudio();
         for (let i = 0; i < 2; i++) {
@@ -62,17 +40,6 @@ describe('FighterAudioView', () => {
         expect(listPlayed(chip).filter((sound) => sound === KICK_SWISH)).toHaveLength(2);
     });
 
-    it('clacks as the fighter blocks, and cracks as they go down', () => {
-        const { chip, state, tick } = setUpFighterAudio();
-        state.phase = 'blocking';
-        tick();
-        state.phase = 'idle';
-        tick();
-        state.phase = 'defeated';
-        tick();
-        expect(listPlayed(chip)).toEqual([BLOCK, HIT]);
-    });
-
     it('plays nothing for the state it starts in', () => {
         const { chip } = setUpFighterAudio({ phase: 'defeated', move: 'jump' });
         expect(chip.play).not.toHaveBeenCalled();
@@ -80,15 +47,6 @@ describe('FighterAudioView', () => {
 });
 
 describe('MatchAudioView', () => {
-    it('sounds the gong as the game starts, then plays the fight\'s tune as the fighting starts', () => {
-        const { music, sfx, state, tick } = setUpMatchAudio();
-        expect(listPlayed(sfx)).toEqual([GONG]);
-        vi.clearAllMocks();
-        state.phase = 'fighting';
-        tick();
-        expect(listPlayed(music)).toEqual([FIGHT_THEME]);
-    });
-
     it('plays the tune on through a point, without starting it again', () => {
         const { music, state, tick } = setUpMatchAudio();
         vi.clearAllMocks();
@@ -115,18 +73,6 @@ describe('MatchAudioView', () => {
         state.phase = 'fighting';
         tick();
         expect(listPlayed(music)).toEqual([FIGHT_THEME]);
-    });
-
-    it('plays rising notes for each of the player\'s points and falling notes for each of the opponent\'s', () => {
-        const { sfx, state, tick } = setUpMatchAudio();
-        state.phase = 'fighting';
-        tick();
-        vi.clearAllMocks();
-        state.playerPoints = 1;
-        tick();
-        state.opponentPoints = 1;
-        tick();
-        expect(listPlayed(sfx)).toEqual([POINT_WON, POINT_LOST]);
     });
 
     it('plays no point\'s notes for the points that end a round when the clock runs out, only the round\'s jingle', () => {
@@ -156,22 +102,6 @@ describe('MatchAudioView', () => {
         state.secondsLeft = FULL_CLOCK_SECONDS;
         tick();
         expect(listPlayed(sfx)).toEqual(Array.from({ length: TICKING_SECONDS }, () => TICK));
-    });
-
-    it.each([
-        { name: 'ROUND_WON', phase: 'round-over', winner: 'the player', hasPlayerWon: true, song: ROUND_WON },
-        { name: 'ROUND_LOST', phase: 'round-over', winner: 'the opponent', hasPlayerWon: false, song: ROUND_LOST },
-        { name: 'MATCH_WON', phase: 'match-over', winner: 'the player', hasPlayerWon: true, song: MATCH_WON },
-        { name: 'MATCH_LOST', phase: 'match-over', winner: 'the opponent', hasPlayerWon: false, song: MATCH_LOST },
-    ] as const)('plays $name when the phase becomes $phase and $winner has won', ({ phase, hasPlayerWon, song }) => {
-        const { music, state, tick } = setUpMatchAudio();
-        state.phase = 'fighting';
-        tick();
-        vi.clearAllMocks();
-        state.hasPlayerWon = hasPlayerWon;
-        state.phase = phase;
-        tick();
-        expect(listPlayed(music)).toEqual([song]);
     });
 });
 

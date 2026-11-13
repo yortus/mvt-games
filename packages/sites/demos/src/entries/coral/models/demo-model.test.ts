@@ -3,26 +3,25 @@ import { COLS, ROWS } from '../data';
 import { createDemoModel, type DemoModel } from './demo-model';
 
 describe('the coral', () => {
-    it('grows out from its seeds', () => {
+    it('grows out from its seeds, keeping every amount in bounds', () => {
         const model = createDemoModel();
         const before = totalGrowth(model);
-        run(model, 1500);
+        run(model, 500);
         expect(totalGrowth(model)).toBeGreaterThan(before);
-    });
-
-    it('keeps every amount in bounds', () => {
-        const model = createDemoModel();
-        run(model, 1500);
+        let lowest = Infinity;
+        let highest = -Infinity;
         for (let i = 0; i < COLS * ROWS; i++) {
-            expect(model.growthAt(i)).toBeGreaterThanOrEqual(0);
-            expect(model.growthAt(i)).toBeLessThan(1);
+            lowest = Math.min(lowest, model.growthAt(i));
+            highest = Math.max(highest, model.growthAt(i));
         }
+        expect(lowest).toBeGreaterThanOrEqual(0);
+        expect(highest).toBeLessThan(1);
     });
 
     it('starts with coral, and moves on to the next pattern when asked, keeping its growth', () => {
         const model = createDemoModel();
         expect(model.pattern).toBe('coral');
-        run(model, 500);
+        run(model, 160);
         const before = totalGrowth(model);
         model.nextPattern();
         expect(model.pattern).toBe('spots');

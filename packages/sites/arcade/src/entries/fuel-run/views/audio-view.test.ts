@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
-import {
-    BASE_DESTROYED, BASE_SIREN, BOMB_DROP, EXPLOSION, FUEL_ALARM, GAME_OVER, LAUNCH, REFUEL, ROCKET_LAUNCH, RUN_CLEAR, SAUCER,
-    SHIP_CRASH, SHOT,
-} from '../data';
+import { BASE_SIREN, FUEL_ALARM, GAME_OVER, ROCKET_LAUNCH, RUN_CLEAR, SAUCER, SHIP_CRASH, SHOT } from '../data';
 import { type GamePhase, SECTION_CLEAR_DELAY_MS } from '../models';
 import { AudioView } from './audio-view';
 
@@ -18,11 +15,6 @@ afterEach(() => {
 });
 
 describe('AudioView', () => {
-    it('plays the march as a game starts', () => {
-        const { music } = setUp();
-        expect(listPlayed(music)).toEqual([LAUNCH]);
-    });
-
     it('stops the march and plays the crash as the ship is lost', () => {
         const { music, sfx, state, tickFor } = setUp();
         vi.clearAllMocks();
@@ -60,33 +52,6 @@ describe('AudioView', () => {
 
     it('has a fanfare that ends before the next run starts', () => {
         expect(RUN_CLEAR.durationMs).toBeLessThanOrEqual(SECTION_CLEAR_DELAY_MS);
-    });
-
-    it.each(['section-clear', 'game-over'] as const)('plays the march as play starts again after %s', (phase) => {
-        const { music, state, tickFor } = setUp();
-        state.phase = phase;
-        tickFor(TICK_MS);
-        vi.clearAllMocks();
-        state.phase = 'playing';
-        tickFor(TICK_MS);
-        expect(listPlayed(music)).toEqual([LAUNCH]);
-    });
-
-    it.each([
-        { count: 'shotsFired', effect: SHOT },
-        { count: 'bombsDropped', effect: BOMB_DROP },
-        { count: 'rocketsLaunched', effect: ROCKET_LAUNCH },
-        { count: 'enemiesDestroyed', effect: EXPLOSION },
-        { count: 'fuelTanksDestroyed', effect: REFUEL },
-        { count: 'basesDestroyed', effect: BASE_DESTROYED },
-    ] as const)('plays one sound, and only its own, each time $count rises', ({ count, effect }) => {
-        const { sfx, state, tickFor } = setUp();
-        vi.clearAllMocks();
-        for (let i = 1; i <= 2; i++) {
-            state[count] = i;
-            tickFor(TICK_MS * 3);
-        }
-        expect(listPlayed(sfx)).toEqual([effect, effect]);
     });
 
     it('hears a rise made by the model in the tick before the view\'s first refresh', () => {

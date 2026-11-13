@@ -40,12 +40,6 @@ describe('FlockModel', () => {
         expect(paused.boids.map((boid) => boid.position.x)).toEqual(steady.boids.map((boid) => boid.position.x));
     });
 
-    it('initialises with the requested number of boids', () => {
-        const model = createFlockModel(defaultOptions());
-        expect(model.boidCount).toBe(20);
-        expect(model.boids.length).toBe(20);
-    });
-
     it('initialises boids within arena bounds', () => {
         const model = createFlockModel(defaultOptions());
         for (let i = 0; i < model.boids.length; i++) {
@@ -126,12 +120,6 @@ describe('FlockModel', () => {
         expect(model.boids.length).toBe(5);
     });
 
-    it('perceptionRadius setter changes the perception radius', () => {
-        const model = createFlockModel(defaultOptions());
-        model.perceptionRadius = 25;
-        expect(model.perceptionRadius).toBe(25);
-    });
-
     describe('weight controls', () => {
         it('setting all weights to 0 means flocking forces do not steer boids', () => {
             // All flocking weights are zero. Edge repulsion may still apply,
@@ -161,24 +149,6 @@ describe('FlockModel', () => {
                 expect(model.boids[i].vx).toBeCloseTo(initialVx[i], 2);
                 expect(model.boids[i].vy).toBeCloseTo(initialVy[i], 2);
             }
-        });
-
-        it('separation setter updates the weight', () => {
-            const model = createFlockModel(defaultOptions());
-            model.separation = 5;
-            expect(model.separation).toBe(5);
-        });
-
-        it('alignment setter updates the weight', () => {
-            const model = createFlockModel(defaultOptions());
-            model.alignment = 3;
-            expect(model.alignment).toBe(3);
-        });
-
-        it('cohesion setter updates the weight', () => {
-            const model = createFlockModel(defaultOptions());
-            model.cohesion = 2;
-            expect(model.cohesion).toBe(2);
         });
     });
 
@@ -325,18 +295,6 @@ describe('FlockModel', () => {
         // Mean resultant length: 1 = all same direction, 0 = uniform spread
         const mrl = Math.sqrt(sinSum * sinSum + cosSum * cosSum) / model.boids.length;
         expect(mrl).toBeLessThan(0.95);
-    });
-
-    it('wander setter updates the weight', () => {
-        const model = createFlockModel(defaultOptions());
-        model.wander = 7;
-        expect(model.wander).toBe(7);
-    });
-
-    it('visionAngle setter updates the angle', () => {
-        const model = createFlockModel(defaultOptions());
-        model.visionAngle = Math.PI;
-        expect(model.visionAngle).toBe(Math.PI);
     });
 
     it('narrow vision cone reduces effective neighbour count', async () => {

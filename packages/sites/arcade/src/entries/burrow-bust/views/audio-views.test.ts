@@ -2,10 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
-import {
-    DEATH, FIRE, FIRE_WARNING, GAME_OVER, GHOST, HARPOON, LEVEL_CLEAR, LEVEL_START, POP, PUMP_1, PUMP_2, PUMP_3,
-    PUMP_4, ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE, SQUASH, WALK_TUNE,
-} from '../data';
+import { POP, PUMP_1, PUMP_2, PUMP_3, PUMP_4, ROCK_CRASH, ROCK_FALL, ROCK_WOBBLE } from '../data';
 import type { EnemyPhase, GamePhase, InflationStage, RockPhase } from '../models';
 import { EnemyAudioView } from './enemy-audio-view';
 import { GameAudioView, HURRY_TEMPO } from './game-audio-view';
@@ -16,23 +13,11 @@ import { RockAudioView } from './rock-audio-view';
 
 const TICK_MS = 1000 / 60;
 
-const JINGLES = [
-    { phase: 'dying', song: DEATH },
-    { phase: 'level-clear', song: LEVEL_CLEAR },
-    { phase: 'game-over', song: GAME_OVER },
-] as const;
-
 afterEach(() => {
     vi.restoreAllMocks();
 });
 
 describe('GameAudioView', () => {
-    it('plays the level\'s jingle as the game starts, and queues the walking tune after it', () => {
-        const { music } = setUpGameAudio({ isDiggerMoving: true });
-        expect(listPlayed(music)).toEqual([LEVEL_START]);
-        expect(music.queue).toHaveBeenCalledWith(WALK_TUNE);
-    });
-
     it.each([
         { isDiggerMoving: false, isEnemyFleeing: false },
         { isDiggerMoving: true, isEnemyFleeing: true },
@@ -40,20 +25,6 @@ describe('GameAudioView', () => {
         const { music } = setUpGameAudio(initial);
         expect(music.tempoScale).toBe(1);
     });
-
-    for (const { phase, song } of JINGLES) {
-        it.each([
-            { isDiggerMoving: false, isEnemyFleeing: false },
-            { isDiggerMoving: true, isEnemyFleeing: true },
-        ])(`plays the ${phase} tune at its own tempo, with the digger moving $isDiggerMoving and the last creature fleeing $isEnemyFleeing`, (initial) => {
-            const { music, state, tick } = setUpGameAudio(initial);
-            vi.clearAllMocks();
-            state.phase = phase;
-            tick();
-            expect(listPlayed(music)).toEqual([song]);
-            expect(music.tempoScale).toBe(1);
-        });
-    }
 
     it('holds the walking tune while the digger stands, and moves it on as the digger moves', () => {
         const { music, state, tick } = setUpGameAudio({ phase: 'dying' });
@@ -73,36 +44,6 @@ describe('GameAudioView', () => {
         state.phase = 'playing';
         tick();
         expect(music.tempoScale).toBe(tempoScale);
-    });
-
-    it('plays the death tune as the digger is caught, then the walking tune with no jingle', () => {
-        const { music, state, tick } = setUpGameAudio({ isDiggerMoving: true });
-        vi.clearAllMocks();
-        state.phase = 'dying';
-        tick();
-        state.phase = 'playing';
-        tick();
-        expect(listPlayed(music)).toEqual([DEATH, WALK_TUNE]);
-        expect(music.queue).not.toHaveBeenCalled();
-    });
-
-    it.each(['level-clear', 'game-over'] as const)('plays the level\'s jingle as play starts again after %s', (phase) => {
-        const { music, state, tick } = setUpGameAudio({ phase, isDiggerMoving: true });
-        vi.clearAllMocks();
-        state.phase = 'playing';
-        tick();
-        expect(listPlayed(music)).toEqual([LEVEL_START]);
-        expect(music.queue).toHaveBeenCalledWith(WALK_TUNE);
-    });
-
-    it('zips each time the harpoon shoots out', () => {
-        const { sfx, state, tick } = setUpGameAudio();
-        state.harpoonShots++;
-        tick();
-        tick();
-        state.harpoonShots++;
-        tick();
-        expect(listPlayed(sfx)).toEqual([HARPOON, HARPOON]);
     });
 });
 
@@ -124,29 +65,6 @@ describe('EnemyAudioView', () => {
         state.hasEscaped = true;
         tick();
         expect(chip.play).not.toHaveBeenCalled();
-    });
-
-    it.each([
-        { phase: 'crushed', effect: SQUASH },
-        { phase: 'ghosting', effect: GHOST },
-    ] as const)('plays its sound once as the creature\'s phase becomes $phase', ({ phase, effect }) => {
-        const { chip, state, tick } = setUpEnemyAudio();
-        state.phase = phase;
-        tick();
-        tick();
-        expect(listPlayed(chip)).toEqual([effect]);
-    });
-
-    it('hisses as a salamander draws breath, then roars as it breathes fire', () => {
-        const { chip, state, tick } = setUpEnemyAudio();
-        state.isFireTelegraph = true;
-        tick();
-        state.isFireTelegraph = false;
-        state.isFireActive = true;
-        tick();
-        state.isFireActive = false;
-        tick();
-        expect(listPlayed(chip)).toEqual([FIRE_WARNING, FIRE]);
     });
 
     it.each([

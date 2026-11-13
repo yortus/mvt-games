@@ -47,14 +47,13 @@ describe('the digger model', () => {
         expect(phases.slice(digging - 2)).toEqual(['seeding', 'filling', 'digging', 'shuffling', 'grading', 'finished', 'trying']);
     });
 
+    // One puzzle: digger-model.slow.test.ts grades five
     it('grades a finished puzzle by the hardest technique it needed, or Hardest if it needed guesswork', () => {
-        for (let seed = 41; seed < 46; seed++) {
-            const model = createDiggerModel({ seed, level: 'hardest' });
-            runUntilFinished(model, 1000);
-            const technique = model.grading.hardestTechnique;
-            const expected: Level = model.grading.needsGuessing ? 'hardest' : technique === undefined ? 'easiest' : TECHNIQUE_LEVEL[technique];
-            expect(model.grade).toBe(expected);
-        }
+        const model = createDiggerModel({ seed: 41, level: 'hardest' });
+        runUntilFinished(model, 1000);
+        const technique = model.grading.hardestTechnique;
+        const expected: Level = model.grading.needsGuessing ? 'hardest' : technique === undefined ? 'easiest' : TECHNIQUE_LEVEL[technique];
+        expect(model.grade).toBe(expected);
     });
 
     it('marks each cell it digs, and counts the givens it leaves', () => {

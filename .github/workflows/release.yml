@@ -36,6 +36,9 @@ jobs:
             - run: npm ci
             - run: npm run lint
             - run: npm run test:unit
+            # The book's examples, exported projects and the playground's editor,
+            # against the libraries about to be published
+            - run: npm run test:slow
             # v-snap's own unit tests. Its visual tests run in visual.yml.
             - run: npm run test:unit -w v-snap
             # audio90's own tests, which the root's leave out

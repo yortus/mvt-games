@@ -30,6 +30,7 @@
         "bench": "tsx packages/internal/benchmarks/run.ts",
         "test": "vitest run",
         "test:unit": "vitest run -p unit",
+        "test:slow": "vitest run -p slow",
         "test:watch": "vitest",
         "test:ui": "vitest --ui",
         "test:visual": "vitest run visual-tests/",

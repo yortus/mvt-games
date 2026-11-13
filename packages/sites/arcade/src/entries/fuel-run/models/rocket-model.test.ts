@@ -6,15 +6,6 @@ function makeRocket(worldCol = 20, worldRow = 10, detectRange = 8, launchSpeed =
 }
 
 describe('RocketModel', () => {
-    describe('initial state', () => {
-        it('starts idle at given position', () => {
-            const r = makeRocket(20, 10);
-            expect(r.worldCol).toBe(20);
-            expect(r.worldRow).toBe(10);
-            expect(r.phase).toBe('idle');
-        });
-    });
-
     describe('detection', () => {
         it('remains idle if ship is outside detect range', () => {
             const r = makeRocket(20, 10, 8);

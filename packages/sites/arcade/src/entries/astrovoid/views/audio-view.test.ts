@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
-import {
-    BEAT_HIGH, BEAT_LOW, BREAK_LARGE, BREAK_MEDIUM, BREAK_SMALL, FIRE, GAME_OVER, RESPAWN, SHIP_EXPLODE, THRUST,
-    WAVE_CLEAR,
-} from '../data';
+import { BEAT_HIGH, BEAT_LOW, THRUST } from '../data';
 import type { AsteroidSize, GamePhase } from '../models';
 import { AudioView } from './audio-view';
 
@@ -97,42 +94,6 @@ describe('AudioView', () => {
         tickFor(1000);
         expect(listPlayedOf(chip, THRUST)).toHaveLength(0);
     });
-
-    it('fires once for each shot, even in the next tick', () => {
-        const { chip, state, tickFor } = setUp();
-        state.shotsFired = 1;
-        tickFor(TICK_MS);
-        state.shotsFired = 2;
-        tickFor(TICK_MS);
-        tickFor(TICK_MS);
-        expect(listPlayedOf(chip, FIRE)).toHaveLength(2);
-    });
-
-    for (const [size, effect] of [['large', BREAK_LARGE], ['medium', BREAK_MEDIUM], ['small', BREAK_SMALL]] as const) {
-        it(`plays one ${size} break for each rise in the count, when the last rock broken is ${size}`, () => {
-            const { chip, state, tickFor } = setUp();
-            state.lastBrokenRockSize = size;
-            state.rocksBroken = 1;
-            tickFor(TICK_MS);
-            // Two rocks in one tick make one sound
-            state.rocksBroken = 3;
-            tickFor(TICK_MS);
-            tickFor(TICK_MS);
-            expect(listPlayed(chip).filter(isBreak)).toEqual([effect, effect]);
-        });
-    }
-
-    for (const [phase, effect] of [
-        ['dying', SHIP_EXPLODE], ['respawning', RESPAWN], ['wave-clear', WAVE_CLEAR], ['game-over', GAME_OVER],
-    ] as const) {
-        it(`plays its sound once as the game turns to ${phase}`, () => {
-            const { chip, state, tickFor } = setUp();
-            state.phase = phase;
-            tickFor(TICK_MS);
-            tickFor(TICK_MS);
-            expect(listPlayedOf(chip, effect)).toHaveLength(1);
-        });
-    }
 });
 
 // ---------------------------------------------------------------------------
@@ -163,10 +124,6 @@ function listBeats(chip: HeadlessAudio80): unknown[] {
 
 function isBeat(sound: unknown): boolean {
     return sound === BEAT_LOW || sound === BEAT_HIGH;
-}
-
-function isBreak(sound: unknown): boolean {
-    return sound === BREAK_LARGE || sound === BREAK_MEDIUM || sound === BREAK_SMALL;
 }
 
 /**

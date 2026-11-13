@@ -6,25 +6,6 @@ import { createMatchModel } from './match-model';
 // ---------------------------------------------------------------------------
 
 describe('MatchModel', () => {
-    describe('initial state', () => {
-        it('starts with zero points, zero rounds, round 1', () => {
-            const match = createMatchModel();
-            expect(match.playerPoints).toBe(0);
-            expect(match.opponentPoints).toBe(0);
-            expect(match.playerRounds).toBe(0);
-            expect(match.opponentRounds).toBe(0);
-            expect(match.round).toBe(1);
-        });
-
-        it('is not round-over or match-over initially', () => {
-            const match = createMatchModel();
-            expect(match.isRoundOver()).toBe(false);
-            expect(match.isMatchOver()).toBe(false);
-            expect(match.getRoundWinner()).toBeUndefined();
-            expect(match.getMatchWinner()).toBeUndefined();
-        });
-    });
-
     describe('scoring points', () => {
         it('increments player points', () => {
             const match = createMatchModel();

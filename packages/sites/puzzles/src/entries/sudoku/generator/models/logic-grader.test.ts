@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createDiggerModel } from './digger-model';
 import { createLogicGrader, type LogicGrader, TECHNIQUES } from './logic-grader';
 import {
-    countSolutions, findAllowedDigits, findSolution, FULL_GRID, isValidGrid, SINGLES_PUZZLE,
+    checkGraderSteps, findAllowedDigits, FULL_GRID, isValidGrid, makePuzzle, SINGLES_PUZZLE,
 } from './test-grids.test-support';
 
 describe('the logic grader', () => {
@@ -46,25 +45,12 @@ describe('the logic grader', () => {
         expect(grader.lastTechnique).toBeUndefined();
     });
 
-    it('never places a wrong digit, nor rubs out a right one, in puzzles of every level', () => {
-        const usedTechniques = new Set<string>();
-        for (let seed = 1; seed <= 12; seed++) {
-            const puzzle = makePuzzle(seed, seed % 2 === 0 ? 'hardest' : 'hard');
-            expect(countSolutions(puzzle)).toBe(1);
-            const solution = findSolution(puzzle) ?? puzzle;
-            const grader = createLogicGrader();
-            grader.start(puzzle);
-            while (grader.status === 'solving') {
-                grader.step();
-                if (grader.lastTechnique !== undefined) usedTechniques.add(grader.lastTechnique);
-                for (let cell = 0; cell < 81; cell++) {
-                    if (grader.digits[cell] !== 0) expect(grader.digits[cell]).toBe(solution[cell]);
-                    else expect(grader.candidates[cell] & (1 << solution[cell])).not.toBe(0);
-                }
-            }
-        }
-        // Enough puzzles to see more than singles, so the other techniques are checked too
-        expect(usedTechniques.size).toBeGreaterThan(2);
+    // A sample: logic-grader.slow.test.ts checks 12 puzzles, enough to see
+    // more than singles.
+    it('never places a wrong digit, nor rubs out a right one, in a hard puzzle and a hardest one', () => {
+        const { ambiguous, mistakes } = checkGraderSteps([1, 2]);
+        expect(ambiguous).toEqual([]);
+        expect(mistakes).toEqual([]);
     });
 
     it('keeps its hardest technique as the hardest of its steps, in the order of TECHNIQUES', () => {
@@ -89,15 +75,4 @@ function countEmpty(grid: Readonly<Uint8Array>): number {
         if (grid[cell] === 0) count++;
     }
     return count;
-}
-
-/** A puzzle made by the digger model, for `level`, from `seed`. */
-function makePuzzle(seed: number, level: 'hard' | 'hardest'): Uint8Array {
-    const model = createDiggerModel({ seed, level });
-    model.choosePlayback('fast');
-    while (model.phase !== 'grading') model.update(1000);
-    // The grader's first step is the pencil marks, with only the givens shown
-    const puzzle = new Uint8Array(81);
-    for (let cell = 0; cell < 81; cell++) puzzle[cell] = model.cellKindAt(cell) === 'given' ? model.digitAt(cell) : 0;
-    return puzzle;
 }

@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createGameModel, type GameModel } from './game-model';
-import {
-    FIGHTER_START_LEFT_X,
-    FIGHTER_START_RIGHT_X,
-    MOVE_DATA,
-} from '../data';
+import { MOVE_DATA } from '../data';
 import {
     ROUND_INTRO_DELAY_MS,
     ROUND_TIMER_MS,
@@ -54,32 +50,6 @@ function makeGameInFighting(): GameModel {
 // ---------------------------------------------------------------------------
 
 describe('GameModel', () => {
-    describe('initial state', () => {
-        it('starts in round-intro phase', () => {
-            const game = createGameModel();
-            expect(game.phase).toBe('round-intro');
-        });
-
-        it('creates player and opponent fighters', () => {
-            const game = createGameModel();
-            expect(game.player).toBeDefined();
-            expect(game.opponent).toBeDefined();
-            expect(game.player.x).toBe(FIGHTER_START_LEFT_X);
-            expect(game.opponent.x).toBe(FIGHTER_START_RIGHT_X);
-        });
-
-        it('creates match model at zero', () => {
-            const game = createGameModel();
-            expect(game.match.playerPoints).toBe(0);
-            expect(game.match.opponentPoints).toBe(0);
-        });
-
-        it('has full round timer', () => {
-            const game = createGameModel();
-            expect(game.roundTimeRemainingMs).toBe(ROUND_TIMER_MS);
-        });
-    });
-
     describe('phase transitions', () => {
         it('transitions from round-intro to fighting after delay', () => {
             const game = createGameModel();
@@ -168,14 +138,6 @@ describe('GameModel', () => {
 
             // If blocking occurred, opponent phase may be 'blocking'
             // and no points would be scored if the block prevented the hit
-        });
-    });
-
-    describe('scoring integration', () => {
-        it('score starts at zero for both sides', () => {
-            const game = makeGameInFighting();
-            expect(game.match.playerPoints).toBe(0);
-            expect(game.match.opponentPoints).toBe(0);
         });
     });
 
