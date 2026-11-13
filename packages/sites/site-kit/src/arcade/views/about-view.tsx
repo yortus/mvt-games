@@ -1,5 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 
+import { listenToPressOutside } from './listen-to-press-outside';
+
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
@@ -32,7 +34,11 @@ export interface AboutViewBindings {
 export function AboutView(bindings: AboutViewBindings): Element {
     let root: HTMLElement | undefined;
     window.addEventListener('keydown', onPageKeyDown);
-    window.addEventListener('pointerdown', onPagePointerDown);
+    const stopPressOutside = listenToPressOutside({
+        isOpen: bindings.isOpen,
+        isInside: (target) => root?.contains(target) === true,
+        onPressedOutside: () => bindings.onDismissed?.(),
+    });
 
     return (
         <div class="about" ref={(e) => { root = e; }} onDestroyed={stopListening}>
@@ -79,13 +85,9 @@ export function AboutView(bindings: AboutViewBindings): Element {
         e.preventDefault();
     }
 
-    function onPagePointerDown(e: PointerEvent): void {
-        if (bindings.isOpen() && root !== undefined && !(e.target instanceof Node && root.contains(e.target))) bindings.onDismissed?.();
-    }
-
     function stopListening(): void {
         window.removeEventListener('keydown', onPageKeyDown);
-        window.removeEventListener('pointerdown', onPagePointerDown);
+        stopPressOutside();
     }
 }
 

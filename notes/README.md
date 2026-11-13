@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**097** (085 and 096 are taken, by work in worktrees).
+**099** (085 and 096 are taken, by work in worktrees).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -105,7 +105,6 @@ Acceptance Criteria checklist and a dated Progress Log. See
 | 077 | [Audio90 Studio](./proposals/077-audio90-studio.md) | Proposed. An editor for `audio90`'s sounds and songs, built with MVT, as a private site at `/studio/` beside the playground, depending on `audio90` by its npm name. Four stages, each worth shipping: a sound designer for either chip (presets, sliders, randomise, mutate, export as code), an engine editor for the Audio90's engines with a scope and the keyboard as a piano, a tracker made from the Tune Tracker's views, and sharing (a song in a link, Open in Playground, WAV). Grown from 074 section 8 |
 | 080 | [The Audio80's voices inside the Audio90](./proposals/080-audio80-voices-in-the-audio90.md) | Proposed. One chip kind: the Audio90's voices 0-3 become the Audio80, run unchanged with its own output stage so its sounds stay byte-identical, and voices 4-15 stay Audio90 voices (4 + 12, since no song uses more than 10). Two stages first, each worth doing on its own: chips that rest while silent, and one meaning for each tracker token (`f` keeps brightness). Then songs of one kind, the Arcade's nine Audio80 entries moved, and the `Audio80` chip deprecated; mixed songs later |
 | 083 | [Tock, MVT for web apps](./proposals/083-tock-mvt-for-web-apps.md) | Proposed. A rival to React and Vue built on MVT: the same models, views and bindings, with an app ticker that ticks on demand (input, async results, models' deadlines, while animating) so an idle page costs nothing. Keyed lists with cleanup scopes, form bindings, async delivery, a router model, recording and replay; `@mvtjs/widgets` (a model and an accessible view per widget); a Tock site and a docs track; js-framework-benchmark plus our own suites against React, Vue, Solid and Svelte. Stage 0 is a spike with go or no-go hypotheses |
-| 095 | [Input across the sites](./proposals/095-input-across-the-sites.md) | Proposed, from a survey of every entry. Extends 094's layers (follow a device, recognise a gesture, say what it means) to all input: the arcade controls keep their d-pad and buttons, with their keys in a table read by `listenToKeys` (fixing five keyboard bugs), and each game wires them in its top-level view beside its gestures. One shared helper per gesture kind (press, press and hold, single-pointer drag in Pixi and the DOM, pan and zoom), and the site kit's input in one folder, with Pixi at `input/pixi` |
 
 **How they relate.** All of them can be read on their own. 022 is the
 design 011 section 5.5 deferred until a second renderer, and would land
@@ -181,6 +180,8 @@ deleted.
 | 086 | [The Three Sites and Their Themes: Follow-Ons](tasks/backlog/086-site-and-theme-follow-ons.md) | low | 2026-11-01 |
 | 090 | [The Book: Follow-Ons](tasks/backlog/090-book-follow-ons.md) | low | 2026-11-01 |
 | 093 | [Enforce the Tick Rules](tasks/backlog/093-enforce-the-tick-rules.md) | low | 2026-11-07 |
+| 097 | [`@mvtjs/three`'s Pointer Picker: a Cancel, and One Pointer](tasks/backlog/097-three-pointer-picker-cancel-and-pointer-id.md) | low | 2026-11-13 |
+| 098 | [Input Follow-Ons](tasks/backlog/098-input-follow-ons.md) | medium | 2026-11-13 |
 
 ## Archive
 
@@ -240,6 +241,7 @@ deleted.
 | 089 | [Proposal: API cheat sheets](archive/089-api-cheat-sheets.md) (short guides to the APIs a project can use, arranged by task, chosen and written by hand, with signatures and summaries generated from the libraries' declarations, and a test that fails on a stale name or an export on no sheet; shown over the run in the playground, as a drawer in the book's embeds that opens on what the example imports, and as the book's Appendix G, its groups numbered and found by the docs' search. Its follow-ups are in task 017) | 2026-11-01 |
 | 092 | [Decision: update and refresh, or update alone?](archive/092-update-and-refresh-or-update-alone/decision.md) (decided: keep both, by a thin margin. A spike ran `refresh` as the last step of `update` across the whole test suite and nothing real broke. The rules that matter most apply in either design, and update-only's mistakes are quiet where today's are loud. Records the rules it led to, `update(0)`, relays outside the frame, the gotchas, Unity's `LateUpdate`, update-only as a house style, a second evaluation, and what would reopen it, with the spike's patch and scripts. The book's version is in Chapter 34, with Unity's `LateUpdate` in Appendix H. Enforcement is in task 093, and naming in 072) | 2026-11-07 |
 | 094 | [Proposal: drags on a grid, handled one way](archive/094-drags-on-a-grid.md) (three layers: `listenToPointer` follows one pointer over a Pixi container, `createGridGesturesViewModel` turns its path in cells into taps and steps between neighbouring cells or corners, and each entry says what a step means, with game rules wired in its top-level view. Minotaur, Sudoku and Kwazy Cactii use it, and the site kit's drag and swipe views; playtested on a phone) | 2026-11-07 |
+| 095 | [Proposal: input across the sites](archive/095-input-across-the-sites.md) (094's layers extended to all input: the arcade controls read a table of keys through `listenToKeys`, fixing five keyboard bugs, and each game wires them in its top-level view, with `arcadeControls` on its starter in place of `inputConfig`. How to play names the controls. Buttons fire on a tap. Shared helpers: `listenToPress`, `listenToPointer` everywhere it fits, `createPressGesturesViewModel`, `listenToPanZoom`, `listenToElementPointer` and `listenToPressOutside`. Loose ends in 098, the three.js picker in 097) | 2026-11-13 |
 
 ## Elsewhere
 

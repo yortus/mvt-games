@@ -455,7 +455,7 @@ handle them, so every board follows a finger the same way:
 - `listenToPointer`, from `@mvtjs/site-kit/input/pixi`, follows one finger or
   the mouse over your board's container, from a press until it lets go, and
   gives you its positions in the container's pixels. A second finger can't
-  take a drag over, and a drag the browser cancels ends.
+  take a drag over.
 - `createGridGesturesViewModel`, from `@mvtjs/site-kit/input`, takes those
   positions in cells, and reports taps and steps from cell to cell (or
   corner to corner, for lines drawn between cells). A fast drag steps
@@ -474,6 +474,24 @@ that sinks or dips while it is held uses `listenToPress`, from
 `@mvtjs/site-kit/input/pixi`, instead. It fires on a tap too, and returns
 `isHeld`, which your view's refresh reads to show the hold. A control that
 is held, such as the d-pad, reports as it goes down instead.
+
+A few more shared pieces cover other gestures:
+
+- `createPressGesturesViewModel`, from `@mvtjs/site-kit/input`, tells a tap
+  on a key from a hold, as Sudoku's keypad does. Your view passes it each
+  pointer's events, and moves it on in its update step, so the hold is
+  timed in game time.
+- `listenToElementPointer`, from `@mvtjs/site-kit/input`, follows one finger
+  or the mouse over a DOM element, as `listenToPointer` does over a Pixi
+  container. It's for an entry drawn in the DOM, or on a canvas of its own,
+  as the Fruit Machine's cabinet is.
+- `listenToPanZoom`, from `@mvtjs/site-kit/input`, turns drags, pinches,
+  twists, the wheel and double taps over an element into pans and zooms,
+  as Penrose Tiling and Fractalscope do.
+
+The two DOM pieces return a function that stops them. Call it as your view
+is destroyed. The Pixi pieces need no stopping, since a container's
+listeners go when it is destroyed.
 
 Swipes and drags listen over the game's own view, so an entry that uses them
 shows no d-pad, which is the default. The host's buttons still work beside

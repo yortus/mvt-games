@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 import { THEME_CHOICES, type ThemeChoice, type ThemeKind } from '../models';
 import { THEMES } from './themes';
+import { listenToPressOutside } from './listen-to-press-outside';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -33,7 +34,11 @@ export function NavThemeView(bindings: NavThemeViewBindings): Element {
     // Presentation state: whether the menu is open
     let isOpen = false;
     window.addEventListener('keydown', onPageKeyDown);
-    window.addEventListener('pointerdown', onPagePointerDown);
+    const stopPressOutside = listenToPressOutside({
+        isOpen: () => isOpen,
+        isInside: (target) => root?.contains(target) === true,
+        onPressedOutside: () => { isOpen = false; },
+    });
 
     return (
         <div class="nav-theme" ref={(e) => { root = e; }} onDestroyed={stopListening}>
@@ -85,12 +90,8 @@ export function NavThemeView(bindings: NavThemeViewBindings): Element {
         e.preventDefault();
     }
 
-    function onPagePointerDown(e: PointerEvent): void {
-        if (isOpen && root !== undefined && !(e.target instanceof Node && root.contains(e.target))) isOpen = false;
-    }
-
     function stopListening(): void {
         window.removeEventListener('keydown', onPageKeyDown);
-        window.removeEventListener('pointerdown', onPagePointerDown);
+        stopPressOutside();
     }
 }

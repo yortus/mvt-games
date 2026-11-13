@@ -17,11 +17,11 @@
 | [`src/entry-types/`](./src/entry-types/) | What an entry is, and how it starts | `@mvtjs/site-kit/entry-types` |
 | [`src/runner/`](./src/runner/) | The entry host, which runs one entry of any renderer, and the page's sound | `@mvtjs/site-kit/runner` |
 | [`src/shared/`](./src/shared/) | The Pixi views entries share: the overlay and pixel text | `@mvtjs/site-kit/shared` |
-| [`src/input/pixi/`](./src/input/pixi/) | Input on a Pixi stage: `listenToPointer`, and the touch, swipe and drag views | `@mvtjs/site-kit/input/pixi` |
+| [`src/input/pixi/`](./src/input/pixi/) | Input on a Pixi stage: `listenToPointer`, `listenToPress`, and the touch, swipe and drag views | `@mvtjs/site-kit/input/pixi` |
 | [`src/sound/`](./src/sound/) | The chip types views play on, `MusicChip` and `SfxChip` | `@mvtjs/site-kit/sound` |
 | [`src/pixel-glyphs/`](./src/pixel-glyphs/) | Every printable character as rows of cells, which entries draw their own way | `@mvtjs/site-kit/pixel-glyphs` |
 | [`src/highscores/`](./src/highscores/) | The highscore tables' rules, and the page's stores | `@mvtjs/site-kit/highscores` |
-| [`src/storage/`](./src/storage/), [`src/device/`](./src/device/), [`src/input/`](./src/input/) | What the page keeps between visits, what the device supports, and input with no renderer: the arcade controls, the keyboard, and taps and drags over a grid | `@mvtjs/site-kit/storage` and so on |
+| [`src/storage/`](./src/storage/), [`src/device/`](./src/device/), [`src/input/`](./src/input/) | What the page keeps between visits, what the device supports, and input with no renderer: the arcade controls, the keyboard, taps and drags over a grid, taps and holds on keys, pans and zooms, and a pointer followed over a DOM element | `@mvtjs/site-kit/storage` and so on |
 | [`src/snapshot/`](./src/snapshot/) | The page `generate-thumbnails` photographs each entry on | `@mvtjs/site-kit/snapshot` |
 | [`src/testing/`](./src/testing/) | `describeCatalogue`: the checks every site's catalogue passes | `@mvtjs/site-kit/testing` |
 | [`scripts/`](./scripts/) | `defineSiteConfig`, which each site's `vite.config.ts` exports, its plugins, the one dev server, and the thumbnail, texture and pixel-font scripts | `@mvtjs/site-kit/vite` |

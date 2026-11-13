@@ -1,5 +1,6 @@
 /** @jsxImportSource @mvtjs/html */
 import { PauseMenuView } from './pause-menu-view';
+import { listenToPressOutside } from './listen-to-press-outside';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -143,7 +144,13 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
     let moreButton: HTMLElement | undefined;
     const toolButtons: HTMLElement[] = [];
     const observer = new ResizeObserver(fitTools);
-    window.addEventListener('pointerdown', onPagePointerDown, { capture: true });
+    // Heard before anything on the page, even a game that stops the press going further
+    const stopPressOutside = listenToPressOutside({
+        isOpen: () => isMenuOpen,
+        isInside: (target) => moreButton?.contains(target) === true || moreButton?.nextElementSibling?.contains(target) === true,
+        onPressedOutside: () => { isMenuOpen = false; },
+        isCapturing: true,
+    });
     window.addEventListener('keydown', onPageKeyDown, { capture: true });
 
     return (
@@ -281,12 +288,6 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
     }
 
     /** A press anywhere but on the menu, or on its button, closes the menu. */
-    function onPagePointerDown(e: PointerEvent): void {
-        if (!isMenuOpen || !(e.target instanceof Node)) return;
-        if (moreButton?.contains(e.target) === true || moreButton?.nextElementSibling?.contains(e.target) === true) return;
-        isMenuOpen = false;
-    }
-
     /** Escape closes the menu, and does nothing else: it reaches nothing that would pause or leave the entry. */
     function onPageKeyDown(e: KeyboardEvent): void {
         if (!isMenuOpen || e.key !== 'Escape') return;
@@ -297,7 +298,7 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
 
     function stopListening(): void {
         observer.disconnect();
-        window.removeEventListener('pointerdown', onPagePointerDown, { capture: true });
+        stopPressOutside();
         window.removeEventListener('keydown', onPageKeyDown, { capture: true });
     }
 

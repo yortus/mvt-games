@@ -10,8 +10,13 @@
 > shared helper. And the site kit's input moves into one folder, with
 > renderer-specific pieces in a subpath named for the renderer.
 
-**Status:** being implemented, a step at a time (section 11). Step 1, the
-site kit's layout, is done. Step 2, the arcade controls on `listenToKeys`,
+**Status:** finished, 2026-11-13. Every step in section 11 is done. What
+it left open is in task
+[098](../tasks/backlog/098-input-follow-ons.md): Pixi 8's missing
+`pointercancel`, the playtests, and the open questions in section 10. The
+three.js picker is task
+[097](../tasks/backlog/097-three-pointer-picker-cancel-and-pointer-id.md).
+How each step went follows. Step 1, the site kit's layout, is done. Step 2, the arcade controls on `listenToKeys`,
 is done, and found one more bug: `listenToKeys` released a hold as soon as
 one of its keys came up, though another of its keys was still down (←
 and A, in Penrose Tiling and Fractalscope, and the arcade's keys). It now
@@ -64,6 +69,12 @@ options, and one set of tests. `listenToElementPointer`, in `input/`,
 follows one pointer over a DOM element, with pointer capture. The Fruit
 Machine's cabinet uses it, which fixes its second finger, and so does the
 Perfmon's panel.
+Step 9 is done, as task 097. Section 6.6's other item is done too. The
+page's three views that close on a press outside (the runner's menu, About
+and the theme menu) share `listenToPressOutside`, in `arcade/views/`.
+Step 10 is done. Adding an Entry describes the arcade controls, buttons,
+and the shared gesture helpers. AGENTS.md, Project Structure and the site
+kit's README list the helpers. No cheat sheet names a moved export.
 
 **Written:** 2026-11-07, against `main` at `dd3c1794` plus 094's changes,
 from a survey of every entry and the site kit. Line numbers are from that
@@ -693,6 +704,9 @@ Do not reopen without new information.
 
 ## 10. Open questions
 
+*Since finished:* the questions still open are in task 098. The overlay's
+question is settled: Restart fires on a tap, as every button does (step 5).
+
 - **Pixi 8 never reports a cancelled pointer.** Its event system listens
   for no DOM `pointercancel` (Pixi 8.21, `EventSystem.mjs`). After a
   cancel, the browser sends no `pointerup` either. So a helper that follows
@@ -737,24 +751,24 @@ Do not reopen without new information.
 Each step ships on its own, with its tests, and is playtested where it
 changes what a player feels.
 
-1. Site kit layout (section 7): `input/pixi/`, `sound/`, `isTouchDevice`
-   from `device/`. Moves and imports only, no change in behaviour.
-2. The arcade controls on `listenToKeys` (4.2): `ARCADE_CONTROL_KEYS`,
+1. ~~Site kit layout (section 7): `input/pixi/`, `sound/`, `isTouchDevice`
+   from `device/`. Moves and imports only, no change in behaviour.~~ Done.
+2. ~~The arcade controls on `listenToKeys` (4.2): `ARCADE_CONTROL_KEYS`,
    `createArcadeControls`, one listener per session, nothing reported as the
    host pauses. `listenToKeys`' stop releases from a microtask (bug 12).
    Remove `listenToKeyboard` and `KeyboardInputView`. Tests for bugs 1, 2,
    3, 5 and 12, and that starting, pausing and stopping a session report
-   nothing until a microtask has run.
-3. `ArcadeControlsInputView` and the games' wiring moved into their game views
+   nothing until a microtask has run.~~ Done.
+3. ~~`ArcadeControlsInputView` and the games' wiring moved into their game views
    (4.3), a game at a time, starting with Galaxy Raiders (the smallest).
-   Tests that making and destroying it report nothing.
-4. How to play names controls, and restart text from the table (4.4).
-5. Every button fires on a tap, and `listenToPress` for those that show their hold (6.2).
-6. `listenToPointer` everywhere it fits (6.1), and `TouchInputView`'s fixes,
-   including a finger on the touch controls as they hide for a pause (4.2).
-7. The press-and-hold view model (6.3).
-8. `listenToPanZoom` (6.4) and `listenToElementPointer` (6.5).
-9. A task for `@mvtjs/three`'s picker (6.6).
-10. Docs: Adding an Entry (input), AGENTS.md's site kit folders, Project
+   Tests that making and destroying it report nothing.~~ Done.
+4. ~~How to play names controls, and restart text from the table (4.4).~~ Done.
+5. ~~Every button fires on a tap, and `listenToPress` for those that show their hold (6.2).~~ Done.
+6. ~~`listenToPointer` everywhere it fits (6.1), and `TouchInputView`'s fixes,
+   including a finger on the touch controls as they hide for a pause (4.2).~~ Done.
+7. ~~The press-and-hold view model (6.3).~~ Done.
+8. ~~`listenToPanZoom` (6.4) and `listenToElementPointer` (6.5).~~ Done.
+9. ~~A task for `@mvtjs/three`'s picker (6.6).~~ Done, as task 097.
+10. ~~Docs: Adding an Entry (input), AGENTS.md's site kit folders, Project
     Structure, the site kit's README, and the cheat sheets if a moved export
-    appears on one.
+    appears on one.~~ Done.
