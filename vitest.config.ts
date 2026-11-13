@@ -1,3 +1,4 @@
+import { globSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defaultClientConditions, defaultServerConditions } from 'vite';
 import { configDefaults, defineConfig } from 'vitest/config';
@@ -18,6 +19,23 @@ const SLOW_TESTS = ['**/*.slow.test.?(c|m)[jt]s?(x)'];
  */
 const UNIT_TEST_MS = process.env.CI === 'true' ? 6_000 : 2_000;
 
+/**
+ * The unit test files that each need a worker of their own, relative to the
+ * root. The files that run in a page, which name a DOM environment in their
+ * first lines, such as `// @vitest-environment happy-dom`, are found as the
+ * config loads, so in watch mode a new one joins them when Vitest restarts.
+ * The rest are listed, with why.
+ */
+const ISOLATED_TESTS = [
+    // It counts the copies of the refresh code that a JSX runtime takes from
+    // a pool the module keeps, which other files' JSX tests would take first
+    'packages/libraries/utils/src/jsx/create-jsx.test.ts',
+];
+const DOM_TESTS = globSync('packages/**/*.test.{ts,tsx}', { cwd: ROOT })
+    .map((file) => file.replaceAll('\\', '/'))
+    .filter((file) => !/(^|\/)(node_modules|visual-tests)\/|\.slow\.test\.|^packages\/libraries\/(v-snap|audio90)\//.test(file))
+    .filter((file) => /@vitest-environment\s+(happy-dom|jsdom)/.test(readFileSync(resolve(ROOT, file), 'utf8').slice(0, 400)));
+
 // One test run over every workspace in packages/: the unit tests and the slow
 // tests in Node, and the visual tests in a browser. Each vsnap() plugin adds the projects for
 // one package's visual tests when Vitest starts: `visual-canvas` and
@@ -26,8 +44,9 @@ const UNIT_TEST_MS = process.env.CI === 'true' ? 6_000 : 2_000;
 // `visual-playground-html` for the playground,
 // and `visual-library-html` for the HTML library's views. They bring
 // v-snap's reporter with them. The plugins also leave the visual tests out of
-// this config's own projects, `unit` and `slow`. So `-p unit` runs the unit
-// tests alone, `-p slow` the slow tests, and `vitest run visual-tests/` the
+// this config's own projects, `unit`, `unit-isolated` and `slow`. So
+// `npm run test:unit` runs the unit tests alone, `-p slow` the slow tests,
+// and `vitest run visual-tests/` the
 // visual tests, since every visual test file is in a `visual-tests` folder.
 // v-snap and audio90 are left out, as if each lived in a repo of its own:
 // each one's own config runs its tests, and the scripts call it.
@@ -73,17 +92,33 @@ export default defineConfig({
         exclude: [...configDefaults.exclude, '.claude/**', 'packages/libraries/v-snap/**', 'packages/libraries/audio90/**'],
         projects: [
             // The unit tests: every test file but the slow ones and the visual
-            // ones. They are the check to run while working, so each test has
-            // a budget, and a test that needs more is made cheaper or moved to
-            // the slow tests. Their files share their workers' modules rather
-            // than each loading its own, which halves the run. So a test file
-            // must leave no global state changed for the files after it.
+            // ones, in two projects. They are the check to run while working,
+            // so each test has a budget, and a test that needs more is made
+            // cheaper or moved to the slow tests.
+            //
+            // `unit` holds the files that run in plain Node. They share their
+            // workers' modules rather than each loading its own, which takes
+            // the run from about 20 seconds to 12. So a file there must leave
+            // no global state changed for the files after it.
             {
                 extends: true,
                 test: {
                     name: 'unit',
-                    exclude: [...SLOW_TESTS],
+                    exclude: [...SLOW_TESTS, ...DOM_TESTS, ...ISOLATED_TESTS],
                     isolate: false,
+                    testTimeout: UNIT_TEST_MS,
+                },
+            },
+            // `unit-isolated` holds the files that each need a worker of their
+            // own: those that run in a page, since what a file leaves in a
+            // shared page, such as an open dialog, a window listener or the
+            // page's own classes, breaks the files after it, and those that
+            // count on a module's state from a fresh start.
+            {
+                extends: true,
+                test: {
+                    name: 'unit-isolated',
+                    include: [...DOM_TESTS, ...ISOLATED_TESTS],
                     testTimeout: UNIT_TEST_MS,
                 },
             },

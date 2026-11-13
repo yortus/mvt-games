@@ -98,7 +98,7 @@ tables in memory, by the same rules, and forgets them when the page closes.
 
 | Command | What it does |
 | --- | --- |
-| `npx vitest run -p unit packages/sites/site-kit/highscores-worker packages/sites/site-kit/src/highscores` | Runs the tests of the Worker and the code it shares, in Node. The SQLite storage runs on Node's own SQLite (`node:sqlite`) |
+| `npm run test:unit -- packages/sites/site-kit/highscores-worker packages/sites/site-kit/src/highscores` | Runs the tests of the Worker and the code it shares, in Node. The SQLite storage runs on Node's own SQLite (`node:sqlite`) |
 | `npm run highscores:dev -w @mvtjs/arcade` | Runs the Worker on this machine, on Cloudflare's runtime, as the `test` environment. Set `VITE_HIGHSCORES_URL` to its address to try it from the site |
 | `npm run highscores:deploy:test -w @mvtjs/arcade` | Deploys the `test` environment. It needs a Wrangler login (`npx wrangler login`) |
 | `npm run highscores:deploy -w @mvtjs/arcade` | Deploys production |

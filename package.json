@@ -29,7 +29,7 @@
         "release": "changeset version && npm install --package-lock-only",
         "bench": "tsx packages/internal/benchmarks/run.ts",
         "test": "vitest run",
-        "test:unit": "vitest run -p unit",
+        "test:unit": "vitest run -p unit -p unit-isolated",
         "test:slow": "vitest run -p slow",
         "test:watch": "vitest",
         "test:ui": "vitest --ui",

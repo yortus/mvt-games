@@ -6,10 +6,10 @@ name: Tests
 #
 # - On every push, and on demand. A push already runs a pull request's
 #   commits, so a pull request runs them only when it comes from a fork.
-# - The unit tests' files share their workers' modules, rather than each
-#   loading its own, so a file that leaves global state changed can break
-#   the files after it. So they run in a new shuffled order each time, and
-#   the log names the seed, which repeats the order:
+# - The unit tests that run in plain Node share their workers' modules,
+#   rather than each loading its own, so a file that leaves global state
+#   changed can break the files after it. So they run in a new shuffled
+#   order each time, and the log names the seed, which repeats the order:
 #   `npm run test:unit -- --sequence.shuffle.files --sequence.seed=<seed>`.
 on:
     push:
