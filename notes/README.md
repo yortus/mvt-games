@@ -155,6 +155,7 @@ deleted.
 | 082 | [Sudoku, a Game of Daily Puzzles with Doodled Notes](tasks/active/082-sudoku-daily-game.md) | medium | 2026-10-30 |
 | 088 | [One Way In for Every Puzzle](tasks/active/088-puzzle-way-in.md) | medium | 2026-11-01 |
 | 091 | [The Perfmon: Frames Missed While the Main Thread Is Free](tasks/active/091-perfmon-missed-frames.md) | medium | 2026-11-06 |
+| 098 | [Input Follow-Ons](tasks/active/098-input-follow-ons.md) | medium | 2026-11-13 |
 
 ### Backlog
 
@@ -182,7 +183,6 @@ deleted.
 | 090 | [The Book: Follow-Ons](tasks/backlog/090-book-follow-ons.md) | low | 2026-11-01 |
 | 093 | [Enforce the Tick Rules](tasks/backlog/093-enforce-the-tick-rules.md) | low | 2026-11-07 |
 | 097 | [`@mvtjs/three`'s Pointer Picker: a Cancel, and One Pointer](tasks/backlog/097-three-pointer-picker-cancel-and-pointer-id.md) | low | 2026-11-13 |
-| 098 | [Input Follow-Ons](tasks/backlog/098-input-follow-ons.md) | medium | 2026-11-13 |
 
 ## Archive
 

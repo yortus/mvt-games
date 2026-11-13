@@ -71,8 +71,9 @@ On a phone, over `npm run dev:https`, and on a desktop:
 
 ## Acceptance Criteria
 
-- [ ] The Pixi cancel gap is fixed, with a test that runs Pixi's event
-      boundary.
+- [x] The Pixi cancel gap is fixed. Not through Pixi's event boundary, which
+      has no mapping for `pointercancel` at all, so the test dispatches the
+      DOM's own events on the window (see the progress log).
 - [ ] Each playtest above is done, and anything it finds is fixed or
       logged.
 - [ ] Each open question is decided, or moved to its own task.
@@ -80,3 +81,21 @@ On a phone, over `npm run dev:https`, and on a desktop:
 ## Progress Log
 
 - 2026-11-13: created from 095's open questions and its playtests.
+- 2026-11-13: the cancel gap fixed, by neither of the two ways above.
+  Passing the cancel on to Pixi as a `pointerupoutside` would make it a
+  release, so a cancelled drag would act (Rosette's would swap), and Pixi's
+  `EventBoundary` has no mapping for `pointercancel` to pass it on as one.
+  Instead, `listenToPointerLoss` (site kit, `input/pixi/`) listens on the
+  window for the DOM's `pointercancel`, for the pointer a helper follows,
+  and for `blur` while one is down, which 095's rule asked of every helper
+  ("handles a cancel and a lost focus") and neither Pixi helper did.
+  `listenToPointer` reports a loss as a cancel, and `listenToPress` drops
+  the press without firing. The touch controls, `DragInputView` and
+  `SwipeInputView` are built on `listenToPointer`, so they have it too. Both
+  helpers keep Rosette's backstop for any release still missing: a press by
+  the primary pointer of the kind followed ends the one followed. The
+  helpers' own Pixi `pointercancel` listeners, which could never fire, are
+  gone, and so are the tests that emitted one. Pixi's own tracking of a
+  cancelled pointer isn't cleared: a later press overwrites it, so nothing
+  visible goes wrong. `@mvtjs/pixi`'s JSX still offers `onPointerCancel`,
+  which Pixi 8 never fires.

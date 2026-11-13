@@ -78,7 +78,7 @@ describe('DragInputView', () => {
         let shipX = SHIP_X;
         const { view, onDragged } = makeView({ fromX: () => shipX });
         view.emit('pointerdown', touch(1, 100, 100));
-        view.emit('pointercancel', touch(1, 100, 100));
+        view.emit('pointerup', touch(1, 100, 100));
         shipX = SHIP_X + 20;
         view.emit('pointerdown', touch(2, 300, 300));
         view.emit('globalpointermove', touch(2, 290, 300));

@@ -12,12 +12,10 @@ describe('listenToPress', () => {
         expect(target.eventMode).toBe('static');
     });
 
-    it('doesn\'t fire for a pointer let go off the button, or cancelled', () => {
+    it('doesn\'t fire for a pointer let go off the button', () => {
         const { target, presses } = listen();
         target.emit('pointerdown', pointer(1));
         target.emit('pointerupoutside', pointer(1));
-        target.emit('pointerdown', pointer(1));
-        target.emit('pointercancel', pointer(1));
         expect(presses()).toBe(0);
     });
 
@@ -45,6 +43,16 @@ describe('listenToPress', () => {
         expect(presses()).toBe(1);
     });
 
+    it('follows the only pointer of its kind down, without firing, if the release of the one followed went missing', () => {
+        const { target, press, presses } = listen();
+        target.emit('pointerdown', pointer(1, true));
+        target.emit('pointerdown', pointer(2, true));
+        target.emit('pointerup', pointer(1));
+        expect([presses(), press.isHeld]).toEqual([0, true]);
+        target.emit('pointerup', pointer(2));
+        expect(presses()).toBe(1);
+    });
+
     it('reads whether the button works as the pointer lets go', () => {
         let isEnabled = true;
         const { target, presses } = listen({ isEnabled: () => isEnabled });
@@ -62,7 +70,7 @@ function listen(more: Partial<PressOptions> = {}): { target: Container; press: P
     return { target, press, presses: () => presses };
 }
 
-/** A pointer event from finger `pointerId`. */
-function pointer(pointerId: number): FederatedPointerEvent {
-    return { pointerId } as unknown as FederatedPointerEvent;
+/** A pointer event from finger `pointerId`. A primary pointer is the only one of its kind down. */
+function pointer(pointerId: number, isPrimary = false): FederatedPointerEvent {
+    return { pointerId, isPrimary, pointerType: 'touch' } as unknown as FederatedPointerEvent;
 }

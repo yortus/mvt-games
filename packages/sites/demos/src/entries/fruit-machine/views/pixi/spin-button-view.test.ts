@@ -68,7 +68,7 @@ describe('SpinButtonView', () => {
         expect(t.presses()).toBe(1);
     });
 
-    it('sinks while held, and rises again as the browser cancels the touch, which presses nothing', () => {
+    it('sinks while held, and rises again as the finger slides off and lets go, which presses nothing', () => {
         const t = setup('spin');
         const face = t.view.children[1];
         const restingY = face.y;
@@ -77,7 +77,7 @@ describe('SpinButtonView', () => {
         refreshView(t.view);
         expect(face.y).toBeGreaterThan(restingY);
 
-        t.view.emit('pointercancel', POINTER);
+        t.view.emit('pointerupoutside', POINTER);
         refreshView(t.view);
         expect(face.y).toBe(restingY);
         expect(t.presses()).toBe(0);

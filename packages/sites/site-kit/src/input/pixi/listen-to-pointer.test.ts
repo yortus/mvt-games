@@ -39,17 +39,6 @@ describe('listenToPointer', () => {
         expect(released.events).toEqual(['press 10,20', 'move 30,40', 'release 30,40', 'press 50,60']);
     });
 
-    it('reports a cancel as one, or as letting go when nothing listens for a cancel', () => {
-        const cancelled = listen();
-        cancelled.target.emit('pointerdown', touch(1, 10, 20));
-        cancelled.target.emit('pointercancel', touch(1, 10, 20));
-        expect(cancelled.events).toEqual(['press 10,20', 'cancel']);
-        const released = listen({ onCancelled: undefined });
-        released.target.emit('pointerdown', touch(1, 10, 20));
-        released.target.emit('pointercancel', touch(1, 12, 22));
-        expect(released.events).toEqual(['press 10,20', 'release 12,22']);
-    });
-
     it('reports a pointer moving while none is followed as hovering, and not once one is', () => {
         const { target, events } = listen({ onHovered: (x, y) => events.push(`hover ${x},${y}`) });
         target.emit('globalpointermove', touch(1, 5, 5));

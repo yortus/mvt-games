@@ -1,4 +1,5 @@
 import { type Container, type FederatedPointerEvent, Point } from 'pixi.js';
+import { listenToPointerLoss } from './listen-to-pointer-loss';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -20,8 +21,10 @@ export interface PointerOptions {
     /** The pointer followed was let go, over the target or not. */
     readonly onReleased?: (x: number, y: number) => void;
     /**
-     * The browser took the pointer followed away, as a phone does when its
-     * own gesture begins. Without it, a cancel counts as letting go.
+     * The pointer followed was lost without being let go: the browser
+     * cancelled it, the window lost focus while it was down, or its release
+     * went missing. Without it, a loss counts as letting go, where the
+     * pointer was last.
      */
     readonly onCancelled?: () => void;
 }
@@ -37,12 +40,13 @@ export interface PointerOptions {
  * can't take the drag over.
  * It only reports. What a press or a drag means is up to whoever calls it.
  *
- * A pointer's release can go missing, if it happens where the page doesn't
- * hear it. Then the next press would be taken for a second finger, and
- * ignored, and so would every press after it. So a press by the primary
- * pointer of the kind followed, which the browser marks as the only one of
- * its kind down, ends the one followed, as a cancel, and is followed
- * instead.
+ * A pointer the browser cancels, or that is down as the window loses focus,
+ * is lost, and reported as a cancel (`listenToPointerLoss` says how). If a
+ * pointer's release goes missing in some other way, the next press would
+ * be taken for a second finger, and ignored, and so would every press
+ * after it. So a press by the primary pointer of the kind followed, which
+ * the browser marks as the only one of its kind down, ends the one
+ * followed, as a cancel, and is followed instead.
  *
  * The listeners go when the container is destroyed.
  */
@@ -85,14 +89,7 @@ export function listenToPointer(options: PointerOptions): void {
     });
     target.on('pointerup', release);
     target.on('pointerupoutside', release);
-    target.on('pointercancel', (e: FederatedPointerEvent) => {
-        if (e.pointerId !== pointerId) return;
-        if (onCancelled === undefined) {
-            release(e);
-            return;
-        }
-        cancel();
-    });
+    listenToPointerLoss({ target, pointerId: () => pointerId, onLost: cancel });
 
     function release(e: FederatedPointerEvent): void {
         if (e.pointerId !== pointerId) return;
