@@ -32,20 +32,6 @@ function setUp() {
 }
 
 describe('BulletLayerView', () => {
-    it('shows one particle per bullet, with the bullet\'s position, angle and texture', () => {
-        const { textures, view, add } = setUp();
-        add(10, 20, 'round');
-        add(30, 40, 'long', 1.5);
-        refreshView(view);
-
-        const particles = view.particleChildren;
-        expect(particles.length).toBe(2);
-        expect([particles[0].x, particles[0].y]).toEqual([10, 20]);
-        expect(particles[0].texture).toBe(textures.round);
-        expect(particles[1].rotation).toBe(1.5);
-        expect(particles[1].texture).toBe(textures.long);
-    });
-
     it('follows the count down and up, reusing the same particles', () => {
         const { bullets, view, add } = setUp();
         add(1, 1, 'round');

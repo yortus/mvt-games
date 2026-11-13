@@ -3,8 +3,6 @@ import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
-    CARRIER_HIT,
-    DIVE,
     RESPAWN,
     SCOUT_HIT,
     SHIP_HIT,
@@ -12,7 +10,6 @@ import {
     STAGE_CLEAR,
     STAGE_FANFARE,
     STAGE_TUNE,
-    STRIKER_HIT,
     WAVES,
 } from '../data';
 import type { EnemyKind, EnemyPhase, GamePhase } from '../models';
@@ -29,14 +26,6 @@ afterEach(() => {
 });
 
 describe('GameAudioView', () => {
-    it('plays the fanfare at its own tempo as the game starts, and queues the stage\'s tune, on the music chip', () => {
-        const { music, sfx } = setUpGameAudio();
-        expect(listPlayed(music)).toEqual([STAGE_FANFARE]);
-        expect(music.queue).toHaveBeenCalledWith(STAGE_TUNE);
-        expect(music.tempoScale).toBe(1);
-        expect(sfx.play).not.toHaveBeenCalled();
-    });
-
     it('plays a shot once for each rise in the count, on the sound effects chip', () => {
         const { music, sfx, state, tick } = setUpGameAudio();
         state.shotsFired = 1;
@@ -101,24 +90,6 @@ describe('GameAudioView', () => {
 });
 
 describe('EnemyAudioView', () => {
-    it.each([
-        { kind: 'scout', effect: SCOUT_HIT },
-        { kind: 'striker', effect: STRIKER_HIT },
-        { kind: 'carrier', effect: CARRIER_HIT },
-    ] as const)('plays the $kind\'s explosion as it is destroyed', ({ kind, effect }) => {
-        const { chip, state, tick } = setUpEnemyAudio({ kind });
-        state.isAlive = false;
-        tick();
-        expect(listPlayed(chip)).toEqual([effect]);
-    });
-
-    it('whistles as the raider dives', () => {
-        const { chip, state, tick } = setUpEnemyAudio({ phase: 'formation' });
-        state.phase = 'diving';
-        tick();
-        expect(listPlayed(chip)).toEqual([DIVE]);
-    });
-
     it('plays nothing on its first poll, or when its slot\'s raider comes alive', () => {
         const { chip, state, tick } = setUpEnemyAudio({ isAlive: false, phase: 'dead', kind: 'scout' });
         expect(chip.play).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
 {
-    "browser": "HeadlessChrome/156.0.8078.4",
+    "browser": "HeadlessChrome/158.0.8127.18",
     "webgl": "SwiftShader",
     "locale": "en-US",
     "timeZone": "UTC",

@@ -1,8 +1,9 @@
 // Checks that each site's home page (the arcade's, the demos' and the
 // puzzles') stays light to load, and fails the build if one does not: see
 // `home-page-load.ts` for what it measures, and why. `npm run build` runs it
-// after building the sites; `npm run check:home-page-budget` runs it alone. A test runs the same check with the
-// other tests (`home-page-budget.test.ts`), which catches it sooner.
+// after building the sites; `npm run check:home-page-budget` runs it alone. A slow
+// test runs the same check (`home-page-budget.slow.test.ts`), which CI runs on
+// every push, so it catches a heavier page before a deploy.
 
 import process from 'node:process';
 import { describeHomePageLoad, measureHomePageLoad, SITE_NAMES } from './home-page-load.ts';

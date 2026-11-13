@@ -49,43 +49,6 @@ function findSwappablePair(board: BoardModel): [CactusCell, CactusCell] | undefi
 
 describe('BoardModel', () => {
     describe('initial state', () => {
-        it('starts in idle phase', () => {
-            const board = makeBoard();
-            expect(board.phase).toBe('idle');
-        });
-
-        it('has integer cell positions', () => {
-            const board = makeBoard();
-            for (let r = 0; r < board.cells.length; r++) {
-                for (let c = 0; c < board.cells[r].length; c++) {
-                    const cell = board.cells[r][c];
-                    expect(Number.isInteger(cell.row)).toBe(true);
-                    expect(Number.isInteger(cell.col)).toBe(true);
-                }
-            }
-        });
-
-        it('all progress values are 0 when idle', () => {
-            const board = makeBoard();
-            expect(board.swapProgress).toBe(0);
-            expect(board.matchProgress).toBe(0);
-            expect(board.settleProgress).toBe(0);
-        });
-
-        it('matchedCells is empty when idle', () => {
-            const board = makeBoard();
-            expect(board.matchedCells).toEqual([]);
-        });
-
-        it('settleOriginRows are all NaN when idle', () => {
-            const board = makeBoard();
-            for (let r = 0; r < board.settleOriginRows.length; r++) {
-                for (let c = 0; c < board.settleOriginRows[r].length; c++) {
-                    expect(board.settleOriginRows[r][c]).toBeNaN();
-                }
-            }
-        });
-
         it('has no EMPTY_CELL entries after initialisation', () => {
             const board = makeBoard();
             for (let r = 0; r < board.cells.length; r++) {
@@ -324,13 +287,6 @@ describe('BoardModel', () => {
                     expect(board.settleOriginRows[r][c]).toBeNaN();
                 }
             }
-        });
-    });
-
-    describe('scoring', () => {
-        it('starts at score 0', () => {
-            const board = makeBoard();
-            expect(board.score).toBe(0);
         });
     });
 

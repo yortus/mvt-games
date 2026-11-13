@@ -11,8 +11,8 @@
 // It builds the site in memory, as it is deployed, with its own Vite
 // config, and walks the home page's chunks from its entry through their
 // static imports, which the browser loads before the page runs. Dynamic
-// imports are left out: they load later, on demand. A test runs it with the
-// other tests (`home-page-budget.test.ts`), and `npm run build` runs it
+// imports are left out: they load later, on demand. A slow test runs it
+// (`home-page-budget.slow.test.ts`), and `npm run build` runs it
 // after building the sites (`home-page-budget.ts`).
 
 import { fileURLToPath } from 'node:url';

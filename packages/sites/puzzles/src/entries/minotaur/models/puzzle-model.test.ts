@@ -9,14 +9,6 @@ const maze = makeMazePuzzle({ seed: 1, settings: LEVEL_SETTINGS.easy });
 const { grid } = maze;
 
 describe('PuzzleModel', () => {
-    it('starts with nothing marked and nothing broken', () => {
-        const puzzle = createPuzzleModel({ maze });
-        for (let edge = 0; edge < grid.edgeCount; edge++) expect(puzzle.markAt(edge)).toBe('unknown');
-        for (let cell = 0; cell < grid.cellCount; cell++) expect(puzzle.isClashAt(cell)).toBe(false);
-        expect(puzzle.isSolved).toBe(false);
-        expect(puzzle.undoCount).toBe(0);
-    });
-
     it('is solved once the passages marked are the solution\'s, walls or not, and then takes no more marks', () => {
         const puzzle = createPuzzleModel({ maze });
         const passages = listPassages(maze);

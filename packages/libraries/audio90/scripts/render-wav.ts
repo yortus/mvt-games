@@ -2,7 +2,8 @@
  * Renders every song and sound a module exports to WAV files, for listening
  * to them without a browser. An Audio80's sounds are mono files, and an
  * Audio90's stereo. It also prints each one's length and peak, and each
- * song's loudness beside the loudness every song should have.
+ * song's loudness beside the loudness every song should have, with a
+ * warning for a song too loud or too quiet.
  *
  * Run from the package's folder, naming the modules by their paths from
  * where you run it:
@@ -18,7 +19,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { extname, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { registerHooks } from 'node:module';
-import { encodeWav, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, type RenderedSamples, findSounds } from 'audio90/headless';
+import { encodeWav, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, type RenderedSamples, findSounds } from 'audio90/headless';
 
 // A module of songs and sounds imports `audio90`, which holds the browser
 // chips. Each one imports its worklet's URL with Vite's `?worker&url`, which
@@ -64,6 +65,15 @@ function write(folder: string, name: string, samples: RenderedSamples, isSong: b
     writeFileSync(file, encodeWav(samples, SAMPLE_RATE));
     const frames = samples instanceof Float32Array ? samples.length : samples.left.length;
     const seconds = (frames / SAMPLE_RATE).toFixed(2);
-    const loudness = isSong ? `, ${measureLoudness(samples, SAMPLE_RATE).toFixed(1)} LUFS (songs: ${REFERENCE_LOUDNESS_LUFS})` : '';
+    const loudness = isSong ? describeLoudness(measureLoudness(samples, SAMPLE_RATE)) : '';
     console.log(`${file}  ${seconds} s, peak ${measurePeak(samples).toFixed(2)}${loudness}`);
+}
+
+/** Describes a song's loudness beside the loudness every song shares, and says how to fix a song outside the tolerance. */
+function describeLoudness(lufs: number): string {
+    const off = lufs - REFERENCE_LOUDNESS_LUFS;
+    let advice = '';
+    if (off > LOUDNESS_TOLERANCE_LU) advice = '  TOO LOUD: lower its volume';
+    if (off < -LOUDNESS_TOLERANCE_LU) advice = '  TOO QUIET: raise its volume';
+    return `, ${lufs.toFixed(1)} LUFS (songs: ${REFERENCE_LOUDNESS_LUFS} ± ${LOUDNESS_TOLERANCE_LU})${advice}`;
 }

@@ -11,19 +11,6 @@ const EMPTY_CELLS = givens.flatMap((digit, cell) => (digit === 0 ? [cell] : []))
 const GIVEN_CELL = givens.findIndex((digit) => digit !== 0);
 
 describe('PuzzleModel', () => {
-    it('starts with its givens, and nothing filled in or noted', () => {
-        const puzzle = createPuzzleModel({ givens, solution });
-        for (let cell = 0; cell < CELL_COUNT; cell++) {
-            expect(puzzle.digitAt(cell)).toBe(givens[cell]);
-            expect(puzzle.isGivenAt(cell)).toBe(givens[cell] !== 0);
-            expect(puzzle.marksAt(cell)).toBe(0);
-            expect(puzzle.isClashAt(cell)).toBe(false);
-        }
-        expect(puzzle.groupNotes).toEqual([]);
-        expect(puzzle.isSolved).toBe(false);
-        expect(puzzle.undoCount).toBe(0);
-    });
-
     it('fills in a digit, and undoes it', () => {
         const puzzle = createPuzzleModel({ givens, solution });
         const cell = EMPTY_CELLS[0];

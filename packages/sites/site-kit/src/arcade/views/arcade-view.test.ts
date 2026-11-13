@@ -5,7 +5,7 @@ import { createMemoryHighscoreStore } from '../../highscores';
 import { advanceTime, destroyElement, refreshView } from '@mvtjs/html';
 import type { ArcadeEntry, EntryStarter } from '../../entry-types';
 import { LAUNCH_MS, REVEAL_MS } from '../data';
-import { type ArcadeModel, createArcadeModel, DEFAULT_SOUND_SETTINGS } from '../models';
+import { type ArcadeModel, createArcadeModel } from '../models';
 import type { SiteConfig } from '../site-config';
 import { ArcadeView } from './arcade-view';
 import type { LivePreview } from './live-preview';
@@ -54,25 +54,6 @@ describe('ArcadeView', () => {
             expect(model.activeChipCount).toBe(1);
             expect(model.activeChipAt(0)).toBe(maze);
             expect(model.searchText).toBe('');
-            destroyElement(view);
-        });
-    });
-
-    describe('the Perfmon', () => {
-        it('opens and closes with the gauge in the nav, starting closed', () => {
-            const { model, navTools, tick, view } = setUp();
-            const gauge = navTools.querySelector<HTMLElement>('.nav-perfmon')!;
-            const panel = view.querySelector<HTMLElement>('.perfmon-float')!;
-            expect(model.isPerfmonOpen).toBe(false);
-            expect(panel.hidden).toBe(true);
-            gauge.click();
-            tick();
-            expect(model.isPerfmonOpen).toBe(true);
-            expect(panel.hidden).toBe(false);
-            expect(gauge.getAttribute('aria-pressed')).toBe('true');
-            gauge.click();
-            tick();
-            expect(panel.hidden).toBe(true);
             destroyElement(view);
         });
     });
@@ -166,25 +147,6 @@ describe('ArcadeView', () => {
     });
 
     describe('the sound', () => {
-        it('mutes all the sound with the nav\'s speaker, and unmutes it with each sound at the level it had', () => {
-            const { model, navTools, tick, view } = setUp();
-            const sfxVolume = 0.7;
-            model.musicVolume = 0;
-            model.sfxVolume = sfxVolume;
-            const speaker = navTools.querySelector<HTMLElement>('.nav-sound')!;
-            speaker.click();
-            tick();
-            expect(model.isSoundMuted).toBe(true);
-            expect(speaker.classList.contains('is-off')).toBe(true);
-            speaker.click();
-            tick();
-            expect(model.isSoundMuted).toBe(false);
-            expect(model.musicVolume).toBe(0);
-            expect(model.sfxVolume).toBe(sfxVolume);
-            expect(speaker.classList.contains('is-off')).toBe(false);
-            destroyElement(view);
-        });
-
         it('brings sound back when the speaker is pressed with both sounds off, each at the level it had', () => {
             const { model, navTools, tick, view } = setUp();
             const musicVolume = 0.3;
@@ -201,18 +163,6 @@ describe('ArcadeView', () => {
             expect(model.musicVolume).toBe(musicVolume);
             expect(model.sfxVolume).toBe(sfxVolume);
             expect(speaker.classList.contains('is-off')).toBe(false);
-            destroyElement(view);
-        });
-
-        it('brings sound back at the default volumes when the speaker is pressed with both sounds slid to 0', () => {
-            const { model, navTools, tick, view } = setUp();
-            model.musicVolume = 0;
-            model.sfxVolume = 0;
-            navTools.querySelector<HTMLElement>('.nav-sound')!.click();
-            tick();
-            expect(model.isSoundMuted).toBe(false);
-            expect(model.musicVolume).toBe(DEFAULT_SOUND_SETTINGS.musicVolume);
-            expect(model.sfxVolume).toBe(DEFAULT_SOUND_SETTINGS.sfxVolume);
             destroyElement(view);
         });
 

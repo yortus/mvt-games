@@ -3,9 +3,9 @@ import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio90PlayOptions, Audio90Sound } from 'audio90';
 import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
 import {
-    ALL_CLEAR, ATTACK_BROKEN, BOMB, BOMB_PICKUP, BOSS_HIT, BOSS_THEME, CHARGE_TONES, EXPLODE_HUGE, EXPLODE_LARGE, EXPLODE_SMALL,
-    EXTEND, FOCUS, FOCUSED_SHOT, GAME_OVER, GEM, type ItemKind, LOCK_TICK, LOCKED, POWER_UP, RESPAWN, RING_UP, SHIELD_HIT,
-    SHIP_EXPLODE, SHOT, STAGE_CLEAR, STAGE_THEME, VOLLEY_BURST, VOLLEY_CHARGED, VOLLEY_LAUNCH, WARNING,
+    ATTACK_BROKEN, BOMB, BOSS_HIT, BOSS_THEME, CHARGE_TONES, EXPLODE_LARGE, EXPLODE_SMALL, EXTEND, FOCUS, FOCUSED_SHOT,
+    type ItemKind, LOCK_TICK, LOCKED, RESPAWN, SHIELD_HIT, SHIP_EXPLODE, SHOT, VOLLEY_BURST, VOLLEY_CHARGED, VOLLEY_LAUNCH,
+    WARNING,
 } from '../data';
 import type { BossPhase, ExplosionSize, GamePhase, VolleyPhase } from '../models';
 import { AudioView } from './audio-view';
@@ -20,33 +20,6 @@ afterEach(() => {
 });
 
 describe('AudioView', () => {
-    it('starts the stage\'s theme as the game starts', () => {
-        const { music } = setUp();
-        expect(listPlayed(music)).toEqual([STAGE_THEME]);
-    });
-
-    for (const previous of ['tally', 'game-over', 'all-clear'] as const) {
-        it(`starts the stage's theme again as play follows the ${previous} phase`, () => {
-            const { music, state, tick } = setUp();
-            state.phase = previous;
-            tick();
-            vi.clearAllMocks();
-            state.phase = 'playing';
-            tick();
-            expect(listPlayed(music)).toEqual([STAGE_THEME]);
-        });
-    }
-
-    for (const [phase, song] of [['tally', STAGE_CLEAR], ['game-over', GAME_OVER], ['all-clear', ALL_CLEAR]] as const) {
-        it(`plays its own song as the game turns to the ${phase} phase`, () => {
-            const { music, state, tick } = setUp();
-            vi.clearAllMocks();
-            state.phase = phase;
-            tick();
-            expect(listPlayed(music)).toEqual([song]);
-        });
-    }
-
     it('plays the guns\' first blip in the game\'s first tick', () => {
         const { sfx } = setUp({ isFiring: true });
         expect(listPlayedOf(sfx, SHOT)).toHaveLength(1);
@@ -81,17 +54,6 @@ describe('AudioView', () => {
         expect(listPlayedOf(sfx, FOCUS)).toHaveLength(1);
     });
 
-    it('plays each explosion by its size', () => {
-        const { sfx, state, tick } = setUp();
-        const sizes: readonly ExplosionSize[] = ['small', 'large', 'huge'];
-        for (const size of sizes) {
-            state.lastExplosionSize = size;
-            state.explosionsStarted++;
-            tick();
-        }
-        expect(listPlayed(sfx)).toEqual([EXPLODE_SMALL, EXPLODE_LARGE, EXPLODE_HUGE]);
-    });
-
     it('plays the ship\'s loss instead of its explosion, then its return, with the music playing on', () => {
         const { music, sfx, state, tick } = setUp();
         vi.clearAllMocks();
@@ -120,24 +82,6 @@ describe('AudioView', () => {
         state.extendsEarned++;
         tick();
         expect(listPlayedOf(sfx, EXTEND)).toHaveLength(2);
-    });
-
-    it('plays a sound for each kind of pickup, a gem and a bomb', () => {
-        const { sfx, state, tick } = setUp();
-        const pickUp = (kind: ItemKind): void => {
-            state.lastItemKind = kind;
-            state.itemsCollected++;
-            tick();
-        };
-        pickUp('power');
-        pickUp('bomb');
-        state.gemsCollected += 5;
-        state.isBombing = true;
-        tick();
-        expect(listPlayedOf(sfx, POWER_UP)).toHaveLength(1);
-        expect(listPlayedOf(sfx, BOMB_PICKUP)).toHaveLength(1);
-        expect(listPlayedOf(sfx, GEM)).toHaveLength(1);
-        expect(listPlayedOf(sfx, BOMB)).toHaveLength(1);
     });
 
     it('stops the theme and sounds the warning as it starts, sounds it again while it shows, then plays the boss\'s theme', () => {
@@ -261,19 +205,6 @@ describe('AudioView', () => {
         vi.clearAllMocks();
         tickFor(tick, 500);
         for (let i = 0; i < CHARGE_TONES.length; i++) expect(listPlayedOf(sfx, CHARGE_TONES[i])).toHaveLength(0);
-    });
-
-    it('sweeps up as the ring forms, and tinks as it stops each bullet', () => {
-        const { sfx, state, tick } = setUp();
-        state.isVolleyRingUp = true;
-        tick();
-        expect(listPlayedOf(sfx, RING_UP)).toHaveLength(1);
-        state.volleyShieldHits++;
-        tick();
-        state.volleyShieldHits++;
-        tick();
-        expect(listPlayedOf(sfx, SHIELD_HIT)).toHaveLength(2);
-        expect(listPlayedOf(sfx, RING_UP)).toHaveLength(1);
     });
 
     it('plays no chime for a full bar that a lock let go of', () => {

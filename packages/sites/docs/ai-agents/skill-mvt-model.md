@@ -84,6 +84,10 @@ files in the sites, and the last row on every file:
   through its public API, and asserting on its state. Expected values come
   from the model's own constants, not copied numbers. Move time on in
   steps no bigger than the ticker's cap, with `advanceTime`, never one
-  big `update`.
+  big `update`. Test the rules a playtest wouldn't show, not the
+  constructor's options read back
+  ([Tests Not Worth Writing](../chapters/15-testing-models.md#tests-not-worth-writing)).
+  A test that needs more than its 2 s budget samples its cases, and the
+  full sweep goes in an `xxx-model.slow.test.ts` beside it.
 - `npm run lint`, `npx tsc -b` and `npm run test:unit` pass.
 - Load the `code-style` skill's checklist too.

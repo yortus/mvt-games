@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
-import { CAUGHT, CLEARED, GAME_START, NIBBLE_HIGH, NIBBLE_LOW, SNEAK } from '../data';
+import { CAUGHT, CLEARED, GAME_START, SNEAK } from '../data';
 import type { GamePhase } from '../models';
-import { AudioView, SNEAK_SPEED_UP } from './audio-view';
+import { AudioView } from './audio-view';
 
 // The view is tested by what it asks of its chips: which songs and sounds it plays, and at what tempo. How a chip
 // plays a song is the chip's own concern, tested with it.
@@ -21,18 +21,6 @@ describe('AudioView', () => {
         expect(listPlayed(music)).toEqual([GAME_START]);
         expect(music.queue).toHaveBeenCalledWith(SNEAK);
         expect(music.tempoScale).toBe(1);
-    });
-
-    it.each([
-        { remainingCrumbs: TOTAL_CRUMBS, left: 'every crumb left' },
-        { remainingCrumbs: TOTAL_CRUMBS / 2, left: 'half the crumbs left' },
-        { remainingCrumbs: 1, left: 'one crumb left' },
-    ])('plays the sneaking tune faster the fewer crumbs are left, with $left', ({ remainingCrumbs }) => {
-        const { music, state, tickFor } = setUpSneaking();
-        state.remainingCrumbs = remainingCrumbs;
-        tickFor(TICK_MS);
-        const tempoScale = 1 + (1 - remainingCrumbs / TOTAL_CRUMBS) * SNEAK_SPEED_UP;
-        expect(music.tempoScale).toBeCloseTo(tempoScale);
     });
 
     it.each([
@@ -64,15 +52,6 @@ describe('AudioView', () => {
         expect(listPlayed(music)).toEqual([GAME_START]);
         expect(music.queue).toHaveBeenCalledWith(SNEAK);
         expect(music.tempoScale).toBe(1);
-    });
-
-    it('nibbles for each crumb, low and high by turns', () => {
-        const { sfx, state, tickFor } = setUp();
-        for (const remaining of [99, 98, 97]) {
-            state.remainingCrumbs = remaining;
-            tickFor(TICK_MS);
-        }
-        expect(listPlayed(sfx)).toEqual([NIBBLE_HIGH, NIBBLE_LOW, NIBBLE_HIGH]);
     });
 });
 

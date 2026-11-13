@@ -43,13 +43,6 @@ describe('createLookViewModel', () => {
     });
 
     describe('the grids', () => {
-        it('starts with its gaps open, and the tiles in place', () => {
-            const { look } = setup({});
-            expect(look.gridReveal).toBe(DEFAULT_GRID_REVEAL);
-            expect(look.gap).toBe(DEFAULT_GAP);
-            expect(look.drawBack).toBe(0);
-        });
-
         it('closes the gaps as the reveal falls to 0', () => {
             const { look } = setup({});
             look.gridReveal = DEFAULT_GRID_REVEAL / 2;

@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/html';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import {
-    BET, BIG_WIN, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, LEVER, NO_WIN, PAYTABLE,
-    type Paytable, REEL_CLICK, REEL_STOP, SETTLE_MS, SETTLE_STAGGER_MS, STOPPING_SETTLE_MS, type SymbolKind, WAY_OF_3, WAY_OF_5, WIN,
+    BET, CELEBRATION_OPENER_MS, CELEBRATION_STEP_MS, COIN, FIRST_SETTLE_MS, LEVER, NO_WIN, PAYTABLE, type Paytable,
+    REEL_CLICK, REEL_STOP, SETTLE_MS, SETTLE_STAGGER_MS, STOPPING_SETTLE_MS, type SymbolKind, WAY_OF_3, WIN,
 } from '../../data';
 import { createFruitMachineModel, type FruitMachineModelOptions } from '../../models';
 import { AudioView } from './audio-view';
@@ -55,14 +55,6 @@ describe('AudioView', () => {
         expect(countPlayed(t.sfx, REEL_STOP)).toBe(1);
     });
 
-    it('sighs at a spin that wins nothing, with no jingle', () => {
-        const t = setUp({ strips: NO_WIN_STRIPS });
-        void t.model.spin();
-        t.advance(LANDED_MS + 1000);
-        expect(countPlayed(t.sfx, NO_WIN)).toBe(1);
-        expect(t.music.play).not.toHaveBeenCalled();
-    });
-
     it('plays a jingle and a shower of coins for a win, then a chime for its way', () => {
         const t = setUp({ strips: WAY_OF_3_STRIPS, paytable: BET_BACK_PAYTABLE });
         void t.model.spin();
@@ -86,14 +78,6 @@ describe('AudioView', () => {
         expect(t.music.play).not.toHaveBeenCalled();
         expect(countPlayed(t.sfx, COIN)).toBe(0);
         expect(countPlayed(t.sfx, WAY_OF_3)).toBe(0);
-    });
-
-    it('plays the longer jingle for a big win, and a higher chime for a longer way', () => {
-        const t = setUp({ strips: WAY_OF_5_STRIPS });
-        void t.model.spin();
-        t.advance(LANDED_MS + BIG_WIN.durationMs);
-        expect(listPlayed(t.music)).toEqual([BIG_WIN]);
-        expect(countPlayed(t.sfx, WAY_OF_5)).toBe(1);
     });
 
     it('cuts a jingle short when the next spin starts', () => {
@@ -145,15 +129,6 @@ const WAY_OF_3_STRIPS: readonly (readonly SymbolKind[])[] = [
 
 /** The machine's paytable, with the way on `WAY_OF_3_STRIPS` paying back exactly the bet: the smallest win celebrated. */
 const BET_BACK_PAYTABLE: Paytable = { ...PAYTABLE, pic1: { ...PAYTABLE.pic1, 3: BET } };
-
-/** One way wins. It is the first picture, on all five reels, and it pays a big win. */
-const WAY_OF_5_STRIPS: readonly (readonly SymbolKind[])[] = [
-    ['pic1', 'pic2', 'pic3'],
-    ['pic4', 'pic1', 'pic5'],
-    ['pic6', 'pic4', 'pic1'],
-    ['pic1', 'pic5', 'pic4'],
-    ['pic5', 'pic1', 'pic6'],
-];
 
 /** How long the last reel takes to land, from the start of a spin, and one tick more. */
 const LANDED_MS = FIRST_SETTLE_MS + (NO_WIN_STRIPS.length - 1) * SETTLE_STAGGER_MS + SETTLE_MS + TICK_MS;

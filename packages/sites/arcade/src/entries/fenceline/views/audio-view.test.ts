@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Container } from 'pixi.js';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
-import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, SNAP, SNAPPED_TUNE, STRING_TICK, TIE_OFF } from '../data';
+import { BAA, BLOW_OUT, CREAK, EXTRA_LIFE, HATCH, STRING_TICK, TIE_OFF } from '../data';
 import type { GamePhase } from '../models';
 import { CREAK_PERIOD_MS, FULL_FIELD_TEMPO, AudioView } from './audio-view';
 
@@ -81,13 +81,6 @@ describe('AudioView', () => {
         tick();
         tick();
         expect(listPlayed(sfx)).toEqual([STRING_TICK, TIE_OFF, BAA, BLOW_OUT, HATCH, EXTRA_LIFE]);
-    });
-
-    it('twangs as the wire snaps, and plays its tune on the music chip', () => {
-        state.phase = 'snapped';
-        tick();
-        expect(listPlayed(sfx)).toEqual([SNAP]);
-        expect(listPlayed(music)).toEqual([SNAPPED_TUNE]);
     });
 
     it('quickens the meadow tune as the share fenced nears the target, up to its full tempo there, and plays the next song at its own', () => {

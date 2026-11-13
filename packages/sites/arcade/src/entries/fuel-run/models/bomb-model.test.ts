@@ -6,14 +6,6 @@ function makeBomb(worldCol = 5, worldRow = 3, vCol = 4, gravity = 20) {
 }
 
 describe('BombModel', () => {
-    describe('initial state', () => {
-        it('starts at given position', () => {
-            const b = makeBomb(5, 3);
-            expect(b.worldCol).toBe(5);
-            expect(b.worldRow).toBe(3);
-        });
-    });
-
     describe('update', () => {
         it('drifts forward and falls under gravity', () => {
             const b = makeBomb(5, 3, 4, 20);

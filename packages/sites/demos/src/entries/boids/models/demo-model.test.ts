@@ -18,12 +18,6 @@ const FLOCK_OPTIONS = {
 const STEP_MS = 16;
 
 describe('createDemoModel', () => {
-    it('starts in real time, with the influences hidden', () => {
-        const model = createDemoModel({ flock: FLOCK_OPTIONS });
-        expect(model.timeScale).toBe(1);
-        expect(model.isShowingInfluences).toBe(false);
-    });
-
     it('moves the flock on by the time given, scaled by the time scale', () => {
         const model = createDemoModel({ flock: FLOCK_OPTIONS });
         const update = vi.spyOn(model.flock, 'update');

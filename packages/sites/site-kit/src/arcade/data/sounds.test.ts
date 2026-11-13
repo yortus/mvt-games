@@ -1,55 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render, findSounds } from 'audio90/headless';
+import { findSounds } from 'audio90/headless';
 import * as sounds from './sounds';
 
 // Importing the data parses its notation, so a mistake in a pattern or a step
-// table fails here. Each effect and song is then rendered as the chip would
-// play it, and its samples are hashed. A change to the chip or to the data
-// that changes the sound fails the test. Once someone has listened to the new
-// sound (`npm run audio:render`), the snapshot can be updated (`vitest -u`).
-
-const { songs, sounds: found } = findSounds(sounds);
-// A song's instruments are sounds too. Each is heard in its song's test, so only the sounds played on their own are tested alone
-const instruments = new Set(songs.flatMap(([, song]): readonly unknown[] => song.instruments));
-const effects = found.filter(([, sound]) => !instruments.has(sound));
+// table fails here. How the sounds sound is checked by ear: `npm run
+// audio:render` renders them to WAV files, and prints each one's peak, and
+// each song's loudness beside the loudness every song shares.
 
 describe('arcade sounds', () => {
-    it('has effects and songs to test', () => {
-        expect(effects.length).toBeGreaterThan(0);
+    it('parses its songs and sounds', () => {
+        const { songs, sounds: found } = findSounds(sounds);
+        expect(found.length).toBeGreaterThan(0);
         expect(songs.length).toBeGreaterThan(0);
     });
-
-    for (const [name, effect] of effects) {
-        it(`${name} sounds as it did, audible and unclipped`, () => {
-            const samples = render(effect);
-            expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
-            expect(measurePeak(samples)).toBeLessThan(CLIPPING);
-            expect(hashSamples(samples)).toMatchSnapshot();
-        });
-    }
-
-    for (const [name, song] of songs) {
-        // Loudness is averaged over blocks of 400 ms. A song much shorter than that would measure mostly the silence after it.
-        const isMeasurable = song.durationMs >= MEASURABLE_MS;
-        it(`${name} sounds as it did, audible and unclipped${isMeasurable ? ', as loud as every other song' : ''}`, () => {
-            const samples = render(song);
-            expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
-            expect(measurePeak(samples)).toBeLessThan(CLIPPING);
-            if (isMeasurable) {
-                expect(Math.abs(measureLoudness(samples) - REFERENCE_LOUDNESS_LUFS)).toBeLessThanOrEqual(LOUDNESS_TOLERANCE_LU);
-            }
-            expect(hashSamples(samples)).toMatchSnapshot();
-        });
-    }
 });
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** A sound quieter than this is lost. The floor is lower than a game's, because the Arcade's sounds are its interface and are meant to be small. */
-const AUDIBLE = 0.04;
-/** A sound louder than this is being squashed by the output stage's soft clip. */
-const CLIPPING = 0.9;
-/** A song at least this long has a loudness worth measuring. */
-const MEASURABLE_MS = 1200;

@@ -2,14 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { CAT_SPAWNS, MAZE_COLS, MAZE_DATA, MAZE_ROWS, MOUSE_SPAWN, PEN_EXIT } from './maze-data';
 
 describe('maze data', () => {
-    it('is a 22 × 28 grid', () => {
-        expect(MAZE_ROWS).toBe(22);
-        expect(MAZE_COLS).toBe(28);
-        for (let r = 0; r < MAZE_DATA.length; r++) {
-            expect(MAZE_DATA[r].length).toBe(MAZE_COLS);
-        }
-    });
-
     it('is enclosed by walls', () => {
         for (let c = 0; c < MAZE_COLS; c++) {
             expect(MAZE_DATA[0][c]).toBe('wall');

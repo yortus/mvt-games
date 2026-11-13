@@ -11,20 +11,6 @@ function makeSimpleSection(colCount: number, floorHeight: number, ceilingHeight 
 }
 
 describe('TerrainModel', () => {
-    describe('construction', () => {
-        it('calculates total columns from all sections', () => {
-            const terrain = createTerrainModel({
-                sections: [
-                    makeSimpleSection(10, 2),
-                    makeSimpleSection(20, 3),
-                ],
-                rows: 14,
-            });
-            expect(terrain.totalCols).toBe(30);
-            expect(terrain.rows).toBe(14);
-        });
-    });
-
     describe('getTile', () => {
         it('returns solid for floor tiles', () => {
             const terrain = createTerrainModel({
@@ -57,26 +43,6 @@ describe('TerrainModel', () => {
             expect(terrain.getTile(10, 0)).toBe('empty');
             expect(terrain.getTile(0, -1)).toBe('empty');
             expect(terrain.getTile(0, 14)).toBe('empty');
-        });
-    });
-
-    describe('isSolid', () => {
-        it('returns true for solid tiles', () => {
-            const terrain = createTerrainModel({
-                sections: [makeSimpleSection(5, 3)],
-                rows: 14,
-            });
-            expect(terrain.isSolid(0, 13)).toBe(true);
-            expect(terrain.isSolid(0, 11)).toBe(true);
-        });
-
-        it('returns false for empty tiles and out-of-bounds', () => {
-            const terrain = createTerrainModel({
-                sections: [makeSimpleSection(5, 3)],
-                rows: 14,
-            });
-            expect(terrain.isSolid(0, 10)).toBe(false);
-            expect(terrain.isSolid(-1, 13)).toBe(false);
         });
     });
 

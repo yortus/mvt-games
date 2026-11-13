@@ -308,6 +308,17 @@ A test is worth writing when it would catch a change that you didn't mean
 to make. Some tests catch only changes that you did mean to make, and
 those take more effort to maintain than they save.
 
+So weigh each test by its payoff. Ask how likely it is to catch a mistake
+that you're likely to make, and what that mistake would cost if it got
+through. Then set that against what the test costs: the time it takes to
+run, and the time you spend updating it whenever you change the code on
+purpose. A mistake that you'd see or hear the first time you played the
+game costs little, since you'd fix it in a minute. One that shows only in
+a rare case, such as a saved game loaded a week later or a move made on
+the last frame of a round, costs a lot, and that's where a test earns its
+keep. A test that takes seconds to run has a cost of its own: you'll run
+the tests less often, so they catch mistakes later.
+
 - **Implementation details.** Don't test a model's private variables, or
   whether it uses a GSAP timeline or plain arithmetic inside. If it
   changes from one to the other and still meets its guarantees, every
@@ -321,6 +332,9 @@ those take more effort to maintain than they save.
   duration, the board has moved on" to "at 199 ms it is swapping, and at
   201 ms it is matching". A test pinned to an exact millisecond breaks
   each time someone tunes a duration.
+- **A tuned value, copied.** A test that expects a hitbox to be 1.5 tiles
+  tall breaks the next time someone tunes the hitbox, and catches nothing.
+  Read the expected value from the same constant the model uses.
 
 ## Assertion Patterns
 

@@ -447,10 +447,21 @@ checks where the song has got to, such as a view that pulses on each
 `beat`, call the chip's `update` once a tick, so its clock keeps step with
 the test's.
 
+Weigh these tests as
+[Chapter 15](15-testing-models.md#tests-not-worth-writing) weighs any
+test. A view that plays the wrong sound for something that happens all the
+time, such as a jump, is heard in the first playtest, so a test for each
+such sound mostly costs you an update whenever you change the mapping. Test
+what you could get wrong without hearing it: a sound that must not play in
+a rare case, a loop that must stop, a sound on the view's first refresh.
+
 The sounds themselves can have audio tests too, which catch a sound that
 changes by accident. They're the sound equivalent of
 [visual tests](17-visual-tests.md). How you write one depends on your
-sound library.
+sound library. Each one changes whenever you change its sound on purpose,
+and rendering a whole song takes seconds, so they pay off most for a sound
+library's own reference sounds, where one mistake would change every
+game's sound at once.
 
 ::: info In this book
 `createHeadlessAudio80` and `createHeadlessAudio90` come from

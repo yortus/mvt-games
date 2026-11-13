@@ -1,5 +1,7 @@
 // Grids and helpers for the models' tests. The grids were made by this
 // demo's own model, from seed 2026.
+import { createDiggerModel } from './digger-model';
+import { createLogicGrader } from './logic-grader';
 
 // ---------------------------------------------------------------------------
 // Grids
@@ -65,6 +67,48 @@ export function isValidGrid(grid: Readonly<Uint8Array>): boolean {
         if (digit !== 0 && (candidatesOf(grid, cell) & (1 << digit)) === 0) return false;
     }
     return true;
+}
+
+/** A puzzle made by the digger model, for `level`, from `seed`. */
+export function makePuzzle(seed: number, level: 'hard' | 'hardest'): Uint8Array {
+    const model = createDiggerModel({ seed, level });
+    model.choosePlayback('fast');
+    while (model.phase !== 'grading') model.update(1000);
+    // The grader's first step is the pencil marks, with only the givens shown
+    const puzzle = new Uint8Array(81);
+    for (let cell = 0; cell < 81; cell++) puzzle[cell] = model.cellKindAt(cell) === 'given' ? model.digitAt(cell) : 0;
+    return puzzle;
+}
+
+/**
+ * Solves a puzzle from each seed with the logic grader, checking every step
+ * against the puzzle's solution, and returns each puzzle that has more than
+ * one solution, each mistake (a wrong digit, or a right one rubbed out of the
+ * pencil marks), and the techniques used. Even seeds make hardest puzzles,
+ * and odd seeds hard ones.
+ */
+export function checkGraderSteps(seeds: readonly number[]): { readonly ambiguous: number[]; readonly mistakes: string[]; readonly usedTechniques: Set<string> } {
+    const ambiguous: number[] = [];
+    const mistakes: string[] = [];
+    const usedTechniques = new Set<string>();
+    for (const seed of seeds) {
+        const puzzle = makePuzzle(seed, seed % 2 === 0 ? 'hardest' : 'hard');
+        if (countSolutions(puzzle) !== 1) ambiguous.push(seed);
+        const solution = findSolution(puzzle) ?? puzzle;
+        const grader = createLogicGrader();
+        grader.start(puzzle);
+        for (let step = 1; grader.status === 'solving'; step++) {
+            grader.step();
+            if (grader.lastTechnique !== undefined) usedTechniques.add(grader.lastTechnique);
+            for (let cell = 0; cell < 81; cell++) {
+                const isWrong = grader.digits[cell] !== 0
+                    ? grader.digits[cell] !== solution[cell]
+                    : (grader.candidates[cell] & (1 << solution[cell])) === 0;
+                if (isWrong) mistakes.push(`seed ${seed}, step ${step}, cell ${cell}, after ${grader.lastTechnique}`);
+            }
+        }
+    }
+    return { ambiguous, mistakes, usedTechniques };
 }
 
 // ---------------------------------------------------------------------------

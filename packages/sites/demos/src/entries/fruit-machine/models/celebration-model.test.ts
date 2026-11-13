@@ -22,15 +22,6 @@ function advance(celebration: CelebrationModel, totalMs: number): void {
 // ---------------------------------------------------------------------------
 
 describe('celebration model', () => {
-    it('starts inactive', () => {
-        const celebration = createCelebrationModel();
-
-        expect(celebration.isActive).toBe(false);
-        expect(celebration.stepIndex).toBe(-1);
-        expect(celebration.win).toBeUndefined();
-        expect(celebration.wins).toEqual([]);
-    });
-
     it('opens with every win at once', () => {
         const celebration = createCelebrationModel();
 

@@ -4,11 +4,6 @@ import { createTrackerModel } from './tracker-model';
 const TUNE_COUNT = 4;
 
 describe('createTrackerModel', () => {
-    it('starts with the first tune chosen, and nothing playing', () => {
-        const model = create();
-        expect([model.tuneIndex, model.isPlaying, model.starts, model.playedMs]).toEqual([0, false, 0, 0]);
-    });
-
     it('starts the tune chosen, counts how long it plays, and stops it when asked again', () => {
         const model = create();
         model.playOrStop();

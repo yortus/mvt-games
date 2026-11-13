@@ -160,6 +160,7 @@ teaches. Link the section in the finding.
 | Parents delegate `update` to children; cross-model work in the parent | [Chapter 4](../chapters/04-models.md#trees-of-models) |
 | A model produces the same results at any step size up to the ticker's cap: timers and phases carry leftover time, collisions are checked along the way, and every event that came due in a step happens | [Chapter 6](../chapters/06-time-and-phases.md#steps-of-different-sizes) |
 | A test moves time in steps no bigger than the cap (`advanceTime`), never one big `update` | [Chapter 15](../chapters/15-testing-models.md#advancing-time) |
+| A new test pays for itself: it guards a mistake a playtest wouldn't show, it doesn't restate a mapping or copy a tuned value, and a unit test stays well inside its 2 s budget (a slow one is a `*.slow.test.ts`) | [Chapter 15](../chapters/15-testing-models.md#tests-not-worth-writing) |
 | A moment that repeats is a count, not an event | [Chapter 9](../chapters/09-noticing-changes.md#counts-moments-that-repeat) |
 | Views build display objects once, and change properties in `refresh()` | [Chapter 7](../chapters/07-views.md#the-refresh-contract) |
 | An `update` is safe at a `deltaMs` of 0: per-tick work and timers that have run out are guarded, and a second `update(0)` changes nothing | [Chapter 4](../chapters/04-models.md#the-update-deltams-contract) |

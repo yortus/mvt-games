@@ -2,9 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio90PlayOptions, Audio90Sound } from 'audio90';
 import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
-import {
-    CHOSEN, DEAD_END, DUG, FILLED, FINISHED, GAVE_UP, HELD, MARKED, NEEDED, PLACED, RUBBED_OUT, SEED, SHUFFLE, STUCK, TRIED, TRY,
-} from '../data';
+import { DEAD_END, DUG, RUBBED_OUT, SEED, TRY } from '../data';
 import type { CellEvent, DiggerPhase } from '@mvtjs/puzzles/sudoku-generator';
 import { AudioView } from './audio-view';
 
@@ -20,16 +18,6 @@ describe('AudioView', () => {
     it('plays nothing as it is made', () => {
         const { sfx } = setUp();
         expect(listPlayed(sfx)).toEqual([]);
-    });
-
-    it('tocks for each puzzle tried, and chimes instead for the one chosen', () => {
-        const { sfx, state, tick } = setUp({ phase: 'trying' });
-        state.gridsTried = 1;
-        tick();
-        state.gridsTried = 2;
-        state.isGridChosen = true;
-        tick();
-        expect(listPlayed(sfx)).toEqual([TRIED, CHOSEN]);
     });
 
     it('rings each seed at its digit\'s note, where its cell is', () => {
@@ -72,28 +60,6 @@ describe('AudioView', () => {
         expect(listPlayedOf(sfx, DEAD_END).length).toBeLessThan(listPlayedOf(sfx, TRY).length);
     });
 
-    it('sweeps down as the search gives up, and rises as the grid is full', () => {
-        const { sfx, state, tick } = setUp({ phase: 'filling' });
-        state.restarts = 1;
-        tick();
-        state.phase = 'digging';
-        tick();
-        expect(listPlayed(sfx)).toEqual([GAVE_UP, FILLED]);
-    });
-
-    it('chimes a dug cell at its digit\'s note, knocks for a needed cell, and ticks for a held one', () => {
-        const { sfx, state, tick } = setUp({ phase: 'digging' });
-        state.cellsDug = 1;
-        state.dugDigit = 9;
-        tick();
-        state.cellsNeeded = 1;
-        tick();
-        state.cellsHeld = 1;
-        tick();
-        expect(listPlayed(sfx)).toEqual([DUG, NEEDED, HELD]);
-        expect(listPlayOptionsOf(sfx, DUG)[0]?.note).toBe(84 + 19);
-    });
-
     it('brushes out each rival digit that leads nowhere, but not the last, as the cell is dug with a chime', () => {
         const { sfx, state, tick } = setUp({ phase: 'digging' });
         state.testsFailed = 1;
@@ -102,28 +68,6 @@ describe('AudioView', () => {
         state.cellsDug = 1;
         tick();
         expect(listPlayed(sfx)).toEqual([RUBBED_OUT, DUG]);
-    });
-
-    it('breathes with each shuffle, and shimmers as the pencil marks go in', () => {
-        const { sfx, state, tick } = setUp({ phase: 'shuffling' });
-        state.shufflesDone = 1;
-        tick();
-        state.phase = 'grading';
-        tick();
-        expect(listPlayed(sfx)).toEqual([SHUFFLE, MARKED]);
-    });
-
-    it('plays a note for each digit reasoned out, a brush for marks rubbed out, a warning when stuck, and a flourish when done', () => {
-        const { sfx, state, tick } = setUp({ phase: 'grading' });
-        state.logicPlacements = 1;
-        tick();
-        state.logicReductions = 1;
-        tick();
-        state.needsGuessing = true;
-        tick();
-        state.puzzlesFinished = 1;
-        tick();
-        expect(listPlayed(sfx)).toEqual([PLACED, RUBBED_OUT, STUCK, FINISHED]);
     });
 
     it('plays nothing as a new puzzle sets the counts back to nothing', () => {

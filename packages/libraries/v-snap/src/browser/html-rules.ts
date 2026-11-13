@@ -1,4 +1,5 @@
 import { blankFontUrl } from './fonts';
+import { findShadowRoot } from './shadow-roots';
 
 // ---------------------------------------------------------------------------
 // Functions
@@ -21,7 +22,7 @@ import { blankFontUrl } from './fonts';
  * - **A text field's caret is hidden,** since it blinks.
  *
  * A shadow root's elements don't see the page's rules, so `adoptHtmlRules`
- * gives them to each open shadow root of a view.
+ * gives them to each shadow root of a view, open or closed.
  */
 export async function installHtmlRules(): Promise<void> {
     const face = new FontFace(BLANK_FAMILY, `url(${blankFontUrl})`, { weight: '1 1000' });
@@ -33,10 +34,9 @@ export async function installHtmlRules(): Promise<void> {
 }
 
 /**
- * Gives the page's rules (see `installHtmlRules`) to every open shadow root
- * under the host, such as a web component's, so that its text is blank too.
- * A closed shadow root can't be reached, and its text draws as the system
- * draws it.
+ * Gives the page's rules (see `installHtmlRules`) to every shadow root under
+ * the host, such as a web component's, so that its text is blank too. That
+ * includes a closed root, which `watchShadowRoots` kept when it was made.
  */
 export function adoptHtmlRules(host: HTMLElement): void {
     for (const root of listShadowRoots(host)) {
@@ -67,14 +67,15 @@ export async function settleAnimations(host: HTMLElement): Promise<void> {
 }
 
 /**
- * Returns the host and every element under it, those in open shadow roots
+ * Returns the host and every element under it, those in shadow roots
  * included, each before the elements inside it.
  */
 export function listElements(host: HTMLElement): (HTMLElement | SVGElement)[] {
     const elements: (HTMLElement | SVGElement)[] = [];
     const visit = (element: Element): void => {
         if (element instanceof HTMLElement || element instanceof SVGElement) elements.push(element);
-        if (element.shadowRoot !== null) for (const child of element.shadowRoot.children) visit(child);
+        const root = findShadowRoot(element);
+        if (root !== undefined) for (const child of root.children) visit(child);
         for (const child of element.children) visit(child);
     };
     visit(host);
@@ -196,12 +197,13 @@ function createSheet(): CSSStyleSheet {
 function listShadowRoots(host: HTMLElement): ShadowRoot[] {
     const roots: ShadowRoot[] = [];
     for (const element of listElements(host)) {
-        if (element.shadowRoot !== null) roots.push(element.shadowRoot);
+        const root = findShadowRoot(element);
+        if (root !== undefined) roots.push(root);
     }
     return roots;
 }
 
-/** Returns the animations of the host, the elements under it, their pseudo-elements, and the elements in their open shadow roots. */
+/** Returns the animations of the host, the elements under it, their pseudo-elements, and the elements in their shadow roots. */
 function listAnimations(host: HTMLElement): Animation[] {
     const animations = new Set(host.getAnimations({ subtree: true }));
     for (const root of listShadowRoots(host)) {

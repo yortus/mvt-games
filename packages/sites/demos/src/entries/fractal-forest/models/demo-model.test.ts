@@ -52,11 +52,13 @@ describe('the fractal forest', () => {
     });
 
     it('keeps every branch above the ground, however hard a tree curls', () => {
+        let lowest = Infinity;
         for (let forest = 0; forest < 50; forest++) {
             for (const tree of createDemoModel().trees) {
-                for (const branch of tree.branches) expect(branch.y1).toBeGreaterThan(0);
+                for (const branch of tree.branches) lowest = Math.min(lowest, branch.y1);
             }
         }
+        expect(lowest).toBeGreaterThan(0);
     });
 
     it('lets each leaf go from where it was, without a jump', () => {

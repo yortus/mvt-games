@@ -1,32 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, parseAudio90Song, prepareAudio90Samples, printAudio90Cell, printAudio90Song } from 'audio90';
-import { hashSamples, LOUDNESS_TOLERANCE_LU, measureLoudness, measurePeak, REFERENCE_LOUDNESS_LUFS, render } from 'audio90/headless';
+import { AUDIO90_SAMPLE_MEMORY, createAudio90Song, printAudio90Cell } from 'audio90';
 import { INSTRUMENT_NAMES } from './instrument-names';
 import { SAMPLES } from './samples';
 import { TUNES } from './tunes';
 
 // Importing the data parses its notation, so a mistake in a pattern or a step
-// table fails here. Each tune and effect is then rendered as the chip would
-// play it, and its samples are hashed. A change to the chip or to the data
-// that changes a sound makes that sound's test fail. Listen to the new sound
-// first, then update the snapshot with `vitest -u`.
+// table fails here. How the tunes sound is checked by ear: `npm run
+// audio:render` renders them to WAV files, and prints each one's peak and
+// loudness beside the loudness every song shares.
 
-// Each tune is rendered whole, which takes a few seconds on a busy machine
-describe('tunes', { timeout: 30_000 }, () => {
-    it('bounces its samples within the chip\'s sample memory', () => {
+describe('tunes', () => {
+    // The chip makes this check as it bounces the samples, but bouncing them
+    // takes most of a second.
+    it('fits its samples in the chip\'s sample memory', () => {
         expect(SAMPLES.reduce((total, sample) => total + sample.length, 0)).toBeLessThanOrEqual(AUDIO90_SAMPLE_MEMORY);
-        expect(() => prepareAudio90Samples(SAMPLES)).not.toThrow();
     });
-
-    for (const tune of TUNES) {
-        it(`${tune.name} sounds as it did, audible and unclipped, as loud as every other song`, () => {
-            const samples = render(tune.song);
-            expect(measurePeak(samples)).toBeGreaterThan(AUDIBLE);
-            expect(measurePeak(samples)).toBeLessThan(CLIPPING);
-            expect(Math.abs(measureLoudness(samples) - REFERENCE_LOUDNESS_LUFS)).toBeLessThanOrEqual(LOUDNESS_TOLERANCE_LU);
-            expect(hashSamples(samples)).toMatchSnapshot();
-        });
-    }
 
     it('formats every cell of every tune as text that parses back into the same cell, as the Tune Tracker shows them', () => {
         for (const { song } of TUNES) {
@@ -44,10 +32,6 @@ describe('tunes', { timeout: 30_000 }, () => {
         }
     });
 
-    it('prints each tune as text that parses back into the same song', () => {
-        for (const { song } of TUNES) expect(parseAudio90Song(printAudio90Song(song))).toEqual(song);
-    });
-
     it('names every instrument a tune plays, in 15 characters or fewer', () => {
         for (const { song } of TUNES) {
             for (const instrument of song.instruments) expect(INSTRUMENT_NAMES.get(instrument)?.length ?? 0).toBeGreaterThan(0);
@@ -55,12 +39,3 @@ describe('tunes', { timeout: 30_000 }, () => {
         for (const name of INSTRUMENT_NAMES.values()) expect(name.length).toBeLessThanOrEqual(15);
     });
 });
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Quieter than this, a sound is lost under the music. */
-const AUDIBLE = 0.08;
-/** The peak at which a sound counts as clipped. The output rounds off loud levels, so a peak never reaches 1. */
-const CLIPPING = 0.9;

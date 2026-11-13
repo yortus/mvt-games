@@ -6,15 +6,6 @@ function makeUfo(speed = 4, oscillationAmp = 1.5, oscillationFreq = 2) {
 }
 
 describe('UfoModel', () => {
-    describe('initial state', () => {
-        it('starts at given position', () => {
-            const u = makeUfo();
-            expect(u.worldCol).toBe(30);
-            // worldRow starts at baseRow since sin(0) = 0
-            expect(u.worldRow).toBeCloseTo(5, 1);
-        });
-    });
-
     describe('update - movement', () => {
         it('moves leftward at given speed', () => {
             const u = makeUfo(4, 0, 0);
