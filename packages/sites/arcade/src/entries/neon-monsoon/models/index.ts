@@ -1,5 +1,4 @@
 export type { Point, XDirection, YDirection, ShotKind, ExplosionSize, GamePhase } from './common';
-export { createRandom, type Random } from './random';
 export { createBulletField, type BulletField, type BulletFieldOptions } from './bullet-field';
 export { createGemField, type GemField, type GemFieldOptions, type GemTarget } from './gem-field';
 export { createEmitterModel, type EmitterModel, type EmitterModelOptions } from './emitter-model';

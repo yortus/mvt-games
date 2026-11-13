@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-10-15 |
-| Updated  | 2026-10-21 |
+| Updated  | 2026-11-13 |
 
 ## Description
 
@@ -40,9 +40,11 @@ defaults to a random one.
 For each game, the top-level game model takes an optional `seed` (as Neon
 Monsoon's does), makes one seeded source, and passes it to the child models
 that need it. Child models take `random: () => number` as a required option,
-with no `Math.random` default. Neon Monsoon's `createRandom` (xorshift32) or
-the fruit machine's random source could be shared rather than copied; if so,
-decide where it lives (`@mvtjs/utils`, or the Arcade's `#shared`).
+with no `Math.random` default. The seeded source to use is `createRandom`,
+from `@mvtjs/site-kit/random` (xorshift32, with `next`, `between`,
+`nextIndex` and a `state` that can be saved), which replaced the entries'
+seven copies on 2026-11-13. Boids and the Penrose tiling still keep their own
+Mulberry32 inline; moving them changes their layouts and thumbnails.
 
 Find them again by searching model files for `Math.random`. A lint rule
 could keep them out: `@mvtjs/no-wall-clock` already reports timers and clock
@@ -54,7 +56,7 @@ are left; `Math.random()` could join it, or get a sibling rule.
 - [ ] No model calls `Math.random()`
 - [ ] Each game's top-level model takes an optional seed, and passes one seeded source to its children
 - [ ] Child models take `random` as a required option, with no default
-- [ ] Where a shared seeded random source lives is decided
+- [x] Where a shared seeded random source lives is decided
 - [ ] A lint rule keeps `Math.random()` out of models, or the reason not to is recorded
 - [ ] `npm run lint`, `npm run build` and `npm test` pass
 
@@ -64,3 +66,6 @@ are left; `Math.random()` could join it, or get a sibling rule.
   note on the page that some games don't yet comply.
 - 2026-10-21: Renumbered 073 (was 071) on reaching `vnext`, where 069 was
   taken.
+- 2026-11-13: The shared source lives in the site kit, as
+  `@mvtjs/site-kit/random`. Fenceline, Neon Monsoon, the falling sand, the
+  fruit machine, Minotaur, Rosette and Sudoku's generator now import it.

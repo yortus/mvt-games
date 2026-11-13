@@ -1,4 +1,4 @@
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 import { ALL_DIGITS, BOX_OF, CELL_COUNT, COLUMN_OF, countDigits, lowestDigit, pickDigit, ROW_OF, toDigitSet } from '../sudoku-grid';
 
 // ---------------------------------------------------------------------------

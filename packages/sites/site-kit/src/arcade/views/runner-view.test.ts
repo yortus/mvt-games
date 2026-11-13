@@ -132,8 +132,6 @@ function setUp(): { runner: Element; state: RunnerState } {
         },
         title: () => 'Entry',
         isGame: () => true,
-        isLandscape: () => false,
-        isTurned: () => false,
     });
     document.body.replaceChildren(runner);
     refreshView(runner);

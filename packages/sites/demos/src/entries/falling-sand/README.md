@@ -228,7 +228,6 @@ does not jump.
 | [`array-grain-grid.ts`](./models/grain-grid/array-grain-grid.ts) | The grid, with a typed array per field |
 | [`store-grain-grid.ts`](./models/grain-grid/store-grain-grid.ts) | The grid, in a SolidJS store, with tracked reads |
 | [`starting-scene.ts`](./models/starting-scene.ts) | The opening scene |
-| [`random.ts`](./models/random.ts) | Seeded random numbers, with a state that can be saved |
 | [`model-constants.ts`](./models/model-constants.ts) | The tank sizes in cells, the timestep, pouring and flipping, and the rules grains move by |
 | **`views/`** | |
 | [`demo-view.tsx`](./views/demo-view.tsx) | The whole demo: tank above, toolbar below |

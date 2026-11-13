@@ -4,14 +4,26 @@
 
 /**
  * A seeded source of random numbers in `[0, 1)`, using Marsaglia's xorshift32.
- * The same seed always produces the same sequence of spins, so tests can
- * replay a session exactly. Allocation-free per call.
+ * The same seed always gives the same sequence. So with recorded input and
+ * the same time steps, a game replays exactly, a test can fix the dice, and
+ * every visitor gets the same daily puzzle. Allocation-free per call.
+ *
+ * A model takes one as an option, or a seed to create one, rather than
+ * calling `Math.random()`.
  */
 export interface Random {
     /** The next number in the sequence, in `[0, 1)`. */
     next: () => number;
-    /** The next whole number in `[0, count)`. */
+    /** The next number in `[min, max)`. */
+    between: (min: number, max: number) => number;
+    /** The next whole number in `[0, count)`, such as an index into a list `count` long. */
     nextIndex: (count: number) => number;
+    /**
+     * The generator's whole state, a whole number from 1 to 2^32 - 1. Setting
+     * it back to a value read earlier replays the sequence from that point,
+     * so a saved game carries on just as it would have.
+     */
+    state: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -27,6 +39,7 @@ export interface RandomOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
+/** Creates a source of random numbers, starting from `seed`. */
 export function createRandom(options: RandomOptions): Random {
     // Small seeds give xorshift small first numbers, so the seed is scrambled
     // first (MurmurHash3's finaliser), and nearby seeds start far apart.
@@ -38,7 +51,10 @@ export function createRandom(options: RandomOptions): Random {
 
     return {
         next,
+        between: (min, max) => min + next() * (max - min),
         nextIndex: (count) => Math.floor(next() * count),
+        get state() { return x >>> 0; },
+        set state(value) { x = (value | 0) || 0x9e3779b9; },
     };
 
     function next(): number {

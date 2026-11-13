@@ -6,7 +6,7 @@ import { LEVEL_SETTINGS } from './levels';
 import { createMazePuzzle, type MazePuzzle } from './maze-puzzle';
 import { createMazeGrid } from './maze-grid';
 import { createMazeSolver } from './maze-solver';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { readClues } from './read-clues';
 
 describe('drawRandomPath', () => {

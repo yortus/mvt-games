@@ -1,7 +1,7 @@
 import { CELL_COUNT, COLUMN_OF, findCandidates, type Level, lowestDigit, ROW_OF, toDigitSet } from '../sudoku-grid';
 import { type CellEvent, createCellEventLog } from './cell-event';
 import { LEVEL_SETTINGS } from './model-constants';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 import type { SearchLog } from './search-log';
 import type { StepSolver } from './step-solver';
 import { writeDigOrder } from './write-dig-order';

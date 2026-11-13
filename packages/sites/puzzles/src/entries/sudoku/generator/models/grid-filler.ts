@@ -1,7 +1,7 @@
 import { CELL_COUNT, countDigits, findCandidates, pickDigit } from '../sudoku-grid';
 import { type CellEvent, createCellEventLog } from './cell-event';
 import { FILL_MOVE_BUDGET, SEED_COUNT } from './model-constants';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 import type { SearchLog } from './search-log';
 import type { StepSolver } from './step-solver';
 

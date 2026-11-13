@@ -56,7 +56,7 @@ import {
     TALLY_MS,
     WARNING_MS,
 } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { createScoreModel, type ScoreModel } from './score-model';
 import { createShipModel, type ShipModel } from './ship-model';
 import { createStageModel, type StageModel } from './stage-model';
@@ -215,7 +215,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     // ---- Initialise --------------------------------------------------------
 
-    const random = createRandom(seed);
+    const random = createRandom({ seed });
     const scoring = createScoreModel();
     const enemyBullets = createBulletField<BulletKind>({
         capacity: MAX_ENEMY_BULLETS, hitRadii: BULLET_HIT_RADII, width: ARENA_WIDTH, height: ARENA_HEIGHT, margin: BULLET_MARGIN,

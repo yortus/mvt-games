@@ -174,9 +174,9 @@ export function startSitePage(site: SiteConfig): void {
 
     // The visitor's system setting for less motion, followed as it changes
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    // On a phone or a tablet held upright, a game wider than tall plays turned on
+    // On a phone or a tablet held upright, an entry wider than tall plays turned on
     // its side, to be played with the device turned. One with its orientation
-    // unlocked turns the page too, and the game shows upright again
+    // unlocked turns the page too, and the entry shows upright again
     const canTurn = isHandheldDevice();
     const portrait = window.matchMedia('(orientation: portrait)');
 
@@ -481,17 +481,15 @@ export function startSitePage(site: SiteConfig): void {
 
     /**
      * Whether the runner is turned a quarter turn clockwise: on a phone or a
-     * tablet held upright, for a game wider than tall. Only a game at a fixed
-     * size on the host's Pixi stage turns, since the host maps the pointer
-     * through the turn for that stage alone. Every game is one, and its starter,
-     * once loaded, confirms it.
+     * tablet held upright, for an entry wider than tall. Only an entry at a
+     * fixed size on the host's Pixi stage turns, since the host maps the
+     * pointer through the turn for that stage alone. The entry lists whether
+     * it is one (`laysItselfOut`), so the answer is known before its code loads.
      */
     function isRunnerTurned(): boolean {
         const entry = model.activeEntry;
         if (!canTurn || model.phase === 'browsing' || entry === undefined || !portrait.matches) return false;
-        if (site.entryKind !== 'game' || entry.screenWidth <= entry.screenHeight) return false;
-        const starter = model.starter;
-        return starter === undefined || (starter.kind === 'pixi' && starter.fitTo === undefined);
+        return entry.screenWidth > entry.screenHeight && entry.laysItselfOut !== true;
     }
 
     /** Returns the ids of the entries the visitor marked as favourites on a visit before. The model drops any it does not list. */
@@ -708,9 +706,16 @@ export function startSitePage(site: SiteConfig): void {
     /**
      * In development, an entry's listed play area must be the one it plays at:
      * for an entry that lays itself out (`fitTo`), the one it lays out to when it
-     * is fitted to that area.
+     * is fitted to that area. And it must list whether it lays itself out, as
+     * its starter does, for the page to know whether to turn it.
      */
     function checkPlayArea(entry: ArcadeEntry, starter: EntryStarter): void {
+        const laysItselfOut = starter.kind === 'element' || starter.fitTo !== undefined;
+        assert(
+            (entry.laysItselfOut ?? false) === laysItselfOut,
+            () => `${entry.id}: ${laysItselfOut ? 'lays itself out, but its entry does not say so' : 'plays at a fixed size, but its entry says it lays itself out'}; `
+                + "correct its entry's laysItselfOut",
+        );
         if (starter.kind !== 'pixi') return;
         starter.fitTo?.(entry.screenWidth, entry.screenHeight);
         assert(

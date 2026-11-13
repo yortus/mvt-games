@@ -1,6 +1,6 @@
 import type { DustDevilModel } from './dust-devil-model';
 import { SHEEP_FLEE_DISTANCE, SHEEP_FLEE_SPEED, SHEEP_RADIUS, SHEEP_WALK_SPEED } from './model-constants';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 
 // ---------------------------------------------------------------------------
 // Interface

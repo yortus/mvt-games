@@ -87,7 +87,7 @@ export interface ArcadeViewBindings {
      */
     readonly isSoundOffByDefault: () => boolean;
     /**
-     * Whether the runner is turned a quarter turn clockwise, for a game wider
+     * Whether the runner is turned a quarter turn clockwise, for an entry wider
      * than tall on a phone held upright. Its bar, its stage and everything
      * over them then show for the phone turned on its side.
      */
@@ -321,8 +321,6 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 onSfxIconPressed={() => toggleSound(model.sfxVolume, model.turnSfxOn, model.turnSfxOff)}
                 title={() => model.activeEntry?.name ?? ''}
                 isGame={() => model.activeEntry !== undefined && bindings.site.entryKind === 'game'}
-                isLandscape={() => (model.activeEntry?.screenWidth ?? 0) > (model.activeEntry?.screenHeight ?? 0)}
-                isTurned={bindings.isTurned}
                 onBackPressed={leaveEntry}
                 onPausePressed={() => { model.isPaused = true; }}
                 onResumePressed={() => {

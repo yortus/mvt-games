@@ -11,6 +11,7 @@
         "./input": "./src/input/index.ts",
         "./input/pixi": "./src/input/pixi/index.ts",
         "./pixel-glyphs": "./src/pixel-glyphs/index.ts",
+        "./random": "./src/random/index.ts",
         "./runner": "./src/runner/index.ts",
         "./shared": "./src/shared/index.ts",
         "./site-config": "./src/arcade/site-config.ts",

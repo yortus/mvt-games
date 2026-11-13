@@ -71,6 +71,7 @@ packages/sites/site-kit/src/       Imported by the sites as @mvtjs/site-kit/<fol
 ├── highscores/          The highscore tables' rules, and the page's stores. The Worker that keeps the tables is in ../highscores-worker/
 ├── runner/              The entry host, which runs one entry of any renderer in the MVT order, and the page's sound
 ├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way
+├── random/              The seeded random source models take (createRandom), the same sequence for the same seed
 ├── shared/              The Pixi views entries share: the overlay and pixel text
 ├── sound/               The chip types views play on (MusicChip, SfxChip)
 ├── snapshot/            The page generate-thumbnails photographs each entry on

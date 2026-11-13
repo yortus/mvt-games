@@ -32,10 +32,6 @@ export interface RunnerViewBindings {
     readonly title: () => string;
     /** Whether the chosen entry is a game, rather than a demo, which the pause menu's heading says. */
     readonly isGame: () => boolean;
-    /** Whether the entry's play area is wider than tall. On a phone held upright, a hint suggests turning it, unless the runner is turned for it. */
-    readonly isLandscape: () => boolean;
-    /** Whether the runner is turned a quarter turn, for a game wider than tall on a phone held upright. No hint is needed then. */
-    readonly isTurned: () => boolean;
     /** Reported as the back button, or the pause menu's Exit, is pressed. */
     readonly onBackPressed?: () => void;
     /** Reported as the pause button is pressed while the entry runs. */
@@ -90,8 +86,6 @@ export interface RunnerViewBindings {
  * under the speaker says so. Pressing the hint turns the sound on.
  */
 export function RunnerView(bindings: RunnerViewBindings): Element {
-    // Presentation state: whether the visitor has waved the turn-your-phone hint away
-    let isHintDismissed = false;
     // Presentation state: whether the visitor has waved the sound-is-off hint away
     let isSoundHintDismissed = false;
     const canFullscreen = document.fullscreenEnabled;
@@ -210,10 +204,6 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
             </header>
             <div class="runner-frame">
                 {bindings.stage}
-            </div>
-            <div class="runner-rotate-hint" visible={() => bindings.isPlaying() && bindings.isLandscape() && !bindings.isTurned() && !isHintDismissed}>
-                <span text="Turn your phone sideways for a bigger view" />
-                <button type="button" aria-label="Dismiss" text="×" onClick={() => { isHintDismissed = true; }} />
             </div>
             <div class="runner-sound-hint" visible={() => bindings.isPlaying() && bindings.isSoundOffByDefault() && !isSoundHintDismissed}>
                 <button type="button" class="runner-sound-hint-text" text="Sound is off. Tap here to turn it on." onClick={() => bindings.onSoundPressed?.()} />

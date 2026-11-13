@@ -2,7 +2,7 @@ import {
     createColourTriple, findMostChroma, isInGamut, measureColourDistance, toHexColour, writeLinearRgb, writeLinearRgbOfHex, writeOklab,
     writeOklch,
 } from './colour-space';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 import type { TilePatch } from './tile-patch';
 
 // ---------------------------------------------------------------------------

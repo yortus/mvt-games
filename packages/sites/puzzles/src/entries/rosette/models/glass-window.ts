@@ -1,6 +1,6 @@
 import type { LevelSettings } from './levels';
 import { paintGradient } from './paint-gradient';
-import { createRandom, type Random } from './random';
+import { createRandom, type Random } from '@mvtjs/site-kit/random';
 import { createTilePatch, type TilePatch } from './tile-patch';
 import type { FrameKind } from './trace-frame';
 

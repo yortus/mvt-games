@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createDustDevilModel, type DevilTarget } from './dust-devil-model';
 import { createFieldModel } from './field-model';
 import { DEVIL_BLOW_OUT_MS, DEVIL_FULL_ROOM, DEVIL_MIN_SIZE, DEVIL_RADIUS } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 
 const STEP_MS = 1000 / 60;
 const NO_TARGET: DevilTarget = { row: 0, col: 0, isExposed: false };

@@ -4,7 +4,7 @@ import type { Direction } from './common';
 import { createDustDevilModel, type DevilTarget, type DustDevilModel } from './dust-devil-model';
 import type { FieldModel } from './field-model';
 import { isClearOf } from './geometry';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 import { createSheepModel, type SheepModel, type SheepModelOptions } from './sheep-model';
 
 // ---------------------------------------------------------------------------

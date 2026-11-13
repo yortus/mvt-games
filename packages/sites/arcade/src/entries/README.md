@@ -651,6 +651,12 @@ export const details: EntryDetails = {
   own pixels: the same numbers its views use, written out, since importing
   them would bring the views, and their renderer, into the Arcade's first
   load. In development, the Arcade checks they match the starter's.
+- **`laysItselfOut: true`** goes on an entry that lays itself out for the
+  area it is given: an element entry, or a Pixi entry with `fitTo`. Leave it
+  out for an entry at a fixed size on the host's Pixi stage. On a phone held
+  upright, the site turns an entry wider than tall a quarter turn, but only
+  one that doesn't lay itself out, and it needs to know which before the
+  entry's code loads. In development, the site checks it against the starter.
 - In `details.ts`, the **`description`** is a paragraph or two, separated
   by a blank line, about what the entry is, written for someone who wants
   to play it or watch it. How it's built goes in **`implementation`**, also

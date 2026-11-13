@@ -5,7 +5,7 @@ import {
 } from '../data';
 import { type CelebrationModel, createCelebrationModel } from './celebration-model';
 import { evaluateWays, type WayWin } from './evaluate-ways';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { createReelModel, type ReelModel } from './reel-model';
 
 // ---------------------------------------------------------------------------

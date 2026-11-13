@@ -14,6 +14,7 @@ export const entry: ArcadeEntry = {
     // It fills whatever it is given; this is the shape of a typical one.
     screenWidth: 960,
     screenHeight: 600,
+    laysItselfOut: true,
     thumbnail,
     // The flock: what a square crop of its picture keeps in view
     thumbnailFocus: { x: 480, y: 300 },

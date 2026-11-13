@@ -40,7 +40,7 @@ export interface EntryHost {
     isPaused: boolean;
     /**
      * Whether the page has turned the host's element a quarter turn
-     * clockwise, with a CSS transform on it or an ancestor, so a game wider
+     * clockwise, with a CSS transform on it or an ancestor, so an entry wider
      * than tall plays on its side on a phone held upright. The host then fits
      * the entry to the element's own width and height, which run across and
      * down the turned element. It maps the pointer through the turn, and

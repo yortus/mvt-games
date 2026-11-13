@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRandom, type Random } from './random';
+import { createRandom, type Random } from '@mvtjs/site-kit/random';
 import { createStepSolver, type StepSolver } from './step-solver';
 import { countSolutions, findAllowedDigits, FULL_GRID, isValidGrid, parseGrid, SINGLES_PUZZLE } from './test-grids.test-support';
 

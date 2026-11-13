@@ -1,6 +1,6 @@
 import { swapColumns, swapDigits, swapStacks, turnGrid } from './grid-shuffles';
 import { SHUFFLE_COUNT } from './model-constants';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 
 // ---------------------------------------------------------------------------
 // Interface

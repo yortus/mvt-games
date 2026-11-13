@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CELL_COUNT } from '../sudoku-grid';
 import { createGridFiller } from './grid-filler';
 import { SEED_COUNT } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { createSearchLog } from './search-log';
 import { createStepSolver } from './step-solver';
 import { isValidGrid } from './test-grids.test-support';

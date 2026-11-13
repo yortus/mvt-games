@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CELL_COUNT, type Level, LEVELS } from '../sudoku-grid';
 import { createCellDigger } from './cell-digger';
 import { LEVEL_SETTINGS } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { createSearchLog } from './search-log';
 import { createStepSolver } from './step-solver';
 import { countSolutions, FULL_GRID } from './test-grids.test-support';

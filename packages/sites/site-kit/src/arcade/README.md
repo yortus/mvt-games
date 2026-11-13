@@ -377,7 +377,7 @@ deliberate:
   squashes the entry's own picture, which is in the stage element the entry
   host owns. `drawStage` ([`entry-transition-view.tsx`](./views/entry-transition-view.tsx))
   sets that element's `transform` while it plays, and clears it after.
-- **Turning the runner with CSS.** On a phone held upright, a game wider
+- **Turning the runner with CSS.** On a phone held upright, an entry wider
   than tall plays turned a quarter turn, for the phone turned on its side.
   The page decides (`isRunnerTurned` in `start-site-page.ts`), and `ArcadeView` marks
   the page with a class, which turns each of the runner's layers in the
@@ -385,8 +385,10 @@ deliberate:
   canvas's box in the page, which a turn breaks, so the entry host maps the
   pointer through the turn itself
   ([`../runner/pixi-stage.ts`](../runner/pixi-stage.ts)). That is why only
-  games on the host's Pixi stage are turned. The way in floats the polaroid
-  to the play area turning as it goes.
+  entries at a fixed size on the host's Pixi stage are turned. An entry that
+  lays itself out says so in its listing (`laysItselfOut`), so the page knows
+  before its code loads. The way in floats the polaroid to the play area
+  turning as it goes.
 
 ## In the Guide
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CELL_COUNT } from '../sudoku-grid';
 import { createGridShuffler, type ShuffleKind } from './grid-shuffler';
 import { SHUFFLE_COUNT } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { FULL_GRID, isValidGrid } from './test-grids.test-support';
 
 describe('the grid shuffler', () => {

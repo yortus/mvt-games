@@ -1,5 +1,5 @@
 import type { MazeGrid } from './maze-grid';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 
 /** What `drawRandomPath` draws on. */
 export interface DrawRandomPathOptions {

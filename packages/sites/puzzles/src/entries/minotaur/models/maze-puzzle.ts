@@ -3,7 +3,7 @@ import { PASSAGE, WALL } from './edge-states';
 import type { LevelSettings } from './levels';
 import { createMazeGrid, type MazeGrid } from './maze-grid';
 import { createMazeSolver } from './maze-solver';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { readClues } from './read-clues';
 
 // ---------------------------------------------------------------------------

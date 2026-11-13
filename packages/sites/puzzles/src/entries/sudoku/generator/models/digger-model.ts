@@ -8,7 +8,7 @@ import {
     FASTEST_MOVE_MS, FILL_MOVE_MS, GRID_CHOSEN_MS, GRID_TRIED_MS, MAX_GRIDS_TRIED, MOVE_SPEED_UP, PLAYBACK_RATE, STEP_MS,
     TECHNIQUE_LEVEL, TECHNIQUE_MS, TEST_MOVE_MS,
 } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { createSearchLog, type SearchMoves } from './search-log';
 import type { StepKind } from './step-kind';
 import { createStepSolver } from './step-solver';

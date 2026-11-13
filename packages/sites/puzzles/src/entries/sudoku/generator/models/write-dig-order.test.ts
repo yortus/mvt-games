@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { type DigOrderKind, writeDigOrder } from './write-dig-order';
 
 const KINDS: readonly DigOrderKind[] = ['random', 'every-other', 'snake', 'reading'];

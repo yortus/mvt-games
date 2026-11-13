@@ -14,6 +14,7 @@ export const entry: ArcadeEntry = {
     // It lays itself out for the area it plays in; this is the one it is designed around
     screenWidth: 960,
     screenHeight: 492,
+    laysItselfOut: true,
     thumbnail,
     // The colour of its flock
     cardColor: 'seafoam',

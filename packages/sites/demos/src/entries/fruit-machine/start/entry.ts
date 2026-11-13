@@ -14,6 +14,7 @@ export const entry: ArcadeEntry = {
     // It fills whatever it is given; this is the shape of a typical one.
     screenWidth: 1280,
     screenHeight: 800,
+    laysItselfOut: true,
     thumbnail,
     // The colour of its pink sign
     cardColor: 'bubblegum',

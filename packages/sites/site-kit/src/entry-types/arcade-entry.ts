@@ -28,6 +28,18 @@ export interface ArcadeEntry {
     readonly screenWidth: number;
     readonly screenHeight: number;
     /**
+     * Whether the entry lays itself out for the area it is given, rather than
+     * playing at its fixed play area on the host's Pixi stage: an element
+     * entry, which brings its own renderers, or a Pixi entry that fits itself
+     * (`fitTo`). On a phone held upright, the page turns an entry wider than
+     * tall a quarter turn, but only one that doesn't lay itself out, since
+     * the host maps the pointer through the turn for its own stage alone. It
+     * is listed here, rather than read from the starter, so the way in turns
+     * the right way before the entry's code has loaded. In development, the
+     * page checks it against the starter.
+     */
+    readonly laysItselfOut?: boolean;
+    /**
      * The classic the entry is inspired by, if it is one game rather than a
      * genre: credited in the info panel, and a place the search looks. The
      * one place another game's title may appear.

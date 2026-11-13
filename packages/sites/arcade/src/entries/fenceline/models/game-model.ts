@@ -17,7 +17,7 @@ import {
     START_LIVES,
     STARVE_SHARE,
 } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { placeBeetles, placeDevils, placeSheep } from './round-setup';
 import type { SheepModel } from './sheep-model';
 

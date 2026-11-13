@@ -4,7 +4,7 @@ import {
 import {
     BRUSH_RADIUS, FLIP_DURATION_MS, MAX_STEPS_PER_UPDATE, POUR_FALL_SPEED, SPRAY_GRAINS_PER_STEP, STEP_MS,
 } from './model-constants';
-import { createRandom } from './random';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { addStartingScene } from './starting-scene';
 
 // ---------------------------------------------------------------------------
@@ -133,7 +133,7 @@ export interface DemoModelOptions {
 
 export function createDemoModel(options: DemoModelOptions): DemoModel {
     const { cols, rows, storage = 'objects', scene = 'starting', brushScale = 1 } = options;
-    const random = createRandom(options.seed ?? 1);
+    const random = createRandom({ seed: options.seed ?? 1 });
     const grid = createGrainGrid(storage, { cols, rows, random: random.next });
     const sprayCount = Math.round(SPRAY_GRAINS_PER_STEP * brushScale * brushScale);
 

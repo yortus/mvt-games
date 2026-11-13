@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGrainGrid, type GrainGrid, type GrainStorageKind } from './grain-grid';
-import { createRandom } from '../random';
+import { createRandom } from '@mvtjs/site-kit/random';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -9,7 +9,7 @@ import { createRandom } from '../random';
 const STORAGES: readonly GrainStorageKind[] = ['objects', 'arrays', 'store'];
 
 function create(storage: GrainStorageKind, cols: number, rows: number, seed: number): GrainGrid {
-    return createGrainGrid(storage, { cols, rows, random: createRandom(seed).next });
+    return createGrainGrid(storage, { cols, rows, random: createRandom({ seed }).next });
 }
 
 function stepTimes(grid: GrainGrid, count: number): void {
@@ -316,7 +316,7 @@ describe('grain grid storages', () => {
      * the same seed gets the same edits.
      */
     function play(grid: GrainGrid, steps: number, seed: number): void {
-        const edits = createRandom(seed + 1);
+        const edits = createRandom({ seed: seed + 1 });
         const pick = (n: number): number => Math.floor(edits.next() * n);
         for (let s = 0; s < steps; s++) {
             for (let i = 0; i < 2; i++) grid.add(pick(grid.cols), pick(4), edits.next() < 0.6 ? 'sand' : 'water', 2);
@@ -356,7 +356,7 @@ describe('grain grid storages', () => {
 
         // The same run, handed over half way. The grid taking over draws
         // from the same random numbers, from where the first grid left off.
-        const random = createRandom(9);
+        const random = createRandom({ seed: 9 });
         const first = createGrainGrid(from, { cols: COLS, rows: ROWS, random: random.next });
         play(first, 45, 1);
         const second = createGrainGrid(to, { cols: COLS, rows: ROWS, random: random.next });

@@ -1,5 +1,5 @@
 import { DEVIL_BLOW_OUT_MS, DEVIL_FULL_ROOM, DEVIL_MIN_SIZE, DEVIL_RADIUS, DEVIL_STARVING_ROOM } from './model-constants';
-import type { Random } from './random';
+import type { Random } from '@mvtjs/site-kit/random';
 
 // ---------------------------------------------------------------------------
 // Interface
