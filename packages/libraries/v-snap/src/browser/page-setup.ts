@@ -5,6 +5,7 @@ import { installCanvasText } from './canvas-text';
 import { monoFontUrl, sansFontUrl } from './fonts';
 import { installHtmlRules } from './html-rules';
 import { installSeededRandom } from './page-state';
+import { watchShadowRoots } from './shadow-roots';
 import { loadViewKinds } from './view-kinds';
 
 // ---------------------------------------------------------------------------
@@ -24,7 +25,8 @@ export interface PageSetup {
 // ---------------------------------------------------------------------------
 
 /**
- * Sets the page up once, and returns the setup. It installs the seeded
+ * Sets the page up once, and returns the setup. It starts keeping the
+ * page's shadow roots (see `watchShadowRoots`), then installs the seeded
  * `Math.random`, the test fonts, the canvas text and the HTML rules. Then
  * it checks the environment and the calibration set, once per run, and
  * stops the run if they do not match. Last, it loads the kinds of view that
@@ -43,6 +45,8 @@ export function setUpPage(): Promise<PageSetup> {
 let setup: Promise<PageSetup> | undefined;
 
 async function setUp(): Promise<PageSetup> {
+    // Before any view's code runs, so that every shadow root is seen.
+    watchShadowRoots();
     const resetRandom = installSeededRandom(SEED);
     const [sans, mono] = await Promise.all([loadFont(sansFontUrl), loadFont(monoFontUrl)]);
     const canvasText = installCanvasText({ sans, mono });

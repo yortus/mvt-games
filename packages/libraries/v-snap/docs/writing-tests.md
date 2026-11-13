@@ -254,9 +254,13 @@ do everywhere else.
 
 HTML text is drawn blank, as
 [Limits and Rules](limits-and-rules.md#what-the-images-leave-out)
-explains. That includes the text in a view's open shadow roots, such as a
-web component's. A closed shadow root can't be reached, so its text is
-drawn in the system's fonts. Those differ between systems, so its image
+explains. That includes the text in a view's shadow roots, such as a web
+component's, closed ones too. Your code can't reach a closed shadow root
+from its host, but v-snap keeps each root that `attachShadow` makes, as
+the page makes it. A root that the HTML parser makes from a
+`<template shadowrootmode>` element is the exception. No `attachShadow`
+call makes it, so if it's closed, v-snap can't reach it. Its text is then
+drawn in the system's fonts, which differ between systems, so its image
 can differ too.
 
 ## One Kind of Test in Each File

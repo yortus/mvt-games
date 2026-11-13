@@ -55,7 +55,11 @@ there.
   runs in one shared page, and the tests of an HTML test file share their
   page too. So a change that one test leaves behind affects the tests
   after it. That includes a `vi.mock` or a `vi.stubGlobal` that you don't
-  undo.
+  undo. v-snap resets the state that it knows the libraries keep for
+  themselves. Before each Pixi test, it destroys the bitmap fonts that Pixi
+  made for `BitmapText`, so each test's text is drawn from a font that
+  holds only its own characters. A font that you install with
+  `BitmapFont.install` is yours, so v-snap leaves it alone.
 - **If pixel-art and smooth tests share a Pixi texture, make it in the
   pose.** Pixi fixes a texture's sampling, sharp or smoothed, when it
   makes the texture. v-snap sets the default sampling from the test's

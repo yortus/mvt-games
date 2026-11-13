@@ -1,11 +1,12 @@
 // These are the visual test harness's own tests. Each one checks one case
 // of drawing a view on a canvas: a canvas that the pose draws, or a Pixi or
 // three.js view, which this package's vsnap.config.ts registers.
-import { Container, Graphics, Sprite, Text } from 'pixi.js';
+import { BitmapText, Container, Graphics, Sprite, Text } from 'pixi.js';
 import { AmbientLight, DirectionalLight, Group, Mesh, MeshStandardMaterial, PerspectiveCamera, TorusKnotGeometry } from 'three';
 import { describe, expect, it, onTestFinished } from 'vitest';
 import config, { type Sketch } from '../../../vsnap.config';
 import { getPixiRenderer, pixiViews } from '../../pixi';
+import type { CanvasImage } from '../canvas-drawing';
 import { defineVsnapConfig, loadViewKinds } from '../view-kinds';
 import { bindCanvasTest, canvasTest } from '../visual-test';
 
@@ -51,6 +52,31 @@ canvasTest('canvas text', () => new Text({ text: 'SPIN 1,250', style: { fontFami
 // The test fonts lack these characters, so each is drawn as a box with
 // its code point inside.
 canvasTest('characters the test fonts lack', () => new Text({ text: 'A ★☆ 😀', style: { fontFamily: 'sans-serif', fontSize: 40, fill: 0xffffff } }));
+
+// Pixi makes a bitmap font for each family that BitmapText asks for, and
+// keeps it. Its glyphs are packed in the order they're asked for, and small
+// text is drawn from a mipmap that blends each glyph with its neighbours.
+// v-snap destroys those fonts before each pose, so text that one test
+// asked for first can't change the next test's image. Verdana and Tahoma
+// are both drawn in the sans-serif test font, so their images match.
+it('draws BitmapText the same, whatever BitmapText an earlier test drew', async () => {
+    const kind = pixiViews();
+    const drawDigits = async (fontFamily: string, text = '1 2 5 10 25 100'): Promise<Uint8Array> => {
+        kind.beforePose?.({});
+        const view = new BitmapText({ text, style: { fontFamily, fontSize: 17.5, fill: 0xffffff } });
+        view.position.set(0.3, 0.6);
+        try {
+            return (await kind.draw(view, { width: 160, height: 30, maxPixels: 500_000 }) as CanvasImage).pixels;
+        }
+        finally {
+            view.destroy();
+        }
+    };
+    await drawDigits('Verdana', 'Letters first: ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    const afterLetters = await drawDigits('Verdana');
+    const fresh = await drawDigits('Tahoma');
+    expect(afterLetters).toEqual(fresh);
+});
 
 it('draws two characters that the test fonts lack differently', () => {
     const draw = (text: string): Uint8ClampedArray => {

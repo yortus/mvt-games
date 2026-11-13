@@ -199,6 +199,27 @@ it('gives the page rules to an open shadow root', () => {
     }
 });
 
+// A closed root's host answers shadowRoot with null, but v-snap kept the
+// root when the page made it, so its text is blank and its odd font size
+// is rounded, as in an open one.
+it('gives the page rules to a closed shadow root, and rounds its font sizes', () => {
+    const block = createBlock('');
+    const shadow = block.attachShadow({ mode: 'closed' });
+    shadow.innerHTML = '<style>p { font-family: Arial; font-size: 17.3px }</style><p>Text</p>';
+    document.body.append(block);
+    try {
+        expect(block.shadowRoot).toBeNull();
+        adoptHtmlRules(block);
+        quantizeFontSizes(block);
+        const text = shadow.querySelector('p') as Element;
+        expect(getComputedStyle(text).fontFamily).toContain('Visual Blank');
+        expect(getComputedStyle(text).fontSize).toBe('17.25px');
+    }
+    finally {
+        block.remove();
+    }
+});
+
 it('brings animations to rest', async () => {
     const block = createBlock('<div style="width:10px;height:10px"></div>');
     document.body.append(block);

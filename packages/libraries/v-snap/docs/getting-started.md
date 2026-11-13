@@ -27,7 +27,7 @@ version.
   Vitest config doesn't include, point v-snap's `viteConfig` option at it.
   If you build with something else, write a small Vite config with the
   aliases and plugins that your views rely on.
-- **Playwright 1.64, any patch release,** and Vitest's Playwright
+- **Playwright 1.65, any patch release,** and Vitest's Playwright
   provider, `@vitest/browser-playwright`, at the same version as `vitest`.
   The provider is the package that lets Vitest drive Playwright's browser.
   They're peer dependencies, so npm installs them along with v-snap. Make

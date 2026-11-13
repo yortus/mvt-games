@@ -269,8 +269,8 @@ export default tseslint.config(
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',
             'packages/sites/playground/scripts/vite-plugin-reference-sheets.ts',
             'packages/libraries/audio90/src/web/worklet/register-chip-processor.ts',
-            // v-snap replaces canvas text drawing and patches a Pixi pool.
             'packages/libraries/v-snap/src/browser/canvas-text.ts',
+            'packages/libraries/v-snap/src/browser/shadow-roots.ts',
             'packages/libraries/v-snap/src/pixi/pixi-views.ts',
         ],
         rules: { '@mvtjs/no-this': 'off' },

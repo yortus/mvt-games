@@ -1,4 +1,4 @@
-import { BatchableGraphics, Container } from 'pixi.js';
+import { BatchableGraphics, type BitmapFont, BitmapFontManager, Cache, Container } from 'pixi.js';
 import type { CanvasViewKind } from '../browser';
 import { drawPixiImage, type PixiImageOptions, preparePixiPose } from './pixi-image';
 
@@ -39,13 +39,18 @@ export interface PixiViewsOptions {
  * say so. Otherwise it is drawn smooth.
  */
 export function pixiViews(options: PixiViewsOptions = {}): CanvasViewKind<Container, PixiImageOptions, 'pixi'> {
+    // The project's vsnap.config.ts calls this before any test file loads,
+    // so every font that Pixi makes for itself is seen.
+    watchBitmapFonts();
     return {
         kind: 'pixi',
         isView: (value) => value instanceof Container,
         defaults: { pixelArt: options.pixelArt, background: options.background },
-        // The pose makes its textures with the defaults that this sets.
+        // The pose makes its textures with the defaults that this sets, and
+        // its bitmap text with fonts of its own.
         beforePose: (imageOptions) => {
             patchPixiPools();
+            forgetBitmapFonts();
             preparePixiPose(imageOptions);
         },
         prepare: options.prepare,
@@ -75,4 +80,50 @@ function patchPixiPools(): void {
         reset.call(this);
         this.roundPixels = 0;
     };
+}
+
+/** The bitmap fonts that Pixi made for itself, for `BitmapText` in a family that no installed font has. */
+const madeFonts = new Set<BitmapFont>();
+
+let isWatching = false;
+
+/**
+ * Starts noting each bitmap font that Pixi makes for itself, once per page.
+ * A `BitmapText` whose family has no installed font gets one that Pixi
+ * makes the first time it is asked for, and keeps for the page's life. Its
+ * glyphs are packed into a texture in the order that they are first asked
+ * for, and the texture is mipmapped. So small text is drawn from a mipmap,
+ * where each glyph blends with its neighbours, and those depend on the text
+ * that earlier tests drew. A font that the project installs by name, with
+ * `BitmapFont.install`, is the project's own, and isn't noted.
+ */
+function watchBitmapFonts(): void {
+    if (isWatching) return;
+    isWatching = true;
+    const getFont = BitmapFontManager.getFont.bind(BitmapFontManager);
+    BitmapFontManager.getFont = (text, style) => {
+        const font = getFont(text, style);
+        // Pixi looks up an installed font by this name first.
+        const installedName = `${style.fontFamily}-bitmap`;
+        const isInstalled = Cache.has(installedName) && Cache.get(installedName) === font;
+        if (!isInstalled && !madeFonts.has(font)) {
+            madeFonts.add(font);
+            font.once('destroy', () => madeFonts.delete(font));
+        }
+        return font;
+    };
+}
+
+/**
+ * Destroys the bitmap fonts that Pixi made for itself, and forgets the
+ * layouts that it laid out with them. Pixi makes each one afresh when a
+ * test next asks for it, holding only that test's glyphs, in the order
+ * that it asks for them. So the test's image doesn't depend on the tests
+ * before it.
+ */
+function forgetBitmapFonts(): void {
+    if (madeFonts.size === 0) return;
+    // Destroying a font takes it out of Pixi's cache, and out of the set.
+    for (const font of [...madeFonts]) font.destroy();
+    BitmapFontManager.measureCache.clear();
 }
