@@ -53,6 +53,12 @@ export const RIM_WIDTH = 5;
  * this long for it to land.
  */
 export const FLY_MS = 420;
+/** How far above the pointer a dragged piece is drawn, in pixels, so a finger doesn't hide it. A dropped piece settles from there. */
+export const LIFT_RAISE = 6;
+/** How long a locked group takes to lift, shake and settle as a piece joins it, in ms. */
+export const SETTLE_MS = 480;
+/** When the sun starts to come up behind a mended window, in ms after the celebration's ripple reaches the frame. */
+export const SUN_FROM_MS = 800;
 /** The outline of a piece picked up, and of the tile it would swap with. */
 export const PICKED_COLOR = 0xffffff;
 export const TARGET_COLOR = 0xffffff;

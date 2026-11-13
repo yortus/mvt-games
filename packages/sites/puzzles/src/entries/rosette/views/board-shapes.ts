@@ -21,6 +21,8 @@ export interface BoardShapes {
     readonly scale: number;
     /** The top of the window's frame. */
     readonly windowTop: number;
+    /** The radius of a free piece's ring, in pixels: a share of a tile edge, kept within a few pixels. */
+    readonly ringRadius: number;
     /** Each tile's outline, through the middle of its lead. */
     readonly outers: readonly number[][];
     /** Each tile's glass, inside its lead. */
@@ -98,12 +100,28 @@ export function createBoardShapes(options: BoardShapesOptions): BoardShapes {
         }
     }
 
-    return { centreX, centreY, scale, windowTop: centreY - halfHeight * scale, outers, insets, pieceShapes, sideNeighbours, sweepPlaces };
+    return {
+        centreX,
+        centreY,
+        scale,
+        windowTop: centreY - halfHeight * scale,
+        ringRadius: Math.max(RING_LEAST, Math.min(RING_MOST, scale * RING_SHARE)),
+        outers,
+        insets,
+        pieceShapes,
+        sideNeighbours,
+        sweepPlaces,
+    };
 }
 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** A free piece's ring's radius, as a share of a tile edge, kept between these in pixels. */
+const RING_SHARE = 0.08;
+const RING_LEAST = 3;
+const RING_MOST = 4.5;
 
 /** How far down the light's sweep slants as it goes across. */
 const SWEEP_SLANT = 0.4;
