@@ -4,18 +4,20 @@
 
 /**
  * A square grid of cells, numbered row by row from the top left, and which
- * cells are next to which. Two stars may not touch, side to side or at a
- * corner, so each cell has up to eight neighbours that matter.
+ * cells are next to which. Two stars may not touch, side to side or
+ * diagonally, so each cell has up to eight neighbours that matter.
  */
 export interface StarGrid {
     /** How many cells along each side, and how many rows, columns and regions it has. */
     readonly size: number;
+    /** How many stars every row, column and region holds: one or two. */
+    readonly starsPerLine: number;
     readonly cellCount: number;
-    /** Each cell's neighbours, side to side and at its corners: eight places for each cell, -1 past the edge. */
+    /** Each cell's neighbours, side to side and diagonally: eight places for each cell, -1 past the edge. */
     readonly neighbours: Readonly<Int32Array>;
     /** Each cell's neighbours across its sides: four places for each cell, up, right, down and left, -1 past the edge. */
     readonly sides: Readonly<Int32Array>;
-    /** Whether `a` and `b` touch, side to side or at a corner. */
+    /** Whether `a` and `b` touch, side to side or diagonally. */
     readonly isTouching: (a: number, b: number) => boolean;
 }
 
@@ -26,6 +28,8 @@ export interface StarGrid {
 export interface StarGridOptions {
     /** How many cells along each side. */
     readonly size: number;
+    /** How many stars every row, column and region holds. */
+    readonly starsPerLine: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,7 +38,7 @@ export interface StarGridOptions {
 
 /** Creates a grid `size` cells square. */
 export function createStarGrid(options: StarGridOptions): StarGrid {
-    const { size } = options;
+    const { size, starsPerLine } = options;
     const cellCount = size * size;
     const neighbours = new Int32Array(cellCount * 8).fill(-1);
     const sides = new Int32Array(cellCount * 4).fill(-1);
@@ -58,6 +62,7 @@ export function createStarGrid(options: StarGridOptions): StarGrid {
     }
     return {
         size,
+        starsPerLine,
         cellCount,
         neighbours,
         sides,

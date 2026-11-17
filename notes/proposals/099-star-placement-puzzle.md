@@ -3,7 +3,7 @@
 > A new entry for the puzzles site. You get a square grid, n cells on a side,
 > cut into n regions of irregular shape. You place stars so that every row,
 > every column and every region holds exactly two, and no two stars touch,
-> not even at a corner. The puzzle type is best known as Star Battle, a genre
+> not even diagonally. The puzzle type is best known as Star Battle, a genre
 > invented for the 2003 World Puzzle Championship, and is published by many
 > people under several names. We make our own puzzles with a generator: lay
 > out a valid set of stars first, grow the regions around them, then reshape
@@ -14,8 +14,9 @@
 > stands, so the first step of the build is a faster solver, measured on a
 > phone.
 
-**Status:** spiked as a playable entry, **Stars**, at 9x9 only, with two
-levels (section 10). Uncommitted. Not playtested yet.
+**Status:** built as a beta entry, **Stars**, deployed. Four levels since
+the first playtest (section 10). Since 101, every puzzle is fair by
+construction, with givens, and the generator of section 4 is replaced.
 
 **Written:** 2026-11-13, against `vnext` at `48b318f3`. The rules and names
 come from the sources in section 2. The spike was a Node script (not in the
@@ -47,7 +48,7 @@ the [originality rules](../../packages/sites/arcade/src/entries/README.md#origin
   is a group of cells joined side to side.
 - Place stars so that every row, every column and every region holds
   exactly two.
-- No two stars may touch, side to side or at a corner. So around every star
+- No two stars may touch, side to side or diagonally. So around every star
   is a ring of eight cells with no star in it.
 - Every other cell is empty.
 - A good puzzle has exactly one answer, found without guessing.
@@ -417,3 +418,32 @@ and the shared calendar and card.
     checked for one solution and its grade), the puzzle model, the
     walkthrough, 7 visual tests, the whole-screen image, a thumbnail and
     share picture. The puzzles site's card wall picture was not retaken.
+- 2026-11-17: The user's first playtest, after deploying it as **Stars
+  BETA**. Three changes asked for, two made:
+  - **Levels.** The two 9x9 levels became Hard (one look ahead) and Expert
+    (deep look ahead). Easy and Medium are new, with **one star a line**:
+    6x6 and 8x8, graded `rules` (neighbours, full lines and bands, no
+    looking ahead). The grid now carries its stars a line, and the layout
+    and region makers take one or two. With one star, each star's piece of
+    region is a whole region. Making a puzzle in Node: Easy 4 ms on
+    average (worst 17 ms), Medium 50 ms (worst 370 ms). The seeds are by
+    level name, so every day's puzzles changed, and progress kept from the
+    first deploy is dropped.
+  - **Drags ring a group.** Dragging no longer dots cells. A drag gathers
+    the cells it goes over, eight-way, and backing over the cell before
+    lets the last one go. On release, two cells or more are ringed as a
+    group, "a star is in one of these", or the ring comes off if those
+    cells are ringed already. A ring is drawn just inside its cells in
+    violet, faint once a star is in it, red once every cell has a dot.
+    Overlapping rings take lanes, a step further in. Undo is now a copy of
+    the marks and rings per action, and saves keep the rings.
+  - **No guessing**: proposed in 101, not built. Hard and Expert still
+    need looking ahead, which the user rightly calls guessing.
+  - The walkthrough's third step rings a group; the showcase is a Hard
+    puzzle with a ring. New visual tests for Expert and for rings, and a
+    unit test for the drag's cells. Thumbnail and share picture retaken.
+- 2026-11-17: The generator of sections 4 and 5 is replaced by 101's:
+  direct techniques only, and givens printed on the grid until they finish
+  the puzzle. No reshaping and no solution counting, so the speed problem
+  of section 4.4 is gone: Expert, now 10x10, is made in 61 ms on average
+  in Node. See 101, section 9.

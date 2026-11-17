@@ -1,4 +1,4 @@
-import { EMPTY, STAR, STARS_PER_LINE, UNKNOWN } from './cell-states';
+import { EMPTY, STAR, UNKNOWN } from './cell-states';
 import type { StarGrid } from './star-grid';
 
 // ---------------------------------------------------------------------------
@@ -6,26 +6,48 @@ import type { StarGrid } from './star-grid';
 // ---------------------------------------------------------------------------
 
 /**
- * What a puzzle takes to solve, as a person would solve it.
+ * A way a person works out cells, by reading the board as it stands, with
+ * nothing supposed and nothing followed. From easiest to hardest:
  *
- * - `look-ahead`: the rules, counting, and one look ahead: "a star here
- *   would leave this region, or this pair of rows, without room for its
- *   stars". Every two-star puzzle needs some of this.
- * - `deep-look-ahead`: looking ahead further, counting inside the look.
- * - `guessing`: none of that finishes it, so it would take guessing. Such
- *   a puzzle is never made.
+ * - `rules`: the eight cells round a star are empty. A row, column or
+ *   region with all its stars has no more, and one with only as many open
+ *   cells as the stars it still needs has a star in each.
+ * - `bands`: if k regions lie wholly inside k rows side by side, the rest
+ *   of those rows is empty. If k rows are wholly covered by k regions,
+ *   those regions are empty outside the rows. The same for columns.
+ * - `pressure`: a star at a cell would empty its own ring of eight cells.
+ *   If that would leave a row, column or region without room for the stars
+ *   it still needs, the cell is empty.
+ * - `boxes`: two rows side by side need twice a line's stars, and a 2x2 box
+ *   holds one at most. If their open cells, covered by boxes from the left,
+ *   take exactly that many boxes, each box holds one star: one with a single
+ *   open cell has its star there, and a cell outside a box that touches
+ *   every open cell in it is empty. The same for columns.
  */
-export type StarReasoning = 'look-ahead' | 'deep-look-ahead' | 'guessing';
+export type StarTechnique = 'rules' | 'bands' | 'pressure' | 'boxes';
 
-/** Works out a puzzle of stars, given its regions. */
+/** The techniques, from easiest to hardest. */
+export const STAR_TECHNIQUES: readonly StarTechnique[] = ['rules', 'bands', 'pressure', 'boxes'];
+
+/** How far the techniques got with a puzzle. */
+export interface StarSolution {
+    /** Each cell, as `STAR`, `EMPTY`, or `UNKNOWN` where the techniques got no further. */
+    readonly cells: Uint8Array;
+    /** Whether every cell is known. A puzzle the techniques finish has one solution, since every step was forced. */
+    readonly isFinished: boolean;
+    /** The hardest technique it needed. */
+    readonly hardest: StarTechnique;
+}
+
+/** Works out a puzzle of stars, given its regions, as a person would, and never supposes. */
 export interface StarSolver {
     /**
-     * Counts the puzzle's solutions, stopping at `most`. Each solution found
-     * is added to `found`, if given, as `STAR` or `EMPTY` for each cell.
+     * Works out as many cells as the techniques up to `most` can, from
+     * `givens`: `STAR` or `EMPTY` for each cell printed on the grid, and
+     * `UNKNOWN` for the rest. Each time, it tries the easiest technique
+     * first.
      */
-    countSolutions: (most: number, found?: Uint8Array[]) => number;
-    /** Finds what the puzzle takes to solve. A puzzle that doesn't take guessing has one solution. */
-    grade: () => StarReasoning;
+    solve: (givens: Readonly<Uint8Array>, most: StarTechnique) => StarSolution;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,25 +64,10 @@ export interface StarSolverOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-/**
- * Creates a solver for the puzzle with `regions`. It works on cells, each
- * unknown, a star or empty, and knows three rules:
- *
- * 1. **Neighbours.** The eight cells around a star are empty.
- * 2. **Full lines.** A row, column or region with its two stars has no
- *    more. One with only as many unknown cells as the stars it still needs
- *    has a star in each.
- * 3. **Room.** A line that needs two more stars needs two unknown cells
- *    that don't touch. Two rows side by side need four stars between them,
- *    with no two in neighbouring columns; and so do two columns.
- *
- * To count solutions, it applies the rules until they settle, then tries a
- * cell both ways. To grade, it also counts regions inside bands of rows and
- * columns, and looks ahead, as a person would, and never guesses.
- */
+/** Creates a solver for the puzzle with `regions`. */
 export function createStarSolver(options: StarSolverOptions): StarSolver {
     const { grid, regions } = options;
-    const { size, cellCount, neighbours } = grid;
+    const { size, starsPerLine, cellCount, neighbours } = grid;
 
     // The puzzle's lines: its rows, then its columns, then its regions, as runs of cells in one list
     const lineCount = size * 3;
@@ -83,76 +90,36 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
     }
     lineStarts[lineCount] = at;
 
-    // Scratch space for the band counting
+    // Scratch space: for the bands, for pressure and which lines a cell's ring reaches, and for the boxes
     const lowest = new Int32Array(size);
     const highest = new Int32Array(size);
     const isInside = new Uint8Array(size);
     const isAcross = new Uint8Array(size);
-    // Scratch space for looking ahead
-    const trial = new Uint8Array(cellCount);
+    const pool = new Int32Array(cellCount);
+    const isLineReached = new Uint8Array(lineCount);
+    const boxesNeeded = starsPerLine * 2;
+    const boxCells = new Int32Array(boxesNeeded * 4);
+    const boxSizes = new Int32Array(boxesNeeded);
 
     return {
-        countSolutions(most, found) {
-            let count = 0;
-            search(new Uint8Array(cellCount));
-            return count;
-
-            function search(cells: Uint8Array): void {
-                if (!applyRules(cells)) return;
-                // Try a cell of the line that needs stars and has the fewest unknown cells
-                let bestLine = -1;
-                let bestUnknowns = Infinity;
-                for (let line = 0; line < lineCount; line++) {
-                    let stars = 0;
-                    let unknowns = 0;
-                    for (let i = lineStarts[line]; i < lineStarts[line + 1]; i++) {
-                        const state = cells[lineCells[i]];
-                        if (state === STAR) stars++;
-                        else if (state === UNKNOWN) unknowns++;
-                    }
-                    if (stars < STARS_PER_LINE && unknowns < bestUnknowns) {
-                        bestUnknowns = unknowns;
-                        bestLine = line;
-                    }
-                }
-                if (bestLine < 0) {
-                    count++;
-                    found?.push(cells);
-                    return;
-                }
-                let cell = -1;
-                for (let i = lineStarts[bestLine]; i < lineStarts[bestLine + 1] && cell < 0; i++) {
-                    if (cells[lineCells[i]] === UNKNOWN) cell = lineCells[i];
-                }
-                const withStar = cells.slice();
-                withStar[cell] = STAR;
-                search(withStar);
-                if (count >= most) return;
-                const withoutStar = cells.slice();
-                withoutStar[cell] = EMPTY;
-                search(withoutStar);
-            }
-        },
-        grade() {
-            // Solve as a person would, trying the easiest reasoning first each time, and note the hardest it needed
-            const cells = new Uint8Array(cellCount);
-            let reasoning: StarReasoning = 'look-ahead';
+        solve(givens, most) {
+            const cells = Uint8Array.from(givens);
+            const mostLevel = STAR_TECHNIQUES.indexOf(most);
+            let hardest = 0;
             for (;;) {
-                if (!applyRules(cells)) return 'guessing';
-                if (!cells.includes(UNKNOWN)) return reasoning;
-                if (countBands(cells)) continue;
-                if (lookAhead(cells, false)) continue;
-                if (lookAhead(cells, true)) {
-                    reasoning = 'deep-look-ahead';
-                    continue;
-                }
-                return 'guessing';
+                applyRules(cells);
+                if (!cells.includes(UNKNOWN)) break;
+                if (mostLevel >= 1 && countBands(cells)) hardest = Math.max(hardest, 1);
+                else if (mostLevel >= 2 && applyPressure(cells)) hardest = Math.max(hardest, 2);
+                else if (mostLevel >= 3 && fillBoxes(cells)) hardest = 3;
+                else break;
             }
+            return { cells, isFinished: !cells.includes(UNKNOWN), hardest: STAR_TECHNIQUES[hardest] };
         },
     };
 
-    /** Applies the three rules until nothing changes. Returns false if the cells break a rule, so they can't be part of a solution. */
-    function applyRules(cells: Uint8Array): boolean {
+    /** Applies the rules until nothing changes. */
+    function applyRules(cells: Uint8Array): void {
         let isChanged = true;
         while (isChanged) {
             isChanged = false;
@@ -160,9 +127,7 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
                 if (cells[cell] !== STAR) continue;
                 for (let k = 0; k < 8; k++) {
                     const next = neighbours[cell * 8 + k];
-                    if (next < 0) continue;
-                    if (cells[next] === STAR) return false;
-                    if (cells[next] === UNKNOWN) {
+                    if (next >= 0 && cells[next] === UNKNOWN) {
                         cells[next] = EMPTY;
                         isChanged = true;
                     }
@@ -172,75 +137,27 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
                 const start = lineStarts[line];
                 const end = lineStarts[line + 1];
                 let stars = 0;
-                let unknowns = 0;
+                let open = 0;
                 for (let i = start; i < end; i++) {
                     const state = cells[lineCells[i]];
                     if (state === STAR) stars++;
-                    else if (state === UNKNOWN) unknowns++;
+                    else if (state === UNKNOWN) open++;
                 }
-                if (stars > STARS_PER_LINE || stars + unknowns < STARS_PER_LINE) return false;
-                if (unknowns === 0) continue;
-                if (stars === STARS_PER_LINE || stars + unknowns === STARS_PER_LINE) {
-                    const fill = stars === STARS_PER_LINE ? EMPTY : STAR;
-                    for (let i = start; i < end; i++) {
-                        if (cells[lineCells[i]] === UNKNOWN) cells[lineCells[i]] = fill;
-                    }
-                    isChanged = true;
+                if (open === 0 || (stars < starsPerLine && stars + open > starsPerLine)) continue;
+                const fill = stars >= starsPerLine ? EMPTY : STAR;
+                for (let i = start; i < end; i++) {
+                    if (cells[lineCells[i]] === UNKNOWN) cells[lineCells[i]] = fill;
                 }
-                else if (STARS_PER_LINE - stars >= 2 && !hasCellsApart(cells, start, end)) return false;
+                isChanged = true;
             }
         }
-        return hasRoomInPairs(cells);
     }
 
-    /** Whether the line from `start` to `end` in the list has two unknown cells that don't touch. */
-    function hasCellsApart(cells: Uint8Array, start: number, end: number): boolean {
-        for (let i = start; i < end; i++) {
-            if (cells[lineCells[i]] !== UNKNOWN) continue;
-            for (let j = i + 1; j < end; j++) {
-                if (cells[lineCells[j]] === UNKNOWN && !grid.isTouching(lineCells[i], lineCells[j])) return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Whether every two rows side by side, and every two columns, still have
-     * room for their four stars: no two in neighbouring places along them,
-     * since any two cells there touch.
-     */
-    function hasRoomInPairs(cells: Uint8Array): boolean {
-        for (let isColumns = 0; isColumns < 2; isColumns++) {
-            for (let first = 0; first + 1 < size; first++) {
-                // The most stars that fit up to each place: with none at the place, or with one
-                let withNone = 0;
-                let withOne = -Infinity;
-                for (let along = 0; along < size; along++) {
-                    const a = isColumns === 0 ? first * size + along : along * size + first;
-                    const b = isColumns === 0 ? a + size : a + 1;
-                    const canBeNone = cells[a] !== STAR && cells[b] !== STAR;
-                    const canBeOne = cells[a] !== EMPTY || cells[b] !== EMPTY;
-                    const nextNone = canBeNone ? Math.max(withNone, withOne) : -Infinity;
-                    withOne = canBeOne ? withNone + 1 : -Infinity;
-                    withNone = nextNone;
-                }
-                if (Math.max(withNone, withOne) < STARS_PER_LINE * 2) return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Counts regions in bands of rows, and of columns. If k regions lie
-     * wholly inside k rows side by side, those rows' stars are all theirs,
-     * so the rest of the rows is empty. If k rows are wholly covered by k
-     * regions, those regions have no stars outside the rows. Returns
-     * whether it changed anything.
-     */
+    /** Counts regions in bands of rows, and of columns. Returns whether it changed anything. */
     function countBands(cells: Uint8Array): boolean {
         let isChanged = false;
         for (let isColumns = 0; isColumns < 2; isColumns++) {
-            // The rows (or columns) each region still spans
+            // The rows (or columns) each region still spans. A band's change only narrows them, so a count from these stays sound
             lowest.fill(size);
             highest.fill(-1);
             for (let cell = 0; cell < cellCount; cell++) {
@@ -278,25 +195,135 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
         return isChanged;
     }
 
-    /**
-     * Looks for cells where a star would break the rules, one cell at a
-     * time, and empties each it finds. Looking deep, it counts bands inside
-     * each look too. Returns whether it found any.
-     */
-    function lookAhead(cells: Uint8Array, isDeep: boolean): boolean {
+    /** Empties every open cell whose ring of eight would leave some line without room for its stars. Returns whether it emptied any. */
+    function applyPressure(cells: Uint8Array): boolean {
         let isChanged = false;
         for (let cell = 0; cell < cellCount; cell++) {
             if (cells[cell] !== UNKNOWN) continue;
-            trial.set(cells);
-            trial[cell] = STAR;
-            let isPossible = applyRules(trial);
-            while (isDeep && isPossible && countBands(trial)) isPossible = applyRules(trial);
-            // A star that breaks the rules here breaks them still, once more cells are known
-            if (!isPossible) {
+            // Only the lines through the cell and its ring change
+            isLineReached.fill(0);
+            markLinesOf(cell);
+            for (let k = 0; k < 8; k++) {
+                const next = neighbours[cell * 8 + k];
+                if (next >= 0) markLinesOf(next);
+            }
+            let isEmpty = false;
+            for (let line = 0; line < lineCount && !isEmpty; line++) {
+                if (isLineReached[line] === 0) continue;
+                let stars = 0;
+                let poolSize = 0;
+                let hasCell = false;
+                for (let i = lineStarts[line]; i < lineStarts[line + 1]; i++) {
+                    const other = lineCells[i];
+                    if (other === cell) hasCell = true;
+                    else if (cells[other] === STAR) stars++;
+                    else if (cells[other] === UNKNOWN && !grid.isTouching(other, cell)) pool[poolSize++] = other;
+                }
+                if (!hasRoom(poolSize, starsPerLine - stars - (hasCell ? 1 : 0))) isEmpty = true;
+            }
+            if (isEmpty) {
                 cells[cell] = EMPTY;
                 isChanged = true;
             }
         }
         return isChanged;
+    }
+
+    function markLinesOf(cell: number): void {
+        isLineReached[Math.floor(cell / size)] = 1;
+        isLineReached[size + (cell % size)] = 1;
+        isLineReached[size * 2 + regions[cell]] = 1;
+    }
+
+    /** Whether the first `poolSize` cells of `pool` can hold `need` stars, none touching. Exact for one star or two. */
+    function hasRoom(poolSize: number, need: number): boolean {
+        if (need <= 0) return true;
+        if (poolSize < need) return false;
+        if (need === 1) return true;
+        for (let i = 0; i < poolSize; i++) {
+            for (let j = i + 1; j < poolSize; j++) {
+                if (!grid.isTouching(pool[i], pool[j])) return true;
+            }
+        }
+        return false;
+    }
+
+    /** Covers each two rows, and each two columns, side by side with 2x2 boxes, and fills what the boxes force. Returns whether it changed anything. */
+    function fillBoxes(cells: Uint8Array): boolean {
+        let isChanged = false;
+        for (let isColumns = 0; isColumns < 2; isColumns++) {
+            for (let first = 0; first + 1 < size; first++) {
+                const cellAt = (line: number, along: number): number => (isColumns === 0 ? line * size + along : along * size + line);
+                // Boxes from the left, each starting at the first place along with a cell that isn't empty, and taking that place and the next
+                let boxCount = 0;
+                let along = 0;
+                while (along < size && boxCount <= boxesNeeded) {
+                    if (cells[cellAt(first, along)] === EMPTY && cells[cellAt(first + 1, along)] === EMPTY) {
+                        along++;
+                        continue;
+                    }
+                    if (boxCount === boxesNeeded) {
+                        boxCount++;
+                        break;
+                    }
+                    let count = 0;
+                    for (let step = 0; step < 2 && along + step < size; step++) {
+                        for (let line = first; line <= first + 1; line++) {
+                            const cell = cellAt(line, along + step);
+                            if (cells[cell] !== EMPTY) boxCells[boxCount * 4 + count++] = cell;
+                        }
+                    }
+                    boxSizes[boxCount++] = count;
+                    along += 2;
+                }
+                if (boxCount !== boxesNeeded) continue;
+                for (let box = 0; box < boxCount; box++) {
+                    if (fillBox(cells, box)) isChanged = true;
+                }
+            }
+        }
+        return isChanged;
+    }
+
+    /** Fills what a box holding exactly one star forces. Returns whether it changed anything. */
+    function fillBox(cells: Uint8Array, box: number): boolean {
+        let open = 0;
+        let lastOpen = -1;
+        for (let i = 0; i < boxSizes[box]; i++) {
+            const cell = boxCells[box * 4 + i];
+            if (cells[cell] === STAR) return false;
+            if (cells[cell] === UNKNOWN) {
+                open++;
+                lastOpen = cell;
+            }
+        }
+        if (open === 0) return false;
+        if (open === 1) {
+            cells[lastOpen] = STAR;
+            return true;
+        }
+        // A cell outside the box that touches every open cell in it touches the last one, so look round that one
+        let isChanged = false;
+        for (let k = 0; k < 8; k++) {
+            const candidate = neighbours[lastOpen * 8 + k];
+            if (candidate < 0 || cells[candidate] !== UNKNOWN || isInBox(box, candidate)) continue;
+            let isTouchingAll = true;
+            for (let i = 0; i < boxSizes[box] && isTouchingAll; i++) {
+                const cell = boxCells[box * 4 + i];
+                if (cells[cell] === UNKNOWN && !grid.isTouching(cell, candidate)) isTouchingAll = false;
+            }
+            if (isTouchingAll) {
+                cells[candidate] = EMPTY;
+                isChanged = true;
+            }
+        }
+        return isChanged;
+    }
+
+    function isInBox(box: number, cell: number): boolean {
+        for (let i = 0; i < boxSizes[box]; i++) {
+            if (boxCells[box * 4 + i] === cell) return true;
+        }
+        return false;
     }
 }

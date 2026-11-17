@@ -5,7 +5,6 @@ import { createComputed } from '@mvtjs/utils';
 import { ButtonView, DIM_TEXT_COLOR, INK_COLOR, LABEL_STYLE, LEVEL_NAMES, MARGIN, SMALL_STYLE, SOLVED_COLOR, writeDate } from '../../../shared';
 import type { CellMark, GameModel, PuzzleModel } from '../models';
 import { BoardView } from './board-view';
-import { createStrokeViewModel } from './stroke-view-model';
 import {
     BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, BUTTON_GAP, BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_Y, HINT_Y,
     SCREEN_WIDTH,
@@ -32,8 +31,9 @@ export interface PuzzleViewBindings {
  * date.
  *
  * A tap moves a cell on from nothing, to a dot, to a star, and back to
- * nothing. A drag dots the empty cells it goes over, or rubs dots out if it
- * starts on one.
+ * nothing. A drag rings the cells it goes over as a group, a note that a
+ * star is in one of them, or takes the ring off a group of just those
+ * cells.
  */
 export function PuzzleView(bindings: PuzzleViewBindings): Container {
     const { model } = bindings;
@@ -50,13 +50,12 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
     });
     const isSolved = (): boolean => puzzle().isSolved;
     const hintText = createComputed({ watch: isSolved, compute: writeHint });
-    // What a drag does to the cells it goes over
-    const stroke = createStrokeViewModel({
-        markAt: (cell) => puzzle().markAt(cell),
-        onStrokeStarted: () => puzzle().startStroke(),
-        onCellMarked: (cell, mark) => puzzle().mark(cell, mark),
-        onStrokeFinished: () => puzzle().finishStroke(),
-    });
+    /** A drag over cells rings them, or takes the ring off, if they are ringed already. */
+    const ringOrUnring = (cells: readonly number[]): void => {
+        const index = puzzle().findGroup(cells);
+        if (index >= 0) puzzle().clearGroup(index);
+        else puzzle().noteGroup(cells);
+    };
 
     return (
         <container>
@@ -76,14 +75,15 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
                     width={BOARD_WIDTH}
                     height={BOARD_HEIGHT}
                     markAt={(cell) => puzzle().markAt(cell)}
+                    isGivenAt={(cell) => puzzle().isGivenAt(cell)}
                     isClashAt={(cell) => puzzle().isClashAt(cell)}
+                    groups={() => puzzle().groups}
+                    groupStateAt={(index) => puzzle().groupStateAt(index)}
                     isSolved={isSolved}
                     changes={() => puzzle().changes}
                     puzzlesOpened={() => model.puzzlesOpened}
                     onCellTapped={(cell) => puzzle().mark(cell, NEXT_MARKS[puzzle().markAt(cell)])}
-                    onDragStarted={stroke.start}
-                    onDraggedOver={stroke.markOver}
-                    onDragFinished={stroke.finish}
+                    onCellsDragged={ringOrUnring}
                 />
             </container>
             <ButtonView
@@ -125,5 +125,5 @@ const NEXT_MARKS: Readonly<Record<CellMark, CellMark>> = { none: 'dot', dot: 'st
 /** The line of help, for what is going on. */
 function writeHint(isSolved: boolean): string {
     if (isSolved) return 'Solved! It\'s ticked off on the calendar.';
-    return 'Tap for a dot, again for a star. Drag to dot many cells.';
+    return 'Tap for a dot, again for a star. Drag to ring a group.';
 }

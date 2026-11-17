@@ -7,17 +7,20 @@ import type { HowToPlayText } from '../../../shared';
 /** How to play Stars, written once, for the card in the game and for the info panel. */
 export const HOW_TO_PLAY: HowToPlayText = {
     rules: [
-        'Place two stars in every row, every column and every region. The regions are the shapes drawn with thick lines.',
-        'No two stars may touch, not even at a corner. Every other cell is empty.',
+        'Place stars so that every row, every column and every region holds the same number: one at Easy and Medium, two at '
+        + 'Hard and Expert. The regions are the shapes drawn with thick lines.',
+        'No two stars may touch, not even diagonally. Every other cell is empty.',
+        'The stars and dots printed in black are given. Every puzzle can be solved from them by looking, with no guessing.',
     ],
     controls: [
         { action: 'Put a dot in a cell', inputs: ['click', 'tap'], note: 'A dot is your note that a cell has no star' },
         { action: 'Place a star', inputs: ['click', 'tap'], note: 'Tap a cell twice. A third tap clears it' },
-        { action: 'Dot many cells', inputs: ['drag'], note: 'Drag across them. A drag that starts on a dot rubs dots out' },
+        { action: 'Ring a group', inputs: ['drag'], note: 'Drag across cells: your note that a star is in one of them. Drag again to take it off' },
         { action: 'Undo', inputs: [{ button: 'Undo' }], note: 'Takes back the last thing you did' },
     ],
     notes: [
-        'Stars that touch, and the stars of a row, column or region with more than two, show in red.',
+        'Stars that touch, and the stars of a row, column or region with too many, show in red.',
+        'A ring fades once a star is in it, and turns red if every cell in it has a dot.',
         'Your progress on every puzzle is kept in this browser.',
     ],
 };

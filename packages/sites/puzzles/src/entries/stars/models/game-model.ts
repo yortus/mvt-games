@@ -106,8 +106,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
         get puzzlesSolved() { return puzzlesSolved; },
         get canRestartPuzzle() { return phase === 'playing' && puzzle !== undefined && intro.practice === undefined; },
         openPuzzle(day) {
+            if (phase !== 'calendar' || !calendar.isPlayable(day)) return;
             const settings = LEVEL_SETTINGS[calendar.level];
-            if (phase !== 'calendar' || !calendar.isPlayable(day) || settings === undefined) return;
             puzzleDay = day;
             puzzleLevel = calendar.level;
             const stars = createStarPuzzle({ seed: findPuzzleSeed(day, puzzleLevel), settings });
@@ -119,7 +119,6 @@ export function createGameModel(options: GameModelOptions): GameModel {
         closePuzzle() {
             intro.close();
             if (phase !== 'playing') return;
-            puzzle?.finishStroke();
             model.keepProgress();
             puzzle = undefined;
             phase = 'calendar';

@@ -18,10 +18,10 @@ export const STARTING_LEVEL: PuzzleLevel = 'easy';
 /** How many actions undo can take back, at most. */
 export const MOST_UNDOS = 200;
 
-/** The puzzle the card that says how to play shows, solved: the seed it is made from, and its settings. Any seed would do. */
+/** The puzzle the card that says how to play shows, solved: the seed it is made from, and its settings, a medium puzzle's. Any seed would do. */
 export const EXAMPLE_SEED = 5;
-export const EXAMPLE_SETTINGS: LevelSettings = { size: 9, reasoning: 'look-ahead' };
+export const EXAMPLE_SETTINGS: LevelSettings = { size: 8, starsPerLine: 1, hardest: 'bands', isHardestNeeded: false };
 
-/** The walkthrough's practice puzzle: the seed it is made from, and its settings. Any seed would do, other than the example's. */
+/** The walkthrough's practice puzzle: the seed it is made from, and its settings, an easy puzzle's. Any seed would do, other than the example's. */
 export const PRACTICE_SEED = 7;
-export const PRACTICE_SETTINGS: LevelSettings = { size: 9, reasoning: 'look-ahead' };
+export const PRACTICE_SETTINGS: LevelSettings = { size: 6, starsPerLine: 1, hardest: 'bands', isHardestNeeded: false };

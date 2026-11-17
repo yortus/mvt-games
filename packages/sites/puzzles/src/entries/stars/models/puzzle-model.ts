@@ -1,4 +1,4 @@
-import { STAR, STARS_PER_LINE } from './cell-states';
+import { EMPTY, STAR, UNKNOWN } from './cell-states';
 import { MOST_UNDOS } from './model-constants';
 import { type PuzzleSave, readPuzzleSave, writePuzzleSave } from './puzzle-save';
 import type { StarPuzzle } from './star-puzzle';
@@ -11,44 +11,57 @@ import { createUndoHistory } from './undo-history';
 /** What the player has marked a cell with: nothing yet, a dot for a cell they know has no star, or a star. */
 export type CellMark = 'none' | 'dot' | 'star';
 
+/** How a group the player ringed stands: still open, met by a star placed in it, or broken, with a dot in every cell. */
+export type GroupState = 'open' | 'met' | 'broken';
+
 /**
- * One puzzle being solved: the marks the player has made on its cells. The
- * player marks cells with dots and stars, an action at a time, and the
- * puzzle is solved once the stars are its solution's. Dots are the player's
- * own notes, and don't count. Every action can be undone, back to the start
- * of the visit. Once the puzzle is solved, it takes no more marks.
+ * One puzzle being solved: the marks the player has made on its cells, and
+ * the groups of cells they have ringed. Its givens, the stars and dots
+ * printed on it, are marks from the start, which never change. The puzzle
+ * is solved once the stars are its solution's. Dots and groups are the player's own notes, and don't
+ * count: a dot says a cell has no star, and a group says a star is in one
+ * of its cells. Every action can be undone, back to the start of the visit.
+ * Once the puzzle is solved, it takes no more marks.
  *
  * It points out stars that break a rule, as they are placed: stars that
- * touch, and the stars of a row, column or region with more than two.
+ * touch, and the stars of a row, column or region with too many.
  */
 export interface PuzzleModel {
     /** The puzzle being solved. */
     readonly puzzle: StarPuzzle;
     readonly markAt: (cell: number) => CellMark;
+    /** Whether `cell` is a given: a star or a dot printed on the grid, which the player can't change. */
+    readonly isGivenAt: (cell: number) => boolean;
     /** Whether `cell` holds a star that breaks a rule. */
     readonly isClashAt: (cell: number) => boolean;
+    /** The groups ringed, each its cells in order. The list is replaced, never changed, as groups come and go. */
+    readonly groups: readonly (readonly number[])[];
+    readonly groupStateAt: (index: number) => GroupState;
+    /** Which group has exactly `cells`, in any order, or -1 if none does. */
+    readonly findGroup: (cells: readonly number[]) => number;
     /** Whether the stars marked are the solution's. */
     readonly isSolved: boolean;
     /** How many actions undo can take back. */
     readonly undoCount: number;
-    /** A count that rises with every mark and every undo, so that progress can be kept, and the board redrawn, as it changes. */
+    /** A count that rises with every mark, every group and every undo, so that progress can be kept, and the board redrawn, as it changes. */
     readonly changes: number;
-    /** Stars placed, dots marked, marks taken off, stars that broke a rule, and actions undone, since the puzzle opened. */
+    /** Stars placed, dots marked, marks taken off, stars that broke a rule, groups ringed and taken off, and actions undone, since the puzzle opened. */
     readonly starsPlaced: number;
     readonly dotsMarked: number;
     readonly marksCleared: number;
     readonly clashesMade: number;
+    readonly groupsNoted: number;
+    readonly groupsCleared: number;
     readonly undosDone: number;
-    /** Dots marked in the stroke being made, or the last one. */
-    readonly strokeDots: number;
-    /** The cell marked last, or -1. */
+    /** The cell marked last, or the first cell of the group ringed or taken off last, or -1. */
     readonly lastMarkedCell: number;
 
-    /** Starts a stroke: the marks until it finishes are undone together. */
-    startStroke: () => void;
-    /** Marks `cell`, as part of the stroke being made, or as an action of its own if none is. */
+    /** Marks `cell`, unless it is a given. */
     mark: (cell: number, mark: CellMark) => void;
-    finishStroke: () => void;
+    /** Rings `cells` as a group: a star is in one of them. Takes two cells or more, and a group not ringed already. */
+    noteGroup: (cells: readonly number[]) => void;
+    /** Takes off the group at `index`. */
+    clearGroup: (index: number) => void;
     /** Takes back the last action. */
     undo: () => void;
     /** Returns the puzzle as it stands, to be restored later through the options' `saved`. */
@@ -76,34 +89,44 @@ export interface PuzzleModelOptions {
 /** Creates a puzzle with nothing marked, or as it was saved. */
 export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     const { puzzle } = options;
-    const { grid, regions, solution } = puzzle;
-    const { size, cellCount, neighbours } = grid;
-    const marks = readPuzzleSave(options.saved, puzzle) ?? new Uint8Array(cellCount);
-    const history = createUndoHistory({ marks, mostUndos: MOST_UNDOS });
+    const { grid, regions, givens, solution } = puzzle;
+    const { size, starsPerLine, cellCount, neighbours } = grid;
+    const saved = readPuzzleSave(options.saved, puzzle);
+    let marks = saved?.marks ?? Uint8Array.from(givens, (given) => GIVEN_MARKS[given]);
+    let groups: readonly (readonly number[])[] = saved?.groups.map(toSortedCells) ?? [];
+    const history = createUndoHistory<Snapshot>({ mostUndos: MOST_UNDOS });
 
     // What the marks mean, worked out as they change, since views ask about them every frame
     const clashes = new Uint8Array(cellCount);
     const rowStars = new Int32Array(size);
     const colStars = new Int32Array(size);
     const regionStars = new Int32Array(size);
+    let groupStates: GroupState[] = [];
     let clashCount = 0;
     let isSolved = false;
 
-    let isStroking = false;
     let changes = 0;
     let starsPlaced = 0;
     let dotsMarked = 0;
     let marksCleared = 0;
     let clashesMade = 0;
+    let groupsNoted = 0;
+    let groupsCleared = 0;
     let undosDone = 0;
-    let strokeDots = 0;
     let lastMarkedCell = -1;
     findWhatMarksMean();
 
     const model: PuzzleModel = {
         puzzle,
         markAt: (cell) => MARK_NAMES[marks[cell]],
+        isGivenAt: (cell) => givens[cell] !== UNKNOWN,
         isClashAt: (cell) => clashes[cell] === 1,
+        get groups() { return groups; },
+        groupStateAt: (index) => groupStates[index],
+        findGroup(cells) {
+            const sorted = toSortedCells(cells);
+            return groups.findIndex((group) => group.length === sorted.length && group.every((cell, i) => cell === sorted[i]));
+        },
         get isSolved() { return isSolved; },
         get undoCount() { return history.count; },
         get changes() { return changes; },
@@ -111,53 +134,63 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         get dotsMarked() { return dotsMarked; },
         get marksCleared() { return marksCleared; },
         get clashesMade() { return clashesMade; },
+        get groupsNoted() { return groupsNoted; },
+        get groupsCleared() { return groupsCleared; },
         get undosDone() { return undosDone; },
-        get strokeDots() { return strokeDots; },
         get lastMarkedCell() { return lastMarkedCell; },
-        startStroke() {
-            if (isStroking || isSolved) return;
-            isStroking = true;
-            strokeDots = 0;
-            history.start();
-        },
         mark(cell, mark) {
             const state = MARK_STATES[mark];
-            if (isSolved || cell < 0 || cell >= cellCount || marks[cell] === state) return;
-            const isOwnAction = !isStroking;
-            if (isOwnAction) model.startStroke();
-            history.keepCell(cell);
+            if (isSolved || cell < 0 || cell >= cellCount || marks[cell] === state || givens[cell] !== UNKNOWN) return;
+            keepForUndo();
             marks[cell] = state;
             lastMarkedCell = cell;
             if (state === STAR_MARK) starsPlaced++;
-            else if (state === DOT_MARK) {
-                dotsMarked++;
-                strokeDots++;
-            }
+            else if (state === DOT_MARK) dotsMarked++;
             else marksCleared++;
             const clashesBefore = clashCount;
             findWhatMarksMean();
             if (clashCount > clashesBefore) clashesMade++;
             changes++;
-            if (isOwnAction) model.finishStroke();
         },
-        finishStroke() {
-            if (!isStroking) return;
-            isStroking = false;
-            history.finish();
+        noteGroup(cells) {
+            const group = toSortedCells(cells);
+            if (isSolved || group.length < 2 || group[0] < 0 || group[group.length - 1] >= cellCount || model.findGroup(group) >= 0) return;
+            keepForUndo();
+            groups = [...groups, group];
+            lastMarkedCell = group[0];
+            groupsNoted++;
+            findWhatMarksMean();
+            changes++;
+        },
+        clearGroup(index) {
+            if (isSolved || index < 0 || index >= groups.length) return;
+            keepForUndo();
+            lastMarkedCell = groups[index][0];
+            groups = groups.filter((_, i) => i !== index);
+            groupsCleared++;
+            findWhatMarksMean();
+            changes++;
         },
         undo() {
             if (isSolved) return;
-            model.finishStroke();
-            if (history.undo() === undefined) return;
+            const before = history.takeBack();
+            if (before === undefined) return;
+            marks = before.marks;
+            groups = before.groups;
             findWhatMarksMean();
             undosDone++;
             changes++;
         },
-        save: () => writePuzzleSave(puzzle, marks),
+        save: () => writePuzzleSave(puzzle, marks, groups),
     };
     return model;
 
-    /** Works out the clashes, and whether the puzzle is solved, from the marks. */
+    /** Keeps the marks and groups as they are, before an action changes them. */
+    function keepForUndo(): void {
+        history.keep({ marks: marks.slice(), groups });
+    }
+
+    /** Works out the clashes, the groups' states, and whether the puzzle is solved, from the marks. */
     function findWhatMarksMean(): void {
         rowStars.fill(0);
         colStars.fill(0);
@@ -175,9 +208,9 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             if ((solution[cell] === STAR) !== isStar) isSolved = false;
             let isClash = false;
             if (isStar) {
-                isClash = rowStars[Math.floor(cell / size)] > STARS_PER_LINE
-                    || colStars[cell % size] > STARS_PER_LINE
-                    || regionStars[regions[cell]] > STARS_PER_LINE;
+                isClash = rowStars[Math.floor(cell / size)] > starsPerLine
+                    || colStars[cell % size] > starsPerLine
+                    || regionStars[regions[cell]] > starsPerLine;
                 for (let k = 0; k < 8 && !isClash; k++) {
                     const next = neighbours[cell * 8 + k];
                     if (next >= 0 && marks[next] === STAR_MARK) isClash = true;
@@ -186,6 +219,12 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             clashes[cell] = isClash ? 1 : 0;
             if (isClash) clashCount++;
         }
+        groupStates = groups.map(findGroupState);
+    }
+
+    function findGroupState(group: readonly number[]): GroupState {
+        if (group.some((cell) => marks[cell] === STAR_MARK)) return 'met';
+        return group.every((cell) => marks[cell] === DOT_MARK) ? 'broken' : 'open';
     }
 }
 
@@ -198,3 +237,16 @@ const DOT_MARK = 1;
 const STAR_MARK = 2;
 const MARK_NAMES: readonly CellMark[] = ['none', 'dot', 'star'];
 const MARK_STATES: Readonly<Record<CellMark, number>> = { none: 0, dot: DOT_MARK, star: STAR_MARK };
+/** The mark each kind of given starts as, by its state: none for no given, a star, or a dot. */
+const GIVEN_MARKS: Readonly<Record<number, number>> = { [UNKNOWN]: 0, [STAR]: STAR_MARK, [EMPTY]: DOT_MARK };
+
+/** The puzzle as it was before an action, for undo to put back. */
+interface Snapshot {
+    readonly marks: Uint8Array;
+    readonly groups: readonly (readonly number[])[];
+}
+
+/** Returns `cells` in order, each once. */
+function toSortedCells(cells: readonly number[]): number[] {
+    return [...new Set(cells)].sort((a, b) => a - b);
+}

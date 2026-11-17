@@ -18,12 +18,13 @@ export type StarsWalkthrough = Pick<IntroModelOptions<PuzzleModel, StarsTarget>,
  *
  * - `dot`: put a dot in a cell, with a tap.
  * - `star`: place a star, with two taps.
- * - `drag`: dot two cells or more, with a drag.
+ * - `group`: ring a group of cells, with a drag.
  * - `undo`: take back the last thing done.
  * - `done`: nothing more to do.
  *
  * The demos follow the practice puzzle's solution, so what the arrow marks
- * is right: a dot where there is no star, and a star where there is one.
+ * is right: a dot where there is no star, a star where there is one, and a
+ * group with a star in it.
  */
 export const STARS_WALKTHROUGH: StarsWalkthrough = {
     steps: [
@@ -40,10 +41,10 @@ export const STARS_WALKTHROUGH: StarsWalkthrough = {
             findDemo: findStarDemo,
         },
         {
-            name: 'drag',
-            text: 'Stars never touch, not even at a corner. Drag across the cells around a star to dot them all.',
-            isDone: (puzzle) => puzzle.strokeDots >= 2,
-            findDemo: findDragDemo,
+            name: 'group',
+            text: 'Drag across cells to ring them: your note that a star is in one of them. Drag over the same cells again to take the ring off.',
+            isDone: (puzzle) => puzzle.groupsNoted >= 1,
+            findDemo: findGroupDemo,
         },
         {
             name: 'undo',
@@ -68,12 +69,6 @@ export const STARS_WALKTHROUGH: StarsWalkthrough = {
 
 const NO_DEMO: Demo<StarsTarget> = [];
 
-/** How many cells the drag demo dots. */
-const DRAG_DEMO_CELLS = 3;
-
-/** A cell's eight neighbours, in order round it from the top, as steps across and down, so each is next to the one before. */
-const RING: readonly (readonly [number, number])[] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
-
 /** A tap on an unmarked cell with no star, from the middle of the grid out, so the demo is in plain sight. */
 function findDotDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
     const cell = findFromMiddle(puzzle, (c) => puzzle.puzzle.solution[c] !== STAR && puzzle.markAt(c) === 'none');
@@ -87,22 +82,26 @@ function findStarDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
     return [{ kind: puzzle.markAt(cell) === 'dot' ? 'tap' : 'double-tap', targets: [toCellMiddle(puzzle, cell)] }];
 }
 
-/** A drag over a few unmarked cells round a star placed, or round one of the solution's if none is placed. */
-function findDragDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
-    const { size } = puzzle.puzzle.grid;
-    let star = findFromMiddle(puzzle, (c) => puzzle.markAt(c) === 'star');
-    if (star < 0) star = findFromMiddle(puzzle, (c) => puzzle.puzzle.solution[c] === STAR);
+/**
+ * A drag over two cells side by side in one region, one of them a star in
+ * the solution that isn't placed yet, and the other unmarked, from the
+ * middle of the grid out.
+ */
+function findGroupDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
+    const { grid, regions, solution } = puzzle.puzzle;
+    let partner = -1;
+    const star = findFromMiddle(puzzle, (cell) => {
+        if (solution[cell] !== STAR || puzzle.markAt(cell) === 'star') return false;
+        for (let side = 0; side < 4; side++) {
+            const next = grid.sides[cell * 4 + side];
+            if (next < 0 || regions[next] !== regions[cell] || puzzle.markAt(next) !== 'none') continue;
+            partner = next;
+            return true;
+        }
+        return false;
+    });
     if (star < 0) return NO_DEMO;
-    const targets: StarsTarget[] = [];
-    const row = Math.floor(star / size);
-    const col = star % size;
-    for (let i = 0; i < RING.length && targets.length < DRAG_DEMO_CELLS; i++) {
-        const r = row + RING[i][1];
-        const c = col + RING[i][0];
-        if (r < 0 || r >= size || c < 0 || c >= size || puzzle.markAt(r * size + c) !== 'none') continue;
-        targets.push(toCellMiddle(puzzle, r * size + c));
-    }
-    return targets.length < 2 ? NO_DEMO : [{ kind: 'drag', targets }];
+    return [{ kind: 'drag', targets: [toCellMiddle(puzzle, partner), toCellMiddle(puzzle, star)] }];
 }
 
 /** The cell nearest the middle of the grid that passes `test`, or -1 if none does. */

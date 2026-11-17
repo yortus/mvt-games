@@ -1,1 +1,1 @@
-export { CLASHED, DOTTED, RUBBED, SOLVED, STARRED, UNDONE } from './sounds';
+export { CLASHED, DOTTED, GROUPED, RUBBED, SOLVED, STARRED, UNDONE } from './sounds';

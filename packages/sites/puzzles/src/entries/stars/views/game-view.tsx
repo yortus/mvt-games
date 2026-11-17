@@ -66,8 +66,9 @@ export function GameView(bindings: GameViewBindings): Container {
                 dotsMarked={() => model.puzzle?.dotsMarked ?? 0}
                 marksCleared={() => model.puzzle?.marksCleared ?? 0}
                 clashesMade={() => model.puzzle?.clashesMade ?? 0}
+                groupsNoted={() => model.puzzle?.groupsNoted ?? 0}
+                groupsCleared={() => model.puzzle?.groupsCleared ?? 0}
                 undosDone={() => model.puzzle?.undosDone ?? 0}
-                strokeDots={() => model.puzzle?.strokeDots ?? 0}
                 markPan={() => findMarkPan(model)}
                 puzzlesSolved={() => model.puzzlesSolved}
             />

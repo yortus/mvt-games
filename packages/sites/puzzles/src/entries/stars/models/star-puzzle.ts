@@ -1,24 +1,27 @@
-import { createRandom, type Random } from '@mvtjs/site-kit/random';
-import { STAR } from './cell-states';
-import { growRegions, isRegionWhole } from './grow-regions';
+import { createRandom } from '@mvtjs/site-kit/random';
+import { UNKNOWN } from './cell-states';
+import { findGivens } from './find-givens';
+import { growRegions } from './grow-regions';
 import { layOutStars } from './lay-out-stars';
 import type { LevelSettings } from './levels';
 import { createStarGrid, type StarGrid } from './star-grid';
-import { createStarSolver } from './star-solver';
+import { createStarSolver, type StarTechnique } from './star-solver';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A puzzle to solve: its grid, its regions, and its one solution. */
+/** A puzzle to solve: its grid, its regions, the cells printed on it, and its one solution. */
 export interface StarPuzzle {
     readonly grid: StarGrid;
     /** Each cell's region, numbered from 0. */
     readonly regions: Readonly<Uint8Array>;
+    /** The cells printed on the grid at the start: `STAR` or `EMPTY`, and `UNKNOWN` for the rest. */
+    readonly givens: Readonly<Uint8Array>;
     /** Each cell of the solution, as `STAR` or `EMPTY`. */
     readonly solution: Readonly<Uint8Array>;
-    /** What it takes to solve. */
-    readonly reasoning: LevelSettings['reasoning'];
+    /** The hardest technique it takes. */
+    readonly hardest: StarTechnique;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,26 +40,35 @@ export interface StarPuzzleOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a puzzle from `seed`. It works backwards from the answer: it lays
- * out the stars first, then grows regions around them, two stars in each,
- * so the puzzle has at least one solution, its own. While it has others, it
- * takes one of them, finds a cell that is a star there but not in its own,
- * and moves that cell into a neighbouring region. The other solution now
- * has a region with a star too many, so it is gone, and its own still
- * holds. Once one solution is left, the puzzle is kept if it takes the
- * reasoning asked for. Otherwise it starts again.
+ * Creates a puzzle from `seed` that the level's techniques solve, with
+ * nothing supposed, so it has one solution and never takes guessing. It
+ * works backwards from the answer: it lays out the stars, grows regions
+ * round them, then prints a few givens on the grid, until the techniques
+ * finish it, keeping only the givens they need. It finds givens a few
+ * times over, at random, and keeps the fewest. A level that asks for its
+ * hardest technique gets a puzzle that needs it, or the maker starts again.
  */
 export function createStarPuzzle(options: StarPuzzleOptions): StarPuzzle {
-    const { size, reasoning } = options.settings;
-    const grid = createStarGrid({ size });
+    const { size, starsPerLine, hardest, isHardestNeeded } = options.settings;
+    const grid = createStarGrid({ size, starsPerLine });
     const random = createRandom({ seed: options.seed });
     for (let attempt = 0; attempt < MOST_ATTEMPTS; attempt++) {
         const solution = layOutStars({ grid, random });
         const regions = growRegions({ grid, solution, random });
-        if (regions === undefined || !reshapeRegions(grid, regions, solution, random)) continue;
-        if (createStarSolver({ grid, regions }).grade() === reasoning) return { grid, regions, solution, reasoning };
+        if (regions === undefined) continue;
+        const solver = createStarSolver({ grid, regions });
+        let best: Uint8Array | undefined;
+        let bestCount = Infinity;
+        for (let tries = 0; tries < GIVENS_TRIES; tries++) {
+            const givens = findGivens({ grid, solution, solver, most: hardest, random });
+            const count = countGivens(givens);
+            if (count >= bestCount || (isHardestNeeded && solver.solve(givens, hardest).hardest !== hardest)) continue;
+            best = givens;
+            bestCount = count;
+        }
+        if (best !== undefined) return { grid, regions, givens: best, solution, hardest: solver.solve(best, hardest).hardest };
     }
-    throw new Error(`No ${size} by ${size} puzzle that takes ${reasoning} turned up in ${MOST_ATTEMPTS} attempts`);
+    throw new Error(`No ${size} by ${size} puzzle of ${starsPerLine} stars a line that takes ${hardest} turned up in ${MOST_ATTEMPTS} attempts`);
 }
 
 // ---------------------------------------------------------------------------
@@ -66,55 +78,13 @@ export function createStarPuzzle(options: StarPuzzleOptions): StarPuzzle {
 /** How many layouts to try before giving up. No level comes near it. */
 const MOST_ATTEMPTS = 1000;
 
-/** How many solutions a count stops at, while reshaping. */
-const MOST_COUNTED = 10;
+/** How many times to find givens for one layout, keeping the fewest. More find fewer givens, at a cost in time. */
+const GIVENS_TRIES = 3;
 
-/** How many changes to try, for each row of the grid, before starting again. */
-const TRIES_PER_ROW = 30;
-
-/** How often a change that leaves more solutions is kept anyway, so the search doesn't get stuck. */
-const WORSE_CHANGE_ODDS = 0.2;
-
-/** Moves cells between regions until `solution` is the only solution. Returns whether it got there. */
-function reshapeRegions(grid: StarGrid, regions: Uint8Array, solution: Readonly<Uint8Array>, random: Random): boolean {
-    const { size, cellCount, sides } = grid;
-    let found: Uint8Array[] = [];
-    let count = createStarSolver({ grid, regions }).countSolutions(MOST_COUNTED, found);
-    const moves: number[] = [];
-    for (let tries = 0; count > 1 && tries < TRIES_PER_ROW * size; tries++) {
-        // Another solution: one with a star where ours has none
-        const other = found.find((cells) => !isSameStars(cells, solution));
-        if (other === undefined) return false;
-        // Its stars that ours hasn't, each beside a region it could move into
-        moves.length = 0;
-        for (let cell = 0; cell < cellCount; cell++) {
-            if (other[cell] !== STAR || solution[cell] === STAR) continue;
-            for (let side = 0; side < 4; side++) {
-                const next = sides[cell * 4 + side];
-                if (next >= 0 && regions[next] !== regions[cell]) moves.push(cell, regions[next]);
-            }
-        }
-        if (moves.length === 0) return false;
-        const move = random.nextIndex(moves.length / 2) * 2;
-        const cell = moves[move];
-        const from = regions[cell];
-        if (!isRegionWhole(grid, regions, from, cell)) continue;
-        regions[cell] = moves[move + 1];
-        const nextFound: Uint8Array[] = [];
-        const nextCount = createStarSolver({ grid, regions }).countSolutions(MOST_COUNTED, nextFound);
-        if (nextCount <= count || random.next() < WORSE_CHANGE_ODDS) {
-            count = nextCount;
-            found = nextFound;
-        }
-        else regions[cell] = from;
+function countGivens(givens: Readonly<Uint8Array>): number {
+    let count = 0;
+    for (let cell = 0; cell < givens.length; cell++) {
+        if (givens[cell] !== UNKNOWN) count++;
     }
-    return count === 1;
-}
-
-/** Whether `cells` has its stars where `solution` has. */
-function isSameStars(cells: Readonly<Uint8Array>, solution: Readonly<Uint8Array>): boolean {
-    for (let cell = 0; cell < cells.length; cell++) {
-        if ((cells[cell] === STAR) !== (solution[cell] === STAR)) return false;
-    }
-    return true;
+    return count;
 }

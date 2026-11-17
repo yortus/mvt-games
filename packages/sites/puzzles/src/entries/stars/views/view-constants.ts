@@ -46,3 +46,6 @@ export const MOST_CELL_SIZE = 64;
  * regions beside it. No two regions that share a side get the same tint.
  */
 export const REGION_TINTS: readonly number[] = [0xfbe4d2, 0xdcebd8, 0xdbe6f4, 0xf1dfee, 0xf6efc9, 0xd7eeea, 0xeee0d3];
+
+/** The violet the groups the player rings are drawn in, apart from the stars' blue and the regions' ink. */
+export const GROUP_COLOR = 0x7b4fc9;

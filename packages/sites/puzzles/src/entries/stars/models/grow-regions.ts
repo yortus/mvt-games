@@ -8,7 +8,7 @@ import type { StarGrid } from './star-grid';
 
 export interface GrowRegionsOptions {
     readonly grid: StarGrid;
-    /** The stars the regions are drawn around, two in every row and column. */
+    /** The stars the regions are drawn around, the grid's number in every row and column. */
     readonly solution: Readonly<Uint8Array>;
     readonly random: Random;
 }
@@ -18,14 +18,17 @@ export interface GrowRegionsOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns regions drawn around `solution`'s stars, two stars in each, as a
- * region number for each cell, or undefined if this try didn't work out.
+ * Returns regions drawn around `solution`'s stars, the grid's number of
+ * stars in each, as a region number for each cell, or undefined if this try
+ * didn't work out.
  *
- * It grows half a region from each star: a random empty cell beside a half
- * joins it, until every cell is in one. Then it pairs each half with a
- * half beside it, so the halves make whole regions of two stars each. The
- * pairing is a small search that pairs the half with the fewest choices
- * first. Now and then no pairing exists, and the caller tries again.
+ * It grows a piece of region from each star: a random empty cell beside a
+ * piece joins it, until every cell is in one. With one star a line, each
+ * piece is a region. With two, it pairs each piece with a piece beside it,
+ * so the pieces make whole regions of two stars each. The pairing is a
+ * small search that pairs the piece with the fewest choices first. Now and
+ * then no pairing exists, or, with one star a line, a region is a single
+ * cell, which would give its star away. Then the caller tries again.
  */
 export function growRegions(options: GrowRegionsOptions): Uint8Array | undefined {
     const { grid, solution, random } = options;
@@ -51,6 +54,7 @@ export function growRegions(options: GrowRegionsOptions): Uint8Array | undefined
         half[cell] = choices[random.nextIndex(choiceCount)];
         left--;
     }
+    if (grid.starsPerLine === 1) return hasOneCellRegion(half, halfCount) ? undefined : Uint8Array.from(half);
 
     // Which halves are beside which
     const isBeside: boolean[][] = Array.from({ length: halfCount }, () => new Array<boolean>(halfCount).fill(false));
@@ -114,37 +118,16 @@ export function growRegions(options: GrowRegionsOptions): Uint8Array | undefined
     }
 }
 
-/** Whether `region`'s cells, leaving out `without`, are all joined side to side, and there is at least one. */
-export function isRegionWhole(grid: StarGrid, regions: Readonly<Uint8Array>, region: number, without: number): boolean {
-    const { cellCount, sides } = grid;
-    let first = -1;
-    let cells = 0;
-    for (let cell = 0; cell < cellCount; cell++) {
-        if (regions[cell] !== region || cell === without) continue;
-        if (first < 0) first = cell;
-        cells++;
-    }
-    if (first < 0) return false;
-    const seen = new Uint8Array(cellCount);
-    const stack = [first];
-    seen[first] = 1;
-    let reached = 1;
-    while (stack.length > 0) {
-        const cell = stack.pop()!;
-        for (let side = 0; side < 4; side++) {
-            const next = sides[cell * 4 + side];
-            if (next < 0 || next === without || seen[next] === 1 || regions[next] !== region) continue;
-            seen[next] = 1;
-            reached++;
-            stack.push(next);
-        }
-    }
-    return reached === cells;
-}
-
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** Whether any of the `regionCount` regions of `regions` is a single cell. */
+function hasOneCellRegion(regions: Readonly<Int32Array>, regionCount: number): boolean {
+    const sizes = new Int32Array(regionCount);
+    for (let cell = 0; cell < regions.length; cell++) sizes[regions[cell]]++;
+    return sizes.includes(1);
+}
 
 /** How long the pairing searches before this try is given up. */
 const MOST_PAIRING_STEPS = 20_000;

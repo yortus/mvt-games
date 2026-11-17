@@ -25,9 +25,18 @@ export function ExampleStarsView(bindings: ExampleStarsViewBindings): Container 
         width: EXAMPLE_SIZE,
         height: EXAMPLE_SIZE,
         markAt,
+        isGivenAt: () => false,
         isClashAt: () => false,
+        groups: () => NO_GROUPS,
+        groupStateAt: () => 'open',
         isSolved: () => true,
         changes: () => 0,
         puzzlesOpened: () => 0,
     });
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+const NO_GROUPS: readonly (readonly number[])[] = [];

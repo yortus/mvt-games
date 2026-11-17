@@ -1,11 +1,10 @@
 import { createAudio90Sound } from 'audio90';
 
 // The game's sound effects, for the Audio90. All were written for this game.
-// They are soft and short, since a puzzle is played in quiet: pencil dots, and
-// small glassy twinkles for stars. Each dot in a drag is played a step higher
-// than the last, chosen by the audio view, so a long drag climbs.
+// They are soft and short, since a puzzle is played in quiet: pencil dots, a
+// pencil's sweep for a ring round a group, and small glassy twinkles for stars.
 
-/** A dot: a tiny, soft tap of a pencil point, at the note the audio view chooses. */
+/** A dot: a tiny, soft tap of a pencil point. */
 export const DOTTED = createAudio90Sound({
     oscillator: { wave: 'sine' },
     filter: { mode: 'lowpass12', cutoffHz: 1800 },
@@ -37,7 +36,26 @@ export const STARRED = createAudio90Sound({
     echo: 0.2,
 });
 
-/** A mark taken off: a short, airy brush, like a thumb over paper. */
+/** A ring drawn round a group: a soft pencil sweep that rises, as a loop drawn round. */
+export const GROUPED = createAudio90Sound({
+    oscillator: { unison: 0 },
+    noise: 1,
+    filter: { mode: 'bandpass', cutoffHz: 1600 },
+    envelope: { attackMs: 30, decayMs: 120, sustain: 0, releaseMs: 40 },
+    note: 'C-4',
+    stepMs: 30,
+    steps: `
+        +0
+        +5
+        +9
+        +12
+    `,
+    lengthMs: 140,
+    priority: 1,
+    volume: 2,
+});
+
+/** A mark or a ring taken off: a short, airy brush, like a thumb over paper. */
 export const RUBBED = createAudio90Sound({
     oscillator: { unison: 0 },
     noise: 1,
