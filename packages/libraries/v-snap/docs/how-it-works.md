@@ -131,9 +131,12 @@ run downloads that.
 - **Settings** such as the colour profile, screen scale, locale and time
   zone are fixed when the browser starts.
 - **Canvas text** is drawn in v-snap's own fonts, Source Sans 3 and
-  Source Code Pro, which come with the package. v-snap lays the text out
-  itself, and draws each letter as a shape, so the system's text engine
-  takes no part. Every system draws shapes alike. This covers text drawn
+  Source Code Pro, which come with the package, or in fonts that your
+  project registers, whose files are in your repository. Either way, the
+  font is the same file on every machine. v-snap lays the text out
+  itself, with fontkit, a library that reads font files, and draws each
+  letter as a shape, so the system's text engine takes no part. Every
+  system draws shapes alike. This covers text drawn
   with the canvas's text methods, such as `fillText`, which is how Pixi's
   `Text` draws. Text that reaches a canvas in another way is drawn by the
   system, in its own fonts. Pixi's `HTMLText` is one example, since it

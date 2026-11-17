@@ -10,8 +10,10 @@
 > family at the end of each font list is needed only for families that
 > aren't registered.
 
-**Status:** proposed. Nothing built. Its questions were decided on
-2026-11-17, as recommended (section 14).
+**Status:** implemented on 2026-11-17, steps 1 to 6 (section 15), and
+archived. Its questions were decided on 2026-11-17, as recommended
+(section 14). Section 16 records what was built, and where it differs from
+the design above.
 
 **Written:** 2026-11-17, on `vnext` at 16f5755c, with `v-snap` 0.6.0
 published. Checked against v-snap's canvas text, page setup, config
@@ -29,7 +31,7 @@ loading and docs. Nothing measured yet.
 [Limits and Rules](../../packages/libraries/v-snap/docs/limits-and-rules.md),
 [How It Works](../../packages/libraries/v-snap/docs/how-it-works.md),
 [Troubleshooting](../../packages/libraries/v-snap/docs/troubleshooting.md),
-[042](../archive/042-visual-snapshot-tests.md) (v-snap's design).
+[042](./042-visual-snapshot-tests.md) (v-snap's design).
 
 | Decision | Recommendation | Section |
 | --- | --- | --- |
@@ -90,9 +92,9 @@ instead, as paths relative to v-snap's root:
 export default defineConfig({
     plugins: [vsnap({
         fonts: {
-            NexaBook: 'raw-assets/fonts/NexaBook.woff',
-            NexaBold: { src: 'raw-assets/fonts/NexaBold.woff', weight: 700 },
-            NexaHeavyMonoSpace: 'raw-assets/fonts/NexaHeavyMonoSpace.woff',
+            MyTitleFont: 'assets/fonts/my-title-font.woff',
+            MyGameFont: { src: 'assets/fonts/my-game-font-bold.woff', weight: 700 },
+            MyScoreFont: 'assets/fonts/my-score-font.woff',
         },
     })],
 });
@@ -146,9 +148,9 @@ type FontSource = string | {
 };
 ```
 
-- **One file, or several.** `NexaBook: 'NexaBook.woff'` registers one
-  face. `Nexa: ['Nexa-Book.woff', 'Nexa-Bold.woff']` registers a family of
-  faces, one per file.
+- **One file, or several.** `MyTitleFont: 'my-title-font.woff'` registers
+  one face. `MyGameFont: ['my-game-font-regular.woff', 'my-game-font-bold.woff']`
+  registers a family of faces, one per file.
 - **Weight and style come from the file.** A static face's weight is its
   `OS/2` weight class, and it's italic if its `OS/2` selection flags or
   its italic angle say so. A variable face's weight range is its `wght`
@@ -158,7 +160,7 @@ type FontSource = string | {
   know the names from CSS.
 
 The suggestion's other shape, a map from weight to file
-(`NexaBold: { 700: nexaBold }`), is not chosen. It can't say a face's
+(`MyGameFont: { 700: myGameFontBold }`), is not chosen. It can't say a face's
 style without nesting another level, and it repeats what the file already
 says.
 
@@ -178,8 +180,9 @@ since a path can't say which of its fonts to use.
 `parse()` walks the font list in order. For each family, a registered
 family wins. Otherwise a known or generic family picks v-snap's mono or
 sans font, as today. The first family that either finds ends the walk.
-So `'NexaBold, sans-serif'` draws in NexaBold, and `'Arial, NexaBold'`
-draws in v-snap's sans font, as a browser with Arial would.
+So `'MyGameFont, sans-serif'` draws in MyGameFont, and
+`'Arial, MyGameFont'` draws in v-snap's sans font, as a browser with Arial
+would.
 
 A registered family is never unpinned, so its list needs no generic
 family. Only a list with neither a registered nor a known family is
@@ -428,3 +431,59 @@ A changeset for a minor version of v-snap goes with the first step.
 5. Docs (section 12) and a changeset.
 6. Generic keys, `sans-serif` and `monospace` (section 7), with their own
    tests and docs.
+
+## 16. Progress
+
+**2026-11-17: steps 1 to 6 built.**
+
+- **Node:** `src/node/fonts.ts` resolves and checks the option
+  (`resolveFonts`), reads each face's weight and style with fontkit, and
+  gives each file a `/@fs/` URL. `config.ts` takes `fonts`, `provide`s the
+  faces to canvas pages as `vsnapFonts` (HTML pages get `[]`), and adds the
+  fonts' folders to `server.fs.allow`. `FontSource` and `FontFamilies` are
+  exported from `v-snap/vitest`.
+- **Page:** `page-setup.ts` loads the faces with the test fonts.
+  `canvas-text.ts` walks the font list for registered families, picks a
+  face with `match-face.ts` (CSS's rule), takes `ital` or `slnt` axes for
+  italic before a shear, lays text out in runs (section 6), and keys its
+  variations by font. The unpinned-family message now names the `fonts`
+  option first.
+- **Generic keys (step 6)** came with the rest, since they were a few
+  lines in `parse()`.
+- **Exactness:** the whole repo's visual tests (400 tests, every image
+  identical) and v-snap's own (200 tests, every old image identical) pass
+  with no reference changed.
+- **Docs:** Configuration has a new section, Your Own Fonts, with the
+  licence note. Limits and Rules, How It Works, Troubleshooting, the README
+  and CONTRIBUTING are updated. The changeset is
+  `.changeset/v-snap-project-fonts.md`, for a minor version.
+
+Where the build differs from the design above:
+
+1. **Registered families are registered after calibration, not passed to
+   `installCanvasText`** (section 8). Section 8 said that registered fonts
+   can't change the calibration check, but a font registered for
+   `sans-serif` or `monospace` would: the calibration set asks for those
+   families. So `installCanvasText` takes the test fonts alone, and
+   `registerFamilies()` is called after `checkCalibration()` and before
+   `loadViewKinds()`. Nothing of the project's runs in between, so nothing
+   it draws can miss them. v-snap's own tests register a font for
+   `monospace`, and calibration still passes.
+2. **Characters that no font has are laid out in the last face,** which is
+   always a test font, as part of the runs. So a string that one face
+   draws, such as every string in a project with no `fonts`, is one run and
+   one `layout()` call, exactly as before, and the box keeps its look.
+   Combining marks and joiners stay in the run before them.
+3. **The fixtures differ from section 13.** Source Sans cut to ASCII would
+   draw almost exactly as the sans-serif test font, so the images couldn't
+   show which font drew. The fixtures are Fixture Mono (Source Code Pro at
+   400, as OpenType, and at 700, as WOFF) and Fixture Sans (Source Sans at
+   400), cut to capitals, digits and a little punctuation, so lower case
+   shows the fallback. Fixture Sans is registered for `monospace`. All are
+   renamed, as the OFL's Reserved Font Name "Source" requires, and
+   `fixtures/fonts/README.md` says how they were made.
+4. **The measurement test** measures at module level, as a game's code
+   might, which also shows that the fonts load before any test file.
+5. **`server.fs.allow` is added to once Vite has resolved the config,**
+   by a small plugin, since setting it in the project's config would
+   replace the folders that Vite allows by default.

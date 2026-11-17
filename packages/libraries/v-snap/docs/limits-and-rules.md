@@ -25,12 +25,18 @@ there.
   end, or removes it if it repeats forever. So an image shows where an
   animation ends, not a moment in the middle of it.
 - **Canvas text is drawn in v-snap's own fonts,** one sans-serif and one
-  monospace, not in the fonts your view asks for. If a character isn't in
-  those fonts, such as ★ or an emoji, v-snap draws a box with the
-  character's code point inside. So changing one such character to
-  another still changes the image. Text that your view measures, to wrap
-  or fit it, is measured in v-snap's own fonts too. So a line that
-  overflows in your font may fit in the image.
+  monospace, unless you
+  [register your own](configuration.md#your-own-fonts). If a character
+  isn't in any of the fonts, such as ★ or an emoji, v-snap draws a box
+  with the character's code point inside. So changing one such character
+  to another still changes the image. Text that your view measures, to
+  wrap or fit it, is measured in the same fonts. So if your font isn't
+  registered, a line that overflows in your font may fit in the image.
+- **Your own fonts are laid out by v-snap, not by the browser.** Latin
+  text, with its kerning, comes out close to the browser's. Ligatures,
+  other OpenType features and scripts such as Arabic may differ. Bold
+  isn't faked for a family with no bold face, as a browser would fake it,
+  so register the bold file too.
 - **Text that reaches a canvas without the canvas's own text calls
   (`fillText` and `strokeText`) is drawn by the system,** in the system's
   own fonts. One example is Pixi's `HTMLText`, which draws HTML through an
@@ -68,16 +74,17 @@ there.
   it, so a later test of the other kind draws it differently. Its image
   then depends on which test ran first. A texture that sets its own
   sampling, such as a spritesheet's, draws the same in every test.
-- **Give each canvas font a family that v-snap knows.** v-snap draws
-  canvas text in one of its own fonts, the sans-serif one or the monospace
-  one. It picks one by looking through your CSS font list, such as
-  `'Arial, sans-serif'`, for the first family it knows. It knows every
-  generic family, and common system fonts such as Arial, Helvetica, Segoe
-  UI, Roboto, Consolas and Menlo. `monospace` and `ui-monospace` use the
-  monospace font, and every other generic family uses the sans-serif
-  font. So `'"Press Start 2P", monospace'` works, but `'"Press Start 2P"'`
-  on its own fails its test. If you end each list with `sans-serif` or
-  `monospace`, it always works.
+- **Give each canvas font a family that v-snap can draw.** v-snap draws
+  canvas text in the fonts that you register, or in one of its own, the
+  sans-serif one or the monospace one. It picks one by looking through your
+  CSS font list, such as `'Arial, sans-serif'`, for the first family that
+  you registered or that it knows. It knows every generic family, and
+  common system fonts such as Arial, Helvetica, Segoe UI, Roboto, Consolas
+  and Menlo. `monospace` and `ui-monospace` use the monospace font, and
+  every other generic family uses the sans-serif font. So
+  `'"Press Start 2P", monospace'` works, but `'"Press Start 2P"'` on its
+  own fails its test, unless you register Press Start 2P's font file. If
+  you end each list with `sans-serif` or `monospace`, it always works.
 
 To find a test that breaks the first rule, run the visual tests in a
 random order, with `--sequence.shuffle`, as

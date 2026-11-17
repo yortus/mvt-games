@@ -7,8 +7,17 @@ import { vsnapProjects } from 'v-snap/vitest';
 // tests run Vitest on a fixture of their own, which starts a browser, so
 // they are left out of the unit tests. The fixture's reference images are
 // named without their test file's stem, so each one belongs to its folder,
-// not to one file. `npm test` runs them all.
-const visual = vsnapProjects({ root: import.meta.dirname, exclude: ['fixtures/**'] });
+// not to one file. The visual tests draw canvas text in fonts that they
+// register, from the fixtures: a family of their own, and a font for
+// monospace, which no other test asks for. `npm test` runs them all.
+const visual = vsnapProjects({
+    root: import.meta.dirname,
+    exclude: ['fixtures/**'],
+    fonts: {
+        'Fixture Mono': ['fixtures/fonts/fixture-mono-regular.otf', 'fixtures/fonts/fixture-mono-bold.woff'],
+        'monospace': 'fixtures/fonts/fixture-sans-regular.otf',
+    },
+});
 const fixture = vsnapProjects({
     name: 'visual-fixture',
     root: resolve(import.meta.dirname, 'fixtures/visual-tests-folders'),

@@ -9,6 +9,7 @@ the kinds of view that your tests pose, and runs in the test page, as
 - [Listing v-snap's Projects](#listing-v-snaps-projects)
 - [What the Projects Inherit](#what-the-projects-inherit)
 - [Options](#options)
+- [Your Own Fonts](#your-own-fonts)
 - [Checks When the Config Loads](#checks-when-the-config-loads)
 - [Where Files Go](#where-files-go)
 - [Changing Layout](#changing-layout)
@@ -157,6 +158,7 @@ every option is optional.
 | `vsnapConfig` | Your `vsnap.config.ts`, which runs in the test page. The default is `vsnap.config.ts` in the root, or `vsnap.config.mts`, `.js` or `.mjs`, if there is one. Naming it shows anyone reading `vitest.config.ts` where the rest of v-snap's settings are |
 | `viewport` | The test page's viewport, as `{ width, height }` in CSS pixels. An HTML view must fit inside it, and a test's own `viewport` can't be bigger. The default, `DEFAULT_VIEWPORT`, is 1280 by 800 |
 | `colorScheme` | What the page's `prefers-color-scheme` media queries see, `'light'` or `'dark'`, unless a test's own `colorScheme` says otherwise. The default is `'dark'` |
+| `fonts` | Your own font files for canvas text, by family name. See [Your Own Fonts](#your-own-fonts). The default is none, and canvas text is drawn in v-snap's own fonts |
 
 In a monorepo, you can add v-snap's projects once for each package that
 has visual tests, each with its own `root` and `name`. Use a `vsnap()`
@@ -164,6 +166,87 @@ plugin for each package, or a `vsnapProjects()` call for each, all in one
 config. Two packages can also share a root, if their `include` globs
 don't overlap. If a test file matches the globs of two of them, the run
 stops.
+
+## Your Own Fonts
+
+v-snap draws canvas text in its own fonts, Source Sans 3 and Source Code
+Pro, so that every machine draws it alike. If your game draws its text in
+fonts of its own, register their files with the `fonts` option, and text
+that asks for them is drawn in them. That way the images look like your
+game, and a line that doesn't fit in your font doesn't fit in the image
+either.
+
+```ts
+export default defineConfig({
+    plugins: [vsnap({
+        fonts: {
+            MyTitleFont: 'assets/fonts/my-title-font.woff',
+            MyGameFont: [
+                'assets/fonts/my-game-font-regular.woff',
+                'assets/fonts/my-game-font-bold.woff',
+            ],
+            MyScoreFont: {
+                src: 'assets/fonts/my-score-font.woff',
+                weight: 900,
+            },
+        },
+    })],
+});
+```
+
+Each key is a family name, as your font lists ask for it, matched in any
+case, as CSS matches it. Each value is one font file, a list of files for
+the family's faces, or a face with its `src` and its `weight` or `style`.
+The paths are relative to v-snap's `root`. v-snap reads each face's weight
+and style from its file, so you only need `weight` or `style` if the file
+is wrong, or if you use a face as another weight. A variable font covers
+the range of its weight axis. Files may be OpenType, TrueType, WOFF or
+WOFF2, with one font in each.
+
+v-snap draws your fonts in the same way as its own. It lays the text out
+itself, from the font file, and draws each letter as a shape. The file is
+the same on every machine, since it's in your repository, so the images
+still match everywhere.
+
+- **The first family that v-snap can draw wins.** v-snap looks through
+  your font list in order. A registered family is drawn in its font, and a
+  family that v-snap knows, such as Arial or `sans-serif`, in v-snap's
+  own. So `'MyGameFont, sans-serif'` is drawn in MyGameFont, but
+  `'Arial, MyGameFont'` is drawn in v-snap's sans-serif font, as a browser
+  with Arial would draw it. A font list that names a registered family
+  doesn't need a generic family at the end.
+- **A face is picked as a browser picks one.** v-snap uses CSS's own rule
+  for font matching. Italic faces are used for italic text, if the family
+  has any. Then a face that covers the weight asked for is used, or else
+  the nearest weight, by CSS's rule. For text from 400 to 500, heavier faces
+  up to 500 come first. For lighter text, lighter faces come first, and
+  for heavier text, heavier faces do. Italic text in a family with no
+  italic face uses a variable font's `ital` or `slnt` axis if it has one,
+  and is slanted otherwise.
+- **Bold isn't faked.** A browser thickens the letters of a family with no
+  bold face when bold text asks for one. v-snap doesn't, so the text is
+  drawn in the nearest face it has. Register the bold file, and bold text
+  uses it.
+- **Characters a font lacks fall back,** as in a browser. Each character
+  that your font doesn't have is drawn in the next registered family in
+  the list, then in v-snap's own font for the list's generic family
+  (sans-serif if there's none). A character that none of them have is drawn
+  as a box with its code point inside.
+
+You can also register `sans-serif` and `monospace`. Your font then takes
+the place of v-snap's own for that generic family, and for every system
+font that v-snap draws in it, such as Arial or Consolas. So a project
+whose views ask only for `sans-serif` can still be drawn in its own font.
+The other generic families, such as `serif` and `cursive`, can't be
+registered.
+
+Only canvas pages load your fonts. HTML text is drawn blank, whatever its
+font, as [Limits and Rules](limits-and-rules.md) says.
+
+**Font licences.** Registering a font puts its file in your repository,
+and serves it to a test page on your own machine. If your game ships the
+font, its licence usually covers that, but some licences limit copies, so
+check yours.
 
 ## Checks When the Config Loads
 
@@ -177,6 +260,11 @@ two things:
   `bindCanvasTest`. If it doesn't, you get a warning. Without the type,
   `canvasTest` doesn't know your kinds of view, so every test of a kind
   that you registered is a type error.
+
+It also reads each file in the `fonts` option, before the browser starts.
+A file that is missing, isn't a font, or holds a collection of fonts stops
+the run, and so do two family names that differ only in case. The error
+names the family, so you can find the line.
 
 ## Where Files Go
 

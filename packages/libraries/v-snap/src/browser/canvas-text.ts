@@ -1,4 +1,5 @@
 import type { Font, Glyph, PathCommand } from 'fontkit';
+import { type MatchableFace, matchFace } from './match-face';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -17,14 +18,39 @@ import type { Font, Glyph, PathCommand } from 'fontkit';
  * measures text through the same `measureText`, so its layout agrees with
  * the drawing.
  *
- * A character that the test fonts lack, such as ★ or an emoji, is drawn as
- * a box holding its code point in hex digits, as a system's fallback font
- * draws it. So each such character draws differently, and a change from
- * one to another changes the image.
+ * A project may register its own fonts for named families. Text that asks
+ * for one is laid out and drawn in it, in the same way, in the face that
+ * CSS would pick. A character that a registered font lacks falls back, run
+ * by run as in a browser, to the font list's later registered families,
+ * then to the test font.
+ *
+ * A character that no font has, such as ★ or an emoji, is drawn as a box
+ * holding its code point in hex digits, as a system's fallback font draws
+ * it. So each such character draws differently, and a change from one to
+ * another changes the image.
  */
 export interface CanvasText {
-    /** Returns the font families asked for since the last call that no test font stands in for. */
+    /** Returns the font families asked for since the last call that no font stands in for. */
     takeUnpinnedFamilies: () => readonly string[];
+    /**
+     * Registers the project's own families, in place of any registered
+     * before. The page registers them after its calibration set, which is
+     * drawn in the test fonts alone, and before any of the project's code
+     * runs.
+     */
+    registerFamilies: (families: readonly RegisteredFamily[]) => void;
+}
+
+/** A font family that a project registers, with its faces loaded. */
+export interface RegisteredFamily {
+    readonly name: string;
+    /** At least one face. */
+    readonly faces: readonly RegisteredFace[];
+}
+
+/** One face of a registered family. */
+export interface RegisteredFace extends MatchableFace {
+    readonly font: Font;
 }
 
 // ---------------------------------------------------------------------------
@@ -46,7 +72,10 @@ export interface CanvasTextOptions {
 export function installCanvasText(options: CanvasTextOptions): CanvasText {
     const unpinned = new Set<string>();
     const parsed = new Map<string, ParsedFont>();
-    const variations = new Map<string, Font>();
+    /** Each font's variations, by their axes' settings. */
+    const variations = new Map<Font, Map<string, Font>>();
+    /** The registered families, by their names in lower case. */
+    let registered = new Map<string, RegisteredFamily>();
 
     for (const proto of [CanvasRenderingContext2D.prototype, OffscreenCanvasRenderingContext2D.prototype] as CanvasRenderingContext2D[]) {
         proto.fillText = function (this: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth?: number) {
@@ -66,11 +95,19 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
             unpinned.clear();
             return families;
         },
+        registerFamilies(families) {
+            registered = new Map(families.map((family) => [family.name.trim().toLowerCase(), family]));
+            parsed.clear();
+        },
     };
 
     /**
-     * Returns the test font, size and slant that a CSS font string asks for.
-     * The string is in the form that the canvas normalises it to.
+     * Returns the faces and size that a CSS font string asks for. The string
+     * is in the form that the canvas normalises it to. The font list's first
+     * registered or known family draws the text. Characters that its font
+     * lacks fall back to the list's later registered families, then to the
+     * project's own font for the list's generic family, if it registers one,
+     * then to the test font.
      */
     function parse(css: string): ParsedFont {
         let font = parsed.get(css);
@@ -81,16 +118,24 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
             const weight = weightWord === 'normal' ? 400 : weightWord === 'bold' ? 700 : Number(weightWord) || 400;
             const size = Number(match?.[4] ?? 10);
             const families = (match?.[5] ?? 'sans-serif').split(',').map((f) => f.trim().replace(/^["']|["']$/g, ''));
-            let base: Font | undefined;
+            const isItalic = style === 'italic' || style.startsWith('oblique');
+            const faces: Face[] = [];
+            /** The kind of test font that the list's first known family picks. */
+            let kind: StandInKind | undefined;
             for (const family of families) {
                 const key = family.toLowerCase();
-                if (MONO_FAMILIES.has(key)) base = options.mono;
-                else if (SANS_FAMILIES.has(key)) base = options.sans;
-                if (base !== undefined) break;
+                const own = registered.get(key);
+                const known: StandInKind | undefined = MONO_FAMILIES.has(key) ? 'mono' : SANS_FAMILIES.has(key) ? 'sans' : undefined;
+                if (own !== undefined) faces.push(pickRegisteredFace(own, weight, isItalic));
+                else if (known !== undefined && faces.length === 0) faces.push(pickStandInFace(known, weight, isItalic));
+                kind ??= known;
             }
-            const unpinnedFamily = base === undefined ? families[0] : undefined;
-            base ??= options.sans;
-            font = { font: findVariation(base, weight), size, isItalic: style === 'italic' || style.startsWith('oblique'), unpinnedFamily };
+            const unpinnedFamily = faces.length === 0 ? families[0] : undefined;
+            kind ??= 'sans';
+            const ownStandIn = registered.get(GENERIC_FAMILY[kind]);
+            if (ownStandIn !== undefined) addFace(faces, pickRegisteredFace(ownStandIn, weight, isItalic));
+            addFace(faces, pickTestFace(kind, weight, isItalic));
+            font = { faces, size, unpinnedFamily };
             parsed.set(css, font);
         }
         // Recorded on every use, not only the first, so that every test that
@@ -99,14 +144,55 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
         return font;
     }
 
-    function findVariation(base: Font, weight: number): Font {
-        const key = `${base === options.mono ? 'mono' : 'sans'}:${weight}`;
-        let font = variations.get(key);
-        if (font === undefined) {
-            font = base.getVariation({ wght: weight }) as Font;
-            variations.set(key, font);
+    /** Returns the face that stands in for a known family: the project's own font for its generic family, or else the test font. */
+    function pickStandInFace(kind: StandInKind, weight: number, isItalic: boolean): Face {
+        const own = registered.get(GENERIC_FAMILY[kind]);
+        return own === undefined ? pickTestFace(kind, weight, isItalic) : pickRegisteredFace(own, weight, isItalic);
+    }
+
+    /** Returns a test font at a weight. There is no italic test font, so italic and oblique text is slanted instead. */
+    function pickTestFace(kind: StandInKind, weight: number, isItalic: boolean): Face {
+        return { font: vary(kind === 'mono' ? options.mono : options.sans, { wght: weight }), shear: isItalic ? ITALIC_SHEAR : 0 };
+    }
+
+    /**
+     * Returns the face of a registered family for a weight and style, as CSS
+     * picks it, set to the weight if it is variable. Italic text with no
+     * italic face takes the face's `ital` axis, or failing that its `slnt`
+     * axis, slanted as far as CSS's default oblique angle, -14 degrees. A
+     * face with neither is slanted by a shear, as the test fonts are.
+     */
+    function pickRegisteredFace(family: RegisteredFamily, weight: number, isItalic: boolean): Face {
+        const match = matchFace(family.faces, weight, isItalic);
+        const axes = match.face.font.variationAxes;
+        const settings: Record<string, number> = {};
+        if (axes.wght !== undefined) settings.wght = match.weight;
+        let shear = isItalic && !match.face.isItalic ? ITALIC_SHEAR : 0;
+        if (shear !== 0 && axes.ital !== undefined) {
+            settings.ital = axes.ital.max;
+            shear = 0;
         }
-        return font;
+        else if (shear !== 0 && axes.slnt !== undefined && axes.slnt.min < 0) {
+            settings.slnt = Math.max(axes.slnt.min, OBLIQUE_ANGLE);
+            shear = 0;
+        }
+        return { font: Object.keys(settings).length === 0 ? match.face.font : vary(match.face.font, settings), shear };
+    }
+
+    /** Returns a variable font set to the given axes' values, made once for each set of values. */
+    function vary(font: Font, settings: Readonly<Record<string, number>>): Font {
+        let made = variations.get(font);
+        if (made === undefined) {
+            made = new Map();
+            variations.set(font, made);
+        }
+        const key = Object.entries(settings).map(([axis, value]) => `${axis}=${value}`).join(',');
+        let variation = made.get(key);
+        if (variation === undefined) {
+            variation = font.getVariation(settings) as Font;
+            made.set(key, variation);
+        }
+        return variation;
     }
 }
 
@@ -115,21 +201,45 @@ export function installCanvasText(options: CanvasTextOptions): CanvasText {
 // ---------------------------------------------------------------------------
 
 interface ParsedFont {
-    readonly font: Font;
+    /**
+     * The faces that draw the text, in the order that they are tried for
+     * each character. The first draws the text and sets its baseline. The
+     * last is a test font, which also lays out the characters that no face
+     * has, as boxes.
+     */
+    readonly faces: readonly Face[];
     readonly size: number;
-    /** Whether the text is slanted. There is no italic test font, so italic and oblique text is slanted instead. */
-    readonly isItalic: boolean;
-    /** The family asked for, if no test font stands in for any family in its list. */
+    /** The family asked for, if no font stands in for any family in its list. */
     readonly unpinnedFamily: string | undefined;
 }
 
+/** A font at one weight and slant, ready to lay text out in. */
+interface Face {
+    readonly font: Font;
+    /** The shear that slants italic text drawn in a face with no italic of its own, or 0. */
+    readonly shear: number;
+}
+
+/** The kinds of test font. */
+type StandInKind = 'sans' | 'mono';
+
+/** The generic family that each kind of test font stands in for, which a project may register its own font for. */
+const GENERIC_FAMILY: Readonly<Record<StandInKind, string>> = { sans: 'sans-serif', mono: 'monospace' };
+
 interface Laid {
-    readonly glyphs: readonly Glyph[];
-    /** Each glyph's pen position, in pixels. */
-    readonly x: readonly number[];
-    readonly y: readonly number[];
+    readonly runs: readonly LaidRun[];
     /** The total advance (how far the pen moves), with letter spacing after every glyph, as the canvas measures it. */
     readonly width: number;
+}
+
+/** A stretch of text that one face draws, laid out. */
+interface LaidRun {
+    readonly face: Face;
+    readonly text: string;
+    readonly glyphs: readonly Glyph[];
+    /** Each glyph's pen position, in pixels, from the start of the whole text. */
+    readonly x: readonly number[];
+    readonly y: readonly number[];
     readonly scale: number;
 }
 
@@ -150,20 +260,70 @@ const SANS_FAMILIES: ReadonlySet<string> = new Set([
 /** The slant given to italic text, as a shear. */
 const ITALIC_SHEAR = 0.2;
 
+/** CSS's default oblique angle, in degrees, as a `slnt` axis measures it. */
+const OBLIQUE_ANGLE = -14;
+
+/**
+ * Matches a character that joins the one before it, and so stays in its
+ * run: a combining mark, which includes the variation selectors, or a
+ * joiner.
+ */
+const JOINER = /^(?:\p{M}|‌|‍)$/u;
+
+/**
+ * Lays text out in runs, each in one face, with kerning within each run, as
+ * a browser does. Text that one face draws is one run.
+ */
 function lay(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string): Laid {
-    const run = p.font.layout(text);
-    const scale = p.size / p.font.unitsPerEm;
     const spacing = toPixels(ctx.letterSpacing, p.size);
-    const x: number[] = [];
-    const y: number[] = [];
+    const runs: LaidRun[] = [];
     let pen = 0;
-    for (let i = 0; i < run.glyphs.length; i++) {
-        const position = run.positions[i];
-        x.push(pen + position.xOffset * scale);
-        y.push(position.yOffset * scale);
-        pen += position.xAdvance * scale + spacing;
+    for (const part of splitRuns(p.faces, text)) {
+        const run = part.face.font.layout(part.text);
+        const scale = p.size / part.face.font.unitsPerEm;
+        const x: number[] = [];
+        const y: number[] = [];
+        for (let i = 0; i < run.glyphs.length; i++) {
+            const position = run.positions[i];
+            x.push(pen + position.xOffset * scale);
+            y.push(position.yOffset * scale);
+            pen += position.xAdvance * scale + spacing;
+        }
+        runs.push({ face: part.face, text: part.text, glyphs: run.glyphs, x, y, scale });
     }
-    return { glyphs: run.glyphs, x, y, width: pen, scale };
+    return { runs, width: pen };
+}
+
+/**
+ * Splits text into the longest stretches that one face draws. Each character
+ * goes to the first face that has it, or to the last face if none has it.
+ */
+function splitRuns(faces: readonly Face[], text: string): { readonly face: Face; readonly text: string }[] {
+    if (faces.length === 1) return [{ face: faces[0], text }];
+    const runs: { face: Face; text: string }[] = [];
+    let current: Face | undefined;
+    let start = 0;
+    let end = 0;
+    for (const char of text) {
+        const code = char.codePointAt(0) ?? 0;
+        const face = current !== undefined && JOINER.test(char)
+            ? current
+            : faces.find((f) => f.font.hasGlyphForCodePoint(code)) ?? faces[faces.length - 1];
+        if (face !== current) {
+            if (current !== undefined) runs.push({ face: current, text: text.slice(start, end) });
+            current = face;
+            start = end;
+        }
+        end += char.length;
+    }
+    if (current !== undefined) runs.push({ face: current, text: text.slice(start) });
+    return runs;
+}
+
+/** Adds a face to the end of a list of faces, unless the list already ends with it. */
+function addFace(faces: Face[], face: Face): void {
+    const last = faces.at(-1);
+    if (last === undefined || last.font !== face.font || last.shear !== face.shear) faces.push(face);
 }
 
 /**
@@ -214,10 +374,12 @@ function isRightToLeft(ctx: CanvasRenderingContext2D): boolean {
     return canvas instanceof HTMLCanvasElement && canvas.isConnected && getComputedStyle(canvas).direction === 'rtl';
 }
 
+/** Returns the offset of text from its y for the context's baseline, by the metrics of the font that draws the text, as the canvas does. */
 function computeBaselineOffset(ctx: CanvasRenderingContext2D, p: ParsedFont): number {
-    const scale = p.size / p.font.unitsPerEm;
-    const ascent = p.font.ascent * scale;
-    const descent = -p.font.descent * scale;
+    const font = p.faces[0].font;
+    const scale = p.size / font.unitsPerEm;
+    const ascent = font.ascent * scale;
+    const descent = -font.descent * scale;
     switch (ctx.textBaseline) {
         case 'top': return ascent;
         case 'hanging': return ascent * 0.8;
@@ -235,7 +397,7 @@ function layOutPath(options: {
     readonly x: number;
     readonly y: number;
     readonly maxWidth: number | undefined;
-    /** The font whose digits name a character that the font lacks. */
+    /** The font whose digits name a character that no font has. */
     readonly digits: Font;
 }): Path2D {
     const { ctx, p, text, x, y, maxWidth } = options;
@@ -244,21 +406,36 @@ function layOutPath(options: {
     const squeeze = maxWidth !== undefined && laid.width > maxWidth && laid.width > 0 ? maxWidth / laid.width : 1;
     const originX = x + computeAlignOffset(ctx, laid.width * squeeze);
     const originY = y + computeBaselineOffset(ctx, p);
-    const s = laid.scale;
-    const shear = p.isItalic ? ITALIC_SHEAR : 0;
     const path = new Path2D();
+    for (const run of laid.runs) addRunToPath({ path, run, originX, originY, squeeze, digits: options.digits });
+    return path;
+}
+
+/** Adds the outlines of a run's glyphs to a path. */
+function addRunToPath(options: {
+    readonly path: Path2D;
+    readonly run: LaidRun;
+    readonly originX: number;
+    readonly originY: number;
+    readonly squeeze: number;
+    readonly digits: Font;
+}): void {
+    const { path, run, originX, originY, squeeze } = options;
+    const font = run.face.font;
+    const s = run.scale;
+    const shear = run.face.shear;
     // The characters that the font lacks, in order. Each is laid out as the
     // font's empty glyph, glyph 0, which looks the same for every character.
-    const missing = [...text].map((c) => c.codePointAt(0) ?? 0).filter((code) => !p.font.hasGlyphForCodePoint(code));
+    const missing = [...run.text].map((c) => c.codePointAt(0) ?? 0).filter((code) => !font.hasGlyphForCodePoint(code));
     let nextMissing = 0;
-    for (let i = 0; i < laid.glyphs.length; i++) {
-        const gx = originX + laid.x[i] * squeeze;
-        const gy = originY - laid.y[i];
+    for (let i = 0; i < run.glyphs.length; i++) {
+        const gx = originX + run.x[i] * squeeze;
+        const gy = originY - run.y[i];
         const px = (u: number, v: number) => gx + (u * s + v * s * shear) * squeeze;
         const py = (v: number) => gy - v * s;
-        const glyph = laid.glyphs[i];
+        const glyph = run.glyphs[i];
         const commands = glyph.id === 0 && nextMissing < missing.length
-            ? drawMissingGlyph({ code: missing[nextMissing++], width: glyph.advanceWidth, height: p.font.capHeight, digits: options.digits })
+            ? drawMissingGlyph({ code: missing[nextMissing++], width: glyph.advanceWidth, height: font.capHeight, digits: options.digits })
             : glyph.path.commands;
         for (const c of commands) {
             const a = c.args;
@@ -281,7 +458,6 @@ function layOutPath(options: {
             }
         }
     }
-    return path;
 }
 
 /**
@@ -334,24 +510,28 @@ function addRect(commands: PathCommand[], x0: number, y0: number, x1: number, y1
 
 function measure(ctx: CanvasRenderingContext2D, p: ParsedFont, text: string): TextMetrics {
     const laid = lay(ctx, p, text);
-    const s = laid.scale;
     let left = Infinity;
     let right = -Infinity;
     let top = -Infinity;
     let bottom = Infinity;
-    for (let i = 0; i < laid.glyphs.length; i++) {
-        const b = laid.glyphs[i].bbox;
-        if (!Number.isFinite(b.minX) || b.maxX <= b.minX) continue;
-        left = Math.min(left, laid.x[i] + b.minX * s);
-        right = Math.max(right, laid.x[i] + b.maxX * s);
-        top = Math.max(top, laid.y[i] + b.maxY * s);
-        bottom = Math.min(bottom, laid.y[i] + b.minY * s);
+    for (const run of laid.runs) {
+        const s = run.scale;
+        for (let i = 0; i < run.glyphs.length; i++) {
+            const b = run.glyphs[i].bbox;
+            if (!Number.isFinite(b.minX) || b.maxX <= b.minX) continue;
+            left = Math.min(left, run.x[i] + b.minX * s);
+            right = Math.max(right, run.x[i] + b.maxX * s);
+            top = Math.max(top, run.y[i] + b.maxY * s);
+            bottom = Math.min(bottom, run.y[i] + b.minY * s);
+        }
     }
     if (!Number.isFinite(left)) left = right = top = bottom = 0;
     const align = computeAlignOffset(ctx, laid.width);
     const base = computeBaselineOffset(ctx, p);
-    const ascent = p.font.ascent * s;
-    const descent = -p.font.descent * s;
+    const font = p.faces[0].font;
+    const s = p.size / font.unitsPerEm;
+    const ascent = font.ascent * s;
+    const descent = -font.descent * s;
     return {
         width: laid.width,
         actualBoundingBoxLeft: -(left + align),

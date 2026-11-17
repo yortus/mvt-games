@@ -31,6 +31,7 @@ import { configDefaults, type Plugin, type TestProjectInlineConfiguration } from
 import type { Reporter } from 'vitest/node';
 import type { ColorScheme, PageKind } from '../protocol.ts';
 import { createRunState, createVisualCommands } from './commands.ts';
+import { type FontFamilies, resolveFonts, type ResolvedFonts } from './fonts.ts';
 import { createLayout } from './layout.ts';
 import { toDisplayPath } from './paths.ts';
 import { forgetFingerprint, isLeftOutByCommandLine, mustRebundle, recordFingerprint } from './rebundle.ts';
@@ -112,6 +113,19 @@ export interface VsnapOptions {
      * `dark`.
      */
     readonly colorScheme?: ColorScheme;
+    /**
+     * The project's own fonts for canvas text, by family name, as paths
+     * relative to the root. Text that asks for a registered family draws in
+     * it, laid out and drawn by v-snap as its own fonts are, so images still
+     * repeat on every machine, and its font list needs no generic family.
+     * Each family takes one file, a list of files, or faces that give their
+     * `weight` and `style`, which are read from each file by default. A face
+     * is picked for each weight and style as CSS picks one. The keys
+     * `sans-serif` and `monospace` replace v-snap's own fonts for those
+     * families. By default, there are none, and canvas text draws in
+     * v-snap's own fonts.
+     */
+    readonly fonts?: FontFamilies;
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +179,7 @@ export function createVsnapProjects(options: VsnapOptions): { projects: TestProj
     const projectNames = pageKinds.map((pageKind) => `${name}-${pageKind}`);
     const viewConfig = findViewConfig(root, options.vsnapConfig);
     if (viewConfig !== undefined) checkViewConfig(viewConfig);
+    const fonts = resolveFonts(root, options.fonts);
     const allFiles = [...files.canvas, ...files.html];
     const reporter = createVisualReporter({
         layout,
@@ -189,6 +204,7 @@ export function createVsnapProjects(options: VsnapOptions): { projects: TestProj
         viewport: options.viewport ?? DEFAULT_VIEWPORT,
         colorScheme: options.colorScheme ?? 'dark',
         viteConfig: options.viteConfig,
+        fonts,
     }));
     return { projects, plugin };
 }
@@ -206,6 +222,8 @@ function createVisualProject(options: {
     readonly viewport: { readonly width: number; readonly height: number };
     readonly colorScheme: ColorScheme;
     readonly viteConfig: string | undefined;
+    /** The project's own fonts, checked. */
+    readonly fonts: ResolvedFonts;
     readonly name: string;
     readonly pageKind: PageKind;
     readonly files: readonly string[];
@@ -243,6 +261,8 @@ function createVisualProject(options: {
             vsnapConfigFile: toDisplayPath(options.viewConfig ?? join(options.root, VIEW_CONFIG_NAMES[0])),
             vsnapViewport: options.viewport,
             vsnapColorScheme: options.colorScheme,
+            // HTML text is drawn blank, so an HTML page loads no fonts.
+            vsnapFonts: isHtml ? [] : options.fonts.families,
         },
         browser: {
             enabled: true,
@@ -261,7 +281,7 @@ function createVisualProject(options: {
     } satisfies TestProjectInlineConfiguration['test'];
     return {
         root: options.root,
-        plugins: [options.plugin, createOwnSettingsPlugin(test)],
+        plugins: [options.plugin, createOwnSettingsPlugin(test), ...(isHtml ? [] : [createFontFoldersPlugin(options.fonts.folders)])],
         // The page imports the project's vsnap.config.ts by this name. Vite
         // resolves the import as it resolves a test's, so both get one module.
         resolve: { alias: { 'virtual:vsnap-config': options.viewConfig ?? NO_CONFIG } },
@@ -312,6 +332,26 @@ function createOwnSettingsPlugin(own: { readonly include: readonly string[]; rea
             test.setupFiles = [...own.setupFiles];
             test.browser = own.browser;
             for (const key of UNIT_ONLY_SETTINGS) delete test[key];
+        },
+    };
+}
+
+/**
+ * Returns the plugin that lets the page fetch the project's own font files,
+ * wherever they are. It adds each file's folder to the folders that Vite
+ * may serve (`server.fs.allow`), once Vite has resolved the config. Setting
+ * the option in the config instead would replace the folders that Vite
+ * allows by default, such as the workspace's root.
+ */
+function createFontFoldersPlugin(folders: readonly string[]): Plugin {
+    return {
+        name: 'v-snap:font-folders',
+        configResolved: (resolved) => {
+            const allow = resolved.server.fs.allow as string[];
+            for (const folder of folders) {
+                const path = folder.replaceAll('\\', '/');
+                if (!allow.includes(path)) allow.push(path);
+            }
         },
     };
 }

@@ -116,8 +116,9 @@ drawn. That has some costs, and [Limits and Rules](docs/limits-and-rules.md)
 lists them in full.
 
 - **Canvas text is drawn in v-snap's own fonts,** Source Sans 3 and Source
-  Code Pro. Text that a view measures is measured in them too. A character
-  that they lack, such as an emoji, is drawn as a box.
+  Code Pro, unless you register your own font files. Text that a view
+  measures is measured in the same fonts. A character that none of them
+  have, such as an emoji, is drawn as a box.
 - **HTML text is drawn blank.** Every letter is an empty space 0.625 em
   wide. So an HTML image shows layout and styling, but not words. Text
   wraps where it would if every letter were that wide.

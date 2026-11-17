@@ -30,6 +30,24 @@ export type PageKind = 'canvas' | 'html';
 /** A colour scheme, as CSS's `prefers-color-scheme` names it. */
 export type ColorScheme = 'light' | 'dark';
 
+/** A family of font files that a project registers, as Node has checked it and the page loads it. */
+export interface ProvidedFontFamily {
+    /** The family's name, as the config gives it. */
+    readonly family: string;
+    readonly faces: readonly ProvidedFontFace[];
+}
+
+/** One font file of a registered family. */
+export interface ProvidedFontFace {
+    /** Where the page fetches the file from. */
+    readonly url: string;
+    /** The file's path, for messages. */
+    readonly file: string;
+    /** The weights that the face covers: one weight twice for a static face, or a variable face's range. */
+    readonly weight: readonly [number, number];
+    readonly style: 'normal' | 'italic';
+}
+
 /** How an actual image compares with its reference. */
 export type VisualOutcome =
     | 'same' // identical pixels
@@ -205,6 +223,8 @@ declare module 'vitest' {
         vsnapViewport: { readonly width: number; readonly height: number };
         /** The page's colour scheme, provided by the config (`colorScheme`), which a test's colour scheme returns to. */
         vsnapColorScheme: ColorScheme;
+        /** The font families that the project registers for canvas text (`fonts`). An HTML page gets none. */
+        vsnapFonts: readonly ProvidedFontFamily[];
     }
 }
 

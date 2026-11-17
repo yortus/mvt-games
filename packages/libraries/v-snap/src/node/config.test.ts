@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { dirname, join, resolve } from 'node:path';
+import { afterAll, beforeEach, describe, expect, it, onTestFinished } from 'vitest';
 import { configDefaults, type Plugin } from 'vitest/config';
 import { DEFAULT_VIEWPORT, vsnapProjects } from './config.ts';
 import { forgetVsnapCalls } from './test-files.ts';
@@ -52,5 +52,21 @@ describe('vsnapProjects', () => {
         expect(test).not.toHaveProperty('environment');
         expect(test).not.toHaveProperty('environmentOptions');
         expect(test.alias).toBe(alias);
+    });
+
+    // A font outside the workspace is served only if its folder is allowed.
+    // Setting server.fs.allow in the config would replace Vite's own folders,
+    // so the folder is added to the resolved list instead.
+    it("lets a canvas page fetch the project's fonts, keeping the folders Vite allows, and gives an HTML page none", () => {
+        writeFileSync(join(root, 'src', 'visual-tests', 'hud.test.ts'), "canvasTest('a', () => view);\n");
+        onTestFinished(() => rmSync(join(root, 'src', 'visual-tests', 'hud.test.ts')));
+        const font = resolve(import.meta.dirname, '..', '..', 'fixtures', 'fonts', 'fixture-mono-regular.otf');
+        const [canvas, html] = vsnapProjects({ name: 'fonts', root, fonts: { Mono: font } });
+        expect(canvas.test?.provide?.vsnapFonts?.map((f) => f.family)).toEqual(['Mono']);
+        expect(html.test?.provide).toMatchObject({ vsnapFonts: [] });
+        const plugin = (canvas.plugins as Plugin[]).find((p) => p.name === 'v-snap:font-folders');
+        const resolved = { server: { fs: { allow: ['/workspace'] } } };
+        (plugin?.configResolved as (config: unknown) => void)(resolved);
+        expect(resolved.server.fs.allow).toEqual(['/workspace', dirname(font).replaceAll('\\', '/')]);
     });
 });

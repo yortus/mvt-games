@@ -73,7 +73,7 @@ used.
 
 | Folder | What it holds |
 | --- | --- |
-| `src/browser/` | The side that runs in the test page. The main entry point exports `canvasTest`, `htmlTest`, `bindCanvasTest`, `defineVsnapConfig` and `htmlViews` from here, with the types of the kinds of view. This side loads the project's `vsnap.config.ts`, reads canvases, captures HTML views, and sets the page up. The setup seeds random numbers, draws canvas text in the two test fonts, blanks HTML text, and checks the calibration set |
+| `src/browser/` | The side that runs in the test page. The main entry point exports `canvasTest`, `htmlTest`, `bindCanvasTest`, `defineVsnapConfig` and `htmlViews` from here, with the types of the kinds of view. This side loads the project's `vsnap.config.ts`, reads canvases, captures HTML views, and sets the page up. The setup seeds random numbers, draws canvas text in the two test fonts or the project's own, blanks HTML text, and checks the calibration set |
 | `src/pixi/`, `src/three/` | The kinds of view for Pixi and three.js, which `v-snap/pixi` and `v-snap/three` export: `pixiViews`, `getPixiRenderer` and `threeViews`. Only these folders import the libraries |
 | `src/shared/` | Helpers that the test page and the support for Pixi and three.js share, such as the size budget |
 | `src/node/` | The side that runs in Node. `v-snap/vitest` exports `vsnap()` and `vsnapProjects()` from here, which make the plugin, the projects and the reporter. It also holds the layout, the browser commands, the PNG files, the comparison, the reporter, and the step that installs the browser |
@@ -156,6 +156,13 @@ script builds.
 
 Canvas text is drawn in the two test fonts, Source Sans 3 and Source Code
 Pro. They are under the SIL Open Font License, whose text is beside them.
+
+v-snap's own visual tests register fonts of their own, from
+`fixtures/fonts/`, which the published package leaves out. They are small
+static faces cut from the two test fonts, and the one that the tests use
+as a family of its own is monospaced, unlike the sans-serif test font, so
+the images show which font drew. The fixtures' README says how they were
+made.
 
 ## The Speed Benchmark
 

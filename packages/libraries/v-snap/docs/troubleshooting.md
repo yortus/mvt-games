@@ -44,15 +44,33 @@ kind of page.
   from v-snap's package. That usually happens when v-snap is installed
   outside your project's folder. Add v-snap's folder to Vite's
   `server.fs.allow` list.
+- **"v-snap's fonts option gives ... the file ..., which doesn't exist."**
+  A path in the `fonts` option is wrong. It's relative to v-snap's `root`
+  option, which is Vitest's root unless you set it.
+- **"... which isn't a font file that v-snap can read."** The file in the
+  `fonts` option isn't OpenType, TrueType, WOFF or WOFF2, or it's damaged.
+  The rest of the message says what fontkit, which reads the files, made
+  of it.
+- **"... which is a collection of fonts."** A `.ttc` or `.dfont` file
+  holds several fonts, and a path can't say which one to use. Give a file
+  that holds one font, such as one that a font tool takes out of the
+  collection.
+- **"v-snap couldn't load the font file for ..."** The test page couldn't
+  fetch a file in the `fonts` option. v-snap lets Vite serve each font's
+  folder, so this is rare. Check that the file is still there, and that
+  your Vite config doesn't deny its folder (`server.fs.deny`).
 - **"The actual image ... is blank."** The view drew nothing inside the
   image. It may need its kind's `prepare` step, or, for three.js, a camera
   that looks at it. If the view is meant to be a single colour, set
   `canBeBlank: true` in the test's options.
 - **"The view in ... asks for fonts that visual tests can't draw."**
-  v-snap draws canvas text only in its own fonts, so that every machine
-  draws it alike. A font list in your view names no family that v-snap can
-  swap for one of them. End each font list with `sans-serif` or
-  `monospace`, and v-snap draws the text in its own font of that kind.
+  v-snap draws canvas text only in fonts that it has the files of, so that
+  every machine draws it alike. A font list in your view names no family
+  that you registered or that v-snap can swap for one of its own. Register
+  the family's font files with the
+  [`fonts` option](configuration.md#your-own-fonts), and v-snap draws the
+  text in them. Or end each font list with `sans-serif` or `monospace`,
+  and v-snap draws the text in its own font of that kind.
 - **"... matches the visual test files' globs, but it declares no
   canvasTest or htmlTest."** v-snap sorts visual test files by reading
   them for those two names, before they run. This file has neither. It
