@@ -9,15 +9,15 @@ export const HOW_TO_PLAY: HowToPlayText = {
     rules: [
         'Moor every boat of the fleet in the harbour. Each boat is a straight line of cells, across or down, from a dinghy '
         + 'of one cell to a ferry of four or more.',
-        'Boats never touch, not even diagonally, so each one can swing on its mooring. The numbers say how many cells of '
-        + 'each row and column hold part of a boat.',
+        'Boats never touch, not even diagonally. The numbers say how many cells of each row and column hold part of a '
+        + 'boat.',
         'The water and boat pieces printed in navy are given. A piece says which way its boat goes on. Every puzzle can be '
         + 'solved from them by looking, without guessing.',
     ],
     controls: [
         { action: 'Mark water', inputs: ['click', 'tap'], note: 'Water is your note that a cell doesn\'t hold a boat' },
-        { action: 'Mark part of a boat', inputs: ['click', 'tap'], note: 'Tap a cell twice. A third tap clears it' },
-        { action: 'Mark a row of cells', inputs: ['drag'], note: 'Every cell you drag over is marked as a tap would mark the first' },
+        { action: 'Mark a boat', inputs: ['click', 'tap'], note: 'Tap a cell twice. A third tap clears it' },
+        { action: 'Mark a row', inputs: ['drag'], note: 'Drag to mark each cell as a tap marks the first' },
         { action: 'Undo', inputs: [{ button: 'Undo' }], note: 'Takes back the last thing you did' },
     ],
     notes: [
