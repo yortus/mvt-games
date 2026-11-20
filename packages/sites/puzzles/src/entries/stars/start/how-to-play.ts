@@ -10,12 +10,12 @@ export const HOW_TO_PLAY: HowToPlayText = {
         'Place stars so that every row, every column and every region holds exactly two. The regions are the shapes drawn '
         + 'with thick lines.',
         'No two stars may touch, not even diagonally. Every other cell is empty.',
-        'The stars and crosses printed in black are given. Every puzzle can be solved from them by looking, with no guessing.',
+        'The stars and crosses printed in black are given. Every puzzle can be solved from them by looking, without guessing.',
     ],
     controls: [
-        { action: 'Put a cross in a cell', inputs: ['click', 'tap'], note: 'A cross is your note that a cell has no star' },
+        { action: 'Put a cross', inputs: ['click', 'tap'], note: 'A cross is your note that a cell is empty' },
         { action: 'Place a star', inputs: ['click', 'tap'], note: 'Tap a cell twice. A third tap clears it' },
-        { action: 'Ring a group', inputs: ['drag'], note: 'Drag across cells side by side: your note that a star is in one of them. Rings can\'t overlap. Drag again to take it off' },
+        { action: 'Ring a group', inputs: ['drag'], note: 'Drag across cells side by side, to note that a star is in one of them. Drag again to take it off' },
         { action: 'Undo', inputs: [{ button: 'Undo' }], note: 'Takes back the last thing you did' },
     ],
     notes: [

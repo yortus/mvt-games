@@ -951,6 +951,17 @@ kind, such as a cell or a key. The last step asks nothing, and never
 counts as done. Make the demos follow the puzzle's solution, so that what
 the arrow shows is right.
 
+**Fitting the text on the cards.** The walkthrough card has room for two
+lines of each step's text. The How to play card grows to hold its text,
+but shrinks to fit the screen once it's too tall, and then all of its text
+is smaller. A test,
+[card-text.test.ts](../../../puzzles/src/entries/visual-tests/card-text.test.ts),
+measures every puzzle's text on both cards, in a real browser. It fails if
+a step's text spills out, or if the How to play card has to shrink. It
+finds your text where every puzzle keeps it, so export the walkthrough
+from your models' `index.ts`, and `HOW_TO_PLAY` from your start files'
+`index.ts`. If it fails, shorten the text it names.
+
 **The model.** Give the game model an `intro`, made with `createIntroModel`
 from the records, a way to make a practice puzzle, and the walkthrough.
 Call `intro.showCardIfNew()` as the model is made, so the card shows over
