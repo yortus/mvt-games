@@ -9,7 +9,8 @@ import {
 } from '../../../shared';
 import type { ClueState, EdgeMark, MazePuzzle } from '../models';
 import { createBoardGesturesViewModel, type DrawnMark } from './board-gestures-view-model';
-import { type BoardLayout, layOutBoard, measureClueWidth } from './board-layout';
+import { type BoardLayout, layOutBoard, measureClueWidth, toClueLabels } from './board-layout';
+import { HIDDEN_CLUE_COLOR } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -53,7 +54,9 @@ export interface BoardViewBindings {
  * wall. The walls marked are drawn in ink along the lines, and the passages
  * as a line in a pen's blue through the cells' middles. S and E are inked
  * in their cells. The clues are stacked above the maze and set out to its
- * left, each at the line it is for, with a tick on the border.
+ * left, each at the line it is for, with a tick on the border. A hidden
+ * clue shows a violet `?`, so you can spot the lines you have to work out
+ * without one.
  *
  * It is made of layers: the card, a glow for when it is solved, the grid's
  * lines, the marks, then the border and the ends, and the clues. The marks
@@ -174,20 +177,20 @@ export function BoardView(bindings: BoardViewBindings): Container {
         clueTexts = [];
         clueLines = [];
         for (let line = 0; line < next.clues.length; line++) {
-            const clue = next.clues[line].length === 0 ? EMPTY_CLUE : next.clues[line];
+            const labels = toClueLabels(next.clues[line]);
             const isAlongTop = line < next.grid.columnLineCount;
             let x = gridX - clueGap;
-            for (let i = clue.length - 1; i >= 0; i--) {
-                const text = new Text({ text: String(clue[i]), style });
+            for (let i = labels.length - 1; i >= 0; i--) {
+                const text = new Text({ text: labels[i], style });
                 if (isAlongTop) {
                     text.anchor.set(0.5);
-                    text.position.set(gridX + (line + 1) * cellSize, gridY - clueGap - (clue.length - 1 - i) * clueStep - clueSize * 0.5);
+                    text.position.set(gridX + (line + 1) * cellSize, gridY - clueGap - (labels.length - 1 - i) * clueStep - clueSize * 0.5);
                 }
                 else {
                     text.anchor.set(1, 0.5);
                     text.position.set(x, gridY + (line - next.grid.columnLineCount + 1) * cellSize);
-                    // The number's width and a space, as the layout measures them
-                    x -= measureClueWidth([clue[i], 0], clueSize) - measureClueWidth([0], clueSize);
+                    // The label's width and a space, as the layout measures them
+                    x -= measureClueWidth([labels[i], '0'], clueSize) - measureClueWidth(['0'], clueSize);
                 }
                 view.addChild(text);
                 clueTexts.push(text);
@@ -235,7 +238,9 @@ export function BoardView(bindings: BoardViewBindings): Container {
         }
         for (let i = 0; i < clueTexts.length; i++) {
             const state = isSolved ? 'open' : bindings.clueStateAt(clueLines[i]);
-            clueTexts[i].tint = state === 'broken' ? CLASH_COLOR : state === 'met' ? DIM_TEXT_COLOR : INK_COLOR;
+            // A hidden clue's ? is always open, and shows in its own colour so it stands out from the numbers
+            const openColor = maze!.clues[clueLines[i]] ? INK_COLOR : HIDDEN_CLUE_COLOR;
+            clueTexts[i].tint = state === 'broken' ? CLASH_COLOR : state === 'met' ? DIM_TEXT_COLOR : openColor;
             clueTexts[i].alpha = state === 'met' ? MET_CLUE_ALPHA : 1;
         }
     }
@@ -266,5 +271,3 @@ const MET_CLUE_ALPHA = 0.55;
 /** How strong the glow of a maze solved grows, and how long it takes, in ms. */
 const GLOW_ALPHA = 0.85;
 const GLOW_MS = 600;
-/** What shows for a line with no wall. */
-const EMPTY_CLUE: readonly number[] = [0];

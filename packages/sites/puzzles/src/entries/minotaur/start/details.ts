@@ -14,7 +14,8 @@ export const details: EntryDetails = {
         + 'and down the left are the clues. Each number is the length of a stretch of wall on that line, in order, as in a '
         + 'paint-by-numbers puzzle.',
         'There is a new maze every day at each of four levels. Easy is a 5 by 5 grid, and Expert is 11 by 11. Everyone gets '
-        + 'the same mazes on the same day, and you can still play every day back to the start of 2026. Each maze you build '
+        + 'the same mazes on the same day, and you can still play every day back to the start of 2026. At Hard and Expert, '
+        + 'a few lines hide their whole clue behind a ?, so you have less to work from. Each maze you build '
         + 'is ticked off on the calendar. If you leave a maze half done, it\'s kept just as you left it.',
     ].join('\n\n'),
     implementation: [
@@ -36,6 +37,9 @@ export const details: EntryDetails = {
         + 'draws another path. That happens to about one path in ten on the small grids, and one in four at Expert. The '
         + 'solver was checked against every possible path on grids up to 5 by 5, which are small enough for a search to '
         + 'list every path.',
+        'At Hard and Expert, the maker then hides some clues. It visits the lines in a random order, and hides a line\'s '
+        + 'clue if the rules can still finish the maze without it. So every hidden clue is one you can do without, and '
+        + 'you never have to guess. Hard hides three clues, and Expert hides four.',
         'When you drag through cells, the board view turns your pointer\'s movement into steps between cells, which draw '
         + 'the path. When you drag along lines, it turns the movement into steps between the grid\'s corners, which draw '
         + 'walls. The puzzle model stores each stroke as one action, so Undo takes back a whole stroke.',

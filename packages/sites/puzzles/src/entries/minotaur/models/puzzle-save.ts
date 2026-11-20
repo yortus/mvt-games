@@ -12,9 +12,13 @@ export interface PuzzleSave {
     readonly marks: string;
 }
 
-/** Returns `maze` written out: its size, its ends and its clues, such as `5x5 3-21 1.2/3/...`. Two mazes with the same description are the same puzzle. */
+/**
+ * Returns `maze` written out as its size, its ends and its clues, such as
+ * `5x5 3-21 1.2/3/?/...`, with `?` for a hidden clue. Two mazes with the same
+ * description are the same puzzle.
+ */
 export function describeMaze(maze: MazePuzzle): string {
-    const clues = maze.clues.map((clue) => clue.join('.')).join('/');
+    const clues = maze.clues.map((clue) => clue?.join('.') ?? '?').join('/');
     return `${maze.grid.rows}x${maze.grid.cols} ${maze.start}-${maze.end} ${clues}`;
 }
 

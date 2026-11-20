@@ -45,3 +45,6 @@ export const MOST_CELL_SIZE = 76;
 export const CLUE_SHARE = 0.46;
 export const LEAST_CLUE_SIZE = 13;
 export const MOST_CLUE_SIZE = 22;
+
+/** The violet of a hidden clue's `?`, apart from the ink of the clues, the red of a broken one and the blue of the path. */
+export const HIDDEN_CLUE_COLOR = 0x7b4fc9;

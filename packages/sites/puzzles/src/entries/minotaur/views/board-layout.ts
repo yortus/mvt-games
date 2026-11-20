@@ -23,7 +23,8 @@ export interface BoardLayout {
 export interface BoardLayoutOptions {
     readonly rows: number;
     readonly cols: number;
-    readonly clues: readonly (readonly number[])[];
+    /** Each line's clue, or undefined where it's hidden. */
+    readonly clues: readonly (readonly number[] | undefined)[];
     /** How many of the clues are on lines between columns, along the top. The rest are down the left. */
     readonly columnLineCount: number;
     /** The space to fit into. */
@@ -47,8 +48,9 @@ export function layOutBoard(options: BoardLayoutOptions): BoardLayout {
     let tallestClue = 1;
     let widestClue = 1;
     for (let line = 0; line < clues.length; line++) {
-        if (line < columnLineCount) tallestClue = Math.max(tallestClue, clues[line].length);
-        else widestClue = Math.max(widestClue, measureClueWidth(clues[line], 1));
+        const labels = toClueLabels(clues[line]);
+        if (line < columnLineCount) tallestClue = Math.max(tallestClue, labels.length);
+        else widestClue = Math.max(widestClue, measureClueWidth(labels, 1));
     }
 
     let cellSize = MOST_CELL_SIZE;
@@ -73,11 +75,21 @@ export function layOutBoard(options: BoardLayoutOptions): BoardLayout {
     };
 }
 
-/** How wide `clue`'s numbers are, set out in a row, at `clueSize`. An empty clue shows a 0. */
-export function measureClueWidth(clue: readonly number[], clueSize: number): number {
-    if (clue.length === 0) return DIGIT_SHARE * clueSize;
+/**
+ * Returns the labels that `clue` shows, one for each stretch of wall. A line
+ * without walls shows a 0, and a hidden clue shows a single `?`, so you can
+ * tell the two apart.
+ */
+export function toClueLabels(clue: readonly number[] | undefined): readonly string[] {
+    if (!clue) return HIDDEN_LABELS;
+    if (clue.length === 0) return EMPTY_LABELS;
+    return clue.map(String);
+}
+
+/** How wide a clue's `labels` are, set out in a row, at `clueSize`. Each character is as wide as a digit. */
+export function measureClueWidth(labels: readonly string[], clueSize: number): number {
     let width = 0;
-    for (let i = 0; i < clue.length; i++) width += (clue[i] >= 10 ? 2 : 1) * DIGIT_SHARE * clueSize + (i > 0 ? SPACE_SHARE * clueSize : 0);
+    for (let i = 0; i < labels.length; i++) width += labels[i].length * DIGIT_SHARE * clueSize + (i > 0 ? SPACE_SHARE * clueSize : 0);
     return width;
 }
 
@@ -90,3 +102,7 @@ const STEP_SHARE = 1.1;
 const GAP_SHARE = 0.95;
 const DIGIT_SHARE = 0.6;
 const SPACE_SHARE = 0.55;
+
+/** The labels of a line without walls, and of a hidden clue. */
+const EMPTY_LABELS: readonly string[] = ['0'];
+const HIDDEN_LABELS: readonly string[] = ['?'];
