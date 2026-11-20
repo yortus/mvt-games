@@ -2,13 +2,13 @@
 
 import type { Container } from 'pixi.js';
 import { createComputed } from '@mvtjs/utils';
-import { ButtonView, DIM_TEXT_COLOR, INK_COLOR, LABEL_STYLE, LEVEL_NAMES, MARGIN, SMALL_STYLE, SOLVED_COLOR, writeDate } from '../../../shared';
+import { ButtonView, DIM_TEXT_COLOR, INK_COLOR, LABEL_STYLE, LEVEL_NAMES, MARGIN, SMALL_STYLE, writeDate } from '../../../shared';
 import type { GameModel, PuzzleModel } from '../models';
 import { BoardView } from './board-view';
 import { createStrokeViewModel } from './stroke-view-model';
 import {
     BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, HINT_Y, SCREEN_WIDTH, BUTTON_GAP, BUTTON_HEIGHT,
-    BUTTON_WIDTH, BUTTON_Y,
+    BUTTON_WIDTH, BUTTON_Y, GOLD_TEXT_COLOR,
 } from './view-constants';
 
 // ---------------------------------------------------------------------------
@@ -103,7 +103,7 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
                 y={HINT_Y}
                 anchor={0.5}
                 style={SMALL_STYLE}
-                tint={() => (isSolved() ? SOLVED_COLOR : DIM_TEXT_COLOR)}
+                tint={() => (isSolved() ? GOLD_TEXT_COLOR : DIM_TEXT_COLOR)}
             />
         </container>
     );
@@ -115,6 +115,6 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
 
 /** The line of help, for what is going on. */
 function writeHint(isSolved: boolean): string {
-    if (isSolved) return 'Built! It\'s ticked off on the calendar.';
-    return 'Drag through cells for the path, along lines for walls. Drag again to rub out.';
+    if (isSolved) return 'Escaped! It\'s ticked off on the calendar.';
+    return 'Drag through cells for the thread, along lines for walls. Drag again to rub out.';
 }

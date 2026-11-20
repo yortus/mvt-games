@@ -19,7 +19,7 @@ describe('AudioView', () => {
         expect(listPlayed(sfx)).toEqual([]);
     });
 
-    it('ticks each passage a step higher than the last in its stroke, and starts low again with the next stroke', () => {
+    it('plays each passage a step higher than the last in its stroke, and starts low again with the next stroke', () => {
         const { sfx, state, tick } = setUp();
         for (let i = 1; i <= 3; i++) {
             state.passagesMarked = i;
@@ -36,7 +36,7 @@ describe('AudioView', () => {
         expect(notes[3]).toBe(notes[0]);
     });
 
-    it('knocks for a wall and brushes for a mark rubbed out, from the side of the maze the mark is on', () => {
+    it('clacks for a wall and brushes for a mark rubbed out, from the side of the maze the mark is on', () => {
         const { sfx, state, tick } = setUp();
         state.wallsMarked = 1;
         state.markPan = -1;
@@ -58,7 +58,7 @@ describe('AudioView', () => {
         expect(listPlayed(sfx)).toEqual([CLASHED]);
     });
 
-    it('stays silent as the puzzle shown changes and its counts jump, but still chimes a puzzle solved', () => {
+    it('stays silent as the puzzle shown changes and its counts jump, but still sounds the trumpet for a puzzle solved', () => {
         const { sfx, state, tick } = setUp({ passagesMarked: 1, undosDone: 1 });
         // The walkthrough ends, and the puzzle open shows again, with its own, higher counts
         state.passagesMarked = 5;

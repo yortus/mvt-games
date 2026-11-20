@@ -26,7 +26,7 @@ canvasTest('a hard maze, opened after a medium one', SIZE, () => pose([
 // The way in: the card, as the game first opens, then the walkthrough from it. The arrow comes in for 600 ms, and a
 // drag presses for 300 before it moves
 canvasTest('how to play, on its card over the calendar', SIZE, () => pose((model) => model.intro.showCard()));
-canvasTest('the walkthrough, from the calendar, its arrow partway through drawing the path from S', SIZE, () => pose(startWalkthrough, 1300));
+canvasTest('the walkthrough, from the calendar, its arrow partway through drawing the path from alpha', SIZE, () => pose(startWalkthrough, 1300));
 
 /** Opens the card, and starts the walkthrough from it. */
 function startWalkthrough(model: GameModel): void {
