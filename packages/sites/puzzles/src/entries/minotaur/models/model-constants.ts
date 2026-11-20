@@ -20,8 +20,8 @@ export const MOST_UNDOS = 200;
 
 /** The small maze the card that says how to play shows, solved: the seed it is made from, and its size. Any seed would do; this one is easy to follow. */
 export const EXAMPLE_SEED = 5;
-export const EXAMPLE_SETTINGS: LevelSettings = { size: 4, reasoning: 'rules' };
+export const EXAMPLE_SETTINGS: LevelSettings = { size: 4 };
 
 /** The walkthrough's practice maze: the seed it is made from, and its size. Any seed would do, other than the example's. */
 export const PRACTICE_SEED = 7;
-export const PRACTICE_SETTINGS: LevelSettings = { size: 5, reasoning: 'rules' };
+export const PRACTICE_SETTINGS: LevelSettings = { size: 5 };

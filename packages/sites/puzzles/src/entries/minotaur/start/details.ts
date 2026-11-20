@@ -8,25 +8,37 @@ import { HOW_TO_PLAY } from './how-to-play';
 /** Minotaur's long text, for its info panel and the search. The page loads it after its first paint, not with the cards. */
 export const details: EntryDetails = {
     description: [
-        'A logic puzzle in which you build a maze from clues on its walls, a kind of puzzle known elsewhere as Build a Maze '
-        + 'or Labyrinth. The maze has one way through: a single path from S to E that passes through every cell once. Every '
-        + 'side of a cell the path doesn\'t cross is a wall, and the numbers along the top and down the left say how long '
-        + 'each stretch of wall on that line is, in order, as in a paint-by-numbers puzzle.',
-        'There is a new maze every day at each of four levels, from Easy, a 5 by 5 grid, to Expert, 11 by 11. Everyone gets '
-        + 'the same mazes on the same day, and every day back to the start of 2026 can still be played. Each maze you build '
-        + 'is ticked off on the calendar, and one you leave half done is kept just as you left it.',
+        'Minotaur is a logic puzzle in which you build a maze from clues on its walls. Elsewhere, this kind of puzzle is '
+        + 'known as Build a Maze or Labyrinth. The maze has one way through. It\'s a single path from S to E that passes '
+        + 'through every cell once. Every side of a cell that the path doesn\'t cross is a wall. The numbers along the top '
+        + 'and down the left are the clues. Each number is the length of a stretch of wall on that line, in order, as in a '
+        + 'paint-by-numbers puzzle.',
+        'There is a new maze every day at each of four levels. Easy is a 5 by 5 grid, and Expert is 11 by 11. Everyone gets '
+        + 'the same mazes on the same day, and you can still play every day back to the start of 2026. Each maze you build '
+        + 'is ticked off on the calendar. If you leave a maze half done, it\'s kept just as you left it.',
     ].join('\n\n'),
     implementation: [
-        'Each maze is made the moment it opens, from a seed worked out from its date and level, so every player\'s game makes '
-        + 'the same one without asking a server. A maker draws a random path through every cell by "backbite" moves: it '
-        + 'joins an end of the path to a cell beside it, and turns the loose piece round. The walls are whatever the path '
-        + 'leaves, and the clues are read off them.',
-        'A solver then works the clues as a person would. It settles each line like a nonogram\'s, gives every cell two '
-        + 'passages (the ends one), and walls off anything that would close a loop. At the harder levels it also tries '
-        + 'edges, to see which way breaks a rule. A maze it can solve without guessing has one solution, and is kept; '
-        + 'the rest, about one in twenty, are drawn again. The solver was checked against every path on small grids. '
-        + 'The board view only turns the pointer into steps between cells, or between the grid\'s corners, and the '
-        + 'puzzle model keeps each stroke as one action to undo.',
+        'Each maze is made when you open it. The maker starts from a seed, a number worked out from the maze\'s date and '
+        + 'level. The same seed always makes the same maze, so every player gets the same puzzle without a request to a '
+        + 'server.',
+        'The maker first draws a random path through every cell. It starts with a path that snakes along the rows, then '
+        + 'reshapes it with many "backbite" moves. Each move joins one end of the path to a cell beside it. That makes a '
+        + 'loop, so the move then cuts the loop open again beside that cell. The path still passes through every cell '
+        + 'once, but its shape has changed. Every side that the finished path doesn\'t cross becomes a wall, and the maker '
+        + 'reads the clues off those walls.',
+        'Next, a solver checks that you can build the maze from its clues without guessing. It uses three rules, and each '
+        + 'rule reads only the board as it stands. The first rule works on one line at a time, as you would in a nonogram, '
+        + 'a paint-by-numbers puzzle. If a side is a wall in every way that the line\'s clue can fit, it must be a wall. '
+        + 'The same goes for a gap. The second rule looks at each cell. The path enters and leaves every cell, so it '
+        + 'crosses two of the cell\'s sides. At S and E, it crosses only one. Once a cell has all the crossings it needs, '
+        + 'its other sides must be walls. The third rule walls off any side that would close a loop.',
+        'If the rules settle every side, the maze has one solution, and the maker keeps it. If they get stuck, the maker '
+        + 'draws another path. That happens to about one path in ten on the small grids, and one in four at Expert. The '
+        + 'solver was checked against every possible path on grids up to 5 by 5, which are small enough for a search to '
+        + 'list every path.',
+        'When you drag through cells, the board view turns your pointer\'s movement into steps between cells, which draw '
+        + 'the path. When you drag along lines, it turns the movement into steps between the grid\'s corners, which draw '
+        + 'walls. The puzzle model stores each stroke as one action, so Undo takes back a whole stroke.',
     ].join('\n\n'),
     howToPlay: {
         intro: HOW_TO_PLAY.rules.join(' '),

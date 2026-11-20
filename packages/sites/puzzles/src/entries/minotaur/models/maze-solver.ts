@@ -6,17 +6,18 @@ import type { MazeGrid } from './maze-grid';
 // Interface
 // ---------------------------------------------------------------------------
 
-/**
- * What it takes to solve a maze from its clues: the rules alone, edge by
- * edge; trying edges, to see which way breaks a rule; or guessing, which a
- * good puzzle never needs.
- */
-export type MazeReasoning = 'rules' | 'tries' | 'guessing';
+/** How far the rules get with a maze: each edge as they leave it, and whether they settled every one. */
+export interface MazeSolverProgress {
+    /** Each edge as `PASSAGE`, `WALL`, or `UNKNOWN` where the rules can't tell. */
+    readonly edges: Uint8Array;
+    /** Whether the rules settled every edge without breaking. Then the maze has one solution, and this is it. */
+    readonly isFinished: boolean;
+}
 
 /**
- * Solves a maze from its clues, as a person might, and counts its solutions.
- * It knows each edge as unknown, a wall or a passage, and applies three
- * rules until none tells it anything more:
+ * Solves a maze from its clues, as a person would. It knows each edge as
+ * unknown, a wall or a passage, and applies three rules until none tells it
+ * anything more:
  *
  * - **Lines.** Each line's edges must follow its clue. An edge that is a
  *   wall in every way the clue fits is a wall, and the same for a passage.
@@ -27,14 +28,14 @@ export type MazeReasoning = 'rules' | 'tries' | 'guessing';
  *   that would join the start's piece of the path to the end's before every
  *   cell is on it.
  *
- * Trying an edge means setting it one way and applying the rules: if they
- * find a contradiction, the edge must be the other way.
+ * Each rule reads the board as it stands, so a person can follow every
+ * step. The solver never sets an edge to see what breaks, since a person
+ * would have to draw it in, follow it, and back up: that is guessing. Every
+ * edge the rules settle is forced, so a maze they finish has one solution.
  */
 export interface MazeSolver {
-    /** What the maze takes to solve: `rules` or `tries` if it can be solved without guessing, which means it has one solution. */
-    readonly grade: () => MazeReasoning;
-    /** How many solutions the maze has, counting no further than `limit`. */
-    readonly countSolutions: (limit: number) => number;
+    /** Applies the rules from an empty board until none tells it anything more. */
+    readonly solve: () => MazeSolverProgress;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,13 +70,11 @@ export function createMazeSolver(options: MazeSolverOptions): MazeSolver {
     const piece = new Int32Array(cellCount);
 
     return {
-        grade() {
-            const states = new Uint8Array(edgeCount);
-            if (!applyRules(states)) return 'guessing';
-            if (isSolved(states)) return 'rules';
-            return applyTries(states) && isSolved(states) ? 'tries' : 'guessing';
+        solve() {
+            const edges = new Uint8Array(edgeCount);
+            const isFinished = applyRules(edges) && !edges.includes(UNKNOWN);
+            return { edges, isFinished };
         },
-        countSolutions: (limit) => countFrom(new Uint8Array(edgeCount), limit),
     };
 
     /** Applies the rules to `states` until none tells it more. Returns false if they find a contradiction. */
@@ -162,67 +161,5 @@ export function createMazeSolver(options: MazeSolverOptions): MazeSolver {
             cell = next;
         }
         return root;
-    }
-
-    /** Tries each unknown edge both ways, keeping what a contradiction proves, until no try proves anything. Returns false on a contradiction. */
-    function applyTries(states: Uint8Array): boolean {
-        const tried = new Uint8Array(edgeCount);
-        let isProving = true;
-        while (isProving) {
-            isProving = false;
-            for (let edge = 0; edge < edgeCount; edge++) {
-                if (states[edge] !== UNKNOWN) continue;
-                for (let way = PASSAGE; way <= WALL; way++) {
-                    tried.set(states);
-                    tried[edge] = way;
-                    if (applyRules(tried)) continue;
-                    states[edge] = way === PASSAGE ? WALL : PASSAGE;
-                    if (!applyRules(states)) return false;
-                    isProving = true;
-                    break;
-                }
-            }
-        }
-        return true;
-    }
-
-    function isSolved(states: Readonly<Uint8Array>): boolean {
-        return states.indexOf(UNKNOWN) < 0;
-    }
-
-    /** Counts the solutions that follow from `states`, up to `limit`, by the rules and then by search. */
-    function countFrom(states: Uint8Array, limit: number): number {
-        if (!applyRules(states)) return 0;
-        const edge = chooseEdge(states);
-        if (edge < 0) return 1;
-        let count = 0;
-        for (let way = PASSAGE; way <= WALL && count < limit; way++) {
-            const next = states.slice();
-            next[edge] = way;
-            count += countFrom(next, limit - count);
-        }
-        return count;
-    }
-
-    /** An unknown edge of the cell with the fewest unknown sides, the likeliest to settle quickly, or -1 if none is unknown. */
-    function chooseEdge(states: Readonly<Uint8Array>): number {
-        let chosen = -1;
-        let fewest = 5;
-        for (let cell = 0; cell < cellCount; cell++) {
-            let unknowns = 0;
-            let unknown = -1;
-            for (let side = 0; side < 4; side++) {
-                const edge = cellEdges[cell * 4 + side];
-                if (edge >= 0 && states[edge] === UNKNOWN) {
-                    unknowns++;
-                    unknown = edge;
-                }
-            }
-            if (unknowns > 0 && unknowns < fewest) {
-                fewest = unknowns;
-                chosen = unknown;
-            }
-        }
-        return chosen;
     }
 }

@@ -1,6 +1,6 @@
 // What the maze solver's tests share: every path through a small grid, and
 // the puzzle and the solver that each path makes.
-import { PASSAGE } from './edge-states';
+import { PASSAGE, WALL } from './edge-states';
 import type { MazeGrid } from './maze-grid';
 import { createMazeSolver } from './maze-solver';
 import { readClues } from './read-clues';
@@ -29,22 +29,27 @@ export function listEveryPath(grid: MazeGrid): number[][] {
 
 /**
  * Lists every path through a grid, and returns how many there are, how many
- * are alone in their puzzle (so the puzzle has one solution), and on how
- * many the solver agrees about whether the puzzle has one solution.
+ * are alone in their puzzle (so the puzzle has one solution), how many
+ * puzzles the solver's rules finish, and how many of those they get wrong:
+ * a puzzle with more than one solution, or an answer other than the path.
  */
-export function compareWithBruteForce(grid: MazeGrid): [paths: number, unique: number, agreed: number] {
+export function compareWithBruteForce(grid: MazeGrid): [paths: number, unique: number, finished: number, wrong: number] {
     const all = listEveryPath(grid);
     const groups = new Map<string, number>();
     for (const path of all) groups.set(describePuzzle(grid, path), (groups.get(describePuzzle(grid, path)) ?? 0) + 1);
-    let agreed = 0;
     let alone = 0;
+    let finished = 0;
+    let wrong = 0;
     for (const path of all) {
         const isAlone = groups.get(describePuzzle(grid, path)) === 1;
         if (isAlone) alone++;
-        const solutions = createSolverFor(grid, path).countSolutions(2);
-        if ((solutions === 1) === isAlone) agreed++;
+        const { edges, isFinished } = createSolverFor(grid, path).solve();
+        if (!isFinished) continue;
+        finished++;
+        const states = toStates(grid, path);
+        if (!isAlone || edges.some((state, edge) => state !== states[edge])) wrong++;
     }
-    return [all.length, alone, agreed];
+    return [all.length, alone, finished, wrong];
 }
 
 /** Returns the solver for the puzzle that a path makes. */
@@ -58,8 +63,9 @@ function describePuzzle(grid: MazeGrid, path: readonly number[]): string {
     return `${path[0]} ${path[path.length - 1]} ${clues}`;
 }
 
+/** Each edge of the path's maze, as `PASSAGE` or `WALL`. */
 function toStates(grid: MazeGrid, path: readonly number[]): Uint8Array {
-    const states = new Uint8Array(grid.edgeCount);
+    const states = new Uint8Array(grid.edgeCount).fill(WALL);
     for (let i = 0; i + 1 < path.length; i++) states[grid.edgeBetween(path[i], path[i + 1])] = PASSAGE;
     return states;
 }

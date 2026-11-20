@@ -19,8 +19,6 @@ export interface MazePuzzle {
     readonly clues: readonly (readonly number[])[];
     /** Each edge of the solution, as `PASSAGE` or `WALL`. */
     readonly solution: Readonly<Uint8Array>;
-    /** What it takes to solve. */
-    readonly reasoning: LevelSettings['reasoning'];
 }
 
 // ---------------------------------------------------------------------------
@@ -30,7 +28,7 @@ export interface MazePuzzle {
 export interface MazePuzzleOptions {
     /** Any whole number. The same seed always makes the same puzzle. */
     readonly seed: number;
-    /** The puzzle's size, and what it must take to solve. */
+    /** The puzzle's size. */
     readonly settings: LevelSettings;
 }
 
@@ -40,13 +38,14 @@ export interface MazePuzzleOptions {
 
 /**
  * Creates a puzzle from `seed`. It draws a random path through every cell,
- * reads the clues off the walls it leaves, and keeps the puzzle only if it
- * can be solved without guessing, which means it has one solution, and
- * takes the reasoning asked for. Otherwise it draws another. Most paths
- * make a puzzle with one solution, so it rarely draws more than a few.
+ * reads the clues off the walls it leaves, and keeps the puzzle only if the
+ * solver's rules finish it, so it has one solution and never needs a guess.
+ * Otherwise it draws another. The rules finish about nine paths in ten up
+ * to 9 by 9, and three in four at 11 by 11, so it rarely draws more than a
+ * few.
  */
 export function createMazePuzzle(options: MazePuzzleOptions): MazePuzzle {
-    const { size, reasoning } = options.settings;
+    const { size } = options.settings;
     const grid = createMazeGrid({ rows: size, cols: size });
     const random = createRandom({ seed: options.seed });
     for (let attempt = 0; attempt < MOST_ATTEMPTS; attempt++) {
@@ -56,9 +55,9 @@ export function createMazePuzzle(options: MazePuzzleOptions): MazePuzzle {
         const clues = readClues(grid, solution);
         const start = path[0];
         const end = path[path.length - 1];
-        if (createMazeSolver({ grid, clues, start, end }).grade() === reasoning) return { grid, start, end, clues, solution, reasoning };
+        if (createMazeSolver({ grid, clues, start, end }).solve().isFinished) return { grid, start, end, clues, solution };
     }
-    throw new Error(`No ${size} by ${size} maze that takes ${reasoning} turned up in ${MOST_ATTEMPTS} attempts`);
+    throw new Error(`No ${size} by ${size} maze that the rules finish turned up in ${MOST_ATTEMPTS} attempts`);
 }
 
 // ---------------------------------------------------------------------------

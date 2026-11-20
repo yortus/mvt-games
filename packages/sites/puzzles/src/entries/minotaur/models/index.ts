@@ -1,5 +1,4 @@
 export { PASSAGE, UNKNOWN, WALL } from './edge-states';
-export type { MazeReasoning } from './maze-solver';
 export { findPuzzleSeed } from './find-puzzle-seed';
 export { type LevelSettings, LEVEL_SETTINGS } from './levels';
 export { createMazePuzzle, type MazePuzzleOptions, type MazePuzzle } from './maze-puzzle';

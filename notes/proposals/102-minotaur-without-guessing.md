@@ -17,7 +17,8 @@
 > givens: **hide the clues the rules can do without**. About a third of
 > them can go, and the rules then take about 70% more passes to finish.
 
-**Status:** proposed. Nothing built.
+**Status:** step 1 built (section 7): every level can be solved without a guess. Step 2,
+hidden clues, waits on the questions in section 5.
 
 **Written:** 2026-11-17, against `vnext` at `2ef9c043`, at the user's
 request: "look at whether and how this givens technique can also be
@@ -241,3 +242,27 @@ out from the cells around it." The rules text loses nothing.
 2. Hidden clues: in the maker, the puzzle, its save and description, the
    board view, the How to play card and the details text.
 3. Timings in Node and on a phone, and a playtest.
+
+## 7. Progress
+
+- 2026-11-20: Step 1, at the user's request: "make the fix to Minotaur
+  now, so that guessing is never required."
+  - **The solver** has the three rules only. `applyTries`, the grades and
+    `countSolutions` are gone; `solve()` returns the edges the rules
+    settle and whether they settled them all.
+  - **The maker** keeps a maze when the rules finish it, and draws again
+    otherwise. Levels are just a size now.
+  - **Easy and Medium are unchanged**: they already kept only mazes the
+    rules finish, and the pinned days show the same mazes. Hard and Expert
+    change on every day, and one left half done starts afresh. The details
+    text leaves that out, at the user's call: there are only a few players.
+  - **Brute force instead of a counter.** Section 3.1 planned to move
+    `countSolutions` into test support. Instead, the brute-force tests
+    check the rules directly: on every 4x4 and 5x5 path, wherever the rules
+    finish, the path is alone in its puzzle and is what they found. They
+    finish all 552 puzzles on a 4x4, and 7,248 of the 7,992 5x5 puzzles
+    with one solution. Each level's test checks that the rules reach the
+    drawn path.
+  - **Timings** in Node, 60 days a level: Easy 0.2 ms (worst 1.6), Medium
+    0.4 (0.9), Hard 0.9 (1.9), Expert 2.1 (7.0). Faster than before, since
+    Hard and Expert no longer hunt for the rarer mazes that need tries.
