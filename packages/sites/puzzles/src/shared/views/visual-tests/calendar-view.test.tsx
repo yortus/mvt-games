@@ -41,7 +41,7 @@ async function pose(play: (calendar: DailyCalendar<TestLevel>, records: DailyRec
     const view = new Container();
     view.addChild(
         new Graphics().rect(0, 0, SIZE.width, SIZE.height).fill(PAPER_COLOR),
-        CalendarView({ calendar, title: 'Sudoku', tagline: 'A new puzzle every day, at five levels', levelNames: LEVEL_NAMES, onDayChosen: () => undefined }),
+        CalendarView({ calendar, title: 'Sudoku', tagline: 'A new puzzle every day, at five levels', levelNames: LEVEL_NAMES, onDayChosen: () => undefined, onHowToPlayPressed: () => undefined }),
     );
     play(calendar, records);
     await advanceTime(16, view);

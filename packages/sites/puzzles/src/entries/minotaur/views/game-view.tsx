@@ -56,6 +56,7 @@ export function GameView(bindings: GameViewBindings): Container {
                         tagline="A new maze to build every day, at four levels"
                         levelNames={LEVEL_NAMES}
                         onDayChosen={model.openPuzzle}
+                        onHowToPlayPressed={model.intro.showCard}
                     />
                 </Match>
                 <Match when={() => model.puzzle !== undefined}>

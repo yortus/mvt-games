@@ -37,8 +37,13 @@ export const DAYS_Y = 232;
 export const DAY_PITCH = PAGE_WIDTH / 7;
 export const DAY_SIZE = DAY_PITCH - 6;
 
+/** The button that shows how to play, under the days, in the middle, and as large as a puzzle's buttons. */
+export const HOW_TO_PLAY_Y = DAYS_Y + DAY_PITCH * 6 + 14;
+export const HOW_TO_PLAY_WIDTH = 250;
+export const HOW_TO_PLAY_HEIGHT = 48;
+
 /** The count of days solved, along the bottom. */
-export const FOOTER_Y = DAYS_Y + DAY_PITCH * 6 + 22;
+export const FOOTER_Y = HOW_TO_PLAY_Y + HOW_TO_PLAY_HEIGHT + 22;
 
 // ---------------------------------------------------------------------------
 // Colours: ink, pen and pencil on paper

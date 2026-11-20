@@ -57,6 +57,7 @@ function setUp() {
     const stage = new Container();
     stage.addChild(CalendarView({
         calendar, title: 'Test', tagline: 'A test', levelNames: { easy: 'Easy', hard: 'Hard' }, onDayChosen: (day) => chosen.push(day),
+        onHowToPlayPressed: () => undefined,
     }));
     // Nothing renders here, and Pixi works out where each object is as it renders, so it is done by hand
     stage.enableRenderGroup();

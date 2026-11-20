@@ -7,8 +7,9 @@ import { CALENDAR_SLOTS, type DailyCalendar } from '../models';
 import { ButtonView } from './button-view';
 import { DayView } from './day-view';
 import {
-    DAY_PITCH, DAYS_Y, DIM_TEXT_COLOR, FONT_FAMILY, FOOTER_Y, INK_COLOR, LABEL_STYLE, MARGIN, MONTH_BUTTON_WIDTH, MONTH_NAMES, MONTH_Y,
-    PAGE_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, SMALL_STYLE, TAB_GAP, TAB_HEIGHT, TAB_Y, TAGLINE_Y, TITLE_Y, WEEKDAY_NAMES, WEEKDAY_Y,
+    DAY_PITCH, DAYS_Y, DIM_TEXT_COLOR, FONT_FAMILY, FOOTER_Y, HOW_TO_PLAY_HEIGHT, HOW_TO_PLAY_WIDTH, HOW_TO_PLAY_Y, INK_COLOR, LABEL_STYLE, MARGIN,
+    MONTH_BUTTON_WIDTH, MONTH_NAMES, MONTH_Y, PAGE_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, SMALL_STYLE, TAB_GAP, TAB_HEIGHT, TAB_Y, TAGLINE_Y, TITLE_Y,
+    WEEKDAY_NAMES, WEEKDAY_Y,
 } from './view-constants';
 
 // ---------------------------------------------------------------------------
@@ -25,6 +26,8 @@ export interface CalendarViewBindings<L extends string> {
     levelNames: Readonly<Record<L, string>>;
     /** The player chose `day`, which has a puzzle to play. */
     onDayChosen: (day: number) => void;
+    /** The player wants to see how to play. */
+    onHowToPlayPressed: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -32,9 +35,10 @@ export interface CalendarViewBindings<L extends string> {
 // ---------------------------------------------------------------------------
 
 /**
- * The calendar's screen: the game's name, a tab for each level, and a month
- * of days, each ticked once its puzzle at that level is solved. Days after
- * today, and before the first, are faded. The arrows go to the months
+ * The calendar's screen: the game's name, a tab for each level, a month of
+ * days, each ticked once its puzzle at that level is solved, and a button
+ * that shows how to play, as a puzzle's screen has. Days after today, and
+ * before the first, are faded. The arrows go to the months
  * before and after, as far as there are puzzles, and so does a swipe
  * anywhere on the screen: to the left for the month after, as a page turns,
  * and to the right for the month before. Its origin is the screen's top left
@@ -109,6 +113,14 @@ export function CalendarView<L extends string>(bindings: CalendarViewBindings<L>
             />
             {weekdays}
             {days}
+            <ButtonView
+                x={middleX - HOW_TO_PLAY_WIDTH / 2}
+                y={HOW_TO_PLAY_Y}
+                width={HOW_TO_PLAY_WIDTH}
+                height={HOW_TO_PLAY_HEIGHT}
+                label="How to play"
+                onPressed={bindings.onHowToPlayPressed}
+            />
             <text text={footerText} x={middleX} y={FOOTER_Y} anchor={0.5} style={SMALL_STYLE} tint={DIM_TEXT_COLOR} />
         </container>
     );

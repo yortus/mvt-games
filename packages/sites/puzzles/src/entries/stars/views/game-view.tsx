@@ -53,6 +53,7 @@ export function GameView(bindings: GameViewBindings): Container {
                         tagline="A new sky of stars to place every day"
                         levelNames={LEVEL_NAMES}
                         onDayChosen={model.openPuzzle}
+                        onHowToPlayPressed={model.intro.showCard}
                     />
                 </Match>
                 <Match when={() => model.puzzle !== undefined}>
