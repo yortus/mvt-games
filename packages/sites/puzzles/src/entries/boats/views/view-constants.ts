@@ -90,11 +90,5 @@ export const SHADOW_COLOR = 0x174a73;
  */
 export const HULL_COLORS: readonly number[] = [0xff7a6b, 0xffc53d, 0x34c49c, 0xa27ce6];
 
-/** The white of the cabins on the hulls. */
-export const CABIN_COLOR = 0xffffff;
-
-/** The blue of the cabins' little windows. */
-export const WINDOW_COLOR = 0x5cbde6;
-
 /** The pale hull of a boat in the fleet list not yet found. */
 export const UNFOUND_HULL_COLOR = 0xddd5c4;

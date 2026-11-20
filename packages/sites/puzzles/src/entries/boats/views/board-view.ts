@@ -64,7 +64,7 @@ export interface BoardViewBindings {
  * water.
  *
  * Boats are drawn whole, a hull for each straight run of boat cells, with a
- * soft shadow on the water and a white cabin. A dinghy is coral, and longer
+ * soft shadow on the water and a lighter deck. A dinghy is coral, and longer
  * boats are sunflower, mint and lilac. A boat that breaks a rule shows in
  * red, on red cells.
  *

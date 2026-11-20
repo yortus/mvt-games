@@ -6,7 +6,7 @@ import {
 import type { BoardLayout } from './board-layout';
 import { darken } from './darken';
 import { drawHull, measureBowLength, measureSternRound } from './draw-hull';
-import { CABIN_COLOR, HULL_COLORS, NAVY_COLOR, SHADOW_COLOR, WINDOW_COLOR } from './view-constants';
+import { HULL_COLORS, NAVY_COLOR, SHADOW_COLOR } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -33,7 +33,7 @@ export interface DrawBoatsOptions {
 /**
  * Adds every boat on the harbour to `graphics`, filled and outlined. Each
  * straight run of boat cells joined side to side is one hull, with a soft
- * shadow on the water and a white cabin. A run that bends, or that breaks a
+ * shadow on the water and a lighter deck. A run that bends, or that breaks a
  * rule, is drawn in red, a block for each cell. A run of givens alone is
  * navy, and a printed piece of a longer boat is cut square where its boat
  * goes on. A printed piece in a run the player has marked stays navy, so
@@ -89,7 +89,7 @@ export function drawBoats(graphics: Graphics, options: DrawBoatsOptions): void {
 /**
  * Draws one straight run of boat cells, `length` cells from `low` to
  * `high`, as a hull. The shadow pass draws its shadow, and the other pass
- * its hull and cabin. Where the player has marked a boat onto a printed
+ * its hull and deck. Where the player has marked a boat onto a printed
  * piece, that piece's part of the hull stays navy. So the player can still
  * see the piece, and where it shows the boat ends.
  */
@@ -155,38 +155,16 @@ function drawRunHull(
         }
         if (hasPieces) graphics.fill(NAVY_COLOR).stroke({ color: darken(NAVY_COLOR), width: Math.max(1, cellSize * OUTLINE_SHARE), join: 'round' });
     }
-    // A whole boat has a cabin, and a dinghy a seat. A printed piece of a longer boat has neither, since its cabin may be on the cells beyond
-    if (!isLoneMiddle && (length > 1 || (hasStern && hasBow))) drawCabin(graphics, cellSize, from, to, middle, beam, isDown, length);
-}
-
-/** Draws a white cabin in the middle of a hull, with little windows, or a seat across a dinghy. */
-function drawCabin(
-    graphics: Graphics, cellSize: number, from: number, to: number, middle: number, beam: number, isDown: boolean, length: number,
-): void {
-    const centre = (from + to) / 2;
-    const rect = (along: number, across: number, alongSize: number, acrossSize: number, radius: number): void => {
-        if (isDown) graphics.roundRect(middle + across - acrossSize / 2, along - alongSize / 2, acrossSize, alongSize, radius);
-        else graphics.roundRect(along - alongSize / 2, middle + across - acrossSize / 2, alongSize, acrossSize, radius);
-    };
-    if (length === 1) {
-        rect(centre - cellSize * 0.04, 0, cellSize * 0.1, beam * 0.62, cellSize * 0.03);
-        graphics.fill(CABIN_COLOR);
-        return;
+    // A whole boat has a deck, a lighter wash in its own shape. A printed piece of a longer boat stays plain, since its deck goes on past it
+    if (!isLoneMiddle && (length > 1 || (hasStern && hasBow))) {
+        const inset = cellSize * DECK_INSET_SHARE;
+        const deckFrom = from + (hasStern ? inset : 0);
+        const deckTo = to - (hasBow ? inset * DECK_BOW_INSET : 0);
+        const deckBeam = beam - inset * 2;
+        drawHull(graphics, { from: deckFrom, to: deckTo, middle, beam: deckBeam, isDown, hasStern, hasBow });
+        graphics.fill({ color: DECK_COLOR, alpha: DECK_ALPHA });
     }
-    const cabin = Math.min((to - from) * CABIN_SHARE, cellSize * MOST_CABIN_SHARE * length);
-    rect(centre - cellSize * 0.06, 0, cabin, beam * 0.56, beam * 0.14);
-    graphics.fill(CABIN_COLOR);
-    // The windows, evenly along the cabin
-    const windows = Math.min(length, 4);
-    const radius = beam * WINDOW_SHARE;
-    for (let i = 0; i < windows; i++) {
-        const along = centre - cellSize * 0.06 - cabin / 2 + (cabin * (i + 0.5)) / windows;
-        if (isDown) graphics.circle(middle, along, radius);
-        else graphics.circle(along, middle, radius);
-    }
-    graphics.fill(WINDOW_COLOR);
 }
-
 /** Draws each cell of `run` that the player marked as a red block, for a run that bends or breaks a rule. */
 function drawBlocks(graphics: Graphics, options: DrawBoatsOptions, run: readonly number[]): void {
     const { puzzle, layout, isGivenAt } = options;
@@ -241,14 +219,16 @@ const SHADOW_ACROSS_SHARE = 0.07;
 /** How dark a boat's shadow is. */
 const SHADOW_ALPHA = 0.28;
 
-/** How much of a hull's length its cabin covers. */
-const CABIN_SHARE = 0.42;
+/** How far a deck sits in from its hull's sides and stern, as a share of a cell. */
+const DECK_INSET_SHARE = 0.075;
 
-/** The longest a cabin is for each cell of its boat, as a share of a cell. */
-const MOST_CABIN_SHARE = 0.32;
+/** How much further in a deck's point sits from the bow's, as a share of the side inset, since the bow is pointed. */
+const DECK_BOW_INSET = 1.8;
 
-/** A window's radius, as a share of the beam. */
-const WINDOW_SHARE = 0.08;
+/** The colour washed over a hull for its deck. */
+const DECK_COLOR = 0xffffff;
 
+/** How strong the deck's wash is. */
+const DECK_ALPHA = 0.16;
 /** How far a square piece, or a red block, sits in from its cell's edges, as a share of a cell. */
 const MIDDLE_INSET_SHARE = 0.18;
