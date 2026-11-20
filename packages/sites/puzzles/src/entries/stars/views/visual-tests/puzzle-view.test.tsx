@@ -12,7 +12,7 @@ canvasTest('an expert puzzle, at the start', SIZE, () => pose('expert', () => un
 // The showcase places the stars of the top rows of a hard puzzle, dots the cells round them, and rings a group
 canvasTest('part solved, with dots round the stars and a group ringed', SIZE, () => pose('hard', playShowcase));
 
-canvasTest('rings: an L of three cells, one met by a star, one broken by dots, and two that overlap', SIZE, () => pose('hard', (model) => {
+canvasTest('rings: an L of three cells, one met by a star, one broken by dots, and two side by side', SIZE, () => pose('hard', (model) => {
     const puzzle = model.puzzle!;
     const { size } = puzzle.puzzle.grid;
     // An L, top left
@@ -24,10 +24,10 @@ canvasTest('rings: an L of three cells, one met by a star, one broken by dots, a
     puzzle.noteGroup([size * (size - 2), size * (size - 2) + 1]);
     puzzle.mark(size * (size - 2), 'dot');
     puzzle.mark(size * (size - 2) + 1, 'dot');
-    // A square of four, and a row of three across it, bottom right
+    // A square of four, and a row of three under it, bottom right
     const corner = size * (size - 3) + size - 3;
     puzzle.noteGroup([corner, corner + 1, corner + size, corner + size + 1]);
-    puzzle.noteGroup([corner + size - 1, corner + size, corner + size + 1]);
+    puzzle.noteGroup([corner + size * 2 - 1, corner + size * 2, corner + size * 2 + 1]);
 }));
 
 canvasTest('stars that break the rules: two touching, and a row of three', SIZE, () => pose('hard', (model) => {

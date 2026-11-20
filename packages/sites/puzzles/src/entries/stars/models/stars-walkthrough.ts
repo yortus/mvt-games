@@ -88,20 +88,20 @@ function findStarDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
  * middle of the grid out.
  */
 function findGroupDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
-    const { grid, regions, solution } = puzzle.puzzle;
-    let partner = -1;
-    const star = findFromMiddle(puzzle, (cell) => {
-        if (solution[cell] !== STAR || puzzle.markAt(cell) === 'star') return false;
-        for (let side = 0; side < 4; side++) {
-            const next = grid.sides[cell * 4 + side];
-            if (next < 0 || regions[next] !== regions[cell] || puzzle.markAt(next) !== 'none') continue;
-            partner = next;
-            return true;
-        }
-        return false;
-    });
+    const { solution } = puzzle.puzzle;
+    const star = findFromMiddle(puzzle, (cell) => solution[cell] === STAR && puzzle.markAt(cell) !== 'star' && findPartner(puzzle, cell) >= 0);
     if (star < 0) return NO_DEMO;
-    return [{ kind: 'drag', targets: [toCellMiddle(puzzle, partner), toCellMiddle(puzzle, star)] }];
+    return [{ kind: 'drag', targets: [toCellMiddle(puzzle, findPartner(puzzle, star)), toCellMiddle(puzzle, star)] }];
+}
+
+/** A cell beside `cell`, sharing a side, in the same region and unmarked, or -1 if there is none. */
+function findPartner(puzzle: PuzzleModel, cell: number): number {
+    const { grid, regions } = puzzle.puzzle;
+    for (let side = 0; side < 4; side++) {
+        const next = grid.sides[cell * 4 + side];
+        if (next >= 0 && regions[next] === regions[cell] && puzzle.markAt(next) === 'none') return next;
+    }
+    return -1;
 }
 
 /** The cell nearest the middle of the grid that passes `test`, or -1 if none does. */

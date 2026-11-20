@@ -5,13 +5,13 @@ import { createBoardGesturesViewModel } from './board-gestures-view-model';
 // 6 by 6 grid, cell 7 is the second cell of the second row.
 
 describe('createBoardGesturesViewModel', () => {
-    it('reports a tap as its cell, and a drag as the cells it went over once let go', () => {
+    it('reports a tap as its cell, and a drag as the cells it went over once let go, going round a diagonal step', () => {
         const { gestures, taps, drags } = setUp();
         gestures.press(1.5, 1.5);
         gestures.release();
         dragThrough(gestures, [[0.5, 0.5], [1.5, 0.5], [2.5, 1.5]]);
         expect(taps).toEqual([7]);
-        expect(drags).toEqual([[0, 1, 8]]);
+        expect(drags).toEqual([[0, 1, 2, 8]]);
         expect(gestures.draggedCells).toEqual([]);
     });
 

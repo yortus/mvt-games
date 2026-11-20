@@ -1,6 +1,6 @@
 import type { Random } from '@mvtjs/site-kit/random';
 import { EMPTY, STAR } from './cell-states';
-import type { StarGrid } from './star-grid';
+import { type StarGrid, STARS_PER_LINE } from './star-grid';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -16,32 +16,33 @@ export interface LayOutStarsOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a random layout of stars for `grid`, with its number of stars in
- * every row and every column, and none touching, as `STAR` or `EMPTY` for
+ * Returns a random layout of stars for `grid`, with two stars in every row
+ * and every column, and none touching, as `STAR` or `EMPTY` for
  * each cell. Regions come later, drawn around the stars. It goes row by
  * row, choosing columns at least two apart that touch no star in the row
- * above, and backs up from a dead end. Every grid this game uses has a
- * layout: 5 by 5 or larger with one star a line, 9 by 9 or larger with two.
+ * above, and backs up from a dead end. Every grid 8 by 8 or larger has a
+ * layout. 7 by 7 has none: two rows side by side need four stars, and a 2x2
+ * box can hold only one.
  */
 export function layOutStars(options: LayOutStarsOptions): Uint8Array {
     const { grid, random } = options;
-    const { size, starsPerLine } = grid;
+    const { size } = grid;
     // Every choice of columns, each two or more from the next, that a row's stars could take
     const choices: number[][] = [];
     addChoices([], 0);
     const columnStars = new Int32Array(size);
     const rowChoices: number[][] = [];
     let steps = 0;
-    if (!layOutRow(0)) throw new Error(`No layout of ${starsPerLine} stars a line fits a ${size} by ${size} grid`);
+    if (!layOutRow(0)) throw new Error(`No layout of two stars a line fits a ${size} by ${size} grid`);
 
     const solution = new Uint8Array(grid.cellCount).fill(EMPTY);
     for (let row = 0; row < size; row++) {
-        for (let i = 0; i < starsPerLine; i++) solution[row * size + rowChoices[row][i]] = STAR;
+        for (let i = 0; i < STARS_PER_LINE; i++) solution[row * size + rowChoices[row][i]] = STAR;
     }
     return solution;
 
     function addChoices(columns: number[], from: number): void {
-        if (columns.length === starsPerLine) {
+        if (columns.length === STARS_PER_LINE) {
             choices.push(columns.slice());
             return;
         }
@@ -57,7 +58,7 @@ export function layOutStars(options: LayOutStarsOptions): Uint8Array {
         if (row === size) return true;
         // Each column must still be able to get its stars from the rows left, every other row at most
         for (let col = 0; col < size; col++) {
-            if (starsPerLine - columnStars[col] > Math.ceil((size - row) / 2)) return false;
+            if (STARS_PER_LINE - columnStars[col] > Math.ceil((size - row) / 2)) return false;
         }
         const order = shuffle(choices.slice(), random);
         const above = row > 0 ? rowChoices[row - 1] : undefined;
@@ -76,7 +77,7 @@ export function layOutStars(options: LayOutStarsOptions): Uint8Array {
     /** Whether `columns` have room for another star each, and touch none of the stars in `above`. */
     function fits(columns: readonly number[], above: readonly number[] | undefined): boolean {
         for (let j = 0; j < columns.length; j++) {
-            if (columnStars[columns[j]] >= starsPerLine) return false;
+            if (columnStars[columns[j]] >= STARS_PER_LINE) return false;
             if (above === undefined) continue;
             for (let k = 0; k < above.length; k++) {
                 if (Math.abs(columns[j] - above[k]) <= 1) return false;

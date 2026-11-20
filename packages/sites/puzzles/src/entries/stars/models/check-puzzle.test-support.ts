@@ -1,25 +1,23 @@
 import { STAR, UNKNOWN } from './cell-states';
 import { countSolutions } from './count-solutions.test-support';
 import type { LevelSettings } from './levels';
+import { STARS_PER_LINE } from './star-grid';
 import type { StarPuzzle } from './star-puzzle';
 import { createStarSolver } from './star-solver';
 
 /**
  * Returns what is wrong with `puzzle`, made at `settings`, or an empty list:
- * its solution keeps every rule, its regions are whole and no one-star
- * region is a single cell, it has one solution (counted by a search that
+ * its solution keeps every rule, it has one solution (counted by a search that
  * shares nothing with the maker), the level's techniques finish it from its
  * givens, it needs the level's hardest technique if the level asks, and
  * every given is needed.
  */
 export function checkPuzzle(puzzle: StarPuzzle, settings: LevelSettings): string[] {
     const { grid, regions, givens, solution } = puzzle;
-    const { size, starsPerLine, cellCount } = grid;
+    const { size, cellCount } = grid;
     const problems: string[] = [];
     const lineStars = new Array<number>(size * 3).fill(0);
-    const regionSizes = new Array<number>(size).fill(0);
     for (let cell = 0; cell < cellCount; cell++) {
-        regionSizes[regions[cell]]++;
         if (solution[cell] !== STAR) continue;
         lineStars[Math.floor(cell / size)]++;
         lineStars[size + (cell % size)]++;
@@ -29,8 +27,7 @@ export function checkPuzzle(puzzle: StarPuzzle, settings: LevelSettings): string
         }
         if (givens[cell] !== UNKNOWN && givens[cell] !== STAR) problems.push(`given at ${cell} isn't its star`);
     }
-    if (lineStars.some((stars) => stars !== starsPerLine)) problems.push(`stars in lines: ${lineStars.join(',')}`);
-    if (starsPerLine === 1 && regionSizes.includes(1)) problems.push('a one-cell region');
+    if (lineStars.some((stars) => stars !== STARS_PER_LINE)) problems.push(`stars in lines: ${lineStars.join(',')}`);
     if (countSolutions(grid, regions, givens, 2) !== 1) problems.push('not one solution');
 
     const solver = createStarSolver({ grid, regions });

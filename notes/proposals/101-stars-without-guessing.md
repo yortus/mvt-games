@@ -327,3 +327,40 @@ The user answered these on 2026-11-17:
     progress the ones before can't. A puzzle model test for givens. The
     How to play card, the details text, the showcase and every image were
     updated; the thumbnail and share picture were retaken.
+- 2026-11-20: Second playtest: "single stars are way too easy and make the
+  experience inconsistent", and "sometimes I feel like there's still trial
+  and backtracking involved".
+  - **Trial and error, checked.** No technique branches or follows a
+    chain. But on 40 daily puzzles at each of Hard and Expert, the easy
+    techniques stalled about 4 times a puzzle, each time needing
+    pressure, which is a one-step supposition: picture a star and its
+    ring. Over half of pressure's finds were the subtle form (a line
+    needing two stars whose open cells left all touch). And at about one
+    stall in ten, only one cell on the whole board could be found, a
+    needle in a haystack that invites trying cells.
+  - **The user's calls:** keep pressure's "room for two" form; and
+    wherever the rules stall, there must be at least two cells to find.
+    The solver now runs each technique allowed from the same board,
+    easiest first, until they have found two cells between them, and
+    counts fewer as stuck, so the maker prints a given there. It costs
+    about half a given a puzzle.
+  - **Two stars a line at every level.** 7x7 can't hold them (two rows
+    side by side need four stars, and a 2x2 box holds one), so 8x8 is the
+    smallest. Easy 8x8, up to bands, not required; Medium 8x8, pressure
+    required; Hard 9x9, pressure required; Expert 10x10, boxes required.
+    The example and practice puzzles are 8x8 too.
+  - **Measured** in Node, 60 puzzles a level:
+
+    | Level | Givens, mean | Range | Stars among them | Made in, mean | Worst |
+    | --- | --- | --- | --- | --- | --- |
+    | Easy | 2.8 | 1-4 | 77% | 2 ms | 6 ms |
+    | Medium | 0.2 | 0-2 | 57% | 2 ms | 8 ms |
+    | Hard | 2.4 | 1-4 | 69% | 17 ms | 31 ms |
+    | Expert | 5.9 | 0-11 | 49% | 74 ms | 276 ms |
+
+    Easy prints more givens than Medium, since it has fewer techniques to
+    finish with. Every day's puzzles changed again.
+  - **One star a line is gone from the code**, at the user's word: two
+    stars a line is a fixed rule (`STARS_PER_LINE`, beside the grid), not
+    a setting of the grid or the levels, and the one-star branch of region
+    growing and its one-cell-region check are deleted. No puzzle changed.

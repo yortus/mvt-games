@@ -28,6 +28,8 @@ export interface BoardViewBindings {
     groups: () => readonly (readonly number[])[];
     /** How the group at `index` stands: a met group fades, and a broken one shows in red. */
     groupStateAt: (index: number) => GroupState;
+    /** Whether a drag over `cells` would ring them, or take a ring off. A drag that wouldn't is drawn in grey. Without it, every drag is drawn in violet. */
+    canRing?: (cells: readonly number[]) => boolean;
     /** Whether the puzzle is solved. As it becomes solved, its stars turn green, and it glows. */
     isSolved: () => boolean;
     /** A count that rises with every change to the marks and groups, so the board is redrawn only as they change. */
@@ -51,8 +53,10 @@ export interface BoardViewBindings {
  * in a pen's blue, or red where they break a rule, on a red cell. Givens,
  * the stars and dots printed on the grid, are drawn in ink. A group
  * the player ringed is drawn round, just inside its cells, in violet: faint
- * once a star is in it, and red once every cell has a dot. The cells a drag
- * is gathering are washed in violet and drawn round too.
+ * once a star is in it, and red once every cell has a dot. Every ring is
+ * drawn the same way in, since groups never overlap. The cells a drag is
+ * gathering are washed in violet and drawn round too, or in grey if letting
+ * go would do nothing.
  *
  * It is made of layers: the tinted cells, a glow for when it is solved, the
  * thin lines, the marks, the regions' borders, the groups, and the drag.
@@ -222,7 +226,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
         return isGiven ? GIVEN_STAR : PLAYER_STAR;
     }
 
-    /** Draws round each group ringed, faint once met and red once broken. Groups that overlap are drawn a little further in, in turn, so their lines stay apart. */
+    /** Draws round each group ringed, faint once met and red once broken. */
     function drawRings(): void {
         rings.clear();
         if (bindings.isSolved()) return;
@@ -230,13 +234,12 @@ export function BoardView(bindings: BoardViewBindings): Container {
         const width = Math.max(2, layout.cellSize * RING_SHARE);
         for (let i = 0; i < groups.length; i++) {
             const state = bindings.groupStateAt(i);
-            const inset = layout.cellSize * (RING_INSET + (i % RING_LANES) * RING_LANE_STEP);
-            outlineCells(rings, groups[i], inset);
+            outlineCells(rings, groups[i], layout.cellSize * RING_INSET);
             rings.stroke({ color: state === 'broken' ? CLASH_COLOR : GROUP_COLOR, width, alpha: state === 'met' ? MET_RING_ALPHA : 1, cap: 'round' });
         }
     }
 
-    /** Draws the cells the drag is gathering: washed in violet, and drawn round. */
+    /** Draws the cells the drag is gathering: washed in violet, and drawn round, or in grey if they can't be ringed. */
     function drawDrag(): void {
         drawnDragChanges = gestures!.dragChanges;
         const cells = gestures!.draggedCells;
@@ -245,9 +248,10 @@ export function BoardView(bindings: BoardViewBindings): Container {
         drag.clear();
         if (cells.length === 0) return;
         for (let i = 0; i < cells.length; i++) drag.rect(gridX + (cells[i] % size) * cellSize, gridY + Math.floor(cells[i] / size) * cellSize, cellSize, cellSize);
-        drag.fill({ color: GROUP_COLOR, alpha: DRAG_WASH_ALPHA });
+        const color = cells.length < 2 || (bindings.canRing?.(cells) ?? true) ? GROUP_COLOR : PENCIL_COLOR;
+        drag.fill({ color, alpha: DRAG_WASH_ALPHA });
         outlineCells(drag, cells, cellSize * RING_INSET);
-        drag.stroke({ color: GROUP_COLOR, width: Math.max(2, cellSize * RING_SHARE), cap: 'round' });
+        drag.stroke({ color, width: Math.max(2, cellSize * RING_SHARE), cap: 'round' });
     }
 
     /**
@@ -325,11 +329,9 @@ const MARK_COLORS: readonly (number | undefined)[] = [PENCIL_COLOR, INK_COLOR, u
 /** A given dot's radius, as a share of a cell: a little bigger than the player's. */
 const GIVEN_DOT_SHARE = 0.085;
 
-/** A ring's width, and how far inside its cells it is drawn, each as a share of a cell, and how many lanes, each a step further in, overlapping rings take in turn. */
+/** A ring's width, and how far inside its cells it is drawn, each as a share of a cell. */
 const RING_SHARE = 0.05;
 const RING_INSET = 0.12;
-const RING_LANES = 3;
-const RING_LANE_STEP = 0.07;
 /** How faint a ring with a star in it is, and how strong the wash over a drag's cells. */
 const MET_RING_ALPHA = 0.3;
 const DRAG_WASH_ALPHA = 0.16;

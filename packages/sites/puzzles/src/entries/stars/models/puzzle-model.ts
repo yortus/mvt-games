@@ -1,6 +1,7 @@
 import { EMPTY, STAR, UNKNOWN } from './cell-states';
 import { MOST_UNDOS } from './model-constants';
 import { type PuzzleSave, readPuzzleSave, writePuzzleSave } from './puzzle-save';
+import { STARS_PER_LINE } from './star-grid';
 import type { StarPuzzle } from './star-puzzle';
 import { createUndoHistory } from './undo-history';
 
@@ -16,7 +17,8 @@ export type GroupState = 'open' | 'met' | 'broken';
 
 /**
  * One puzzle being solved: the marks the player has made on its cells, and
- * the groups of cells they have ringed. Its givens, the stars and dots
+ * the groups of cells they have ringed. Groups never overlap, and each is
+ * joined side to side, so its ring is one simple shape. Its givens, the stars and dots
  * printed on it, are marks from the start, which never change. The puzzle
  * is solved once the stars are its solution's. Dots and groups are the player's own notes, and don't
  * count: a dot says a cell has no star, and a group says a star is in one
@@ -39,6 +41,8 @@ export interface PuzzleModel {
     readonly groupStateAt: (index: number) => GroupState;
     /** Which group has exactly `cells`, in any order, or -1 if none does. */
     readonly findGroup: (cells: readonly number[]) => number;
+    /** Whether `cells` can be ringed as a group: two or more, joined side to side, and none of them in a group already. */
+    readonly canNoteGroup: (cells: readonly number[]) => boolean;
     /** Whether the stars marked are the solution's. */
     readonly isSolved: boolean;
     /** How many actions undo can take back. */
@@ -58,7 +62,7 @@ export interface PuzzleModel {
 
     /** Marks `cell`, unless it is a given. */
     mark: (cell: number, mark: CellMark) => void;
-    /** Rings `cells` as a group: a star is in one of them. Takes two cells or more, and a group not ringed already. */
+    /** Rings `cells` as a group: a star is in one of them. Takes only cells that `canNoteGroup` allows. */
     noteGroup: (cells: readonly number[]) => void;
     /** Takes off the group at `index`. */
     clearGroup: (index: number) => void;
@@ -90,7 +94,7 @@ export interface PuzzleModelOptions {
 export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     const { puzzle } = options;
     const { grid, regions, givens, solution } = puzzle;
-    const { size, starsPerLine, cellCount, neighbours } = grid;
+    const { size, cellCount, neighbours } = grid;
     const saved = readPuzzleSave(options.saved, puzzle);
     let marks = saved?.marks ?? Uint8Array.from(givens, (given) => GIVEN_MARKS[given]);
     let groups: readonly (readonly number[])[] = saved?.groups.map(toSortedCells) ?? [];
@@ -127,6 +131,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             const sorted = toSortedCells(cells);
             return groups.findIndex((group) => group.length === sorted.length && group.every((cell, i) => cell === sorted[i]));
         },
+        canNoteGroup: (cells) => isGroupAllowed(toSortedCells(cells)),
         get isSolved() { return isSolved; },
         get undoCount() { return history.count; },
         get changes() { return changes; },
@@ -154,7 +159,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         },
         noteGroup(cells) {
             const group = toSortedCells(cells);
-            if (isSolved || group.length < 2 || group[0] < 0 || group[group.length - 1] >= cellCount || model.findGroup(group) >= 0) return;
+            if (isSolved || !isGroupAllowed(group)) return;
             keepForUndo();
             groups = [...groups, group];
             lastMarkedCell = group[0];
@@ -185,6 +190,23 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     };
     return model;
 
+    /** Whether `group`, its cells in order, is two cells or more, on the grid, joined side to side, and clear of every group. */
+    function isGroupAllowed(group: readonly number[]): boolean {
+        if (group.length < 2 || group[0] < 0 || group[group.length - 1] >= cellCount) return false;
+        for (let i = 0; i < groups.length; i++) {
+            if (groups[i].some((cell) => group.includes(cell))) return false;
+        }
+        // Spread from the first cell across shared sides, and see if every cell is reached
+        const reached = [group[0]];
+        for (let i = 0; i < reached.length; i++) {
+            for (let side = 0; side < 4; side++) {
+                const next = grid.sides[reached[i] * 4 + side];
+                if (next >= 0 && group.includes(next) && !reached.includes(next)) reached.push(next);
+            }
+        }
+        return reached.length === group.length;
+    }
+
     /** Keeps the marks and groups as they are, before an action changes them. */
     function keepForUndo(): void {
         history.keep({ marks: marks.slice(), groups });
@@ -208,9 +230,9 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             if ((solution[cell] === STAR) !== isStar) isSolved = false;
             let isClash = false;
             if (isStar) {
-                isClash = rowStars[Math.floor(cell / size)] > starsPerLine
-                    || colStars[cell % size] > starsPerLine
-                    || regionStars[regions[cell]] > starsPerLine;
+                isClash = rowStars[Math.floor(cell / size)] > STARS_PER_LINE
+                    || colStars[cell % size] > STARS_PER_LINE
+                    || regionStars[regions[cell]] > STARS_PER_LINE;
                 for (let k = 0; k < 8 && !isClash; k++) {
                     const next = neighbours[cell * 8 + k];
                     if (next >= 0 && marks[next] === STAR_MARK) isClash = true;

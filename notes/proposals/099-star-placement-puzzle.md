@@ -447,3 +447,12 @@ and the shared calendar and card.
   the puzzle. No reshaping and no solution counting, so the speed problem
   of section 4.4 is gone: Expert, now 10x10, is made in 61 ms on average
   in Node. See 101, section 9.
+- 2026-11-20: Second playtest. Rings simplified: a ring's cells must be
+  joined side to side, and rings can't overlap. Drags step across and
+  down only, a drag that wouldn't ring shows in grey, and every ring is
+  drawn at one inset. Before, overlapping rings took turns at three
+  insets by their place in the list, so rings looked different widths,
+  and jumped when another was added or taken off. Saved rings that break
+  the new rule are simply kept: they draw on top of each other, and break
+  nothing. Also two stars a line at every level, and a check on trial and
+  error in Hard and Expert: see 101, section 9.

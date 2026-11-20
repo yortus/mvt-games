@@ -1,5 +1,5 @@
 import { EMPTY, STAR, UNKNOWN } from './cell-states';
-import type { StarGrid } from './star-grid';
+import { type StarGrid, STARS_PER_LINE } from './star-grid';
 
 /**
  * Counts the solutions of the puzzle with `regions` and `givens`, stopping
@@ -9,7 +9,7 @@ import type { StarGrid } from './star-grid';
  * against it.
  */
 export function countSolutions(grid: StarGrid, regions: Readonly<Uint8Array>, givens: Readonly<Uint8Array>, most: number): number {
-    const { size, starsPerLine, cellCount, neighbours } = grid;
+    const { size, cellCount, neighbours } = grid;
     const lines: number[][] = [];
     for (let row = 0; row < size; row++) lines.push(Array.from({ length: size }, (_, col) => row * size + col));
     for (let col = 0; col < size; col++) lines.push(Array.from({ length: size }, (_, row) => row * size + col));
@@ -26,7 +26,7 @@ export function countSolutions(grid: StarGrid, regions: Readonly<Uint8Array>, gi
         for (const line of lines) {
             const stars = line.filter((cell) => cells[cell] === STAR).length;
             const open = line.filter((cell) => cells[cell] === UNKNOWN).length;
-            if (stars < starsPerLine && open < bestOpen) {
+            if (stars < STARS_PER_LINE && open < bestOpen) {
                 best = line;
                 bestOpen = open;
             }
@@ -64,10 +64,10 @@ export function countSolutions(grid: StarGrid, regions: Readonly<Uint8Array>, gi
             for (const line of lines) {
                 const stars = line.filter((cell) => cells[cell] === STAR).length;
                 const open = line.filter((cell) => cells[cell] === UNKNOWN);
-                if (stars > starsPerLine || stars + open.length < starsPerLine) return false;
+                if (stars > STARS_PER_LINE || stars + open.length < STARS_PER_LINE) return false;
                 if (open.length === 0) continue;
-                if (stars === starsPerLine || stars + open.length === starsPerLine) {
-                    for (const cell of open) cells[cell] = stars === starsPerLine ? EMPTY : STAR;
+                if (stars === STARS_PER_LINE || stars + open.length === STARS_PER_LINE) {
+                    for (const cell of open) cells[cell] = stars === STARS_PER_LINE ? EMPTY : STAR;
                     isChanged = true;
                 }
             }

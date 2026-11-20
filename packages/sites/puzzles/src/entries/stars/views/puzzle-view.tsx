@@ -33,7 +33,7 @@ export interface PuzzleViewBindings {
  * A tap moves a cell on from nothing, to a dot, to a star, and back to
  * nothing. A drag rings the cells it goes over as a group, a note that a
  * star is in one of them, or takes the ring off a group of just those
- * cells.
+ * cells. A drag over cells in another group does neither.
  */
 export function PuzzleView(bindings: PuzzleViewBindings): Container {
     const { model } = bindings;
@@ -79,6 +79,7 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
                     isClashAt={(cell) => puzzle().isClashAt(cell)}
                     groups={() => puzzle().groups}
                     groupStateAt={(index) => puzzle().groupStateAt(index)}
+                    canRing={(cells) => puzzle().findGroup(cells) >= 0 || puzzle().canNoteGroup(cells)}
                     isSolved={isSolved}
                     changes={() => puzzle().changes}
                     puzzlesOpened={() => model.puzzlesOpened}

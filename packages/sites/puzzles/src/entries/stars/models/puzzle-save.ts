@@ -1,4 +1,5 @@
 import { EMPTY, STAR } from './cell-states';
+import { STARS_PER_LINE } from './star-grid';
 import type { StarPuzzle } from './star-puzzle';
 
 // A puzzle's marks, kept as plain values for storage, and read back. What is
@@ -28,7 +29,7 @@ export interface PuzzleMarks {
  * puzzles with the same description are the same puzzle.
  */
 export function describePuzzle(puzzle: StarPuzzle): string {
-    return `${puzzle.grid.size}x${puzzle.grid.starsPerLine} ${puzzle.regions.join('')} ${puzzle.givens.join('')}`;
+    return `${puzzle.grid.size}x${STARS_PER_LINE} ${puzzle.regions.join('')} ${puzzle.givens.join('')}`;
 }
 
 /** Returns the save of `puzzle` with `marks` and `groups`. */

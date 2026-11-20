@@ -49,8 +49,8 @@ export interface StarPuzzleOptions {
  * hardest technique gets a puzzle that needs it, or the maker starts again.
  */
 export function createStarPuzzle(options: StarPuzzleOptions): StarPuzzle {
-    const { size, starsPerLine, hardest, isHardestNeeded } = options.settings;
-    const grid = createStarGrid({ size, starsPerLine });
+    const { size, hardest, isHardestNeeded } = options.settings;
+    const grid = createStarGrid({ size });
     const random = createRandom({ seed: options.seed });
     for (let attempt = 0; attempt < MOST_ATTEMPTS; attempt++) {
         const solution = layOutStars({ grid, random });
@@ -68,7 +68,7 @@ export function createStarPuzzle(options: StarPuzzleOptions): StarPuzzle {
         }
         if (best !== undefined) return { grid, regions, givens: best, solution, hardest: solver.solve(best, hardest).hardest };
     }
-    throw new Error(`No ${size} by ${size} puzzle of ${starsPerLine} stars a line that takes ${hardest} turned up in ${MOST_ATTEMPTS} attempts`);
+    throw new Error(`No ${size} by ${size} puzzle that takes ${hardest} turned up in ${MOST_ATTEMPTS} attempts`);
 }
 
 // ---------------------------------------------------------------------------

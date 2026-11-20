@@ -1,5 +1,5 @@
 import { EMPTY, STAR, UNKNOWN } from './cell-states';
-import type { StarGrid } from './star-grid';
+import { type StarGrid, STARS_PER_LINE } from './star-grid';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -39,13 +39,20 @@ export interface StarSolution {
     readonly hardest: StarTechnique;
 }
 
-/** Works out a puzzle of stars, given its regions, as a person would, and never supposes. */
+/**
+ * Works out a puzzle of stars, given its regions, as a person would, and
+ * never supposes. Wherever the rules get stuck, it asks for at least two
+ * cells that the other techniques can find from the board as it stands. A
+ * single cell to find, somewhere on the whole board, is a needle in a
+ * haystack: a person would likely start trying cells to find it. So the
+ * solver counts that as stuck too.
+ */
 export interface StarSolver {
     /**
      * Works out as many cells as the techniques up to `most` can, from
      * `givens`: `STAR` or `EMPTY` for each cell printed on the grid, and
-     * `UNKNOWN` for the rest. Each time, it tries the easiest technique
-     * first.
+     * `UNKNOWN` for the rest. Each time, it uses the easiest technique that
+     * finds something.
      */
     solve: (givens: Readonly<Uint8Array>, most: StarTechnique) => StarSolution;
 }
@@ -67,7 +74,7 @@ export interface StarSolverOptions {
 /** Creates a solver for the puzzle with `regions`. */
 export function createStarSolver(options: StarSolverOptions): StarSolver {
     const { grid, regions } = options;
-    const { size, starsPerLine, cellCount, neighbours } = grid;
+    const { size, cellCount, neighbours } = grid;
 
     // The puzzle's lines: its rows, then its columns, then its regions, as runs of cells in one list
     const lineCount = size * 3;
@@ -97,9 +104,12 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
     const isAcross = new Uint8Array(size);
     const pool = new Int32Array(cellCount);
     const isLineReached = new Uint8Array(lineCount);
-    const boxesNeeded = starsPerLine * 2;
+    const boxesNeeded = STARS_PER_LINE * 2;
     const boxCells = new Int32Array(boxesNeeded * 4);
     const boxSizes = new Int32Array(boxesNeeded);
+    // Where the rules are stuck: the board after each technique, by its place in the list, and which cells any of them found
+    const tried = STAR_TECHNIQUES.map(() => new Uint8Array(cellCount));
+    const isFound = new Uint8Array(cellCount);
 
     return {
         solve(givens, most) {
@@ -109,14 +119,34 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
             for (;;) {
                 applyRules(cells);
                 if (!cells.includes(UNKNOWN)) break;
-                if (mostLevel >= 1 && countBands(cells)) hardest = Math.max(hardest, 1);
-                else if (mostLevel >= 2 && applyPressure(cells)) hardest = Math.max(hardest, 2);
-                else if (mostLevel >= 3 && fillBoxes(cells)) hardest = 3;
-                else break;
+                // Each technique from the same board, easiest first, until enough cells are found between them
+                isFound.fill(0);
+                let foundCount = 0;
+                let easiest = 0;
+                for (let level = 1; level <= mostLevel && foundCount < FEWEST_FOUND; level++) {
+                    tried[level].set(cells);
+                    if (!applyTechnique(level, tried[level])) continue;
+                    if (easiest === 0) easiest = level;
+                    for (let cell = 0; cell < cellCount; cell++) {
+                        if (tried[level][cell] === cells[cell] || isFound[cell] === 1) continue;
+                        isFound[cell] = 1;
+                        foundCount++;
+                    }
+                }
+                if (foundCount < FEWEST_FOUND) break;
+                cells.set(tried[easiest]);
+                hardest = Math.max(hardest, easiest);
             }
             return { cells, isFinished: !cells.includes(UNKNOWN), hardest: STAR_TECHNIQUES[hardest] };
         },
     };
+
+    /** Applies the technique at `level` in the list, past the rules, once. Returns whether it changed anything. */
+    function applyTechnique(level: number, cells: Uint8Array): boolean {
+        if (level === 1) return countBands(cells);
+        if (level === 2) return applyPressure(cells);
+        return fillBoxes(cells);
+    }
 
     /** Applies the rules until nothing changes. */
     function applyRules(cells: Uint8Array): void {
@@ -143,8 +173,8 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
                     if (state === STAR) stars++;
                     else if (state === UNKNOWN) open++;
                 }
-                if (open === 0 || (stars < starsPerLine && stars + open > starsPerLine)) continue;
-                const fill = stars >= starsPerLine ? EMPTY : STAR;
+                if (open === 0 || (stars < STARS_PER_LINE && stars + open > STARS_PER_LINE)) continue;
+                const fill = stars >= STARS_PER_LINE ? EMPTY : STAR;
                 for (let i = start; i < end; i++) {
                     if (cells[lineCells[i]] === UNKNOWN) cells[lineCells[i]] = fill;
                 }
@@ -219,7 +249,7 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
                     else if (cells[other] === STAR) stars++;
                     else if (cells[other] === UNKNOWN && !grid.isTouching(other, cell)) pool[poolSize++] = other;
                 }
-                if (!hasRoom(poolSize, starsPerLine - stars - (hasCell ? 1 : 0))) isEmpty = true;
+                if (!hasRoom(poolSize, STARS_PER_LINE - stars - (hasCell ? 1 : 0))) isEmpty = true;
             }
             if (isEmpty) {
                 cells[cell] = EMPTY;
@@ -327,3 +357,10 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
         return false;
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** How many cells, at least, the techniques must find between them wherever the rules are stuck. */
+const FEWEST_FOUND = 2;

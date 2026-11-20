@@ -47,7 +47,9 @@ describe('createPuzzleModel', () => {
 
     it('rings a group once, met by a star in it, broken by a dot in every cell, and undo takes the ring back', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
-        const [a, b] = PUZZLE.grid.neighbours.slice(STARS[0] * 8, STARS[0] * 8 + 8).filter((cell) => cell >= 0);
+        // Two cells side by side
+        const a = PUZZLE.grid.size + 1;
+        const b = a + 1;
         model.noteGroup([b, a]);
         model.noteGroup([a, b]);
         expect([model.groups.length, model.findGroup([a, b]), model.groupStateAt(0)]).toEqual([1, 0, 'open']);
@@ -62,6 +64,18 @@ describe('createPuzzleModel', () => {
         expect([model.groups.length, model.markAt(a), model.markAt(b)]).toEqual([1, 'none', 'none']);
         model.undo();
         expect(model.groups.length).toBe(0);
+    });
+
+    it('rings only cells joined side to side, and clear of every other ring', () => {
+        const model = createPuzzleModel({ puzzle: PUZZLE });
+        const { size } = PUZZLE.grid;
+        model.noteGroup([0, size + 1]);
+        model.noteGroup([0, 2]);
+        expect(model.groups.length).toBe(0);
+        model.noteGroup([0, 1, size + 1]);
+        model.noteGroup([size + 1, size + 2]);
+        model.noteGroup([size + 2, size + 3]);
+        expect(model.groups).toEqual([[0, 1, size + 1], [size + 2, size + 3]]);
     });
 
     it('comes back as it was saved, and starts afresh from a save of another puzzle', () => {

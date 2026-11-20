@@ -17,9 +17,9 @@ describe('the solver\'s techniques', () => {
     it('never contradict a solution, and each one makes progress the ones before it can\'t', () => {
         const wrong: string[] = [];
         const progress = new Array<number>(STAR_TECHNIQUES.length).fill(0);
-        for (const [size, starsPerLine] of SHAPES) {
-            const grid = createStarGrid({ size, starsPerLine });
-            const random = createRandom({ seed: size * 10 + starsPerLine });
+        for (const size of SIZES) {
+            const grid = createStarGrid({ size });
+            const random = createRandom({ seed: size * 10 + 2 });
             for (let sample = 0; sample < SAMPLES_PER_SHAPE; sample++) {
                 const solution = layOutStars({ grid, random });
                 const regions = growRegions({ grid, solution, random });
@@ -38,7 +38,7 @@ describe('the solver\'s techniques', () => {
                     for (let cell = 0; cell < grid.cellCount; cell++) {
                         if (cells[cell] === UNKNOWN) continue;
                         known++;
-                        if ((cells[cell] === STAR) !== (solution[cell] === STAR)) wrong.push(`${size}x${starsPerLine} #${sample} ${STAR_TECHNIQUES[t]}: cell ${cell}`);
+                        if ((cells[cell] === STAR) !== (solution[cell] === STAR)) wrong.push(`${size}x${size} #${sample} ${STAR_TECHNIQUES[t]}: cell ${cell}`);
                     }
                     if (knownBefore >= 0 && known > knownBefore) progress[t]++;
                     knownBefore = known;
@@ -50,5 +50,5 @@ describe('the solver\'s techniques', () => {
     }, 120_000);
 });
 
-const SHAPES: readonly (readonly [number, number])[] = [[6, 1], [8, 1], [9, 2], [10, 2]];
-const SAMPLES_PER_SHAPE = 150;
+const SIZES: readonly number[] = [8, 9, 10];
+const SAMPLES_PER_SHAPE = 200;

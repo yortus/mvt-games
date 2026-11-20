@@ -6,7 +6,9 @@ import { createGridGesturesViewModel } from '@mvtjs/site-kit/input';
 
 /**
  * Taps and drags on the grid. A tap is reported as the cell it landed on.
- * A drag gathers the cells it goes over, diagonally too, and is reported as
+ * A drag gathers the cells it goes over, stepping across and down, never
+ * diagonally, so each cell it gathers shares a side with one before it. A
+ * diagonal move goes through a cell beside both. The drag is reported as
  * those cells once the player lets go, if there are two or more. Going back
  * over the cell before the last lets the last one go again, so a drag can
  * be put right before it is let go.
@@ -50,7 +52,7 @@ export function createBoardGesturesViewModel(options: BoardGesturesViewModelOpti
         rows: size,
         cols: size,
         lattice: 'cells',
-        steps: 'eight-way',
+        steps: 'four-way',
         cellReach: CELL_REACH,
         onTapped,
         onStepped(from, to) {
