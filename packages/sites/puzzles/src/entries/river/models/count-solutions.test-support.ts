@@ -1,25 +1,28 @@
 import { GIVEN_DRY, isGivenRiver, NO_GIVEN } from './given-pieces';
 import type { RiverPuzzle } from './river-puzzle';
 import { DRY, RIVER, UNKNOWN } from './river-states';
+import { DOWN, RIGHT } from './valley-grid';
 
 /**
  * Counts the rivers that fit `puzzle`'s ends, numbers and givens, up to
- * `most`, by a plain search that shares nothing with the solver. It takes
- * the edges in order, tries each as river and as dry, and backs up as soon
- * as a cell has more river sides than it can, or too few open ones left, or
- * a row or column has more river cells than its number, or too few cells
- * left that could still be river. Once every edge is chosen, it checks that
- * the river is one path from the spring to the sea, and fits the givens.
+ * `most`. It uses a plain search that shares no code with the solver. It
+ * takes the edges in order, and tries each as river and as dry. It backs up
+ * as soon as a choice can't lead to a river that fits. That happens when a
+ * cell has more river sides than it can, or too few open ones left. It also
+ * happens when a row or column has more river cells than its number, or too
+ * few cells left that could still be river. Once every edge is chosen, it
+ * checks that the river is one path from the spring to the sea, and fits
+ * the givens.
  */
 export function countSolutions(puzzle: RiverPuzzle, most: number): number {
     const { grid, spring, sea, rowCounts, colCounts, givens } = puzzle;
-    const { size, cellCount, edgeCount, edgeCellA, edgeCellB, cellEdges } = grid;
+    const { size, cellCount, edgeCount, edgeCellA, edgeCellB, cellEdges, cellAcross } = grid;
     const edges = new Uint8Array(edgeCount);
-    // The edges in the order they are chosen: each cell's right and lower edges, cell by cell, so each cell is settled soon
+    // The edges in the order they are chosen. Each cell's right and lower edges come cell by cell, so each cell is settled soon
     const order: number[] = [];
     for (let cell = 0; cell < cellCount; cell++) {
-        if (cellEdges[cell * 4 + 1] >= 0) order.push(cellEdges[cell * 4 + 1]);
-        if (cellEdges[cell * 4 + 2] >= 0) order.push(cellEdges[cell * 4 + 2]);
+        if (cellEdges[cell * 4 + RIGHT] >= 0) order.push(cellEdges[cell * 4 + RIGHT]);
+        if (cellEdges[cell * 4 + DOWN] >= 0) order.push(cellEdges[cell * 4 + DOWN]);
     }
     const seen = new Uint8Array(cellCount);
     const queue = new Int32Array(cellCount);
@@ -56,7 +59,7 @@ export function countSolutions(puzzle: RiverPuzzle, most: number): number {
             for (let side = 0; side < 4; side++) {
                 const edge = cellEdges[cell * 4 + side];
                 if (edge < 0 || edges[edge] !== RIVER) continue;
-                const other = edgeCellA[edge] === cell ? edgeCellB[edge] : edgeCellA[edge];
+                const other = cellAcross(edge, cell);
                 if (seen[other] === 1) continue;
                 seen[other] = 1;
                 queue[tail++] = other;
@@ -75,8 +78,8 @@ export function countSolutions(puzzle: RiverPuzzle, most: number): number {
         let colRiver = 0;
         let colMaybe = 0;
         for (let i = 0; i < size; i++) {
-            const inRow = findCellState(row * size + i);
-            const inCol = findCellState(i * size + col);
+            const inRow = findCellMark(row * size + i);
+            const inCol = findCellMark(i * size + col);
             if (inRow === RIVER) rowRiver++;
             else if (inRow === UNKNOWN) rowMaybe++;
             if (inCol === RIVER) colRiver++;
@@ -105,7 +108,7 @@ export function countSolutions(puzzle: RiverPuzzle, most: number): number {
     }
 
     /** Whether `cell` is river, dry, or can't yet be told, from the edges chosen so far. */
-    function findCellState(cell: number): number {
+    function findCellMark(cell: number): number {
         if (cell === spring || cell === sea) return RIVER;
         let open = 0;
         for (let side = 0; side < 4; side++) {
@@ -121,12 +124,12 @@ export function countSolutions(puzzle: RiverPuzzle, most: number): number {
     function isWhole(): boolean {
         for (let cell = 0; cell < cellCount; cell++) {
             if (!isCellPossible(cell)) return false;
-            if (givens[cell] !== NO_GIVEN && givens[cell] !== GIVEN_DRY && findCellState(cell) !== RIVER) return false;
+            if (givens[cell] !== NO_GIVEN && givens[cell] !== GIVEN_DRY && findCellMark(cell) !== RIVER) return false;
         }
         // Follow the river from the spring, and see that it reaches the sea having passed through every river cell
         let riverCells = 0;
         for (let cell = 0; cell < cellCount; cell++) {
-            if (findCellState(cell) === RIVER) riverCells++;
+            if (findCellMark(cell) === RIVER) riverCells++;
         }
         let cell = spring;
         let from = -1;
@@ -136,7 +139,7 @@ export function countSolutions(puzzle: RiverPuzzle, most: number): number {
             for (let side = 0; side < 4 && next < 0; side++) {
                 const edge = cellEdges[cell * 4 + side];
                 if (edge < 0 || edges[edge] !== RIVER) continue;
-                const other = edgeCellA[edge] === cell ? edgeCellB[edge] : edgeCellA[edge];
+                const other = cellAcross(edge, cell);
                 if (other !== from) next = other;
             }
             if (next < 0) return false;

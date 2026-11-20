@@ -11,7 +11,7 @@ import { placeBoats } from './place-boats';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A puzzle to solve: its harbour, its fleet, its numbers, the cells printed on it, and its one solution. */
+/** A puzzle to solve. It has a harbour, a fleet, numbers for its rows and columns, the cells printed on it, and one solution. */
 export interface BoatPuzzle {
     /** The harbour, and which cells are next to which. */
     readonly grid: HarbourGrid;
@@ -46,14 +46,14 @@ export interface BoatPuzzleOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a puzzle from `seed` that the level's techniques solve, with
- * nothing supposed, so it has one solution and never needs guessing. It
- * works backwards from the answer: it places the boats, reads the numbers
- * off the rows and columns, then prints a few givens on the harbour, until
- * the techniques finish it, keeping only the givens they need. It finds
- * givens a few times over, at random, and keeps the fewest. A level that
- * requires its hardest technique gets a puzzle that needs it, or the maker
- * starts again with new boats.
+ * Creates a puzzle from `seed` that the level's techniques solve without
+ * guessing, or following where a guess leads. Every step is forced, so the
+ * puzzle has one solution. The maker works backwards from the answer. It
+ * places the boats, and reads the numbers off the rows and columns. Then it
+ * prints givens on the harbour until the techniques finish it, and keeps
+ * only the givens they need. It finds givens a few times over, at random,
+ * and keeps the fewest. If a level requires its hardest technique, and the
+ * puzzle doesn't need it, the maker starts again with new boats.
  */
 export function createBoatPuzzle(options: BoatPuzzleOptions): BoatPuzzle {
     const { size, fleet, hardest, isHardestNeeded } = options.settings;
@@ -72,7 +72,7 @@ export function createBoatPuzzle(options: BoatPuzzleOptions): BoatPuzzle {
         let best: Uint8Array | undefined;
         let bestCount = Infinity;
         for (let tries = 0; tries < GIVENS_TRIES; tries++) {
-            const givens = findGivens({ grid, solution, solver, most: hardest, random });
+            const givens = findGivens({ grid, solution, solver, hardest, random });
             const count = countGivens(givens);
             if (count >= bestCount || (isHardestNeeded && solver.solve(givens, hardest).hardest !== hardest)) continue;
             best = givens;
@@ -87,10 +87,10 @@ export function createBoatPuzzle(options: BoatPuzzleOptions): BoatPuzzle {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** How many fleets to place before giving up. No level comes near it. */
+/** How many fleets to place before giving up. Every level needs far fewer. */
 const MOST_ATTEMPTS = 1000;
 
-/** How many times to find givens for one fleet, keeping the fewest. More find fewer givens, at a cost in time. */
+/** How many times to find givens for one fleet, keeping the fewest. More tries find fewer givens, but take longer. */
 const GIVENS_TRIES = 3;
 
 /** Returns how many cells of `givens` are printed on the harbour. */

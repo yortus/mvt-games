@@ -1,3 +1,4 @@
+import { findPiece } from './find-piece';
 import { GIVEN_DRY, isGivenRiver } from './given-pieces';
 import { DRY, RIVER, UNKNOWN } from './river-states';
 import type { ValleyGrid } from './valley-grid';
@@ -7,8 +8,9 @@ import type { ValleyGrid } from './valley-grid';
 // ---------------------------------------------------------------------------
 
 /**
- * A way a person works out the river, by reading the valley as it stands,
- * with nothing supposed and nothing followed. From easiest to hardest:
+ * A way a person works out the river by reading the valley as it stands,
+ * without guessing, or following where a guess leads. These are the
+ * techniques, from easiest to hardest.
  *
  * - `rules`: the river runs into a cell and out again, so a river cell has
  *   two river sides, and each end of the river one, besides the side it
@@ -45,18 +47,17 @@ export interface SolverProgress {
 }
 
 /**
- * Works out a river, given its ends and its numbers, as a person would, and
- * never supposes. Wherever the rules get stuck, it requires at least two
- * cells or edges that the other techniques can find from the valley as it
- * stands, as Stars' solver does, so a player never hunts the whole valley
- * for a single one.
+ * Works out a river from its ends and its numbers, the way a person would,
+ * without guessing. When the rules get stuck, it goes on only if the harder
+ * techniques, between them, find at least two cells or edges. That way a
+ * player never has to search the whole valley for a single deduction.
  */
 export interface RiverSolver {
     /**
      * Works out as much of the river as the techniques up to `most` can, from
-     * `givens`: what each cell printed on the valley shows, as a number from
-     * `given-pieces`, and `NO_GIVEN` for the rest. Each time, it uses the
-     * easiest technique that finds something.
+     * `givens`. Each given is what a cell printed on the valley shows, as a
+     * number from `given-pieces`, or `NO_GIVEN` for a cell not printed. Each
+     * time, it uses the easiest technique that finds something.
      */
     solve: (givens: Readonly<Uint8Array>, most: RiverTechnique) => SolverProgress;
 }
@@ -69,8 +70,9 @@ export interface RiverSolver {
 export interface RiverSolverOptions {
     /** The puzzle's valley. */
     readonly grid: ValleyGrid;
-    /** The cell the river rises in, on the left edge, and the cell it reaches the sea from, on the bottom edge. */
+    /** The cell the river rises in, on the left edge. */
     readonly spring: number;
+    /** The cell the river reaches the sea from, on the bottom edge. */
     readonly sea: number;
     /** How many river cells each row holds, from the top. */
     readonly rowCounts: Readonly<Uint8Array>;
@@ -88,13 +90,13 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
     const { size, cellCount, edgeCount, edgeCellA, edgeCellB, cellEdges } = grid;
     const acrossCount = size * (size - 1);
 
-    // Scratch space: the stretches of river, as a parent for each cell, and the board as a technique found it
+    // Scratch space. `piece` holds the stretches of river, as a parent for each cell, for `findPiece`. The board arrays hold the board as a technique found it
     const piece = new Int32Array(cellCount);
     const pieceRowCells = new Int32Array(size);
     const pieceColCells = new Int32Array(size);
     const boardCells = new Uint8Array(cellCount);
     const boardEdges = new Uint8Array(edgeCount);
-    // Where the rules are stuck: the board after each technique, by its place in the list
+    // Where the rules are stuck, these hold the board after each technique, by its place in the list
     const triedCells = RIVER_TECHNIQUES.map(() => new Uint8Array(cellCount));
     const triedEdges = RIVER_TECHNIQUES.map(() => new Uint8Array(edgeCount));
     const isCellFound = new Uint8Array(cellCount);
@@ -121,7 +123,7 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
             for (;;) {
                 applyRules(cells, edges);
                 if (!edges.includes(UNKNOWN) && !cells.includes(UNKNOWN)) break;
-                // Each technique from the same board, easiest first, until enough is found between them
+                // Try each technique from the same board, easiest first, until they find enough between them
                 isCellFound.fill(0);
                 isEdgeFound.fill(0);
                 let foundCount = 0;
@@ -180,7 +182,7 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
                     cells[cell] = RIVER;
                     isChanged = true;
                 }
-                // A dead end: too few open sides for the river to run through
+                // A cell with too few open sides for the river to run through is a dead end
                 if (cells[cell] === UNKNOWN && rivers + open < need) {
                     cells[cell] = DRY;
                     isChanged = true;
@@ -203,9 +205,9 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
                 let rivers = 0;
                 let open = 0;
                 for (let i = 0; i < size; i++) {
-                    const state = cells[isColumn ? i * size + index : index * size + i];
-                    if (state === RIVER) rivers++;
-                    else if (state === UNKNOWN) open++;
+                    const known = cells[isColumn ? i * size + index : index * size + i];
+                    if (known === RIVER) rivers++;
+                    else if (known === UNKNOWN) open++;
                 }
                 if (open === 0 || (rivers < count && rivers + open > count)) continue;
                 const fill = rivers >= count ? DRY : RIVER;
@@ -224,15 +226,15 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
         boardEdges.set(edges);
         for (let cell = 0; cell < cellCount; cell++) piece[cell] = cell;
         for (let edge = 0; edge < edgeCount; edge++) {
-            if (boardEdges[edge] === RIVER) piece[findPiece(edgeCellA[edge])] = findPiece(edgeCellB[edge]);
+            if (boardEdges[edge] === RIVER) piece[findPiece(piece, edgeCellA[edge])] = findPiece(piece, edgeCellB[edge]);
         }
-        const springPiece = findPiece(spring);
-        const seaPiece = findPiece(sea);
+        const springPiece = findPiece(piece, spring);
+        const seaPiece = findPiece(piece, sea);
         let isChanged = false;
         for (let edge = 0; edge < edgeCount; edge++) {
             if (boardEdges[edge] !== UNKNOWN) continue;
-            const a = findPiece(edgeCellA[edge]);
-            const b = findPiece(edgeCellB[edge]);
+            const a = findPiece(piece, edgeCellA[edge]);
+            const b = findPiece(piece, edgeCellB[edge]);
             const isLoop = a === b;
             const isFinishing = springPiece !== seaPiece && ((a === springPiece && b === seaPiece) || (a === seaPiece && b === springPiece));
             if (isLoop || (isFinishing && !isFinishedRiverRight(springPiece, seaPiece))) {
@@ -244,15 +246,15 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
     }
 
     /**
-     * Whether the river made of the stretches from the spring and from the
-     * sea, joined, would be the whole river: every river cell is in one of
+     * Returns whether joining the stretches from the spring and from the sea
+     * would make the whole river. It would if every river cell is in one of
      * them, and their cells meet every number.
      */
     function isFinishedRiverRight(springPiece: number, seaPiece: number): boolean {
         pieceRowCells.fill(0);
         pieceColCells.fill(0);
         for (let cell = 0; cell < cellCount; cell++) {
-            const root = findPiece(cell);
+            const root = findPiece(piece, cell);
             const isInRiver = root === springPiece || root === seaPiece;
             if (boardCells[cell] === RIVER && !isInRiver) return false;
             if (!isInRiver) continue;
@@ -265,21 +267,29 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
         return true;
     }
 
-    /** Settles the last open crossing of each line between two columns or two rows, by whether the river must cross it an odd or an even number of times. Returns whether it changed anything. */
+    /**
+     * Settles the last open crossing of each line between two columns or two
+     * rows. The river must cross each line an odd or an even number of times,
+     * which decides it. Returns whether it changed anything.
+     */
     function countCrossings(edges: Uint8Array): boolean {
         boardEdges.set(edges);
         let isChanged = false;
         const springRow = Math.floor(spring / size);
         const seaCol = sea % size;
-        for (let isRows = 0; isRows < 2; isRows++) {
+        // The lines between columns come first, then the lines between rows
+        for (let axis = 0; axis < 2; axis++) {
+            const isBetweenRows = axis === 1;
             for (let line = 0; line < size - 1; line++) {
-                // The spring is on the left edge and the sea on the bottom one, so the sea is right of every line between columns past its own, and below every line between rows
-                const isOdd = isRows === 0 ? seaCol > line : springRow <= line;
+                // The spring is on the left edge, and the sea is on the bottom edge. So the river
+                // crosses a line between columns an odd number of times if the sea is right of it.
+                // It crosses a line between rows an odd number of times if the spring is above it.
+                const isOdd = isBetweenRows ? springRow <= line : seaCol > line;
                 let rivers = 0;
                 let open = 0;
                 let last = -1;
                 for (let i = 0; i < size; i++) {
-                    const edge = isRows === 0 ? i * (size - 1) + line : acrossCount + line * size + i;
+                    const edge = isBetweenRows ? acrossCount + line * size + i : i * (size - 1) + line;
                     if (boardEdges[edge] === RIVER) rivers++;
                     else if (boardEdges[edge] === UNKNOWN) {
                         open++;
@@ -292,17 +302,6 @@ export function createRiverSolver(options: RiverSolverOptions): RiverSolver {
             }
         }
         return isChanged;
-    }
-
-    function findPiece(cell: number): number {
-        let root = cell;
-        while (piece[root] !== root) root = piece[root];
-        while (piece[cell] !== root) {
-            const next = piece[cell];
-            piece[cell] = root;
-            cell = next;
-        }
-        return root;
     }
 }
 

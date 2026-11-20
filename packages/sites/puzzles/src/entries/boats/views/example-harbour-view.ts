@@ -7,6 +7,7 @@ import { BoardView } from './board-view';
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** The solved harbour that the How to play card shows. */
 export interface ExampleHarbourViewBindings {
     /** The puzzle shown, solved, read once. */
     example: BoatPuzzle;
@@ -16,7 +17,11 @@ export interface ExampleHarbourViewBindings {
 // View
 // ---------------------------------------------------------------------------
 
-/** A harbour, solved, for the card that says how to play: the board, fitted to the card's example, with every boat moored and its numbers, but no fleet list. */
+/**
+ * A solved harbour, for the card that says how to play. It's the board,
+ * fitted to the card's example, with every boat moored and its numbers
+ * shown. It leaves out the fleet list.
+ */
 export function ExampleHarbourView(bindings: ExampleHarbourViewBindings): Container {
     const { example } = bindings;
     const markAt = (cell: number): CellMark => (example.solution[cell] === BOAT ? 'boat' : 'none');

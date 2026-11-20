@@ -3,9 +3,9 @@ import { GIVEN_DRY, NO_GIVEN } from './given-pieces';
 import { LEVEL_SETTINGS } from './levels';
 import { createPuzzleModel } from './puzzle-model';
 import { createRiverPuzzle } from './river-puzzle';
-import { RIVER } from './river-states';
+import { DRY, RIVER } from './river-states';
 
-// One puzzle for every test. Most tests take its givens away, so any edge can be drawn
+// One puzzle for every test. Most tests take its givens away, so that any edge can be drawn
 const MADE = createRiverPuzzle({ seed: 1, settings: LEVEL_SETTINGS.medium });
 const PUZZLE = { ...MADE, givens: new Uint8Array(MADE.grid.cellCount).fill(NO_GIVEN) };
 const { size } = PUZZLE.grid;
@@ -17,7 +17,7 @@ for (let edge = 0; edge < PUZZLE.grid.edgeCount; edge++) {
 describe('createPuzzleModel', () => {
     it('is solved once its river is the solution\'s, whatever meadows are marked, and then takes no more marks', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
-        const dry = PUZZLE.solutionCells.indexOf(2);
+        const dry = PUZZLE.solutionCells.indexOf(DRY);
         model.setMeadow(dry, true);
         for (let i = 0; i < RIVER_EDGES.length - 1; i++) model.setRiver(RIVER_EDGES[i], true);
         expect(model.isSolved).toBe(false);
@@ -59,6 +59,15 @@ describe('createPuzzleModel', () => {
         expect([model.isRiverAt(0), model.isRiverAt(1), model.undoCount]).toEqual([false, false, 0]);
     });
 
+    it('keeps nothing to undo from a stroke that rubs out all it drew', () => {
+        const model = createPuzzleModel({ puzzle: PUZZLE });
+        model.startStroke();
+        model.setRiver(0, true);
+        model.setRiver(0, false);
+        model.finishStroke();
+        expect(model.undoCount).toBe(0);
+    });
+
     it('keeps the edges round a given cell as they are', () => {
         const givens = new Uint8Array(PUZZLE.grid.cellCount).fill(NO_GIVEN);
         const cell = 3 * size + 3;
@@ -77,5 +86,19 @@ describe('createPuzzleModel', () => {
         const other = createRiverPuzzle({ seed: 2, settings: LEVEL_SETTINGS.medium });
         expect(createPuzzleModel({ puzzle: other, saved: model.save() }).isRiverAt(5)).toBe(false);
         expect(createPuzzleModel({ puzzle: PUZZLE, saved: { puzzle: 'nonsense', rivers: '9', meadows: '' } }).isRiverAt(5)).toBe(false);
+    });
+
+    it('sets the marks on the givens from the givens, whatever a save says, so the puzzle can still be solved', () => {
+        const fresh = createPuzzleModel({ puzzle: MADE });
+        const save = fresh.save();
+        // Every edge drawn and every cell marked as meadow, givens included
+        const saved = { ...save, rivers: save.rivers.replace(/0/g, '1'), meadows: save.meadows.replace(/0/g, '1') };
+        const model = createPuzzleModel({ puzzle: MADE, saved });
+        const wrongMeadows: number[] = [];
+        for (let cell = 0; cell < MADE.grid.cellCount; cell++) {
+            if (model.isGivenAt(cell) && model.isMeadowAt(cell) !== fresh.isMeadowAt(cell)) wrongMeadows.push(cell);
+        }
+        for (let edge = 0; edge < MADE.grid.edgeCount; edge++) model.setRiver(edge, MADE.solutionEdges[edge] === RIVER);
+        expect([wrongMeadows, model.isSolved]).toEqual([[], true]);
     });
 });

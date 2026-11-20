@@ -1,26 +1,26 @@
 import type { PuzzleLevel } from '../../../shared';
 import type { BoatTechnique } from './boat-solver';
 
-/** What makes a level of puzzle. Its name is one of the four every puzzle on the site has. */
+/** The settings for one level of puzzle. Every puzzle on the site has the same four levels. */
 export interface LevelSettings {
-    /** The harbour's size: as many rows as columns. */
+    /** How many rows the harbour has. It has as many columns. */
     readonly size: number;
     /** The length of every boat in the fleet, longest first. */
     readonly fleet: readonly number[];
-    /** The hardest technique the player is expected to use. Givens are printed until that much finishes the puzzle. */
+    /** The hardest technique the player is expected to use. The maker prints givens until the techniques up to this one can finish the puzzle. */
     readonly hardest: BoatTechnique;
     /** Whether every puzzle must need `hardest`, so the level is harder in kind than the one before. */
     readonly isHardestNeeded: boolean;
 }
 
-/** The levels, in order: all four every puzzle on the site has. */
+/** The levels, from easiest to hardest. Every puzzle on the site has these four. */
 export const BOAT_LEVELS: readonly PuzzleLevel[] = ['easy', 'medium', 'hard', 'expert'];
 
 /**
- * Each fleet fills about a fifth of its harbour, as the classic 10 by 10
- * puzzle's does. Each step up changes one or two things: Medium is bigger,
- * with a longer boat, and needs the fleet count, Hard is the classic
- * harbour and fleet, and Expert keeps them and needs the places.
+ * Each fleet fills a fifth to just over a quarter of its harbour. Medium is
+ * bigger than Easy, has a longer boat, and needs the `fleet` technique. Hard
+ * has the classic puzzle's 10 by 10 harbour and fleet. Expert keeps them,
+ * and needs the `places` technique.
  */
 export const LEVEL_SETTINGS: Readonly<Record<PuzzleLevel, LevelSettings>> = {
     easy: { size: 6, fleet: [3, 2, 2, 1, 1, 1], hardest: 'rules', isHardestNeeded: false },

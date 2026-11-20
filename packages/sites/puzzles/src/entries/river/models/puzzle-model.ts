@@ -1,3 +1,4 @@
+import { findPiece } from './find-piece';
 import { GIVEN_DRY, isGivenRiver, NO_GIVEN } from './given-pieces';
 import { MOST_UNDOS } from './model-constants';
 import { type PuzzleMarks, type PuzzleSave, readPuzzleSave, writePuzzleSave } from './puzzle-save';
@@ -9,22 +10,29 @@ import { createUndoHistory } from './undo-history';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** How a row's or column's number stands: still open, met by the river cells drawn on it, or broken, with too many, or too little room left. */
+/**
+ * The status of a row's or column's number. It is `open` while the river
+ * could still meet it. It is `met` when the river cells drawn on the line
+ * match it, and `broken` when the line has too many river cells or too
+ * little room left.
+ */
 export type ClueState = 'open' | 'met' | 'broken';
 
 /**
- * One valley being solved: the river the player has drawn across its edges,
- * and the cells they have marked as meadow, their note that the river keeps
- * away. Its givens, the pieces of river and the dry land printed on it, are
- * marks from the start, which never change, and neither do the edges round
- * them. The puzzle is solved once the river is its solution's. The player
- * draws a stroke at a time, and each stroke is undone as one. The last
- * `MOST_UNDOS` strokes can be undone, as far back as when the puzzle opened.
- * Once the puzzle is solved, it ignores every action.
+ * One valley being solved. The player draws the river across its edges,
+ * and marks cells as meadow, which is their note that the river doesn't
+ * pass through them. The givens are the pieces of river and the dry land
+ * printed on the valley. They are marks from the start, and they never
+ * change. Neither do the edges round them. The puzzle is solved once the
+ * river drawn matches its solution. The player draws a stroke at a time,
+ * and undo reverses a whole stroke. The last `MOST_UNDOS` strokes can be
+ * undone, as far back as when the puzzle opened. Once the puzzle is solved,
+ * it ignores every action.
  *
- * It points out what breaks a rule, as the marks are made: a cell with more
- * river sides than it can have, river through a meadow, and the cells of a
- * loop.
+ * It points out each cell that breaks a rule as the marks are made. A cell
+ * breaks a rule if it has more river sides than it can have, or if the
+ * river runs through it and it is marked as meadow. Each cell of a loop
+ * breaks a rule too.
  */
 export interface PuzzleModel {
     /** The puzzle being solved. */
@@ -33,19 +41,19 @@ export interface PuzzleModel {
     readonly isRiverAt: (edge: number) => boolean;
     /** Whether `cell` is marked as meadow, given or the player's. */
     readonly isMeadowAt: (cell: number) => boolean;
-    /** Whether `cell` is a given: a piece of river or dry land printed on the valley, which the player can't change. */
+    /** Whether `cell` is a given, which is a piece of river or dry land printed on the valley. The player can't change it. */
     readonly isGivenAt: (cell: number) => boolean;
     /** Whether `edge` touches a given cell, so the player can't change it. */
     readonly isEdgeFixedAt: (edge: number) => boolean;
     /** Whether `cell` breaks a rule. */
     readonly isClashAt: (cell: number) => boolean;
-    /** How the number of `line` stands: the rows from the top, then the columns from the left. */
+    /** The status of the number of `line`. The rows come first, from the top, then the columns, from the left. */
     readonly clueStateAt: (line: number) => ClueState;
-    /** Whether the river drawn is the solution's. */
+    /** Whether the river drawn matches the solution. */
     readonly isSolved: boolean;
-    /** How many strokes undo can take back. */
+    /** How many strokes can be undone. */
     readonly undoCount: number;
-    /** A count that rises with every mark and every undo, so that progress can be kept, and the valley redrawn, as it changes. */
+    /** A count that rises with every mark and every undo, so a change to the marks can be noticed. */
     readonly changes: number;
     /** Edges the river was drawn across since the puzzle opened. */
     readonly riverDrawn: number;
@@ -59,20 +67,20 @@ export interface PuzzleModel {
     readonly clashesMade: number;
     /** Strokes undone since the puzzle opened. */
     readonly undosDone: number;
-    /** The cell marked last, or the first cell beside the edge marked last, or -1. */
+    /** The cell marked last, or the first cell beside the edge marked last. It is -1 until the first mark. */
     readonly lastMarkedCell: number;
 
-    /** Starts a stroke: the marks until it finishes are undone together. */
+    /** Starts a stroke. Undo reverses all the marks made until the stroke finishes, together. */
     startStroke: () => void;
-    /** Draws the river across `edge`, or rubs it out, as part of the stroke being made, or as a stroke of its own if none is. Ignores an edge that is fixed. */
+    /** Draws the river across `edge`, or rubs it out, as part of the stroke being made, or as a stroke of its own when the player isn't making one. Ignores an edge that is fixed. */
     setRiver: (edge: number, isRiver: boolean) => void;
-    /** Marks `cell` as meadow, or removes the mark, as a stroke of its own. Ignores a given. */
+    /** Marks `cell` as meadow, or removes the mark, as part of the stroke being made, or as a stroke of its own when the player isn't making one. Ignores a given. */
     setMeadow: (cell: number, isMeadow: boolean) => void;
-    /** Finishes the stroke being made. */
+    /** Finishes the stroke being made. A stroke that leaves the marks as they were before it isn't kept for undo. */
     finishStroke: () => void;
-    /** Takes back the last stroke, if there is one. */
+    /** Reverses the last stroke, if there is one. */
     undo: () => void;
-    /** Returns the puzzle as it stands, to be restored later through the options' `saved`. */
+    /** Returns the marks as they stand, as plain values that the options' `saved` can restore later. */
     save: () => PuzzleSave;
 }
 
@@ -87,7 +95,10 @@ export interface PuzzleModelOptions {
     /**
      * A save of this puzzle, from `save`, maybe from a visit before. It is
      * read from storage, so it is checked first. One that is not a save of
-     * this puzzle is ignored, and the puzzle starts afresh.
+     * this puzzle is ignored, and the puzzle starts afresh. The marks on the
+     * givens, and on the edges round them, are set from the givens, whatever
+     * the save says. The player can't change those marks, so a save that
+     * disagreed with them would leave a puzzle that can't be solved.
      */
     readonly saved?: unknown;
 }
@@ -96,19 +107,20 @@ export interface PuzzleModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates a puzzle with nothing drawn but its givens, or as it was saved. */
+/** Creates a puzzle with only its givens drawn, or as it was saved. */
 export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     const { puzzle } = options;
     const { grid, spring, sea, rowCounts, colCounts, givens, solutionEdges } = puzzle;
     const { size, cellCount, edgeCount, edgeCellA, edgeCellB, cellEdges } = grid;
-    let marks: PuzzleMarks = readPuzzleSave(options.saved, puzzle) ?? createGivenMarks();
+    let marks: PuzzleMarks = readPuzzleSave(options.saved, puzzle) ?? { rivers: new Uint8Array(edgeCount), meadows: new Uint8Array(cellCount) };
+    markGivens();
     const history = createUndoHistory<PuzzleMarks>({ mostUndos: MOST_UNDOS });
     const isFixed = new Uint8Array(edgeCount);
     for (let edge = 0; edge < edgeCount; edge++) {
         if (givens[edgeCellA[edge]] !== NO_GIVEN || givens[edgeCellB[edge]] !== NO_GIVEN) isFixed[edge] = 1;
     }
 
-    // What the marks mean, worked out as they change, since views ask about them every frame
+    // Work out what the marks mean each time they change, because views read the results every tick
     const clashes = new Uint8Array(cellCount);
     const clueStates: ClueState[] = new Array<ClueState>(size * 2).fill('open');
     const piece = new Int32Array(cellCount);
@@ -117,9 +129,8 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     let clashCount = 0;
     let isSolved = false;
 
-    // The stroke being made: the marks before it, and whether it changed any
+    // The marks as they were before the stroke being made, or undefined between strokes
     let strokeBefore: PuzzleMarks | undefined;
-    let isStrokeChanged = false;
 
     let changes = 0;
     let riverDrawn = 0;
@@ -152,14 +163,13 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         startStroke() {
             if (strokeBefore !== undefined || isSolved) return;
             strokeBefore = { rivers: marks.rivers.slice(), meadows: marks.meadows.slice() };
-            isStrokeChanged = false;
         },
         setRiver(edge, isRiver) {
-            const state = isRiver ? 1 : 0;
-            if (isSolved || edge < 0 || edge >= edgeCount || isFixed[edge] === 1 || marks.rivers[edge] === state) return;
+            const mark = isRiver ? 1 : 0;
+            if (isSolved || edge < 0 || edge >= edgeCount || isFixed[edge] === 1 || marks.rivers[edge] === mark) return;
             const isOwnStroke = strokeBefore === undefined;
             if (isOwnStroke) model.startStroke();
-            marks.rivers[edge] = state;
+            marks.rivers[edge] = mark;
             lastMarkedCell = edgeCellA[edge];
             if (isRiver) riverDrawn++;
             else riverCleared++;
@@ -167,11 +177,11 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             if (isOwnStroke) model.finishStroke();
         },
         setMeadow(cell, isMeadow) {
-            const state = isMeadow ? 1 : 0;
-            if (isSolved || cell < 0 || cell >= cellCount || givens[cell] !== NO_GIVEN || marks.meadows[cell] === state) return;
+            const mark = isMeadow ? 1 : 0;
+            if (isSolved || cell < 0 || cell >= cellCount || givens[cell] !== NO_GIVEN || marks.meadows[cell] === mark) return;
             const isOwnStroke = strokeBefore === undefined;
             if (isOwnStroke) model.startStroke();
-            marks.meadows[cell] = state;
+            marks.meadows[cell] = mark;
             lastMarkedCell = cell;
             if (isMeadow) meadowsMarked++;
             else meadowsCleared++;
@@ -180,7 +190,8 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         },
         finishStroke() {
             if (strokeBefore === undefined) return;
-            if (isStrokeChanged) history.keep(strokeBefore);
+            // A stroke that rubbed out all it drew isn't kept, so that each undo changes the marks
+            if (!isSameMarks(strokeBefore, marks)) history.keep(strokeBefore);
             strokeBefore = undefined;
         },
         undo() {
@@ -197,24 +208,25 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     };
     return model;
 
-    /** The marks a puzzle starts with: the river through each given piece, and meadow on each given dry cell. */
-    function createGivenMarks(): PuzzleMarks {
-        const rivers = new Uint8Array(edgeCount);
-        const meadows = new Uint8Array(cellCount);
+    /**
+     * Sets the marks on each given cell, and on the edges round it, from the
+     * givens. The river runs through each given piece, and each given dry
+     * cell is marked as meadow.
+     */
+    function markGivens(): void {
         for (let cell = 0; cell < cellCount; cell++) {
-            if (givens[cell] === GIVEN_DRY) meadows[cell] = 1;
-            if (!isGivenRiver(givens[cell])) continue;
+            const given = givens[cell];
+            if (given === NO_GIVEN) continue;
+            marks.meadows[cell] = given === GIVEN_DRY ? 1 : 0;
             for (let side = 0; side < 4; side++) {
                 const edge = cellEdges[cell * 4 + side];
-                if (edge >= 0 && (givens[cell] >> side) & 1) rivers[edge] = 1;
+                if (edge >= 0) marks.rivers[edge] = isGivenRiver(given) && (given >> side) & 1 ? 1 : 0;
             }
         }
-        return { rivers, meadows };
     }
 
     /** Works out what a mark just made means, and counts it. */
     function noteChange(): void {
-        isStrokeChanged = true;
         const clashesBefore = clashCount;
         findWhatMarksMean();
         if (clashCount > clashesBefore) clashesMade++;
@@ -224,26 +236,26 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     /** Works out the clashes, the numbers' states, and whether the puzzle is solved, from the marks. */
     function findWhatMarksMean(): void {
         clashes.fill(0);
-        // A cell with more river sides than it can have, or river through a meadow
+        // Find each cell with more river sides than it can have, or with river through a meadow
         for (let cell = 0; cell < cellCount; cell++) {
             const rivers = countRiverSides(cell);
             const most = cell === spring || cell === sea ? 1 : 2;
             if (rivers > most || (rivers > 0 && marks.meadows[cell] === 1)) clashes[cell] = 1;
         }
-        // The cells of a stretch of river with a loop in it: as many river edges as cells, or more
+        // Find the cells of each stretch of river with a loop in it. A stretch has a loop if it has as many river edges as cells, or more
         for (let cell = 0; cell < cellCount; cell++) piece[cell] = cell;
         for (let edge = 0; edge < edgeCount; edge++) {
-            if (marks.rivers[edge] === 1) piece[findPiece(edgeCellA[edge])] = findPiece(edgeCellB[edge]);
+            if (marks.rivers[edge] === 1) piece[findPiece(piece, edgeCellA[edge])] = findPiece(piece, edgeCellB[edge]);
         }
         pieceCells.fill(0);
         pieceEdges.fill(0);
-        for (let cell = 0; cell < cellCount; cell++) pieceCells[findPiece(cell)]++;
+        for (let cell = 0; cell < cellCount; cell++) pieceCells[findPiece(piece, cell)]++;
         for (let edge = 0; edge < edgeCount; edge++) {
-            if (marks.rivers[edge] === 1) pieceEdges[findPiece(edgeCellA[edge])]++;
+            if (marks.rivers[edge] === 1) pieceEdges[findPiece(piece, edgeCellA[edge])]++;
         }
         clashCount = 0;
         for (let cell = 0; cell < cellCount; cell++) {
-            const root = findPiece(cell);
+            const root = findPiece(piece, cell);
             if (pieceEdges[root] > 0 && pieceEdges[root] >= pieceCells[root]) clashes[cell] = 1;
             clashCount += clashes[cell];
         }
@@ -254,6 +266,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         }
     }
 
+    /** Returns how many of `cell`'s sides the river is drawn across. */
     function countRiverSides(cell: number): number {
         let rivers = 0;
         for (let side = 0; side < 4; side++) {
@@ -263,7 +276,11 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         return rivers;
     }
 
-    /** Met if the river cells drawn on the line are its number, broken if there are too many or too little room left, and open otherwise. */
+    /**
+     * Returns `met` if the river cells drawn on the line match its number,
+     * `broken` if the line has too many or too little room left, and `open`
+     * otherwise.
+     */
     function findClueState(line: number): ClueState {
         const isColumn = line >= size;
         const index = isColumn ? line - size : line;
@@ -278,15 +295,19 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         if (rivers > count || rivers + open < count) return 'broken';
         return rivers === count ? 'met' : 'open';
     }
+}
 
-    function findPiece(cell: number): number {
-        let root = cell;
-        while (piece[root] !== root) root = piece[root];
-        while (piece[cell] !== root) {
-            const next = piece[cell];
-            piece[cell] = root;
-            cell = next;
-        }
-        return root;
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/** Returns whether `a` and `b` hold the same marks. */
+function isSameMarks(a: PuzzleMarks, b: PuzzleMarks): boolean {
+    for (let edge = 0; edge < a.rivers.length; edge++) {
+        if (a.rivers[edge] !== b.rivers[edge]) return false;
     }
+    for (let cell = 0; cell < a.meadows.length; cell++) {
+        if (a.meadows[cell] !== b.meadows[cell]) return false;
+    }
+    return true;
 }

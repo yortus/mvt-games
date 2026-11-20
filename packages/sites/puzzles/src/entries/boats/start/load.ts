@@ -33,7 +33,7 @@ export const load = definePixiLoader(async () => ({
                 stage.removeChild(view);
                 view.destroy({ children: true });
             },
-            // The player's marks are kept as they go, so a restart clears the puzzle open, once the player is sure
+            // The player's marks are saved as they go, so a restart clears the open puzzle once the player confirms
             restartQuestion: () => (model.canRestartPuzzle ? writeRestartQuestion(model.puzzle?.isSolved === true) : undefined),
             restart: model.restartPuzzle,
         };
@@ -45,9 +45,9 @@ export const load = definePixiLoader(async () => ({
 // ---------------------------------------------------------------------------
 
 /**
- * In the page, the game is on today's date where the player is, from the
- * device's clock and time zone, and keeps the player's progress in the
- * browser.
+ * Creates the game as it plays in the page. It's set on today's date where
+ * the player is, from the device's clock and time zone. It keeps the
+ * player's progress in the browser.
  */
 function createPlayersModel(): GameModel {
     const now = new Date();
@@ -56,9 +56,9 @@ function createPlayersModel(): GameModel {
 }
 
 /**
- * Started headless, for the thumbnail or a visual test, the game is on a
- * fixed day, so its picture is the same whenever it is taken. It keeps
- * nothing, and shows a puzzle part solved.
+ * Creates the game for when it starts headless, for the thumbnail or a
+ * visual test. It's set on a fixed day, so its picture is the same each
+ * time. It keeps nothing, and shows a puzzle part solved.
  */
 function createShowcaseModel(): GameModel {
     const model = createGameModel({ today: SHOWCASE_DAY, store: createMemoryStore(), offersIntro: false });
@@ -66,9 +66,10 @@ function createShowcaseModel(): GameModel {
     return model;
 }
 
+/** The day the game is set on when it starts headless, Friday 30 October 2026. The visual tests use the same day. */
 const SHOWCASE_DAY = toDayNumber({ year: 2026, month: 10, day: 30 });
 
-/** The question the player confirms before a restart clears the puzzle open. */
+/** Returns the question the player confirms before a restart clears the open puzzle. */
 function writeRestartQuestion(isSolved: boolean): string {
     return isSolved ? 'Clear this puzzle and solve it again? It stays ticked off on the calendar.' : 'Clear this puzzle and start it again?';
 }

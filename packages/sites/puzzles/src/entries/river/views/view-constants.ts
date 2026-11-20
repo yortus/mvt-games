@@ -71,15 +71,36 @@ export const FIELD_LINE_COLOR = 0xbde6a3;
 /** The blades of grass scattered over the meadow. */
 export const GRASS_COLOR = 0x7fbf5c;
 
-/** The river: its sandy banks, its water, and the light on the water. */
+/** The colours of the river's sandy banks, its water, and the light on the water. */
 export const BANK_COLOR = 0xeedc9a;
 export const RIVER_COLOR = 0x4aaee6;
 export const RIVER_LIGHT_COLOR = 0xbfeafc;
 
+/** The grey stone of a given piece's banks. It stands apart from the sand of the reaches that the player draws. */
+export const STONE_COLOR = 0xb8b4a8;
+
+/**
+ * The colour of each of the river's three strokes. They're drawn one on
+ * another, the banks first, then the water, then the light on the water.
+ */
+export const RIVER_PASS_COLORS: readonly number[] = [BANK_COLOR, RIVER_COLOR, RIVER_LIGHT_COLOR];
+
+/** The width of each of the river's three strokes, as a share of a cell. */
+export const RIVER_PASS_SHARES: readonly number[] = [0.6, 0.4, 0.09];
+
+/** How strong each of the river's three strokes is, from 0 to 1. */
+export const RIVER_PASS_ALPHAS: readonly number[] = [1, 1, 0.75];
+
+/** The deeper blue of the sea. */
+export const SEA_COLOR = 0x2f8fd4;
+
 /** The white of the glints that twinkle on the water. */
 export const GLINT_COLOR = 0xffffff;
 
-/** The flower the player plants on a cell the river keeps away from: white petals round a golden middle. */
+/** How long the light takes to run down the solved river, from the spring to the sea, in ms. */
+export const FLOW_MS = 1400;
+
+/** The flower that the player plants on a cell the river doesn't pass through. It has white petals round a golden middle. */
 export const PETAL_COLOR = 0xffffff;
 export const PETAL_EDGE_COLOR = 0xd6d2c4;
 export const FLOWER_MIDDLE_COLOR = 0xffc93c;

@@ -15,7 +15,7 @@ export const STARTING_LEVEL: PuzzleLevel = 'easy';
 // Playing
 // ---------------------------------------------------------------------------
 
-/** How many actions undo can take back, at most. */
+/** How many strokes can be undone, at most. */
 export const MOST_UNDOS = 200;
 
 /** The seed of the example on the How to play card, which shows it solved. Any seed would do. */

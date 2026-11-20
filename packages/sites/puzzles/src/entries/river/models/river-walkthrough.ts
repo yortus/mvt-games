@@ -6,15 +6,16 @@ import { DRY, RIVER } from './river-states';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What the walkthrough's arrow touches: a point on the valley, in cells, across and down from its top left corner, or the Undo button. */
+/** What the walkthrough's arrow points at. It is a point on the valley, in cells across and down from its top left corner, or the Undo button. */
 export type RiverTarget = { readonly on: 'grid'; readonly x: number; readonly y: number } | { readonly on: 'undo' };
 
-/** The walkthrough of the controls: its steps, what their demos are found from, and how to tell targets apart. */
+/** The walkthrough of the controls. It holds the steps, how their demos are found, and how to tell targets apart. */
 export type RiverWalkthrough = Pick<IntroModelOptions<PuzzleModel, RiverTarget>, 'steps' | 'findWhenChanged' | 'isSameTarget'>;
 
 /**
  * How to draw a river, a step at a time, on a practice puzzle. Each step
- * asks the player to do one thing, and is done once they have:
+ * shows the player one thing to do, and ends once they have done it. These
+ * are the steps.
  *
  * - `meadow`: mark a cell as meadow, with a tap.
  * - `river`: draw the river from one cell to the next, with a drag.
@@ -22,14 +23,15 @@ export type RiverWalkthrough = Pick<IntroModelOptions<PuzzleModel, RiverTarget>,
  * - `undo`: take back the last thing done.
  * - `done`: nothing more to do.
  *
- * The demos follow the practice puzzle's solution, so what the arrow marks
- * is right: meadow where the river keeps away, and river where it runs.
+ * The demos follow the practice puzzle's solution, so the arrow shows the
+ * right marks. It shows meadow where the river keeps away, and river where
+ * it runs.
  */
 export const RIVER_WALKTHROUGH: RiverWalkthrough = {
     steps: [
         {
             name: 'meadow',
-            text: 'Tap a cell to plant a flower: your note that the river keeps away from it. This is a practice puzzle, so try anything.',
+            text: 'Tap a cell to plant a flower, which marks a cell the river doesn\'t pass through. This is only practice, so try anything.',
             isDone: (puzzle) => puzzle.meadowsMarked >= 1,
             findDemo: findMeadowDemo,
         },
@@ -68,30 +70,31 @@ export const RIVER_WALKTHROUGH: RiverWalkthrough = {
 
 const NO_DEMO: Demo<RiverTarget> = [];
 
-/** A tap on an unmarked dry cell, from the middle of the valley out, so the demo is in plain sight. */
+/** Returns a tap on an unmarked dry cell, near the middle of the valley, so the demo is in plain sight. */
 function findMeadowDemo(puzzle: PuzzleModel): Demo<RiverTarget> {
-    const cell = findFromMiddle(puzzle, (c) => puzzle.puzzle.solutionCells[c] === DRY && !puzzle.isMeadowAt(c) && !puzzle.isGivenAt(c));
+    const cell = findCellFromMiddle(puzzle, (c) => puzzle.puzzle.solutionCells[c] === DRY && !puzzle.isMeadowAt(c) && !puzzle.isGivenAt(c));
     return cell < 0 ? NO_DEMO : [{ kind: 'tap', targets: [toCellMiddle(puzzle, cell)] }];
 }
 
-/** A drag across an edge the river crosses in the solution, not drawn yet, and free to draw, from the middle of the valley out. */
+/** Returns a drag across an edge near the middle of the valley that the river crosses in the solution, and that the player can still draw. */
 function findRiverDemo(puzzle: PuzzleModel): Demo<RiverTarget> {
     const edge = findEdgeFromMiddle(puzzle, (e) => puzzle.puzzle.solutionEdges[e] === RIVER && !puzzle.isRiverAt(e) && !puzzle.isEdgeFixedAt(e));
     return edge < 0 ? NO_DEMO : toDrag(puzzle, edge);
 }
 
-/** A drag across an edge the player drew the river across. */
+/** Returns a drag across an edge that the player drew the river across. */
 function findRubDemo(puzzle: PuzzleModel): Demo<RiverTarget> {
     const edge = findEdgeFromMiddle(puzzle, (e) => puzzle.isRiverAt(e) && !puzzle.isEdgeFixedAt(e));
     return edge < 0 ? NO_DEMO : toDrag(puzzle, edge);
 }
 
+/** Returns a drag from the middle of one of `edge`'s cells to the middle of the other. */
 function toDrag(puzzle: PuzzleModel, edge: number): Demo<RiverTarget> {
     const { edgeCellA, edgeCellB } = puzzle.puzzle.grid;
     return [{ kind: 'drag', targets: [toCellMiddle(puzzle, edgeCellA[edge]), toCellMiddle(puzzle, edgeCellB[edge])] }];
 }
 
-/** The edge nearest the middle of the valley that passes `test`, or -1 if none does. */
+/** Returns the edge nearest the middle of the valley that passes `test`, or -1 if every edge fails it. */
 function findEdgeFromMiddle(puzzle: PuzzleModel, test: (edge: number) => boolean): number {
     const { grid } = puzzle.puzzle;
     const middle = (grid.size - 1) / 2;
@@ -109,8 +112,8 @@ function findEdgeFromMiddle(puzzle: PuzzleModel, test: (edge: number) => boolean
     return best;
 }
 
-/** The cell nearest the middle of the valley that passes `test`, or -1 if none does. */
-function findFromMiddle(puzzle: PuzzleModel, test: (cell: number) => boolean): number {
+/** Returns the cell nearest the middle of the valley that passes `test`, or -1 if every cell fails it. */
+function findCellFromMiddle(puzzle: PuzzleModel, test: (cell: number) => boolean): number {
     const { size, cellCount } = puzzle.puzzle.grid;
     const middle = (size - 1) / 2;
     let best = -1;
@@ -126,6 +129,7 @@ function findFromMiddle(puzzle: PuzzleModel, test: (cell: number) => boolean): n
     return best;
 }
 
+/** Returns the point in the middle of `cell`. */
 function toCellMiddle(puzzle: PuzzleModel, cell: number): RiverTarget {
     const { size } = puzzle.puzzle.grid;
     return { on: 'grid', x: (cell % size) + 0.5, y: Math.floor(cell / size) + 0.5 };

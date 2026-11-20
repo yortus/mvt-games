@@ -1,7 +1,7 @@
 export { findPuzzleSeed } from './find-puzzle-seed';
 export { createGameModel, type GameModel, type GameModelOptions, type RiverPhase } from './game-model';
-export { GIVEN_DRY, isGivenRiver, NO_GIVEN } from './given-pieces';
-export { LEVEL_SETTINGS, type LevelSettings, RIVER_LEVELS } from './levels';
+export { findEndSide, GIVEN_DRY, isGivenRiver, NO_GIVEN } from './given-pieces';
+export { LEVEL_SETTINGS, type LevelSettings } from './levels';
 export { RIVER_WALKTHROUGH, type RiverTarget, type RiverWalkthrough } from './river-walkthrough';
 export { FIRST_DAY } from './model-constants';
 export { playShowcase } from './play-showcase';

@@ -7,7 +7,7 @@ import { createRiverPuzzle } from './river-puzzle';
 import { DRY } from './river-states';
 
 describe('River\'s walkthrough', () => {
-    it('follows the solution: a meadow where the river keeps away, a reach of river where it runs, rubbed out, then Undo', () => {
+    it('follows the solution, with a meadow where the river keeps away and river drawn where it runs, then rubbed out and put back with Undo', () => {
         const puzzle = createPuzzleModel({ puzzle: createRiverPuzzle({ seed: PRACTICE_SEED, settings: PRACTICE_SETTINGS }) });
         const walkthrough = createWalkthroughModel({ practice: puzzle, ...RIVER_WALKTHROUGH });
         const steps: string[] = [];

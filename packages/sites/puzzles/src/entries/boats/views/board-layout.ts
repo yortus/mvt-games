@@ -1,3 +1,4 @@
+import type { BoatPuzzle } from '../models';
 import { MOST_CELL_SIZE } from './view-constants';
 
 // ---------------------------------------------------------------------------
@@ -26,11 +27,8 @@ export interface BoardLayout {
 
 /** What a board is laid out from. */
 export interface BoardLayoutOptions {
-    /** How many cells along each side of the harbour. */
-    readonly size: number;
-    /** How many boat cells the fleet has in all, and how many boats, which the fleet list is fitted to. */
-    readonly fleetCells: number;
-    readonly fleetBoats: number;
+    /** The puzzle. The board is fitted to its harbour's size and its fleet. */
+    readonly puzzle: BoatPuzzle;
     /** Whether the fleet list is shown under the harbour. The example on the How to play card leaves it out. */
     readonly hasFleet: boolean;
     /** The width of the space to fit into. */
@@ -44,14 +42,19 @@ export interface BoardLayoutOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Fits a harbour into a space, as large as it will go, up to
- * `MOST_CELL_SIZE` a cell, with room for its numbers above and to its left,
- * and for the fleet list under it, and centres them all.
+ * Fits a puzzle's harbour into a space, as large as it will go, up to
+ * `MOST_CELL_SIZE` a cell. It leaves room for the numbers above the harbour
+ * and to its left, and for the fleet list under it. Then it centres them
+ * all in the space.
  */
 export function layOutBoard(options: BoardLayoutOptions): BoardLayout {
-    const { size, fleetCells, fleetBoats, hasFleet, width, height } = options;
+    const { puzzle, hasFleet, width, height } = options;
+    const { size } = puzzle.grid;
+    const fleetBoats = puzzle.fleet.length;
+    let fleetCells = 0;
+    for (let i = 0; i < fleetBoats; i++) fleetCells += puzzle.fleet[i];
     const fleetRoom = hasFleet ? FLEET_ROOM : 0;
-    // The numbers take a strip a fixed share of a cell, so fit the cells and the strip together
+    // The numbers sit in a strip whose depth is a share of a cell, so the cells and the strip are fitted together
     const cellSize = Math.min(MOST_CELL_SIZE, width / (size + CLUE_SHARE), (height - fleetRoom) / (size + CLUE_SHARE));
     const clueRoom = cellSize * CLUE_SHARE;
     const span = size * cellSize;
@@ -72,14 +75,26 @@ export function layOutBoard(options: BoardLayoutOptions): BoardLayout {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** How deep the strip for the numbers is, and how large the numbers are, as shares of a cell, and the largest they are drawn. */
+/** How deep the strip for the numbers is, as a share of a cell. */
 const CLUE_SHARE = 0.75;
+
+/** How large the numbers are, as a share of a cell. */
 const CLUE_TEXT_SHARE = 0.5;
+
+/** The largest the numbers are drawn, in pixels. */
 const MOST_CLUE_SIZE = 26;
 
-/** The height of the space under the harbour for the fleet list, how far its middle sits below the middle of that space, the largest a boat cell is drawn there, the gap between two boats as a share of a cell, and how much of the width it may take. */
+/** The height of the space under the harbour for the fleet list, in pixels. */
 const FLEET_ROOM = 56;
+
+/** How far the fleet list's middle sits below the middle of its space, in pixels. */
 const FLEET_DROP = 4;
+
+/** The largest a boat cell is drawn in the fleet list, in pixels. */
 const MOST_FLEET_UNIT = 26;
+
+/** The gap between two boats in the fleet list, as a share of a boat cell there. */
 const FLEET_GAP_SHARE = 0.7;
+
+/** How much of the space's width the fleet list may cover. */
 const FLEET_WIDTH_SHARE = 0.95;

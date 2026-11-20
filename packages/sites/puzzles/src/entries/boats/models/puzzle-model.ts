@@ -1,5 +1,6 @@
 import { BOAT } from './cell-states';
 import { GIVEN_DINGHY, GIVEN_END_LEFT, GIVEN_END_UP, GIVEN_WATER, isGivenBoat, NO_GIVEN } from './given-pieces';
+import { DIAGONALS, findCellAfterRun, findCellBeforeRun } from './harbour-grid';
 import { MOST_UNDOS } from './model-constants';
 import type { BoatPuzzle } from './boat-puzzle';
 import { BOAT_MARK, NO_MARK, type PuzzleSave, readPuzzleSave, WATER_MARK, writePuzzleSave } from './puzzle-save';
@@ -9,41 +10,56 @@ import { createUndoHistory } from './undo-history';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What the player has marked a cell with: nothing yet, water for a cell they know is open, or part of a boat. */
+/** The mark on a cell. It is `none` until the player marks it, `water` for a cell they know is open, or `boat` for part of a boat. */
 export type CellMark = 'none' | 'water' | 'boat';
 
-/** How a row's or column's number stands: still open, met by the boat cells marked on it, or broken, with too many, or too little room left. */
+/**
+ * How a row's or column's number stands. It is `met` when the boat cells
+ * marked on the line match the number. It is `broken` when there are too
+ * many, or too few unmarked cells left to reach it. Otherwise it is `open`.
+ */
 export type ClueState = 'open' | 'met' | 'broken';
 
 /**
- * One harbour being solved: the marks the player has made on its cells.
- * Its givens, the water and boat pieces printed on it, are marks from the
- * start, which never change. The puzzle is solved once the boats are its
- * solution's. Water marks are the player's own notes, and don't count. The
- * player marks cells a stroke at a time, and each stroke is undone as one.
- * The last `MOST_UNDOS` strokes can be undone, as far back as when the
- * puzzle opened. Once the puzzle is solved, it ignores every action.
+ * One harbour being solved, with the marks the player has made on its
+ * cells. Its givens, the water and boat pieces printed on it, are marks
+ * from the start, which never change. The puzzle is solved once the boat
+ * marks match the solution. Water marks are the player's own notes, and
+ * don't count. The player marks cells a stroke at a time, and undo takes
+ * back a whole stroke. The last `MOST_UNDOS` strokes can be undone, as far
+ * back as when the puzzle opened. Once the puzzle is solved, it ignores
+ * every action.
  *
- * It points out what breaks a rule, as the marks are made: boats that touch
- * diagonally, a boat longer than any in the fleet, and a boat beside a
- * printed piece that says there is water there. It finds the finished
- * boats, each a straight run of boat cells with water or the edge on every
- * way on, so the fleet can be ticked off.
+ * It points out each mark that breaks a rule, as the marks are made. These
+ * are the clashes it finds:
+ *
+ * - boats that touch diagonally
+ * - a boat longer than any in the fleet
+ * - a boat beside a printed piece that says there is water there
+ * - water beside a printed end, on the side its boat goes on
+ *
+ * It also finds the finished boats, so the fleet can be ticked off. A
+ * finished boat is a straight run of boat cells with water or the edge past
+ * each end, or on every side of a single cell.
  */
 export interface PuzzleModel {
     /** The puzzle being solved. */
     readonly puzzle: BoatPuzzle;
     /** The mark on `cell`, given or the player's. */
     readonly markAt: (cell: number) => CellMark;
-    /** Whether `cell` is a given: water or a piece of a boat printed on the harbour, which the player can't change. */
+    /** Whether `cell` is a given, which is water or a piece of a boat printed on the harbour. The player can't change a given. */
     readonly isGivenAt: (cell: number) => boolean;
     /** Whether `cell` holds a boat that breaks a rule. */
     readonly isClashAt: (cell: number) => boolean;
-    /** How the number of `line` stands: the rows from the top, then the columns from the left. */
+    /** How the number of `line` stands. The lines are the rows from the top, then the columns from the left. */
     readonly clueStateAt: (line: number) => ClueState;
-    /** How many finished boats `length` cells long are marked. */
+    /**
+     * How many finished boats `length` cells long are marked. Once the
+     * puzzle is solved, every boat counts as found, so it returns how many
+     * boats of that length the fleet has.
+     */
     readonly finishedBoatCountOf: (length: number) => number;
-    /** Whether the boats marked are the solution's. */
+    /** Whether the boat marks match the solution. */
     readonly isSolved: boolean;
     /** How many strokes undo can take back. */
     readonly undoCount: number;
@@ -66,7 +82,7 @@ export interface PuzzleModel {
     /** The cell marked last, or -1. */
     readonly lastMarkedCell: number;
 
-    /** Starts a stroke: the marks until it finishes are undone together. */
+    /** Starts a stroke. The marks made until it finishes are undone together. */
     startStroke: () => void;
     /** Marks `cell`, as part of the stroke being made, or as a stroke of its own if none is. Ignores a given, and a cell off the harbour. */
     mark: (cell: number, mark: CellMark) => void;
@@ -98,7 +114,7 @@ export interface PuzzleModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates a puzzle with nothing marked but its givens, or as it was saved. */
+/** Creates a puzzle with only its givens marked, or as it was saved. */
 export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     const { puzzle } = options;
     const { grid, fleet, rowCounts, colCounts, givens, solution } = puzzle;
@@ -106,8 +122,11 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     const longest = fleet[0];
     let marks = readPuzzleSave(options.saved, puzzle) ?? Uint8Array.from(givens, toGivenMark);
     const history = createUndoHistory<Uint8Array>({ mostUndos: MOST_UNDOS });
+    // How many boats of each length the fleet has
+    const fleetCounts = new Int32Array(longest + 1);
+    for (let i = 0; i < fleet.length; i++) fleetCounts[fleet[i]]++;
 
-    // What the marks mean, worked out as they change, since views ask about them every frame
+    // What the marks mean, worked out as they change, since views read them every frame
     const clashes = new Uint8Array(cellCount);
     const clueStates: ClueState[] = new Array<ClueState>(size * 2).fill('open');
     const finishedCounts = new Int32Array(longest + 1);
@@ -117,7 +136,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     let finishedCount = 0;
     let isSolved = false;
 
-    // The stroke being made: the marks before it, and how many cells it marked
+    // The stroke being made. It keeps the marks from before it, and how many cells it marked
     let strokeBefore: Uint8Array | undefined;
     let strokeCells = 0;
     let strokeClashes = 0;
@@ -140,7 +159,10 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         isGivenAt: (cell) => givens[cell] !== NO_GIVEN,
         isClashAt: (cell) => clashes[cell] === 1,
         clueStateAt: (line) => clueStates[line],
-        finishedBoatCountOf: (length) => (length >= 0 && length <= longest ? finishedCounts[length] : 0),
+        finishedBoatCountOf(length) {
+            if (length < 0 || length > longest) return 0;
+            return isSolved ? fleetCounts[length] : finishedCounts[length];
+        },
         get isSolved() { return isSolved; },
         get undoCount() { return history.count; },
         get changes() { return changes; },
@@ -160,15 +182,15 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             strokeFinished = finishedCount;
         },
         mark(cell, mark) {
-            const state = MARK_STATES[mark];
-            if (isSolved || cell < 0 || cell >= cellCount || marks[cell] === state || givens[cell] !== NO_GIVEN) return;
+            const stored = MARK_VALUES[mark];
+            if (isSolved || cell < 0 || cell >= cellCount || marks[cell] === stored || givens[cell] !== NO_GIVEN) return;
             const isOwnStroke = strokeBefore === undefined;
             if (isOwnStroke) model.startStroke();
-            marks[cell] = state;
+            marks[cell] = stored;
             lastMarkedCell = cell;
             strokeCells++;
-            if (state === BOAT_MARK) boatsMarked++;
-            else if (state === WATER_MARK) waterMarked++;
+            if (stored === BOAT_MARK) boatsMarked++;
+            else if (stored === WATER_MARK) waterMarked++;
             else marksCleared++;
             const clashesBefore = clashCount;
             findWhatMarksMean();
@@ -217,7 +239,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             }
         }
         findPieceClashes();
-        // Each run of boat cells joined side to side: too long, or finished
+        // Each run of boat cells joined side to side clashes if it is too long or bent, and counts if it is finished
         for (let cell = 0; cell < cellCount; cell++) {
             if (marks[cell] !== BOAT_MARK || boatOf[cell] >= 0) continue;
             gatherRun(cell);
@@ -234,7 +256,11 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         for (let line = 0; line < size * 2; line++) clueStates[line] = findClueState(line);
     }
 
-    /** Marks a printed dinghy or end, and the cell beside it, as clashing where a boat is marked on a side it says is water, or water on the side it says goes on. */
+    /**
+     * Marks each printed dinghy or end as clashing where a boat is marked on
+     * a side that it says is water, and marks that boat too. Water marked on
+     * the side that an end's boat goes on clashes as well.
+     */
     function findPieceClashes(): void {
         for (let cell = 0; cell < cellCount; cell++) {
             const given = givens[cell];
@@ -277,7 +303,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         return isAcross || isDown;
     }
 
-    /** Whether the straight `run` has water marked, or the edge, on every way on: past both ends, or on every side of a single cell. */
+    /** Whether the straight `run` has water marked, or the edge, past both its ends, or on every side of a single cell. */
     function isRunFinished(): boolean {
         if (run.length === 1) {
             for (let side = 0; side < 4; side++) {
@@ -287,19 +313,22 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             return true;
         }
         // A longer boat goes on only past its ends. Its sides are known to be water, since a boat there would touch it
-        let low = run[0];
-        let high = run[0];
+        let first = run[0];
+        let last = run[0];
         for (let i = 1; i < run.length; i++) {
-            low = Math.min(low, run[i]);
-            high = Math.max(high, run[i]);
+            first = Math.min(first, run[i]);
+            last = Math.max(last, run[i]);
         }
-        const isDown = high - low >= size;
-        const before = sides[low * 4 + (isDown ? 0 : 3)];
-        const after = sides[high * 4 + (isDown ? 2 : 1)];
+        const before = findCellBeforeRun(grid, first, last);
+        const after = findCellAfterRun(grid, first, last);
         return (before < 0 || marks[before] === WATER_MARK) && (after < 0 || marks[after] === WATER_MARK);
     }
 
-    /** Met if the boat cells marked on the line are its number, broken if there are too many or too little room left, and open otherwise. */
+    /**
+     * Returns how the number of `line` stands. It is met if the boat cells
+     * marked on the line match the number, and broken if there are too many,
+     * or too few unmarked cells left to reach it. Otherwise it is open.
+     */
     function findClueState(line: number): ClueState {
         const isColumn = line >= size;
         const index = isColumn ? line - size : line;
@@ -320,16 +349,13 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Each mark's name, by the number it is kept as. */
+/** Each mark's name, by the number it is stored as. */
 const MARK_NAMES: readonly CellMark[] = ['none', 'water', 'boat'];
 
-/** The number each mark is kept as, by its name. */
-const MARK_STATES: Readonly<Record<CellMark, number>> = { none: NO_MARK, water: WATER_MARK, boat: BOAT_MARK };
+/** The number each mark is stored as, by its name. */
+const MARK_VALUES: Readonly<Record<CellMark, number>> = { none: NO_MARK, water: WATER_MARK, boat: BOAT_MARK };
 
-/** Where a cell's diagonal neighbours are among its eight. */
-const DIAGONALS: readonly number[] = [0, 2, 5, 7];
-
-/** The mark a cell starts with, from its given: water, part of a boat, or nothing. */
+/** Returns the mark that a cell starts with, from its given. That is water, part of a boat, or no mark. */
 function toGivenMark(given: number): number {
     if (given === GIVEN_WATER) return WATER_MARK;
     return isGivenBoat(given) ? BOAT_MARK : NO_MARK;

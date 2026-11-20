@@ -5,12 +5,12 @@ import type { CellMark } from '../models';
 // ---------------------------------------------------------------------------
 
 /**
- * What a drag over the harbour does to the cells it goes over: a stroke. The
- * cell it begins at says what it marks. The stroke marks that cell as a tap
- * would, then marks every cell it goes over the same way. So a drag from an
- * empty cell marks water, a drag from water marks a boat, and a drag from a
- * boat clears. A drag from a printed cell, which a tap can't change, marks
- * water. Each stroke is undone as one.
+ * A stroke is what a drag over the harbour does to the cells it goes over.
+ * The cell that the drag begins at decides what it marks. The stroke marks
+ * that cell as a tap would, then marks every cell it goes over the same
+ * way. So a drag from an empty cell marks water, a drag from water marks a
+ * boat, and a drag from a boat clears. A tap can't change a printed cell,
+ * so a drag from one marks water. Each stroke is undone as one.
  */
 export interface StrokeViewModel {
     /** The drag began at `cell`. */

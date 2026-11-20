@@ -1,9 +1,9 @@
 import type { Random } from '@mvtjs/site-kit/random';
 import type { DrawnRiver } from './draw-river';
-import { findGivenPiece, NO_GIVEN } from './given-pieces';
+import { findEndSide, findGivenPiece, NO_GIVEN } from './given-pieces';
 import type { RiverSolver, RiverTechnique } from './river-solver';
 import { UNKNOWN } from './river-states';
-import { LEFT, DOWN, type ValleyGrid } from './valley-grid';
+import type { ValleyGrid } from './valley-grid';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -28,22 +28,21 @@ export interface FindGivensOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns givens for a puzzle, what each cell printed on the valley shows
- * and `NO_GIVEN` for the rest, so that the techniques up to `most` finish
- * it, with nothing supposed. It works as Stars' maker does. While the
- * techniques leave cells open, or cells with sides open, it prints one of
- * them, picked at random, as the solution has it: dry land, or its piece of
- * river. Then it removes each given, in a random order, and puts it back
- * only if the techniques can't finish without it. It repeats that pass
- * until a whole pass keeps every given, since removing one given can make
- * another unneeded.
+ * Returns givens for a puzzle, so that the techniques up to `most` finish
+ * it without guessing, or following where a guess leads. Each given is what
+ * a cell printed on the valley shows, or `NO_GIVEN` for a cell not printed.
+ * While the techniques leave cells open, or cells with sides open, it
+ * prints one of them, picked at random, as the solution has it. That is dry
+ * land, or the cell's piece of river. Then it removes each given, in a
+ * random order, and puts it back only if the techniques can't finish
+ * without it. It repeats that pass until a whole pass keeps every given,
+ * since removing one given can make another unneeded.
  */
 export function findGivens(options: FindGivensOptions): Uint8Array {
     const { grid, river, solver, most, random } = options;
     const { cellCount, cellEdges } = grid;
     const givens = new Uint8Array(cellCount).fill(NO_GIVEN);
-    const open = new Int32Array(cellCount);
-    const endSide = (cell: number): number => (cell === river.spring ? LEFT : cell === river.sea ? DOWN : -1);
+    const openCells = new Int32Array(cellCount);
     let solved = solver.solve(givens, most);
     while (!solved.isFinished) {
         let openCount = 0;
@@ -53,30 +52,31 @@ export function findGivens(options: FindGivensOptions): Uint8Array {
                 const edge = cellEdges[cell * 4 + side];
                 if (edge >= 0 && solved.edges[edge] === UNKNOWN) isOpen = true;
             }
-            if (isOpen) open[openCount++] = cell;
+            if (isOpen) openCells[openCount++] = cell;
         }
-        const cell = open[random.nextIndex(openCount)];
-        givens[cell] = findGivenPiece(grid, river.cells, river.edges, cell, endSide(cell));
+        const cell = openCells[random.nextIndex(openCount)];
+        givens[cell] = findGivenPiece(grid, river.cells, river.edges, cell, findEndSide(cell, river.spring, river.sea));
         solved = solver.solve(givens, most);
     }
 
     // Remove each given the techniques can do without
+    const givenCells = new Int32Array(cellCount);
     let givenCount = 0;
     for (let cell = 0; cell < cellCount; cell++) {
-        if (givens[cell] !== NO_GIVEN) open[givenCount++] = cell;
+        if (givens[cell] !== NO_GIVEN) givenCells[givenCount++] = cell;
     }
     for (let i = givenCount - 1; i > 0; i--) {
         const j = random.nextIndex(i + 1);
-        const cell = open[i];
-        open[i] = open[j];
-        open[j] = cell;
+        const cell = givenCells[i];
+        givenCells[i] = givenCells[j];
+        givenCells[j] = cell;
     }
     // Each pass goes in the same order, and only the shuffle above is random, so a later pass changes a puzzle only if it removes a given
     let isRemoved = true;
     while (isRemoved) {
         isRemoved = false;
         for (let i = 0; i < givenCount; i++) {
-            const cell = open[i];
+            const cell = givenCells[i];
             const given = givens[cell];
             if (given === NO_GIVEN) continue;
             givens[cell] = NO_GIVEN;

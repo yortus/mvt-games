@@ -34,9 +34,8 @@ describe('GameModel', () => {
         expect([next.puzzle!.isSolved, next.puzzlesSolved]).toEqual([true, 1]);
     });
 
-    it('starts a puzzle again, cleared and no longer started, but still ticked off if it was solved, and can\'t start the practice puzzle again', () => {
-        const store = createMemoryStore();
-        const model = createModel(store);
+    it('starts a solved puzzle again with only its givens marked, and keeps it ticked off', () => {
+        const model = createModel(createMemoryStore());
         expect(model.canRestartPuzzle).toBe(false);
         model.openPuzzle(TODAY - 3);
         solve(model);
@@ -44,35 +43,51 @@ describe('GameModel', () => {
         model.restartPuzzle();
         expect([model.puzzle!.isSolved, model.puzzle!.boatsMarked, model.puzzle!.undoCount]).toEqual([false, 0, 0]);
         expect(model.calendar.isSolved(TODAY - 3)).toBe(true);
-        // One not solved, started again and left, is no longer started
-        model.closePuzzle();
+    });
+
+    it('forgets a puzzle that is started again and left, so it no longer shows as started', () => {
+        const store = createMemoryStore();
+        const model = createModel(store);
         model.openPuzzle(TODAY - 4);
         model.puzzle!.mark(findOpenCell(model.puzzle!), 'water');
         model.update(16);
         model.restartPuzzle();
         model.closePuzzle();
         expect(createModel(store).calendar.isStarted(TODAY - 4)).toBe(false);
+    });
 
+    it('can\'t start the walkthrough\'s practice puzzle again', () => {
+        const model = createModel(createMemoryStore());
         model.openPuzzle(TODAY);
         model.intro.showCard();
         model.intro.startWalkthrough();
         expect(model.canRestartPuzzle).toBe(false);
     });
 
-    it('plays the walkthrough on a practice puzzle, which stands in for the puzzle open and is never kept, and counts a puzzle opened as the walkthrough starts and again as it ends', () => {
+    it('plays the walkthrough on a practice puzzle, which is never kept, and then goes back to the open puzzle', () => {
         const model = createModel(createMemoryStore());
         model.openPuzzle(TODAY);
         const real = model.puzzle;
-        const opened = model.puzzlesOpened;
         model.intro.showCard();
         model.intro.startWalkthrough();
         const practice = model.puzzle!;
-        expect([practice === real, model.puzzlesOpened]).toEqual([false, opened + 1]);
+        expect(practice === real).toBe(false);
         practice.mark(findOpenCell(practice), 'water');
         model.update(16);
         expect(model.calendar.isStarted(TODAY)).toBe(false);
         model.intro.close();
-        expect([model.puzzle === real, model.puzzlesOpened, real?.changes]).toEqual([true, opened + 2, 0]);
+        expect([model.puzzle === real, real?.changes]).toEqual([true, 0]);
+    });
+
+    it('counts a puzzle opened as the walkthrough starts, and again as it ends', () => {
+        const model = createModel(createMemoryStore());
+        model.openPuzzle(TODAY);
+        const opened = model.puzzlesOpened;
+        model.intro.showCard();
+        model.intro.startWalkthrough();
+        expect(model.puzzlesOpened).toBe(opened + 1);
+        model.intro.close();
+        expect(model.puzzlesOpened).toBe(opened + 2);
     });
 });
 
@@ -80,7 +95,7 @@ function createModel(store: ReturnType<typeof createMemoryStore>): GameModel {
     return createGameModel({ today: TODAY, store, offersIntro: false });
 }
 
-/** The first cell of `puzzle` that isn't a given, so the player can mark it. */
+/** Returns the first cell of `puzzle` that isn't a given, so the player can mark it. */
 function findOpenCell(puzzle: PuzzleModel): number {
     let cell = 0;
     while (puzzle.isGivenAt(cell)) cell++;

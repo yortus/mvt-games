@@ -15,6 +15,7 @@ import {
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** The game that a `PuzzleView` shows, with a puzzle open. */
 export interface PuzzleViewBindings {
     /** The game, which has a puzzle open whenever this view shows. */
     model: GameModel;
@@ -31,8 +32,10 @@ export interface PuzzleViewBindings {
  * is. The practice puzzle of a walkthrough says so in place of its date.
  *
  * A drag from cell to cell draws the river between them, or rubs it out if
- * the first edge it crosses has river already. A tap plants a flower on a
- * cell, the player's note that the river keeps away, or removes it.
+ * the first edge it can change has river already. A drag passes over the
+ * edges that a given fixes. A tap plants a flower on a cell, or removes it.
+ * The flower is the player's note that the river doesn't pass through that
+ * cell.
  */
 export function PuzzleView(bindings: PuzzleViewBindings): Container {
     const { model } = bindings;
@@ -121,7 +124,7 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** The line of help, for what is going on. */
+/** Returns the line of help, which depends on whether the puzzle is solved. */
 function writeHint(isSolved: boolean): string {
     if (isSolved) return 'The river reaches the sea! It\'s ticked off on the calendar.';
     return 'Drag from cell to cell to draw the river. Tap to plant a flower.';

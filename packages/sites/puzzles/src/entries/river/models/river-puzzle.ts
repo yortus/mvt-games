@@ -11,7 +11,7 @@ import { createValleyGrid, type ValleyGrid } from './valley-grid';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** A puzzle to solve: its valley, the river's two ends, its numbers, the cells printed on it, and its one solution. */
+/** A puzzle to solve. It holds its valley, the river's two ends, its numbers, the cells printed on it, and its one solution. */
 export interface RiverPuzzle {
     /** The valley, and which cells are next to which. */
     readonly grid: ValleyGrid;
@@ -50,14 +50,14 @@ export interface RiverPuzzleOptions {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a puzzle from `seed` that the level's techniques solve, with
- * nothing supposed, so it has one solution and never needs guessing. It
- * works backwards from the answer. It draws a river, reads the numbers off
- * the rows and columns, then prints a few givens on the valley, until the
- * techniques finish it, keeping only the givens they need. It finds givens
- * a few times over, at random, and keeps the fewest. A level that requires
- * its hardest technique gets a puzzle that needs it, or the maker starts
- * again with a new river.
+ * Creates a puzzle from `seed` that the level's techniques solve without
+ * guessing, so it has exactly one solution. It works backwards from the
+ * answer. It draws a river, and reads the numbers off the rows and columns.
+ * Then it prints givens on the valley until the techniques finish the
+ * puzzle, and keeps only the givens they need. It finds givens a few times
+ * over, at random, and keeps the fewest. If the level requires its hardest
+ * technique, and the puzzle doesn't need it, it starts again with a new
+ * river.
  */
 export function createRiverPuzzle(options: RiverPuzzleOptions): RiverPuzzle {
     const { size, leastFill, mostFill, hardest, isHardestNeeded } = options.settings;
@@ -95,7 +95,7 @@ export function createRiverPuzzle(options: RiverPuzzleOptions): RiverPuzzle {
             hardest: solver.solve(best, hardest).hardest,
         };
     }
-    throw new Error(`No ${size} by ${size} puzzle that needs ${hardest} turned up in ${MOST_ATTEMPTS} attempts`);
+    throw new Error(`Couldn't make a puzzle of ${size} by ${size} cells that needs ${hardest} in ${MOST_ATTEMPTS} attempts.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ export function createRiverPuzzle(options: RiverPuzzleOptions): RiverPuzzle {
 /** How many rivers to draw before giving up. No level comes near it. */
 const MOST_ATTEMPTS = 1000;
 
-/** How many times to find givens for one river, keeping the fewest. More find fewer givens, at a cost in time. */
+/** How many times to find givens for one river, keeping the fewest. More tries find fewer givens, but take longer. */
 const GIVENS_TRIES = 3;
 
 /** Returns how many cells of `givens` are printed on the valley. */

@@ -1,9 +1,8 @@
-import { GIVEN_DRY } from './given-pieces';
 import type { RiverPuzzle } from './river-puzzle';
 
 // A puzzle's marks, kept as plain values for storage, and read back. What is
-// read back comes from the visitor's browser, so it is checked first:
-// anything that is not a whole save of the same puzzle is ignored.
+// read back comes from the visitor's browser, so it is checked first.
+// Anything that is not a whole save of the same puzzle is ignored.
 
 /** A puzzle as it stood, kept as plain values for storage. */
 export interface PuzzleSave {
@@ -24,8 +23,8 @@ export interface PuzzleMarks {
 }
 
 /**
- * Returns `puzzle` written out: its size, its spring and its sea, its
- * numbers, and each cell's given as one character, such as
+ * Returns `puzzle` written out as text. The text holds its size, its spring
+ * and its sea, its numbers, and each cell's given as one character, such as
  * `6 12.33 1.2.4.3.2.3 3.3.2.1.4.2 00g0...`. Two puzzles with the same
  * description are the same puzzle, since the ends, the numbers and the
  * givens have one solution between them.
@@ -42,17 +41,16 @@ export function writePuzzleSave(puzzle: RiverPuzzle, marks: PuzzleMarks): Puzzle
     return { puzzle: describePuzzle(puzzle), rivers: marks.rivers.join(''), meadows: marks.meadows.join('') };
 }
 
-/** Returns the marks in `saved`, if it is a whole save of `puzzle`, or undefined if not. */
+/**
+ * Returns the marks in `saved`, if it is a whole save of `puzzle`, or
+ * undefined if not. It doesn't check the marks against the puzzle's
+ * givens.
+ */
 export function readPuzzleSave(saved: unknown, puzzle: RiverPuzzle): PuzzleMarks | undefined {
     if (typeof saved !== 'object' || saved === null) return undefined;
     const { puzzle: description, rivers, meadows } = saved as Record<string, unknown>;
     const { cellCount, edgeCount } = puzzle.grid;
     if (description !== describePuzzle(puzzle) || typeof rivers !== 'string' || typeof meadows !== 'string') return undefined;
     if (rivers.length !== edgeCount || meadows.length !== cellCount || !/^[01]*$/.test(rivers) || !/^[01]*$/.test(meadows)) return undefined;
-    const readMeadows = Uint8Array.from(meadows, Number);
-    // Each given dry cell is marked as meadow
-    for (let cell = 0; cell < cellCount; cell++) {
-        if (puzzle.givens[cell] === GIVEN_DRY && readMeadows[cell] !== 1) return undefined;
-    }
-    return { rivers: Uint8Array.from(rivers, Number), meadows: readMeadows };
+    return { rivers: Uint8Array.from(rivers, Number), meadows: Uint8Array.from(meadows, Number) };
 }

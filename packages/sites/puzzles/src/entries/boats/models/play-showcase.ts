@@ -2,9 +2,10 @@ import { BOAT } from './cell-states';
 import type { GameModel } from './game-model';
 
 /**
- * Plays some of today's hard puzzle, as a player might: it opens it, moors
- * the solution's boats in the top rows, and marks the water round them. For
- * the thumbnail, and the visual tests, which show the game in play.
+ * Plays some of today's hard puzzle, as a player might. It opens the
+ * puzzle, moors the solution's boats in the top rows, and marks the water
+ * beside them. It leaves the game partway through a puzzle, which suits a
+ * picture of the game in play.
  */
 export function playShowcase(model: GameModel): void {
     model.calendar.chooseLevel('hard');
@@ -25,6 +26,10 @@ export function playShowcase(model: GameModel): void {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
 
 /** How many rows, from the top, the showcase moors the boats of. */
 const SHOWN_ROWS = 4;

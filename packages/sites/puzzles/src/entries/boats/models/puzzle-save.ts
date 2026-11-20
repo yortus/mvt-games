@@ -2,8 +2,8 @@ import { GIVEN_WATER, isGivenBoat } from './given-pieces';
 import type { BoatPuzzle } from './boat-puzzle';
 
 // A puzzle's marks, kept as plain values for storage, and read back. What is
-// read back comes from the visitor's browser, so it is checked first:
-// anything that is not a whole save of the same puzzle is ignored.
+// read back comes from the visitor's browser, so it is checked first. A save
+// that isn't a whole save of the same puzzle is ignored.
 
 /** A puzzle as it stood, kept as plain values for storage. */
 export interface PuzzleSave {
@@ -53,7 +53,7 @@ export function readPuzzleSave(saved: unknown, puzzle: BoatPuzzle): Uint8Array |
     for (let cell = 0; cell < cellCount; cell++) {
         const mark = readMarks[cell];
         if (mark !== NO_MARK && mark !== WATER_MARK && mark !== BOAT_MARK) return undefined;
-        // Each given's mark is the given itself: water, or part of a boat
+        // Each given's mark must match the given, as water or part of a boat
         const given = puzzle.givens[cell];
         if ((given === GIVEN_WATER && mark !== WATER_MARK) || (isGivenBoat(given) && mark !== BOAT_MARK)) return undefined;
     }

@@ -2,7 +2,7 @@ import { canvasTest } from 'v-snap';
 import type { PuzzleLevel } from '../../../../shared';
 import { playShowcase } from '../../models';
 import { PuzzleView } from '../puzzle-view';
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../view-constants';
+import { FLOW_MS, SCREEN_HEIGHT, SCREEN_WIDTH } from '../view-constants';
 import { type Play, poseGame, solve, TODAY } from './river-poses.test-support';
 
 const SIZE = { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: false };
@@ -36,8 +36,9 @@ canvasTest('rivers that break the rules: a loop, three ways from one cell, and a
     puzzle.setRiver(edgeBetween(middle, middle + 1), true);
 }));
 
-canvasTest('solved, with the light halfway down the river', SIZE, () => pose('medium', solve, 700));
-canvasTest('solved, with the light at the sea and the meadow in bloom', SIZE, () => pose('easy', solve, 1600));
+// The light takes FLOW_MS to run from the spring to the sea, so these poses are timed from it
+canvasTest('solved, with the light halfway down the river', SIZE, () => pose('medium', solve, FLOW_MS / 2));
+canvasTest('solved, with the light at the sea and the meadow in bloom', SIZE, () => pose('easy', solve, FLOW_MS + 200));
 
 /** The puzzle's screen, on today's valley at `level`, after `play`. */
 function pose(level: PuzzleLevel, play: Play, ms?: number) {

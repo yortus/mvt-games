@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import { PUZZLE_LEVELS } from '../../../shared';
 import { checkPuzzle } from './check-puzzle.test-support';
-import { LEVEL_SETTINGS, RIVER_LEVELS } from './levels';
+import { LEVEL_SETTINGS } from './levels';
 import { createRiverPuzzle } from './river-puzzle';
 
 describe('createRiverPuzzle', () => {
     it('makes puzzles with one solution that each level\'s techniques finish from givens that are all needed', () => {
         const problems: string[] = [];
-        for (let i = 0; i < RIVER_LEVELS.length; i++) {
-            const settings = LEVEL_SETTINGS[RIVER_LEVELS[i]];
+        for (let i = 0; i < PUZZLE_LEVELS.length; i++) {
+            const settings = LEVEL_SETTINGS[PUZZLE_LEVELS[i]];
             for (let seed = 0; seed < SEEDS_PER_LEVEL; seed++) {
                 const found = checkPuzzle(createRiverPuzzle({ seed, settings }), settings);
-                for (let j = 0; j < found.length; j++) problems.push(`${RIVER_LEVELS[i]} ${seed}: ${found[j]}`);
+                for (let j = 0; j < found.length; j++) problems.push(`${PUZZLE_LEVELS[i]} ${seed}: ${found[j]}`);
             }
         }
         expect(problems).toEqual([]);
@@ -24,5 +25,5 @@ describe('createRiverPuzzle', () => {
     });
 });
 
-/** How many seeds each level is checked with: a sample, to keep within the test's time. The slow test checks many. */
+/** How many seeds each level is checked with. It is a small sample, so the test stays within its time limit. The slow test beside it checks many days' puzzles. */
 const SEEDS_PER_LEVEL = 3;

@@ -7,6 +7,7 @@ import { BoardView } from './board-view';
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** The puzzle that an `ExampleValleyView` shows. */
 export interface ExampleValleyViewBindings {
     /** The puzzle shown, solved, read once. */
     example: RiverPuzzle;
@@ -16,7 +17,7 @@ export interface ExampleValleyViewBindings {
 // View
 // ---------------------------------------------------------------------------
 
-/** A valley, solved, for the card that says how to play: the board, fitted to the card's example, with the whole river drawn and the meadow in bloom. */
+/** A valley, solved, for the How to play card. It's the board, fitted to the card's example, with the whole river drawn and the meadow in bloom. */
 export function ExampleValleyView(bindings: ExampleValleyViewBindings): Container {
     const { example } = bindings;
     return BoardView({

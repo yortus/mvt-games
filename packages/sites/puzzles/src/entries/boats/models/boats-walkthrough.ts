@@ -6,10 +6,10 @@ import type { PuzzleModel } from './puzzle-model';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What the walkthrough's arrow touches: a point on the harbour, in cells, across and down from its top left corner, or the Undo button. */
+/** What the walkthrough's arrow touches. That is a point on the harbour, in cells across and down from its top left corner, or the Undo button. */
 export type BoatsTarget = { readonly on: 'grid'; readonly x: number; readonly y: number } | { readonly on: 'undo' };
 
-/** The walkthrough of the controls: its steps, what their demos are found from, and how to tell targets apart. */
+/** The walkthrough of the controls. It has its steps, what their demos are found from, and how to tell targets apart. */
 export type BoatsWalkthrough = Pick<IntroModelOptions<PuzzleModel, BoatsTarget>, 'steps' | 'findWhenChanged' | 'isSameTarget'>;
 
 /**
@@ -23,13 +23,14 @@ export type BoatsWalkthrough = Pick<IntroModelOptions<PuzzleModel, BoatsTarget>,
  * - `done`: nothing more to do.
  *
  * The demos follow the practice puzzle's solution, so what the arrow marks
- * is right: water where there is water, and a boat where there is one.
+ * is right. It marks water where there is water, and a boat where there is
+ * one.
  */
 export const BOATS_WALKTHROUGH: BoatsWalkthrough = {
     steps: [
         {
             name: 'water',
-            text: 'Tap a cell to mark it as water: your note that a boat isn\'t there. This is a practice puzzle, so try anything.',
+            text: 'Tap a cell to mark it as water, where you know a boat isn\'t. This is a practice puzzle, so try anything.',
             isDone: (puzzle) => puzzle.waterMarked >= 1,
             findDemo: findWaterDemo,
         },
@@ -41,7 +42,7 @@ export const BOATS_WALKTHROUGH: BoatsWalkthrough = {
         },
         {
             name: 'sweep',
-            text: 'Drag across cells to mark them all the way a tap marks the first. Drag from an empty cell to mark water.',
+            text: 'Drag across cells to mark them all as a tap would mark the first. Start on an empty cell to mark water.',
             isDone: (puzzle) => puzzle.sweepsMade >= 1,
             findDemo: findSweepDemo,
         },
@@ -66,25 +67,26 @@ export const BOATS_WALKTHROUGH: BoatsWalkthrough = {
 // Internals
 // ---------------------------------------------------------------------------
 
+/** An empty demo, for a step that the arrow doesn't show. */
 const NO_DEMO: Demo<BoatsTarget> = [];
 
 /** How many cells the sweep's demo drags over. */
 const SWEEP_LENGTH = 3;
 
-/** A tap on an unmarked cell of water, from the middle of the harbour out, so the demo is in plain sight. */
+/** Returns a tap on an unmarked cell of water, from the middle of the harbour out, so the demo is in plain sight. */
 function findWaterDemo(puzzle: PuzzleModel): Demo<BoatsTarget> {
     const cell = findFromMiddle(puzzle, (c) => puzzle.puzzle.solution[c] !== BOAT && puzzle.markAt(c) === 'none');
     return cell < 0 ? NO_DEMO : [{ kind: 'tap', targets: [toCellMiddle(puzzle, cell)] }];
 }
 
-/** Two taps on a cell with a boat in the solution and none marked, or one tap if it is marked as water already. */
+/** Returns two taps on a cell with a boat in the solution and none marked, or one tap if it is marked as water already. */
 function findBoatDemo(puzzle: PuzzleModel): Demo<BoatsTarget> {
     const cell = findFromMiddle(puzzle, (c) => puzzle.puzzle.solution[c] === BOAT && puzzle.markAt(c) !== 'boat');
     if (cell < 0) return NO_DEMO;
     return [{ kind: puzzle.markAt(cell) === 'water' ? 'tap' : 'double-tap', targets: [toCellMiddle(puzzle, cell)] }];
 }
 
-/** A drag across a few unmarked cells of water side by side in a row, from the middle of the harbour out, so the sweep marks them all as water. */
+/** Returns a drag across a few unmarked cells of water side by side in a row, from the middle of the harbour out. The sweep marks them all as water. */
 function findSweepDemo(puzzle: PuzzleModel): Demo<BoatsTarget> {
     const { size } = puzzle.puzzle.grid;
     const first = findFromMiddle(puzzle, (cell) => cell % size <= size - SWEEP_LENGTH && isOpenWaterRun(puzzle, cell));
@@ -100,7 +102,7 @@ function isOpenWaterRun(puzzle: PuzzleModel, first: number): boolean {
     return true;
 }
 
-/** The cell nearest the middle of the harbour that passes `test`, or -1 if none does. */
+/** Returns the cell nearest the middle of the harbour that passes `test`, or -1 if none does. */
 function findFromMiddle(puzzle: PuzzleModel, test: (cell: number) => boolean): number {
     const { size, cellCount } = puzzle.puzzle.grid;
     const middle = (size - 1) / 2;
@@ -117,6 +119,7 @@ function findFromMiddle(puzzle: PuzzleModel, test: (cell: number) => boolean): n
     return best;
 }
 
+/** Returns the middle of `cell`, as a point on the harbour for the arrow to touch. */
 function toCellMiddle(puzzle: PuzzleModel, cell: number): BoatsTarget {
     const { size } = puzzle.puzzle.grid;
     return { on: 'grid', x: (cell % size) + 0.5, y: Math.floor(cell / size) + 0.5 };

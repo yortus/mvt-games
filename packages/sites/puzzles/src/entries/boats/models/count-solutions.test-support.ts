@@ -4,9 +4,9 @@ import type { BoatPuzzle } from './boat-puzzle';
 
 /**
  * Counts the solutions of `puzzle`'s fleet, numbers and givens, up to
- * `most`, by a plain search that shares nothing with the solver: it places
- * each boat in turn, longest first, at every place it fits, and checks the
- * numbers and the givens once every boat is placed. Boats of the same length
+ * `most`, by a plain search that shares nothing with the solver. It places
+ * each boat in turn, longest first, at every place it fits. Once every boat
+ * is placed, it checks the numbers and the givens. Boats of the same length
  * are placed in order along the harbour, so each layout is counted once.
  */
 export function countSolutions(puzzle: BoatPuzzle, most: number): number {

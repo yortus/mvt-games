@@ -20,19 +20,19 @@ export type BoatsPhase = 'calendar' | 'playing';
  * its date and its level. Each puzzle's progress, and which are solved, are
  * kept between visits.
  *
- * The way in is the one every puzzle on the site has: a card that says how
- * to play, over a puzzle, solved, as a player first opens the game, and a
- * walkthrough of the controls, on a practice puzzle, which stands in for
- * the puzzle open until it ends, and is never kept.
+ * Every puzzle on the site has the same way in. When a player first opens
+ * the game, a card says how to play, over a solved puzzle. A walkthrough of
+ * the controls can follow, on a practice puzzle. The practice puzzle stands
+ * in for the open puzzle until the walkthrough ends, and is never kept.
  */
 export interface GameModel {
     /** What is on screen. It is `playing` while a walkthrough plays, wherever it was started from. */
     readonly phase: BoatsPhase;
     /** The calendar of days to choose from, at each level. */
     readonly calendar: DailyCalendar<PuzzleLevel>;
-    /** The puzzle being played, while one is: the practice puzzle while the walkthrough plays. */
+    /** The puzzle being played, if there is one. While the walkthrough plays, it is the practice puzzle. */
     readonly puzzle: PuzzleModel | undefined;
-    /** The way in: the card that says how to play, and the walkthrough. */
+    /** The way in, which is the card that says how to play, and the walkthrough. */
     readonly intro: IntroModel<PuzzleModel, BoatsTarget>;
     /** The puzzle the card shows, solved. */
     readonly example: BoatPuzzle;
@@ -48,7 +48,7 @@ export interface GameModel {
     readonly puzzlesOpened: number;
     /** Puzzles solved on this visit. */
     readonly puzzlesSolved: number;
-    /** Whether there is a puzzle to start again: one of the calendar's, open, and not the walkthrough's practice puzzle. */
+    /** Whether there is a puzzle to start again. It must be one of the calendar's, open, and not the walkthrough's practice puzzle. */
     readonly canRestartPuzzle: boolean;
 
     /** Opens `day`'s puzzle at the calendar's level, as it was left, if the day has one. */
@@ -157,7 +157,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     if (options.offersIntro) intro.showCardIfNew();
     return model;
 
-    /** A new practice puzzle, the same every time, for the walkthrough. It is never kept. */
+    /** Returns a new practice puzzle for the walkthrough, the same every time. It is never kept. */
     function createPractice(): PuzzleModel {
         return createPuzzleModel({ puzzle: createBoatPuzzle({ seed: PRACTICE_SEED, settings: PRACTICE_SETTINGS }) });
     }

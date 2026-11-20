@@ -25,9 +25,9 @@ export interface BoardGesturesViewModelOptions {
  * Creates the taps and drags on the valley. A tap is reported as the cell
  * it landed on. A drag follows the cells it passes through the middle of,
  * across and down, never diagonally, and each step from a cell to the next
- * is reported as the edge it crosses. Whether a drag draws the river or
- * rubs it out is the stroke's to say. Positions are in cells, across and
- * down from the valley's top left corner.
+ * is reported as the edge it crosses. The stroke view model decides
+ * whether a drag draws the river or rubs it out. Positions are in cells,
+ * across and down from the valley's top left corner.
  */
 export function createBoardGesturesViewModel(options: BoardGesturesViewModelOptions): GridGesturesViewModel {
     const { grid, onTapped, onDraggedOver, onDragFinished } = options;

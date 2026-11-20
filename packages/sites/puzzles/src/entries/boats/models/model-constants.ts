@@ -8,7 +8,7 @@ import { LEVEL_SETTINGS, type LevelSettings } from './levels';
 /** The first day with puzzles. The calendar goes back no further. */
 export const FIRST_DAY = toDayNumber({ year: 2026, month: 1, day: 1 });
 
-/** The level a new player starts on. After that, the level they last chose. */
+/** The level a new player starts on. After that, the game opens at the level they last chose. */
 export const STARTING_LEVEL: PuzzleLevel = 'easy';
 
 // ---------------------------------------------------------------------------

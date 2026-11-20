@@ -39,6 +39,7 @@ canvasTest('the fleet ticked off as boats are finished', SIZE, () => pose('mediu
     }
 }));
 
+// The clear blue rises for 700 ms as the puzzle is solved, so by 800 ms it has finished
 canvasTest('solved, clear', SIZE, () => pose('easy', solve, 800));
 
 /** The puzzle's screen, on today's harbour at `level`, after `play`. */

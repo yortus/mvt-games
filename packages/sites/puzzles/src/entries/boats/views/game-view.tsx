@@ -16,6 +16,7 @@ import { BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, BUTTON_HEIGHT, BUTTON_WIDT
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** What the game's screen shows, and what it plays its sounds on. */
 export interface GameViewBindings {
     /** The game, read once. */
     model: GameModel;
@@ -28,23 +29,22 @@ export interface GameViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The whole screen, on paper: the calendar of days to choose from, or the
- * harbour being solved. Over either goes the way in: the card that says how
- * to play, or the walkthrough's card and its arrow, over the puzzle's
- * screen.
+ * The whole screen, on paper. It shows the calendar of days to choose from,
+ * or the harbour being solved. The way in goes over either one. That's the
+ * card that says how to play, or the walkthrough's card and its arrow over
+ * the puzzle's screen.
  */
 export function GameView(bindings: GameViewBindings): Container {
     const { model, sfx } = bindings;
 
-    /** Where the walkthrough's arrow touches a target, on the puzzle's screen: a point on the harbour, laid out as the board lays it out, or the middle of the Undo button. */
+    /**
+     * Returns where the walkthrough's arrow touches a target on the puzzle's
+     * screen. That's a point on the harbour, laid out as the board lays it
+     * out, or the middle of the Undo button.
+     */
     const findTargetPoint = (target: BoatsTarget): ScreenPoint => {
         if (target.on === 'undo') return { x: UNDO_X + BUTTON_WIDTH / 2, y: BUTTON_Y + BUTTON_HEIGHT / 2 };
-        const { grid, fleet } = model.puzzle!.puzzle;
-        let fleetCells = 0;
-        for (let i = 0; i < fleet.length; i++) fleetCells += fleet[i];
-        const { cellSize, gridX, gridY } = layOutBoard({
-            size: grid.size, fleetCells, fleetBoats: fleet.length, hasFleet: true, width: BOARD_WIDTH, height: BOARD_HEIGHT,
-        });
+        const { cellSize, gridX, gridY } = layOutBoard({ puzzle: model.puzzle!.puzzle, hasFleet: true, width: BOARD_WIDTH, height: BOARD_HEIGHT });
         return { x: BOARD_X + gridX + target.x * cellSize, y: BOARD_Y + gridY + target.y * cellSize };
     };
     return (

@@ -24,11 +24,11 @@ export interface BoardGesturesViewModelOptions {
 
 /**
  * Creates the taps and drags on the harbour. A tap is reported as the cell
- * it landed on. A drag is reported as it goes: the cell it began at, each
- * cell it steps into, across and down, never diagonally, and the moment it
- * ends. What a drag does to its cells is the puzzle's screen's to say.
- * Positions are in cells, across and down from the harbour's top left
- * corner.
+ * it landed on. A drag is reported as it goes. First comes the cell it
+ * began at, then each cell it steps into, and then the moment it ends. A
+ * drag steps across and down, never diagonally. The puzzle's screen
+ * decides what a drag does to its cells. Positions are in cells, across
+ * and down from the harbour's top left corner.
  */
 export function createBoardGesturesViewModel(options: BoardGesturesViewModelOptions): GridGesturesViewModel {
     const { size, onTapped, onDragStarted, onDraggedOver, onDragFinished } = options;
@@ -60,5 +60,5 @@ export function createBoardGesturesViewModel(options: BoardGesturesViewModelOpti
 // Internals
 // ---------------------------------------------------------------------------
 
-/** How near a cell's middle a drag must pass to step into it, in cells, across and down, so a wobbly tap stays a tap. */
+/** How near a cell's middle a drag must pass to step into it, in cells. A wobbly tap stays a tap. */
 const CELL_REACH = 0.4;

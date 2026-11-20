@@ -3,10 +3,9 @@ import type { GameModel } from './game-model';
 import { traceRiver } from './trace-river';
 
 /**
- * Plays some of today's hard puzzle, as a player might: it opens it, draws
- * the first half of the river from the spring, and marks a few meadows
- * beside it. For the thumbnail, and the visual tests, which show the game in
- * play.
+ * Plays some of today's hard puzzle, as a player might, so the game shows a
+ * puzzle in play. It opens the puzzle, draws the first half of the river
+ * from the spring, and marks the dry cells beside it as meadow.
  */
 export function playShowcase(model: GameModel): void {
     model.calendar.chooseLevel('hard');
@@ -24,7 +23,7 @@ export function playShowcase(model: GameModel): void {
         for (let side = 0; side < 4; side++) {
             const edge = grid.cellEdges[river[i] * 4 + side];
             if (edge < 0) continue;
-            const other = grid.edgeCellA[edge] === river[i] ? grid.edgeCellB[edge] : grid.edgeCellA[edge];
+            const other = grid.cellAcross(edge, river[i]);
             if (solutionCells[other] === DRY) puzzle.setMeadow(other, true);
         }
     }

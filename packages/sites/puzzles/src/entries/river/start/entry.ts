@@ -8,9 +8,8 @@ import thumbnail from './thumbnail.webp';
 /** River, as the puzzles site lists it. Its code loads on launch, from `load.ts`, and its long text after the page's first paint, from `details.ts`. */
 export const entry: ArcadeEntry = {
     id: 'river',
-    // Marked as a beta until it has been playtested
-    name: 'River BETA',
-    summary: 'A new valley every day: draw a winding river from the spring to the sea, from the numbers.',
+    name: 'River',
+    summary: 'Draw a new river every day, at four levels. Wind it from the spring to the sea, and let the numbers show you the way.',
     tags: ['puzzle'],
     screenWidth: 540,
     screenHeight: 768,

@@ -45,13 +45,13 @@ export interface AudioViewBindings {
 
 /**
  * Plays the game's sounds, the sounds of a valley in spring, on the Audio90.
- * River drawn bubbles, a flower planted is a bird's chirp, and river or a
- * flower taken off rustles like grass. A mark that breaks a rule plunks low,
- * twice, like pebbles into deep water, in place of its own sound. Undo is a
- * bubble going back down. A solved puzzle ripples with bells, like a stream
- * running to the sea, and a bird sings. When the puzzle shown changes,
- * its counts replace the last puzzle's, and on that tick the view stays
- * silent for them.
+ * Drawing the river bubbles, planting a flower chirps like a bird, and
+ * taking off river or a flower rustles like grass. A mark that breaks a rule
+ * plunks low, twice, like pebbles into deep water, in place of its own
+ * sound. Undo is a bubble going back down. A solved puzzle ripples with
+ * bells, like a stream running to the sea, and a bird sings. When the puzzle
+ * shown changes, its counts replace the last puzzle's, and on that tick the
+ * view stays silent for them.
  */
 export function AudioView(bindings: AudioViewBindings): Container {
     const { sfx } = bindings;

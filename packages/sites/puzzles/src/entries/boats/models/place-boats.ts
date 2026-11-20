@@ -37,11 +37,12 @@ export function placeBoats(options: PlaceBoatsOptions): Uint8Array {
         let isPlaced = true;
         for (let boat = 0; boat < fleet.length && isPlaced; boat++) {
             const length = fleet[boat];
-            // Every place it fits, as its first cell, doubled and plus one for a boat going down
+            // List every place it fits. Each is stored as its first cell doubled, plus one for a boat going down
             let count = 0;
+            const directions = length === 1 ? 1 : 2;
             for (let start = 0; start < cellCount; start++) {
-                for (let isDown = 0; isDown < (length === 1 ? 1 : 2); isDown++) {
-                    if (fits(start, length, isDown === 1)) starts[count++] = start * 2 + isDown;
+                for (let direction = 0; direction < directions; direction++) {
+                    if (fits(start, length, direction === 1)) starts[count++] = start * 2 + direction;
                 }
             }
             if (count === 0) {
@@ -76,5 +77,5 @@ export function placeBoats(options: PlaceBoatsOptions): Uint8Array {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** How many times to try placing the whole fleet before giving up. No level's fleet comes near it. */
+/** How many times to try placing the whole fleet before giving up. Every level's fleet needs far fewer. */
 const MOST_ATTEMPTS = 1000;

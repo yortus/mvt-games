@@ -2,29 +2,33 @@ import { BOAT, UNKNOWN, WATER } from './cell-states';
 import {
     GIVEN_DINGHY, GIVEN_END_LEFT, GIVEN_END_UP, GIVEN_MIDDLE, GIVEN_WATER, isGivenBoat,
 } from './given-pieces';
-import type { HarbourGrid } from './harbour-grid';
+import {
+    DIAGONALS, findCellAfterRun, findCellBeforeRun, type HarbourGrid,
+} from './harbour-grid';
 
 // ---------------------------------------------------------------------------
 // Interface
 // ---------------------------------------------------------------------------
 
 /**
- * A way a person works out cells, by reading the harbour as it stands, with
- * nothing supposed and nothing followed. From easiest to hardest:
+ * A way a person works out cells by reading the harbour as it stands,
+ * without guessing, or following where a guess leads. From easiest to
+ * hardest:
  *
  * - `rules`: the four cells diagonally beside a boat are water, since boats
- *   never touch and never bend. A printed piece says which of its sides go
- *   on. A row or column with all its boat cells found is water elsewhere,
- *   and one with only as many open cells as boat cells still needed is boat
- *   in all of them.
+ *   never touch and never bend. A printed piece says which of its sides
+ *   its boat goes on from. A row or column with all its boat cells found is
+ *   water everywhere else. A line with only as many open cells as the boat
+ *   cells it still needs is boat in all of them.
  * - `fleet`: a boat with water at both ends is finished. Once every boat of
- *   a length is found, a boat that long but not finished must be longer, so
- *   if it can only grow one way, it grows there. And a boat as long as the
+ *   a length is found, an unfinished boat of that length must be longer.
+ *   If it can grow only one way, it grows there. A boat as long as the
  *   longest still to find can't grow, so its open ends are water.
  * - `places`: list every place each boat still to find could go, from the
- *   water and the numbers so far. A cell that every place of the last boat
- *   of a length covers is boat. If there are only as many places as boats,
- *   each place holds one. A cell that every boat still to find misses is water.
+ *   water and the numbers so far. A place is a straight run of cells that
+ *   could hold the boat. A cell that every place of the last boat of a
+ *   length covers is boat. If there are only as many places as boats, each
+ *   place holds one. A cell that every boat still to find misses is water.
  */
 export type BoatTechnique = 'rules' | 'fleet' | 'places';
 
@@ -42,20 +46,20 @@ export interface SolverProgress {
 }
 
 /**
- * Works out a harbour of boats, given its fleet and its numbers, as a
- * person would, and never supposes. Wherever the rules get stuck, it
- * requires at least two cells that the other techniques can find from the
- * harbour as it stands, as Stars' solver does, so a player never hunts the
- * whole harbour for a single cell.
+ * Works out a harbour of boats from its fleet and its numbers, as a person
+ * would, without guessing. When the rules alone get stuck, the solver goes
+ * on only if the other techniques, between them, can find at least two
+ * cells. That way a player never has to search the whole harbour for a
+ * single cell.
  */
 export interface BoatSolver {
     /**
-     * Works out as many cells as the techniques up to `most` can, from
-     * `givens`: what each cell printed on the harbour shows, as a number
-     * from `given-pieces`, and `NO_GIVEN` for the rest. Each time, it uses
-     * the easiest technique that finds something.
+     * Works out as many cells as the techniques up to `hardest` can, from
+     * `givens`. `givens` holds what each cell printed on the harbour shows,
+     * as a number from `given-pieces`, and `NO_GIVEN` for the rest. Each
+     * time, it uses the easiest technique that finds something.
      */
-    solve: (givens: Readonly<Uint8Array>, most: BoatTechnique) => SolverProgress;
+    solve: (givens: Readonly<Uint8Array>, hardest: BoatTechnique) => SolverProgress;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +91,7 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
     const fleetCounts = new Int32Array(longest + 1);
     for (let i = 0; i < fleet.length; i++) fleetCounts[fleet[i]]++;
 
-    // Scratch space: the boats found so far, and the places a boat could go
+    // Scratch space for the boats found so far, and the places a boat could go
     const boatOf = new Int32Array(cellCount);
     const boatCells = new Int32Array(cellCount);
     const boatStarts: number[] = [];
@@ -99,31 +103,33 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
     const placeCells = new Int32Array(cellCount * 2 * longest);
     const coverCounts = new Int32Array(cellCount);
     const isCovered = new Uint8Array(cellCount);
-    // The board as a technique found it. A technique reads only this, and writes what it finds to the board itself, so a cell it finds early in its pass never changes what it finds later
+    // A copy of the cells as they were when a technique started. The technique
+    // reads only this copy, and writes what it finds to the cells. That way, a
+    // cell it finds early in its pass never changes what it finds later.
     const board = new Uint8Array(cellCount);
-    // Where the rules are stuck: the board after each technique, by its place in the list, and which cells any of them found
+    // Where the rules are stuck, `tried` holds the cells after each technique,
+    // by its place in `BOAT_TECHNIQUES`, and `isFound` marks the cells that
+    // any of them found.
     const tried = BOAT_TECHNIQUES.map(() => new Uint8Array(cellCount));
     const isFound = new Uint8Array(cellCount);
-    let givens: Readonly<Uint8Array> = new Uint8Array(cellCount);
 
     return {
-        solve(given, most) {
-            givens = given;
+        solve(givens, hardest) {
             const cells = new Uint8Array(cellCount);
             for (let cell = 0; cell < cellCount; cell++) {
-                if (given[cell] === GIVEN_WATER) cells[cell] = WATER;
-                else if (isGivenBoat(given[cell])) cells[cell] = BOAT;
+                if (givens[cell] === GIVEN_WATER) cells[cell] = WATER;
+                else if (isGivenBoat(givens[cell])) cells[cell] = BOAT;
             }
-            const mostLevel = BOAT_TECHNIQUES.indexOf(most);
-            let hardest = 0;
+            const hardestLevel = BOAT_TECHNIQUES.indexOf(hardest);
+            let neededLevel = 0;
             for (;;) {
-                applyRules(cells);
+                applyRules(cells, givens);
                 if (!cells.includes(UNKNOWN)) break;
-                // Each technique from the same board, easiest first, until enough cells are found between them
+                // Try each technique on the same cells, easiest first, until they find enough cells between them
                 isFound.fill(0);
                 let foundCount = 0;
                 let easiest = 0;
-                for (let level = 1; level <= mostLevel && foundCount < FEWEST_FOUND; level++) {
+                for (let level = 1; level <= hardestLevel && foundCount < FEWEST_FOUND; level++) {
                     tried[level].set(cells);
                     if (!applyTechnique(BOAT_TECHNIQUES[level], tried[level])) continue;
                     if (easiest === 0) easiest = level;
@@ -135,9 +141,9 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
                 }
                 if (foundCount < FEWEST_FOUND) break;
                 cells.set(tried[easiest]);
-                hardest = Math.max(hardest, easiest);
+                neededLevel = Math.max(neededLevel, easiest);
             }
-            return { cells, isFinished: !cells.includes(UNKNOWN), hardest: BOAT_TECHNIQUES[hardest] };
+            return { cells, isFinished: !cells.includes(UNKNOWN), hardest: BOAT_TECHNIQUES[neededLevel] };
         },
     };
 
@@ -151,8 +157,8 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
         }
     }
 
-    /** Applies the rules until nothing changes. */
-    function applyRules(cells: Uint8Array): void {
+    /** Applies the rules, with the printed pieces in `givens`, until the cells stop changing. */
+    function applyRules(cells: Uint8Array, givens: Readonly<Uint8Array>): void {
         let isChanged = true;
         while (isChanged) {
             isChanged = false;
@@ -161,7 +167,7 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
                 for (let i = 0; i < DIAGONALS.length; i++) {
                     if (setCell(cells, neighbours[cell * 8 + DIAGONALS[i]], WATER)) isChanged = true;
                 }
-                if (applyPiece(cells, cell)) isChanged = true;
+                if (applyPiece(cells, givens[cell], cell)) isChanged = true;
             }
             for (let line = 0; line < size * 2; line++) {
                 const isColumn = line >= size;
@@ -170,9 +176,9 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
                 let boats = 0;
                 let open = 0;
                 for (let i = 0; i < size; i++) {
-                    const state = cells[isColumn ? i * size + index : index * size + i];
-                    if (state === BOAT) boats++;
-                    else if (state === UNKNOWN) open++;
+                    const content = cells[isColumn ? i * size + index : index * size + i];
+                    if (content === BOAT) boats++;
+                    else if (content === UNKNOWN) open++;
                 }
                 if (open === 0 || (boats < count && boats + open > count)) continue;
                 const fill = boats >= count ? WATER : BOAT;
@@ -182,24 +188,25 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
         }
     }
 
-    /** Sets the sides of a printed piece at `cell` that its shape says. Returns whether it changed anything. */
-    function applyPiece(cells: Uint8Array, cell: number): boolean {
-        const given = givens[cell];
+    /** Sets the sides of `cell` that its printed piece, `given`, says. Returns whether it changed anything. */
+    function applyPiece(cells: Uint8Array, given: number, cell: number): boolean {
         let isChanged = false;
         if (given === GIVEN_DINGHY || (given >= GIVEN_END_UP && given <= GIVEN_END_LEFT)) {
-            // A dinghy has water all round it, and an end has water on every side but the one its boat goes on from
+            // A dinghy has water all round it. An end has water on every side but the one its boat goes on from
             const onward = given === GIVEN_DINGHY ? -1 : given - GIVEN_END_UP;
             for (let side = 0; side < 4; side++) {
                 if (setCell(cells, sides[cell * 4 + side], side === onward ? BOAT : WATER)) isChanged = true;
             }
         }
         else if (given === GIVEN_MIDDLE) {
-            // A middle goes on both ways along one line. Water or the edge on one side means the other line, and a boat on one side means its own
+            // A middle goes on both ways along one line. Water or the edge on
+            // one side means the boat runs along the other line. A boat on one
+            // side means it runs along that side's line.
             for (let side = 0; side < 4; side++) {
                 const next = sides[cell * 4 + side];
-                const state = next < 0 ? WATER : cells[next];
-                if (state === UNKNOWN) continue;
-                const along = state === BOAT ? side % 2 : (side + 1) % 2;
+                const content = next < 0 ? WATER : cells[next];
+                if (content === UNKNOWN) continue;
+                const along = content === BOAT ? side % 2 : (side + 1) % 2;
                 for (let other = 0; other < 4; other++) {
                     if (setCell(cells, sides[cell * 4 + other], other % 2 === along ? BOAT : WATER)) isChanged = true;
                 }
@@ -219,18 +226,18 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
             if (isBoatFinished[boat]) continue;
             const length = boatLengths[boat];
             if (length >= longestNeeded) {
-                // It can't grow, so every open way on is water
+                // It can't grow, so every open cell it could grow into is water
                 for (let i = 0; i < 4; i++) {
-                    const next = findWayOn(board, boat, i);
+                    const next = findCellToGrowInto(board, boat, i);
                     if (next >= 0 && setCell(cells, next, WATER)) isChanged = true;
                 }
             }
             else if (found[length] >= fleetCounts[length]) {
-                // Every boat this long is found, so it must grow, and if it can only grow one way, it grows there
+                // Every boat this long is found, so this one must grow. If it can grow only one way, it grows there
                 let only = -1;
                 let open = 0;
                 for (let i = 0; i < 4; i++) {
-                    const next = findWayOn(board, boat, i);
+                    const next = findCellToGrowInto(board, boat, i);
                     if (next < 0) continue;
                     only = next;
                     open++;
@@ -260,7 +267,7 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
                 for (let i = 0; i < length; i++) isCovered[placeCells[place * length + i]] = 1;
             }
             if (left === 1) {
-                // The last boat of this length: a cell every place covers is boat
+                // This is the last boat of this length, so a cell that every place covers is boat
                 coverCounts.fill(0);
                 for (let place = 0; place < placeCount; place++) {
                     for (let i = 0; i < length; i++) coverCounts[placeCells[place * length + i]]++;
@@ -270,7 +277,7 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
                 }
             }
             else if (placeCount === left && arePlacesApart(placeCount, length)) {
-                // Only as many places as boats, so each holds one
+                // There are only as many places as boats, so each holds one
                 for (let i = 0; i < placeCount * length; i++) {
                     if (setCell(cells, placeCells[i], BOAT)) isChanged = true;
                 }
@@ -288,10 +295,10 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
 
     /**
      * Lists the places a boat `length` long could go, into `placeCells`,
-     * `length` cells to a place. A place is a straight run of cells, none of
-     * them water, with no boat touching it from outside, that fits the
-     * numbers of its rows and columns. A finished boat isn't a place, since
-     * it is found already. Returns how many places there are.
+     * `length` cells to a place. A place is a straight run of open or boat
+     * cells that fits the numbers of its rows and columns, and that boats
+     * outside it never touch. A finished boat isn't a place, since it is
+     * found already. Returns how many places there are.
      */
     function listPlaces(cells: Uint8Array, length: number): number {
         let count = 0;
@@ -321,7 +328,7 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
             if (cells[cell] === WATER) return false;
             if (cells[cell] === UNKNOWN) open++;
         }
-        // Nothing touching it from outside: the ring of cells round it holds no boat
+        // The ring of cells round it must be free of boats, so that boats outside never touch it
         const lastRow = isDown ? row + length : row + 1;
         const lastCol = isDown ? col + 1 : col + length;
         for (let r = row - 1; r <= lastRow; r++) {
@@ -332,8 +339,8 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
             }
         }
         // A boat this long is there already. It is a place only if it isn't finished, so it could still grow
-        if (open === 0) return isGrowable(cells, start, step, length, isDown);
-        // The numbers: its own line holds all its open cells, and each line across holds one
+        if (open === 0) return isGrowable(cells, start, step, length);
+        // Its own line must have room for all its open cells, and each line across it for one
         if (isDown) {
             if (colBoats[col] + open > colCounts[col]) return false;
             for (let i = 0; i < length; i++) {
@@ -349,8 +356,12 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
         return true;
     }
 
-    /** Whether a boat `length` long from `start`, `step` apart, has an open cell on any way on: past either end, or across any side for a boat of one cell. */
-    function isGrowable(cells: Uint8Array, start: number, step: number, length: number, isDown: boolean): boolean {
+    /**
+     * Whether a boat `length` long from `start`, `step` apart, has an open
+     * cell that it could grow into. A longer boat could grow past either
+     * end, and a boat of one cell across any side.
+     */
+    function isGrowable(cells: Uint8Array, start: number, step: number, length: number): boolean {
         if (length === 1) {
             for (let side = 0; side < 4; side++) {
                 const next = sides[start * 4 + side];
@@ -358,8 +369,9 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
             }
             return false;
         }
-        const before = sides[start * 4 + (isDown ? 0 : 3)];
-        const after = sides[(start + (length - 1) * step) * 4 + (isDown ? 2 : 1)];
+        const last = start + (length - 1) * step;
+        const before = findCellBeforeRun(grid, start, last);
+        const after = findCellAfterRun(grid, start, last);
         return (before >= 0 && cells[before] === UNKNOWN) || (after >= 0 && cells[after] === UNKNOWN);
     }
 
@@ -380,9 +392,10 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
     }
 
     /**
-     * Finds the boats as they stand: each run of boat cells joined side to
-     * side, and whether it is finished, with water or the edge on every way
-     * on. Counts the finished boats of each length in `found`.
+     * Finds the boats as they stand. A boat is a run of boat cells joined
+     * side to side. It is finished once every cell it could grow into is
+     * water or past the edge. Counts the finished boats of each length in
+     * `found`.
      */
     function findBoats(cells: Uint8Array): void {
         boatOf.fill(-1);
@@ -410,7 +423,7 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
             boatLengths.push(length);
             let isFinished = true;
             for (let i = 0; i < 4 && isFinished; i++) {
-                if (findWayOn(cells, boat, i) >= 0) isFinished = false;
+                if (findCellToGrowInto(cells, boat, i) >= 0) isFinished = false;
             }
             isBoatFinished.push(isFinished);
             if (isFinished && length <= longest) found[length]++;
@@ -418,31 +431,31 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
     }
 
     /**
-     * The open cell a boat could grow into, the `way`th of up to four, or -1.
-     * A boat of one cell could grow across any side. A longer boat lies
-     * along a line, so it could grow only past its two ends: ways 0 and 1,
-     * past its first and last cells.
+     * Returns the `index`th of up to four cells that `boat` could grow into,
+     * if that cell is open, or -1 if not. A boat of one cell could grow
+     * across any of its sides, `UP` to `LEFT`. A longer boat lies along a
+     * line, so it could grow only past its ends. Index 0 is past its first
+     * cell, and 1 is past its last.
      */
-    function findWayOn(cells: Uint8Array, boat: number, way: number): number {
+    function findCellToGrowInto(cells: Uint8Array, boat: number, index: number): number {
         const start = boatStarts[boat];
         const length = boatLengths[boat];
         let next = -1;
-        if (length === 1) next = sides[boatCells[start] * 4 + way];
-        else if (way < 2) {
-            // The boat's cells, lowest and highest, along its line
-            let low = boatCells[start];
-            let high = low;
+        if (length === 1) next = sides[boatCells[start] * 4 + index];
+        else if (index < 2) {
+            // Find the boat's lowest and highest cells along its line
+            let first = boatCells[start];
+            let last = first;
             for (let i = 1; i < length; i++) {
-                low = Math.min(low, boatCells[start + i]);
-                high = Math.max(high, boatCells[start + i]);
+                first = Math.min(first, boatCells[start + i]);
+                last = Math.max(last, boatCells[start + i]);
             }
-            const isDown = high - low >= size;
-            next = way === 0 ? sides[low * 4 + (isDown ? 0 : 3)] : sides[high * 4 + (isDown ? 2 : 1)];
+            next = index === 0 ? findCellBeforeRun(grid, first, last) : findCellAfterRun(grid, first, last);
         }
         return next >= 0 && cells[next] === UNKNOWN ? next : -1;
     }
 
-    /** The longest boat length the fleet still needs a boat of, or 0 if every boat is found. */
+    /** Returns the longest boat length that the fleet still needs a boat of, or 0 once every boat is found. */
     function findLongestNeeded(): number {
         for (let length = longest; length >= 1; length--) {
             if (found[length] < fleetCounts[length]) return length;
@@ -469,12 +482,9 @@ export function createBoatSolver(options: BoatSolverOptions): BoatSolver {
 /** How many cells, at least, the techniques must find between them wherever the rules are stuck. */
 const FEWEST_FOUND = 2;
 
-/** Where a cell's diagonal neighbours are among its eight. */
-const DIAGONALS: readonly number[] = [0, 2, 5, 7];
-
-/** Sets `cell` to `state`, if it is on the grid and open. Returns whether it did. */
-function setCell(cells: Uint8Array, cell: number, state: number): boolean {
+/** Sets `cell` to `content`, if it is on the grid and open. Returns whether it did. */
+function setCell(cells: Uint8Array, cell: number, content: number): boolean {
     if (cell < 0 || cells[cell] !== UNKNOWN) return false;
-    cells[cell] = state;
+    cells[cell] = content;
     return true;
 }

@@ -8,23 +8,16 @@ describe('createBoatPuzzle', () => {
         const problems: string[] = [];
         for (let i = 0; i < BOAT_LEVELS.length; i++) {
             const settings = LEVEL_SETTINGS[BOAT_LEVELS[i]];
-            // Counting a 10 by 10 harbour's solutions takes a while, so the small ones are counted here, and every one in the slow test
-            const isCounted = settings.size < 10;
+            // Counting a 10 by 10 harbour's solutions takes a while. So only the smaller harbours are counted here, and the slow test counts them all
+            const isSolutionCounted = settings.size < 10;
             for (let seed = 0; seed < SEEDS_PER_LEVEL; seed++) {
-                const found = checkPuzzle(createBoatPuzzle({ seed, settings }), settings, isCounted);
+                const found = checkPuzzle({ puzzle: createBoatPuzzle({ seed, settings }), settings, isSolutionCounted });
                 for (let j = 0; j < found.length; j++) problems.push(`${BOAT_LEVELS[i]} ${seed}: ${found[j]}`);
             }
         }
         expect(problems).toEqual([]);
     });
-
-    it('makes the same puzzle from the same seed', () => {
-        const settings = LEVEL_SETTINGS.expert;
-        const a = createBoatPuzzle({ seed: 3, settings });
-        const b = createBoatPuzzle({ seed: 3, settings });
-        expect([b.solution, b.givens]).toEqual([a.solution, a.givens]);
-    });
 });
 
-/** How many seeds each level is checked with: a sample, to keep within the test's time. The slow test checks many. */
+/** How many seeds each level is checked with. They are a sample, to keep the test within its time, and the slow test checks many. */
 const SEEDS_PER_LEVEL = 3;

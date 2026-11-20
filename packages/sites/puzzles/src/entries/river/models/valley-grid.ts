@@ -3,13 +3,13 @@
 // ---------------------------------------------------------------------------
 
 /**
- * The shape of a valley: its cells, and the edges between them that the
- * river can cross. Cells are numbered row by row from the top left. The
+ * The shape of a valley, which is its cells and the edges between them that
+ * the river can cross. Cells are numbered row by row from the top left. The
  * edges between cells side by side come first, row by row, then the edges
- * between cells one above the other. The valley's border has no edges here,
- * since the river crosses it only at its two ends, which the puzzle says.
- * Every array is made once, so a solver or a view can read them as often as
- * it likes.
+ * between cells one above the other. The border has no edges in this list.
+ * The river crosses it only at the spring and the sea, and the puzzle
+ * stores those cells itself. Every array is made once, so a solver or a
+ * view can read them as often as it likes.
  */
 export interface ValleyGrid {
     /** How many cells along each side. */
@@ -18,8 +18,9 @@ export interface ValleyGrid {
     readonly cellCount: number;
     /** How many edges it has between its cells. */
     readonly edgeCount: number;
-    /** The cells either side of each edge: the one to the left or above, and the one to the right or below. */
+    /** The cell on one side of each edge: the one to the left, or the one above. */
     readonly edgeCellA: Readonly<Int32Array>;
+    /** The cell on the other side of each edge: the one to the right, or the one below. */
     readonly edgeCellB: Readonly<Int32Array>;
     /** Each cell's four edges, at `cell * 4`: up, right, down and left, or -1 at the border. */
     readonly cellEdges: Readonly<Int32Array>;
@@ -27,7 +28,24 @@ export interface ValleyGrid {
     readonly isEdgeAcross: (edge: number) => boolean;
     /** The edge between two cells next to each other, or -1 if they aren't. */
     readonly edgeBetween: (cell: number, other: number) => number;
+    /** The cell on the far side of `edge` from `cell`, which is one of the edge's two cells. */
+    readonly cellAcross: (edge: number, cell: number) => number;
 }
+
+// A cell's sides, in the order of its edges in `cellEdges`. Opposite sides
+// are two apart.
+
+/** The side of a cell towards the top of the valley. */
+export const UP = 0;
+
+/** The side of a cell towards the right of the valley. */
+export const RIGHT = 1;
+
+/** The side of a cell towards the bottom of the valley. */
+export const DOWN = 2;
+
+/** The side of a cell towards the left of the valley. */
+export const LEFT = 3;
 
 // ---------------------------------------------------------------------------
 // Options
@@ -87,11 +105,6 @@ export function createValleyGrid(options: ValleyGridOptions): ValleyGrid {
             }
             return -1;
         },
+        cellAcross: (edge, cell) => (edgeCellA[edge] === cell ? edgeCellB[edge] : edgeCellA[edge]),
     };
 }
-
-/** A cell's sides, in the order of its edges in `cellEdges`. Opposite sides are two apart. */
-export const UP = 0;
-export const RIGHT = 1;
-export const DOWN = 2;
-export const LEFT = 3;

@@ -8,9 +8,8 @@ import thumbnail from './thumbnail.webp';
 /** Boats, as the puzzles site lists it. Its code loads on launch, from `load.ts`, and its long text after the page's first paint, from `details.ts`. */
 export const entry: ArcadeEntry = {
     id: 'boats',
-    // Marked as a beta until it has been playtested
-    name: 'Boats BETA',
-    summary: 'A new harbour every day: moor the fleet from the numbers, and keep the boats from touching.',
+    name: 'Boats',
+    summary: 'Moor a fleet of boats from the numbers, and keep them from touching. There\'s a new harbour every day.',
     tags: ['puzzle'],
     screenWidth: 540,
     screenHeight: 768,

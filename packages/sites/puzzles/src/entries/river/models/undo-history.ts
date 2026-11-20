@@ -4,15 +4,15 @@
 
 /**
  * The states a puzzle can go back to, newest last, each as it was before an
- * action. A valley is small, so a whole copy of its marks for each
- * action costs little, and undo is then only putting a copy back.
+ * action. A valley is small, so a whole copy of its marks for each action
+ * takes little memory. Undo then only has to put a copy back.
  */
 export interface UndoHistory<T> {
     /** How many actions can be taken back. */
     readonly count: number;
     /** Keeps `before`, the state as it is before an action. */
     keep: (before: T) => void;
-    /** Returns the state before the last action, and forgets it, or undefined if there is nothing to take back. */
+    /** Returns the state before the last action, and forgets it, or returns undefined if the history is empty. */
     takeBack: () => T | undefined;
 }
 
@@ -22,7 +22,7 @@ export interface UndoHistory<T> {
 
 /** What an undo history is created with. */
 export interface UndoHistoryOptions {
-    /** The most actions kept. The oldest goes as another comes. */
+    /** The most states kept. Keeping one more than this drops the oldest. */
     readonly mostUndos: number;
 }
 

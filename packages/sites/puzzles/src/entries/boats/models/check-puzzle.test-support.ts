@@ -5,15 +5,30 @@ import type { LevelSettings } from './levels';
 import { createBoatSolver } from './boat-solver';
 import type { BoatPuzzle } from './boat-puzzle';
 
+/** What `checkPuzzle` checks. */
+export interface CheckPuzzleOptions {
+    /** The puzzle to check. */
+    readonly puzzle: BoatPuzzle;
+    /** The level's settings that the puzzle was made at. */
+    readonly settings: LevelSettings;
+    /** Whether to count the puzzle's solutions. Counting a big harbour's solutions takes a while. */
+    readonly isSolutionCounted: boolean;
+}
+
 /**
- * Returns what is wrong with `puzzle`, made at `settings`, or an empty list:
- * its solution holds the fleet with no two boats touching, its numbers and
- * givens match its solution, it has one solution (counted by a search that
- * shares nothing with the maker), if `isCounted`, the level's techniques
- * finish it from its givens, it needs the level's hardest technique if the
- * level asks, and every given is needed.
+ * Returns what is wrong with a puzzle, or an empty list. It checks each of
+ * these:
+ *
+ * - The solution holds the fleet, with no two boats touching.
+ * - The numbers and the givens match the solution.
+ * - The puzzle has one solution, if `isSolutionCounted`. A search that
+ *   shares nothing with the solver counts the solutions.
+ * - The level's techniques finish the puzzle from its givens.
+ * - The puzzle needs the level's hardest technique, if the level asks.
+ * - Every given is needed.
  */
-export function checkPuzzle(puzzle: BoatPuzzle, settings: LevelSettings, isCounted: boolean): string[] {
+export function checkPuzzle(options: CheckPuzzleOptions): string[] {
+    const { puzzle, settings, isSolutionCounted } = options;
     const { grid, fleet, rowCounts, colCounts, givens, solution } = puzzle;
     const { size, cellCount } = grid;
     const problems: string[] = [];
@@ -46,7 +61,7 @@ export function checkPuzzle(puzzle: BoatPuzzle, settings: LevelSettings, isCount
     for (let cell = 0; cell < cellCount; cell++) {
         if (givens[cell] !== NO_GIVEN && givens[cell] !== findGivenPiece(grid, solution, cell)) problems.push(`given at ${cell} isn't the solution's`);
     }
-    if (isCounted && countSolutions(puzzle, 2) !== 1) problems.push('not one solution');
+    if (isSolutionCounted && countSolutions(puzzle, 2) !== 1) problems.push('not one solution');
 
     const solver = createBoatSolver({ grid, fleet, rowCounts, colCounts });
     const solved = solver.solve(givens, settings.hardest);

@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**105** (085 and 096 are taken, by work in worktrees).
+**106** (085 and 096 are taken, by work in worktrees).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -186,6 +186,7 @@ deleted.
 | 090 | [The Book: Follow-Ons](tasks/backlog/090-book-follow-ons.md) | low | 2026-11-01 |
 | 093 | [Enforce the Tick Rules](tasks/backlog/093-enforce-the-tick-rules.md) | low | 2026-11-07 |
 | 097 | [`@mvtjs/three`'s Pointer Picker: a Cancel, and One Pointer](tasks/backlog/097-three-pointer-picker-cancel-and-pointer-id.md) | low | 2026-11-13 |
+| 105 | [The Puzzles' Game Model, Undo and Seeds, in Shared](tasks/backlog/105-puzzle-models-in-shared.md) | low | 2026-11-20 |
 
 ## Archive
 

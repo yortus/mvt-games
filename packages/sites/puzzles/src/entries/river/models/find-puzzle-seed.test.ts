@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { toDayNumber } from '../../../shared';
+import { PUZZLE_LEVELS, toDayNumber } from '../../../shared';
 import { findPuzzleSeed } from './find-puzzle-seed';
-import { LEVEL_SETTINGS, RIVER_LEVELS } from './levels';
+import { LEVEL_SETTINGS } from './levels';
 import { FIRST_DAY } from './model-constants';
 import { describePuzzle } from './puzzle-save';
 import { createRiverPuzzle } from './river-puzzle';
@@ -15,7 +15,7 @@ describe('findPuzzleSeed', () => {
         const days = { 'the first day': FIRST_DAY, '30 October 2026': toDayNumber({ year: 2026, month: 10, day: 30 }) };
         const puzzles: Record<string, string> = {};
         for (const [name, day] of Object.entries(days)) {
-            for (const level of RIVER_LEVELS) {
+            for (const level of PUZZLE_LEVELS) {
                 puzzles[`${name}, ${level}`] = describePuzzle(createRiverPuzzle({ seed: findPuzzleSeed(day, level), settings: LEVEL_SETTINGS[level] }));
             }
         }

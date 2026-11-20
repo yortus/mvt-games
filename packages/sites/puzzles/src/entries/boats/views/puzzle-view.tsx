@@ -15,6 +15,7 @@ import {
 // Bindings
 // ---------------------------------------------------------------------------
 
+/** The game whose open puzzle the screen shows. */
 export interface PuzzleViewBindings {
     /** The game, which has a puzzle open whenever this view shows. */
     model: GameModel;
@@ -131,5 +132,5 @@ const NEXT_MARKS: Readonly<Record<CellMark, CellMark>> = { none: 'water', water:
 /** The line of help, for what is going on. */
 function writeHint(isSolved: boolean): string {
     if (isSolved) return 'All moored! It\'s ticked off on the calendar.';
-    return 'Tap for water, again for a boat. Drag to mark a row of cells.';
+    return 'Tap for water, again for a boat. Drag to mark a line of cells.';
 }

@@ -7,7 +7,7 @@ import { MARGIN, PAGE_WIDTH } from '../../../shared';
 // The screen
 // ---------------------------------------------------------------------------
 
-/** The screen's size in pixels, every puzzle's: tall, to suit a phone held upright. The way in is laid out on it. */
+/** The screen's size in pixels, the same for every puzzle. It's tall, to suit a phone held upright. The way in is laid out on it. */
 export { SCREEN_HEIGHT, SCREEN_WIDTH } from '../../../shared';
 
 // ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ export const BAR_BUTTON_HEIGHT = 44;
 /** The top of the bar along the top, which holds the way back and the puzzle's date and level. */
 export const BAR_Y = 18;
 
-/** The left of the space the harbour, its numbers and its fleet are fitted into, and centred in. */
+/** The left of the space that the harbour, its numbers and its fleet are centred in. */
 export const BOARD_X = MARGIN;
 
 /** The top of the space the harbour is fitted into. */
@@ -63,8 +63,10 @@ export const HINT_Y = BUTTON_Y + BUTTON_HEIGHT + 22;
 /** The largest a cell is drawn, in pixels, however few cells there are. */
 export const MOST_CELL_SIZE = 64;
 
-/** The pale aqua of shallow water not yet known, and the clear blue of a cell the player has marked as water. */
+/** The pale aqua of shallow water not yet known. */
 export const SHALLOWS_COLOR = 0xc4ecf7;
+
+/** The clear blue of a cell the player has marked as water. */
 export const WATER_COLOR = 0x5cbde6;
 
 /** The faint lines between the cells, lighter than the water, like the edges of ripples. */
@@ -73,22 +75,25 @@ export const RIPPLE_LINE_COLOR = 0x9fdcf1;
 /** The white of the waves the player marks water with, and of the glints that twinkle on the water. */
 export const WAVE_COLOR = 0xffffff;
 
-/** The deep navy that what the puzzle prints is drawn in: a given wave, and a given boat's hull. */
+/** The deep navy of the givens. Given waves and the hulls of given boats are drawn in it. */
 export const NAVY_COLOR = 0x203a5c;
 
 /** The shadow a boat casts on the water. */
 export const SHADOW_COLOR = 0x174a73;
 
 /**
- * Each boat's hull colour, by its length, from one cell to five: a coral
- * dinghy, a sunflower skiff, a mint yacht, a lilac ferry and a tangerine
- * barge. A boat's length shows in its size too, so the colour is never the
+ * Each boat's hull colour, by its length, from one cell to four. There's a
+ * coral dinghy, a sunflower skiff, a mint yacht and a lilac ferry. Every
+ * fleet's longest boat is four cells, and a longer run of boat cells shows
+ * in red. A boat's length shows in its size too, so the colour is never the
  * only way to tell boats apart.
  */
-export const HULL_COLORS: readonly number[] = [0xff7a6b, 0xffc53d, 0x34c49c, 0xa27ce6, 0xff9a3c];
+export const HULL_COLORS: readonly number[] = [0xff7a6b, 0xffc53d, 0x34c49c, 0xa27ce6];
 
-/** The cabins on the hulls, and their little windows. */
+/** The white of the cabins on the hulls. */
 export const CABIN_COLOR = 0xffffff;
+
+/** The blue of the cabins' little windows. */
 export const WINDOW_COLOR = 0x5cbde6;
 
 /** The pale hull of a boat in the fleet list not yet found. */

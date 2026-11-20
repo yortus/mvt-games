@@ -4,8 +4,8 @@
 
 /**
  * The states a puzzle can go back to, newest last, each as it was before an
- * action. A harbour is small, so a whole copy of its marks for each
- * action costs little, and undo is then only putting a copy back.
+ * action. A harbour is small, so a whole copy of its marks for each action
+ * takes little memory. Undo then only puts a copy back.
  */
 export interface UndoHistory<T> {
     /** How many actions can be taken back. */
@@ -22,7 +22,7 @@ export interface UndoHistory<T> {
 
 /** What an undo history is created with. */
 export interface UndoHistoryOptions {
-    /** The most actions kept. The oldest goes as another comes. */
+    /** The most actions kept. Once there are this many, the oldest is dropped as each new one is kept. */
     readonly mostUndos: number;
 }
 
