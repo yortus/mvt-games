@@ -68,8 +68,10 @@ export interface BoardViewBindings {
  * soft shadow on the water and a white cabin: a dinghy is coral, and longer
  * boats sunflower, mint, lilac and tangerine. Givens, the waves and boat
  * pieces printed on the harbour, are drawn in navy, and a printed piece of a
- * longer boat is cut square where its boat goes on. A boat that breaks a
- * rule shows in red, on red cells. The fleet list shows every boat to find,
+ * longer boat is cut square where its boat goes on. A printed piece stays
+ * navy as the player marks the rest of its boat, so what it says is never
+ * hidden. A boat that breaks a rule shows in red, on red cells, with its
+ * printed pieces still navy. The fleet list shows every boat to find,
  * pale until a finished boat of its length is marked.
  *
  * It is made of layers: the shallows, the water and red cells, the clear
@@ -328,21 +330,31 @@ export function BoardView(bindings: BoardViewBindings): Container {
                 const isAcross = Math.floor(low / size) === Math.floor(high / size);
                 const isDownRun = low % size === high % size;
                 if (hasClash || (!isAcross && !isDownRun)) {
-                    if (!isShadowPass) drawBlocks();
+                    if (isShadowPass) continue;
+                    drawBlocks();
+                    // Each printed piece in the run still shows as printed, so the player can see what it says
+                    for (let i = 0; i < run.length; i++) {
+                        if (bindings.isGivenAt(run[i])) drawRunHull(run[i], run[i], 1, false, NAVY_COLOR);
+                    }
                     continue;
                 }
                 const color = isAllGiven ? NAVY_COLOR : HULL_COLORS[Math.min(run.length, HULL_COLORS.length) - 1];
-                drawRunHull(low, high, isShadowPass, color);
+                drawRunHull(low, high, run.length, isShadowPass, color);
             }
         }
     }
 
-    /** Draws one straight run of boat cells, from `low` to `high`, as a hull: its shadow on the shadow pass, and its hull and cabin on the other. */
-    function drawRunHull(low: number, high: number, isShadowPass: boolean, color: number): void {
+    /**
+     * Draws one straight run of boat cells, `length` cells from `low` to
+     * `high`, as a hull. The shadow pass draws its shadow, and the other pass
+     * its hull and cabin. Where the player has marked a boat onto a printed
+     * piece, that piece's part of the hull stays navy. So the player can
+     * still see the piece, and where it says the boat ends.
+     */
+    function drawRunHull(low: number, high: number, length: number, isShadowPass: boolean, color: number): void {
         const { grid, givens } = puzzle!;
         const { size } = grid;
         const { cellSize, gridX, gridY } = layout;
-        const length = run.length;
         // Which way the hull lies: a single cell lies the way a printed end says, and across otherwise
         const lowGiven = bindings.isGivenAt(low) ? givens[low] : 0;
         const highGiven = bindings.isGivenAt(high) ? givens[high] : 0;
@@ -376,6 +388,19 @@ export function BoardView(bindings: BoardViewBindings): Container {
             return;
         }
         boats.fill(color).stroke({ color: darken(color), width: Math.max(1, cellSize * OUTLINE_SHARE), join: 'round' });
+        if (color !== NAVY_COLOR) {
+            // Each printed piece's part of the hull, from its cell's edges, or from the stern or to the bow at the hull's ends
+            let hasPieces = false;
+            for (let i = 0; i < length; i++) {
+                const cell = isDown ? low + i * size : low + i;
+                if (!bindings.isGivenAt(cell)) continue;
+                const pieceFrom = i === 0 ? from : start + i * cellSize;
+                const pieceTo = i === length - 1 ? to : start + (i + 1) * cellSize;
+                drawHull(boats, { from: pieceFrom, to: pieceTo, middle, beam, isDown, hasStern: hasStern && i === 0, hasBow: hasBow && i === length - 1 });
+                hasPieces = true;
+            }
+            if (hasPieces) boats.fill(NAVY_COLOR).stroke({ color: darken(NAVY_COLOR), width: Math.max(1, cellSize * OUTLINE_SHARE), join: 'round' });
+        }
         // A cabin on a whole boat, or a seat across a dinghy. A printed piece of a longer boat has neither, since its cabin may be on the cells beyond
         if (!isLoneMiddle && (length > 1 || (hasStern && hasBow))) drawCabin(from, to, middle, beam, isDown, length);
     }
@@ -407,13 +432,14 @@ export function BoardView(bindings: BoardViewBindings): Container {
         boats.fill(WINDOW_COLOR);
     }
 
-    /** Draws each cell of `run` as a red block, for a run that bends or breaks a rule. */
+    /** Draws each cell of `run` the player marked as a red block, for a run that bends or breaks a rule. */
     function drawBlocks(): void {
         const { size } = puzzle!.grid;
         const { cellSize, gridX, gridY } = layout;
         const inset = cellSize * MIDDLE_INSET_SHARE;
         for (let i = 0; i < run.length; i++) {
             const cell = run[i];
+            if (bindings.isGivenAt(cell)) continue;
             boats.roundRect(gridX + (cell % size) * cellSize + inset, gridY + Math.floor(cell / size) * cellSize + inset, cellSize - inset * 2, cellSize - inset * 2, cellSize * 0.12);
         }
         boats.fill(CLASH_COLOR).stroke({ color: darken(CLASH_COLOR), width: Math.max(1, cellSize * OUTLINE_SHARE) });

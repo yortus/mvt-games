@@ -80,5 +80,5 @@ export function drawHull(graphics: Graphics, options: DrawHullOptions): void {
 
 /** How round the stern's corners are, and how long the bow's point is, as shares of the beam, and how far along the bow its curve's control points sit, as a share of the bow. */
 const STERN_SHARE = 0.38;
-const BOW_SHARE = 0.75;
-const BOW_CURVE = 0.1;
+const BOW_SHARE = 0.95;
+const BOW_CURVE = 0.55;
