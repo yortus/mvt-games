@@ -456,3 +456,9 @@ and the shared calendar and card.
   the new rule are simply kept: they draw on top of each other, and break
   nothing. Also two stars a line at every level, and a check on trial and
   error in Hard and Expert: see 101, section 9.
+- 2026-11-20: The player's stars are gold, with a darker gold edge so they
+  stay clear on the pale yellow tint, and their "no star" notes are faint
+  blue crosses instead of dots. Givens stay in ink, as black stars and
+  crosses, and solved stars still turn green, as on every puzzle. "Dot" is
+  "cross" throughout, in the text and in the code (the mark, its count,
+  its sound). Saves are unchanged, since they keep marks as digits.

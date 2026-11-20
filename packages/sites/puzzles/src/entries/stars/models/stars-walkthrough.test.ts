@@ -7,7 +7,7 @@ import { createStarPuzzle } from './star-puzzle';
 import { STARS_WALKTHROUGH, type StarsTarget } from './stars-walkthrough';
 
 describe('Stars\' walkthrough', () => {
-    it('follows the solution: a dot where there is no star, a star where there is one, a group with a star in it, then Undo', () => {
+    it('follows the solution: a cross where there is no star, a star where there is one, a group with a star in it, then Undo', () => {
         const puzzle = createPuzzleModel({ puzzle: createStarPuzzle({ seed: PRACTICE_SEED, settings: PRACTICE_SETTINGS }) });
         const walkthrough = createWalkthroughModel({ practice: puzzle, ...STARS_WALKTHROUGH });
         const { solution } = puzzle.puzzle;
@@ -16,7 +16,7 @@ describe('Stars\' walkthrough', () => {
             steps.push(walkthrough.stepName);
             doDemo(puzzle, walkthrough);
         }
-        expect(steps).toEqual(['dot', 'star', 'group', 'undo']);
+        expect(steps).toEqual(['cross', 'star', 'group', 'undo']);
         // What the demos marked is right, and Undo took back the group
         const cells = Array.from({ length: solution.length }, (_, cell) => cell);
         expect(cells.every((cell) => puzzle.markAt(cell) === 'none' || (puzzle.markAt(cell) === 'star') === (solution[cell] === STAR))).toBe(true);
@@ -40,8 +40,8 @@ function doTouch(puzzle: PuzzleModel, touch: DemoTouch<StarsTarget>): void {
         puzzle.noteGroup(cells);
     }
     else {
-        // A tap moves a cell on from nothing, to a dot, to a star
+        // A tap moves a cell on from nothing, to a cross, to a star
         const taps = touch.kind === 'double-tap' ? 2 : 1;
-        for (let i = 0; i < taps; i++) puzzle.mark(cells[0], puzzle.markAt(cells[0]) === 'none' ? 'dot' : 'star');
+        for (let i = 0; i < taps; i++) puzzle.mark(cells[0], puzzle.markAt(cells[0]) === 'none' ? 'cross' : 'star');
     }
 }

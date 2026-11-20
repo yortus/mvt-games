@@ -3,7 +3,7 @@ import type { GameModel } from './game-model';
 
 /**
  * Plays some of today's hard puzzle, as a player might: it opens it, places
- * the solution's stars in the top rows, dots the cells round them, and
+ * the solution's stars in the top rows, crosses out the cells round them, and
  * rings a group with a star in it further down. For the thumbnail, and the
  * visual tests, which show the game in play.
  */
@@ -19,7 +19,7 @@ export function playShowcase(model: GameModel): void {
         puzzle.mark(cell, 'star');
         for (let k = 0; k < 8; k++) {
             const next = grid.neighbours[cell * 8 + k];
-            if (next >= 0 && puzzle.markAt(next) === 'none') puzzle.mark(next, 'dot');
+            if (next >= 0 && puzzle.markAt(next) === 'none') puzzle.mark(next, 'cross');
         }
     }
     // A star below the rows shown, and not given, ringed with the cells beside it in its region

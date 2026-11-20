@@ -16,23 +16,23 @@ export type StarsWalkthrough = Pick<IntroModelOptions<PuzzleModel, StarsTarget>,
  * How to mark a puzzle, a step at a time, on a practice puzzle. Each step
  * asks the player to do one thing, and is done once they have:
  *
- * - `dot`: put a dot in a cell, with a tap.
+ * - `cross`: put a cross in a cell, with a tap.
  * - `star`: place a star, with two taps.
  * - `group`: ring a group of cells, with a drag.
  * - `undo`: take back the last thing done.
  * - `done`: nothing more to do.
  *
  * The demos follow the practice puzzle's solution, so what the arrow marks
- * is right: a dot where there is no star, a star where there is one, and a
+ * is right: a cross where there is no star, a star where there is one, and a
  * group with a star in it.
  */
 export const STARS_WALKTHROUGH: StarsWalkthrough = {
     steps: [
         {
-            name: 'dot',
-            text: 'Tap a cell to put a dot in it: your note that it has no star. This is a practice puzzle, so try anything.',
-            isDone: (puzzle) => puzzle.dotsMarked >= 1,
-            findDemo: findDotDemo,
+            name: 'cross',
+            text: 'Tap a cell to put a cross in it: your note that it has no star. This is a practice puzzle, so try anything.',
+            isDone: (puzzle) => puzzle.crossesMarked >= 1,
+            findDemo: findCrossDemo,
         },
         {
             name: 'star',
@@ -70,16 +70,16 @@ export const STARS_WALKTHROUGH: StarsWalkthrough = {
 const NO_DEMO: Demo<StarsTarget> = [];
 
 /** A tap on an unmarked cell with no star, from the middle of the grid out, so the demo is in plain sight. */
-function findDotDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
+function findCrossDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
     const cell = findFromMiddle(puzzle, (c) => puzzle.puzzle.solution[c] !== STAR && puzzle.markAt(c) === 'none');
     return cell < 0 ? NO_DEMO : [{ kind: 'tap', targets: [toCellMiddle(puzzle, cell)] }];
 }
 
-/** Two taps on a cell with a star in the solution and none placed, or one tap if it has a dot already. */
+/** Two taps on a cell with a star in the solution and none placed, or one tap if it has a cross already. */
 function findStarDemo(puzzle: PuzzleModel): Demo<StarsTarget> {
     const cell = findFromMiddle(puzzle, (c) => puzzle.puzzle.solution[c] === STAR && puzzle.markAt(c) !== 'star');
     if (cell < 0) return NO_DEMO;
-    return [{ kind: puzzle.markAt(cell) === 'dot' ? 'tap' : 'double-tap', targets: [toCellMiddle(puzzle, cell)] }];
+    return [{ kind: puzzle.markAt(cell) === 'cross' ? 'tap' : 'double-tap', targets: [toCellMiddle(puzzle, cell)] }];
 }
 
 /**

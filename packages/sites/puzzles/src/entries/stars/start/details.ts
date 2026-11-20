@@ -13,7 +13,7 @@ export const details: EntryDetails = {
         + 'stars. No two stars touch, not even diagonally, and that one rule does most of the work: each star you place '
         + 'rules out the eight cells round it.',
         'There is a new puzzle every day at each of four levels: Easy and Medium on 8 by 8 grids, Hard on 9 by 9, and '
-        + 'Expert on 10 by 10. Each puzzle prints a few stars and dots on the grid, '
+        + 'Expert on 10 by 10. Each puzzle prints a few stars and crosses on the grid, '
         + 'as few as it needs, so that it can always be solved by looking, with nothing guessed. Everyone gets the same puzzles on the '
         + 'same day, and every day back to the start of 2026 can still be played. Each puzzle you solve is ticked off on '
         + 'the calendar, and one you leave half done is kept just as you left it.',
@@ -26,7 +26,7 @@ export const details: EntryDetails = {
         + 'that have only as many cells left as stars they need, counts regions inside bands of rows, sees where a star would '
         + 'leave a line no room, and covers pairs of rows with 2x2 boxes. It never supposes a star and follows it. Wherever '
         + 'the easy steps run out, it asks for at least two cells it can find next, so you never hunt the whole board for '
-        + 'one. Wherever it gets stuck, the maker prints the answer for one cell, a star or a dot, and goes on. Then it takes each printed '
+        + 'one. Wherever it gets stuck, the maker prints the answer for one cell, a star or a cross, and goes on. Then it takes each printed '
         + 'cell away again, keeping only those the solver can\'t do without. A puzzle the solver finishes can only have one '
         + 'answer.',
     ].join('\n\n'),

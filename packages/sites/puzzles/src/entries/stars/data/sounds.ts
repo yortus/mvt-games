@@ -1,11 +1,11 @@
 import { createAudio90Sound } from 'audio90';
 
 // The game's sound effects, for the Audio90. All were written for this game.
-// They are soft and short, since a puzzle is played in quiet: pencil dots, a
+// They are soft and short, since a puzzle is played in quiet: pencil crosses, a
 // pencil's sweep for a ring round a group, and small glassy twinkles for stars.
 
-/** A dot: a tiny, soft tap of a pencil point. */
-export const DOTTED = createAudio90Sound({
+/** A cross: a tiny, soft tap of a pencil point. */
+export const CROSSED = createAudio90Sound({
     oscillator: { wave: 'sine' },
     filter: { mode: 'lowpass12', cutoffHz: 1800 },
     envelope: { attackMs: 0, decayMs: 30, sustain: 0, releaseMs: 15 },

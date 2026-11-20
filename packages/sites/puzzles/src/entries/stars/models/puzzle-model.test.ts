@@ -14,16 +14,16 @@ for (let cell = 0; cell < PUZZLE.grid.cellCount; cell++) {
 }
 
 describe('createPuzzleModel', () => {
-    it('is solved once its stars are the solution\'s, whatever dots there are, and then takes no more marks', () => {
+    it('is solved once its stars are the solution\'s, whatever crosses there are, and then takes no more marks', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
         const empty = findEmptyCell();
-        model.mark(empty, 'dot');
+        model.mark(empty, 'cross');
         for (let i = 0; i < STARS.length - 1; i++) model.mark(STARS[i], 'star');
         expect(model.isSolved).toBe(false);
         model.mark(STARS[STARS.length - 1], 'star');
         expect(model.isSolved).toBe(true);
         model.mark(empty, 'star');
-        expect(model.markAt(empty)).toBe('dot');
+        expect(model.markAt(empty)).toBe('cross');
     });
 
     it('points out stars that touch, and only those', () => {
@@ -45,7 +45,7 @@ describe('createPuzzleModel', () => {
         expect(size).toBeGreaterThan(4);
     });
 
-    it('rings a group once, met by a star in it, broken by a dot in every cell, and undo takes the ring back', () => {
+    it('rings a group once, met by a star in it, broken by a cross in every cell, and undo takes the ring back', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
         // Two cells side by side
         const a = PUZZLE.grid.size + 1;
@@ -53,8 +53,8 @@ describe('createPuzzleModel', () => {
         model.noteGroup([b, a]);
         model.noteGroup([a, b]);
         expect([model.groups.length, model.findGroup([a, b]), model.groupStateAt(0)]).toEqual([1, 0, 'open']);
-        model.mark(a, 'dot');
-        model.mark(b, 'dot');
+        model.mark(a, 'cross');
+        model.mark(b, 'cross');
         expect(model.groupStateAt(0)).toBe('broken');
         model.mark(b, 'star');
         expect(model.groupStateAt(0)).toBe('met');
@@ -81,7 +81,7 @@ describe('createPuzzleModel', () => {
     it('comes back as it was saved, and starts afresh from a save of another puzzle', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
         model.mark(STARS[0], 'star');
-        model.mark(findEmptyCell(), 'dot');
+        model.mark(findEmptyCell(), 'cross');
         model.noteGroup([STARS[1], STARS[1] + 1]);
         const restored = createPuzzleModel({ puzzle: PUZZLE, saved: model.save() });
         expect(readMarks(restored)).toEqual(readMarks(model));
@@ -90,11 +90,11 @@ describe('createPuzzleModel', () => {
         expect(readMarks(createPuzzleModel({ puzzle: other, saved: model.save() }))).toEqual(readMarks(createPuzzleModel({ puzzle: other })));
     });
 
-    it('starts with its givens marked, as stars and dots, which marks never change', () => {
+    it('starts with its givens marked, as stars and crosses, which marks never change', () => {
         const model = createPuzzleModel({ puzzle: MADE });
         const given = MADE.givens.findIndex((state) => state !== UNKNOWN);
         const mark = model.markAt(given);
-        expect([model.isGivenAt(given), mark]).toEqual([true, MADE.givens[given] === STAR ? 'star' : 'dot']);
+        expect([model.isGivenAt(given), mark]).toEqual([true, MADE.givens[given] === STAR ? 'star' : 'cross']);
         model.mark(given, 'none');
         expect([model.markAt(given), model.undoCount]).toEqual([mark, 0]);
     });

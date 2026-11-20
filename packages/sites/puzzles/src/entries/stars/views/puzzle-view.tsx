@@ -30,7 +30,7 @@ export interface PuzzleViewBindings {
  * once it is. The practice puzzle of a walkthrough says so in place of its
  * date.
  *
- * A tap moves a cell on from nothing, to a dot, to a star, and back to
+ * A tap moves a cell on from nothing, to a cross, to a star, and back to
  * nothing. A drag rings the cells it goes over as a group, a note that a
  * star is in one of them, or takes the ring off a group of just those
  * cells. A drag over cells in another group does neither.
@@ -120,11 +120,11 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** What a tap turns each mark into: dots first, since they come first in solving. */
-const NEXT_MARKS: Readonly<Record<CellMark, CellMark>> = { none: 'dot', dot: 'star', star: 'none' };
+/** What a tap turns each mark into: crosses first, since they come first in solving. */
+const NEXT_MARKS: Readonly<Record<CellMark, CellMark>> = { none: 'cross', cross: 'star', star: 'none' };
 
 /** The line of help, for what is going on. */
 function writeHint(isSolved: boolean): string {
     if (isSolved) return 'Solved! It\'s ticked off on the calendar.';
-    return 'Tap for a dot, again for a star. Drag to ring a group.';
+    return 'Tap for a cross, again for a star. Drag to ring a group.';
 }

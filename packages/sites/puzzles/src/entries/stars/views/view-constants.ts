@@ -47,5 +47,12 @@ export const MOST_CELL_SIZE = 64;
  */
 export const REGION_TINTS: readonly number[] = [0xfbe4d2, 0xdcebd8, 0xdbe6f4, 0xf1dfee, 0xf6efc9, 0xd7eeea, 0xeee0d3];
 
-/** The violet the groups the player rings are drawn in, apart from the stars' blue and the regions' ink. */
+/** The violet the groups the player rings are drawn in, apart from the stars' gold and the regions' ink. */
 export const GROUP_COLOR = 0x7b4fc9;
+
+/** The gold of the player's stars, and the darker gold of their edge, which keeps them clear on the pale yellow tint. */
+export const STAR_COLOR = 0xf0b429;
+export const STAR_EDGE_COLOR = 0xa8740c;
+
+/** The faint blue of the player's crosses, the notes that a cell has no star. */
+export const CROSS_COLOR = 0x7f9fd8;

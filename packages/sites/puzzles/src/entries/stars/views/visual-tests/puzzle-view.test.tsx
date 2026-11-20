@@ -9,10 +9,10 @@ const SIZE = { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: false };
 
 canvasTest('an easy puzzle, at the start', SIZE, () => pose('easy', () => undefined));
 canvasTest('an expert puzzle, at the start', SIZE, () => pose('expert', () => undefined));
-// The showcase places the stars of the top rows of a hard puzzle, dots the cells round them, and rings a group
-canvasTest('part solved, with dots round the stars and a group ringed', SIZE, () => pose('hard', playShowcase));
+// The showcase places the stars of the top rows of a hard puzzle, crosses out the cells round them, and rings a group
+canvasTest('part solved, with crosses round the stars and a group ringed', SIZE, () => pose('hard', playShowcase));
 
-canvasTest('rings: an L of three cells, one met by a star, one broken by dots, and two side by side', SIZE, () => pose('hard', (model) => {
+canvasTest('rings: an L of three cells, one met by a star, one broken by crosses, and two side by side', SIZE, () => pose('hard', (model) => {
     const puzzle = model.puzzle!;
     const { size } = puzzle.puzzle.grid;
     // An L, top left
@@ -20,10 +20,10 @@ canvasTest('rings: an L of three cells, one met by a star, one broken by dots, a
     // A pair with a star in one cell, top right
     puzzle.noteGroup([size - 3, size - 2]);
     puzzle.mark(size - 2, 'star');
-    // A pair with a dot in each, bottom left
+    // A pair with a cross in each, bottom left
     puzzle.noteGroup([size * (size - 2), size * (size - 2) + 1]);
-    puzzle.mark(size * (size - 2), 'dot');
-    puzzle.mark(size * (size - 2) + 1, 'dot');
+    puzzle.mark(size * (size - 2), 'cross');
+    puzzle.mark(size * (size - 2) + 1, 'cross');
     // A square of four, and a row of three under it, bottom right
     const corner = size * (size - 3) + size - 3;
     puzzle.noteGroup([corner, corner + 1, corner + size, corner + size + 1]);

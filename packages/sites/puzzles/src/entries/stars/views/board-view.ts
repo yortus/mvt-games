@@ -2,11 +2,11 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { setRefresh, setUpdate } from '@mvtjs/pixi';
 import { listenToPointer } from '@mvtjs/site-kit/input/pixi';
 import { watch } from '@mvtjs/utils';
-import { ANSWER_COLOR, CARD_COLOR, CLASH_CELL_COLOR, CLASH_COLOR, INK_COLOR, PENCIL_COLOR, SOLVED_COLOR, SOLVED_GLOW_COLOR, THIN_LINE_COLOR } from '../../../shared';
+import { CARD_COLOR, CLASH_CELL_COLOR, CLASH_COLOR, INK_COLOR, PENCIL_COLOR, SOLVED_COLOR, SOLVED_GLOW_COLOR, THIN_LINE_COLOR } from '../../../shared';
 import type { CellMark, GroupState, StarPuzzle } from '../models';
 import { type BoardGesturesViewModel, createBoardGesturesViewModel } from './board-gestures-view-model';
 import { type BoardLayout, layOutBoard } from './board-layout';
-import { GROUP_COLOR, REGION_TINTS } from './view-constants';
+import { CROSS_COLOR, GROUP_COLOR, REGION_TINTS, STAR_COLOR, STAR_EDGE_COLOR } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -49,11 +49,12 @@ export interface BoardViewBindings {
 /**
  * The grid, fitted into a space and centred in it. Each region is washed
  * with a soft tint, and drawn round with a thick line in ink, with thin
- * lines between its cells. Dots are small pencil marks, and stars are drawn
- * in a pen's blue, or red where they break a rule, on a red cell. Givens,
- * the stars and dots printed on the grid, are drawn in ink. A group
+ * lines between its cells. A cross, the player's note that a cell has no
+ * star, is a faint blue pencil mark. The player's stars are gold, or red
+ * where they break a rule, on a red cell. Givens, the stars and crosses
+ * printed on the grid, are drawn in ink. A group
  * the player ringed is drawn round, just inside its cells, in violet: faint
- * once a star is in it, and red once every cell has a dot. Every ring is
+ * once a star is in it, and red once every cell has a cross. Every ring is
  * drawn the same way in, since groups never overlap. The cells a drag is
  * gathering are washed in violet and drawn round too, or in grey if letting
  * go would do nothing.
@@ -187,7 +188,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
         drawRings();
     }
 
-    /** Draws the clashes, the dots and the stars as they stand. */
+    /** Draws the clashes, the crosses and the stars as they stand. */
     function drawMarks(): void {
         const { size, cellCount } = puzzle!.grid;
         const { cellSize, gridX, gridY } = layout;
@@ -200,19 +201,27 @@ export function BoardView(bindings: BoardViewBindings): Container {
             hasClashes = true;
         }
         if (hasClashes) marks.fill(CLASH_CELL_COLOR);
-        // Each kind of mark in one fill: the player's dots, given dots, the player's stars, given stars, then stars that break a rule
+        // Each kind of mark together: the player's crosses, given crosses, the player's stars, given stars, then stars that break a rule
+        const arm = cellSize * CROSS_SHARE;
         for (let kind = 0; kind < MARK_KINDS; kind++) {
+            const isCross = kind === PLAYER_CROSS || kind === GIVEN_CROSS;
             let hasMarks = false;
             for (let cell = 0; cell < cellCount; cell++) {
                 if (findMarkKind(cell, isSolved) !== kind) continue;
                 const x = gridX + ((cell % size) + 0.5) * cellSize;
                 const y = gridY + (Math.floor(cell / size) + 0.5) * cellSize;
-                if (kind === PLAYER_DOT) marks.circle(x, y, Math.max(2, cellSize * DOT_SHARE));
-                else if (kind === GIVEN_DOT) marks.circle(x, y, Math.max(2.5, cellSize * GIVEN_DOT_SHARE));
+                if (isCross) marks.moveTo(x - arm, y - arm).lineTo(x + arm, y + arm).moveTo(x + arm, y - arm).lineTo(x - arm, y + arm);
                 else marks.star(x, y + cellSize * STAR_DROP, 5, cellSize * STAR_SHARE, cellSize * STAR_SHARE * STAR_INNER);
                 hasMarks = true;
             }
-            if (hasMarks) marks.fill(MARK_COLORS[kind] ?? (isSolved ? SOLVED_COLOR : ANSWER_COLOR));
+            if (!hasMarks) continue;
+            if (isCross) {
+                const share = kind === GIVEN_CROSS ? GIVEN_CROSS_WIDTH_SHARE : CROSS_WIDTH_SHARE;
+                marks.stroke({ color: MARK_COLORS[kind], width: Math.max(1.5, cellSize * share), cap: 'round' });
+            }
+            // The player's stars are gold, with a darker edge so they stand out on every tint, or green once solved
+            else if (kind === PLAYER_STAR && !isSolved) marks.fill(STAR_COLOR).stroke({ color: STAR_EDGE_COLOR, width: Math.max(1, cellSize * STAR_EDGE_SHARE), join: 'round' });
+            else marks.fill(MARK_COLORS[kind] ?? SOLVED_COLOR);
         }
     }
 
@@ -221,7 +230,7 @@ export function BoardView(bindings: BoardViewBindings): Container {
         const mark = bindings.markAt(cell);
         if (mark === 'none') return -1;
         const isGiven = bindings.isGivenAt(cell);
-        if (mark === 'dot') return isGiven ? GIVEN_DOT : PLAYER_DOT;
+        if (mark === 'cross') return isGiven ? GIVEN_CROSS : PLAYER_CROSS;
         if (!isSolved && bindings.isClashAt(cell)) return CLASH_STAR;
         return isGiven ? GIVEN_STAR : PLAYER_STAR;
     }
@@ -312,22 +321,29 @@ export function BoardView(bindings: BoardViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** A border's width, a dot's radius, a star's radius and how far it sits below the middle, each as a share of a cell, and a star's inner radius, as a share of its outer one. */
+/**
+ * A border's width, how far a cross's arms reach from its middle and how
+ * thick they are, the player's and a given's, a star's radius, how far it
+ * sits below the middle, and the width of the edge round the player's, each
+ * as a share of a cell, and a star's inner radius, as a share of its outer
+ * one.
+ */
 const BORDER_SHARE = 0.06;
-const DOT_SHARE = 0.07;
+const CROSS_SHARE = 0.1;
+const CROSS_WIDTH_SHARE = 0.035;
+const GIVEN_CROSS_WIDTH_SHARE = 0.05;
 const STAR_SHARE = 0.36;
 const STAR_DROP = 0.03;
 const STAR_INNER = 0.45;
-/** The kinds of mark, in the order they are drawn, and each one's colour. The player's stars are blue, or green once solved. */
-const PLAYER_DOT = 0;
-const GIVEN_DOT = 1;
+const STAR_EDGE_SHARE = 0.025;
+/** The kinds of mark, in the order they are drawn, and each one's colour. The player's stars are gold, or green once solved. */
+const PLAYER_CROSS = 0;
+const GIVEN_CROSS = 1;
 const PLAYER_STAR = 2;
 const GIVEN_STAR = 3;
 const CLASH_STAR = 4;
 const MARK_KINDS = 5;
-const MARK_COLORS: readonly (number | undefined)[] = [PENCIL_COLOR, INK_COLOR, undefined, INK_COLOR, CLASH_COLOR];
-/** A given dot's radius, as a share of a cell: a little bigger than the player's. */
-const GIVEN_DOT_SHARE = 0.085;
+const MARK_COLORS: readonly (number | undefined)[] = [CROSS_COLOR, INK_COLOR, undefined, INK_COLOR, CLASH_COLOR];
 
 /** A ring's width, and how far inside its cells it is drawn, each as a share of a cell. */
 const RING_SHARE = 0.05;

@@ -10,7 +10,7 @@ import type { StarPuzzle } from './star-puzzle';
 export interface PuzzleSave {
     /** The puzzle it is of, as `describePuzzle` writes it. */
     readonly puzzle: string;
-    /** Each cell's mark, as a digit: 0 for none, 1 for a dot, 2 for a star. */
+    /** Each cell's mark, as a digit: 0 for none, 1 for a cross, 2 for a star. */
     readonly marks: string;
     /** The groups the player ringed, each its cells joined by dots, the groups joined by slashes, such as `3.4/12.13.21`. */
     readonly groups: string;
@@ -48,7 +48,7 @@ export function readPuzzleSave(saved: unknown, puzzle: StarPuzzle): PuzzleMarks 
     const readGroups = groups === '' ? [] : groups.split('/').map((group) => group.split('.').map(Number));
     if (readGroups.some((group) => group.some((cell) => cell >= cellCount))) return undefined;
     const readMarks = Uint8Array.from(marks, Number);
-    // Each given's mark is the given itself: a star, or a dot
+    // Each given's mark is the given itself: a star, or a cross
     for (let cell = 0; cell < cellCount; cell++) {
         const given = puzzle.givens[cell];
         if ((given === STAR && readMarks[cell] !== 2) || (given === EMPTY && readMarks[cell] !== 1)) return undefined;

@@ -63,7 +63,7 @@ export function GameView(bindings: GameViewBindings): Container {
             <AudioView
                 sfx={sfx}
                 starsPlaced={() => model.puzzle?.starsPlaced ?? 0}
-                dotsMarked={() => model.puzzle?.dotsMarked ?? 0}
+                crossesMarked={() => model.puzzle?.crossesMarked ?? 0}
                 marksCleared={() => model.puzzle?.marksCleared ?? 0}
                 clashesMade={() => model.puzzle?.clashesMade ?? 0}
                 groupsNoted={() => model.puzzle?.groupsNoted ?? 0}

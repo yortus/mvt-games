@@ -9,19 +9,19 @@ import { createUndoHistory } from './undo-history';
 // Interface
 // ---------------------------------------------------------------------------
 
-/** What the player has marked a cell with: nothing yet, a dot for a cell they know has no star, or a star. */
-export type CellMark = 'none' | 'dot' | 'star';
+/** What the player has marked a cell with: nothing yet, a cross for a cell they know has no star, or a star. */
+export type CellMark = 'none' | 'cross' | 'star';
 
-/** How a group the player ringed stands: still open, met by a star placed in it, or broken, with a dot in every cell. */
+/** How a group the player ringed stands: still open, met by a star placed in it, or broken, with a cross in every cell. */
 export type GroupState = 'open' | 'met' | 'broken';
 
 /**
  * One puzzle being solved: the marks the player has made on its cells, and
  * the groups of cells they have ringed. Groups never overlap, and each is
- * joined side to side, so its ring is one simple shape. Its givens, the stars and dots
+ * joined side to side, so its ring is one simple shape. Its givens, the stars and crosses
  * printed on it, are marks from the start, which never change. The puzzle
- * is solved once the stars are its solution's. Dots and groups are the player's own notes, and don't
- * count: a dot says a cell has no star, and a group says a star is in one
+ * is solved once the stars are its solution's. Crosses and groups are the player's own notes, and don't
+ * count: a cross says a cell has no star, and a group says a star is in one
  * of its cells. Every action can be undone, back to the start of the visit.
  * Once the puzzle is solved, it takes no more marks.
  *
@@ -32,7 +32,7 @@ export interface PuzzleModel {
     /** The puzzle being solved. */
     readonly puzzle: StarPuzzle;
     readonly markAt: (cell: number) => CellMark;
-    /** Whether `cell` is a given: a star or a dot printed on the grid, which the player can't change. */
+    /** Whether `cell` is a given: a star or a cross printed on the grid, which the player can't change. */
     readonly isGivenAt: (cell: number) => boolean;
     /** Whether `cell` holds a star that breaks a rule. */
     readonly isClashAt: (cell: number) => boolean;
@@ -49,9 +49,9 @@ export interface PuzzleModel {
     readonly undoCount: number;
     /** A count that rises with every mark, every group and every undo, so that progress can be kept, and the board redrawn, as it changes. */
     readonly changes: number;
-    /** Stars placed, dots marked, marks taken off, stars that broke a rule, groups ringed and taken off, and actions undone, since the puzzle opened. */
+    /** Stars placed, crosses marked, marks taken off, stars that broke a rule, groups ringed and taken off, and actions undone, since the puzzle opened. */
     readonly starsPlaced: number;
-    readonly dotsMarked: number;
+    readonly crossesMarked: number;
     readonly marksCleared: number;
     readonly clashesMade: number;
     readonly groupsNoted: number;
@@ -111,7 +111,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
 
     let changes = 0;
     let starsPlaced = 0;
-    let dotsMarked = 0;
+    let crossesMarked = 0;
     let marksCleared = 0;
     let clashesMade = 0;
     let groupsNoted = 0;
@@ -136,7 +136,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         get undoCount() { return history.count; },
         get changes() { return changes; },
         get starsPlaced() { return starsPlaced; },
-        get dotsMarked() { return dotsMarked; },
+        get crossesMarked() { return crossesMarked; },
         get marksCleared() { return marksCleared; },
         get clashesMade() { return clashesMade; },
         get groupsNoted() { return groupsNoted; },
@@ -150,7 +150,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
             marks[cell] = state;
             lastMarkedCell = cell;
             if (state === STAR_MARK) starsPlaced++;
-            else if (state === DOT_MARK) dotsMarked++;
+            else if (state === CROSS_MARK) crossesMarked++;
             else marksCleared++;
             const clashesBefore = clashCount;
             findWhatMarksMean();
@@ -246,7 +246,7 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
 
     function findGroupState(group: readonly number[]): GroupState {
         if (group.some((cell) => marks[cell] === STAR_MARK)) return 'met';
-        return group.every((cell) => marks[cell] === DOT_MARK) ? 'broken' : 'open';
+        return group.every((cell) => marks[cell] === CROSS_MARK) ? 'broken' : 'open';
     }
 }
 
@@ -255,12 +255,12 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
 // ---------------------------------------------------------------------------
 
 /** How a cell's mark is kept: as a digit, so a save writes it out as one. */
-const DOT_MARK = 1;
+const CROSS_MARK = 1;
 const STAR_MARK = 2;
-const MARK_NAMES: readonly CellMark[] = ['none', 'dot', 'star'];
-const MARK_STATES: Readonly<Record<CellMark, number>> = { none: 0, dot: DOT_MARK, star: STAR_MARK };
-/** The mark each kind of given starts as, by its state: none for no given, a star, or a dot. */
-const GIVEN_MARKS: Readonly<Record<number, number>> = { [UNKNOWN]: 0, [STAR]: STAR_MARK, [EMPTY]: DOT_MARK };
+const MARK_NAMES: readonly CellMark[] = ['none', 'cross', 'star'];
+const MARK_STATES: Readonly<Record<CellMark, number>> = { none: 0, cross: CROSS_MARK, star: STAR_MARK };
+/** The mark each kind of given starts as, by its state: none for no given, a star, or a cross. */
+const GIVEN_MARKS: Readonly<Record<number, number>> = { [UNKNOWN]: 0, [STAR]: STAR_MARK, [EMPTY]: CROSS_MARK };
 
 /** The puzzle as it was before an action, for undo to put back. */
 interface Snapshot {
