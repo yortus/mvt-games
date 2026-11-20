@@ -10,10 +10,12 @@ export interface BoardLayout {
     /** The maze's top left corner. */
     readonly gridX: number;
     readonly gridY: number;
-    /** The clues' size, the room a clue number takes along the top, and the gap between the clues and the maze. */
+    /** The clues' size, the room a clue number takes along the top, and the gap between the clues and the maze, which the frame sits in. */
     readonly clueSize: number;
     readonly clueStep: number;
     readonly clueGap: number;
+    /** How wide the frame round the maze is. */
+    readonly frameWidth: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -23,7 +25,8 @@ export interface BoardLayout {
 export interface BoardLayoutOptions {
     readonly rows: number;
     readonly cols: number;
-    readonly clues: readonly (readonly number[])[];
+    /** Each line's clue, or undefined where it's hidden. */
+    readonly clues: readonly (readonly number[] | undefined)[];
     /** How many of the clues are on lines between columns, along the top. The rest are down the left. */
     readonly columnLineCount: number;
     /** The space to fit into. */
@@ -39,45 +42,62 @@ export interface BoardLayoutOptions {
  * Fits a maze and its clues into a space, as large as they will go, and
  * centres them. The clues on lines between columns are stacked above the
  * maze, and those on lines between rows are set out to its left, so the
- * room they need depends on the longest of them. Their size follows the
- * cells', so the fit is found a few times over, each from the last.
+ * room they need depends on the longest of them. A frame runs round the
+ * maze, between it and the clues. The clues' size and the frame's width
+ * follow the cells' size, so the fit is found a few times over, each from
+ * the last.
  */
 export function layOutBoard(options: BoardLayoutOptions): BoardLayout {
     const { rows, cols, clues, columnLineCount, width, height } = options;
     let tallestClue = 1;
     let widestClue = 1;
     for (let line = 0; line < clues.length; line++) {
-        if (line < columnLineCount) tallestClue = Math.max(tallestClue, clues[line].length);
-        else widestClue = Math.max(widestClue, measureClueWidth(clues[line], 1));
+        const labels = toClueLabels(clues[line]);
+        if (line < columnLineCount) tallestClue = Math.max(tallestClue, labels.length);
+        else widestClue = Math.max(widestClue, measureClueWidth(labels, 1));
     }
 
     let cellSize = MOST_CELL_SIZE;
     let clueSize = 0;
     let topRoom = 0;
     let leftRoom = 0;
+    let frameWidth = 0;
     for (let i = 0; i < 4; i++) {
         clueSize = Math.min(MOST_CLUE_SIZE, Math.max(LEAST_CLUE_SIZE, cellSize * CLUE_SHARE));
-        topRoom = tallestClue * clueSize * STEP_SHARE + clueSize * GAP_SHARE;
-        leftRoom = widestClue * clueSize + clueSize * GAP_SHARE;
-        cellSize = Math.min(MOST_CELL_SIZE, (width - leftRoom) / cols, (height - topRoom) / rows);
+        frameWidth = Math.max(LEAST_FRAME_WIDTH, cellSize * FRAME_SHARE);
+        topRoom = tallestClue * clueSize * STEP_SHARE + clueSize * GAP_SHARE + frameWidth;
+        leftRoom = widestClue * clueSize + clueSize * GAP_SHARE + frameWidth;
+        // The frame takes room on the right and at the bottom too
+        cellSize = Math.min(MOST_CELL_SIZE, (width - leftRoom - frameWidth) / cols, (height - topRoom - frameWidth) / rows);
     }
-    const boardWidth = leftRoom + cols * cellSize;
-    const boardHeight = topRoom + rows * cellSize;
+    const boardWidth = leftRoom + cols * cellSize + frameWidth;
+    const boardHeight = topRoom + rows * cellSize + frameWidth;
     return {
         cellSize,
         gridX: (width - boardWidth) / 2 + leftRoom,
         gridY: (height - boardHeight) / 2 + topRoom,
         clueSize,
         clueStep: clueSize * STEP_SHARE,
-        clueGap: clueSize * GAP_SHARE,
+        clueGap: clueSize * GAP_SHARE + frameWidth,
+        frameWidth,
     };
 }
 
-/** How wide `clue`'s numbers are, set out in a row, at `clueSize`. An empty clue shows a 0. */
-export function measureClueWidth(clue: readonly number[], clueSize: number): number {
-    if (clue.length === 0) return DIGIT_SHARE * clueSize;
+/**
+ * Returns the labels that `clue` shows, one for each stretch of wall. A line
+ * without walls shows a 0, and a hidden clue shows a single `?`, so you can
+ * tell the two apart.
+ */
+export function toClueLabels(clue: readonly number[] | undefined): readonly string[] {
+    if (!clue) return HIDDEN_LABELS;
+    if (clue.length === 0) return EMPTY_LABELS;
+    return clue.map(String);
+}
+
+/** How wide a clue's `labels` are, set out in a row, at `clueSize`. Each character is as wide as a digit. */
+export function measureClueWidth(labels: readonly string[], clueSize: number): number {
     let width = 0;
-    for (let i = 0; i < clue.length; i++) width += (clue[i] >= 10 ? 2 : 1) * DIGIT_SHARE * clueSize + (i > 0 ? SPACE_SHARE * clueSize : 0);
+    for (let i = 0; i < labels.length; i++) width += labels[i].length * DIGIT_SHARE * clueSize + (i > 0 ? SPACE_SHARE * clueSize : 0);
     return width;
 }
 
@@ -90,3 +110,11 @@ const STEP_SHARE = 1.1;
 const GAP_SHARE = 0.95;
 const DIGIT_SHARE = 0.6;
 const SPACE_SHARE = 0.55;
+
+/** The frame's width, as a share of a cell, and the least it is, in pixels, so its Greek key stays clear on the smallest boards. */
+const FRAME_SHARE = 0.26;
+const LEAST_FRAME_WIDTH = 9;
+
+/** The labels of a line without walls, and of a hidden clue. */
+const EMPTY_LABELS: readonly string[] = ['0'];
+const HIDDEN_LABELS: readonly string[] = ['?'];

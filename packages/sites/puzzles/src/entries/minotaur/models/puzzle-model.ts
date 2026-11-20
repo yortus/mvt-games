@@ -25,7 +25,8 @@ export type ClueState = 'open' | 'met' | 'broken';
  * It points out what breaks a rule, as the marks are made: a cell with too
  * many passages, or too many walls to be passed through, and the cells of a
  * loop. A clue is met when the walls marked on its line make it exactly,
- * and broken when they can no longer fit it.
+ * and broken when they can no longer fit it. A hidden clue always stays
+ * open, so its line never gives away whether its walls are right.
  */
 export interface PuzzleModel {
     /** The maze being solved. */
@@ -88,7 +89,8 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
     const { cellCount, edgeCount, cellEdges, edgeCellA, edgeCellB, lineEdges } = grid;
     const marks = readPuzzleSave(options.saved, maze) ?? new Uint8Array(edgeCount);
     const history = createUndoHistory({ marks, mostUndos: MOST_UNDOS });
-    const patterns: LinePattern[] = maze.clues.map((clue, line) => createLinePattern({ clue, length: lineEdges[line].length }));
+    // Each line's pattern, or undefined where the line's clue is hidden
+    const patterns: (LinePattern | undefined)[] = maze.clues.map((clue, line) => clue && createLinePattern({ clue, length: lineEdges[line].length }));
     const passagesNeeded = new Uint8Array(cellCount).fill(2);
     passagesNeeded[start] = 1;
     passagesNeeded[end] = 1;
@@ -224,11 +226,13 @@ export function createPuzzleModel(options: PuzzleModelOptions): PuzzleModel {
         return root;
     }
 
-    /** Met if the walls marked on the line are exactly its clue, broken if they can't fit it, and open otherwise. */
+    /** Met if the walls marked on the line are exactly its clue, broken if they can't fit it, and open otherwise, or if the clue is hidden. */
     function findClueState(line: number): ClueState {
         const edges = lineEdges[line];
-        if (!patterns[line].fits(marks, edges)) return 'broken';
+        const pattern = patterns[line];
         const clue = maze.clues[line];
+        if (!pattern || !clue) return 'open';
+        if (!pattern.fits(marks, edges)) return 'broken';
         let runIndex = 0;
         let run = 0;
         for (let i = 0; i <= edges.length; i++) {

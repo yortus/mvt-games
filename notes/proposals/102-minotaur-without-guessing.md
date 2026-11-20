@@ -17,8 +17,9 @@
 > givens: **hide the clues the rules can do without**. About a third of
 > them can go, and the rules then take about 70% more passes to finish.
 
-**Status:** step 1 built (section 7): every level can be solved without a guess. Step 2,
-hidden clues, waits on the questions in section 5.
+**Status:** steps 1 and 2 built (section 7). Every level can be solved
+without a guess, and Hard and Expert hide clues. Waiting on a playtest of
+the hidden clues.
 
 **Written:** 2026-11-17, against `vnext` at `2ef9c043`, at the user's
 request: "look at whether and how this givens technique can also be
@@ -266,3 +267,48 @@ out from the cells around it." The rules text loses nothing.
   - **Timings** in Node, 60 days a level: Easy 0.2 ms (worst 1.6), Medium
     0.4 (0.9), Hard 0.9 (1.9), Expert 2.1 (7.0). Faster than before, since
     Hard and Expert no longer hunt for the rarer mazes that need tries.
+- 2026-11-20: A playtest of today's Expert maze, after step 1: "pretty
+  hard", with the player stuck at about 70% until they found the line
+  techniques. Replayed one deduction at a time, the maze needs only the
+  three rules, and never the part of the loop rule that stops S's piece
+  meeting E's. From about 65%, nearly every step forward comes from the line
+  rule: a complete clue makes every other side of its line a passage, the
+  overlap of a stretch's places, and a passage at each end of a complete
+  stretch. The game doesn't explain any of these yet. Today's Hard was
+  "straightforward, just takes a little while".
+- 2026-11-20: Step 2, at the user's request: "start with your recommended
+  approach and I'll playtest it."
+  - **The answers taken** are section 5's recommendations: hide clues at
+    Hard and Expert, up to 3 at Hard and as many as the rules allow at
+    Expert, shown as `?`, and leave givens out.
+  - **Built as planned in section 3.2.** A hidden clue is undefined in the
+    puzzle's clues, so every reader has to handle it. The solver skips the
+    line rule there, the puzzle model keeps its line open, so it never
+    fades or turns red, and the description writes `?`. Each level's most
+    is `mostHiddenClues` in `levels.ts`, so it is one number to tune.
+  - **The mazes themselves stay the same.** Hiding happens after a maze is
+    chosen, from the same random sequence, so Hard and Expert keep
+    today's paths, now with some clues shown as `?`. Easy and Medium are
+    unchanged. A save made before this change no longer matches its
+    description, so a Hard or Expert maze left half done starts afresh.
+  - **Measured** in Node, 60 days a level: Hard hides 3 every time, in 3.1
+    ms on average (worst 8.1). Expert hides 6 to 8 clues in 49 days of the
+    60 (2 to 9 in all), in 22.8 ms on average (worst 39.2).
+  - **Text:** a third rule on the How to play card ("At Hard and Expert,
+    some clues are hidden, and show a ?."), and a sentence each in the
+    details' description and implementation.
+- 2026-11-20: Playtest of a Hard maze with hidden clues: "pretty good". The
+  user asked for the `?` to stand out more, so it's now violet
+  (`HIDDEN_CLUE_COLOR`), the one colour the board doesn't already use for
+  something else.
+- 2026-11-20: Playtest of the 19 November Expert maze, with 6 hidden
+  clues: the player was stuck at 40-50%, on a line with two placements
+  that the crossing (hidden) clues couldn't separate. The solver settles
+  that line only at 73%, through a long chain of cells from the middle
+  rows, and two of my hints from the solver's own order didn't match the
+  player's board. The verdict: "expert may be too hard for a human". Expert
+  now hides at most 4 of its 20 clues, about Hard's share (3 of 16). In
+  Node, over 60 days: 4 hidden on 58 days, 2 or 3 on the others, 9.7 ms
+  on average (worst 24.9). A Hint button, showing the solver's next
+  deduction from the player's own marks, was offered and not yet asked
+  for.

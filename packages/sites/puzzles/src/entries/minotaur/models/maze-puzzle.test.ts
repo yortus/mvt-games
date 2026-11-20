@@ -39,13 +39,16 @@ describe('drawRandomPath', () => {
 
 describe('createMazePuzzle', () => {
     for (const level of PUZZLE_LEVELS) {
-        it(`makes a ${level} puzzle of its size that the rules alone solve`, () => {
+        it(`makes a ${level} puzzle of its size that the rules alone solve, hiding at most the clues it may`, () => {
             const settings = LEVEL_SETTINGS[level];
             for (let seed = 0; seed < 3; seed++) {
                 const puzzle = createMazePuzzle({ seed, settings });
                 expect([puzzle.grid.rows, puzzle.grid.cols]).toEqual([settings.size, settings.size]);
                 expectPathFromStartToEnd(puzzle);
-                expect(readClues(puzzle.grid, puzzle.solution)).toEqual(puzzle.clues);
+                // Each clue shown is the one the path's walls make
+                const fullClues = readClues(puzzle.grid, puzzle.solution);
+                expect(puzzle.clues.map((clue, line) => clue ?? fullClues[line])).toEqual(fullClues);
+                expect(puzzle.clues.filter((clue) => clue === undefined).length).toBeLessThanOrEqual(settings.mostHiddenClues);
                 const { edges, isFinished } = createMazeSolver(puzzle).solve();
                 expect(isFinished).toBe(true);
                 expect(edges).toEqual(puzzle.solution);

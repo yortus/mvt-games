@@ -28,13 +28,13 @@ export type MinotaurWalkthrough = Pick<IntroModelOptions<PuzzleModel, MinotaurTa
  * - `done`: nothing more to do.
  *
  * The demos follow the practice maze's solution, so what the arrow draws is
- * right: the path from S, and a wall the solution has.
+ * right: the path from the start, and a wall the solution has.
  */
 export const MINOTAUR_WALKTHROUGH: MinotaurWalkthrough = {
     steps: [
         {
             name: 'path',
-            text: 'Start a drag in the middle of the S cell, and drag through the cells to draw the path. This is a practice maze, so try anything.',
+            text: 'Start a drag in the middle of the Α cell, and drag through the cells to lay the thread. This is a practice maze, so try anything.',
             isDone: (puzzle) => puzzle.passagesMarked >= 2,
             findDemo: findPathDemo,
         },
@@ -46,7 +46,7 @@ export const MINOTAUR_WALKTHROUGH: MinotaurWalkthrough = {
         },
         {
             name: 'rub-out',
-            text: 'Drag over a wall, or the path, again to rub it out.',
+            text: 'Drag over a wall, or the thread, again to rub it out.',
             isDone: (puzzle) => puzzle.marksCleared >= 1,
             findDemo: findRubOutDemo,
         },
@@ -58,7 +58,7 @@ export const MINOTAUR_WALKTHROUGH: MinotaurWalkthrough = {
         },
         {
             name: 'done',
-            text: 'Build the maze: one path from S to E through every cell, with the walls the numbers give. Have fun!',
+            text: 'Now find your way out. Lay the thread from Α to Ω, through every cell. Good luck!',
             isDone: () => false,
             findDemo: () => NO_DEMO,
         },
@@ -73,10 +73,10 @@ export const MINOTAUR_WALKTHROUGH: MinotaurWalkthrough = {
 
 const NO_DEMO: Demo<MinotaurTarget> = [];
 
-/** How many steps of the path from S the demo draws. */
+/** How many steps of the path from the start the demo draws. */
 const PATH_DEMO_STEPS = 3;
 
-/** A drag from the middle of the S cell along the solution's path, a few cells on. */
+/** A drag from the middle of the start's cell along the solution's path, a few cells on. */
 function findPathDemo(puzzle: PuzzleModel): Demo<MinotaurTarget> {
     const { grid, start, solution } = puzzle.maze;
     const targets = [toCellMiddle(grid, start)];

@@ -21,6 +21,7 @@ export interface MazeSolverProgress {
  *
  * - **Lines.** Each line's edges must follow its clue. An edge that is a
  *   wall in every way the clue fits is a wall, and the same for a passage.
+ *   A line whose clue is hidden is worked out by the other two rules alone.
  * - **Cells.** The start and the end have one passage each, and every
  *   other cell two. A cell with all it needs has walls on its other sides;
  *   a cell with just enough sides left has passages on all of them.
@@ -44,8 +45,8 @@ export interface MazeSolver {
 
 export interface MazeSolverOptions {
     readonly grid: MazeGrid;
-    /** Each line's clue: the lengths of its stretches of wall, in order. */
-    readonly clues: readonly (readonly number[])[];
+    /** Each line's clue, as the lengths of its stretches of wall in order, or undefined where the clue is hidden. */
+    readonly clues: readonly (readonly number[] | undefined)[];
     /** The cells the path starts and ends in. */
     readonly start: number;
     readonly end: number;
@@ -59,9 +60,11 @@ export interface MazeSolverOptions {
 export function createMazeSolver(options: MazeSolverOptions): MazeSolver {
     const { grid, clues, start, end } = options;
     const { cellCount, edgeCount, edgeCellA, edgeCellB, cellEdges, lineEdges } = grid;
-    const patterns: LinePattern[] = [];
+    // Each line's pattern, or undefined where the line's clue is hidden
+    const patterns: (LinePattern | undefined)[] = [];
     for (let line = 0; line < grid.lineCount; line++) {
-        patterns.push(createLinePattern({ clue: clues[line], length: lineEdges[line].length }));
+        const clue = clues[line];
+        patterns.push(clue && createLinePattern({ clue, length: lineEdges[line].length }));
     }
     const passagesNeeded = new Uint8Array(cellCount).fill(2);
     passagesNeeded[start] = 1;
@@ -83,7 +86,7 @@ export function createMazeSolver(options: MazeSolverOptions): MazeSolver {
         while (isChanging) {
             isChanging = false;
             for (let line = 0; line < patterns.length; line++) {
-                const changed = patterns[line].narrow(states, lineEdges[line]);
+                const changed = patterns[line]?.narrow(states, lineEdges[line]) ?? 0;
                 if (changed < 0) return false;
                 if (changed > 0) isChanging = true;
             }

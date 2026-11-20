@@ -20,7 +20,7 @@ canvasTest('marks that break the rules: a cell with three passages, and a loop',
     for (let i = 0; i < 4; i++) puzzle.mark(grid.edgeBetween(ring[i], ring[(i + 1) % 4]), 'passage');
 }));
 
-canvasTest('solved, glowing, with every wall drawn', SIZE, () => pose('easy', solve, 700));
+canvasTest('solved, every wall shown, the light partway along the gold thread', SIZE, () => pose('easy', solve, 700));
 
 /** The puzzle's screen, on today's puzzle at `level`, after `play`. */
 function pose(level: PuzzleLevel, play: Play | readonly Play[], ms?: number) {

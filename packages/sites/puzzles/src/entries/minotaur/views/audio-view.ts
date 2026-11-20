@@ -40,14 +40,14 @@ export interface AudioViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Plays the game's sounds, on the Audio90. Each passage drawn ticks, a step
- * up a pentatonic scale from the last in its stroke, so a long stroke
- * climbs. A wall knocks, a mark rubbed out brushes, and a mark that breaks
- * a rule knocks low, twice, in place of its own sound. Undo blips, and a
- * solved maze chimes. A fast drag can make several marks in a frame, and
- * the frame plays one sound for them. When the puzzle shown changes, its
- * counts replace the last puzzle's, and on that tick the view stays silent
- * for them.
+ * Plays the game's sounds, on the Audio90. Each passage laid shuffles like
+ * sand, a step up a pentatonic scale from the last in its stroke, so a long
+ * stroke climbs. A wall clacks like bricks, a mark rubbed out brushes, and
+ * a mark that breaks a rule knocks low, twice, in place of its own sound.
+ * Undo blips, and a trumpet sounds when you escape. A fast drag can make
+ * several marks in a frame, and the frame plays one sound for them. When
+ * the puzzle shown changes, its counts replace the last puzzle's, and on
+ * that tick the view stays silent for them.
  */
 export function AudioView(bindings: AudioViewBindings): Container {
     const { sfx } = bindings;
