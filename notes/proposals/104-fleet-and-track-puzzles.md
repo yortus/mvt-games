@@ -17,9 +17,10 @@
 > and 102 did for Stars and Minotaur. A solver uses direct techniques only,
 > and the maker adds givens until it finishes.
 
-**Status:** proposed. This is research and design only. The code isn't
-started, and the generators of sections 5 and 11 are sketched, not spiked.
-So their speed is still a guess.
+**Status:** built, awaiting review and a playtest. Both entries,
+**Boats** and **River** (first named Moorings and Meander), were built on 2026-11-20 in the
+`line-puzzles` worktree, and left uncommitted (section 15). The names
+still need searching in the trademark registers.
 
 **Written:** 2026-11-20, against `vnext` at `bf528841`. The history comes
 from the sources linked in sections 2 and 8. The names were checked by web
@@ -473,3 +474,51 @@ level, as a slow test; visual tests for each view.
 - 2026-11-20: The user asked for beautiful colours and cute cell symbols,
   such as little boats on blue sparkling water and a river through a green
   flowery meadow. Added to sections 4, 10 and 12. Still not started.
+- 2026-11-20: Both built, at the user's word, in the `line-puzzles`
+  worktree (from `vnext` at `d38cc7a4`), uncommitted. The names are the
+  suggested ones. Each has its models, views, sound, walkthrough, How to
+  play card, visual tests, card picture and share picture, and is in the
+  catalogue. The puzzles' card wall picture was retaken.
+  - **Moorings.** Levels: Easy 6x6 (a 3, two 2s, three 1s, `rules`),
+    Medium 8x8 (a 4, a 3, two 2s, three 1s, `fleet`), Hard and Expert
+    10x10 with the classic fleet, `fleet` and `places`. So the Expert of
+    open question 3 is the classic harbour, harder in kind. The techniques
+    are as in section 6, with one more in `places`: a cell that every boat
+    still to find misses is water. In Node, a puzzle is made in 0.4 ms on
+    average at Easy, and 6 to 8 ms at the others, 29 ms at worst. Givens:
+    1 to 3 at Easy, 2 to 13 at the others. Straight boats only (open
+    question 2 left open). A lone printed middle is drawn as a square
+    piece, since its boat's direction isn't shown.
+  - **Meander.** The spring is always on the left edge and the sea on the
+    bottom edge, as in Tatham's version, so the numbers go along the top
+    and down the right. Levels: Easy 6x6 and Medium 8x8 (`rules`), Hard
+    8x8 (`loops`), Expert 10x10 (`crossings`), the river filling 40 to 55%
+    of the valley. The river drawer is section 11's: a loop-erased walk,
+    then bends added. In Node, a puzzle is made in under 4 ms on average
+    up to 8x8, and 28 ms at Expert, 74 ms at worst. Givens: 0 to 3 at
+    Easy, up to 13 at Expert.
+  - **Checked.** A search that shares no code with the solvers counts
+    every puzzle's solutions. All 600 puzzles of 150 days at each level of
+    each game have one, and the slow tests keep checking 30 days. That
+    check found one bug on the way: Moorings' fleet technique read a cell
+    it had just written in the same pass, and grew a boat that wasn't
+    forced. Each technique now reads the board as its pass began.
+  - **Left:** a playtest on a phone and with a mouse, a loudness check of
+    the sounds beside the other puzzles', and the trademark searches.
+- 2026-11-20: Renamed at the user's word, before the first playtest:
+  Moorings is **Boats** and Meander is **River**, since Minotaur, Moorings
+  and Meander made three M puzzles in a row (open question 1). The ids,
+  folders, save keys and code names changed with them. Both are listed as
+  BETA (`Boats BETA`, `River BETA`) until they have been playtested. The
+  harbour and valley themes stay. The puzzles' card wall picture was
+  retaken.
+- 2026-11-20: Sounds rewritten for each theme, at the user's word. Boats:
+  a lap of water, a wooden knock of a hull, a little ship's horn for a
+  boat finished, a wave drawing back, hulls bumping, and the harbour's
+  bell with a gull's call when solved. River: a bubble, a bird's chirp
+  for a flower, a rustle of grass, pebbles plunking for a clash, and a
+  rippling stream of bells with birdsong when solved. Each is levelled by
+  loudness beside Stars' and Minotaur's: about -36 LUFS for frequent
+  marks, -32 for the main mark and a clash, -29 for a boat finished, and
+  -26 for solved. So the loudness check is done; the playtest and the
+  trademark searches are left.
