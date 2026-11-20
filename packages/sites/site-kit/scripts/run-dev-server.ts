@@ -10,7 +10,7 @@
  *
  * Each site has its own Vite dev server, made from its own config, the one
  * its build uses, and mounted on this server under its own path, its Vite
- * base: `/arcade/`, `/demos/`, `/puzzles/`, `/playground/`, and `/docs/`,
+ * base: `/arcade/`, `/puzzles/`, `/demos/`, `/playground/`, and `/docs/`,
  * which is VitePress's, which is Vite underneath. Their updates to the page,
  * as files change, share this server's WebSockets: each Vite takes only the
  * ones at its own base. The site's root, `/`, sends the visitor on to the
@@ -50,7 +50,7 @@ interface Site {
 }
 
 const SITES: readonly Site[] = [
-    ...['arcade', 'demos', 'puzzles', 'playground'].map((name) => ({
+    ...['arcade', 'puzzles', 'demos', 'playground'].map((name) => ({
         name,
         create: (hmrServer: Server) => createViteServer({
             configFile: join(SITES_DIR, name, 'vite.config.ts'),

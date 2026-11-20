@@ -50,7 +50,7 @@ export interface HomePageLoad {
 
 /** The sites, each with a home page to measure. */
 export type SiteName = 'arcade' | 'demos' | 'puzzles';
-export const SITE_NAMES: readonly SiteName[] = ['arcade', 'demos', 'puzzles'];
+export const SITE_NAMES: readonly SiteName[] = ['arcade', 'puzzles', 'demos'];
 
 /** Builds `site` in memory, and measures its home page's first load. */
 export async function measureHomePageLoad(site: SiteName): Promise<HomePageLoad> {

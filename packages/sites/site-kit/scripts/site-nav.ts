@@ -61,18 +61,18 @@ const LINKS: readonly NavLink[] = [
         icon: '<svg class="site-nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 5h8a5 5 0 015 5v1.5a2.5 2.5 0 01-4.6 1.4L13 11H7l-1.4 1.9A2.5 2.5 0 011 11.5V10a5 5 0 015-5z"/><path d="M6 7.5v4M4 9.5h4"/><circle cx="13" cy="8.5" r=".6"/><circle cx="15" cy="10.5" r=".6"/></svg>',
     },
     {
-        label: 'Demos',
-        href: 'demos/',
-        site: 'demos',
-        // A sparkle
-        icon: '<svg class="site-nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5l1.7 5.8 5.8 1.7-5.8 1.7L10 17.5l-1.7-5.8L2.5 10l5.8-1.7z"/></svg>',
-    },
-    {
         label: 'Puzzles',
         href: 'puzzles/',
         site: 'puzzles',
         // A grid of three by three
         icon: '<svg class="site-nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h14v14H3zM7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14"/></svg>',
+    },
+    {
+        label: 'Demos',
+        href: 'demos/',
+        site: 'demos',
+        // A sparkle
+        icon: '<svg class="site-nav-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5l1.7 5.8 5.8 1.7-5.8 1.7L10 17.5l-1.7-5.8L2.5 10l5.8-1.7z"/></svg>',
     },
     {
         label: 'Playground',

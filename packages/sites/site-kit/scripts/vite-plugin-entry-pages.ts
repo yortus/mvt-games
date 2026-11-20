@@ -245,7 +245,7 @@ function escapeHtml(text: string): string {
 }
 
 /** The sites, each a folder of the root. The 404 page sends an address in one to its wall. */
-const SITES: readonly SiteKind[] = ['arcade', 'demos', 'puzzles'];
+const SITES: readonly SiteKind[] = ['arcade', 'puzzles', 'demos'];
 
 /** What the root's pages are called, and what the root says it is. */
 const ROOT_TITLE = 'MVT Games';

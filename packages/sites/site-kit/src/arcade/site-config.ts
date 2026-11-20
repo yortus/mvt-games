@@ -31,7 +31,7 @@ export interface SiteConfig {
 export type SiteKind = 'arcade' | 'demos' | 'puzzles';
 
 /** Every site, in the order the nav lists them. */
-export const SITE_KINDS: readonly SiteKind[] = ['arcade', 'demos', 'puzzles'];
+export const SITE_KINDS: readonly SiteKind[] = ['arcade', 'puzzles', 'demos'];
 
 /**
  * Each site's own theme, which it wears while the visitor's choice is the
