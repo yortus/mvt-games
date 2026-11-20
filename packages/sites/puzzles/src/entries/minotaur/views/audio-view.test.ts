@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio90PlayOptions } from 'audio90';
 import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
-import { CLASHED, RUBBED, STEPPED, WALLED } from '../data';
+import { CLASHED, RUBBED, SOLVED, STEPPED, WALLED } from '../data';
 import { AudioView } from './audio-view';
 
 // The view is tested by what it asks of its chip: which sounds it plays, at which notes, and where.
@@ -57,6 +57,17 @@ describe('AudioView', () => {
         tick();
         expect(listPlayed(sfx)).toEqual([CLASHED]);
     });
+
+    it('stays silent as the puzzle shown changes and its counts jump, but still chimes a puzzle solved', () => {
+        const { sfx, state, tick } = setUp({ passagesMarked: 1, undosDone: 1 });
+        // The walkthrough ends, and the puzzle open shows again, with its own, higher counts
+        state.passagesMarked = 5;
+        state.undosDone = 3;
+        state.puzzlesOpened = 1;
+        state.puzzlesSolved = 1;
+        tick();
+        expect(listPlayed(sfx)).toEqual([SOLVED]);
+    });
 });
 
 interface State {
@@ -67,12 +78,14 @@ interface State {
     undosDone: number;
     strokePassages: number;
     markPan: number;
+    puzzlesOpened: number;
     puzzlesSolved: number;
 }
 
 function setUp(initial: Partial<State> = {}) {
     const state: State = {
-        passagesMarked: 0, wallsMarked: 0, marksCleared: 0, clashesMade: 0, undosDone: 0, strokePassages: 0, markPan: 0, puzzlesSolved: 0, ...initial,
+        passagesMarked: 0, wallsMarked: 0, marksCleared: 0, clashesMade: 0, undosDone: 0, strokePassages: 0, markPan: 0, puzzlesOpened: 0, puzzlesSolved: 0,
+        ...initial,
     };
     const sfx = createSpiedChip();
     const view = AudioView({
@@ -84,6 +97,7 @@ function setUp(initial: Partial<State> = {}) {
         undosDone: () => state.undosDone,
         strokePassages: () => state.strokePassages,
         markPan: () => state.markPan,
+        puzzlesOpened: () => state.puzzlesOpened,
         puzzlesSolved: () => state.puzzlesSolved,
     });
     // One tick as the page runs it: the chip's clock, then the view's update and refresh

@@ -14,8 +14,8 @@ export function findPuzzleSeed(day: number, level: PuzzleLevel): number {
 /**
  * Each level's seed within a day. They are written out, rather than taken
  * from the levels' order, so that changing the order changes no puzzle.
- * Every one of the site's four levels has a seed, though Stars has only two
- * of them so far, so adding the others changes no puzzle either.
  */
 const LEVEL_SEEDS: Readonly<Record<PuzzleLevel, number>> = { easy: 0, medium: 1, hard: 2, expert: 3 };
+
+/** How many seeds each day has, one for each level. */
 const SEEDS_PER_DAY = 4;

@@ -6,8 +6,8 @@ import { ButtonView, DIM_TEXT_COLOR, INK_COLOR, LABEL_STYLE, LEVEL_NAMES, MARGIN
 import type { CellMark, GameModel, PuzzleModel } from '../models';
 import { BoardView } from './board-view';
 import {
-    BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, BUTTON_GAP, BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_Y, HINT_Y,
-    SCREEN_WIDTH,
+    BACK_WIDTH, BAR_BUTTON_HEIGHT, BAR_Y, BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_Y, HINT_Y, HOW_TO_PLAY_X,
+    SCREEN_WIDTH, UNDO_X,
 } from './view-constants';
 
 // ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
                 />
             </container>
             <ButtonView
-                x={MARGIN}
+                x={UNDO_X}
                 y={BUTTON_Y}
                 width={BUTTON_WIDTH}
                 height={BUTTON_HEIGHT}
@@ -97,7 +97,7 @@ export function PuzzleView(bindings: PuzzleViewBindings): Container {
                 onPressed={() => puzzle().undo()}
             />
             <ButtonView
-                x={MARGIN + BUTTON_WIDTH + BUTTON_GAP}
+                x={HOW_TO_PLAY_X}
                 y={BUTTON_Y}
                 width={BUTTON_WIDTH}
                 height={BUTTON_HEIGHT}

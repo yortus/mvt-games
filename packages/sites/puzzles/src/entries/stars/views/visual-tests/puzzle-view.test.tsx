@@ -9,8 +9,11 @@ const SIZE = { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: false };
 
 canvasTest('an easy puzzle, at the start', SIZE, () => pose('easy', () => undefined));
 canvasTest('an expert puzzle, at the start', SIZE, () => pose('expert', () => undefined));
-// The showcase places the stars of the top rows of a hard puzzle, crosses out the cells round them, and rings a group
-canvasTest('part solved, with crosses round the stars and a group ringed', SIZE, () => pose('hard', playShowcase));
+// The showcase opens a hard puzzle, places the stars of its top rows, crosses out the cells round them, and rings a group
+canvasTest('part solved, with crosses round the stars and a group ringed', SIZE, () => poseGame((model) => {
+    playShowcase(model);
+    return PuzzleView({ model });
+}, () => undefined));
 
 canvasTest('rings: an L of three cells, one met by a star, one broken by crosses, and two side by side', SIZE, () => pose('hard', (model) => {
     const puzzle = model.puzzle!;
@@ -49,9 +52,5 @@ function pose(level: PuzzleLevel, play: Play, ms?: number) {
         model.calendar.chooseLevel(level);
         model.openPuzzle(TODAY);
         return PuzzleView({ model });
-    }, (model) => {
-        // The showcase opens its own puzzle, so it starts from the calendar
-        if (play === playShowcase) model.closePuzzle();
-        play(model);
-    }, ms);
+    }, play, ms);
 }

@@ -62,6 +62,7 @@ export function GameView(bindings: GameViewBindings): Container {
                     return cell < 0 ? 0 : model.puzzle?.digitAt(cell) ?? 0;
                 }}
                 undosDone={() => model.puzzle?.undosDone ?? 0}
+                puzzlesOpened={() => model.puzzlesOpened}
                 puzzlesSolved={() => model.puzzlesSolved}
             />
         </container>

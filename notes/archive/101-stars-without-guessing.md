@@ -15,9 +15,14 @@
 > since a puzzle the direct techniques finish can only have one. Even
 > 12x12 is made in under a third of a second.
 
-**Status:** built, uncommitted (section 9): steps 1 to 3, as one step,
-since the grader, the maker and the levels couldn't land apart without
-leaving Expert unfair. Left: timings on a phone, and a playtest.
+**Status:** finished (section 9): steps 1 to 3, as one step, since the
+grader, the maker and the levels couldn't land apart without leaving
+Expert unfair. Playtested, and Stars left beta on 2026-11-20. Timings on a
+phone weren't recorded. On leaving beta, the maker's removal of
+givens became repeated passes: one pass could leave a given that a later
+removal made unneeded, since the solver must find two cells wherever the
+rules stall. That changed 26 of 2026's 1,460 puzzles (fewer givens, the
+same regions), and a test now pins two days' puzzles.
 
 **Written:** 2026-11-17, against `vnext` at `fdd3fbb8`, with Easy and
 Medium already one star a line and the ring for groups in place (099,

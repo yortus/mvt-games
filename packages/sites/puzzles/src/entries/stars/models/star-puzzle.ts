@@ -13,6 +13,7 @@ import { createStarSolver, type StarTechnique } from './star-solver';
 
 /** A puzzle to solve: its grid, its regions, the cells printed on it, and its one solution. */
 export interface StarPuzzle {
+    /** The grid, and which cells are next to which. */
     readonly grid: StarGrid;
     /** Each cell's region, numbered from 0. */
     readonly regions: Readonly<Uint8Array>;
@@ -28,6 +29,7 @@ export interface StarPuzzle {
 // Options
 // ---------------------------------------------------------------------------
 
+/** What a puzzle is made from. */
 export interface StarPuzzleOptions {
     /** Any whole number. The same seed always makes the same puzzle. */
     readonly seed: number;
@@ -45,7 +47,7 @@ export interface StarPuzzleOptions {
  * works backwards from the answer: it lays out the stars, grows regions
  * round them, then prints a few givens on the grid, until the techniques
  * finish it, keeping only the givens they need. It finds givens a few
- * times over, at random, and keeps the fewest. A level that asks for its
+ * times over, at random, and keeps the fewest. A level that requires its
  * hardest technique gets a puzzle that needs it, or the maker starts again.
  */
 export function createStarPuzzle(options: StarPuzzleOptions): StarPuzzle {
@@ -81,6 +83,7 @@ const MOST_ATTEMPTS = 1000;
 /** How many times to find givens for one layout, keeping the fewest. More find fewer givens, at a cost in time. */
 const GIVENS_TRIES = 3;
 
+/** Returns how many cells of `givens` are printed on the grid. */
 function countGivens(givens: Readonly<Uint8Array>): number {
     let count = 0;
     for (let cell = 0; cell < givens.length; cell++) {

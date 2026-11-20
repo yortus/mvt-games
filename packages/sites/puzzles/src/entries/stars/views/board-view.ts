@@ -16,9 +16,11 @@ import { CROSS_COLOR, GROUP_COLOR, REGION_TINTS, STAR_COLOR, STAR_EDGE_COLOR } f
 export interface BoardViewBindings {
     /** The puzzle. The board is built afresh for each new one, fitted to its size. */
     puzzle: () => StarPuzzle;
-    /** The space the grid is fitted into, and centred in, from the board's origin, read once. */
+    /** The width of the space the grid is fitted into, and centred in, from the board's origin, read once. */
     width: number;
+    /** The height of the space the grid is fitted into, read once. */
     height: number;
+    /** The mark on `cell`, given or the player's. */
     markAt: (cell: number) => CellMark;
     /** Whether `cell` is a given, printed on the grid, which is drawn in ink. */
     isGivenAt: (cell: number) => boolean;
@@ -36,7 +38,7 @@ export interface BoardViewBindings {
     changes: () => number;
     /** A count that rises as each puzzle opens, so a fresh copy of the same puzzle, started again, is redrawn too. */
     puzzlesOpened: () => number;
-    /** The player tapped `cell`. Without it, the board takes no input. */
+    /** The player tapped `cell`. Without it, the board ignores the pointer. */
     onCellTapped?: (cell: number) => void;
     /** The player dragged over `cells`, two or more, and let go. */
     onCellsDragged?: (cells: readonly number[]) => void;
@@ -52,19 +54,21 @@ export interface BoardViewBindings {
  * lines between its cells. A cross, the player's note that a cell has no
  * star, is a faint blue pencil mark. The player's stars are gold, or red
  * where they break a rule, on a red cell. Givens, the stars and crosses
- * printed on the grid, are drawn in ink. A group
- * the player ringed is drawn round, just inside its cells, in violet: faint
- * once a star is in it, and red once every cell has a cross. Every ring is
- * drawn the same way in, since groups never overlap. The cells a drag is
- * gathering are washed in violet and drawn round too, or in grey if letting
- * go would do nothing.
+ * printed on the grid, are drawn in ink. A group the player ringed is drawn
+ * round, just inside its cells, in violet: faint once a star is in it, and
+ * red once every cell has a cross. Every ring is drawn the same way in,
+ * since groups never overlap. The cells a drag is gathering are washed in
+ * violet and drawn round too, or in grey if letting go would do nothing.
  *
  * It is made of layers: the tinted cells, a glow for when it is solved, the
  * thin lines, the marks, the regions' borders, the groups, and the drag.
  * The marks and groups are drawn again only as they change, and the drag
  * as it changes. The board only turns pointer events into positions in
  * cells, for the gestures view model to turn into taps and drags. What
- * those do is up to whoever the board reports to.
+ * those do is up to the view that wires its relays.
+ *
+ * The glow rises in the update step, from the moment the puzzle shown
+ * becomes solved. A puzzle that is solved as it first shows glows at once.
  */
 export function BoardView(bindings: BoardViewBindings): Container {
     const view = new Container();
@@ -84,10 +88,11 @@ export function BoardView(bindings: BoardViewBindings): Container {
     let drawnDragChanges = -1;
     // Which cells are in the group being drawn round, as it is drawn
     let isInGroup = new Uint8Array(0);
-    // The glow's time, from the moment the puzzle is solved, and whether the puzzle shown is solved
-    let glowMs = 0;
-    let isShowingSolved = false;
-    build(bindings.puzzle());
+    // The glow's time, from the moment the puzzle is solved, whether the puzzle shown is solved, and which puzzle that is
+    let glowPuzzle = bindings.puzzle();
+    let isShowingSolved = bindings.isSolved();
+    let glowMs = isShowingSolved ? GLOW_MS : 0;
+    build(glowPuzzle);
 
     if (isInteractive) {
         listenToPointer({
@@ -103,13 +108,20 @@ export function BoardView(bindings: BoardViewBindings): Container {
     return view;
 
     function update(deltaMs: number): void {
-        // The glow rises from the moment the puzzle is solved
+        const shown = bindings.puzzle();
         const isSolved = bindings.isSolved();
-        if (isSolved !== isShowingSolved) {
+        if (shown !== glowPuzzle) {
+            // A puzzle that is solved already shows solved at once, and its glow doesn't rise
+            glowPuzzle = shown;
+            isShowingSolved = isSolved;
+            glowMs = isSolved ? GLOW_MS : 0;
+        }
+        else if (isSolved !== isShowingSolved) {
+            // The glow rises from the moment the puzzle is solved
             isShowingSolved = isSolved;
             glowMs = 0;
         }
-        if (isShowingSolved) glowMs += deltaMs;
+        if (isShowingSolved) glowMs = Math.min(GLOW_MS, glowMs + deltaMs);
     }
 
     function refresh(): void {
@@ -181,9 +193,6 @@ export function BoardView(bindings: BoardViewBindings): Container {
             });
             drawnDragChanges = -1;
         }
-        // A puzzle solved already shows solved at once, with no glow rising
-        isShowingSolved = bindings.isSolved();
-        glowMs = isShowingSolved ? GLOW_MS : 0;
         drawMarks();
         drawRings();
     }
@@ -221,7 +230,8 @@ export function BoardView(bindings: BoardViewBindings): Container {
             }
             // The player's stars are gold, with a darker edge so they stand out on every tint, or green once solved
             else if (kind === PLAYER_STAR && !isSolved) marks.fill(STAR_COLOR).stroke({ color: STAR_EDGE_COLOR, width: Math.max(1, cellSize * STAR_EDGE_SHARE), join: 'round' });
-            else marks.fill(MARK_COLORS[kind] ?? SOLVED_COLOR);
+            else if (kind === PLAYER_STAR) marks.fill(SOLVED_COLOR);
+            else marks.fill(MARK_COLORS[kind]);
         }
     }
 
@@ -307,11 +317,12 @@ export function BoardView(bindings: BoardViewBindings): Container {
         for (let i = 0; i < cells.length; i++) isInGroup[cells[i]] = 0;
     }
 
-    /** Where a point on the board is on the grid, in cells, across and down from its top left corner. */
+    /** Where a point on the board is on the grid, in cells across from its left. */
     function toGridX(x: number): number {
         return (x - layout.gridX) / layout.cellSize;
     }
 
+    /** Where a point on the board is on the grid, in cells down from its top. */
     function toGridY(y: number): number {
         return (y - layout.gridY) / layout.cellSize;
     }
@@ -321,38 +332,62 @@ export function BoardView(bindings: BoardViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-/**
- * A border's width, how far a cross's arms reach from its middle and how
- * thick they are, the player's and a given's, a star's radius, how far it
- * sits below the middle, and the width of the edge round the player's, each
- * as a share of a cell, and a star's inner radius, as a share of its outer
- * one.
- */
+/** A region border's width, as a share of a cell. */
 const BORDER_SHARE = 0.06;
+
+/** How far a cross's arms reach from its middle, as a share of a cell. */
 const CROSS_SHARE = 0.1;
+
+/** How thick the player's crosses are, as a share of a cell. */
 const CROSS_WIDTH_SHARE = 0.035;
+
+/** How thick a given cross is, as a share of a cell. Givens are drawn bolder, in ink. */
 const GIVEN_CROSS_WIDTH_SHARE = 0.05;
+
+/** A star's outer radius, as a share of a cell. */
 const STAR_SHARE = 0.36;
+
+/** How far a star sits below the middle of its cell, as a share of a cell, so it looks centred. */
 const STAR_DROP = 0.03;
+
+/** A star's inner radius, as a share of its outer one. */
 const STAR_INNER = 0.45;
+
+/** The width of the edge round the player's stars, as a share of a cell. */
 const STAR_EDGE_SHARE = 0.025;
-/** The kinds of mark, in the order they are drawn, and each one's colour. The player's stars are gold, or green once solved. */
+
+// The kinds of mark, numbered in the order they are drawn, so each kind is drawn in one batch
 const PLAYER_CROSS = 0;
 const GIVEN_CROSS = 1;
 const PLAYER_STAR = 2;
 const GIVEN_STAR = 3;
 const CLASH_STAR = 4;
 const MARK_KINDS = 5;
+
+/**
+ * Each kind of mark's colour, by its number. The player's stars don't have
+ * a single colour. They are gold with a darker edge, or green once the
+ * puzzle is solved, so their entry is undefined, and `drawMarks` chooses
+ * their colour.
+ */
 const MARK_COLORS: readonly (number | undefined)[] = [CROSS_COLOR, INK_COLOR, undefined, INK_COLOR, CLASH_COLOR];
 
-/** A ring's width, and how far inside its cells it is drawn, each as a share of a cell. */
+/** A ring's width, as a share of a cell. */
 const RING_SHARE = 0.05;
+
+/** How far inside its cells a ring is drawn, as a share of a cell. */
 const RING_INSET = 0.12;
-/** How faint a ring with a star in it is, and how strong the wash over a drag's cells. */
+
+/** How faint a ring with a star in it is. */
 const MET_RING_ALPHA = 0.3;
+
+/** How strong the wash over a drag's cells is. */
 const DRAG_WASH_ALPHA = 0.16;
-/** How strong the glow of a puzzle solved grows, and how long it takes, in ms. */
+
+/** How strong the glow of a solved puzzle grows. */
 const GLOW_ALPHA = 0.85;
+
+/** How long the glow takes to grow, in ms. */
 const GLOW_MS = 600;
 
 /** Returns a tint for each region, as an index into `REGION_TINTS`, so no two regions that share a side have the same one. */

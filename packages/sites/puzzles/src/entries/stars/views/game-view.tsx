@@ -3,20 +3,21 @@
 import type { Container } from 'pixi.js';
 import { Match, Switch } from '@mvtjs/pixi';
 import type { SfxChip } from '@mvtjs/site-kit/sound';
-import { CalendarView, IntroView, LEVEL_NAMES, MARGIN, PAPER_COLOR, type ScreenPoint } from '../../../shared';
+import { CalendarView, IntroView, LEVEL_NAMES, PAPER_COLOR, type ScreenPoint } from '../../../shared';
 import type { GameModel, StarsTarget } from '../models';
 import { HOW_TO_PLAY } from '../start';
 import { AudioView } from './audio-view';
 import { layOutBoard } from './board-layout';
 import { ExampleStarsView } from './example-stars-view';
 import { PuzzleView } from './puzzle-view';
-import { BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_Y, SCREEN_HEIGHT, SCREEN_WIDTH } from './view-constants';
+import { BOARD_HEIGHT, BOARD_WIDTH, BOARD_X, BOARD_Y, BUTTON_HEIGHT, BUTTON_WIDTH, BUTTON_Y, SCREEN_HEIGHT, SCREEN_WIDTH, UNDO_X } from './view-constants';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
 export interface GameViewBindings {
+    /** The game, read once. */
     model: GameModel;
     /** The chip the sound effects play on. */
     sfx: SfxChip<'audio90'>;
@@ -37,7 +38,7 @@ export function GameView(bindings: GameViewBindings): Container {
 
     /** Where the walkthrough's arrow touches a target, on the puzzle's screen: a point on the grid, laid out as the board lays it out, or the middle of the Undo button. */
     const findTargetPoint = (target: StarsTarget): ScreenPoint => {
-        if (target.on === 'undo') return { x: MARGIN + BUTTON_WIDTH / 2, y: BUTTON_Y + BUTTON_HEIGHT / 2 };
+        if (target.on === 'undo') return { x: UNDO_X + BUTTON_WIDTH / 2, y: BUTTON_Y + BUTTON_HEIGHT / 2 };
         const { size } = model.puzzle!.puzzle.grid;
         const { cellSize, gridX, gridY } = layOutBoard({ size, width: BOARD_WIDTH, height: BOARD_HEIGHT });
         return { x: BOARD_X + gridX + target.x * cellSize, y: BOARD_Y + gridY + target.y * cellSize };
@@ -71,6 +72,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 groupsCleared={() => model.puzzle?.groupsCleared ?? 0}
                 undosDone={() => model.puzzle?.undosDone ?? 0}
                 markPan={() => findMarkPan(model)}
+                puzzlesOpened={() => model.puzzlesOpened}
                 puzzlesSolved={() => model.puzzlesSolved}
             />
         </container>

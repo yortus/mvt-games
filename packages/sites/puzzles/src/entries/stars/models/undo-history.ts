@@ -20,6 +20,7 @@ export interface UndoHistory<T> {
 // Options
 // ---------------------------------------------------------------------------
 
+/** What an undo history is created with. */
 export interface UndoHistoryOptions {
     /** The most actions kept. The oldest goes as another comes. */
     readonly mostUndos: number;

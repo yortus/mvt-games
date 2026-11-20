@@ -22,6 +22,15 @@ export interface AudioViewBindings {
     readonly strokePassages: () => number;
     /** Where across the maze the last mark was, from -1 at the left edge to 1 at the right, which its sound is panned to. */
     readonly markPan: () => number;
+    /**
+     * The number of puzzles opened on this visit. It rises each time the
+     * puzzle shown changes, which happens when a puzzle is opened or started
+     * again, and when a walkthrough starts or ends. The other counts are read
+     * from the puzzle shown, so they can jump when it changes, even though the
+     * player hasn't made a move. On the tick when this number changes, the
+     * view stays silent for those counts.
+     */
+    readonly puzzlesOpened: () => number;
     /** Puzzles solved on this visit. */
     readonly puzzlesSolved: () => number;
 }
@@ -36,7 +45,9 @@ export interface AudioViewBindings {
  * climbs. A wall knocks, a mark rubbed out brushes, and a mark that breaks
  * a rule knocks low, twice, in place of its own sound. Undo blips, and a
  * solved maze chimes. A fast drag can make several marks in a frame, and
- * the frame plays one sound for them.
+ * the frame plays one sound for them. When the puzzle shown changes, its
+ * counts replace the last puzzle's, and on that tick the view stays silent
+ * for them.
  */
 export function AudioView(bindings: AudioViewBindings): Container {
     const { sfx } = bindings;
@@ -48,6 +59,7 @@ export function AudioView(bindings: AudioViewBindings): Container {
         cleared: bindings.marksCleared,
         clashes: bindings.clashesMade,
         undos: bindings.undosDone,
+        opened: bindings.puzzlesOpened,
         solved: bindings.puzzlesSolved,
     });
     setRefresh(view, refresh);
@@ -55,12 +67,14 @@ export function AudioView(bindings: AudioViewBindings): Container {
 
     function refresh(): void {
         const w = watcher.poll();
-        const pan = bindings.markPan() * PAN_SPREAD;
-        if (w.clashes.increased) sfx.play(CLASHED, { pan });
-        else if (w.passages.increased) sfx.play(STEPPED, { note: STEP_ROOT + toPentatonic(bindings.strokePassages() - 1), pan });
-        else if (w.walls.increased) sfx.play(WALLED, { pan });
-        else if (w.cleared.increased) sfx.play(RUBBED, { pan });
-        if (w.undos.increased) sfx.play(UNDONE);
+        if (!w.opened.changed) {
+            const pan = bindings.markPan() * PAN_SPREAD;
+            if (w.clashes.increased) sfx.play(CLASHED, { pan });
+            else if (w.passages.increased) sfx.play(STEPPED, { note: STEP_ROOT + toPentatonic(bindings.strokePassages() - 1), pan });
+            else if (w.walls.increased) sfx.play(WALLED, { pan });
+            else if (w.cleared.increased) sfx.play(RUBBED, { pan });
+            if (w.undos.increased) sfx.play(UNDONE);
+        }
         if (w.solved.increased) sfx.play(SOLVED);
     }
 }

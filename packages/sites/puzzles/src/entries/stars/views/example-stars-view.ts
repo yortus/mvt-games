@@ -39,4 +39,5 @@ export function ExampleStarsView(bindings: ExampleStarsViewBindings): Container 
 // Internals
 // ---------------------------------------------------------------------------
 
+/** An empty list of groups, for the example. The binding returns this one list, so it doesn't create a new list on every refresh. */
 const NO_GROUPS: readonly (readonly number[])[] = [];

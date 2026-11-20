@@ -30,7 +30,7 @@ export type StarTechnique = 'rules' | 'bands' | 'pressure' | 'boxes';
 export const STAR_TECHNIQUES: readonly StarTechnique[] = ['rules', 'bands', 'pressure', 'boxes'];
 
 /** How far the techniques got with a puzzle. */
-export interface StarSolution {
+export interface SolverProgress {
     /** Each cell, as `STAR`, `EMPTY`, or `UNKNOWN` where the techniques got no further. */
     readonly cells: Uint8Array;
     /** Whether every cell is known. A puzzle the techniques finish has one solution, since every step was forced. */
@@ -41,7 +41,7 @@ export interface StarSolution {
 
 /**
  * Works out a puzzle of stars, given its regions, as a person would, and
- * never supposes. Wherever the rules get stuck, it asks for at least two
+ * never supposes. Wherever the rules get stuck, it requires at least two
  * cells that the other techniques can find from the board as it stands. A
  * single cell to find, somewhere on the whole board, is a needle in a
  * haystack: a person would likely start trying cells to find it. So the
@@ -54,14 +54,16 @@ export interface StarSolver {
      * `UNKNOWN` for the rest. Each time, it uses the easiest technique that
      * finds something.
      */
-    solve: (givens: Readonly<Uint8Array>, most: StarTechnique) => StarSolution;
+    solve: (givens: Readonly<Uint8Array>, most: StarTechnique) => SolverProgress;
 }
 
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
 
+/** What a solver is created with. */
 export interface StarSolverOptions {
+    /** The puzzle's grid. */
     readonly grid: StarGrid;
     /** Each cell's region, numbered from 0. There are as many regions as rows. */
     readonly regions: Readonly<Uint8Array>;
@@ -125,7 +127,7 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
                 let easiest = 0;
                 for (let level = 1; level <= mostLevel && foundCount < FEWEST_FOUND; level++) {
                     tried[level].set(cells);
-                    if (!applyTechnique(level, tried[level])) continue;
+                    if (!applyTechnique(STAR_TECHNIQUES[level], tried[level])) continue;
                     if (easiest === 0) easiest = level;
                     for (let cell = 0; cell < cellCount; cell++) {
                         if (tried[level][cell] === cells[cell] || isFound[cell] === 1) continue;
@@ -141,11 +143,15 @@ export function createStarSolver(options: StarSolverOptions): StarSolver {
         },
     };
 
-    /** Applies the technique at `level` in the list, past the rules, once. Returns whether it changed anything. */
-    function applyTechnique(level: number, cells: Uint8Array): boolean {
-        if (level === 1) return countBands(cells);
-        if (level === 2) return applyPressure(cells);
-        return fillBoxes(cells);
+    /** Applies `technique` once. Returns whether it changed anything. */
+    function applyTechnique(technique: StarTechnique, cells: Uint8Array): boolean {
+        switch (technique) {
+            // `applyRules` has already run until the cells stopped changing, so the rules can't change any more cells here
+            case 'rules': return false;
+            case 'bands': return countBands(cells);
+            case 'pressure': return applyPressure(cells);
+            case 'boxes': return fillBoxes(cells);
+        }
     }
 
     /** Applies the rules until nothing changes. */

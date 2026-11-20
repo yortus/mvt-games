@@ -40,15 +40,15 @@ describe('createPuzzleModel', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
         // Three cells two apart along the top row touch nothing, so the row alone is broken
         const row = [0, 2, 4];
+        expect(size).toBeGreaterThan(row[row.length - 1]);
         for (let i = 0; i < row.length; i++) model.mark(row[i], 'star');
         expect(row.map((cell) => model.isClashAt(cell))).toEqual([true, true, true]);
-        expect(size).toBeGreaterThan(4);
     });
 
     it('rings a group once, met by a star in it, broken by a cross in every cell, and undo takes the ring back', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
         // Two cells side by side
-        const a = PUZZLE.grid.size + 1;
+        const a = size + 1;
         const b = a + 1;
         model.noteGroup([b, a]);
         model.noteGroup([a, b]);
@@ -68,7 +68,6 @@ describe('createPuzzleModel', () => {
 
     it('rings only cells joined side to side, and clear of every other ring', () => {
         const model = createPuzzleModel({ puzzle: PUZZLE });
-        const { size } = PUZZLE.grid;
         model.noteGroup([0, size + 1]);
         model.noteGroup([0, 2]);
         expect(model.groups.length).toBe(0);

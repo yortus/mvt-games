@@ -14,9 +14,10 @@
 > stands, so the first step of the build is a faster solver, measured on a
 > phone.
 
-**Status:** built as a beta entry, **Stars**, deployed. Four levels since
-the first playtest (section 10). Since 101, every puzzle is fair by
-construction, with givens, and the generator of section 4 is replaced.
+**Status:** finished. Built as **Stars**, which left beta on 2026-11-20,
+after a review. Four levels since the first playtest (section 10). Since
+101, every puzzle is fair by construction, with givens, and the generator
+of section 4 is replaced.
 
 **Written:** 2026-11-13, against `vnext` at `48b318f3`. The rules and names
 come from the sources in section 2. The spike was a Node script (not in the
@@ -28,7 +29,7 @@ repo), untuned, as Minotaur's was.
 the puzzles' [shared parts](../../packages/sites/puzzles/src/shared/index.ts),
 [A Puzzle's Day and Its Way In](../../packages/sites/arcade/src/entries/README.md#a-puzzles-day-and-its-way-in),
 the [originality rules](../../packages/sites/arcade/src/entries/README.md#originality),
-[087](../archive/087-wall-maze-puzzle.md) (Minotaur's proposal, whose shape this follows),
+[087](./087-wall-maze-puzzle.md) (Minotaur's proposal, whose shape this follows),
 [073](../tasks/backlog/073-models-take-their-random-source.md) (models take their random source).
 
 | # | Decision or recommendation | Section |

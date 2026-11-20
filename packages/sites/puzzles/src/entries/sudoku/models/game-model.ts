@@ -42,8 +42,13 @@ export interface GameModel {
     /** The day and level of the puzzle being played, or the last one played. */
     readonly puzzleDay: number;
     readonly puzzleLevel: PuzzleLevel;
-    /** Puzzles opened, and solved, on this visit. The practice puzzle counts as opened, as the walkthrough starts and ends. */
+    /**
+     * The number of puzzles opened on this visit. It rises each time the
+     * puzzle shown changes, which happens when a puzzle is opened or started
+     * again, and when a walkthrough starts or ends.
+     */
     readonly puzzlesOpened: number;
+    /** Puzzles solved on this visit. */
     readonly puzzlesSolved: number;
     /** Whether there is a puzzle to start again: one of the calendar's, open, and not the walkthrough's practice puzzle. */
     readonly canRestartPuzzle: boolean;

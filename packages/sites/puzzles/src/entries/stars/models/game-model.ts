@@ -36,11 +36,17 @@ export interface GameModel {
     readonly intro: IntroModel<PuzzleModel, StarsTarget>;
     /** The puzzle the card shows, solved. */
     readonly example: StarPuzzle;
-    /** The day and level of the puzzle being played, or the last one played. */
+    /** The day of the puzzle being played, or of the last one played. */
     readonly puzzleDay: number;
+    /** The level of the puzzle being played, or of the last one played. */
     readonly puzzleLevel: PuzzleLevel;
-    /** Puzzles opened, and solved, on this visit. */
+    /**
+     * The number of puzzles opened on this visit. It rises each time the
+     * puzzle shown changes, which happens when a puzzle is opened or started
+     * again, and when a walkthrough starts or ends.
+     */
     readonly puzzlesOpened: number;
+    /** Puzzles solved on this visit. */
     readonly puzzlesSolved: number;
     /** Whether there is a puzzle to start again: one of the calendar's, open, and not the walkthrough's practice puzzle. */
     readonly canRestartPuzzle: boolean;
@@ -58,6 +64,7 @@ export interface GameModel {
     restartPuzzle: () => void;
     /** Keeps the puzzle's progress now, if it changed since it was last kept, and ticks it off once it is solved. */
     keepProgress: () => void;
+    /** Moves the walkthrough on, and keeps the puzzle's progress if it changed. */
     update: (deltaMs: number) => void;
 }
 
@@ -65,8 +72,9 @@ export interface GameModel {
 // Options
 // ---------------------------------------------------------------------------
 
+/** What the game is created with. */
 export interface GameModelOptions {
-    /** Today's date where the player is, numbered from 1 January 1970. The page reads the clock, and the model takes the day it gives. */
+    /** Today's date where the player is, numbered from 1 January 1970. The page reads the clock and passes the day in. */
     readonly today: number;
     /** Where the progress and the solved puzzles are kept. */
     readonly store: LocalStore;
@@ -102,7 +110,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         example,
         get puzzleDay() { return puzzleDay; },
         get puzzleLevel() { return puzzleLevel; },
-        get puzzlesOpened() { return puzzlesOpened; },
+        get puzzlesOpened() { return puzzlesOpened + intro.practiceChanges; },
         get puzzlesSolved() { return puzzlesSolved; },
         get canRestartPuzzle() { return phase === 'playing' && puzzle !== undefined && intro.practice === undefined; },
         openPuzzle(day) {

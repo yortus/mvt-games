@@ -13,6 +13,7 @@ export const STARS_PER_LINE = 2;
 export interface StarGrid {
     /** How many cells along each side, and how many rows, columns and regions it has. */
     readonly size: number;
+    /** How many cells it has: `size` squared. */
     readonly cellCount: number;
     /** Each cell's neighbours, side to side and diagonally: eight places for each cell, -1 past the edge. */
     readonly neighbours: Readonly<Int32Array>;
@@ -26,6 +27,7 @@ export interface StarGrid {
 // Options
 // ---------------------------------------------------------------------------
 
+/** What a grid is created with. */
 export interface StarGridOptions {
     /** How many cells along each side. */
     readonly size: number;

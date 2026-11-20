@@ -1,5 +1,5 @@
 import { type PuzzleLevel, toDayNumber } from '../../../shared';
-import type { LevelSettings } from './levels';
+import { LEVEL_SETTINGS, type LevelSettings } from './levels';
 
 // ---------------------------------------------------------------------------
 // The calendar
@@ -18,10 +18,14 @@ export const STARTING_LEVEL: PuzzleLevel = 'easy';
 /** How many actions undo can take back, at most. */
 export const MOST_UNDOS = 200;
 
-/** The puzzle the card that says how to play shows, solved: the seed it is made from, and its settings, a medium puzzle's. Any seed would do. */
+/** The seed of the example on the How to play card, which shows it solved. Any seed would do. */
 export const EXAMPLE_SEED = 5;
-export const EXAMPLE_SETTINGS: LevelSettings = { size: 8, hardest: 'bands', isHardestNeeded: false };
 
-/** The walkthrough's practice puzzle: the seed it is made from, and its settings, an easy puzzle's. Any seed would do, other than the example's. */
+/** The example's settings. It is an easy puzzle, so it is small and quick to make. */
+export const EXAMPLE_SETTINGS: LevelSettings = LEVEL_SETTINGS.easy;
+
+/** The seed of the walkthrough's practice puzzle. Any seed would do, other than the example's. */
 export const PRACTICE_SEED = 7;
-export const PRACTICE_SETTINGS: LevelSettings = { size: 8, hardest: 'bands', isHardestNeeded: false };
+
+/** The practice puzzle's settings. It is an easy puzzle, since the walkthrough teaches the controls, not the techniques. */
+export const PRACTICE_SETTINGS: LevelSettings = LEVEL_SETTINGS.easy;

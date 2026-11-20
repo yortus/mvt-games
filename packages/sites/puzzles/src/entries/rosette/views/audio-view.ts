@@ -22,6 +22,15 @@ export interface AudioViewBindings {
     readonly locksGained: () => number;
     /** Whether the open puzzle is solved, when the solved chime says it all. */
     readonly isSolved: () => boolean;
+    /**
+     * The number of puzzles opened on this visit. It rises each time the
+     * puzzle shown changes, which happens when a puzzle is opened or started
+     * again, and when a walkthrough starts or ends. The other counts are read
+     * from the puzzle shown, so they can jump when it changes, even though the
+     * player hasn't made a move. On the tick when this number changes, the
+     * view stays silent for those counts.
+     */
+    readonly puzzlesOpened: () => number;
     /** Puzzles solved on this visit. */
     readonly puzzlesSolved: () => number;
 }
@@ -40,6 +49,10 @@ export interface AudioViewBindings {
  * The wait for the pieces to land is presentation state, counted down in
  * the update step, and each lock chime is counted as it falls due, so the
  * refresh step plays it as that count rises.
+ *
+ * When the puzzle shown changes, its counts replace the last puzzle's,
+ * and on that tick the view stays silent for them. The view also drops a
+ * lock chime that is still waiting for the last puzzle's pieces.
  */
 export function AudioView(bindings: AudioViewBindings): Container {
     const { sfx } = bindings;
@@ -48,14 +61,16 @@ export function AudioView(bindings: AudioViewBindings): Container {
     // The time left until the lock chime, or -1 for none due, and how many have fallen due
     let lockChimeMs = -1;
     let lockChimesDue = 0;
-    const gains = watch({ gained: bindings.locksGained });
-    const watcher = watch({ swaps: bindings.swapsMade, undos: bindings.undosDone, solved: bindings.puzzlesSolved, chimes: () => lockChimesDue });
+    const gains = watch({ gained: bindings.locksGained, opened: bindings.puzzlesOpened });
+    const watcher = watch({ swaps: bindings.swapsMade, undos: bindings.undosDone, opened: bindings.puzzlesOpened, solved: bindings.puzzlesSolved, chimes: () => lockChimesDue });
     setUpdate(view, update);
     setRefresh(view, refresh);
     return view;
 
     function update(deltaMs: number): void {
-        if (gains.poll().gained.increased) lockChimeMs = bindings.isSolved() ? -1 : FLY_MS;
+        const g = gains.poll();
+        if (g.opened.changed) lockChimeMs = -1;
+        else if (g.gained.increased) lockChimeMs = bindings.isSolved() ? -1 : FLY_MS;
         else if (lockChimeMs >= 0) {
             lockChimeMs -= deltaMs;
             if (lockChimeMs <= 0) {
@@ -68,8 +83,8 @@ export function AudioView(bindings: AudioViewBindings): Container {
     function refresh(): void {
         const w = watcher.poll();
         if (w.solved.increased) sfx.play(SOLVED);
-        else if (w.swaps.increased) sfx.play(SWAPPED, { pan: bindings.swapPan() * PAN_SPREAD });
-        if (w.undos.increased) sfx.play(UNDONE);
+        else if (w.swaps.increased && !w.opened.changed) sfx.play(SWAPPED, { pan: bindings.swapPan() * PAN_SPREAD });
+        if (w.undos.increased && !w.opened.changed) sfx.play(UNDONE);
         if (w.chimes.increased) sfx.play(LOCKED);
     }
 }

@@ -3,6 +3,7 @@ import { createRandom } from '@mvtjs/site-kit/random';
 import { EMPTY, STAR, UNKNOWN } from './cell-states';
 import { growRegions } from './grow-regions';
 import { layOutStars } from './lay-out-stars';
+import { LEVEL_SETTINGS, STAR_LEVELS } from './levels';
 import { createStarGrid } from './star-grid';
 import { createStarSolver, STAR_TECHNIQUES } from './star-solver';
 
@@ -50,5 +51,8 @@ describe('the solver\'s techniques', () => {
     }, 120_000);
 });
 
-const SIZES: readonly number[] = [8, 9, 10];
+/** The levels' grid sizes, each once. */
+const SIZES: readonly number[] = [...new Set(STAR_LEVELS.map((level) => LEVEL_SETTINGS[level].size))];
+
+/** How many grids are tried at each size. */
 const SAMPLES_PER_SHAPE = 200;

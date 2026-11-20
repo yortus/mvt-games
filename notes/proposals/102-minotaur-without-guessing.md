@@ -26,7 +26,7 @@ The probes were a Vitest file beside the Minotaur models, not kept. Times
 are in Node.
 
 **Related:**
-[101](./101-stars-without-guessing.md) (Stars without guessing, where the
+[101](../archive/101-stars-without-guessing.md) (Stars without guessing, where the
 line between fair and guessing was drawn),
 [087](../archive/087-wall-maze-puzzle.md) (Minotaur's proposal, whose
 section 4.5 chose tries for the harder levels),

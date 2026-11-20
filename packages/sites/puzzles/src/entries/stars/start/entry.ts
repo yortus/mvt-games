@@ -8,8 +8,7 @@ import thumbnail from './thumbnail.webp';
 /** Stars, as the puzzles site lists it. Its code loads on launch, from `load.ts`, and its long text after the page's first paint, from `details.ts`. */
 export const entry: ArcadeEntry = {
     id: 'stars',
-    // Marked as a beta while its puzzle maker is too slow for bigger grids, and its levels are settled
-    name: 'Stars BETA',
+    name: 'Stars',
     summary: 'A new puzzle of stars every day: two in every row, column and region, and no two touching.',
     tags: ['puzzle'],
     screenWidth: 540,

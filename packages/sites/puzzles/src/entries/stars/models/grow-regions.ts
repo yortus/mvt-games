@@ -6,10 +6,13 @@ import type { StarGrid } from './star-grid';
 // Options
 // ---------------------------------------------------------------------------
 
+/** What `growRegions` works from. */
 export interface GrowRegionsOptions {
+    /** The grid to cut into regions. */
     readonly grid: StarGrid;
     /** The stars the regions are drawn around, two in every row and column. */
     readonly solution: Readonly<Uint8Array>;
+    /** Where the random choices come from, so the same seed grows the same regions. */
     readonly random: Random;
 }
 

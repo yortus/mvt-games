@@ -6,8 +6,11 @@ import { type StarGrid, STARS_PER_LINE } from './star-grid';
 // Options
 // ---------------------------------------------------------------------------
 
+/** What `layOutStars` works from. */
 export interface LayOutStarsOptions {
+    /** The grid to lay the stars out on. */
     readonly grid: StarGrid;
+    /** Where the random choices come from, so the same seed lays out the same stars. */
     readonly random: Random;
 }
 
@@ -17,12 +20,15 @@ export interface LayOutStarsOptions {
 
 /**
  * Returns a random layout of stars for `grid`, with two stars in every row
- * and every column, and none touching, as `STAR` or `EMPTY` for
- * each cell. Regions come later, drawn around the stars. It goes row by
- * row, choosing columns at least two apart that touch no star in the row
- * above, and backs up from a dead end. Every grid 8 by 8 or larger has a
- * layout. 7 by 7 has none: two rows side by side need four stars, and a 2x2
- * box can hold only one.
+ * and every column, and none touching, as `STAR` or `EMPTY` for each cell.
+ * Regions come later, drawn around the stars. It goes row by row, choosing
+ * columns at least two apart that touch no star in the row above, and backs
+ * up from a dead end. Every grid 8 by 8 or larger has a layout, but a
+ * 7 by 7 grid doesn't. On 7 by 7, two rows side by side need four stars,
+ * and the four 2x2 boxes that cover them can hold only one each. So each
+ * box holds a star. The last box is just two cells of column 6, so that
+ * column has a star in each of rows 0 to 1, 2 to 3 and 4 to 5. That makes
+ * three stars, one too many.
  */
 export function layOutStars(options: LayOutStarsOptions): Uint8Array {
     const { grid, random } = options;

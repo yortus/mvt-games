@@ -20,6 +20,15 @@ export interface AudioViewBindings {
     readonly filledDigit: () => number;
     /** Actions undone in the open puzzle. */
     readonly undosDone: () => number;
+    /**
+     * The number of puzzles opened on this visit. It rises each time the
+     * puzzle shown changes, which happens when a puzzle is opened or started
+     * again, and when a walkthrough starts or ends. The other counts are read
+     * from the puzzle shown, so they can jump when it changes, even though the
+     * player hasn't made a move. On the tick when this number changes, the
+     * view stays silent for those counts.
+     */
+    readonly puzzlesOpened: () => number;
     /** Puzzles solved on this visit. */
     readonly puzzlesSolved: () => number;
 }
@@ -33,7 +42,8 @@ export interface AudioViewBindings {
  * its own note on a pentatonic scale, from where its cell is across the
  * grid, and one that breaks a rule knocks low, twice. Undo blips, and a
  * solved puzzle chimes. Notes are silent, as a pencil is, and so is a cell
- * cleared.
+ * cleared. When the puzzle shown changes, its counts replace the last
+ * puzzle's, and on that tick the view stays silent for them.
  */
 export function AudioView(bindings: AudioViewBindings): Container {
     const { sfx } = bindings;
@@ -43,6 +53,7 @@ export function AudioView(bindings: AudioViewBindings): Container {
         placed: bindings.answersPlaced,
         clashes: bindings.clashesMade,
         undos: bindings.undosDone,
+        opened: bindings.puzzlesOpened,
         solved: bindings.puzzlesSolved,
     });
 
@@ -51,9 +62,11 @@ export function AudioView(bindings: AudioViewBindings): Container {
 
     function refresh(): void {
         const w = watcher.poll();
-        if (w.clashes.increased) sfx.play(CLASHED, { pan: toPan(bindings.filledCell()) });
-        else if (w.placed.increased) sfx.play(PLACED, { note: PLACED_ROOT + toPentatonic(bindings.filledDigit()), pan: toPan(bindings.filledCell()) });
-        if (w.undos.increased) sfx.play(UNDONE);
+        if (!w.opened.changed) {
+            if (w.clashes.increased) sfx.play(CLASHED, { pan: toPan(bindings.filledCell()) });
+            else if (w.placed.increased) sfx.play(PLACED, { note: PLACED_ROOT + toPentatonic(bindings.filledDigit()), pan: toPan(bindings.filledCell()) });
+            if (w.undos.increased) sfx.play(UNDONE);
+        }
         if (w.solved.increased) sfx.play(SOLVED);
     }
 }

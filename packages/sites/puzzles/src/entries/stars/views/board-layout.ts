@@ -6,9 +6,11 @@ import { MOST_CELL_SIZE } from './view-constants';
 
 /** Where a grid goes, in pixels, from the top left corner of the space it is fitted into. */
 export interface BoardLayout {
+    /** The size of each cell. */
     readonly cellSize: number;
-    /** The grid's top left corner. */
+    /** The left of the grid. */
     readonly gridX: number;
+    /** The top of the grid. */
     readonly gridY: number;
 }
 
@@ -16,11 +18,13 @@ export interface BoardLayout {
 // Options
 // ---------------------------------------------------------------------------
 
+/** What a board is laid out from. */
 export interface BoardLayoutOptions {
     /** How many cells along each side of the grid. */
     readonly size: number;
-    /** The space to fit into. */
+    /** The width of the space to fit into. */
     readonly width: number;
+    /** The height of the space to fit into. */
     readonly height: number;
 }
 

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { refreshView, updateView } from '@mvtjs/pixi';
 import type { Audio90PlayOptions } from 'audio90';
 import { createHeadlessAudio90, type HeadlessAudio90 } from 'audio90/headless';
-import { CLASHED, PLACED } from '../data';
+import { CLASHED, PLACED, SOLVED } from '../data';
 import { AudioView } from './audio-view';
 
 // The view is tested by what it asks of its chip: which sounds it plays, at which notes, and where.
@@ -43,6 +43,17 @@ describe('AudioView', () => {
         tick();
         expect(listPlayed(sfx)).toEqual([CLASHED]);
     });
+
+    it('stays silent as the puzzle shown changes and its counts jump, but still chimes a puzzle solved', () => {
+        const { sfx, state, tick } = setUp({ answersPlaced: 1, undosDone: 1 });
+        // The walkthrough ends, and the puzzle open shows again, with its own, higher counts
+        state.answersPlaced = 5;
+        state.undosDone = 3;
+        state.puzzlesOpened = 1;
+        state.puzzlesSolved = 1;
+        tick();
+        expect(listPlayed(sfx)).toEqual([SOLVED]);
+    });
 });
 
 interface State {
@@ -51,12 +62,13 @@ interface State {
     filledCell: number;
     filledDigit: number;
     undosDone: number;
+    puzzlesOpened: number;
     puzzlesSolved: number;
 }
 
 function setUp(initial: Partial<State> = {}) {
     const state: State = {
-        answersPlaced: 0, clashesMade: 0, filledCell: -1, filledDigit: 0, undosDone: 0, puzzlesSolved: 0, ...initial,
+        answersPlaced: 0, clashesMade: 0, filledCell: -1, filledDigit: 0, undosDone: 0, puzzlesOpened: 0, puzzlesSolved: 0, ...initial,
     };
     const sfx = createSpiedChip();
     const view = AudioView({
@@ -66,6 +78,7 @@ function setUp(initial: Partial<State> = {}) {
         filledCell: () => state.filledCell,
         filledDigit: () => state.filledDigit,
         undosDone: () => state.undosDone,
+        puzzlesOpened: () => state.puzzlesOpened,
         puzzlesSolved: () => state.puzzlesSolved,
     });
     // One tick as the Arcade runs it: the chip's clock, then the view's update and refresh

@@ -70,6 +70,7 @@ export function GameView(bindings: GameViewBindings): Container {
                 swapPan={() => findSwapPan(model)}
                 locksGained={() => model.puzzle?.locksGained ?? 0}
                 isSolved={() => model.puzzle?.isSolved ?? false}
+                puzzlesOpened={() => model.puzzlesOpened}
                 puzzlesSolved={() => model.puzzlesSolved}
             />
         </container>
