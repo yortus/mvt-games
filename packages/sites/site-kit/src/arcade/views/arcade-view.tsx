@@ -1,7 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 
 import { destroyElement, Match, Switch } from '@mvtjs/html';
-import { assert, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
+import { assert, createReaction, type MetricKind, type PerformanceMetrics, watch } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '../../sound';
 import type { ArcadeEntry, EntryDetails, EntryStarter } from '../../entry-types';
 import type { ArcadeModel, ThemeKind } from '../models';
@@ -64,6 +64,12 @@ export interface ArcadeViewBindings {
      * than loading the page again. A click that opens a new tab still does.
      */
     readonly homeLinks?: readonly HTMLElement[];
+    /**
+     * The site's nav, if the page has one. On a narrow screen its links fold
+     * into a menu, which closes as an entry launches, so it isn't still open
+     * when the visitor comes back to the wall.
+     */
+    readonly nav?: HTMLElement;
     /**
      * The page's own chip for sounds, at the sound effects' volume. It plays
      * whether an entry runs, is paused or is held. The Arcade's own sounds
@@ -170,6 +176,11 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         isMotionReduced: () => bindings.isMotionReduced() || THEMES[model.theme].isQuiet,
     });
     const phaseWatcher = watch({ phase: () => model.phase });
+    const closeNavMenuWhenEntryLaunches = createReaction({
+        watch: () => model.phase,
+        when: 'launching',
+        react: closeNavMenu,
+    });
     // A link straight to an entry launches it before there is a wall to leave
     if (model.phase !== 'browsing') transition.holdGrown();
     /** The picture on the card launched, for the way in to start from as the launch begins. */
@@ -459,6 +470,19 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         lockScroll();
         drawTurn();
         drawTheme();
+        closeNavMenuWhenEntryLaunches();
+    }
+
+    /**
+     * Closes the nav's menu, if it is open. The nav's own script opens and
+     * closes it, with a class on the nav and the state of its toggle, so
+     * this undoes both.
+     */
+    function closeNavMenu(): void {
+        const nav = bindings.nav;
+        if (nav === undefined) return;
+        nav.classList.remove('site-nav--open');
+        nav.querySelector('.site-nav-toggle')?.setAttribute('aria-expanded', 'false');
     }
 
     /**

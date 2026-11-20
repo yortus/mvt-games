@@ -80,6 +80,20 @@ describe('ArcadeView', () => {
         });
     });
 
+    describe('the nav\'s menu, on a narrow screen', () => {
+        it('closes as an entry launches, so it isn\'t still open on the way back', () => {
+            const nav = document.createElement('nav');
+            nav.innerHTML = '<button class="site-nav-toggle" aria-expanded="true"></button>';
+            nav.classList.add('site-nav--open');
+            const { model, tick, view } = setUp({ nav });
+            model.launch(ENTRY.id);
+            tick();
+            expect(nav.classList.contains('site-nav--open')).toBe(false);
+            expect(nav.querySelector('.site-nav-toggle')?.getAttribute('aria-expanded')).toBe('false');
+            destroyElement(view);
+        });
+    });
+
     describe('the info panel over an entry', () => {
         it('pauses the entry as it opens from the bar, and resumes it as it closes', async () => {
             const { model, tick, view } = setUp();
@@ -226,7 +240,7 @@ const PERFMON = { PerfmonFloatView, createPerformanceMeter };
 /** Far longer than a card waits, while selected, to play live. */
 const LONG_ENOUGH_TO_ATTRACT_MS = 5000;
 
-function setUp(options: { homeLinks?: readonly HTMLElement[]; livePreview?: LivePreview } = {}): { model: ArcadeModel; navTools: HTMLElement; view: Element; tick: () => void } {
+function setUp(options: { homeLinks?: readonly HTMLElement[]; nav?: HTMLElement; livePreview?: LivePreview } = {}): { model: ArcadeModel; navTools: HTMLElement; view: Element; tick: () => void } {
     const model = createArcadeModel({
         entries: [ENTRY],
         factsFor: () => undefined,
@@ -257,6 +271,7 @@ function setUp(options: { homeLinks?: readonly HTMLElement[]; livePreview?: Live
         // As loaded, so the panel is built
         perfmon: () => PERFMON,
         homeLinks: options.homeLinks,
+        nav: options.nav,
     });
     document.body.replaceChildren(view, navTools);
     const tick = (): void => {

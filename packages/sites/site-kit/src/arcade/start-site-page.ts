@@ -189,6 +189,7 @@ export function startSitePage(site: SiteConfig): void {
         livePreview,
         navTools: pageElement('site-nav-tools'),
         homeLinks: [...document.querySelectorAll<HTMLElement>('.site-nav-brand, .site-nav-links a.active')],
+        nav: document.querySelector<HTMLElement>('.site-nav') ?? undefined,
         pageSfx: sound.pageSfx,
         pageMusic: sound.pageMusic,
         audioViews: () => audioViews,
