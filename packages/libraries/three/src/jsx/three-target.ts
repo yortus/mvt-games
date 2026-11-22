@@ -3,6 +3,20 @@ import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
 import { destroyObject, onDestroyed } from '../object3d-mixin';
 
 // ---------------------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------------------
+
+/**
+ * A resource that an element's `owns` attribute may list. It's anything
+ * that three.js frees with `dispose()`, such as a geometry, a material, a
+ * texture or a render target. Disposing a material doesn't dispose its
+ * textures, so a view that made them lists them too.
+ */
+export interface OwnedResource {
+    readonly dispose: () => void;
+}
+
+// ---------------------------------------------------------------------------
 // JSX target
 // ---------------------------------------------------------------------------
 
@@ -10,7 +24,7 @@ import { destroyObject, onDestroyed } from '../object3d-mixin';
  * three.js's scene graph, as the JSX base needs it. Nodes are `Object3D`s,
  * whose methods `updateView` and `refreshView` call.
  */
-export const threeTarget: JsxTarget<Object3D> = {
+export const threeTarget: JsxTarget<Object3D, OwnedResource> = {
     name: '@mvtjs/three',
 
     createGroup: () => new Group(),
@@ -42,6 +56,11 @@ export const threeTarget: JsxTarget<Object3D> = {
 
     destroy: destroyObject,
     onDestroyed,
+    // Disposing only dispatches an event, on which the renderer frees its GPU
+    // copy. A mesh that still references the geometry stays safe to destroy.
+    release: (resource) => {
+        resource.dispose();
+    },
 
     // `Object3D` is an `EventDispatcher`. Pointer events reach it from the
     // pointer picker, which raycasts and dispatches them.

@@ -30,7 +30,7 @@ Read the sections you need, by anchor:
 | Presentation state and the view's `update` | [Chapter 11](../chapters/11-presentation-state.md#a-view-s-update-deltams) |
 | What `update` and `refresh` each do | [Chapter 11](../chapters/11-presentation-state.md#the-jobs-of-update-and-refresh) |
 | Start valid: refresh may come before update | [Chapter 11](../chapters/11-presentation-state.md#start-valid-the-first-refresh-may-come-before-the-first-update) |
-| A JSX body: attributes, `visible`, `ref`, `onRefresh`, `onUpdate`, `onDestroyed` | [Chapter 12](../chapters/12-writing-views-in-jsx.md#fixed-values-and-getters), [`visible`](../chapters/12-writing-views-in-jsx.md#hiding-a-subtree-with-visible), [stepping out](../chapters/12-writing-views-in-jsx.md#stepping-out-into-code) |
+| A JSX body: attributes, `visible`, `ref`, `onRefresh`, `onUpdate`, `onDestroyed`, `owns` | [Chapter 12](../chapters/12-writing-views-in-jsx.md#fixed-values-and-getters), [`visible`](../chapters/12-writing-views-in-jsx.md#hiding-a-subtree-with-visible), [stepping out](../chapters/12-writing-views-in-jsx.md#stepping-out-into-code) |
 | JSX or plain TypeScript | [Chapter 12](../chapters/12-writing-views-in-jsx.md#choosing-between-jsx-and-plain-typescript), [mixing](../chapters/12-writing-views-in-jsx.md#mixing-the-two) |
 | Parent views and children | [Chapter 13](../chapters/13-composing-views.md#parent-views-wire-their-children) |
 | `<List>` and `<Switch>` | [Chapter 14](../chapters/14-lists-and-switches.md#how-list-works), [item views](../chapters/14-lists-and-switches.md#two-rules-for-item-views), [`<Switch>`](../chapters/14-lists-and-switches.md#showing-one-of-several-switch) |

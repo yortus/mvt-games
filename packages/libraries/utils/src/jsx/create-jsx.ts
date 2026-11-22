@@ -1,7 +1,7 @@
 import { assert } from '../assert';
 import { hasNodeRefresh, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, type UpdateMethod } from '../view-tick-api';
 import { MVT_ATTRIBUTE_KEYS } from './attributes';
-import type { AttributeDefinition, AttributePattern, ElementDefinition, WriteKind } from './attributes';
+import type { AttributeDefinition, AttributePattern, WriteKind } from './attributes';
 import type { JsxTarget } from './jsx-target';
 import type { DestroyedCallback, RefCallback, RefreshStep } from './jsx-types';
 import { type Binding, createRefreshBuilder } from './refresh-builder';
@@ -20,15 +20,17 @@ export type JsxComponent<N> = (attributes: Record<string, unknown>) => N;
 export type JsxFactory<N> = (type: string | typeof Fragment | JsxComponent<N>, attributes: Record<string, unknown>) => N;
 
 /** A JSX target's element table: each intrinsic element's definition, by tag. */
-export type ElementTable<N> = Readonly<Record<
-    string,
-    ElementDefinition<N, Readonly<Record<string, AttributeDefinition<never>>>, Readonly<Record<string, AttributePattern<never>>>>
->>;
+export type ElementTable<N> = Readonly<Record<string, {
+    /** Creates the element from the values of its creation attributes. */
+    readonly create: (creation: never) => N;
+    readonly attributes: Readonly<Record<string, AttributeDefinition<never>>>;
+    readonly patterns: Readonly<Record<string, AttributePattern<never>>>;
+}>>;
 
 /** Options for {@link createJsx}. */
-export interface JsxOptions<N extends object> {
+export interface JsxOptions<N extends object, R = never> {
     /** The renderer's scene graph, as the base needs it. */
-    readonly target: JsxTarget<N>;
+    readonly target: JsxTarget<N, R>;
     /** The JSX target's intrinsic elements. */
     readonly elements: ElementTable<N>;
     /**
@@ -68,18 +70,23 @@ export interface JsxRuntime<N> {
  *   other bindings and its whole subtree via `SKIP_DESCENDANTS`.
  * - Event attributes are wired before any other attribute is applied, so a
  *   JSX target's `listen` may set a default that an attribute then overrides.
+ * - Creation attributes are collected first, and passed to the element
+ *   table's `create`.
  * - `onRefresh` adds a per-frame step of the element's own, after its
  *   bindings (and skipped with them while it is hidden). `onUpdate` installs
- *   its update method. `onDestroyed` runs when it is destroyed. `ref` runs
- *   last, with the element, for intrinsic elements and components alike.
+ *   its update method. `onDestroyed` runs when it is destroyed. At the same
+ *   time, the JSX target's `release` frees each resource that `owns` lists.
+ *   `ref` runs last, with the element, for intrinsic elements and components
+ *   alike.
  *
- * An attribute the element table does not define, and a function given to an
- * attribute that takes only a fixed value, throw.
+ * The runtime throws for an attribute that the element table does not
+ * define, for a function given to an attribute that accepts only a fixed
+ * value, and for a missing required creation attribute.
  *
  * Why there are no cleanup scopes or context providers, as SolidJS has:
  * `design-notes.md`.
  */
-export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<N> {
+export function createJsx<N extends object, R = never>(options: JsxOptions<N, R>): JsxRuntime<N> {
     const { target, elements } = options;
     // Attribute definitions, resolved once each, by definition.
     const resolvedAttributes = new Map<object, ResolvedAttribute>();
@@ -106,7 +113,9 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
         }
 
         const definition = elementFor(type);
-        const el = definition.create();
+        const el = definition.creationKeys.length === 0
+            ? definition.create(NO_CREATION_VALUES)
+            : definition.create(collectCreationValues(type, definition, attributes));
 
         // Events first, so an attribute applied below can override a default
         // that the JSX target's `listen` sets (Pixi's `eventMode`).
@@ -136,7 +145,7 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
             }
             const attribute = definition.attributes.get(key) ?? patternAttribute(definition, key);
             if (attribute === undefined) throw new Error(`<${type}> has no attribute '${key}' in ${target.name}`);
-            if (attribute.kind === 'event') continue;
+            if (attribute.kind === 'event' || attribute.kind === 'creation') continue;
             if (typeof value !== 'function') {
                 attribute.apply(el, value);
             }
@@ -171,9 +180,38 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
         if (typeof attributes.onDestroyed === 'function') {
             target.onDestroyed(el, attributes.onDestroyed as DestroyedCallback<N>);
         }
+        if (attributes.owns !== undefined) own(type, el, attributes.owns);
         callRef(attributes.ref, el);
 
         return el;
+    }
+
+    /** Releases each of `owned` when `el` is destroyed. */
+    function own(type: string, el: N, owned: unknown): void {
+        if (!Array.isArray(owned)) throw new Error(`<${type}> attribute 'owns' takes an array of resources in ${target.name}`);
+        if (owned.length === 0) return;
+        // Copied, so that a later change to the view's list doesn't change what's released
+        const resources = owned.slice() as R[];
+        target.onDestroyed(el, () => {
+            for (let i = 0; i < resources.length; i++) target.release(resources[i]);
+        });
+    }
+
+    /** Collects the values of an element's creation attributes for its `create`, and checks them. */
+    function collectCreationValues(type: string, element: ResolvedElement<N>, attributes: Record<string, unknown>): Record<string, unknown> {
+        const values: Record<string, unknown> = {};
+        for (let i = 0; i < element.creationKeys.length; i++) {
+            const key = element.creationKeys[i];
+            const value = attributes[key];
+            if (typeof value === 'function') {
+                throw new Error(`<${type}> attribute '${key}' takes a fixed value, not a function, in ${target.name}, since it's read only once, as the element is made`);
+            }
+            if (value !== undefined) values[key] = value;
+            else if ((element.attributes.get(key) as ResolvedCreation).required) {
+                throw new Error(`<${type}> needs its '${key}' attribute in ${target.name}`);
+            }
+        }
+        return values;
     }
 
     function elementFor(kind: string): ResolvedElement<N> {
@@ -182,10 +220,18 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
         const definition = Object.hasOwn(elements, kind) ? elements[kind] : undefined;
         assert(definition !== undefined, () => `Unknown ${target.name} element: <${kind}>`);
         const attributes = new Map<string, ResolvedAttribute>();
+        const creationKeys: string[] = [];
         for (const key in definition.attributes) {
-            attributes.set(key, resolveAttribute(definition.attributes[key]));
+            const attribute = resolveAttribute(definition.attributes[key]);
+            attributes.set(key, attribute);
+            if (attribute.kind === 'creation') creationKeys.push(key);
         }
-        resolved = { create: definition.create, attributes, patterns: definition.patterns };
+        resolved = {
+            create: definition.create as (creation: Readonly<Record<string, unknown>>) => N,
+            attributes,
+            patterns: definition.patterns,
+            creationKeys,
+        };
         resolvedElements.set(kind, resolved);
         return resolved;
     }
@@ -210,6 +256,9 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
         if (resolved !== undefined) return resolved;
         if (definition.kind === 'event') {
             resolved = { kind: 'event', eventName: definition.eventName };
+        }
+        else if (definition.kind === 'creation') {
+            resolved = { kind: 'creation', required: definition.required };
         }
         else {
             const apply = definition.apply as (el: unknown, value: unknown) => void;
@@ -237,10 +286,12 @@ export function createJsx<N extends object>(options: JsxOptions<N>): JsxRuntime<
 // ---------------------------------------------------------------------------
 
 interface ResolvedElement<N> {
-    readonly create: () => N;
+    readonly create: (creation: Readonly<Record<string, unknown>>) => N;
     /** By key: the element's own, then those its patterns have made. */
     readonly attributes: Map<string, ResolvedAttribute>;
     readonly patterns: Readonly<Record<string, AttributePattern<never>>>;
+    /** The keys of the element's creation attributes, whose values are collected before it is made. */
+    readonly creationKeys: readonly string[];
 }
 
 interface ResolvedFixed {
@@ -261,7 +312,15 @@ interface ResolvedEvent {
     readonly eventName: string;
 }
 
-type ResolvedAttribute = ResolvedFixed | ResolvedChangeable | ResolvedEvent;
+interface ResolvedCreation {
+    readonly kind: 'creation';
+    readonly required: boolean;
+}
+
+type ResolvedAttribute = ResolvedFixed | ResolvedChangeable | ResolvedEvent | ResolvedCreation;
+
+/** The values that `create` receives for an element without creation attributes. */
+const NO_CREATION_VALUES: Readonly<Record<string, unknown>> = Object.freeze({});
 
 function bind(attribute: ResolvedChangeable, getter: () => unknown): Binding {
     return { id: attribute.id, kind: attribute.kind, property: attribute.property, apply: attribute.apply, getter };

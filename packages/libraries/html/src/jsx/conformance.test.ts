@@ -59,4 +59,8 @@ describeJsxConformance<Element>({
     parent: (node) => node.parentElement ?? undefined,
     isVisible: (node) => !node.hasAttribute('hidden'),
     isDestroyed,
+    owned: {
+        make: () => new AbortController(),
+        isReleased: (controller: AbortController) => controller.signal.aborted,
+    },
 });

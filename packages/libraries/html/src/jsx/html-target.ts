@@ -19,6 +19,23 @@ import { hasOwnedText } from './owned-text';
  */
 export const MVT_GROUP_CSS = 'mvt-group:not([hidden]){display:contents}';
 
+/**
+ * A resource that an element's `owns` attribute may list. The JSX target's
+ * `release` frees each kind its own way:
+ *
+ * - Anything with an `abort()` method, such as an `AbortController`, is
+ *   aborted. Aborting a controller removes the listeners that were added
+ *   with its `signal`, which is handy for `window` listeners.
+ * - Anything with a `close()` method, such as an `ImageBitmap` or a
+ *   `BroadcastChannel`, is closed.
+ * - Anything with a `destroy()` method, such as a Pixi application that the
+ *   element shows, is destroyed.
+ */
+export type OwnedResource =
+    | { readonly abort: () => void }
+    | { readonly close: () => void }
+    | { readonly destroy: () => void };
+
 // ---------------------------------------------------------------------------
 // JSX target
 // ---------------------------------------------------------------------------
@@ -27,7 +44,7 @@ export const MVT_GROUP_CSS = 'mvt-group:not([hidden]){display:contents}';
  * The DOM, as the JSX base needs it. Nodes are `Element`s, whose methods
  * `updateView` and `refreshView` call.
  */
-export const htmlTarget: JsxTarget<Element> = {
+export const htmlTarget: JsxTarget<Element, OwnedResource> = {
     name: '@mvtjs/html',
 
     // A custom tag rather than a `<div>` with an inline style: groups are
@@ -63,6 +80,11 @@ export const htmlTarget: JsxTarget<Element> = {
 
     destroy: destroyElement,
     onDestroyed,
+    release: (resource) => {
+        if ('abort' in resource) resource.abort();
+        else if ('close' in resource) resource.close();
+        else resource.destroy();
+    },
 
     listen: (node, eventName, handler) => {
         node.addEventListener(eventName, handler as EventListener);

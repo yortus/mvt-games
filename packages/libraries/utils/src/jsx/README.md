@@ -84,7 +84,9 @@ arguments to their parent's call. For an intrinsic element, `jsx`:
    then the on-change ones.
 6. **Handles the attributes every element has:** `onRefresh` (a step of the
    node's own, after its bindings), `onUpdate` (the node's update method),
-   `onDestroyed` and `ref`.
+   `onDestroyed`, `owns` and `ref`. `owns` lists the resources that the
+   view made for the node, such as textures. When the node is destroyed,
+   the JSX target's `release` frees each one.
 
 A function component (`<ShipView ship={ship} />`) is simply called with its
 attributes, and returns a node.
@@ -133,6 +135,15 @@ export const pixiElements = defineElements({
 - **`fixed`** takes only a plain value, written once. `everyFrame`,
   `onChange` and `onChangeNumber` take a plain value or a binding. `event`
   takes a handler.
+- **`creation`** is for an option that the renderer reads only in its
+  constructor, such as the size of a batch. It takes only a plain value.
+  The runtime collects the element's creation attributes before it makes
+  the node, and passes them to `create` by key. Use
+  `creation({ required: true })` for an attribute that the element can't
+  be made without. TypeScript reports it when it's missing, and so does
+  the runtime, which throws. If your `create` reads creation attributes,
+  declare its parameter's type. Otherwise TypeScript infers the node's
+  type as `unknown`.
 - **Each helper takes a property name or an apply function.** Use the
   property name wherever the write is a plain assignment (`'x'`), and a
   function for anything else (`e.scale.set(v)`). The property name is

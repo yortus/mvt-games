@@ -244,6 +244,13 @@ export default tseslint.config(
             '@mvtjs/no-conditional-poll': 'error',
         },
     },
+    // A view makes each geometry, material or texture in a variable, so that it can list it in `owns`. One made
+    // inside the attribute that uses it could never be freed
+    {
+        files: ['**/*.tsx'],
+        plugins: { '@mvtjs': mvt },
+        rules: { '@mvtjs/no-unowned-resource': 'error' },
+    },
     {
         files: ['**/*.test.{ts,tsx}'],
         rules: {

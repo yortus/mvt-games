@@ -17,7 +17,7 @@ import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
 // and brings the `RendererViews` declaration with this entry's types.
 import '../container-mixin';
 import { pixiElements } from './pixi-elements';
-import { pixiTarget } from './pixi-target';
+import { type OwnedResource, pixiTarget } from './pixi-target';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -26,7 +26,7 @@ import { pixiTarget } from './pixi-target';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export declare namespace JSX {
     type Element = Container;
-    type IntrinsicElements = IntrinsicElementsOf<Container, typeof pixiElements>;
+    type IntrinsicElements = IntrinsicElementsOf<Container, typeof pixiElements, OwnedResource>;
 }
 
 // ---------------------------------------------------------------------------

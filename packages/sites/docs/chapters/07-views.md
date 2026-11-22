@@ -398,6 +398,31 @@ return (
 Prefer the event to replacing the view's `destroy` method. Any number of
 listeners can be added, each next to what it releases, and the listeners
 don't need to call the original.
+
+Views make textures and shapes so often that the JSX runtimes have an
+attribute for them, `owns`. List what the view made in `owns` on any
+element. When that element is destroyed, the runtime frees each one, so
+you don't need to write the listener yourself. `@mvtjs/pixi` frees a
+resource by calling its `destroy` method, and `@mvtjs/three` by calling
+its `dispose` method. Here's the same shape again, listed in `owns`:
+
+```tsx
+const boidShape = new GraphicsContext()
+    .poly([8, 0, -5, 4, -5, -4])
+    .fill(0x44ccff);
+
+return (
+    <container owns={[boidShape]}>
+        {/* ...Graphics that all draw boidShape... */}
+    </container>
+);
+```
+
+A resource that several views share belongs to the view that made it, and
+only that view lists it in `owns`. Make each resource in a variable beside
+the JSX, never inside the attribute that uses it. A texture made in
+`<sprite texture={new Texture({ source })} />` doesn't have a name, so you
+can't list it, and it's never freed.
 :::
 
 ::: warning Destroy with `{ children: true }`

@@ -15,7 +15,7 @@ import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
 // and brings the `RendererViews` declaration with this entry's types.
 import '../object3d-mixin';
 import { threeElements } from './three-elements';
-import { threeTarget } from './three-target';
+import { type OwnedResource, threeTarget } from './three-target';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -24,7 +24,7 @@ import { threeTarget } from './three-target';
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export declare namespace JSX {
     type Element = Object3D;
-    type IntrinsicElements = IntrinsicElementsOf<Object3D, typeof threeElements>;
+    type IntrinsicElements = IntrinsicElementsOf<Object3D, typeof threeElements, OwnedResource>;
 }
 
 // ---------------------------------------------------------------------------

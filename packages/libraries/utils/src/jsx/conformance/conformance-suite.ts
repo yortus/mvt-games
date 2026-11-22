@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { countTick, hasNodeRefresh, hasNodeUpdate, refreshNode, setNodeRefresh, setNodeUpdate, SKIP_DESCENDANTS, tickCounter, updateNode } from '../../view-tick-api';
 import { createOrderedSlotList, createSlotList } from '../../slot-list';
+import { creation, element } from '../attributes';
 import { createJsx, type ElementTable, Fragment, type JsxFactory } from '../create-jsx';
 import type { JsxTarget } from '../jsx-target';
 import { createList, type ListComponent } from '../list';
@@ -41,6 +42,11 @@ export interface ConformanceFixture<N extends object> {
     readonly fixed: AttributeProbe<N, unknown>;
     /** An event attribute on `everyFrame.tag`, and how to fire its event. */
     readonly event: { readonly key: string; readonly emit: (node: N) => void };
+    /** How to make a resource for an `owns` attribute, and how to check that the target's `release` freed it. */
+    readonly owned: {
+        readonly make: () => unknown;
+        readonly isReleased: (resource: never) => boolean;
+    };
     readonly children: (node: N) => readonly N[];
     readonly parent: (node: N) => N | undefined;
     readonly isVisible: (node: N) => boolean;
@@ -69,6 +75,7 @@ export function describeJsxConformance<N extends object>(fixture: ConformanceFix
             const { Switch, Match } = createSwitch({ target: fixture.target });
             const context: SuiteContext<N> = { fixture, jsx: runtime.jsx, List, Switch, Match };
             describeRuntime(context);
+            describeCreation(fixture, ownCopyAt);
             describeList(context);
             describeSwitch(context);
         });
@@ -330,6 +337,61 @@ function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): v
             });
         });
 
+        describe('owns attribute', () => {
+            const isReleased = fixture.owned.isReleased as (resource: unknown) => boolean;
+
+            it('releases each resource it lists, once, when the element is destroyed', () => {
+                const first = fixture.owned.make();
+                const second = fixture.owned.make();
+                const el = jsx(everyFrame.tag, { owns: [first, second] });
+                expect(isReleased(first)).toBe(false);
+
+                target.destroy(el);
+                target.destroy(el);
+
+                expect(isReleased(first)).toBe(true);
+                expect(isReleased(second)).toBe(true);
+            });
+
+            it('releases its resources when an ancestor is destroyed, and not before', () => {
+                const resource = fixture.owned.make();
+                const leaf = jsx(everyFrame.tag, { owns: [resource] });
+                const root = group(group(leaf));
+                refresh(root);
+                expect(isReleased(resource)).toBe(false);
+
+                target.destroy(root);
+
+                expect(isReleased(resource)).toBe(true);
+            });
+
+            it('releases only the resources that were listed as the element was made', () => {
+                const kept = fixture.owned.make();
+                const owned = [fixture.owned.make()];
+                const el = jsx(everyFrame.tag, { owns: owned });
+                owned.push(kept);
+
+                target.destroy(el);
+
+                expect(isReleased(kept)).toBe(false);
+            });
+
+            it('releases its resources and still calls onDestroyed', () => {
+                let calls = 0;
+                const resource = fixture.owned.make();
+                const el = jsx(everyFrame.tag, { owns: [resource], onDestroyed: () => void calls++ });
+
+                target.destroy(el);
+
+                expect(calls).toBe(1);
+                expect(isReleased(resource)).toBe(true);
+            });
+
+            it('throws for a value that is not an array', () => {
+                expect(() => jsx(everyFrame.tag, { owns: fixture.owned.make() })).toThrow(/takes an array/);
+            });
+        });
+
         it('wires event attributes as listeners', () => {
             let calls = 0;
             const el = jsx(everyFrame.tag, { [fixture.event.key]: () => void calls++ });
@@ -385,6 +447,53 @@ function describeRuntime<N extends object>({ fixture, jsx }: SuiteContext<N>): v
         it('throws for an unknown element or attribute, naming the target', () => {
             expect(() => jsx('no-such-element', {})).toThrow(new RegExp(target.name));
             expect(() => jsx(everyFrame.tag, { noSuchAttribute: 1 })).toThrow(/no attribute 'noSuchAttribute'/);
+        });
+    });
+}
+
+// --- Creation attributes ---------------------------------------------------
+
+function describeCreation<N extends object>(fixture: ConformanceFixture<N>, ownCopyAt: number): void {
+    const { target } = fixture;
+    // The suite defines a probe element of its own, since few targets have
+    // creation attributes. The probe records the values that its `create`
+    // receives.
+    const received = new WeakMap<N, object>();
+    const { jsx } = createJsx({
+        target,
+        elements: {
+            ...fixture.elements,
+            creationProbe: element((values: { readonly size: number; readonly mode?: string }) => {
+                const node = target.createGroup();
+                received.set(node, values);
+                return node;
+            }, {
+                size: creation<number>({ required: true }),
+                mode: creation<string>(),
+            }),
+        },
+        ownCopyAt,
+    });
+
+    describe('creation attributes', () => {
+        it('passes their values to create, leaving out an optional one that was not given', () => {
+            const sized = jsx('creationProbe', { size: 4 });
+            const both = jsx('creationProbe', { size: 2, mode: 'fast' });
+
+            expect(received.get(sized)).toEqual({ size: 4 });
+            expect(received.get(both)).toEqual({ size: 2, mode: 'fast' });
+        });
+
+        it('still applies the element\'s other attributes, and doesn\'t add a refresh step', () => {
+            const el = jsx('creationProbe', { size: 1, visible: false });
+
+            expect(fixture.isVisible(el)).toBe(false);
+            expect(hasNodeRefresh(el)).toBe(false);
+        });
+
+        it('throws for a missing required one, and for a function, naming the target', () => {
+            expect(() => jsx('creationProbe', {})).toThrow(new RegExp(`needs its 'size' attribute in ${target.name}`));
+            expect(() => jsx('creationProbe', { size: () => 3 })).toThrow(/takes a fixed value, not a function/);
         });
     });
 }

@@ -71,6 +71,21 @@ JSX target runs when the element is destroyed (on Pixi, the `'destroyed'`
 event). See
 [Releasing a View's Resources](../../../../sites/docs/chapters/07-views.md#releasing-a-view-s-resources).
 
+The most common of those are the textures, geometries and materials that a
+view makes, so they have an attribute of their own, `owns`. In PixiJS 3D,
+nearly every view makes a geometry or a material, and each one stays in
+memory until something frees it. Without `owns`, each of those views would
+need an `onDestroyed` of its own to free them. The `owns` attribute lists
+the resources, and the base frees each one with the JSX target's `release`,
+from `onDestroyed`. So `owns` is a cleanup attached to the element's own
+destruction, as the first constraint below requires, not a scope.
+
+`release` may run before the element's children are destroyed, while they
+still hold the resource. So each target's `release` must leave them safe to
+destroy, and every target's `release` does. Pixi's sprites, three.js's
+meshes and PixiJS 3D's meshes can each be destroyed safely after their
+resource was freed.
+
 If scopes are added one day, two constraints follow from section 1:
 
 - **Attach each component's cleanups to its own root node's destruction,
@@ -147,6 +162,14 @@ Property names come only from tables, and are checked to be identifiers
 where the table is defined. A key a caller passes that the table does not
 define throws, and so does a function given to an attribute that takes only
 a fixed value. Both fail at construction, not silently.
+
+**Creation attributes** are for options that a renderer reads only in its
+constructor, such as the size of a PixiJS 3D batch. The runtime collects
+them before it makes the node, and passes them to the element's `create`.
+Such elements could be components instead, but then they would lose their
+`ref` types, and the table's handling of their other attributes. The
+runtime throws for a function given to a creation attribute, and for a
+missing required one.
 
 **Attributes whose names are not known in advance** (HTML's `data-*` and
 `aria-*`) are an element's patterns: the third argument to `element`, a

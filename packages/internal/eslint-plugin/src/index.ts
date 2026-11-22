@@ -1,7 +1,7 @@
 import type { ESLint, Linter } from 'eslint';
 import { version } from '../package.json';
 import { noConditionalPoll, noControlNames, noDeepImports, noEmDash, noInlineWatch, noModuleState, noNull } from './rules';
-import { noRelativeImportsIntoSrc, noRepeatedPoll, noThis, noUnusedWatch, noWallClock } from './rules';
+import { noRelativeImportsIntoSrc, noRepeatedPoll, noThis, noUnownedResource, noUnusedWatch, noWallClock } from './rules';
 
 // ---------------------------------------------------------------------------
 // Plugin
@@ -33,6 +33,7 @@ const plugin = {
         'no-relative-imports-into-src': noRelativeImportsIntoSrc,
         'no-repeated-poll': noRepeatedPoll,
         'no-this': noThis,
+        'no-unowned-resource': noUnownedResource,
         'no-unused-watch': noUnusedWatch,
         'no-wall-clock': noWallClock,
     },

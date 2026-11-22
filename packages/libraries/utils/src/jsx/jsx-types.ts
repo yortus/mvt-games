@@ -1,5 +1,5 @@
 import type { SKIP_DESCENDANTS, UpdateMethod } from '../view-tick-api';
-import type { ChangeableAttribute, ElementDefinition, EventAttribute, FixedAttribute } from './attributes';
+import type { ChangeableAttribute, CreationAttribute, ElementDefinition, EventAttribute, FixedAttribute } from './attributes';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -35,6 +35,16 @@ export type RefreshStep<E> = (el: E) => typeof SKIP_DESCENDANTS | void;
  */
 export type DestroyedCallback<E> = (el: E) => void;
 
+/**
+ * The value of an `owns` attribute. It lists the resources that the view
+ * made for this element, such as the geometry, materials and textures that
+ * it draws with. When the JSX target's `destroy` destroys the element, or an
+ * ancestor of it, the JSX target's `release` frees each one. A resource that
+ * several views share belongs to the view that made it, and only that view
+ * lists it.
+ */
+export type OwnedResources<R> = readonly R[];
+
 /** What JSX children may be, for a JSX target whose nodes are `N`. */
 export type JsxChildren<N> = N | JsxChildList<N>;
 
@@ -45,11 +55,12 @@ export type JsxChildren<N> = N | JsxChildList<N>;
 export type JsxChildList<N> = (N | JsxChildList<N> | undefined | null)[];
 
 /**
- * The attributes the base gives every intrinsic element of every JSX target: the
- * MVT parts of an element. `E` is the element's own type, `N` the JSX target's
- * node type.
+ * The attributes that the base adds to every intrinsic element of every JSX
+ * target, which are the MVT parts of an element. `E` is the element's own
+ * type, `N` the JSX target's node type, and `R` the type of resource that
+ * its `owns` attribute accepts.
  */
-export interface MvtAttributes<E, N> {
+export interface MvtAttributes<E, N, R = never> {
     /**
      * Whether the element is shown. A function is evaluated first on each
      * refresh, and while it is false the element's other bindings and its
@@ -60,23 +71,29 @@ export interface MvtAttributes<E, N> {
     onUpdate?: UpdateMethod;
     onRefresh?: RefreshStep<E>;
     onDestroyed?: DestroyedCallback<E>;
+    owns?: OwnedResources<R>;
     ref?: RefCallback<E>;
     children?: JsxChildren<N>;
 }
 
 /**
- * The value an attribute definition accepts in JSX: its value for a fixed
- * attribute, a value or a getter for a changeable one, and a handler for an
- * event.
+ * The value that an attribute definition accepts in JSX. A fixed or creation
+ * attribute accepts its value, a changeable one accepts a value or a getter,
+ * and an event attribute accepts a handler.
  */
 export type AttributeValue<D> =
-    D extends FixedAttribute<never, infer T> ? T
-        : D extends ChangeableAttribute<never, infer T> ? ValueOrGetter<T>
-            : D extends EventAttribute<infer Ev> ? (event: Ev) => void
-                : never;
+    D extends CreationAttribute<infer T> ? T
+        : D extends FixedAttribute<never, infer T> ? T
+            : D extends ChangeableAttribute<never, infer T> ? ValueOrGetter<T>
+                : D extends EventAttribute<infer Ev> ? (event: Ev) => void
+                    : never;
 
-/** The JSX attributes of an element table's attribute record, all optional. */
-export type AttributesOf<A> = { [K in keyof A]?: AttributeValue<A[K]> };
+/** The JSX attributes of an element table's attribute record. Each is optional, except a required creation attribute. */
+export type AttributesOf<A> = {
+    [K in keyof A as A[K] extends CreationAttribute<unknown, true> ? never : K]?: AttributeValue<A[K]>;
+} & {
+    [K in keyof A as A[K] extends CreationAttribute<unknown, true> ? K : never]: AttributeValue<A[K]>;
+};
 
 /**
  * The JSX attributes an element's patterns accept: for a pattern with the
@@ -93,10 +110,11 @@ export type PatternAttributesOf<P> = {
 /**
  * `JSX.IntrinsicElements` for a JSX target whose nodes are `N`, derived from its
  * element table, so the attribute types cannot disagree with what the
- * runtime does with them.
+ * runtime does with them. `R` is the type of resource that an `owns`
+ * attribute accepts, which the JSX target's `release` frees.
  */
-export type IntrinsicElementsOf<N, T> = {
+export type IntrinsicElementsOf<N, T, R = never> = {
     [K in keyof T]: T[K] extends ElementDefinition<infer E, infer A, infer P>
-        ? AttributesOf<A> & PatternAttributesOf<P> & MvtAttributes<E, N>
+        ? AttributesOf<A> & PatternAttributesOf<P> & MvtAttributes<E, N, R>
         : never;
 };

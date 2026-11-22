@@ -693,7 +693,9 @@ compares the two.
 
 A view that holds a resource that isn't destroyed with its display
 objects, such as a `window` listener, releases it on Pixi's `'destroyed'`
-event, or with the `onDestroyed` attribute in a JSX body. Never replace
+event, or with the `onDestroyed` attribute in a JSX body. A JSX body
+lists the textures, graphics contexts and geometries that it made in
+`owns`, which frees them as the element is destroyed. Never replace
 `destroy` on an instance.
 [Chapter 7](../chapters/07-views.md#releasing-a-view-s-resources) shows
 how.

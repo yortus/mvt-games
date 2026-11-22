@@ -35,7 +35,13 @@ export const JSX_ATTRIBUTE_ENTRIES: readonly CheatSheetEntry[] = [
     {
         name: 'onDestroyed',
         signature: 'onDestroyed={(element) => void}',
-        useFor: 'Release something as the element is destroyed, such as a listener on `window` or a texture you made.',
+        useFor: 'Release something as the element is destroyed, such as a listener on `window`.',
+        chapter: 'chapters/07-views',
+    },
+    {
+        name: 'owns',
+        signature: 'owns={[texture, geometry, ...]}',
+        useFor: 'Free the resources that the view made for the element, such as a texture or a 3D shape, when the element is destroyed.',
         chapter: 'chapters/07-views',
     },
 ];

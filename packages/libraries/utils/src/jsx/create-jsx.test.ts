@@ -78,6 +78,7 @@ const fakeTarget: JsxTarget<FakeNode> = {
     }),
     destroy: () => {},
     onDestroyed: () => {},
+    release: () => {},
     listen: (node, eventName, handler) => {
         node.listeners[eventName] = handler;
         node.log.push(`listen ${eventName}`);

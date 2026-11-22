@@ -205,6 +205,8 @@ you step out into ordinary code at the right moment:
 - **`onDestroyed`** runs when the element is destroyed. Use it to release
   anything the view holds that isn't destroyed with it (see
   [Releasing a View's Resources](07-views.md#releasing-a-view-s-resources)).
+  For a texture or a shape that the view made, you don't need it: list
+  the resource in `owns` instead, and the runtime frees it.
 
 Here's `onRefresh` in a card whose face is drawn in its colour. Redrawing a
 `Graphics` is slow, so the card redraws it only when the colour changes:
@@ -257,7 +259,7 @@ of the work looks like either way:
 | Build child views and wire their bindings | A call, then `addChild` | A tag, with the bindings as attributes |
 | Show a collection, reusing views as items come and go | A pool you manage | `<List>`, in [Chapter 14](14-lists-and-switches.md) |
 | Show one of several subtrees | Several containers, and code to show one | `<Switch>` and `<Match>`, also in Chapter 14 |
-| Listen for input, and release things when the view goes | `on(...)`, `on('destroyed', ...)` | `onPointerTap={...}`, `onDestroyed={...}` |
+| Listen for input, and release things when the view goes | `on(...)`, `on('destroyed', ...)` | `onPointerTap={...}`, `onDestroyed={...}`, `owns={[...]}` |
 | Catch a misspelt property, or a value of the wrong type | TypeScript checks it | TypeScript checks it |
 
 The third row is the one that prevents the shield bug. In JSX, you don't

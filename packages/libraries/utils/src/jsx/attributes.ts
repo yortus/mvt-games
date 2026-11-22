@@ -44,6 +44,20 @@ export interface ChangeableAttribute<E, T> {
     readonly property?: string;
 }
 
+/**
+ * An attribute that is read once, as the element is made, and passed to the
+ * element table's `create`. It's for an option that a renderer reads only in
+ * its constructor, such as the size of a batch. It accepts only a fixed value.
+ * A required one must be given. TypeScript reports it when it's missing,
+ * and the runtime throws.
+ */
+export interface CreationAttribute<T, R extends boolean = boolean> {
+    readonly kind: 'creation';
+    readonly required: R;
+    /** Never set. Its type carries the value's type, for `IntrinsicElementsOf`. */
+    readonly value?: T;
+}
+
 /** An attribute that takes an event handler, added with the JSX target's `listen`. */
 export interface EventAttribute<Ev> {
     readonly kind: 'event';
@@ -54,7 +68,11 @@ export interface EventAttribute<Ev> {
 }
 
 /** Any attribute definition that an element of type `E` accepts. */
-export type AttributeDefinition<E> = FixedAttribute<E, never> | ChangeableAttribute<E, never> | EventAttribute<never>;
+export type AttributeDefinition<E> =
+    | FixedAttribute<E, never>
+    | ChangeableAttribute<E, never>
+    | EventAttribute<never>
+    | CreationAttribute<unknown>;
 
 /**
  * Makes the definition of an attribute whose name starts with a pattern's
@@ -66,11 +84,25 @@ export type AttributePattern<E> = (name: string) => FixedAttribute<E, never> | C
 export type NoPatterns = Readonly<Record<never, never>>;
 
 /**
+ * The values of an element's creation attributes, by key, as its `create`
+ * receives them. A required one is always there, and an optional one only
+ * when it was given.
+ */
+export type CreationValuesOf<A> = {
+    readonly [K in keyof A as A[K] extends CreationAttribute<unknown, true> ? K : never]:
+    A[K] extends CreationAttribute<infer T> ? T : never;
+} & {
+    readonly [K in keyof A as A[K] extends CreationAttribute<unknown, false> ? K : never]?:
+    A[K] extends CreationAttribute<infer T> ? T : never;
+};
+
+/**
  * An intrinsic element: how to create it, the attributes it accepts, and the
  * patterns of any whose names are not known in advance.
  */
 export interface ElementDefinition<E, A, P = NoPatterns> {
-    readonly create: () => E;
+    /** Creates the element from the values of its creation attributes, which most elements don't have. */
+    readonly create: (creation: CreationValuesOf<A>) => E;
     readonly attributes: A;
     /**
      * Attributes whose names are not known in advance, such as HTML's
@@ -114,6 +146,16 @@ export interface AttributeHelpers<E> {
     };
 }
 
+/**
+ * Any intrinsic element definition, whatever its creation attributes. Each
+ * element in an element table must satisfy it.
+ */
+export interface AnyElementDefinition<E> {
+    readonly create: (creation: never) => E;
+    readonly attributes: object;
+    readonly patterns: object;
+}
+
 /** The names of `E`'s number properties. */
 export type NumberPropertyOf<E> = { [K in keyof E & string]: E[K] extends number ? K : never }[keyof E & string];
 
@@ -144,6 +186,17 @@ export function attributesOf<E>(): AttributeHelpers<E> {
     return ATTRIBUTE_HELPERS as AttributeHelpers<E>;
 }
 
+/**
+ * A creation attribute, which is read once, as the element is made, and
+ * passed to the element's `create` by key. Pass `{ required: true }` for an
+ * attribute that the element can't be made without.
+ */
+export function creation<T>(options: { readonly required: true }): CreationAttribute<T, true>;
+export function creation<T>(options?: { readonly required?: false }): CreationAttribute<T, false>;
+export function creation<T>(options?: { readonly required?: boolean }): CreationAttribute<T> {
+    return { kind: 'creation', required: options?.required === true };
+}
+
 /** An event handler attribute, for the event the JSX target's `listen` knows as `eventName`. */
 export function event<Ev>(eventName: string): EventAttribute<Ev> {
     return { kind: 'event', eventName };
@@ -152,13 +205,14 @@ export function event<Ev>(eventName: string): EventAttribute<Ev> {
 /**
  * An intrinsic element definition. Each attribute, and each attribute a
  * pattern makes, must accept the element `create` returns, which the type
- * checks.
+ * checks. `create` receives the values of the element's creation
+ * attributes, if it has any.
  */
 // Overloads rather than a default for `P`: inferred from a table's context,
 // an omitted `P` would widen to its constraint, and every element would
 // accept any attribute.
 export function element<E, A extends Readonly<Record<string, AttributeDefinition<E>>>>(
-    create: () => E,
+    create: (creation: CreationValuesOf<A>) => E,
     attributes: A,
 ): ElementDefinition<E, A, NoPatterns>;
 export function element<
@@ -166,15 +220,15 @@ export function element<
     A extends Readonly<Record<string, AttributeDefinition<E>>>,
     P extends Readonly<Record<string, AttributePattern<E>>>,
 >(
-    create: () => E,
+    create: (creation: CreationValuesOf<A>) => E,
     attributes: A,
     patterns: P,
 ): ElementDefinition<E, A, P>;
 export function element<E>(
-    create: () => E,
+    create: (creation: never) => E,
     attributes: Readonly<Record<string, AttributeDefinition<E>>>,
     patterns: Readonly<Record<string, AttributePattern<E>>> = NO_PATTERNS,
-): ElementDefinition<E, object, object> {
+): AnyElementDefinition<E> {
     return { create, attributes, patterns };
 }
 
@@ -183,7 +237,7 @@ export function element<E>(
  * attribute the base provides on every element (`visible`, `children` and
  * the rest), since the base would never read it.
  */
-export function defineElements<T extends Readonly<Record<string, ElementDefinition<unknown, object, object>>>>(elements: T): T {
+export function defineElements<T extends Readonly<Record<string, AnyElementDefinition<unknown>>>>(elements: T): T {
     for (const kind in elements) {
         for (const key in elements[kind].attributes) {
             assert(
@@ -191,7 +245,7 @@ export function defineElements<T extends Readonly<Record<string, ElementDefiniti
                 () => `<${kind}> defines '${key}', which every element already has; remove it from the table`,
             );
         }
-        for (const prefix in elements[kind].patterns) {
+        for (const prefix in elements[kind].patterns as Readonly<Record<string, unknown>>) {
             for (const key of MVT_ATTRIBUTE_KEYS) {
                 assert(
                     !key.startsWith(prefix),
@@ -209,7 +263,7 @@ export function defineElements<T extends Readonly<Record<string, ElementDefiniti
  * definition of it.
  */
 export const MVT_ATTRIBUTE_KEYS: ReadonlySet<string> = new Set([
-    'children', 'ref', 'visible', 'onUpdate', 'onRefresh', 'onDestroyed',
+    'children', 'ref', 'visible', 'onUpdate', 'onRefresh', 'onDestroyed', 'owns',
 ]);
 
 // ---------------------------------------------------------------------------

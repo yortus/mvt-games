@@ -10,12 +10,14 @@ import type { ChangeableAttribute } from './attributes';
  * listening) and the attribute that shows and hides them. Nothing else about
  * a renderer reaches the base.
  *
- * `N` is the renderer's node type. The base needs nothing of it: it keeps
- * each element's bindings in its refresh method, set with `setRefresh`, which
- * the renderer's `refreshView` calls. The renderer registers its nodes with
- * `registerRenderer`; nothing about that reaches the base either.
+ * `N` is the renderer's node type, and `R` is the type of resource that an
+ * element's `owns` attribute may list. The base doesn't depend on either
+ * type. It keeps each element's bindings in its refresh method, set with
+ * `setRefresh`, which the renderer's `refreshView` calls. The renderer
+ * registers its nodes with `registerRenderer`, and the base doesn't depend
+ * on that either.
  */
-export interface JsxTarget<N extends object> {
+export interface JsxTarget<N extends object, R = never> {
     /** Names the runtime in error messages, e.g. `'@mvtjs/pixi'`. */
     readonly name: string;
 
@@ -45,6 +47,13 @@ export interface JsxTarget<N extends object> {
     destroy: (node: N) => void;
     /** Runs `callback` when `node` is destroyed, by `destroy` on it or on an ancestor. */
     onDestroyed: (node: N, callback: (node: N) => void) => void;
+    /**
+     * Frees a resource that an element's `owns` attribute lists, such as a
+     * texture. The base calls it from `onDestroyed`, so it may run before
+     * the node's children are destroyed, while they still hold the
+     * resource. Freeing it must leave the children safe to destroy.
+     */
+    release: (resource: R) => void;
 
     /**
      * Adds an event listener, for event attributes. Called on a new element,

@@ -1,5 +1,6 @@
-export { attributesOf, defineElements, element, event } from './attributes';
-export type { AttributeDefinition, AttributeHelpers, AttributePattern } from './attributes';
+export { attributesOf, creation, defineElements, element, event } from './attributes';
+export type { AnyElementDefinition, AttributeDefinition, AttributeHelpers, AttributePattern } from './attributes';
+export type { CreationAttribute, CreationValuesOf } from './attributes';
 export type { ChangeableAttribute, ElementDefinition, EventAttribute } from './attributes';
 export type { FixedAttribute, NoPatterns, NumberPropertyOf, WriteKind } from './attributes';
 export { createJsx, Fragment } from './create-jsx';
@@ -7,7 +8,7 @@ export type { ElementTable, JsxComponent, JsxFactory, JsxOptions, JsxRuntime } f
 export type { JsxTarget } from './jsx-target';
 export type { AttributesOf, AttributeValue, DestroyedCallback } from './jsx-types';
 export type { IntrinsicElementsOf, JsxChildList, JsxChildren, MvtAttributes } from './jsx-types';
-export type { PatternAttributesOf, RefCallback, RefreshStep, ValueOrGetter } from './jsx-types';
+export type { OwnedResources, PatternAttributesOf, RefCallback, RefreshStep, ValueOrGetter } from './jsx-types';
 export { createList, type ListBindings, type ListComponent, type ListOptions, type ListSource } from './list';
 export { createSwitch } from './switch';
 export type { MatchBaseBindings, MatchBindings, SwitchBindings, SwitchComponents, SwitchOptions } from './switch';

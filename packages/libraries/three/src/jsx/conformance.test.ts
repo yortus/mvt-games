@@ -4,6 +4,9 @@ import { isDestroyed } from '../object3d-mixin';
 import { threeElements } from './three-elements';
 import { threeTarget } from './three-target';
 
+/** The geometries disposed so far. three.js marks a disposed geometry only with an event, so the test records it here. */
+const disposed = new WeakSet<BufferGeometry>();
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -53,4 +56,12 @@ describeJsxConformance<Object3D>({
     parent: (node) => node.parent ?? undefined,
     isVisible: (node) => node.visible,
     isDestroyed,
+    owned: {
+        make: () => {
+            const geometry = new BoxGeometry();
+            geometry.addEventListener('dispose', () => disposed.add(geometry));
+            return geometry;
+        },
+        isReleased: (geometry: BufferGeometry) => disposed.has(geometry),
+    },
 });

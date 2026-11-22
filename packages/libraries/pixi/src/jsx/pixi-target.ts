@@ -1,5 +1,21 @@
-import { Container } from 'pixi.js';
+import { Container, Texture } from 'pixi.js';
 import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
+
+// ---------------------------------------------------------------------------
+// Interface
+// ---------------------------------------------------------------------------
+
+/**
+ * A resource that an element's `owns` attribute may list. It's anything
+ * that Pixi frees with `destroy()`, such as a texture, a graphics context or
+ * a geometry. A texture is destroyed with its source, since the view that
+ * made the texture made its source too. A texture cut from a shared source,
+ * such as a frame of a sprite sheet, belongs to the code that made the
+ * sheet, so a view doesn't list it.
+ */
+export interface OwnedResource {
+    readonly destroy: () => void;
+}
 
 // ---------------------------------------------------------------------------
 // JSX target
@@ -9,7 +25,7 @@ import { attributesOf, type JsxTarget } from '@mvtjs/utils/jsx';
  * Pixi's scene graph, as the JSX base needs it. Nodes are `Container`s,
  * whose methods `updateView` and `refreshView` call.
  */
-export const pixiTarget: JsxTarget<Container> = {
+export const pixiTarget: JsxTarget<Container, OwnedResource> = {
     name: '@mvtjs/pixi',
 
     createGroup: () => new Container(),
@@ -38,6 +54,12 @@ export const pixiTarget: JsxTarget<Container> = {
     // children and before destroying them.
     onDestroyed: (node, callback) => {
         node.on('destroyed', callback);
+    },
+    // A sprite can be destroyed safely after its texture is, so this may run
+    // before the element's children are destroyed.
+    release: (resource) => {
+        if (resource instanceof Texture) resource.destroy(true);
+        else resource.destroy();
     },
 
     // A container under Pixi's default event mode (`'passive'`) is not

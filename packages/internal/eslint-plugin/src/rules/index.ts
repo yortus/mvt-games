@@ -8,5 +8,6 @@ export { noNull } from './no-null';
 export { noRelativeImportsIntoSrc } from './no-relative-imports-into-src';
 export { noRepeatedPoll } from './no-repeated-poll';
 export { noThis } from './no-this';
+export { noUnownedResource } from './no-unowned-resource';
 export { noUnusedWatch } from './no-unused-watch';
 export { noWallClock } from './no-wall-clock';

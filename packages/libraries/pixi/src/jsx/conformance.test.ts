@@ -1,4 +1,4 @@
-import { type Container, Texture } from 'pixi.js';
+import { type Container, Texture, TextureSource } from 'pixi.js';
 import { describeJsxConformance } from '@mvtjs/utils/jsx/conformance';
 import '../container-mixin';
 import { pixiElements } from './pixi-elements';
@@ -54,4 +54,8 @@ describeJsxConformance<Container>({
     parent: (node) => node.parent ?? undefined,
     isVisible: (node) => node.visible,
     isDestroyed: (node) => node.destroyed,
+    owned: {
+        make: () => new Texture({ source: new TextureSource({ width: 1, height: 1 }) }),
+        isReleased: (texture: Texture) => texture.destroyed,
+    },
 });

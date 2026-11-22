@@ -17,7 +17,7 @@ import { createJsx, type IntrinsicElementsOf } from '@mvtjs/utils/jsx';
 // brings the `RendererViews` declaration with this entry's types.
 import '../element-mixin';
 import { htmlElements } from './html-elements';
-import { htmlTarget } from './html-target';
+import { htmlTarget, type OwnedResource } from './html-target';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -34,7 +34,7 @@ export declare namespace JSX {
      * `<List>` return one.
      */
     type Element = DomElement;
-    type IntrinsicElements = IntrinsicElementsOf<DomElement, typeof htmlElements>;
+    type IntrinsicElements = IntrinsicElementsOf<DomElement, typeof htmlElements, OwnedResource>;
 }
 
 // ---------------------------------------------------------------------------
