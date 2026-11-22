@@ -1,3 +1,4 @@
+import type { Random } from '@mvtjs/site-kit/random';
 import { FOREST_WIDTH } from '../data';
 
 // ---------------------------------------------------------------------------
@@ -71,17 +72,34 @@ export interface DemoModel {
 }
 
 // ---------------------------------------------------------------------------
+// Options
+// ---------------------------------------------------------------------------
+
+export interface DemoModelOptions {
+    /** Where each year's trees get their shapes, and their leaves the moments they fall. The same seed grows the same forests. */
+    readonly random: Random;
+    /**
+     * How far through the first year it starts, from 0 at the start of
+     * spring to just under 1. Every tree and leaf is where it would be had
+     * the year run to then. Absent, it starts at the start of spring.
+     */
+    readonly yearProgress?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Starts the first spring, with new trees about to grow. */
-export function createDemoModel(): DemoModel {
+/** Starts the first year, with new trees about to grow, or grown as far as `yearProgress` has them. */
+export function createDemoModel(options: DemoModelOptions): DemoModel {
+    const { random, yearProgress = 0 } = options;
     const trees: TreeState[] = PLACES.map((place) => ({
         x: 0, distance: place.distance, leafKind: 'blade', height: 0, branches: [], leaves: [], place,
     }));
-    let yearSeconds = 0;
-    let time = 0;
+    let yearSeconds = yearProgress * YEAR_SECONDS;
+    let time = yearSeconds;
     for (let i = 0; i < trees.length; i++) growTree(trees[i]);
+    placeEverything();
 
     return {
         get season() { return SEASONS[Math.min(3, Math.floor((yearSeconds / YEAR_SECONDS) * 4))]; },
@@ -96,32 +114,37 @@ export function createDemoModel(): DemoModel {
                 yearSeconds -= YEAR_SECONDS;
                 for (let i = 0; i < trees.length; i++) growTree(trees[i]);
             }
-            for (let t = 0; t < trees.length; t++) {
-                const tree = trees[t];
-                for (let i = 0; i < tree.branches.length; i++) {
-                    const branch = tree.branches[i];
-                    branch.growth = clamp01((yearSeconds - branch.startSeconds) / GROW_SECONDS);
-                }
-                for (let i = 0; i < tree.leaves.length; i++) moveLeaf(tree.leaves[i]);
-            }
+            placeEverything();
         },
     };
+
+    /** Grows every branch, and moves every leaf, to where they are this moment of the year. */
+    function placeEverything(): void {
+        for (let t = 0; t < trees.length; t++) {
+            const tree = trees[t];
+            for (let i = 0; i < tree.branches.length; i++) {
+                const branch = tree.branches[i];
+                branch.growth = clamp01((yearSeconds - branch.startSeconds) / GROW_SECONDS);
+            }
+            for (let i = 0; i < tree.leaves.length; i++) moveLeaf(tree.leaves[i]);
+        }
+    }
 
     /** Plans a new tree in a tree's place: its rule, every branch and when it grows, and every leaf. */
     function growTree(tree: TreeState): void {
         tree.branches.length = 0;
         tree.leaves.length = 0;
         tree.height = 0;
-        tree.x = tree.place.x + (Math.random() - 0.5) * 1.5;
-        tree.leafKind = LEAF_KINDS[Math.floor(Math.random() * LEAF_KINDS.length)];
+        tree.x = tree.place.x + (random.next() - 0.5) * 1.5;
+        tree.leafKind = LEAF_KINDS[random.nextIndex(LEAF_KINDS.length)];
         const rule: Rule = {
-            spread: 0.22 + Math.random() * 0.5,
+            spread: 0.22 + random.next() * 0.5,
             // Lopsided a little one way, and turning a little as it goes up
-            lean: (Math.random() - 0.5) * 0.7,
-            twist: (Math.random() - 0.5) * 0.22,
-            shrink: 0.66 + Math.random() * 0.14,
+            lean: (random.next() - 0.5) * 0.7,
+            twist: (random.next() - 0.5) * 0.22,
+            shrink: 0.66 + random.next() * 0.14,
             depth: tree.place.depth,
-            startSeconds: Math.random() * 2,
+            startSeconds: random.next() * 2,
         };
         addBranch(tree, rule, 0, 0, Math.PI / 2, TRUNK_LENGTH, TRUNK_THICKNESS, 0);
     }
@@ -136,7 +159,7 @@ export function createDemoModel(): DemoModel {
         // Leaves grow at the ends of the last two levels of branches
         if (depth >= rule.depth - 1) addLeaf(tree, x1, y1, angle, startSeconds + GROW_SECONDS);
         if (depth === rule.depth) return;
-        const jitter = (Math.random() - 0.5) * 0.08;
+        const jitter = (random.next() - 0.5) * 0.08;
         const turn = angle + rule.twist + jitter;
         addBranch(tree, rule, x1, y1, turn + rule.spread * (1 + rule.lean), length * rule.shrink, thickness * 0.66, depth + 1);
         addBranch(tree, rule, x1, y1, turn - rule.spread * (1 - rule.lean), length * rule.shrink, thickness * 0.66, depth + 1);
@@ -149,9 +172,9 @@ export function createDemoModel(): DemoModel {
             attachY: y,
             attachAngle: angle,
             budSeconds,
-            fallSeconds: YEAR_SECONDS * (0.56 + Math.random() * 0.18),
-            restY: -Math.random() * 1.6,
-            flutter: Math.random() * Math.PI * 2,
+            fallSeconds: YEAR_SECONDS * (0.56 + random.next() * 0.18),
+            restY: -random.next() * 1.6,
+            flutter: random.next() * Math.PI * 2,
         });
     }
 

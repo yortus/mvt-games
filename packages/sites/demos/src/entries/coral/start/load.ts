@@ -1,4 +1,5 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { createDemoModel } from '../models';
 import { DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../views';
 
@@ -16,7 +17,8 @@ export const load = definePixiLoader(async () => {
         thumbnailAdvanceMs: 15_000,
 
         start({ stage }): EntrySession {
-            const model = createDemoModel();
+            // A new seed each visit, so each visit's coral grows from new places
+            const model = createDemoModel({ random: createRandom({ seed: Math.floor(Math.random() * 2 ** 32) }) });
             const view = DemoView({ model });
             stage.addChild(view);
 

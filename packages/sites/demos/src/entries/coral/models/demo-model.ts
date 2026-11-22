@@ -1,3 +1,4 @@
+import type { Random } from '@mvtjs/site-kit/random';
 import { COLS, ROWS } from '../data';
 
 // ---------------------------------------------------------------------------
@@ -16,7 +17,7 @@ export type CoralPattern = 'coral' | 'spots' | 'maze' | 'holes' | 'worms';
  * The grid's edges wrap round.
  */
 export interface DemoModel {
-    /** How much of the growth is in the cell at `index` (`row * COLS + col`), from 0 to about 0.5. */
+    /** How much of the growth is in the cell at `index` (`row * cols + col`), from 0 to about 0.5. */
     growthAt: (index: number) => number;
     /** The pattern the growth is making, or moving toward. */
     readonly pattern: CoralPattern;
@@ -28,21 +29,35 @@ export interface DemoModel {
 }
 
 // ---------------------------------------------------------------------------
+// Options
+// ---------------------------------------------------------------------------
+
+export interface DemoModelOptions {
+    /** Where each seed lands, and how much growth it starts with. The same seed sows the same coral. */
+    readonly random: Random;
+    /** How many cells wide the grid is. Absent, it's the demo's width, `COLS`. */
+    readonly cols?: number;
+    /** How many cells tall the grid is. Absent, it's the demo's height, `ROWS`. */
+    readonly rows?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 /** Starts making coral, with food everywhere and a few seeds of growth scattered about. */
-export function createDemoModel(): DemoModel {
+export function createDemoModel(options: DemoModelOptions): DemoModel {
+    const { random, cols = COLS, rows = ROWS } = options;
     // Each chemical twice over: this step's amounts, and the next step's, written from them
-    let food = new Float32Array(COLS * ROWS).fill(1);
-    let growth = new Float32Array(COLS * ROWS);
-    let nextFood = new Float32Array(COLS * ROWS);
-    let nextGrowth = new Float32Array(COLS * ROWS);
+    let food = new Float32Array(cols * rows).fill(1);
+    let growth = new Float32Array(cols * rows);
+    let nextFood = new Float32Array(cols * rows);
+    let nextGrowth = new Float32Array(cols * rows);
     // Each column's neighbours to the left and right, and each row's above and below, as offsets, wrapping round
-    const lefts = Int32Array.from({ length: COLS }, (_, col) => (col + COLS - 1) % COLS);
-    const rights = Int32Array.from({ length: COLS }, (_, col) => (col + 1) % COLS);
-    const ups = Int32Array.from({ length: ROWS }, (_, row) => ((row + ROWS - 1) % ROWS) * COLS);
-    const downs = Int32Array.from({ length: ROWS }, (_, row) => ((row + 1) % ROWS) * COLS);
+    const lefts = Int32Array.from({ length: cols }, (_, col) => (col + cols - 1) % cols);
+    const rights = Int32Array.from({ length: cols }, (_, col) => (col + 1) % cols);
+    const ups = Int32Array.from({ length: rows }, (_, row) => ((row + rows - 1) % rows) * cols);
+    const downs = Int32Array.from({ length: rows }, (_, row) => ((row + 1) % rows) * cols);
     let patternIndex = 0;
     // The rates the growth is moving away from, and how many steps into the current pattern it is
     let fromFeed = PATTERNS[0].feed;
@@ -74,15 +89,15 @@ export function createDemoModel(): DemoModel {
         for (let r = -SEED_RADIUS; r <= SEED_RADIUS; r++) {
             for (let c = -SEED_RADIUS; c <= SEED_RADIUS; c++) {
                 if (r * r + c * c > SEED_RADIUS * SEED_RADIUS) continue;
-                const i = wrap(row + r, ROWS) * COLS + wrap(col + c, COLS);
+                const i = wrap(row + r, rows) * cols + wrap(col + c, cols);
                 food[i] = 0.5;
-                growth[i] = 0.25 + Math.random() * 0.1;
+                growth[i] = 0.25 + random.next() * 0.1;
             }
         }
     }
 
     function seedAtRandom(): void {
-        seedAt(Math.floor(Math.random() * COLS), Math.floor(Math.random() * ROWS));
+        seedAt(random.nextIndex(cols), random.nextIndex(rows));
     }
 
     function nextPattern(): void {
@@ -113,11 +128,11 @@ export function createDemoModel(): DemoModel {
     function step(): void {
         const feed = feedNow();
         const kill = killNow();
-        for (let row = 0; row < ROWS; row++) {
+        for (let row = 0; row < rows; row++) {
             const up = ups[row];
-            const here = row * COLS;
+            const here = row * cols;
             const down = downs[row];
-            for (let col = 0; col < COLS; col++) {
+            for (let col = 0; col < cols; col++) {
                 const left = lefts[col];
                 const right = rights[col];
                 const i = here + col;

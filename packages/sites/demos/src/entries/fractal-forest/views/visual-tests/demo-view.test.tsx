@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js';
 import { advanceTime } from '@mvtjs/pixi';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { canvasTest } from 'v-snap';
 import { createDemoModel } from '../../models';
 import { DemoView, SCREEN_HEIGHT, SCREEN_WIDTH } from '../demo-view';
@@ -8,7 +9,7 @@ const SIZE = { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: false };
 
 /** The forest at a time of year, in seconds from the start of spring, with a year lasting a minute. */
 async function poseAt(seconds: number): Promise<ReturnType<typeof DemoView>> {
-    const model = createDemoModel();
+    const model = createDemoModel({ random: createRandom({ seed: 1 }) });
     const view = DemoView({ model });
     await advanceTime(seconds * 1000, model, view);
     return view;

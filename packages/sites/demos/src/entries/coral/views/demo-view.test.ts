@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Container, FederatedPointerEvent } from 'pixi.js';
 import { updateView } from '@mvtjs/pixi';
+import { createRandom } from '@mvtjs/site-kit/random';
 import { createDemoModel } from '../models';
 import { DemoView } from './demo-view';
 
@@ -33,7 +34,7 @@ describe('DemoView', () => {
 });
 
 function setUp(): { grid: Container; view: Container; nextPattern: ReturnType<typeof vi.fn> } {
-    const model = createDemoModel();
+    const model = createDemoModel({ random: createRandom({ seed: 1 }) });
     const nextPattern = vi.fn();
     model.nextPattern = nextPattern;
     const view = DemoView({ model });
