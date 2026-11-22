@@ -18,6 +18,8 @@ import { fitPlayArea, type PlayArea } from './play-area';
 export interface PixiStage {
     /** Whether it draws pixel art, which is fixed when its renderer is made. */
     readonly isPixelArt: boolean;
+    /** Whether it can draw PixiJS 3D scenes, which is fixed when its renderer is made. */
+    readonly draws3d: boolean;
     /** Starts a session on the stage, passing `options` on to the entry, and shows the canvas. */
     start: (starter: PixiEntryStarter, options: PixiStageStartOptions) => EntrySession;
     /** Hides the canvas, once the session has ended. */
@@ -53,6 +55,12 @@ export interface PixiStageOptions {
     readonly element: HTMLElement;
     /** Whether to draw pixel art. */
     readonly isPixelArt: boolean;
+    /**
+     * Whether the stage is made for an entry that draws 3D, after the entry's
+     * `load` imported PixiJS 3D. PixiJS 3D adds itself only to the renderers
+     * made after it's imported.
+     */
+    readonly draws3d: boolean;
     /** Whether to draw touch controls for entries that take input. */
     readonly isTouch: boolean;
     /** Whether the entry takes input at all, from the keyboard or touch controls. */
@@ -80,7 +88,7 @@ export interface PixiStageStartOptions extends StartOptions {
 
 /** Creates the entry host's Pixi stage, and adds its canvas to `options.element`. */
 export async function createPixiStage(options: PixiStageOptions): Promise<PixiStage> {
-    const { element, isPixelArt, isTouch, takesInput, findChip } = options;
+    const { element, isPixelArt, draws3d, isTouch, takesInput, findChip } = options;
 
     const app = new Application();
     await app.init({
@@ -180,6 +188,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 
     const stage: PixiStage = {
         isPixelArt,
+        draws3d,
 
         start(next, startOptions) {
             starter = next;

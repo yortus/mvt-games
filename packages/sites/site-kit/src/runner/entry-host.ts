@@ -324,14 +324,19 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         }
         fitStarter(next);
         const pixelArt = next.pixelArt ?? false;
-        if (pixiStage !== undefined && pixiStage.isPixelArt === pixelArt) return;
-        // Antialiasing is fixed when a renderer is made, so a change of style needs a new one
+        const draws3d = next.draws3d ?? false;
+        // A stage that can draw 3D can draw any entry, so only a 2D stage is replaced for 3D
+        const fits = pixiStage !== undefined && pixiStage.isPixelArt === pixelArt && (pixiStage.draws3d || !draws3d);
+        if (fits) return;
+        // Antialiasing is fixed when a renderer is made, so a change of style needs a new one.
+        // PixiJS 3D adds itself to a renderer as it starts, so a 3D entry needs one made after its load.
         pixiStage?.destroy();
         pixiStage = undefined;
         const { createPixiStage } = await import('./pixi-stage');
         pixiStage = await createPixiStage({
             element,
             isPixelArt: pixelArt,
+            draws3d,
             isTouch,
             takesInput,
             session: () => session,

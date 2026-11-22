@@ -502,7 +502,9 @@ The starter's other options say how the host should show the entry:
 (scale by whole numbers only, for crisp pixels), `backgroundColor` (the
 colour around the play area, where its shape doesn't match the screen's,
 black unless you name one, as the puzzles do for their paper), `fitTo` (for
-an entry that lays itself out for the area it is given, as Boids does), and
+an entry that lays itself out for the area it is given, as Boids does),
+`draws3d` (for an entry that draws 3D scenes with PixiJS 3D, so the host
+makes a new renderer for it after its `load` has imported PixiJS 3D), and
 `thumbnailAdvanceMs` (how far to run the entry before taking its thumbnail).
 
 ### Sound

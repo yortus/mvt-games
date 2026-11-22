@@ -211,6 +211,13 @@ export interface PixiEntryStarterFields<K extends SoundChoice, C extends Control
      * pixels.
      */
     readonly pixelArt?: boolean;
+    /**
+     * Whether it draws 3D scenes with PixiJS 3D (`@pixi/3d`). PixiJS 3D adds
+     * itself to a Pixi renderer only as the renderer starts, so the host
+     * starts a new one for the entry, after its `load` has imported
+     * PixiJS 3D.
+     */
+    readonly draws3d?: boolean;
     /** Whether a desktop host scales by whole numbers only (1x, 2x, 3x...), for crisp pixel art. */
     readonly integerScale?: boolean;
     /**
