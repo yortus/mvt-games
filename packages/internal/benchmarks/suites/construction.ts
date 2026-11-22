@@ -9,7 +9,7 @@ export const constructionSuite: Suite = {
     cases: [
         ...combinations({
             scenario: ['build'],
-            approach: ['container-only', 'hand-written', 'jsx', 'events', 'solid'],
+            approach: ['container-only', 'hand-written', 'jsx', 'events', 'solid', 'pixi-3d-hand-written', 'pixi-3d-jsx'],
         }),
         ...combinations({
             scenario: ['pool'],
@@ -43,6 +43,8 @@ export const constructionSuite: Suite = {
         approach: {
             ...APPROACH_LABELS,
             'container-only': 'bare container',
+            'pixi-3d-hand-written': 'PixiJS 3D group (hand-written)',
+            'pixi-3d-jsx': 'PixiJS 3D group (JSX)',
             'list': '`<List>` over a `SlotList` (reuses containers)',
             'rebuild': 'build and destroy a container per item',
         },

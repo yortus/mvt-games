@@ -1,3 +1,4 @@
+import type { Container3D } from '@pixi/3d';
 import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
 import type { JsxFactory } from '@mvtjs/utils/jsx';
 import { jsx as pixiJsx, refreshView, setRefresh } from '@mvtjs/pixi';
@@ -17,6 +18,9 @@ import { readParams, report, timeFrames } from '../harness/measure';
 //   element: a write shared by all eight is more than V8 keeps fast
 //   (megamorphic). Hand-written code has a view per kind; the JSX runtime
 //   gives each class a copy of the refresh code of its own.
+// scene `scene3d`: PixiJS 3D groups binding `x`, `y`, `z` and `rotationY`,
+//   all changing every frame, to compare the performance cost of a 3D
+//   element with a 2D one's.
 
 const params = readParams();
 const scene = String(params.scene);
@@ -28,9 +32,7 @@ const TEXTURE_B = Texture.EMPTY;
 const KINDS = ['container', 'sprite', 'graphics', 'text', 'bitmapText', 'htmlText', 'tilingSprite', 'nineSliceSprite'] as const;
 
 const items = createItems(count);
-const root = new Container();
-const jsx = approach === 'hand-written' ? undefined : pixiJsx;
-for (let i = 0; i < count; i++) root.addChild(createView(i, items[i], jsx));
+const root = scene === 'scene3d' ? await createScene3d() : createScene2d();
 
 let tick = 0;
 report({
@@ -86,6 +88,35 @@ function changeItems(frame: number): void {
 // ---------------------------------------------------------------------------
 // Views
 // ---------------------------------------------------------------------------
+
+function createScene2d(): Container {
+    const scene2d = new Container();
+    const jsx = approach === 'hand-written' ? undefined : pixiJsx;
+    for (let i = 0; i < count; i++) scene2d.addChild(createView(i, items[i], jsx));
+    return scene2d;
+}
+
+async function createScene3d(): Promise<Container3D> {
+    // Imported only here, so the 2D scenes never load PixiJS 3D, and run just as they did before it was added
+    const [{ Container3D }, { jsx: pixi3dJsx }] = await Promise.all([import('@pixi/3d'), import('@mvtjs/pixi-3d')]);
+    const scene3d = new Container3D();
+    for (let i = 0; i < count; i++) {
+        const item = items[i];
+        if (approach === 'jsx') {
+            scene3d.addChild(pixi3dJsx('group', { x: () => item.x, y: () => item.y, z: () => item.alpha, rotationY: () => item.rotation }));
+            continue;
+        }
+        const group = new Container3D();
+        setRefresh(group, () => {
+            group.x = item.x;
+            group.y = item.y;
+            group.z = item.alpha;
+            group.rotation.y = item.rotation;
+        });
+        scene3d.addChild(group);
+    }
+    return scene3d;
+}
 
 function createView(index: number, item: ItemModel, jsxOrUndefined: JsxFactory<Container> | undefined): Container {
     if (scene === 'kinds') {
