@@ -20,6 +20,8 @@ export type ArcadeControlSource = 'keyboard' | 'touch' | 'script';
 export interface ArcadeControlsListener {
     /** The direction held left or right has changed. */
     readonly onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
+    /** How far left or right is held has changed, from -1, all the way left, to 1, all the way right. */
+    readonly onXAmountChanged?: (amount: number) => void;
     /** The direction held up or down has changed. */
     readonly onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
     readonly onPrimaryButtonChanged?: (pressed: boolean) => void;
@@ -36,6 +38,14 @@ export interface ArcadeControlsListener {
 export interface ArcadeControls {
     /** The direction held left or right. With both held, the one pressed last wins. */
     readonly xDirection: 'left' | 'none' | 'right';
+    /**
+     * How far left or right is held, from -1, all the way left, to 1, all
+     * the way right. A key holds it all the way. The touch joystick and the
+     * left-right pad hold it as far as the thumb is from their middle, so a
+     * game that steers can turn gently. Held from several sources, their
+     * amounts add up, to no more than all the way.
+     */
+    readonly xAmount: number;
     /** The direction held up or down. With both held, the one pressed last wins. */
     readonly yDirection: 'up' | 'none' | 'down';
     /** Whether `control` is held from any source. */
@@ -44,6 +54,13 @@ export interface ArcadeControls {
     readonly setHeld: (source: ArcadeControlSource, control: ArcadeControl, isHeld: boolean) => void;
     /** Sets the direction held left or right from `source`, or neither, as a d-pad reports it. */
     readonly setXDirection: (source: ArcadeControlSource, direction: 'left' | 'none' | 'right') => void;
+    /**
+     * Sets how far left or right is held from `source`, from -1 to 1, as a
+     * stick reports it. From then on, the source's amount is this one, not
+     * the direction it holds. It doesn't set the direction, which the source
+     * sets with `setXDirection`.
+     */
+    readonly setXAmount: (source: ArcadeControlSource, amount: number) => void;
     /** Sets the direction held up or down from `source`, or neither, as a d-pad reports it. */
     readonly setYDirection: (source: ArcadeControlSource, direction: 'up' | 'none' | 'down') => void;
     /**
@@ -94,6 +111,10 @@ export function createArcadeControls(options: ArcadeControlsOptions = {}): Arcad
     let latestY: 'up' | 'down' = 'up';
     let xDirection: 'left' | 'none' | 'right' = 'none';
     let yDirection: 'up' | 'none' | 'down' = 'none';
+    // How far left or right each source holds, for the sources that have said, as a stick does
+    const xAmounts: Record<ArcadeControlSource, number> = { keyboard: 0, touch: 0, script: 0 };
+    let sourcesWithXAmount = 0;
+    let xAmount = 0;
     const listeners: ArcadeControlsListener[] = [];
 
     const keys = options.keys;
@@ -113,6 +134,9 @@ export function createArcadeControls(options: ArcadeControlsOptions = {}): Arcad
         get xDirection() {
             return xDirection;
         },
+        get xAmount() {
+            return xAmount;
+        },
         get yDirection() {
             return yDirection;
         },
@@ -124,6 +148,12 @@ export function createArcadeControls(options: ArcadeControlsOptions = {}): Arcad
             if (direction !== 'none') setHeld(source, direction, true);
             if (direction !== 'left') setHeld(source, 'left', false);
             if (direction !== 'right') setHeld(source, 'right', false);
+        },
+
+        setXAmount(source, amount) {
+            xAmounts[source] = Math.max(-1, Math.min(1, amount));
+            sourcesWithXAmount |= SOURCE_BITS[source];
+            followXAmount();
         },
 
         setYDirection(source, direction) {
@@ -183,9 +213,31 @@ export function createArcadeControls(options: ArcadeControlsOptions = {}): Arcad
         const left = holders.left !== 0;
         const right = holders.right !== 0;
         const next = left && right ? latestX : left ? 'left' : right ? 'right' : 'none';
-        if (next === xDirection) return;
-        xDirection = next;
-        for (let i = 0; i < listeners.length; i++) listeners[i].onXDirectionChanged?.(next);
+        if (next !== xDirection) {
+            xDirection = next;
+            for (let i = 0; i < listeners.length; i++) listeners[i].onXDirectionChanged?.(next);
+        }
+        followXAmount();
+    }
+
+    /** Adds up how far each source holds left or right. A source that hasn't given an amount holds its direction all the way. */
+    function followXAmount(): void {
+        let total = 0;
+        for (let i = 0; i < SOURCES.length; i++) {
+            const source = SOURCES[i];
+            const bit = SOURCE_BITS[source];
+            if ((sourcesWithXAmount & bit) !== 0) {
+                total += xAmounts[source];
+                continue;
+            }
+            const left = (holders.left & bit) !== 0;
+            const right = (holders.right & bit) !== 0;
+            total += left && right ? (latestX === 'left' ? -1 : 1) : left ? -1 : right ? 1 : 0;
+        }
+        const next = Math.max(-1, Math.min(1, total));
+        if (next === xAmount) return;
+        xAmount = next;
+        for (let i = 0; i < listeners.length; i++) listeners[i].onXAmountChanged?.(next);
     }
 
     function followY(): void {
@@ -203,6 +255,8 @@ export function createArcadeControls(options: ArcadeControlsOptions = {}): Arcad
 // ---------------------------------------------------------------------------
 
 const CONTROLS: readonly ArcadeControl[] = ['left', 'right', 'up', 'down', 'primary', 'secondary', 'restart'];
+
+const SOURCES: readonly ArcadeControlSource[] = ['keyboard', 'touch', 'script'];
 
 /** Each source's bit in a control's holders. */
 const SOURCE_BITS: Readonly<Record<ArcadeControlSource, number>> = { keyboard: 1 << 0, touch: 1 << 1, script: 1 << 2 };

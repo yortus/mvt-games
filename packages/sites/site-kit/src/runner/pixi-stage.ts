@@ -168,6 +168,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             secondaryLabel: () => layout()?.secondaryLabel ?? 'B',
             isJoystickFloating: () => layout()?.floatingJoystick ?? false,
             onXDirectionChanged: (dir) => options.controls()?.setXDirection('touch', dir),
+            onXAmountChanged: (amount) => options.controls()?.setXAmount('touch', amount),
             onYDirectionChanged: (dir) => options.controls()?.setYDirection('touch', dir),
             onPrimaryButtonChanged: (pressed) => options.controls()?.setHeld('touch', 'primary', pressed),
             onSecondaryButtonChanged: (pressed) => options.controls()?.setHeld('touch', 'secondary', pressed),

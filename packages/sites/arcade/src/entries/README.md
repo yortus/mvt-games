@@ -419,6 +419,14 @@ So the model never knows there is a button, and never watches for the
 moment one is pressed. The controls report a button only when it goes down
 or up, never again as a key repeats.
 
+Left and right can also be held part of the way. `onXAmountChanged` reports
+how far, from -1, all the way left, to 1, all the way right. A key holds it
+all the way, and so does the four-way pad. The left-right pad and the
+joystick hold it as far as the thumb is from their middle. A game that
+steers reads the amount rather than the direction. Then a player on a touch
+screen can turn gently round a bend, instead of swinging between full lock
+and straight ahead.
+
 A starter that uses the arcade controls can also play them for its
 thumbnail, with `thumbnailInput`. It is called before each step as the
 thumbnail is set up, so the picture shows the game in action, as Galaxy

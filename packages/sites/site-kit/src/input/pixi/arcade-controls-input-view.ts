@@ -14,6 +14,8 @@ export interface ArcadeControlsInputViewBindings {
     /** The session's arcade controls, which the host passes to the entry as it starts. */
     readonly controls: ArcadeControls;
     readonly onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
+    /** How far left or right is held has changed, from -1 to 1. The left-right pad or the joystick on a touch screen can hold it part of the way. */
+    readonly onXAmountChanged?: (amount: number) => void;
     readonly onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
     readonly onPrimaryButtonChanged?: (pressed: boolean) => void;
     readonly onPrimaryPressed?: () => void;
@@ -40,6 +42,7 @@ export function ArcadeControlsInputView(bindings: ArcadeControlsInputViewBinding
     view.label = 'arcade-controls-input';
     const stopListening = bindings.controls.listen({
         onXDirectionChanged: bindings.onXDirectionChanged,
+        onXAmountChanged: bindings.onXAmountChanged,
         onYDirectionChanged: bindings.onYDirectionChanged,
         onPrimaryButtonChanged: (pressed) => {
             bindings.onPrimaryButtonChanged?.(pressed);

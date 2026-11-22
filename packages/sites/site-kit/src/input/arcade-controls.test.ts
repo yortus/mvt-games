@@ -141,6 +141,20 @@ describe('createArcadeControls', () => {
         expect([controls.xDirection, controls.yDirection]).toEqual(['none', 'down']);
     });
 
+    it('holds left or right all the way from a key, and part of the way from a stick, adding the two', () => {
+        const { controls } = setup();
+        const amounts: number[] = [];
+        controls.listen({ onXAmountChanged: (amount) => amounts.push(amount) });
+        send('keydown', 'ArrowRight');
+        // A stick's amount stands for its source in place of the direction it holds
+        controls.setXAmount('touch', -0.3);
+        controls.setXDirection('touch', 'left');
+        send('keyup', 'ArrowRight');
+        controls.setXAmount('touch', 0);
+        controls.setXDirection('touch', 'none');
+        expect(amounts).toEqual([1, 0.7, -0.3, 0]);
+    });
+
     it('reports nothing to a listener as it starts, even for a control already held', async () => {
         const { controls } = setup();
         send('keydown', 'ArrowLeft');

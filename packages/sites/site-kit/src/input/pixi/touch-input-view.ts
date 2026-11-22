@@ -29,6 +29,8 @@ export interface TouchInputViewBindings {
     /** A joystick that appears where the thumb lands, rather than a fixed d-pad. */
     isJoystickFloating: () => boolean;
     onXDirectionChanged?: (direction: 'left' | 'none' | 'right') => void;
+    /** How far left or right the thumb holds the left-right pad or the joystick, from -1 to 1, by how far it is from the middle. */
+    onXAmountChanged?: (amount: number) => void;
     onYDirectionChanged?: (direction: 'up' | 'none' | 'down') => void;
     onPrimaryButtonChanged?: (pressed: boolean) => void;
     onSecondaryButtonChanged?: (pressed: boolean) => void;
@@ -58,6 +60,8 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
     // The direction the d-pad or the joystick holds
     let dpadXDir: 'left' | 'none' | 'right' = 'none';
     let dpadYDir: 'up' | 'none' | 'down' = 'none';
+    // How far left or right the thumb holds it, from -1 to 1
+    let dpadXAmount = 0;
     // Whether each button is held
     let isPrimaryHeld = false;
     let isSecondaryHeld = false;
@@ -191,6 +195,10 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
             dpadYDir = 'none';
             queueMicrotask(() => bindings.onYDirectionChanged?.('none'));
         }
+        if (dpadXAmount !== 0) {
+            dpadXAmount = 0;
+            queueMicrotask(() => bindings.onXAmountChanged?.(0));
+        }
         if (isPrimaryHeld) {
             isPrimaryHeld = false;
             queueMicrotask(() => bindings.onPrimaryButtonChanged?.(false));
@@ -297,6 +305,20 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         }
     }
 
+    /**
+     * Reports how far left or right a thumb `dx` from the middle holds the
+     * control. Inside the dead zone it holds nothing. Past it, the amount
+     * grows steadily, to all the way a little before the rim, so a thumb
+     * doesn't have to find the very edge.
+     */
+    function setXAmountFrom(dx: number): void {
+        const across = Math.max(0, Math.min(1, (Math.abs(dx) - DEAD_ZONE_RADIUS) / (FULL_REACH_RADIUS - DEAD_ZONE_RADIUS)));
+        const amount = dx < 0 ? -across : across;
+        if (amount === dpadXAmount) return;
+        dpadXAmount = amount;
+        bindings.onXAmountChanged?.(amount);
+    }
+
     /** Steers towards a thumb (dx, dy) from the middle, in one of eight zones. Inside the dead zone, it steers nowhere. */
     function steerTowards(dx: number, dy: number): void {
         if (dx * dx + dy * dy < DEAD_ZONE_RADIUS * DEAD_ZONE_RADIUS) {
@@ -352,10 +374,13 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
                 const reach = distance > DPAD_CSS_RADIUS ? DPAD_CSS_RADIUS / distance : 1;
                 knobX = joystickX + dx * reach;
                 knobY = joystickY + dy * reach;
+                // The amount comes first, so the controls never take a new thumb's direction as all the way, even for a moment
+                setXAmountFrom(dx);
                 steerTowards(dx, dy);
             },
             onReleased: () => {
                 isJoystickHeld = false;
+                setXAmountFrom(0);
                 setDirection('none', 'none');
             },
         });
@@ -383,14 +408,19 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
             target: dpadHit,
             onPressed: steer,
             onMoved: steer,
-            onReleased: () => setDirection('none', 'none'),
+            onReleased: () => {
+                setXAmountFrom(0);
+                setDirection('none', 'none');
+            },
         });
 
         function steer(x: number, y: number): void {
+            // A four-way pad holds one direction all the way, so a press towards up doesn't turn a little too
             if (kind === 'four-way') {
                 steerTowards(x, y);
                 return;
             }
+            setXAmountFrom(x);
             if (x * x + y * y < DEAD_ZONE_RADIUS * DEAD_ZONE_RADIUS) setDirection('none', 'none');
             else setDirection(x < 0 ? 'left' : 'right', 'none');
         }
@@ -407,6 +437,8 @@ const MARGIN_CSS = 12;
 /** How far from the middle a thumb must be to steer, as a share of the d-pad's radius, and in pixels. */
 const DEAD_ZONE = 0.2;
 const DEAD_ZONE_RADIUS = DPAD_CSS_RADIUS * DEAD_ZONE;
+/** How far from the middle a thumb holds left or right all the way, in pixels, a little inside the rim. */
+const FULL_REACH_RADIUS = DPAD_CSS_RADIUS * 0.85;
 const ZONE_SIZE = Math.PI / 4;
 const ZONE_X: readonly ('left' | 'none' | 'right')[] = ['right', 'right', 'none', 'left', 'left', 'left', 'none', 'right'];
 const ZONE_Y: readonly ('up' | 'none' | 'down')[] = ['none', 'down', 'down', 'down', 'none', 'up', 'up', 'up'];

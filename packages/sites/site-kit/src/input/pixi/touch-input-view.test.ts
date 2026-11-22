@@ -75,6 +75,23 @@ describe('TouchInputView', () => {
         expect(heldFill().visible).toBe(false);
     });
 
+    it('holds left part of the way on the left-right pad, as far as the thumb is from the middle, but not on the four-way pad', async () => {
+        const onXAmountChanged = vi.fn();
+        const { view, changeControls, pressDpad } = setUp({ onXAmountChanged });
+        // The four-way pad holds a direction all the way, so it doesn't report an amount
+        pressDpad();
+        expect(onXAmountChanged).not.toHaveBeenCalled();
+
+        changeControls();
+        refreshView(view);
+        await Promise.resolve();
+        pressDpad();
+        expect(onXAmountChanged).toHaveBeenCalledOnce();
+        const [amount] = onXAmountChanged.mock.calls[0] as [number];
+        expect(amount).toBeGreaterThan(-1);
+        expect(amount).toBeLessThan(0);
+    });
+
     it('releases a direction when its finger lifts while the controls are hidden, as Pixi sends that to a hidden object', () => {
         const { view, onXDirectionChanged } = setUp();
         const stage = new Container();
