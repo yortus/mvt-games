@@ -54,16 +54,24 @@ describe('exporting a project', () => {
         expect(fileOf(files, 'src/index.ts')).toContain('createSound');
     });
 
-    it('says in its README which packages are not on npm yet, and leaves them out', () => {
+    it('says in its README which of the packages it imports are not on npm yet, and leaves them out', () => {
         const packages = { ...PACKAGES, '@mvtjs/three': { ...PACKAGES['@mvtjs/three'], isPrivate: true } };
-        const { files } = exportProject({ ...PROJECT, packages });
+        const scene = { path: 'views/scene.tsx', text: `/** @jsxImportSource @mvtjs/three */
+export const scene = <group />;
+` };
+        const { files } = exportProject({ ...PROJECT, files: [...PROJECT.files, scene], packages });
         expect(fileOf(files, 'README.md')).toContain('## Not on npm yet');
-        expect(fileOf(files, 'README.md')).toContain('`@mvtjs/three` is not on npm yet');
+        expect(fileOf(files, 'README.md')).toContain('The project imports `@mvtjs/three`, which is not on npm yet.');
         expect(fileOf(files, 'package.json')).not.toContain('@mvtjs/three');
     });
 
-    it('says nothing about npm in its README when every package is published', () => {
-        const { files } = exportProject({ ...PROJECT, packages: PACKAGES });
+    it('says nothing about npm in its README when everything it imports is published', () => {
+        // `@mvtjs/pixi` is a prefix of `@mvtjs/pixi-3d`, which isn't on npm yet, and mustn't be taken for it
+        const packages = { ...PACKAGES, '@mvtjs/pixi-3d': { ...PACKAGES['@mvtjs/pixi-3d'], isPrivate: true } };
+        const view = { path: 'views/ship.tsx', text: `/** @jsxImportSource @mvtjs/pixi */
+import { setRefresh } from '@mvtjs/pixi';
+` };
+        const { files } = exportProject({ ...PROJECT, files: [...PROJECT.files, view], packages });
         expect(fileOf(files, 'README.md')).not.toContain('Not on npm yet');
     });
 

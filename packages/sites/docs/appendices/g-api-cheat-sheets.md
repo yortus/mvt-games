@@ -19,10 +19,11 @@ links to.
 
 ::: info In this book
 The sheets cover the `@mvtjs` libraries, the playground's `playground`
-module and the `audio90` sound chips, and the parts of Pixi, three.js and
-GSAP that the book's examples use. MVT itself needs none of them. The view
-tick API, such as `setRefresh`, is exported by each renderer's package:
-`@mvtjs/pixi`, `@mvtjs/html` and `@mvtjs/three`. The sheets show the import
+module and the `audio90` sound chips, and the parts of Pixi, PixiJS 3D,
+three.js and GSAP that the book's examples use. MVT itself needs none of
+them. The view tick API, such as `setRefresh`, is exported by each
+renderer's package: `@mvtjs/pixi`, `@mvtjs/html`, `@mvtjs/three` and
+`@mvtjs/pixi-3d`. The sheets show the import
 from `@mvtjs/pixi`, so import it from your own renderer's package instead.
 In the playground, press Cheat sheet, or F1, to open the sheets over the
 run, beside your code. In an experiment, press View code, then Cheat sheet.
@@ -52,6 +53,10 @@ run, beside your code. In an experiment, press View code, then Cheat sheet.
 
 <CheatSheet id="three-jsx" />
 
+## JSX for PixiJS 3D
+
+<CheatSheet id="pixi-3d-jsx" />
+
 ## Time and Motion Helpers
 
 <CheatSheet id="time-and-motion" />
@@ -71,6 +76,10 @@ run, beside your code. In an experiment, press View code, then Cheat sheet.
 ## three.js Essentials
 
 <CheatSheet id="three-essentials" />
+
+## PixiJS 3D Essentials
+
+<CheatSheet id="pixi-3d-essentials" />
 
 ## GSAP Essentials
 

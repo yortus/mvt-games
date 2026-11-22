@@ -21,6 +21,8 @@ export const LEFT_OUT: Readonly<Record<string, string>> = {
     destroyElement: "Destroys an HTML view the MVT way. The JSX sheet's `onDestroyed` covers what a project needs.",
     destroyObject: "Destroys a three.js view the MVT way. The JSX sheet's `onDestroyed` covers what a project needs.",
     isDestroyed: "The JSX sheet's `onDestroyed` covers what a project needs.",
+    connectScene: "Makes `updateView` and `refreshView` reach a `View3D`'s scene. `Scene3DView` calls it for you.",
+    destroyAndFindLeaks: "Checks, in a test, that a 3D view freed what it made. Projects in the playground don't have tests.",
     onDestroyed: 'The JSX attribute of the same name, on the JSX sheets, does the same.',
     createAudio80: 'The playground makes the project\'s chip, and passes it to `start` as `sound`.',
     createAudio90: 'The playground passes every project an Audio80. The Audio90 has guides of its own.',

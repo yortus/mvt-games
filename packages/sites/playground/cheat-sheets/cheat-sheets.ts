@@ -2,6 +2,8 @@ import type { CheatSheet } from './cheat-sheet';
 import { COLLECTIONS_SHEET } from './collections-sheet';
 import { GSAP_ESSENTIALS_SHEET } from './gsap-essentials-sheet';
 import { HTML_JSX_SHEET } from './html-jsx-sheet';
+import { PIXI_3D_ESSENTIALS_SHEET } from './pixi-3d-essentials-sheet';
+import { PIXI_3D_JSX_SHEET } from './pixi-3d-jsx-sheet';
 import { PIXI_ESSENTIALS_SHEET } from './pixi-essentials-sheet';
 import { PIXI_JSX_SHEET } from './pixi-jsx-sheet';
 import { SOUND_SHEET } from './sound-sheet';
@@ -20,10 +22,12 @@ export const CHEAT_SHEETS: readonly CheatSheet[] = [
     PIXI_JSX_SHEET,
     HTML_JSX_SHEET,
     THREE_JSX_SHEET,
+    PIXI_3D_JSX_SHEET,
     TIME_AND_MOTION_SHEET,
     COLLECTIONS_SHEET,
     SOUND_SHEET,
     PIXI_ESSENTIALS_SHEET,
     THREE_ESSENTIALS_SHEET,
+    PIXI_3D_ESSENTIALS_SHEET,
     GSAP_ESSENTIALS_SHEET,
 ];

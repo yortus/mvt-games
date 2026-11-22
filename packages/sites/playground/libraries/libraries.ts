@@ -15,8 +15,11 @@ export const LIBRARIES = [
     '@mvtjs/html/jsx-runtime',
     '@mvtjs/three',
     '@mvtjs/three/jsx-runtime',
+    '@mvtjs/pixi-3d',
+    '@mvtjs/pixi-3d/jsx-runtime',
     'audio90',
     'pixi.js',
+    '@pixi/3d',
     'three',
     'gsap',
 ] as const;
@@ -33,8 +36,11 @@ export const LIBRARY_SUMMARIES: Readonly<Record<LibrarySpecifier, string>> = {
     '@mvtjs/html/jsx-runtime': "What your HTML JSX turns into. You won't need to import it yourself.",
     '@mvtjs/three': 'Lets you write three.js views in JSX, and give them update and refresh methods.',
     '@mvtjs/three/jsx-runtime': "What your three.js JSX turns into. You won't need to import it yourself.",
+    '@mvtjs/pixi-3d': 'Lets you write PixiJS 3D views in JSX, and show them on a Pixi stage with `Scene3DView`.',
+    '@mvtjs/pixi-3d/jsx-runtime': "What your PixiJS 3D JSX turns into. You won't need to import it yourself.",
     'audio90': 'A little sound chip, for music and sound effects.',
     'pixi.js': 'Fast 2D drawing, with sprites, shapes and text.',
+    '@pixi/3d': '3D scenes on a Pixi stage, with cameras, lights, meshes and materials.',
     'three': '3D scenes, with cameras, lights and meshes.',
     'gsap': 'Smooth animation, with tweens and timelines.',
 };
@@ -44,7 +50,7 @@ export const LIBRARY_SUMMARIES: Readonly<Record<LibrarySpecifier, string>> = {
  * `typescript`, `mvtjs` and `playground` are small, and always loaded. Each
  * of the others loads the first time a project imports its library.
  */
-export const TYPE_BUNDLE_KINDS = ['typescript', 'mvtjs', 'playground', 'pixi', 'three', 'gsap'] as const;
+export const TYPE_BUNDLE_KINDS = ['typescript', 'mvtjs', 'playground', 'pixi', 'pixi3d', 'three', 'gsap'] as const;
 
 export type TypeBundleKind = (typeof TYPE_BUNDLE_KINDS)[number];
 
@@ -67,8 +73,11 @@ export const TYPE_BUNDLES_OF: Readonly<Record<LibrarySpecifier, readonly TypeBun
     '@mvtjs/html/jsx-runtime': [],
     '@mvtjs/three': ['three'],
     '@mvtjs/three/jsx-runtime': ['three'],
+    '@mvtjs/pixi-3d': ['pixi', 'pixi3d'],
+    '@mvtjs/pixi-3d/jsx-runtime': ['pixi', 'pixi3d'],
     'audio90': [],
     'pixi.js': ['pixi'],
+    '@pixi/3d': ['pixi', 'pixi3d'],
     'three': ['three'],
     'gsap': ['gsap'],
 };
@@ -76,9 +85,11 @@ export const TYPE_BUNDLES_OF: Readonly<Record<LibrarySpecifier, readonly TypeBun
 /**
  * The packages an exported project depends on, by their names on npm: the
  * libraries a project may import, at the versions the playground runs. A
- * package not yet on npm is left out.
+ * package not yet on npm, such as `@mvtjs/pixi-3d`, is listed too. The
+ * exported `package.json` leaves it out, and the exported README says that
+ * it isn't on npm yet.
  */
-export const EXPORT_DEPENDENCIES = ['@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/html', '@mvtjs/three', 'audio90', 'pixi.js', 'three', 'gsap'] as const;
+export const EXPORT_DEPENDENCIES = ['@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/html', '@mvtjs/three', '@mvtjs/pixi-3d', 'audio90', 'pixi.js', '@pixi/3d', 'three', 'gsap'] as const;
 
 /** What an exported project is built with, and three.js's types, which three.js does not include. */
 export const EXPORT_DEV_DEPENDENCIES = ['typescript', 'vite', '@types/three'] as const;

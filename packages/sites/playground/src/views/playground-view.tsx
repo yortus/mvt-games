@@ -32,8 +32,8 @@ export interface PlaygroundViewBindings {
     readonly model: WorkspaceModel;
     /** The examples to offer, by id and name. */
     readonly examples: readonly { readonly id: string; readonly name: string }[];
-    /** The starting projects New offers, one for each renderer. */
-    readonly starters: readonly { readonly renderer: RendererKind; readonly name: string; readonly description: string }[];
+    /** The starting projects New offers: one for each renderer, and one for PixiJS 3D. */
+    readonly starters: readonly { readonly id: string; readonly renderer: RendererKind; readonly name: string; readonly description: string }[];
     /** The language service, for the editor's completions, hover and the rest. */
     readonly language?: LanguageClient;
 }
@@ -231,9 +231,9 @@ export function PlaygroundView(bindings: PlaygroundViewBindings): Element {
                     layout.closeProjects();
                     model.openExample(id);
                 }}
-                onNewPressed={(renderer) => {
+                onNewPressed={(starterId) => {
                     layout.closeProjects();
-                    model.newProject(renderer);
+                    model.newProject(starterId);
                 }}
                 onOpenPressed={(id) => {
                     layout.closeProjects();

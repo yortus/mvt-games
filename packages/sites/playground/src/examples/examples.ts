@@ -14,9 +14,11 @@ export interface Example {
     readonly files: readonly ProjectFile[];
 }
 
-/** A starting project, which New opens: one for each renderer. */
+/** A starting project, which New opens. Each renderer has one, and PixiJS 3D has its own. */
 export interface Starter {
-    /** The renderer it draws with, which names its folder in `starters/`. */
+    /** Its folder's name in `starters/`, such as `'pixi'` or `'pixi-3d'`. */
+    readonly id: string;
+    /** The renderer it draws with, as its `starter.ts` names it, or else as its folder's name does. */
     readonly renderer: RendererKind;
     /** What it is offered as, such as "Pixi". */
     readonly name: string;
@@ -40,8 +42,8 @@ const ORDER = [
     'traffic-light-jsx',
 ];
 
-/** The order the starting projects are offered in. */
-const RENDERER_ORDER: readonly RendererKind[] = ['pixi', 'html', 'three'];
+/** The order the starting projects are offered in, by their ids. A starter whose id isn't listed comes after these. */
+const STARTER_ORDER: readonly string[] = ['pixi', 'pixi-3d', 'html', 'three'];
 
 /** Every example, in the order the playground lists them. */
 export const EXAMPLES: readonly Example[] = readExamples();
@@ -51,13 +53,13 @@ export function findExample(id: string): Example | undefined {
     return EXAMPLES.find((example) => example.id === id);
 }
 
-/** The starting projects, Pixi's, then HTML's, then three.js's. */
+/** The starting projects: Pixi's, PixiJS 3D's, HTML's, then three.js's. */
 export const STARTERS: readonly Starter[] = readStarters();
 
-/** The starting project for a renderer. */
-export function findStarter(renderer: RendererKind): Starter {
-    const starter = STARTERS.find((s) => s.renderer === renderer);
-    if (starter === undefined) throw new Error(`No starting project for ${renderer}`);
+/** The starting project with this id, such as `'pixi'`. */
+export function findStarter(id: string): Starter {
+    const starter = STARTERS.find((s) => s.id === id);
+    if (starter === undefined) throw new Error(`No starting project called ${id}`);
     return starter;
 }
 
@@ -69,6 +71,8 @@ export function findStarter(renderer: RendererKind): Starter {
 interface ProjectInfo {
     readonly name: string;
     readonly description: string;
+    /** For a starter, the renderer it draws with, when its folder isn't named for one. PixiJS 3D's starter draws with Pixi, for example. */
+    readonly renderer?: RendererKind;
 }
 
 /** A folder of a project's files, with its info file. */
@@ -91,8 +95,19 @@ function readExamples(): Example[] {
 function readStarters(): Starter[] {
     const texts = import.meta.glob<string>('../../starters/*/**/*.{ts,tsx,css}', { query: '?raw', import: 'default', eager: true });
     const infos = import.meta.glob<ProjectInfo>('../../starters/*/starter.ts', { import: 'starter', eager: true });
-    const starters = readFolders(texts, infos).map(({ folder, info, files }) => ({ renderer: folder as RendererKind, ...info, files }));
-    return starters.sort((a, b) => RENDERER_ORDER.indexOf(a.renderer) - RENDERER_ORDER.indexOf(b.renderer));
+    const starters = readFolders(texts, infos).map(({ folder, info, files }) => ({
+        id: folder,
+        renderer: info.renderer ?? (folder as RendererKind),
+        name: info.name,
+        description: info.description,
+        files,
+    }));
+    return starters.sort((a, b) => rankStarter(a.id) - rankStarter(b.id) || a.id.localeCompare(b.id));
+}
+
+function rankStarter(id: string): number {
+    const index = STARTER_ORDER.indexOf(id);
+    return index < 0 ? STARTER_ORDER.length : index;
 }
 
 /** Each folder that has an info file. */

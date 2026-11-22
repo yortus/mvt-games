@@ -13,8 +13,9 @@ const MAINS = import.meta.glob<{ project: Project }>('../../starters/*/main.ts')
 const FRAME_MS = 1000 / 60;
 
 describe('the starting projects', () => {
-    it('are one for each renderer, each with a name, a description and a main.ts', () => {
-        expect(STARTERS.map((s) => s.renderer)).toEqual(['pixi', 'html', 'three']);
+    it('are one for each renderer, and one for PixiJS 3D, each with a name, a description and a main.ts', () => {
+        expect(STARTERS.map((s) => s.id)).toEqual(['pixi', 'pixi-3d', 'html', 'three']);
+        expect(STARTERS.map((s) => s.renderer)).toEqual(['pixi', 'pixi', 'html', 'three']);
         for (const starter of STARTERS) {
             expect(starter.name).not.toBe('');
             expect(starter.description).not.toBe('');
@@ -23,8 +24,8 @@ describe('the starting projects', () => {
     });
 
     for (const starter of STARTERS) {
-        it(`${starter.renderer} runs for a second, headless, with no error, and draws something`, async () => {
-            const { project } = await MAINS[`../../starters/${starter.renderer}/main.ts`]();
+        it(`${starter.id} runs for a second, headless, with no error, and draws something`, async () => {
+            const { project } = await MAINS[`../../starters/${starter.id}/main.ts`]();
             expect(project.renderer).toBe(starter.renderer);
             const sound = createHeadlessAudio80();
             // The root the views go in, and what start returns, for each renderer

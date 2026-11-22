@@ -1,7 +1,6 @@
 import { createPerformanceHistory, type PerformanceHistory, type PerformanceMetrics } from '@mvtjs/utils';
 import { findExample, findStarter } from '../examples';
 import type { FileEdit, TypeProblem } from '../language';
-import type { RendererKind } from '../project-api';
 import { createReferenceModel, type ReferenceModel } from '../reference';
 import { findProjectLocation, findRenderer, MAIN_PATH, type Problem, type ProjectFile, type SourceLocation } from '../runtime';
 import type { ConsoleLevel, SandboxMessage } from '../sandbox';
@@ -200,11 +199,11 @@ export interface WorkspaceModel {
     /** Opens a project in place of the one open: a kept one, by its id, or else one from a link. Its barrels are kept unless it says not. */
     readonly openProject: (project: OpenedProject) => void;
     /**
-     * Opens a renderer's starting project, as a new kept project. Its name
-     * is "New Pixi project", or the like, with a number added if another
-     * project has that name.
+     * Opens a starting project, by its id, such as `'pixi'`, as a new kept
+     * project. Its name is "New Pixi project", or the like, with a number
+     * added if another project has that name.
      */
-    readonly newProject: (renderer: RendererKind) => void;
+    readonly newProject: (starterId: string) => void;
     /**
      * Renames the project open, which keeps it, if it was not kept. Returns
      * why it cannot, if another project has the name, whatever its case. A
@@ -451,8 +450,8 @@ export function createWorkspaceModel(options: WorkspaceModelOptions): WorkspaceM
 
         openProject,
 
-        newProject(renderer) {
-            const starter = findStarter(renderer);
+        newProject(starterId) {
+            const starter = findStarter(starterId);
             openProject({ name: `New ${starter.name} project`, files: starter.files });
             keep();
         },

@@ -30,6 +30,7 @@ export function makeTypeBundles(): Record<TypeBundleKind, TypeBundle> {
         mvtjs: emitted.mvtjs,
         playground: emitted.playground,
         pixi: readPackages(['pixi.js', ...dependencyTypesOf('pixi.js')], { 'pixi.js': ['lib'] }),
+        pixi3d: readPackages(['@pixi/3d'], { '@pixi/3d': ['dist'] }),
         // `build` holds what `import 'three'` resolves to, through the package's `exports`
         three: readPackages(['@types/three', '@types/webxr'], { '@types/three': ['build', 'src', 'index.d.ts'] }),
         gsap: readPackages(['gsap'], { gsap: ['types'] }),
@@ -104,6 +105,7 @@ const PACKAGES: readonly { readonly dir: string; readonly name: string }[] = [
     { dir: 'pixi', name: '@mvtjs/pixi' },
     { dir: 'html', name: '@mvtjs/html' },
     { dir: 'three', name: '@mvtjs/three' },
+    { dir: 'pixi-3d', name: '@mvtjs/pixi-3d' },
     { dir: 'audio90', name: 'audio90' },
 ];
 

@@ -242,7 +242,7 @@ describe('a project language service', { timeout: 60_000 }, () => {
         const { service } = createService();
         for (const project of [...EXAMPLES, ...STARTERS]) {
             await service.setFiles(project.files);
-            const label = 'id' in project ? project.id : project.renderer;
+            const label = project.id;
             const barrels = project.files.filter((f) => /\/index\.ts$/.test(f.path));
             expect(service.keptBarrels(), label).toEqual(barrels);
         }

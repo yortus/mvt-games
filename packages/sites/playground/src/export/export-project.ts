@@ -189,16 +189,17 @@ function indexTs(renderer: RendererKind): string {
 }
 
 function readme(name: string, description: string, packages: Readonly<Record<string, PackageVersion>>, files: readonly ProjectFile[]): string {
-    const unpublished = EXPORT_DEPENDENCIES.filter((p) => packages[p]?.isPrivate === true);
-    const importsUnpublished = unpublished.filter((p) => files.some((f) => f.text.includes(`'${p}`) || f.text.includes(`"${p}`)));
+    // Only the packages the project imports: a project that doesn't import one needn't hear about it
+    const unpublished = EXPORT_DEPENDENCIES.filter((p) => packages[p]?.isPrivate === true && importsPackage(files, p));
+    const isOne = unpublished.length === 1;
     const notes = unpublished.length === 0
         ? []
         : [
                 '',
                 '## Not on npm yet',
                 '',
-                `${unpublished.map((p) => `\`${p}\``).join(', ')} ${unpublished.length === 1 ? 'is' : 'are'} not on npm yet, so this project does not depend on ${unpublished.length === 1 ? 'it' : 'them'}.`,
-                ...(importsUnpublished.length === 0 ? [] : [`The project imports ${importsUnpublished.map((p) => `\`${p}\``).join(', ')}, so it will not build until then.`]),
+                `The project imports ${unpublished.map((p) => `\`${p}\``).join(', ')}, which ${isOne ? 'is' : 'are'} not on npm yet. `
+                + `So this project doesn't depend on ${isOne ? 'it' : 'them'}, and it won't build until ${isOne ? 'it is' : 'they are'} published.`,
             ];
     return [
         `# ${name}`,
@@ -223,6 +224,17 @@ function readme(name: string, description: string, packages: Readonly<Record<str
         ...notes,
         '',
     ].join('\n');
+}
+
+/**
+ * Checks whether any of the project's files imports the package, or one of
+ * its subpaths, or names it as its JSX runtime. The name must end where the
+ * specifier does, so `@mvtjs/pixi` doesn't match `@mvtjs/pixi-3d`.
+ */
+function importsPackage(files: readonly ProjectFile[], name: string): boolean {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+    const pattern = new RegExp(`['"]${escaped}['"/]|@jsxImportSource ${escaped}(?![\\w/-])`);
+    return files.some((f) => pattern.test(f.text));
 }
 
 function escapeHtml(text: string): string {

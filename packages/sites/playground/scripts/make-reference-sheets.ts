@@ -28,10 +28,10 @@ export interface MakeReferenceSheetsOptions {
 
 /**
  * The libraries whose every value export must be on a sheet, or left out
- * on purpose. Pixi, three.js and GSAP are too big for that, and their sheets
- * show only the essentials.
+ * on purpose. Pixi, PixiJS 3D, three.js and GSAP are too big for that, and
+ * their sheets show only the essentials.
  */
-export const COVERED_LIBRARIES: readonly LibrarySpecifier[] = ['playground', '@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/html', '@mvtjs/three', 'audio90'];
+export const COVERED_LIBRARIES: readonly LibrarySpecifier[] = ['playground', '@mvtjs/utils', '@mvtjs/pixi', '@mvtjs/html', '@mvtjs/three', '@mvtjs/pixi-3d', 'audio90'];
 
 // ---------------------------------------------------------------------------
 // Functions

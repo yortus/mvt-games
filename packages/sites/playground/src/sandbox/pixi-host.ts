@@ -13,6 +13,12 @@ import type { RendererHost } from './renderer-host';
  * sandbox, with a container on its stage for the project's views. The
  * runner draws each frame itself, so the application's own ticker is
  * stopped. Each render is timed on the GPU, where the browser allows it.
+ *
+ * PixiJS 3D adds itself to a renderer only as the renderer starts, and so
+ * does the renderer system that `@mvtjs/pixi-3d` draws a `ScreenView` with.
+ * A project that draws 3D imports them. The sandbox loads the project's
+ * module before it makes this host, so both are added in time. A project
+ * that doesn't draw 3D never loads them.
  */
 export async function createPixiHost(project: PixiProject): Promise<RendererHost<Omit<PixiStartOptions, 'sound'>>> {
     const { width, height } = project;

@@ -16,11 +16,11 @@ export interface ProjectsViewBindings {
     readonly openId: () => string | undefined;
     /** Whether the browser keeps the projects for the next visit. */
     readonly isKept: () => boolean;
-    /** The starting projects New offers, one for each renderer. */
-    readonly starters: readonly { readonly renderer: RendererKind; readonly name: string; readonly description: string }[];
+    /** The starting projects New offers: one for each renderer, and one for PixiJS 3D. */
+    readonly starters: readonly { readonly id: string; readonly renderer: RendererKind; readonly name: string; readonly description: string }[];
     /** The examples to offer, by id and name. */
     readonly examples: readonly { readonly id: string; readonly name: string }[];
-    readonly onNewPressed?: (renderer: RendererKind) => void;
+    readonly onNewPressed?: (starterId: string) => void;
     readonly onExampleChosen?: (id: string) => void;
     readonly onOpenPressed?: (id: string) => void;
     readonly onDuplicatePressed?: (id: string) => void;
@@ -61,7 +61,7 @@ export function ProjectsView(bindings: ProjectsViewBindings): Element {
                     <div class="projects-new">
                         <select class="projects-new-menu" aria-label="New project" value={() => ''} onChange={onNewChosen}>
                             <option value="" text="New project..." />
-                            {bindings.starters.map((starter) => <option value={starter.renderer} title={starter.description} text={`${starter.name} project`} />)}
+                            {bindings.starters.map((starter) => <option value={starter.id} title={starter.description} text={`${starter.name} project`} />)}
                         </select>
                         <select class="projects-example-menu" aria-label="Open an example" value={() => ''} onChange={onExampleChosen}>
                             <option value="" text="Open an example..." />
@@ -116,9 +116,9 @@ export function ProjectsView(bindings: ProjectsViewBindings): Element {
     }
 
     function onNewChosen(event: Event): void {
-        const renderer = (event.target as HTMLSelectElement).value;
-        const starter = bindings.starters.find((s) => s.renderer === renderer);
-        if (starter !== undefined) bindings.onNewPressed?.(starter.renderer);
+        const id = (event.target as HTMLSelectElement).value;
+        const starter = bindings.starters.find((s) => s.id === id);
+        if (starter !== undefined) bindings.onNewPressed?.(starter.id);
     }
 
     function onExampleChosen(event: Event): void {
