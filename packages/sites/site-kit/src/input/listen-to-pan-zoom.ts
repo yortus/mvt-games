@@ -1,11 +1,14 @@
+import { type ElementPoint, measurePointOnElement } from './measure-point-on-element';
+
 // ---------------------------------------------------------------------------
 // Options
 // ---------------------------------------------------------------------------
 
 /**
- * What to watch, and where to report. Every measurement is in CSS pixels.
- * A drag is measured as how far it moved. Every point is measured from the
- * element's top left corner.
+ * What to watch, and where to report. Every measurement is in the
+ * element's own CSS pixels, as if it had no CSS transform, so the reports
+ * stay true on a turned page or over a 3D scene. A drag is measured as how
+ * far it moved. Every point is measured from the element's top left corner.
  */
 export interface PanZoomOptions {
     readonly element: HTMLElement;
@@ -52,8 +55,11 @@ export interface PanZoomOptions {
 export function listenToPanZoom(options: PanZoomOptions): () => void {
     const { element, zoomPerWheelNotch, zoomPerDoubleTap } = options;
 
-    // Where each pointer held down was last seen, in client coordinates.
-    const points = new Map<number, { x: number; y: number }>();
+    // Where each pointer held down was last seen, on the element. Its travel
+    // on the screen tells a tap from a drag, since a finger's jitter is
+    // measured on the screen, whatever the element's scale.
+    const points = new Map<number, HeldPoint>();
+    const landed: ElementPoint = { x: 0, y: 0 };
     // The two pointers of a pinch, in the order they went down.
     let firstId = -1;
     let secondId = -1;
@@ -101,7 +107,8 @@ export function listenToPanZoom(options: PanZoomOptions): () => void {
         event.preventDefault();
         lastPointerType = event.pointerType;
         capture(event.pointerId);
-        points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        measurePointOnElement(event, element, landed);
+        points.set(event.pointerId, { x: landed.x, y: landed.y, clientX: event.clientX, clientY: event.clientY });
         if (firstId < 0) {
             firstId = event.pointerId;
             gestureStartMs = event.timeStamp;
@@ -118,19 +125,20 @@ export function listenToPanZoom(options: PanZoomOptions): () => void {
     function onPointerMove(event: PointerEvent): void {
         const point = points.get(event.pointerId);
         if (point === undefined) return;
-        const x = event.clientX;
-        const y = event.clientY;
+        measurePointOnElement(event, element, landed);
+        const x = landed.x;
+        const y = landed.y;
         const other = event.pointerId === firstId
             ? points.get(secondId)
             : event.pointerId === secondId ? points.get(firstId) : undefined;
+        if (event.pointerId === firstId) gestureTravel += Math.abs(event.clientX - point.clientX) + Math.abs(event.clientY - point.clientY);
+        point.clientX = event.clientX;
+        point.clientY = event.clientY;
 
         if (other === undefined) {
             // The only finger down drags. A third finger, waiting, is only
             // followed, so it can take a lifted finger's place.
-            if (event.pointerId === firstId) {
-                gestureTravel += Math.abs(x - point.x) + Math.abs(y - point.y);
-                options.onDragged?.(x - point.x, y - point.y);
-            }
+            if (event.pointerId === firstId) options.onDragged?.(x - point.x, y - point.y);
             point.x = x;
             point.y = y;
             return;
@@ -152,11 +160,8 @@ export function listenToPanZoom(options: PanZoomOptions): () => void {
 
         options.onDragged?.(afterMiddleX - beforeMiddleX, afterMiddleY - beforeMiddleY);
         if (beforeSpread > 0 && afterSpread > 0) {
-            const bounds = element.getBoundingClientRect();
-            const middleX = afterMiddleX - bounds.left;
-            const middleY = afterMiddleY - bounds.top;
-            options.onZoomed?.(afterSpread / beforeSpread, middleX, middleY);
-            options.onTurned?.(wrapAngle(afterAngle - beforeAngle), middleX, middleY);
+            options.onZoomed?.(afterSpread / beforeSpread, afterMiddleX, afterMiddleY);
+            options.onTurned?.(wrapAngle(afterAngle - beforeAngle), afterMiddleX, afterMiddleY);
         }
     }
 
@@ -191,10 +196,8 @@ export function listenToPanZoom(options: PanZoomOptions): () => void {
      */
     function noteTap(event: PointerEvent): void {
         const isTap = !isPinch && gestureTravel < TAP_SLOP && event.timeStamp - gestureStartMs < TAP_MAX_MS;
-        if (isTap && options.onTapped !== undefined) {
-            const tapBounds = element.getBoundingClientRect();
-            options.onTapped(event.clientX - tapBounds.left, event.clientY - tapBounds.top);
-        }
+        measurePointOnElement(event, element, landed);
+        if (isTap) options.onTapped?.(landed.x, landed.y);
         if (event.pointerType === 'mouse') return;
         if (!isTap) {
             lastTapMs = Number.NEGATIVE_INFINITY;
@@ -209,8 +212,7 @@ export function listenToPanZoom(options: PanZoomOptions): () => void {
             return;
         }
         lastTapMs = Number.NEGATIVE_INFINITY;
-        const bounds = element.getBoundingClientRect();
-        options.onZoomed?.(zoomPerDoubleTap, event.clientX - bounds.left, event.clientY - bounds.top);
+        options.onZoomed?.(zoomPerDoubleTap, landed.x, landed.y);
     }
 
     function onDoubleClick(event: MouseEvent): void {
@@ -218,8 +220,8 @@ export function listenToPanZoom(options: PanZoomOptions): () => void {
         // A browser may make a double click of a double tap too, which the
         // taps have already zoomed for.
         if (lastPointerType !== 'mouse') return;
-        const bounds = element.getBoundingClientRect();
-        options.onZoomed?.(zoomPerDoubleTap, event.clientX - bounds.left, event.clientY - bounds.top);
+        measurePointOnElement(event, element, landed);
+        options.onZoomed?.(zoomPerDoubleTap, landed.x, landed.y);
     }
 
     function onWheel(event: WheelEvent): void {
@@ -229,9 +231,9 @@ export function listenToPanZoom(options: PanZoomOptions): () => void {
         const factor = event.ctrlKey
             ? Math.exp(-event.deltaY * ZOOM_PER_PINCH_POINT)
             : zoomPerWheelNotch ** -countNotches(event);
-        const bounds = element.getBoundingClientRect();
         const limited = Math.min(MAX_WHEEL_ZOOM, Math.max(1 / MAX_WHEEL_ZOOM, factor));
-        options.onZoomed?.(limited, event.clientX - bounds.left, event.clientY - bounds.top);
+        measurePointOnElement(event, element, landed);
+        options.onZoomed?.(limited, landed.x, landed.y);
     }
 
     /** Takes the pointer's events even once it leaves the element, so a drag can run off the edge. */
@@ -267,6 +269,14 @@ export const ZOOM_PER_PINCH_POINT = 0.01;
 
 /** The most one wheel event may zoom in or out, however big its delta. */
 export const MAX_WHEEL_ZOOM = 4;
+
+/** A pointer held down: where it was last seen on the element, and on the screen. */
+interface HeldPoint {
+    x: number;
+    y: number;
+    clientX: number;
+    clientY: number;
+}
 
 /** How many notches a wheel event turned, whichever unit it came in. */
 function countNotches(event: WheelEvent): number {

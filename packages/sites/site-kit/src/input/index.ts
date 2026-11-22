@@ -18,6 +18,7 @@ export {
 export { type ElementPointerOptions, listenToElementPointer } from './listen-to-element-pointer';
 export { type KeysOptions, listenToKeys } from './listen-to-keys';
 export { listenToPanZoom, type PanZoomOptions } from './listen-to-pan-zoom';
+export { type ElementPoint, measurePointOnElement } from './measure-point-on-element';
 export {
     createPressGesturesViewModel, type PressGesturesViewModel, type PressGesturesViewModelOptions,
 } from './press-gestures-view-model';

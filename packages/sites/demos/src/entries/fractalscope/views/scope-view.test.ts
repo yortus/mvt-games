@@ -37,10 +37,12 @@ function setup(takesKeys = false) {
     document.body.replaceChildren(view);
     refreshView(view);
     const canvas = view.querySelector('.scope-image') as HTMLCanvasElement;
+    // The canvas sits at the page's top left, untransformed, so a point is the same on the screen and on the
+    // canvas. The pointer helpers measure on the canvas, from offsetX, which the DOM's types leave out
     const pointer = (kind: string, id: number, x: number, y: number): void => {
         canvas.dispatchEvent(new PointerEvent(kind, {
-            pointerId: id, clientX: x, clientY: y, pointerType: 'touch', button: 0, cancelable: true,
-        }));
+            pointerId: id, clientX: x, clientY: y, offsetX: x, offsetY: y, pointerType: 'touch', button: 0, cancelable: true,
+        } as PointerEventInit));
     };
     const reading = (label: string): string => {
         for (const row of view.querySelectorAll('.scope-reading')) {

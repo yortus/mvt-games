@@ -31,7 +31,7 @@ function setup() {
     /** Sends a pointer event. A time, in milliseconds, takes the place of the event's own time stamp. */
     const pointer = (kind: string, id: number, x: number, y: number, extra: PointerEventInit = {}, atMs?: number): void => {
         const event = new PointerEvent(kind, {
-            pointerId: id, clientX: x, clientY: y, pointerType: 'touch', button: 0, bubbles: true, cancelable: true, ...extra,
+            pointerId: id, ...at(x, y), pointerType: 'touch', button: 0, bubbles: true, cancelable: true, ...extra,
         });
         if (atMs !== undefined) Object.defineProperty(event, 'timeStamp', { value: atMs });
         element.dispatchEvent(event);
@@ -42,6 +42,14 @@ function setup() {
         pointer('pointerup', 9, x, y, { pointerType }, atMs + TAP_MAX_MS / 6);
     };
     return { element, stop, calls, drags, zooms, turns, taps, pointer, tap };
+}
+
+/**
+ * A point on the element, as an event gives it. The element sits at the page's top left, untransformed, so
+ * the point is the same on the screen and on the element. The DOM's types leave out `offsetX`, which happy-dom reads.
+ */
+function at(x: number, y: number): MouseEventInit {
+    return { clientX: x, clientY: y, offsetX: x, offsetY: y } as MouseEventInit;
 }
 
 /** The sum of the drags reported, as one. */
@@ -71,6 +79,24 @@ describe('listenToPanZoom', () => {
         expect(t.drags).toEqual([[10, -5], [20, -5]]);
         expect(t.zooms).toEqual([]);
         expect(t.taps).toEqual([]);
+    });
+
+    it('measures on the element, not the screen, so an element drawn at another scale reports in its own pixels', () => {
+        // The element shows at a quarter of its size, 200 pixels in from the screen's left, as a box laid over a
+        // 3D scene might. The browser's offsetX is on the element, which the reports follow
+        const t = setup();
+        const on = (x: number, y: number): MouseEventInit => ({ clientX: 200 + x / 4, clientY: y / 4, offsetX: x, offsetY: y } as MouseEventInit);
+        t.pointer('pointerdown', 1, 0, 0, on(400, 400));
+        t.pointer('pointermove', 1, 0, 0, on(480, 400));
+        t.pointer('pointerup', 1, 0, 0, on(480, 400));
+        // happy-dom's wheel events leave out offsetX, which a browser's have
+        const wheel = new WheelEvent('wheel', { deltaY: -100, cancelable: true, ...on(600, 320) });
+        Object.defineProperty(wheel, 'offsetX', { value: 600 });
+        Object.defineProperty(wheel, 'offsetY', { value: 320 });
+        t.element.dispatchEvent(wheel);
+
+        expect(t.drags).toEqual([[80, 0]]);
+        expect(t.zooms).toEqual([[ZOOM_PER_WHEEL_NOTCH, 600, 320]]);
     });
 
     it('zooms about the middle of two fingers as they spread', () => {
@@ -134,8 +160,8 @@ describe('listenToPanZoom', () => {
     // factor is checked here. The double tap checks the zoom's centre.
     it('zooms in a notch for each turn of the wheel', () => {
         const t = setup();
-        t.element.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: 40, clientY: 30, cancelable: true }));
-        t.element.dispatchEvent(new WheelEvent('wheel', { deltaY: 300, clientX: 40, clientY: 30, cancelable: true }));
+        t.element.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, ...at(40, 30), cancelable: true }));
+        t.element.dispatchEvent(new WheelEvent('wheel', { deltaY: 300, ...at(40, 30), cancelable: true }));
 
         expect(t.zooms[0][0]).toBeCloseTo(ZOOM_PER_WHEEL_NOTCH);
         expect(t.zooms[1][0]).toBeCloseTo(ZOOM_PER_WHEEL_NOTCH ** -3);
@@ -169,7 +195,7 @@ describe('listenToPanZoom', () => {
     it('zooms in on a double click', () => {
         const t = setup();
         t.tap(12, 34, 0, 'mouse');
-        t.element.dispatchEvent(new MouseEvent('dblclick', { clientX: 12, clientY: 34 }));
+        t.element.dispatchEvent(new MouseEvent('dblclick', at(12, 34)));
 
         expect(t.zooms).toEqual([[ZOOM_PER_DOUBLE_TAP, 12, 34]]);
     });
@@ -178,7 +204,7 @@ describe('listenToPanZoom', () => {
         const t = setup();
         t.tap(50, 60, 0);
         t.tap(52, 61, 200);
-        t.element.dispatchEvent(new MouseEvent('dblclick', { clientX: 52, clientY: 61 }));
+        t.element.dispatchEvent(new MouseEvent('dblclick', at(52, 61)));
 
         expect(t.taps.length).toBe(2);
         expect(t.zooms).toEqual([[ZOOM_PER_DOUBLE_TAP, 52, 61]]);
