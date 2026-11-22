@@ -52,8 +52,8 @@ On a phone, over `npm run dev:https`, and on a desktop:
 
 ### Questions still open
 
-- **Event timestamps for taps.** `listenToPanZoom` times taps and double
-  taps with `event.timeStamp`. A replay driven by ticks alone could not
+- **Event timestamps for taps.** `listenToElementPanZoom` times taps and
+  double taps with `event.timeStamp`. A replay driven by ticks alone could not
   reproduce them. Decide, and say so in Appendix A, or move tap timing into
   game time, as `createPressGesturesViewModel` does.
 - **Controls held through a restart.** A new session's game view reports

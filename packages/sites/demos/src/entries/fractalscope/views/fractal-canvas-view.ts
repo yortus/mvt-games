@@ -1,6 +1,6 @@
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
-import { listenToPanZoom } from '@mvtjs/site-kit/input';
+import { listenToElementPanZoom } from '@mvtjs/site-kit/input';
 import type { FractalKind, ScopeSetting } from '../data';
 import type { PaletteName } from './palette-name';
 import type { EscapeGrid } from './picture';
@@ -94,7 +94,7 @@ export function FractalCanvasView(bindings: FractalCanvasViewBindings): Element 
         photos: bindings.photosTaken,
     });
 
-    const stopPanZoom = listenToPanZoom({
+    const stopPanZoom = listenToElementPanZoom({
         element: canvas,
         zoomPerWheelNotch: ZOOM_PER_WHEEL_NOTCH,
         zoomPerDoubleTap: ZOOM_PER_DOUBLE_TAP,

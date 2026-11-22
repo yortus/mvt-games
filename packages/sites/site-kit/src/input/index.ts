@@ -15,9 +15,9 @@ export { describeKey } from './describe-key';
 export {
     createGridGesturesViewModel, type GridGesturesViewModel, type GridGesturesViewModelOptions, type GridLattice, type GridSteps,
 } from './grid-gestures-view-model';
+export { type ElementPanZoomOptions, listenToElementPanZoom } from './listen-to-element-pan-zoom';
 export { type ElementPointerOptions, listenToElementPointer } from './listen-to-element-pointer';
 export { type KeysOptions, listenToKeys } from './listen-to-keys';
-export { listenToPanZoom, type PanZoomOptions } from './listen-to-pan-zoom';
 export { type ElementPoint, measurePointOnElement } from './measure-point-on-element';
 export {
     createPressGesturesViewModel, type PressGesturesViewModel, type PressGesturesViewModelOptions,

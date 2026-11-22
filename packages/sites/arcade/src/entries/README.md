@@ -493,9 +493,9 @@ A few more shared pieces cover other gestures:
   or the mouse over a DOM element, as `listenToPointer` does over a Pixi
   container. It's for an entry drawn in the DOM, or on a canvas of its own,
   as the Fruit Machine's cabinet is.
-- `listenToPanZoom`, from `@mvtjs/site-kit/input`, turns drags, pinches,
-  twists, the wheel and double taps over an element into pans and zooms,
-  as Penrose Tiling and Fractalscope do.
+- `listenToElementPanZoom`, from `@mvtjs/site-kit/input`, turns drags,
+  pinches, twists, the wheel and double taps over a DOM element into pans
+  and zooms, as Penrose Tiling and Fractalscope do.
 - `listenToDragZoom`, from `@mvtjs/site-kit/input/pixi`, does much the
   same over a Pixi container, with drags, pinches and the wheel, such as
   for moving a camera round a 3D scene. The entry host keeps a trackpad's

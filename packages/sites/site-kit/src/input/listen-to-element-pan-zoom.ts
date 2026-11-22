@@ -10,7 +10,7 @@ import { type ElementPoint, measurePointOnElement } from './measure-point-on-ele
  * stay true on a turned page or over a 3D scene. A drag is measured as how
  * far it moved. Every point is measured from the element's top left corner.
  */
-export interface PanZoomOptions {
+export interface ElementPanZoomOptions {
     readonly element: HTMLElement;
     /** How much one notch of the mouse wheel zooms in. */
     readonly zoomPerWheelNotch: number;
@@ -52,7 +52,7 @@ export interface PanZoomOptions {
  * which are part of the input, as a position is. Stopping forgets the
  * gesture in progress, if there is one, and reports nothing.
  */
-export function listenToPanZoom(options: PanZoomOptions): () => void {
+export function listenToElementPanZoom(options: ElementPanZoomOptions): () => void {
     const { element, zoomPerWheelNotch, zoomPerDoubleTap } = options;
 
     // Where each pointer held down was last seen, on the element. Its travel

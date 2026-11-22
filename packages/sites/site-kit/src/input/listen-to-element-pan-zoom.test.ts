@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { listenToPanZoom, TAP_MAX_MS, TAP_SLOP } from './listen-to-pan-zoom';
+import { listenToElementPanZoom, TAP_MAX_MS, TAP_SLOP } from './listen-to-element-pan-zoom';
 
 const ZOOM_PER_WHEEL_NOTCH = 1.25;
 const ZOOM_PER_DOUBLE_TAP = 2.5;
@@ -17,7 +17,7 @@ function setup() {
     const zooms: [number, number, number][] = [];
     const turns: [number, number, number][] = [];
     const taps: [number, number][] = [];
-    const stop = listenToPanZoom({
+    const stop = listenToElementPanZoom({
         element,
         zoomPerWheelNotch: ZOOM_PER_WHEEL_NOTCH,
         zoomPerDoubleTap: ZOOM_PER_DOUBLE_TAP,
@@ -67,7 +67,7 @@ function totalOf(drags: readonly [number, number][]): [number, number] {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('listenToPanZoom', () => {
+describe('listenToElementPanZoom', () => {
     it('drags with one finger, as one gesture, which is no tap', () => {
         const t = setup();
         t.pointer('pointerdown', 1, 100, 100);

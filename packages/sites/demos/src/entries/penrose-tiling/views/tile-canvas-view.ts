@@ -1,6 +1,6 @@
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
-import { listenToPanZoom } from '@mvtjs/site-kit/input';
+import { listenToElementPanZoom } from '@mvtjs/site-kit/input';
 import type { TileSet } from '../models';
 import type { ColorMode } from './color-mode';
 import type { PaletteName } from './palette-name';
@@ -137,7 +137,7 @@ export function TileCanvasView(bindings: TileCanvasViewBindings): HTMLCanvasElem
         pictures: bindings.picturesAsked,
     });
 
-    const stopPanZoom = listenToPanZoom({
+    const stopPanZoom = listenToElementPanZoom({
         element: canvas,
         zoomPerWheelNotch: ZOOM_PER_WHEEL_NOTCH,
         zoomPerDoubleTap: ZOOM_PER_DOUBLE_TAP,
