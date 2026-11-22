@@ -1,4 +1,4 @@
-import { BitmapText, Container, Graphics, HTMLText, NineSliceSprite, Sprite, Text, Texture, TilingSprite } from 'pixi.js';
+import { BitmapText, Container, Graphics, HTMLText, HTMLTextStyle, NineSliceSprite, Sprite, Text, TextStyle, Texture, TilingSprite } from 'pixi.js';
 import type { ColorSource, FederatedPointerEvent, FederatedWheelEvent } from 'pixi.js';
 import { attributesOf, defineElements, element, event } from '@mvtjs/utils/jsx';
 
@@ -87,7 +87,19 @@ const texturedAttributes = {
 const textAttributes = {
     text: texts.onChange('text'),
     tint: texts.onChange((e, v: ColorSource) => { e.tint = v; }),
-    style: texts.onChange((e, v: Record<string, unknown>) => { Object.assign(e.style, v); }),
+    /**
+     * The text's style, which replaces the one before. Texts passed the same
+     * style object share one Pixi style. Pixi then draws one texture for all
+     * the texts with the same string and style, and keeps it on the GPU once.
+     * So write a style once, as a constant, rather than inline in each
+     * element.
+     *
+     * Because the style is shared, changing it in code (`text.style.fill =
+     * ...`) changes every text passed the same object. For a style of its
+     * own, pass a text an inline object, or a `TextStyle` of its own, which is
+     * used as it is.
+     */
+    style: texts.onChange((e, v: Record<string, unknown>) => { e.style = findSharedStyle(e, v); }),
 };
 
 /**
@@ -137,3 +149,44 @@ export const pixiElements = defineElements({
         tint: graphics.onChange((e, v: ColorSource) => { e.tint = v; }),
     }),
 });
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+// The Pixi style made for each style object, one map for each kind of style.
+// Pixi finds a text's texture by its style's identity, not its values. It also
+// makes a new style for every text passed a plain object. Without these maps,
+// two texts would never share a texture. The maps are weak, so a style lives
+// only as long as the object it was made from.
+const textStyles = new WeakMap<object, TextStyle>();
+const htmlTextStyles = new WeakMap<object, HTMLTextStyle>();
+
+/** The Pixi style that texts of `text`'s kind share for `style`, made on first use. */
+function findSharedStyle(text: Text | BitmapText | HTMLText, style: Record<string, unknown>): TextStyle {
+    if (style instanceof TextStyle) return style;
+    if (text instanceof HTMLText) {
+        let shared = htmlTextStyles.get(style);
+        if (shared === undefined) {
+            shared = protectFromDestroy(new HTMLTextStyle(style));
+            htmlTextStyles.set(style, shared);
+        }
+        return shared;
+    }
+    let shared = textStyles.get(style);
+    if (shared === undefined) {
+        shared = protectFromDestroy(new TextStyle(style));
+        textStyles.set(style, shared);
+    }
+    return shared;
+}
+
+/**
+ * Replaces `style`'s `destroy` with an empty function. Other texts share the
+ * style. Destroying one text with `destroy(true)` or `{ style: true }` would
+ * otherwise destroy it for them all.
+ */
+function protectFromDestroy<S extends TextStyle>(style: S): S {
+    style.destroy = () => undefined;
+    return style;
+}

@@ -1,5 +1,5 @@
 import { Application, Container, TextureSource } from 'pixi.js';
-import { createGpuTimer, type GpuTimer, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
+import { createGpuTimer, type GpuTimer, keepReleasedTextTextures, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 import { TouchInputView } from '#input/pixi';
 import type { ArcadeControls } from '../input';
 import { type ArcadeControlsLayout, type ArcadeControlsUse, type EntrySession, type PixiEntryStarter, type SoundChipFinder, startPixiEntry, type StartOptions } from '../entry-types';
@@ -95,6 +95,9 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     });
     // A long gap, as after a hidden tab, is clamped rather than simulated
     app.ticker.minFPS = 1000 / MAX_STEP_MS;
+    // A view built again finds its texts' textures still there. The stage
+    // outlives each entry, so each entry's are released as its session ends.
+    const keptTextTextures = keepReleasedTextTextures({ renderer: app.renderer, maxPixels: KEPT_TEXT_PIXELS });
 
     const canvas = app.canvas;
     canvas.className = 'entry-host-canvas';
@@ -198,6 +201,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         hide() {
             starter = undefined;
             canvas.hidden = true;
+            keptTextTextures.releaseAll();
         },
 
         tick(timeMs) {
@@ -290,6 +294,13 @@ const DEFAULT_BACKGROUND_COLOR = 0x000000;
 
 /** The longest step a frame advances by. */
 const MAX_STEP_MS = 50;
+
+/**
+ * The most pixels of text textures kept for views built again, which is 4 MB
+ * of GPU memory. A puzzle's calendar, with 60 labels, uses under a tenth of
+ * it (89,344 pixels, measured).
+ */
+const KEPT_TEXT_PIXELS = 1_048_576;
 
 /** The longest gap between taps that a browser treats as a double tap. */
 const DOUBLE_TAP_MS = 300;

@@ -4,6 +4,7 @@
 // as `updateView`, from `@mvtjs/utils`), and this import would go with it.
 import './container-mixin';
 export { createGpuTimer, type GpuTimer, type GpuTimerOptions } from './gpu-timer';
+export { keepReleasedTextTextures, type KeepReleasedTextTexturesOptions, type KeptTextTextures } from './keep-released-text-textures';
 export type { MetricKind, PerformanceMetrics } from '@mvtjs/utils';
 export { createTextureRegistry, type TextureRegistry } from './texture-registry';
 export { hasRefresh, hasUpdate, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/utils';

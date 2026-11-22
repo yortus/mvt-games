@@ -74,6 +74,28 @@ describe('pixiTarget', () => {
         expect(text.style.fontSize).toBe(20);
     });
 
+    it('shares one Pixi style between texts passed the same style object, so they can share textures', () => {
+        const style = { fontSize: 14 };
+        const one = jsx('text', { text: 'x', style }) as Text;
+        const two = jsx('text', { text: 'y', style }) as Text;
+        const other = jsx('text', { text: 'x', style: { fontSize: 14 } }) as Text;
+
+        expect(two.style).toBe(one.style);
+        expect(other.style).not.toBe(one.style);
+        expect(one.style.fontSize).toBe(14);
+    });
+
+    it('keeps a shared style working when one of its texts is destroyed with everything it holds', () => {
+        const style = { fontSize: 14, fill: 0xff0000 };
+        const doomed = jsx('text', { text: 'x', style }) as Text;
+        const kept = jsx('text', { text: 'y', style }) as Text;
+
+        doomed.destroy(true);
+
+        expect(kept.style.fontSize).toBe(14);
+        expect(kept.style.fill).toBe(0xff0000);
+    });
+
     it('takes a tint as any colour Pixi does, CSS strings included', () => {
         let tint: ColorSource = '#ff5468';
         const sprite = jsx('sprite', { texture: Texture.WHITE, tint: () => tint }) as Sprite;
