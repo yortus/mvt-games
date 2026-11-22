@@ -58,12 +58,12 @@ htmlTest('a demo, on a desktop, with the mouse', () => inPanel(DEMO, 'desktop'))
 
 htmlTest('a demo, on a phone, with touch only', () => inPanel(DEMO, 'handheld'));
 
-htmlTest('a game, on a desktop, with keys only, in the Dark theme', () => {
+htmlTest('a game, on a desktop, with keys only, in the Night theme', () => {
     wearTheme('dark');
     return inPanel(GAME, 'desktop');
 });
 
-htmlTest('a game, on a desktop, with keys only, in the Light theme', () => {
+htmlTest('a game, on a desktop, with keys only, in the Paper theme', () => {
     wearTheme('light');
     return inPanel(GAME, 'desktop');
 });

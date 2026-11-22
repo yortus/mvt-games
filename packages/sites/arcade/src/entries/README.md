@@ -697,11 +697,12 @@ export const details: EntryDetails = {
   **`cardColor`** the card's colour, from the Arcade's palette. Both are
   optional.
 - **`thumbnailFocus`** is the point of the play area the picture is of,
-  such as the player's ship, in the entry's own pixels. The Dark and Light
-  themes show every card's photo as a square, so a picture of any other
-  shape is cropped closer, and the crop keeps this point at its centre, as
-  nearly as it can. Every entry gives one: look at the card in both themes,
-  and move it until nothing that matters is cut off.
+  such as the player's ship, in the entry's own pixels. The `dark` and
+  `light` themes (Night and Paper) show every card's photo as a square, so
+  a picture of any other shape is cropped closer, and the crop keeps this
+  point at its centre, as nearly as it can. Every entry gives one: look at
+  the card in both themes, and move it until nothing that matters is cut
+  off.
 - **`notice`** is something the visitor should know before they play
   (`{ title, text }`).
   It opens over the entry as it starts, with Continue and Back, and a box to

@@ -25,12 +25,12 @@ htmlTest('confirming a restart', { viewport: { width: 480, height: 420 }, width:
     restartQuestion: () => 'Clear this maze and start it again?',
 }));
 
-htmlTest('open, in the Dark theme', { viewport: { width: 480, height: 420 }, width: 480, height: 420 }, () => {
+htmlTest('open, in the Night theme', { viewport: { width: 480, height: 420 }, width: 480, height: 420 }, () => {
     wearTheme('dark');
     return open(0.7);
 });
 
-htmlTest('open, in the Light theme', { viewport: { width: 480, height: 420 }, width: 480, height: 420 }, () => {
+htmlTest('open, in the Paper theme', { viewport: { width: 480, height: 420 }, width: 480, height: 420 }, () => {
     wearTheme('light');
     return open(0.7);
 });

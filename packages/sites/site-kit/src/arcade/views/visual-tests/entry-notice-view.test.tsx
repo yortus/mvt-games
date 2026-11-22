@@ -18,12 +18,12 @@ htmlTest('open', { viewport: { width: 520, height: 420 }, width: 520, height: 42
 
 htmlTest('open on a phone', { viewport: { width: 360, height: 520 }, width: 360, height: 520 }, open);
 
-htmlTest('open, in the Dark theme', { viewport: { width: 520, height: 420 }, width: 520, height: 420 }, () => {
+htmlTest('open, in the Night theme', { viewport: { width: 520, height: 420 }, width: 520, height: 420 }, () => {
     wearTheme('dark');
     return open();
 });
 
-htmlTest('open, in the Light theme', { viewport: { width: 520, height: 420 }, width: 520, height: 420 }, () => {
+htmlTest('open, in the Paper theme', { viewport: { width: 520, height: 420 }, width: 520, height: 420 }, () => {
     wearTheme('light');
     return open();
 });

@@ -309,10 +309,12 @@ notice shows it first, and the offer waits behind it.
 
 ## 10. Themes: A Setting the Stylesheet Follows
 
-The page has three looks: **Arcade** (loud and dark, the arcade's own),
-**Dark** (calm and modern, the demos' own) and **Light** (warm paper and
-ink, the puzzles' own). The visitor picks one from the palette in the nav,
-or the default, where each site wears its own.
+The page has three looks: `arcade` (loud and dark, the arcade's own),
+`light` (warm paper and ink, the puzzles' own) and `dark` (calm and modern,
+the demos' own). The picker lists them in the nav's order of their sites,
+named for the look they give the wall of cards: **Neon**, **Paper** and
+**Night**. The visitor picks one from the palette in the nav, or the
+default, where each site wears its own.
 
 The choice is a setting, like the sound, so it is the model's:
 `themeChoice` (`'default'` or a theme), and `theme`, the one the page

@@ -11,8 +11,8 @@ export type ThemeKind = 'arcade' | 'dark' | 'light';
  */
 export type ThemeChoice = 'default' | ThemeKind;
 
-/** Every theme, in the order the picker lists them. */
-export const THEME_KINDS: readonly ThemeKind[] = ['arcade', 'dark', 'light'];
+/** Every theme, in the order the picker lists them: the order of the sites whose own they are, as the nav lists the sites. */
+export const THEME_KINDS: readonly ThemeKind[] = ['arcade', 'light', 'dark'];
 
 /** Every choice, in the order the picker lists them: the default first. */
 export const THEME_CHOICES: readonly ThemeChoice[] = ['default', ...THEME_KINDS];

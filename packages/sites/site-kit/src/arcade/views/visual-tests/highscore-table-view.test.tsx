@@ -39,13 +39,13 @@ htmlTest('the row just entered, lit', () => {
     return inPanel({ rows: () => rows, status: () => 'ready', highlightRank: () => 4 });
 });
 
-htmlTest('a full table, in the Dark theme', () => {
+htmlTest('a full table, in the Night theme', () => {
     wearTheme('dark');
     const rows = rowsOf(TABLE_SIZE);
     return inPanel({ rows: () => rows, status: () => 'ready' });
 });
 
-htmlTest('a full table, in the Light theme', () => {
+htmlTest('a full table, in the Paper theme', () => {
     wearTheme('light');
     const rows = rowsOf(TABLE_SIZE);
     return inPanel({ rows: () => rows, status: () => 'ready' });

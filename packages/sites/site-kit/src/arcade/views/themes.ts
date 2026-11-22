@@ -13,7 +13,7 @@ import type { CardPhotoKind } from './card-photo';
  */
 export interface Theme {
     readonly kind: ThemeKind;
-    /** Its name, as the picker lists it. */
+    /** Its name, as the picker lists it. It names the look it gives the wall of cards, such as Neon. */
     readonly name: string;
     /** Whether it is dark or light, which the browser's own controls, such as scroll bars, follow. */
     readonly scheme: 'dark' | 'light';
@@ -34,7 +34,7 @@ export interface Theme {
 export const THEMES: Readonly<Record<ThemeKind, Theme>> = {
     arcade: {
         kind: 'arcade',
-        name: 'Arcade',
+        name: 'Neon',
         scheme: 'dark',
         swatch: ['#0a0f2e', '#161b22', '#ffd83d'],
         isQuiet: false,
@@ -42,7 +42,7 @@ export const THEMES: Readonly<Record<ThemeKind, Theme>> = {
     },
     dark: {
         kind: 'dark',
-        name: 'Dark',
+        name: 'Night',
         scheme: 'dark',
         swatch: ['#121417', '#1c1f24', '#8b8cff'],
         isQuiet: true,
@@ -50,7 +50,7 @@ export const THEMES: Readonly<Record<ThemeKind, Theme>> = {
     },
     light: {
         kind: 'light',
-        name: 'Light',
+        name: 'Paper',
         scheme: 'light',
         swatch: ['#f4f4f5', '#fffdf8', '#c8322b'],
         isQuiet: true,

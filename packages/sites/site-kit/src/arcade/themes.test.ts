@@ -36,7 +36,7 @@ const PAIRS: readonly (readonly [text: string, under: string, ratio: number])[] 
 describe.each(THEME_KINDS)('the %s theme', (theme) => {
     const tokens = readTheme(theme);
 
-    it('gives every property the Arcade theme has a value', () => {
+    it('gives every property the Neon theme has a value', () => {
         const arcade = readTheme('arcade');
         for (const name of arcade.keys()) expect(tokens.has(name), `--theme-${name}`).toBe(true);
     });
