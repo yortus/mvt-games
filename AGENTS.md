@@ -8,7 +8,7 @@
 ## Architecture: MVT (Model-View-Ticker)
 
 - **Models** - own all state and domain logic; advance only via `update(deltaMs)`
-- **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions that the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`)
+- **Views** - read state through a `bindings` interface; refresh every frame via `refresh()`. Views may hold cosmetic presentation state for transitions that the model doesn't track; such views gain an `update(deltaMs)` step. Complex presentation logic can be extracted into a view model (an internal detail of the view). In this repo, a view sets its `update` and `refresh` steps on its container with `setUpdate(view, update)` and `setRefresh(view, refresh)`, from `@mvtjs/pixi` (and `@mvtjs/three`, `@mvtjs/html`, `@mvtjs/pixi-3d`)
 - **Ticker** - drives the loop each frame: `model.update(deltaMs)` then `view.update(deltaMs)` (views with state) then `view.refresh()` then renderer draws. One turn is a **tick**: the ticker ticks the models, then the views. In this repo: each site's page (`startSitePage`, in `packages/sites/site-kit/src/arcade/start-site-page.ts`) runs one loop for itself and the entry it is running. An entry session's `update(deltaMs)` advances only its models, then the entry host (`packages/sites/site-kit/src/runner/`) calls `updateView(app.stage, deltaMs)`, which calls every update method in the stage, then `refreshView(app.stage)`, which calls every refresh method, parents first. Views never forward these calls to their children. The host decides when to pause: `updateView` skips a paused entry's container
 - **Bindings** - plain object bridging view and model: query bindings read state (a function called every refresh, or a fixed value read once), relay bindings (`on*`) report input, usually what the player did, and fire outside the frame
 
@@ -28,6 +28,7 @@ packages/
 │   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the view tick API, watch, reactions and computed values, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
 │   ├── pixi/            @mvtjs/pixi: the view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the view tick API for three.js objects, pointer picker, and its JSX runtime
+│   ├── pixi-3d/         @mvtjs/pixi-3d (private while PixiJS 3D is new, but built as the others are): the view tick API for PixiJS 3D's scene nodes, its JSX runtime, and the views that mix 2D and 3D (Scene3DView, ScreenView, ScreenAnchorView)
 │   ├── html/            @mvtjs/html: the view tick API for DOM elements, its JSX runtime, and a Perfmon view
 │   ├── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
 │   └── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects
@@ -58,7 +59,7 @@ packages/sites/<site>/              arcade, demos or puzzles
             ├── start/   entry.ts (what its card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp (its card's picture), share.png (its link preview's picture)
             ├── data/    Static data and configuration constants
             ├── models/  State & domain logic + domain types
-            └── views/   Presentation (Pixi, three.js or HTML)
+            └── views/   Presentation (Pixi, PixiJS 3D, three.js or HTML)
 ```
 
 ```
@@ -124,7 +125,8 @@ Full reference: [Project Structure](packages/sites/docs/working-in-this-repo/pro
 - **View tick API from the renderer package** - in the site and benchmarks, import `updateView`, `refreshView`, `setUpdate`, `setRefresh`, `SKIP_DESCENDANTS`, `hasUpdate`, `hasRefresh`, the tick counter, the method types and `advanceTime` from the renderer package you use, which re-exports them, not from `@mvtjs/utils` (lint). They are one set of functions for every renderer, so code using two renderers imports them from either
 - **No `null`, no `this`** - our own code and APIs never introduce `null` (`undefined` instead). Be explicit where a third-party `null` arrives (`node.parent === null`, a local `T | null`), and convert it (`?? undefined`) before it reaches our own APIs; a declaration that must accept one takes an `eslint-disable` comment saying why. Closures instead of `this`. Lint: `@mvtjs/no-null`, `@mvtjs/no-this`
 - **Factory functions, not classes** - `createXxxModel(options)` returns an interface; implementation is a plain record with closure-scoped private state
-- **Views are functions** - `XxxView(bindings: XxxViewBindings)`, returning its Pixi container, three.js object or DOM element, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi */`, or `three` or `html`) or plain TypeScript; MVT doesn't require either, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Code Style: Views and Bindings](packages/sites/docs/working-in-this-repo/code-style.md#views-and-bindings) and [Chapter 12, Writing Views in JSX](packages/sites/docs/chapters/12-writing-views-in-jsx.md#choosing-between-jsx-and-plain-typescript). Top-level views take `{ model }`.
+- **Views are functions** - `XxxView(bindings: XxxViewBindings)`, returning its Pixi container, three.js object or DOM element, usable as a JSX tag and as a plain call; never `createXxxView`, never `props`. The body may be JSX (`.tsx`, `/** @jsxImportSource @mvtjs/pixi */`, or `pixi-3d`, `three` or `html`) or plain TypeScript; MVT doesn't require either, and callers can't tell the difference. JSX tends to suit trees of display objects that follow the model; plain TypeScript tends to suit views that mostly draw, manage their own display objects (pools, ring buffers), or need tight control of per-frame work. See [Code Style: Views and Bindings](packages/sites/docs/working-in-this-repo/code-style.md#views-and-bindings) and [Chapter 12, Writing Views in JSX](packages/sites/docs/chapters/12-writing-views-in-jsx.md#choosing-between-jsx-and-plain-typescript). Top-level views take `{ model }`.
+- **3D** - a view on a Pixi stage draws 3D with PixiJS 3D (`@pixi/3d`), through `@mvtjs/pixi-3d`; an entry that sets up its own renderers draws 3D with three.js instead. A 3D view lists each geometry, material and texture that it makes in `owns` (or calls `ownResources`), and never makes one inside the attribute that uses it (lint: `@mvtjs/no-unowned-resource`). Its animation, particles and live textures move by `deltaMs` alone, never on Pixi's shared ticker (lint: `@mvtjs/no-self-updating-3d`): `<model clip clipTimeMs>`, `ParticlesView` and `ScreenView` move them by `deltaMs`. A 3D view's visual tests check that it frees what it made, with `destroyAndFindLeaks`. See [the package's README](packages/libraries/pixi-3d/README.md), and PixiJS 3D's own skill for its API
 - **Interfaces over implementations** - export the interface type, not the concrete object shape
 - **Function-valued properties in types** - `update: (deltaMs: number) => void`, not `update(deltaMs: number): void`, in every interface and type declaration. Enforced by lint (`@typescript-eslint/method-signature-style`)
 - **String-literal unions for enums** - `type TileKind = 'empty' | 'wall' | 'dot'`; never use `enum` or const-object patterns
@@ -225,6 +227,7 @@ Load the relevant skills file for task-specific instructions:
 | Following code conventions | [packages/sites/docs/ai-agents/skill-code-style.md](packages/sites/docs/ai-agents/skill-code-style.md) |
 | Reviewing code             | [packages/sites/docs/ai-agents/skill-code-review.md](packages/sites/docs/ai-agents/skill-code-review.md) |
 | Updating documentation     | [packages/sites/docs/ai-agents/skill-documentation.md](packages/sites/docs/ai-agents/skill-documentation.md) |
+| Using PixiJS 3D's own API  | PixiJS 3D's own skill, `node_modules/@pixi/3d/skills/pixijs-3d/SKILL.md` (registered as `pixijs-3d`), which ships with the installed version |
 
 ## Documentation
 
@@ -241,4 +244,4 @@ this repo. The reading order is in `packages/sites/docs/.vitepress/book.ts`.
 
 ## Tech Stack
 
-TypeScript 5.9 - Pixi.js 8 - three.js (one demo) - GSAP 3 - Vite 8 - Vitest 5 - ESLint 9 - ESLint Stylistic
+TypeScript 5.9 - Pixi.js 8 - PixiJS 3D 0.1 - three.js (one demo) - GSAP 3 - Vite 8 - Vitest 5 - ESLint 9 - ESLint Stylistic

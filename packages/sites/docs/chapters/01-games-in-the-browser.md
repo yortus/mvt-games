@@ -198,7 +198,7 @@ too.
 | Job | In this book |
 | --- | --- |
 | Language | TypeScript |
-| Drawing | Pixi for most examples, three.js for 3D, and the DOM for views made of HTML |
+| Drawing | Pixi for most examples, PixiJS 3D for 3D scenes that share a Pixi stage with 2D views, three.js for 3D scenes that it draws with its own renderer, and the DOM for views made of HTML |
 | Sound | Two virtual sound chips from the `audio90` package, which play through the Web Audio API ([Chapter 20](20-sound-and-music.md)) |
 | Tests | Vitest, and the `v-snap` package for tests that compare images ([Chapters 15 to 17](15-testing-models.md)) |
 | MVT's helpers | The `@mvtjs` libraries: one for each renderer, and `@mvtjs/utils` for what they share |

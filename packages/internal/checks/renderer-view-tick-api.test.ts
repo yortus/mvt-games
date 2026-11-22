@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import * as html from '@mvtjs/html';
 import * as pixi from '@mvtjs/pixi';
+import * as pixi3d from '@mvtjs/pixi-3d';
 import * as three from '@mvtjs/three';
 import * as utils from '@mvtjs/utils';
 import { describe, expect, it } from 'vitest';
@@ -16,11 +17,12 @@ describe('renderer packages', () => {
     it('re-export the same names from @mvtjs/utils', () => {
         expect(namesFromUtils(three)).toEqual(namesFromUtils(pixi));
         expect(namesFromUtils(html)).toEqual(namesFromUtils(pixi));
+        expect(namesFromUtils(pixi3d)).toEqual(namesFromUtils(pixi));
         expect(namesFromUtils(pixi)).toContain('SKIP_DESCENDANTS');
     });
 
     it('re-export the base\'s own values, not copies', () => {
-        const renderers: Record<string, unknown>[] = [pixi, three, html];
+        const renderers: Record<string, unknown>[] = [pixi, three, html, pixi3d];
         for (let i = 0; i < renderers.length; i++) {
             const renderer = renderers[i];
             const names = namesFromUtils(renderer);

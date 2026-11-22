@@ -25,6 +25,7 @@ packages/
 │   ├── utils/           @mvtjs/utils: renderer-agnostic helpers (the view tick API, watch, reactions and computed values, SlotList, tweens, metronome, performance meter); JSX base at ./jsx
 │   ├── pixi/            @mvtjs/pixi: the view tick API for Pixi containers, performance metrics, and Pixi's JSX runtime
 │   ├── three/           @mvtjs/three: the view tick API for three.js objects, pointer picker, and its JSX runtime
+│   ├── pixi-3d/         @mvtjs/pixi-3d (private while PixiJS 3D is new): the view tick API for PixiJS 3D's scene nodes, its JSX runtime, and the views that mix 2D and 3D
 │   ├── html/            @mvtjs/html: the view tick API for DOM elements, its JSX runtime, and a Perfmon view
 │   ├── audio90/         audio90, on npm: the Audio80 and Audio90 sound chips, their tracker notation and sequencer; guides in docs/
 │   └── v-snap/          v-snap, on npm: visual snapshot tests for canvas and HTML views, as Vitest projects

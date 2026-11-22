@@ -251,6 +251,13 @@ export default tseslint.config(
         plugins: { '@mvtjs': mvt },
         rules: { '@mvtjs/no-unowned-resource': 'error' },
     },
+    // PixiJS 3D features move by the views' `deltaMs`. On Pixi's shared ticker, they would be autonomous
+    // animations, which keep moving while the game is paused
+    {
+        files: ['packages/sites/*/src/**/*.{ts,tsx}', 'packages/libraries/pixi-3d/src/**/*.{ts,tsx}', PLAYGROUND_EXAMPLES],
+        plugins: { '@mvtjs': mvt },
+        rules: { '@mvtjs/no-self-updating-3d': 'error' },
+    },
     {
         files: ['**/*.test.{ts,tsx}'],
         rules: {
@@ -271,6 +278,7 @@ export default tseslint.config(
         files: [
             'packages/libraries/pixi/src/container-mixin.ts',
             'packages/libraries/three/src/object3d-mixin.ts',
+            'packages/libraries/pixi-3d/src/container3d-mixin.ts',
             'packages/sites/site-kit/scripts/vite-plugin-entry-pages.ts',
             'packages/sites/site-kit/scripts/vite-plugin-spritesheet.ts',
             'packages/sites/playground/scripts/vite-plugin-library-types.ts',

@@ -127,10 +127,45 @@ Read the sections you need, by anchor:
 - Before a per-frame redraw, check whether drawing once and then scaling,
   tinting or resizing would do.
 
+## Views in 3D
+
+A 3D view on the site's Pixi stage draws with PixiJS 3D, through
+`@mvtjs/pixi-3d`. See [its README](../../../libraries/pixi-3d/README.md),
+and the `pixijs-3d` skill for PixiJS 3D's own API.
+
+- A JSX file starts with `/** @jsxImportSource @mvtjs/pixi-3d */`. Any
+  file that imports `@pixi/3d` imports the view tick API from
+  `@mvtjs/pixi-3d` too.
+- A view frees what it makes. List each geometry, material and texture
+  that the view makes in `owns` on its root element, or call
+  `ownResources(node, [...])` in a plain TypeScript view. Make each one in
+  a variable, never inside the attribute that uses it. A part that several
+  views share belongs to the view that made it, such as the scene that
+  makes one set of car parts for every car. A texture loaded with `Assets`
+  or received through a binding doesn't belong to the view.
+- Time comes from `deltaMs` alone. Pose a model with `<model clip
+  clipTimeMs>`, run particles with `ParticlesView`, and show a 2D view in
+  the scene with `ScreenView`. Never turn on `autoUpdate`. Don't use
+  PixiJS 3D's orbit or first-person cameras, which move on Pixi's shared
+  ticker. Write a camera view instead. `Scene3DView` finds the scene's
+  camera once, so keep one `<camera>` outside any `<Switch>` or `<List>`,
+  and move it rather than swap it.
+- Lights are elements, with `shadow` and `castShadow` as attributes.
+  Write `lookAt` after `x`, `y` and `z`, since attributes are applied in
+  order.
+- To draw a 2D view over a point in the scene, use `ScreenAnchorView`.
+  The `Scene3DView` places it right after it refreshes the scene, once
+  the camera has moved.
+- Each 3D entry's visual tests check that it frees what it made, with
+  `destroyAndFindLeaks(view, { shared })`. List anything loaded with
+  `Assets` in `shared`.
+
 ## Lint
 
 | Rule | Reports |
 | --- | --- |
+| `@mvtjs/no-unowned-resource` | A `new` inside a `geometry`, `material` or `texture` attribute, where the view can't list the resource in `owns` |
+| `@mvtjs/no-self-updating-3d` | A PixiJS 3D object that updates itself on Pixi's shared ticker, because its `autoUpdate` isn't `false` |
 | `no-restricted-syntax` (view files) | `createXxxView`, `XxxViewProps`, a `get` prefix in `XxxViewBindings`, `XxxViewModel` or `XxxViewModelOptions` |
 | `@mvtjs/no-conditional-poll`, `no-repeated-poll`, `no-unused-watch`, `no-inline-watch` | A watcher or reaction called behind a condition, twice in a step, never, or made and used in one expression |
 | `@mvtjs/no-control-names` | Off in a view model (`views/**/*-model.ts`), where controls are handled |

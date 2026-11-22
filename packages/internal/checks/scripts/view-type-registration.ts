@@ -42,6 +42,7 @@ const RENDERERS = [
     { name: '@mvtjs/pixi', viewImport: 'import type { Container } from \'pixi.js\';', viewName: 'Container' },
     { name: '@mvtjs/three', viewImport: 'import type { Object3D } from \'three\';', viewName: 'Object3D' },
     { name: '@mvtjs/html', viewImport: '', viewName: 'Element' },
+    { name: '@mvtjs/pixi-3d', viewImport: 'import type { Container3D } from \'@pixi/3d\';', viewName: 'Container3D' },
 ];
 
 const cases: Case[] = [

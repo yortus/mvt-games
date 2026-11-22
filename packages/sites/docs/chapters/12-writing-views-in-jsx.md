@@ -100,9 +100,9 @@ still turning, while the line at the top says the ship isn't shielded.
 
 ::: info In this book
 MVT doesn't require JSX. The `@mvtjs` libraries have a small JSX runtime
-for each renderer they support: `@mvtjs/pixi`, `@mvtjs/html` for the DOM, and
-`@mvtjs/three` for three.js. All three share one base, in
-`@mvtjs/utils/jsx`, so they behave the same way.
+for each renderer they support: `@mvtjs/pixi`, `@mvtjs/html` for the DOM,
+`@mvtjs/three` for three.js, and `@mvtjs/pixi-3d` for PixiJS 3D. All four
+share one base, in `@mvtjs/utils/jsx`, so they behave the same way.
 :::
 
 ## Setting Up a JSX File
@@ -111,7 +111,7 @@ A JSX body goes in a `.tsx` file. TypeScript compiles each tag into a
 function call, and the comment on the file's first line sets which
 library's functions it calls: `/** @jsxImportSource @mvtjs/pixi */` for
 Pixi views, `@mvtjs/html` for DOM views, `@mvtjs/three` for three.js
-views.
+views, and `@mvtjs/pixi-3d` for PixiJS 3D views.
 
 Tags come in two kinds:
 

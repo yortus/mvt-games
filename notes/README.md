@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**111** (085, 096 and 106 to 108 are taken, by work in worktrees).
+**113** (085, 096, 106 and 108 are taken, by work in worktrees).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -189,6 +189,8 @@ deleted.
 | 093 | [Enforce the Tick Rules](tasks/backlog/093-enforce-the-tick-rules.md) | low | 2026-11-07 |
 | 097 | [`@mvtjs/three`'s Pointer Picker: a Cancel, and One Pointer](tasks/backlog/097-three-pointer-picker-cancel-and-pointer-id.md) | low | 2026-11-13 |
 | 105 | [The Puzzles' Game Model, Undo and Seeds, in Shared](tasks/backlog/105-puzzle-models-in-shared.md) | low | 2026-11-20 |
+| 111 | [Publish `@mvtjs/pixi-3d`](tasks/backlog/111-publish-pixi-3d.md) | low | 2026-11-22 |
+| 112 | [An HTML `PixiCanvasView`](tasks/backlog/112-html-pixi-canvas-view.md) | low | 2026-11-22 |
 
 ## Archive
 
@@ -252,6 +254,7 @@ deleted.
 | 099 | [Proposal: a star placement puzzle](archive/099-star-placement-puzzle.md) (built as **Stars**, out of beta after a review. Genre known as Star Battle (no `inspiredBy`). Two stars a line at every level: Easy and Medium 8x8, Hard 9x9, Expert 10x10. A tap cycles a cross (no star) and a gold star, and a drag rings a group ("a star is in one of these"), joined side to side and never overlapping. Its generator was replaced by 101's. The daily puzzles are pinned by a test, so a change to the maker can't silently drop players' progress) | 2026-11-20 |
 | 100 | [Proposal: v-snap: canvas text in a project's own fonts](archive/100-vsnap-project-fonts.md) (a project registers its own font files for named families with `vsnap({ fonts })`, as paths, checked in Node as the config loads, and loaded by the page before any project code draws (not in `vsnap.config.ts`, nor per test file, since canvas files share a page). v-snap lays them out with `fontkit` and fills glyphs as paths, as it does its own fonts, so images still match everywhere. Faces picked by CSS's rule, italic faces or axes before a slant, no fake bold, fallback run by run through the list, then v-snap's own font, then the hex box. Registered families need no generic family, and `sans-serif` and `monospace` may be registered. Projects with no `fonts` draw byte-identical images; the whole repo's visual tests changed no reference) | 2026-11-17 |
 | 101 | [Proposal: Stars without guessing](archive/101-stars-without-guessing.md) (direct techniques only: neighbours, full lines, bands, pressure and 2x2 boxes, never supposing, and no hints. Every puzzle is fair by construction: regions grown round a layout, givens (stars and crosses, printed in ink) added until the techniques finish it, unneeded ones dropped, the fewest of three tries kept. Reshaping and solution counting are gone. Wherever the rules stall, at least two cells must be findable, or a given is printed. In Node, 2 ms (Easy) to 74 ms (Expert, 10x10) a puzzle, with 0.2 to 6 givens on average. Playtested. Phone timings weren't recorded. On leaving beta, givens are removed in repeated passes, so every given left is needed; 26 of 2026's puzzles lost a given) | 2026-11-20 |
+| 107 | [Proposal: a complete JSX for PixiJS 3D](archive/107-complete-pixi-3d-jsx.md) (Views list the geometry, materials and textures they make in `owns`, which the JSX base supports for every renderer. A lint rule and a leak check in each 3D entry's visual tests catch a resource that isn't listed. The base has creation attributes, and the element table is complete, with `sprite3d`, `batchedMesh`, `model`, twelve pointer events and `hitVolume`. Time comes from `deltaMs` alone, through `<model clip clipTimeMs>` and a seeded `ParticlesView`, and a lint rule reports `autoUpdate`. `Scene3DView` is complete, `ScreenView` draws from its first frame through a renderer system, and `ScreenAnchorView` places 2D over a point in 3D. The package matches the other renderer packages, and is ready to build but private. Docs, cheat sheets, a playground starter and PixiJS 3D's own skill cover it. Publishing is 111, and the HTML bridge is 112. Brought into vnext 2026-11-22, with the 3D entries still to come) | 2026-11-22 |
 
 ## Elsewhere
 

@@ -7,6 +7,7 @@ export { noModuleState } from './no-module-state';
 export { noNull } from './no-null';
 export { noRelativeImportsIntoSrc } from './no-relative-imports-into-src';
 export { noRepeatedPoll } from './no-repeated-poll';
+export { noSelfUpdating3d } from './no-self-updating-3d';
 export { noThis } from './no-this';
 export { noUnownedResource } from './no-unowned-resource';
 export { noUnusedWatch } from './no-unused-watch';

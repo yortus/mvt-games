@@ -6,6 +6,7 @@
         { "path": "./packages/libraries/utils" },
         { "path": "./packages/libraries/pixi" },
         { "path": "./packages/libraries/three" },
+        { "path": "./packages/libraries/pixi-3d" },
         { "path": "./packages/libraries/html" },
         { "path": "./packages/libraries/audio90" },
         { "path": "./packages/libraries/audio90/bench" },
