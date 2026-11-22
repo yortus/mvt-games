@@ -1,10 +1,11 @@
 // Measures a site's home page, its wall of cards (the arcade's, the demos' or
 // the puzzles'): the JavaScript it needs before its first paint, which must
-// not include a renderer (Pixi or three.js), and must stay under a budget,
-// gzipped. The page shows cards, not entries: an
+// not include a renderer (Pixi or three.js) or the sound chips (audio90),
+// and must stay under a budget, gzipped. The page shows cards, not entries: an
 // entry's code, and the renderer it draws with, load only once it is
 // launched, as dynamic imports, and its long text just after the first
-// paint. So does anything few visitors open, such as the Perfmon. A static
+// paint. So does anything few visitors open, such as the Perfmon, and the
+// page's own sounds, which load on the visitor's first press. A static
 // import of one, from anywhere the home page reaches, would bring it into the
 // first load unnoticed, and the page would take longer to appear.
 //
@@ -139,6 +140,8 @@ const FORBIDDEN: readonly { readonly name: string; readonly path: string }[] = [
     { name: 'three', path: '/node_modules/three/' },
     { name: '@mvtjs/pixi', path: '/packages/libraries/pixi/' },
     { name: '@mvtjs/three', path: '/packages/libraries/three/' },
+    // Browsers don't play sound until the visitor's first press, so the page loads its sounds on that press
+    { name: 'audio90', path: '/packages/libraries/audio90/' },
 ];
 
 function toKb(bytes: number, digits = 1): string {

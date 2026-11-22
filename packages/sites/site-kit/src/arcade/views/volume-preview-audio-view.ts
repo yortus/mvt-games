@@ -1,7 +1,7 @@
 import { setRefresh } from '@mvtjs/html';
 import { watch } from '@mvtjs/utils';
 import type { MusicChip, SfxChip } from '../../sound';
-import { SFX_PREVIEW, MUSIC_PREVIEW } from '../data';
+import { SFX_PREVIEW, MUSIC_PREVIEW } from '../sounds';
 
 // ---------------------------------------------------------------------------
 // Bindings

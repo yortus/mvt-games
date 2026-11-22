@@ -24,7 +24,7 @@
 | [`models/arcade-query.ts`](./models/arcade-query.ts) | The search as a URL query, and back |
 | [`models/highscores-model.ts`](./models/highscores-model.ts) | `HighscoresModel`: every game's highscore table, and a score that places in one, from asking for initials to showing the table |
 | [`models/sound-settings.ts`](./models/sound-settings.ts) | The visitor's sound settings, their defaults, and how they are saved and read back |
-| [`data/sounds.ts`](./data/sounds.ts) | The Arcade's own sound effects, and the pause menu's two previews |
+| [`sounds/sounds.ts`](./sounds/sounds.ts) | The Arcade's own sound effects, and the pause menu's two previews. They have a folder of their own, apart from `data/`, because the page's first load imports `data/`. Each sound is made as its module loads, so the bundler can't leave out one that isn't used. A sound in `data/` would bring the notation's parser into the first load. The sounds load with the audio views, on the visitor's first press |
 | [`data/way-in.ts`](./data/way-in.ts) | How long each part of the way into an entry takes, which the model and the transition share |
 | [`views/arcade-view.tsx`](./views/arcade-view.tsx) | The top-level view: takes the model, wires the rest |
 | [`views/card-wall-view.tsx`](./views/card-wall-view.tsx), [`card-view.tsx`](./views/card-view.tsx) | The wall of cards, and one card |

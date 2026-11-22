@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHeadlessAudio80, type HeadlessAudio80 } from 'audio90/headless';
 import { refreshView, updateView } from '@mvtjs/html';
-import { SFX_PREVIEW, MUSIC_PREVIEW } from '../data';
+import { SFX_PREVIEW, MUSIC_PREVIEW } from '../sounds';
 import { VolumePreviewAudioView } from './volume-preview-audio-view';
 
 // The view is tested by what it asks of its chips: which phrase and blip it plays, and when it stops the phrase.
