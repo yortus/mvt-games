@@ -496,6 +496,10 @@ A few more shared pieces cover other gestures:
 - `listenToPanZoom`, from `@mvtjs/site-kit/input`, turns drags, pinches,
   twists, the wheel and double taps over an element into pans and zooms,
   as Penrose Tiling and Fractalscope do.
+- `listenToDragZoom`, from `@mvtjs/site-kit/input/pixi`, does much the
+  same over a Pixi container, with drags, pinches and the wheel, such as
+  for moving a camera round a 3D scene. The entry host keeps a trackpad's
+  pinch from zooming the page.
 
 The two DOM pieces return a function that stops them. Call it as your view
 is destroyed. The Pixi pieces need no stopping, since a container's

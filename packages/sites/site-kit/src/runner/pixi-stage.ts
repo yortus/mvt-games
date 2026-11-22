@@ -113,6 +113,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     // Pinch-zoom, scrolling and double-tap zoom are blocked over the game
     canvas.style.touchAction = 'none';
     canvas.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
+    canvas.addEventListener('wheel', preventPinchZoom, { passive: false });
     element.append(canvas);
 
     // Pixi finds where the pointer is on the canvas from the canvas's box in
@@ -254,6 +255,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
 
         destroy() {
             canvas.removeEventListener('touchend', preventDoubleTapZoom);
+            canvas.removeEventListener('wheel', preventPinchZoom);
             gpuTimer?.destroy();
             gpuTimer = undefined;
             // The page runs several renderers at once, such as an entry's and a card's live preview. Passing
@@ -324,4 +326,16 @@ let lastTouchEndMs = -Infinity;
 function preventDoubleTapZoom(e: TouchEvent): void {
     if (e.timeStamp - lastTouchEndMs <= DOUBLE_TAP_MS) e.preventDefault();
     lastTouchEndMs = e.timeStamp;
+}
+
+/**
+ * A trackpad's pinch reaches the page as the wheel with Control held, as
+ * Control and the wheel do. Either would zoom the whole page, so over the
+ * game it's blocked, as a pinch on a touch screen is. An entry can still
+ * zoom with it, since Pixi passes the wheel on to the stage
+ * (`listenToDragZoom`). Pixi listens for the wheel in a way that can't
+ * block it, so the host blocks it here, on the canvas it owns.
+ */
+function preventPinchZoom(e: WheelEvent): void {
+    if (e.ctrlKey) e.preventDefault();
 }

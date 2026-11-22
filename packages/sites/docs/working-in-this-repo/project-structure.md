@@ -171,7 +171,7 @@ public API.
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `createReaction`, `createComputed`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
 | `packages/sites/site-kit/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView` |
-| `packages/sites/site-kit/src/input/pixi/` | Input on a Pixi stage                  | `listenToPointer`, `listenToPress`, `SwipeInputView`, `DragInputView`, `TouchInputView` |
+| `packages/sites/site-kit/src/input/pixi/` | Input on a Pixi stage                  | `listenToPointer`, `listenToDragZoom`, `listenToPress`, `SwipeInputView`, `DragInputView`, `TouchInputView` |
 | `packages/sites/site-kit/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 
 ::: info Data directories are not MVT layers
