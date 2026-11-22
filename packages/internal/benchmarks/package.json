@@ -13,7 +13,7 @@
         "@mvtjs/site-kit": "*",
         "audio90": "^0.8.0",
         "esbuild": "^0.27.3",
-        "pixi.js": "^8.16.0",
+        "pixi.js": "^8.23.0",
         "solid-js": "^1.9.11",
         "three": "^0.186.1"
     }

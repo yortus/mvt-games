@@ -41,7 +41,7 @@
         "es-module-lexer": "^2.3.2",
         "fflate": "^0.8.3",
         "gsap": "^3.14.2",
-        "pixi.js": "^8.16.0",
+        "pixi.js": "^8.23.0",
         "sucrase": "^3.35.1",
         "three": "^0.186.1",
         "typescript": "^5.9.3"

@@ -19,7 +19,7 @@
         "@mvtjs/site-kit": "*",
         "@mvtjs/utils": "^0.9.0",
         "audio90": "^0.8.0",
-        "pixi.js": "^8.16.0"
+        "pixi.js": "^8.23.0"
     },
     "devDependencies": {
         "@types/node": "^26.6.3",
