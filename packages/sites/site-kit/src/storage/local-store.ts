@@ -47,6 +47,7 @@ export interface LocalStoreOptions {
  * Creates a store over the browser's `localStorage`, or over
  * `options.storage`. Even reaching `localStorage` can throw where storage is
  * blocked, so the store reaches it on each call, and catches what it throws.
+ * Every key is kept with the build's prefix in front of it (see `KEY_PREFIX`).
  */
 export function createLocalStore(options: LocalStoreOptions = {}): LocalStore {
     const storageOf = (): Storage => options.storage ?? globalThis.localStorage;
@@ -54,7 +55,7 @@ export function createLocalStore(options: LocalStoreOptions = {}): LocalStore {
     const store: LocalStore = {
         read(key) {
             try {
-                return storageOf().getItem(key) ?? undefined;
+                return storageOf().getItem(KEY_PREFIX + key) ?? undefined;
             }
             catch {
                 return undefined;
@@ -62,7 +63,7 @@ export function createLocalStore(options: LocalStoreOptions = {}): LocalStore {
         },
         write(key, text) {
             try {
-                storageOf().setItem(key, text);
+                storageOf().setItem(KEY_PREFIX + key, text);
                 return true;
             }
             catch {
@@ -71,7 +72,7 @@ export function createLocalStore(options: LocalStoreOptions = {}): LocalStore {
         },
         remove(key) {
             try {
-                storageOf().removeItem(key);
+                storageOf().removeItem(KEY_PREFIX + key);
             }
             catch {
                 // Storage is blocked, so nothing was kept there
@@ -118,3 +119,16 @@ export function createMemoryStore(): LocalStore {
         },
     });
 }
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/**
+ * What every key starts with, as the build was given it
+ * (`VITE_STORAGE_PREFIX`). It's empty, except in a test copy of the site,
+ * which is served on the same origin as the real one. A browser keeps one
+ * storage for each origin, so without a prefix the test copy would read and
+ * write the visitor's real settings, favourites and saved games.
+ */
+const KEY_PREFIX = (import.meta.env.VITE_STORAGE_PREFIX as string | undefined) ?? '';

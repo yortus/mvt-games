@@ -1,0 +1,82 @@
+name: Deploy a test copy to zz9
+
+# Builds the site, the playground and the docs from any branch, and deploys
+# them as a test copy at yortus.com/zz9/. Start it by hand, from the Actions
+# tab: "Run workflow", then pick the branch. It leaves out the book's PDF,
+# which deploy.yml prints, to deploy sooner, so the copy's link to the PDF
+# finds nothing.
+#
+# The copy is served from the gh-pages branch of the repo yortus/zz9, which
+# holds nothing else. GitHub serves every repo's Pages under the user site's
+# domain, at the repo's name, so it appears at yortus.com/zz9/. Each deploy
+# replaces that branch with a single new commit. Pushing to another repo
+# needs a deploy key: its public half is on zz9, with write access, and its
+# private half is this repo's secret ZZ9_DEPLOY_KEY.
+#
+# The copy shares an origin with the real site, so it shares the visitor's
+# browser storage too. Its keys start with VITE_STORAGE_PREFIX, so it never
+# touches their real settings, favourites, saved games or playground
+# projects. It keeps its highscore tables in memory, as `npm run dev` does,
+# and every page asks search engines to leave it out.
+
+on:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: zz9
+    cancel-in-progress: true
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+        env:
+            # Where the copy is served: its base, and its origin, for the full
+            # addresses each page's link preview needs. The builds and the check
+            # of the previews read them
+            BASE_URL: /zz9/
+            SITE_ORIGIN: https://yortus.com
+            # What the copy's storage keys start with, so it keeps clear of the real site's
+            VITE_STORAGE_PREFIX: 'zz9:'
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .node-version
+                  cache: npm
+
+            - run: npm ci
+            - run: npm run lint
+            - run: npm run test:unit
+            # audio90's own tests, which the root's leave out. The site plays on its chips
+            - run: npm test -w audio90
+            # The arcade, the demos and the puzzles
+            # With no VITE_HIGHSCORES_URL, so the copy keeps its highscore
+            # tables in memory, by the Worker's rules, and posts nowhere
+            - run: npm run build:sites
+            - run: npm run build:playground
+            # With the sites and the playground built: each holds one copy of @mvtjs/utils, as a second throws on load
+            - run: npm run check:one-copy-of-utils
+            - run: npm run build:docs
+            # With everything built: every page has what a link preview needs
+            - run: npm run check:link-previews
+
+            # Asks search engines to leave the copy out, so a search finds
+            # the real site. The pages that only redirect have no <head>, and
+            # a search engine follows them to a page that has one
+            - name: Mark every page noindex
+              run: find dist -name '*.html' -exec sed -i 's|<head>|<head><meta name="robots" content="noindex">|' {} +
+
+            # Replaces zz9's gh-pages branch with dist/, as one commit. The
+            # action adds .nojekyll, so GitHub serves the files as they are
+            - uses: peaceiris/actions-gh-pages@v4
+              with:
+                  deploy_key: ${{ secrets.ZZ9_DEPLOY_KEY }}
+                  external_repository: yortus/zz9
+                  publish_branch: gh-pages
+                  publish_dir: ./dist
+                  force_orphan: true
+                  full_commit_message: Deploy ${{ github.ref_name }} at ${{ github.sha }}

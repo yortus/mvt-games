@@ -56,7 +56,12 @@ export function saveSettings(settings: WorkspaceSettings): void {
 // Internals
 // ---------------------------------------------------------------------------
 
-const SETTINGS_KEY = 'mvt-playground-settings';
+/**
+ * After the build's prefix (`VITE_STORAGE_PREFIX`), which is empty except in a
+ * test copy of the site. The copy is served on the same origin as the real
+ * one, and the prefix keeps it from changing the visitor's real settings.
+ */
+const SETTINGS_KEY = `${(import.meta.env.VITE_STORAGE_PREFIX as string | undefined) ?? ''}mvt-playground-settings`;
 
 function numberOrUndefined(value: unknown): number | undefined {
     return typeof value === 'number' && Number.isFinite(value) ? value : undefined;

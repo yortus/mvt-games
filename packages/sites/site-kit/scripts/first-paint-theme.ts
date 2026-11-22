@@ -8,6 +8,7 @@
  * shows until the stylesheets arrive.
  */
 
+import process from 'node:process';
 import type { ThemeKind } from '@mvtjs/site-kit/arcade';
 import { SITE_THEMES, type SiteKind } from '@mvtjs/site-kit/site-config';
 
@@ -33,8 +34,12 @@ export function firstPaintThemeHtml(site: SiteKind): string {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** Where the page keeps the visitor's choice of theme: `THEME_KEY` in `start-site-page.ts`. */
-const THEME_KEY = 'mvt-arcade:theme';
+/**
+ * Where the page keeps the visitor's choice of theme: `THEME_KEY` in
+ * `start-site-page.ts`, after the build's prefix, as the page's local store
+ * adds it (`KEY_PREFIX` in `local-store.ts`).
+ */
+const THEME_KEY = `${process.env.VITE_STORAGE_PREFIX ?? ''}mvt-arcade:theme`;
 
 /** Each theme's page background, as `themes.css` has it (`--theme-bg`), and whether it is dark or light. */
 const FIRST_PAINT: Readonly<Record<ThemeKind, { readonly background: string; readonly scheme: 'dark' | 'light' }>> = {
