@@ -246,7 +246,10 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             canvas.removeEventListener('touchend', preventDoubleTapZoom);
             gpuTimer?.destroy();
             gpuTimer = undefined;
-            app.destroy(true, { children: true });
+            // The page runs several renderers at once, such as an entry's and a card's live preview. Passing
+            // `true` would also release Pixi's global resources, such as the shader programs that every renderer
+            // shares, and break the others mid-frame. So the canvas is removed, and the shared resources stay
+            app.destroy({ removeView: true, releaseGlobalResources: false }, { children: true });
         },
     };
 

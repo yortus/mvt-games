@@ -57,7 +57,7 @@ export const load = defineElementLoader(async () => {
             const pixiReady = pixi.init({ width: SCREEN_WIDTH, height: SCREEN_HEIGHT, background: 0x2a1766, antialias: true, autoStart: false })
                 .then(() => {
                     if (isDestroyed) {
-                        pixi.destroy(true, { children: true });
+                        pixi.destroy(PIXI_DESTROY_OPTIONS, { children: true });
                         return;
                     }
                     pixi.canvas.classList.add('quadrant-canvas');
@@ -97,7 +97,7 @@ export const load = defineElementLoader(async () => {
                     threeObserver.disconnect();
                     picker.dispose();
                     // Not ready yet: destroyed once it is
-                    if (isPixiReady) pixi.destroy(true, { children: true });
+                    if (isPixiReady) pixi.destroy(PIXI_DESTROY_OPTIONS, { children: true });
                     destroyObject(scene);
                     renderer.dispose();
                     // `dispose` keeps the WebGL context until it is collected; a browser allows only so many
@@ -129,3 +129,15 @@ export const load = defineElementLoader(async () => {
         },
     };
 });
+
+// ---------------------------------------------------------------------------
+// Internals
+// ---------------------------------------------------------------------------
+
+/**
+ * How the Pixi application is destroyed: its canvas removed, and Pixi's
+ * global resources kept. The page runs other renderers at the same time,
+ * such as a card's live preview, which share those resources, such as
+ * shader programs, so releasing them would break the others.
+ */
+const PIXI_DESTROY_OPTIONS = { removeView: true, releaseGlobalResources: false } as const;
