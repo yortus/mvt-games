@@ -40,7 +40,8 @@ export interface SiteConfigOptions {
 // ---------------------------------------------------------------------------
 
 export function defineSiteConfig(options: SiteConfigOptions): UserConfigFnObject {
-    const { site, root, movedEntries, isSiteRoot } = options;
+    const { site, movedEntries, isSiteRoot } = options;
+    const root = toUpperCaseDrive(options.root);
     const siteRoot = process.env.BASE_URL ?? '/';
     return defineConfig(({ mode }) => ({
         appType: 'mpa',
@@ -86,6 +87,19 @@ export function defineSiteConfig(options: SiteConfigOptions): UserConfigFnObject
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns `path` with its Windows drive letter in upper case: `V:\projects`,
+ * never `v:\projects`. A shell opened at `v:\` passes its lower case on to
+ * the root, but paths resolved through `node_modules` use the drive's own
+ * case, `V:`. Vite's dev server then treats one file as two, and can bundle
+ * a library twice. With two copies of a Pixi class, Pixi no longer
+ * recognises its own objects, so it doesn't draw them. Using one case for
+ * the root keeps every path the same.
+ */
+function toUpperCaseDrive(path: string): string {
+    return path.replace(/^[a-z]:/, (drive) => drive.toUpperCase());
+}
 
 /** The `exports` condition under which each @mvtjs package resolves to its source, so the site needs no build of them. */
 const SOURCE_CONDITION = '@mvtjs/source';
