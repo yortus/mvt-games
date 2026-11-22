@@ -1,6 +1,7 @@
 import type { ArcadeEntry } from '@mvtjs/site-kit/entry-types';
 import { entry as astrovoidEntry } from './astrovoid';
 import { entry as burrowBustEntry } from './burrow-bust';
+import { entry as chicaneEntry } from './chicane';
 import { entry as crumbChaseEntry } from './crumb-chase';
 import { entry as deepDiveEntry } from './deep-dive';
 import { entry as dojoDuelEntry } from './dojo-duel';
@@ -31,6 +32,7 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
     fencelineEntry,
     deepDiveEntry,
     gardenSnakeEntry,
+    chicaneEntry,
 ];
 
 /** The entry with `id`, if there is one. */
