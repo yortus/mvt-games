@@ -5,10 +5,11 @@ import { countSolutions, isValidGrid } from './test-grids.test-support';
 
 describe('generateSudoku', () => {
     it('makes the same puzzle from the same seed and level', () => {
-        const first = generateSudoku({ seed: 7, level: 'medium' });
-        const again = generateSudoku({ seed: 7, level: 'medium' });
+        // The quickest level to make, since the level doesn't change how the seed is used
+        const first = generateSudoku({ seed: 7, level: 'easiest' });
+        const again = generateSudoku({ seed: 7, level: 'easiest' });
         expect(again).toEqual(first);
-        expect(generateSudoku({ seed: 8, level: 'medium' }).givens).not.toEqual(first.givens);
+        expect(generateSudoku({ seed: 8, level: 'easiest' }).givens).not.toEqual(first.givens);
     });
 
     for (const level of LEVELS) {

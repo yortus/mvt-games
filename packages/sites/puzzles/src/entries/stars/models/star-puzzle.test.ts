@@ -17,7 +17,8 @@ describe('createStarPuzzle', () => {
     });
 
     it('makes the same puzzle from the same seed', () => {
-        const settings = LEVEL_SETTINGS.expert;
+        // The quickest level to make, since the level doesn't change how the seed is used
+        const settings = LEVEL_SETTINGS.easy;
         const a = createStarPuzzle({ seed: 3, settings });
         const b = createStarPuzzle({ seed: 3, settings });
         expect([b.regions, b.givens]).toEqual([a.regions, a.givens]);

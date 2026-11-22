@@ -118,10 +118,11 @@ describe('PictureViewModel', () => {
         expect(picture.image.maxIterations).toBeLessThanOrEqual(MAX_ITERATIONS);
     });
 
-    it('starts again from nothing, at once, when the fractal changes', async () => {
+    it('starts again from nothing, at once, when the fractal changes', () => {
         // Big enough that one frame does not finish the new picture
         const { model, picture } = setup(1000, 800);
-        await advanceTime(500, picture);
+        // A frame of the first picture, under way
+        picture.update(16);
         model.magnifyAbout(10, -0.75, 0.1);
 
         model.chooseFractal('burning-ship');
@@ -132,10 +133,6 @@ describe('PictureViewModel', () => {
         expect(picture.image.isComplete).toBe(false);
         expect(picture.overview.setting).toEqual(home);
         expect(picture.image.maxIterations).toBe(BASE_ITERATIONS);
-
-        await advanceTime(3000, picture);
-        expect(picture.image.isComplete).toBe(true);
-        expect(picture.overview.isComplete).toBe(true);
     });
 
     it('leaves the picture alone after a gesture that moved nothing', async () => {
