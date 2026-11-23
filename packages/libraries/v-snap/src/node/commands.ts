@@ -210,10 +210,12 @@ function findTestPath(ctx: BrowserCommandContext): string {
 
 /**
  * Compares an actual image with its reference, or writes it as the
- * reference. When the actual image is within the tolerance, `-u` rewrites
- * the reference only on a processor that draws exactly (see
- * `src/node/compare.ts`). That way, an arm64 machine, which rounds a little
- * differently, does not keep rewriting the references.
+ * reference. On arm64, an image whose pixels past the tolerance are few and
+ * scattered passes too, as within the tolerance (see `src/node/compare.ts`).
+ * When the actual image is within the tolerance, `-u` rewrites the
+ * reference only on a processor that draws exactly. That way, an arm64
+ * machine, which rounds a little differently, does not keep rewriting the
+ * references.
  *
  * A reference whose name differs from the test's image name only in case,
  * after a test was renamed so, is renamed by `-u`, and fails the test
@@ -259,7 +261,8 @@ function judge(options: {
         if (isWritable || problem !== undefined) writeFileSync(file, encodePng(actual));
         return { outcome: problem === undefined ? same : 'updated', referenceFile };
     }
-    if (comparison?.isWithinTolerance && !(isWritable && DRAWS_EXACTLY)) {
+    const isClose = comparison !== undefined && (comparison.isWithinTolerance || (!DRAWS_EXACTLY && comparison.isScattered));
+    if (isClose && !(isWritable && DRAWS_EXACTLY)) {
         return { outcome: 'within-tolerance', changed: comparison.changed, maxDelta: comparison.maxDelta, referenceFile };
     }
     if (isWritable) {

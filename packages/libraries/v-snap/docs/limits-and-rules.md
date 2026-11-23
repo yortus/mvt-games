@@ -47,10 +47,18 @@ there.
   images differently from other processors.
 - **Small differences pass.** A pixel passes if none of its colour
   channels differs by more than 2, on a scale of 0 to 255. A real change
-  is almost never that small. On arm64 processors, Vitest's `-u` leaves
-  such a reference alone, since those processors round a little
-  differently. On other processors, `-u` writes the change to the
-  reference.
+  is almost never that small. On arm64 processors, an image also passes
+  if only a few scattered pixels differ by more: at most one in 10,000,
+  in clumps of at most two. Those processors draw an odd pixel along the
+  edge of a 3D shape differently. On arm64, Vitest's `-u` leaves such a
+  reference alone, since those processors round a little differently.
+  On other processors, `-u` writes the change to the reference.
+- **Keep the faces of a 3D scene apart.** Where two faces nearly meet,
+  such as one a few millimetres behind another, rounding in the depth
+  test decides which one shows. Processors with different features round
+  it differently, so the edge can draw differently on two x64 machines.
+  Move the faces a little further apart, or let one overlap the other
+  clearly.
 - **Drawing is done in software,** on the processor. So it can differ a
   little from what a real graphics card draws.
 

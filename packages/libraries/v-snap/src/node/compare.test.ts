@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareImages, TOLERANCE } from './compare.ts';
+import { compareImages, SCATTER_AREA, SCATTER_CLUMP, TOLERANCE } from './compare.ts';
 import type { RgbaImage } from './png.ts';
 
 function createFlatImage(width: number, height: number, rgba: readonly number[]): RgbaImage {
@@ -66,5 +66,35 @@ describe('compareImages', () => {
         expect([...c.diff.pixels.subarray(4, 8)]).toEqual([255, 0, 0, 255]);
         expect([...c.diff.pixels.subarray(0, 4)]).not.toEqual([255, 0, 0, 255]);
         expect(c.diff.pixels[0]).toBeGreaterThan(0);
+    });
+
+    describe('scattered pixels, which arm64 processors draw along the edges of 3D shapes', () => {
+        // An image with room for this many scattered pixels, each a long way past the tolerance
+        const ALLOWED = 4;
+        const WIDTH = 200;
+        const HEIGHT = (ALLOWED * SCATTER_AREA) / WIDTH;
+        const compareWith = (points: readonly (readonly [number, number])[]) => {
+            const actual = createFlatImage(WIDTH, HEIGHT, [100, 100, 100, 255]);
+            for (const [x, y] of points) actual.pixels[(y * WIDTH + x) * 4] = 0;
+            return compareImages({ expected: createFlatImage(WIDTH, HEIGHT, [100, 100, 100, 255]), actual });
+        };
+        // A clump as large as is allowed, in a row, and the rest of the allowance one by one, apart
+        const clump = Array.from({ length: SCATTER_CLUMP }, (_, i) => [10 + i, 10] as const);
+        const apart = Array.from({ length: ALLOWED - SCATTER_CLUMP }, (_, i) => [50 + 20 * i, 100] as const);
+
+        it('counts as many as the image\'s area allows as scattered, apart or in small clumps', () => {
+            const c = compareWith([...clump, ...apart]);
+            expect(c.isWithinTolerance).toBe(false);
+            expect(c.isScattered).toBe(true);
+        });
+
+        it('counts one more than the area allows as more than scattered', () => {
+            expect(compareWith([...clump, ...apart, [190, 190]]).isScattered).toBe(false);
+        });
+
+        it('counts a clump one larger than allowed as more than scattered, even touching only diagonally', () => {
+            const last = clump[clump.length - 1];
+            expect(compareWith([...clump, [last[0] + 1, last[1] + 1]]).isScattered).toBe(false);
+        });
     });
 });

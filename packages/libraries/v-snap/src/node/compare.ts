@@ -7,6 +7,12 @@
  * or 2 levels over thousands of pixels. A pixel count small enough to catch
  * a real change would fail on those images.
  *
+ * arm64 processors also draw an odd pixel along the edge of a 3D shape
+ * differently, by more than the tolerance. So on arm64, an image also
+ * passes if the pixels past the tolerance are few and scattered: at most
+ * one in `SCATTER_AREA`, in clumps of at most `SCATTER_CLUMP` pixels. A
+ * real change is almost always a clump of more.
+ *
  * Other processors draw exactly the same images, so on them a difference
  * within the tolerance is a small real change. Vitest's `-u` rewrites such a
  * reference there, but not on arm64, so that an arm64 machine doesn't keep
@@ -35,6 +41,8 @@ export interface Comparison {
     readonly changedRect: VisualRect | undefined;
     /** Whether the largest difference is within the tolerance. */
     readonly isWithinTolerance: boolean;
+    /** Whether the pixels past the tolerance, if any, are few and scattered, as arm64 processors draw some edges. */
+    readonly isScattered: boolean;
     /** The reference dimmed, with each pixel that differs by more than the tolerance in red, and each that differs by less in dark yellow. */
     readonly diff: RgbaImage;
 }
@@ -44,6 +52,12 @@ export interface Comparison {
 // ---------------------------------------------------------------------------
 
 export const TOLERANCE = 2;
+
+/** An image may have one scattered pixel past the tolerance for each this many pixels, and always one. */
+export const SCATTER_AREA = 10_000;
+
+/** The most pixels past the tolerance that may touch, side by side or diagonally, in an image whose pixels past it are scattered. */
+export const SCATTER_CLUMP = 2;
 
 /** Whether this machine's processor draws exactly the reference environment's images, as every processor but arm64 does. */
 export const DRAWS_EXACTLY = process.arch !== 'arm64';
@@ -56,6 +70,8 @@ export function compareImages(options: { readonly expected: RgbaImage; readonly 
     let changed = 0;
     let exceeded = 0;
     let maxDelta = 0;
+    // Which pixels differ by more than the tolerance, to find their clumps
+    const isExceeded = new Uint8Array(width * height);
     const all = createBounds(width, height);
     const beyond = createBounds(width, height);
     for (let i = 0; i < diff.length; i += 4) {
@@ -69,6 +85,7 @@ export function compareImages(options: { readonly expected: RgbaImage; readonly 
             all.add(x, y);
             if (delta > TOLERANCE) {
                 exceeded++;
+                isExceeded[i / 4] = 1;
                 beyond.add(x, y);
                 diff.set(EXCEEDED_COLOUR, i);
             }
@@ -83,7 +100,8 @@ export function compareImages(options: { readonly expected: RgbaImage; readonly 
         diff[i + 3] = 255;
     }
     const changedRect = exceeded > 0 ? beyond.toRect() : all.toRect();
-    return { changed, exceeded, maxDelta, changedRect, isWithinTolerance: maxDelta <= TOLERANCE, diff: { width, height, pixels: diff } };
+    const isScattered = exceeded <= Math.max(1, Math.floor((width * height) / SCATTER_AREA)) && findLargestClump({ isExceeded, width, height }) <= SCATTER_CLUMP;
+    return { changed, exceeded, maxDelta, changedRect, isWithinTolerance: maxDelta <= TOLERANCE, isScattered, diff: { width, height, pixels: diff } };
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +113,44 @@ const EXCEEDED_COLOUR = [255, 0, 0];
 
 /** The diff's colour for a pixel that differs by no more than the tolerance, dim enough that a real change stands out. */
 const WITHIN_COLOUR = [140, 110, 0];
+
+/**
+ * Returns how many pixels are in the largest clump of marked pixels, where
+ * pixels side by side or diagonally are in one clump. It stops counting a
+ * clump once it is larger than `SCATTER_CLUMP`, since then the answer is
+ * already known.
+ */
+function findLargestClump(options: { readonly isExceeded: Uint8Array; readonly width: number; readonly height: number }): number {
+    const { width, height } = options;
+    const isUnvisited = options.isExceeded.slice();
+    let largest = 0;
+    for (let start = 0; start < isUnvisited.length && largest <= SCATTER_CLUMP; start++) {
+        if (isUnvisited[start] === 0) continue;
+        isUnvisited[start] = 0;
+        const stack = [start];
+        let size = 0;
+        while (stack.length > 0 && size <= SCATTER_CLUMP) {
+            const p = stack.pop() as number;
+            size++;
+            const x = p % width;
+            const y = Math.floor(p / width);
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+                    const n = ny * width + nx;
+                    if (isUnvisited[n] === 1) {
+                        isUnvisited[n] = 0;
+                        stack.push(n);
+                    }
+                }
+            }
+        }
+        largest = Math.max(largest, size);
+    }
+    return largest;
+}
 
 /** Returns the bounds of some pixels, which grow as each is added. */
 function createBounds(width: number, height: number) {

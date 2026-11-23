@@ -27,7 +27,7 @@ by path works. A browser starts only when v-snap's projects run.
 | `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. Outside CI, a new image is written as its reference, and a reference that no test uses any more is deleted, if git tracks it |
 | `vitest run -p unit` | Runs the unit tests alone, and no browser starts. The `vsnap()` plugin names a flat config's tests `unit`. In a config that lists its projects, use your unit project's own name |
 | `vitest run <path>` | Runs the visual tests alone |
-| `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It repairs references too. It renames a reference whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. On arm64 processors, it leaves a reference alone if the actual image is within the tolerance |
+| `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It repairs references too. It renames a reference whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. On arm64 processors, it leaves a reference alone if the actual image is within the tolerance, or differs by a few scattered pixels |
 | `vitest run <file> -t "^<test's name>$" -u` | Updates one test's reference image. A failure message gives you this command |
 | `vitest run <file> -u` | Updates the reference images of one test file |
 | `vitest <path>` | Watches the visual tests, and reruns a test file when it or its view changes. See [Watch Mode](#watch-mode) |

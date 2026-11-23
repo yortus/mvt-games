@@ -155,15 +155,20 @@ run downloads that.
   one of them, the numbers that `Math.random` gives don't change.
 - **A tolerance** lets each colour channel of a pixel differ by up to 2
   levels out of 255. That covers the rounding of some drawing on arm64
-  processors, and a real change is almost never that small. On arm64,
-  Vitest's `-u` keeps the reference of an image that is within the
-  tolerance, so that an arm64 machine doesn't keep rewriting references.
-  Other processors draw exactly. So on them, a difference within the
-  tolerance is a small real change, and `-u` writes it.
+  processors, and a real change is almost never that small. arm64
+  processors also draw an odd pixel along the edge of a 3D shape
+  differently, by more than that. So on arm64, an image also passes if
+  the pixels past the tolerance are few and scattered: at most one in
+  10,000, in clumps of at most two. A real change is almost always a
+  larger clump. On arm64, Vitest's `-u` keeps the reference of such an
+  image, so that an arm64 machine doesn't keep rewriting references. Other processors draw exactly. So on them, a difference
+  within the tolerance is a small real change, and `-u` writes it.
 
 The images were checked on GitHub's Windows x64, Linux x64, Linux arm64
 and macOS arm64 runners. Every image was identical on all four, except
-for small differences on arm64 that the tolerance covers.
+for small differences on arm64 that the tolerance covers. Images of 3D
+scenes, drawn with WebGL, differed on macOS arm64 by scattered pixels
+only.
 [Limits and Rules](limits-and-rules.md) lists what these measures give
 up.
 

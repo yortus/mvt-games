@@ -51,7 +51,7 @@ export interface ProvidedFontFace {
 /** How an actual image compares with its reference. */
 export type VisualOutcome =
     | 'same' // identical pixels
-    | 'within-tolerance' // no channel differs by more than the tolerance
+    | 'within-tolerance' // no channel differs by more than the tolerance, or on arm64, only a few scattered pixels do
     | 'differs'
     | 'new' // no reference
     | 'size' // a different size from the reference
