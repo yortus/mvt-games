@@ -30,7 +30,7 @@ clears it, and the next frame is late to draw it again.
   Pixi entry, before the GPU's own work.
 - **The Arcade lays itself out behind the entry.** The card wall's
   `ResizeObserver` (`card-wall-view.tsx`) measures its width and every
-  card's height, and the wall's effect (`wall-effect-view.ts`) and the head
+  card's height, and the card wall's effect (`card-wall-effect-view.ts`) and the head
   (`arcade-head-view.tsx`) follow the window too, though none of them is
   seen while an entry plays. A profile of a resize showed the cards' `place`
   and `fitToWidth`, and their photos, at work.
@@ -52,7 +52,7 @@ is to measure in a real browser.
   canvas with CSS, so the picture stretches for a moment instead of
   blanking.
 - Pause the Arcade's own layout while an entry plays: the card wall, the
-  head and the wall's effect lay themselves out once, when the entry is
+  head and the card wall's effect lay themselves out once, when the entry is
   closed.
 - Keep the chip's lead as it is unless the stalls cannot be fixed. A longer
   lead hides them, but every sound reacts later.

@@ -420,7 +420,7 @@ deliberate:
   R and X) are not events on any one element, and the JSX runtime has no
   attribute for `window`. The views that need them add a listener and remove
   it in `onDestroyed` (`arcade-view.tsx`, `about-view.tsx`,
-  `pause-menu-view.tsx`, and `wall-effect-view.ts` for `resize`).
+  `pause-menu-view.tsx`, and `card-wall-effect-view.ts` for `resize`).
 - **The transition writes to the runner's stage.** The screen powering on
   squashes the entry's own picture, which is in the stage element the entry
   host owns. `drawStage` ([`entry-transition-view.tsx`](./views/entry-transition-view.tsx))

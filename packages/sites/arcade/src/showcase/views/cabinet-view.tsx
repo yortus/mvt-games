@@ -1,9 +1,10 @@
 /** @jsxImportSource @mvtjs/pixi-3d */
 
-import { type Container3D, CubeGeometry, FlatMaterial, Material3D, PlaneGeometry } from '@pixi/3d';
+import { type Container3D, FlatMaterial, type Material3D, PlaneGeometry } from '@pixi/3d';
 import type { Texture } from 'pixi.js';
-import { CABINET_DEPTH, CABINET_HEIGHT, CABINET_WIDTH, SCREEN_HEIGHT_ABOVE_FLOOR, SCREEN_SETBACK, SCREEN_TILT } from '../data';
+import { CABINET_DEPTH, CABINET_HEIGHT, SCREEN_HEIGHT_ABOVE_FLOOR, SCREEN_SETBACK, SCREEN_TILT } from '../data';
 import { type LiveEntry, LiveScreenView } from '@mvtjs/site-kit/showcase';
+import { BASE_HEIGHT, BEZEL_DEPTH, BEZEL_HEIGHT, type CabinetParts, MARQUEE_DEPTH, MARQUEE_HEIGHT, PANEL_DEPTH, UPPER_DEPTH, UPPER_HEIGHT } from './cabinet-parts';
 import { createMarqueeTexture } from './marquee-texture';
 
 // ---------------------------------------------------------------------------
@@ -17,8 +18,9 @@ export interface CabinetViewBindings {
     readonly facing: number;
     /** The game's name, for the marquee. */
     readonly name: string;
-    /** The cabinet's colour, as a number and as CSS. */
-    readonly color: number;
+    /** The cabinet's paint, one of `parts.paints`. */
+    readonly paint: Material3D;
+    /** The paint's colour as CSS, for the marquee. */
     readonly cssColor: string;
     /** The game's picture, which the screen shows while the game isn't running. */
     readonly thumbnail: Texture;
@@ -27,6 +29,8 @@ export interface CabinetViewBindings {
     readonly screenHeight: number;
     /** The game running on this cabinet, or undefined while it isn't running. */
     readonly game: () => LiveEntry | undefined;
+    /** The materials and shapes every cabinet shares, which the hall's scene owns. */
+    readonly parts: CabinetParts;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,27 +45,21 @@ export interface CabinetViewBindings {
  * attract screen.
  */
 export function CabinetView(bindings: CabinetViewBindings): Container3D {
-    const { x, z, facing, name, color, cssColor, thumbnail, screenWidth, screenHeight, game } = bindings;
-    const paint = new Material3D({ baseColor: color, roughness: 0.45, metallic: 0.1 });
-    const black = new Material3D({ baseColor: 0x0b0b10, roughness: 0.6 });
-    // The game owns its thumbnail, so the cabinet doesn't free it. The cabinet makes the marquee's picture itself, so it frees that one
+    const { x, z, facing, name, paint, cssColor, thumbnail, screenWidth, screenHeight, game, parts } = bindings;
+    const { black, base, panel, upper, bezel, marqueeBox, marqueePlane } = parts;
+    // The game owns its thumbnail, so the cabinet doesn't free it. The cabinet makes the marquee's picture itself, so it frees that one.
+    // The rest of what it's built from, every cabinet shares
     const idleScreen = new FlatMaterial({ baseColorTexture: thumbnail, baseColor: IDLE_TINT });
     const marqueeTexture = createMarqueeTexture({ name, color: cssColor });
     const marquee = new FlatMaterial({ baseColorTexture: marqueeTexture });
-    const base = new CubeGeometry({ width: CABINET_WIDTH, height: BASE_HEIGHT, depth: CABINET_DEPTH });
-    const panel = new CubeGeometry({ width: CABINET_WIDTH, height: 0.08, depth: PANEL_DEPTH });
-    const upper = new CubeGeometry({ width: CABINET_WIDTH, height: UPPER_HEIGHT, depth: UPPER_DEPTH });
-    const bezel = new CubeGeometry({ width: CABINET_WIDTH - 0.06, height: BEZEL_HEIGHT, depth: BEZEL_DEPTH });
     const screen = new PlaneGeometry({ width: screenWidth, height: screenHeight, flipV: true });
-    const marqueeBox = new CubeGeometry({ width: CABINET_WIDTH, height: MARQUEE_HEIGHT, depth: MARQUEE_DEPTH });
-    const marqueePlane = new PlaneGeometry({ width: CABINET_WIDTH - 0.04, height: (CABINET_WIDTH - 0.04) / 4, flipV: true });
     const front = CABINET_DEPTH / 2;
     const screenZ = front - SCREEN_SETBACK;
 
     return (
         // The cabinet's front faces +z, turned to face the way it faces in the hall
         <group
-            owns={[paint, black, idleScreen, marqueeTexture, marquee, base, panel, upper, bezel, screen, marqueeBox, marqueePlane]}
+            owns={[idleScreen, marqueeTexture, marquee, screen]}
             x={x}
             z={z}
             rotationY={Math.PI / 2 - facing}
@@ -101,15 +99,6 @@ export function CabinetView(bindings: CabinetViewBindings): Container3D {
 // Internals
 // ---------------------------------------------------------------------------
 
-const BASE_HEIGHT = 1.0;
-const PANEL_DEPTH = 0.32;
-const MARQUEE_HEIGHT = 0.22;
-const MARQUEE_DEPTH = 0.4;
-const UPPER_HEIGHT = CABINET_HEIGHT - BASE_HEIGHT - MARQUEE_HEIGHT;
-const UPPER_DEPTH = 0.4;
-/** The bezel round the screen, its height and how thick it is. */
-const BEZEL_HEIGHT = 0.66;
-const BEZEL_DEPTH = 0.04;
 /**
  * How far the upper body's front stands behind the screen's middle. The
  * screen leans back, so its top edge, and the bezel's, go behind its

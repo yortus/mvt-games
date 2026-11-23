@@ -3,10 +3,10 @@
 // left and right step through that order, up and down a column at a time.
 
 /** A way the selection can move. */
-export type WallMoveKind = 'left' | 'right' | 'up' | 'down';
+export type CardWallMoveKind = 'left' | 'right' | 'up' | 'down';
 
 /** The move a key asks for: an arrow, or W, A, S or D. */
-export function wallMoveFor(key: string): WallMoveKind | undefined {
+export function cardWallMoveFor(key: string): CardWallMoveKind | undefined {
     switch (key) {
         case 'ArrowLeft': case 'a': case 'A': return 'left';
         case 'ArrowRight': case 'd': case 'D': return 'right';
@@ -24,7 +24,7 @@ export function wallMoveFor(key: string): WallMoveKind | undefined {
  */
 export function movedPosition(options: {
     position: number;
-    move: WallMoveKind;
+    move: CardWallMoveKind;
     shownCount: number;
     columnCount: number;
 }): number {

@@ -67,7 +67,7 @@ export interface EntryTransitionViewModel {
     readonly isBeamOn: boolean;
 
     /** What is drawn over the card wall's cards now. */
-    readonly wallEffect: WallEffectKind;
+    readonly cardWallEffect: CardWallEffectKind;
     /** How many cards the card wall effect covers. */
     readonly cardCount: number;
     /** Card `index`'s rectangle in the viewport, as it was when the transition started. */
@@ -124,7 +124,7 @@ export type EntryTransitionPhase =
     | 'returning';
 
 /** What is drawn over the card wall's cards: nothing, their burning, or their developing. */
-export type WallEffectKind = 'none' | 'burn' | 'develop';
+export type CardWallEffectKind = 'none' | 'burn' | 'develop';
 
 /** The picture as drawn: a window on the whole picture, in a polaroid's border or none. */
 export interface EntryTransitionPicture {
@@ -244,7 +244,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
     let returnFromScale = 1;
     let returnFromOpacity = 1;
 
-    let wallEffect: WallEffectKind = 'none';
+    let cardWallEffect: CardWallEffectKind = 'none';
     let cards: readonly Rect[] = [];
     /** When each card starts to burn or develop, after its phase starts: the nearest to the polaroid first. */
     let cardDelays: number[] = [];
@@ -270,16 +270,16 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
         },
         stage,
         glow,
-        get wallEffect() {
-            return wallEffect;
+        get cardWallEffect() {
+            return cardWallEffect;
         },
         get cardCount() {
             return cards.length;
         },
         cardRectAt: (index) => cards[index] ?? NO_RECT,
         cardProgressAt(index) {
-            if (wallEffect === 'burn') return progressAfter(cardDelays[index], BURN_MS);
-            if (wallEffect === 'develop') return progressAfter(cardDelays[index], DEVELOP_MS);
+            if (cardWallEffect === 'burn') return progressAfter(cardDelays[index], BURN_MS);
+            if (cardWallEffect === 'develop') return progressAfter(cardDelays[index], DEVELOP_MS);
             return 0;
         },
         get isWaiting() {
@@ -289,7 +289,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
             return phase === 'holding' ? elapsedMs : 0;
         },
 
-        enterFrom(start, wall) {
+        enterFrom(start, cardWall) {
             isQuiet = options.isMotionReduced();
             isGoingIn = true;
             isGrown = false;
@@ -300,10 +300,10 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
             resetPicture();
             picture.opacity = 1;
             backdropOpacity = 0;
-            cards = wall;
-            cardDelays = delaysFrom(wall, centreOf(start.window), BURN_STAGGER_MS);
+            cards = cardWall;
+            cardDelays = delaysFrom(cardWall, centreOf(start.window), BURN_STAGGER_MS);
             // Quietly, the page just fades out under the backdrop
-            wallEffect = isQuiet ? 'none' : 'burn';
+            cardWallEffect = isQuiet ? 'none' : 'burn';
             enter('entering', 0);
         },
         holdGrown() {
@@ -320,15 +320,15 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
             backdropOpacity = 1;
             cards = [];
             cardDelays = [];
-            wallEffect = 'none';
+            cardWallEffect = 'none';
             enter('holding', 0);
         },
-        leaveTo(end, wall) {
+        leaveTo(end, cardWall) {
             if (phase === 'powering-off' || phase === 'returning') return;
             isQuiet = options.isMotionReduced();
             isGoingIn = false;
-            cards = wall;
-            cardDelays = delaysFrom(wall, end === undefined ? undefined : centreOf(end.window), DEVELOP_STAGGER_MS);
+            cards = cardWall;
+            cardDelays = delaysFrom(cardWall, end === undefined ? undefined : centreOf(end.window), DEVELOP_STAGGER_MS);
             backdropOpacity = 1;
             glow.opacity = 0;
             // The entry was never seen: the polaroid, as it is, comes back onto its card
@@ -421,7 +421,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
     function beginWayInPart(): void {
         if (phase === 'entering') return;
         // The page is black now: nothing to draw over the cards until they develop on the way back
-        wallEffect = 'none';
+        cardWallEffect = 'none';
         if (phase === 'holding' || phase === 'receding') {
             // Quietly, the polaroid stays on its card
             if (!isQuiet) floated = 1;
@@ -591,7 +591,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
         picture.opacity = from === undefined || to === undefined ? 0 : opacity;
         returnFromScale = scale;
         returnFromOpacity = picture.opacity;
-        wallEffect = isQuiet ? 'none' : 'develop';
+        cardWallEffect = isQuiet ? 'none' : 'develop';
         enter('returning', 0);
     }
 
@@ -613,7 +613,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
             place(returnFrom, returnTo, ease(clamp01((elapsedMs - FLOAT_BACK_DELAY_MS) / FLOAT_BACK_MS)));
         }
         if (elapsedMs < RETURN_TOTAL_MS) return;
-        wallEffect = 'none';
+        cardWallEffect = 'none';
         finish();
         picture.opacity = 0;
         backdropOpacity = 0;

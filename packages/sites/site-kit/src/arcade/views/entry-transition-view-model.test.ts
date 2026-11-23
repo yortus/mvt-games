@@ -20,7 +20,7 @@ const CARD: PhotoPose = {
 const PLAY: Rect = { x: 0, y: 40, width: 500, height: 250 };
 const PLAY_CENTRE = { x: 250, y: 165 };
 /** The chosen card, one beside it, and one far off. */
-const WALL: readonly Rect[] = [
+const CARD_WALL: readonly Rect[] = [
     { x: 90, y: 150, width: 70, height: 110 },
     { x: 170, y: 150, width: 70, height: 110 },
     { x: 900, y: 700, width: 70, height: 110 },
@@ -33,7 +33,7 @@ describe('EntryTransitionViewModel', () => {
     describe('going in', () => {
         it('floats the polaroid to the centre of the play area as the other cards burn, straightening it', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.enterFrom(CARD, CARD_WALL);
             at(harness, 'launching', FLOAT_DELAY_MS);
             expect(pictureOf(harness.transition)).toEqual(CARD);
             at(harness, 'launching', FLOAT_DELAY_MS + FLOAT_MS / 2);
@@ -50,8 +50,8 @@ describe('EntryTransitionViewModel', () => {
 
         it('burns the cards nearest the polaroid first, and all of them by the end of the launch', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
-            expect(harness.transition.wallEffect).toBe('burn');
+            harness.transition.enterFrom(CARD, CARD_WALL);
+            expect(harness.transition.cardWallEffect).toBe('burn');
             at(harness, 'launching', BURN_MS / 2);
             const [chosen, beside, far] = [0, 1, 2].map((i) => harness.transition.cardProgressAt(i));
             expect(chosen).toBeGreaterThan(beside);
@@ -62,18 +62,18 @@ describe('EntryTransitionViewModel', () => {
 
         it('blacks the page out once the cards have burnt, and draws nothing more over the card wall', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.enterFrom(CARD, CARD_WALL);
             at(harness, 'launching', BACKDROP_DELAY_MS);
             expect(harness.transition.backdropOpacity).toBe(0);
             at(harness, 'launching', LAUNCH_MS);
             expect(harness.transition.backdropOpacity).toBe(1);
             expect(harness.transition.phase).toBe('holding');
-            expect(harness.transition.wallEffect).toBe('none');
+            expect(harness.transition.cardWallEffect).toBe('none');
         });
 
         it('holds the polaroid while the entry loads after the launch has had its time, and says it is waiting', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.enterFrom(CARD, CARD_WALL);
             at(harness, 'launching', LAUNCH_MS - 1);
             expect(harness.transition.isWaiting).toBe(false);
             at(harness, 'launching', LAUNCH_MS + 500);
@@ -88,7 +88,7 @@ describe('EntryTransitionViewModel', () => {
 
         it('recedes the polaroid over the entry started, then powers the entry on from a white-hot line, then shows it still', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.enterFrom(CARD, CARD_WALL);
             at(harness, 'launching', LAUNCH_MS - 1);
             at(harness, 'revealing', RECEDE_MS / 2);
             expect(harness.transition.phase).toBe('receding');
@@ -130,7 +130,7 @@ describe('EntryTransitionViewModel', () => {
 
         it('says the beam is on while the screen powers on as a line, and off as the line opens out', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.enterFrom(CARD, CARD_WALL);
             at(harness, 'revealing', POWER_ON_AT_MS - 1);
             expect(harness.transition.isBeamOn).toBe(false);
             at(harness, 'revealing', POWER_ON_AT_MS);
@@ -143,11 +143,11 @@ describe('EntryTransitionViewModel', () => {
 
         it('sets each part up as it begins, though a long frame skips the one before', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.enterFrom(CARD, CARD_WALL);
             at(harness, 'launching', 16);
             at(harness, 'revealing', SHOWING_AT_MS + 1);
             expect(harness.transition.phase).toBe('showing');
-            expect(harness.transition.wallEffect).toBe('none');
+            expect(harness.transition.cardWallEffect).toBe('none');
             expect(harness.transition.picture.opacity).toBe(0);
             expect(harness.transition.backdropOpacity).toBe(0);
             expect(harness.transition.playRect).toEqual(PLAY);
@@ -197,7 +197,7 @@ describe('EntryTransitionViewModel', () => {
     describe('going out', () => {
         it('powers the last frame off to a dot, brings the polaroid out of it, and floats it back onto its card as the cards develop', () => {
             const harness = playing();
-            harness.transition.leaveTo(CARD, WALL);
+            harness.transition.leaveTo(CARD, CARD_WALL);
             expect(harness.transition.phase).toBe('powering-off');
             expect(harness.transition.picture.showsEntryFrame).toBe(true);
             expect(windowOf(harness.transition)).toEqual(PLAY);
@@ -219,7 +219,7 @@ describe('EntryTransitionViewModel', () => {
             expect(harness.transition.picture.width).toBe(CARD.window.width);
             expect(harness.transition.picture.tilt).toBe(0);
             expect(harness.transition.picture.opacity).toBe(0);
-            expect(harness.transition.wallEffect).toBe('develop');
+            expect(harness.transition.cardWallEffect).toBe('develop');
             harness.transition.update(EMERGE_MS);
             expect(harness.transition.picture.scaleX).toBe(1);
             expect(harness.transition.picture.opacity).toBe(1);
@@ -230,14 +230,14 @@ describe('EntryTransitionViewModel', () => {
             expect(harness.transition.backdropOpacity).toBe(0);
             harness.transition.update(RETURN_TOTAL_MS);
             expect(harness.transition.phase).toBe('idle');
-            expect(harness.transition.wallEffect).toBe('none');
+            expect(harness.transition.cardWallEffect).toBe('none');
         });
 
         it('keeps its own clock on the way out, whatever the model\'s phase', () => {
             const harness = playing();
             harness.arcadePhase = 'browsing';
             harness.arcadeElapsedMs = 0;
-            harness.transition.leaveTo(CARD, WALL);
+            harness.transition.leaveTo(CARD, CARD_WALL);
             harness.transition.update(POWER_OFF_MS / 2);
             expect(harness.transition.phase).toBe('powering-off');
             harness.transition.update(POWER_OFF_MS / 2);
@@ -247,15 +247,15 @@ describe('EntryTransitionViewModel', () => {
         it('powers off where the entry played, though the play area worked out on the way out differs', () => {
             const harness = playing();
             harness.target = { x: 10, y: 10, width: 900, height: 700 };
-            harness.transition.leaveTo(CARD, WALL);
+            harness.transition.leaveTo(CARD, CARD_WALL);
             expect(windowOf(harness.transition)).toEqual(PLAY);
         });
 
         it('brings the polaroid straight back if the entry was never seen, though it may have started behind it', () => {
             const harness = transitionHarness();
-            harness.transition.enterFrom(CARD, WALL);
+            harness.transition.enterFrom(CARD, CARD_WALL);
             at(harness, 'revealing', RECEDE_MS / 2);
-            harness.transition.leaveTo(CARD, WALL);
+            harness.transition.leaveTo(CARD, CARD_WALL);
             expect(harness.transition.phase).toBe('returning');
             expect(harness.transition.picture.opacity).toBeGreaterThan(0);
             harness.transition.update(FLOAT_BACK_DELAY_MS + FLOAT_BACK_MS);
@@ -266,7 +266,7 @@ describe('EntryTransitionViewModel', () => {
 
         it('shows no polaroid when there is no card to go back to', () => {
             const harness = playing();
-            harness.transition.leaveTo(undefined, WALL);
+            harness.transition.leaveTo(undefined, CARD_WALL);
             harness.transition.update(POWER_OFF_MS);
             harness.transition.update(EMERGE_MS);
             expect(harness.transition.picture.opacity).toBe(0);
@@ -276,8 +276,8 @@ describe('EntryTransitionViewModel', () => {
     describe('for a visitor who has asked for less motion', () => {
         it('goes in by fading over the same parts of the model\'s time: the page round the polaroid, then the polaroid, then up into the entry', () => {
             const harness = transitionHarness({ isMotionReduced: true });
-            harness.transition.enterFrom(CARD, WALL);
-            expect(harness.transition.wallEffect).toBe('none');
+            harness.transition.enterFrom(CARD, CARD_WALL);
+            expect(harness.transition.cardWallEffect).toBe('none');
             at(harness, 'launching', LAUNCH_MS / 2);
             expect(harness.transition.backdropOpacity).toBeGreaterThan(0);
             expect(harness.transition.backdropOpacity).toBeLessThan(1);
@@ -308,7 +308,7 @@ describe('EntryTransitionViewModel', () => {
 
         it('goes out by fading: the last frame, then the page back, the polaroid on its card', () => {
             const harness = playing({ isMotionReduced: true });
-            harness.transition.leaveTo(CARD, WALL);
+            harness.transition.leaveTo(CARD, CARD_WALL);
             expect(harness.transition.phase).toBe('powering-off');
             harness.transition.update(QUIET_FADE_MS / 2);
             expect(harness.transition.picture.scaleY).toBe(1);
@@ -316,7 +316,7 @@ describe('EntryTransitionViewModel', () => {
             expect(harness.transition.picture.opacity).toBeLessThan(1);
             harness.transition.update(QUIET_FADE_MS / 2);
             expect(harness.transition.phase).toBe('returning');
-            expect(harness.transition.wallEffect).toBe('none');
+            expect(harness.transition.cardWallEffect).toBe('none');
             expect(pictureOf(harness.transition)).toEqual(CARD);
             expect(harness.transition.picture.opacity).toBe(1);
             harness.transition.update(QUIET_FADE_MS);
@@ -329,7 +329,7 @@ describe('EntryTransitionViewModel', () => {
         const harness = transitionHarness();
         harness.transition.update(16);
         expect(harness.transition.phase).toBe('idle');
-        expect(harness.transition.wallEffect).toBe('none');
+        expect(harness.transition.cardWallEffect).toBe('none');
         expect(harness.transition.cardProgressAt(0)).toBe(0);
     });
 });
@@ -375,7 +375,7 @@ function at(harness: Harness, phase: ArcadePhase, elapsedMs: number): void {
 /** A harness with the entry gone in and running. */
 function playing(options: { isMotionReduced?: boolean } = {}): Harness {
     const harness = transitionHarness(options);
-    harness.transition.enterFrom(CARD, WALL);
+    harness.transition.enterFrom(CARD, CARD_WALL);
     at(harness, 'launching', LAUNCH_MS - 1);
     at(harness, 'revealing', POWER_ON_AT_MS);
     at(harness, 'revealing', SHOWING_AT_MS);

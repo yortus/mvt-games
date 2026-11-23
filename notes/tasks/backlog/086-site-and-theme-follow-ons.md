@@ -18,7 +18,7 @@ item can be done on its own, or dropped.
 
 - **A way into an entry of Dark's and Light's own.** Both are quiet themes
   (`isQuiet` in `site-kit/src/arcade/views/themes.ts`), so they borrow the
-  way in a visitor who asks for less motion gets: the wall fades rather than
+  way in a visitor who asks for less motion gets: the card wall fades rather than
   burns. A way of their own, such as the card's photo growing to fill the
   screen, would suit them better than a fade.
 - **The page's sounds in every theme.** The page plays the Arcade's sounds
@@ -31,7 +31,7 @@ item can be done on its own, or dropped.
   draw in ink on paper in Light, say. It would need the theme passed to
   the entry's starter, and a decision on whether entries should change with
   it at all.
-- **What is still the Arcade's in every theme.** The wall's burn (only the
+- **What is still the Arcade's in every theme.** The card wall's burn (only the
   Arcade burns, so it shows only there), and the search box's magnifier,
   which is a data URI that the theme's custom properties can't reach. The
   page's title, the pixel marquee, is the Arcade's in every theme on
@@ -87,7 +87,7 @@ item can be done on its own, or dropped.
 - [ ] Each change to a theme passes `themes.test.ts`, and any new text on a
       new background has its contrast pair there.
 - [ ] The demos' and puzzles' link previews are retaken after any change to
-      how their walls look (`npm run generate-thumbnails -w @mvtjs/demos --
+      how their card walls look (`npm run generate-thumbnails -w @mvtjs/demos --
       demos`).
 
 ## Progress Log

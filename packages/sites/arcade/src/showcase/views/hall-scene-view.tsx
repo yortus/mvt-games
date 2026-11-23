@@ -8,6 +8,7 @@ import { type LiveEntry, type ScreenPlacement, WalkerCameraView } from '@mvtjs/s
 import type { GameModel } from '../models';
 import { EYE_HEIGHT, FIELD_OF_VIEW, FINAL_DEPTH } from '../data';
 import { ButtonBoxView } from './button-box-view';
+import { CABINET_COLORS, createCabinetParts } from './cabinet-parts';
 import { CabinetView } from './cabinet-view';
 import { HallGlowView } from './hall-glow-view';
 import { RoomView } from './room-view';
@@ -47,8 +48,9 @@ export interface HallSceneViewBindings {
  */
 export function HallSceneView(bindings: HallSceneViewBindings): Container3D {
     const { model, entries, thumbnails, screens, gameAt, playRectAt, depth, viewWidth, viewHeight, onButtonPressed } = bindings;
+    const cabinetParts = createCabinetParts();
     return (
-        <group>
+        <group owns={cabinetParts.resources}>
             <WalkerCameraView
                 x={() => model.playerX}
                 z={() => model.playerZ}
@@ -73,19 +75,20 @@ export function HallSceneView(bindings: HallSceneViewBindings): Container3D {
                     leanIn={() => (model.cabinetInPlay === model.hallCabinet ? model.lean : 0)}
                 />
                 {model.cabinets.map((cabinet) => {
-                    const color = CABINET_COLORS[cabinet.index % CABINET_COLORS.length];
+                    const paintIndex = cabinet.index % CABINET_COLORS.length;
                     return (
                         <CabinetView
                             x={cabinet.x}
                             z={cabinet.z}
                             facing={cabinet.facing}
                             name={entries[cabinet.index].name}
-                            color={color}
-                            cssColor={`#${color.toString(16).padStart(6, '0')}`}
+                            paint={cabinetParts.paints[paintIndex]}
+                            cssColor={`#${CABINET_COLORS[paintIndex].toString(16).padStart(6, '0')}`}
                             thumbnail={thumbnails[cabinet.index]}
                             screenWidth={screens[cabinet.index].width}
                             screenHeight={screens[cabinet.index].height}
                             game={() => gameAt(cabinet.index)}
+                            parts={cabinetParts}
                         />
                     );
                 })}
@@ -109,5 +112,3 @@ export function HallSceneView(bindings: HallSceneViewBindings): Container3D {
 
 /** How far the player sees, in metres: the length of a hall, and plenty more. */
 const CAMERA_FAR = 60;
-/** The cabinets' paint, in turn along each wall. */
-const CABINET_COLORS: readonly number[] = [0xd8343f, 0x2f6fd6, 0xf0b429, 0x2fa86b, 0x8e44c9, 0xe8732c];

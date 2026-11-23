@@ -6,7 +6,7 @@ import {
     POWER_ON, RESUME, TAG_ADD, TAG_REMOVE,
 } from '../sounds';
 import type { ArcadePhase } from '../models';
-import type { EntryTransitionPhase, WallEffectKind } from './entry-transition-view-model';
+import type { EntryTransitionPhase, CardWallEffectKind } from './entry-transition-view-model';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -41,7 +41,7 @@ export interface ArcadeAudioViewBindings {
      */
     readonly isBeamOn: () => boolean;
     /** What the way into or out of an entry draws over the cards. */
-    readonly wallEffect: () => WallEffectKind;
+    readonly cardWallEffect: () => CardWallEffectKind;
     /** How many times the keyboard has moved the selection to another card. Each rise is one move. */
     readonly cardKeyMoves: () => number;
 }
@@ -76,7 +76,7 @@ export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement 
         shown: bindings.shownCount,
         loadFailure: bindings.loadFailure,
         isBeamOn: bindings.isBeamOn,
-        wallEffect: bindings.wallEffect,
+        cardWallEffect: bindings.cardWallEffect,
         cardMoves: bindings.cardKeyMoves,
     });
 
@@ -96,9 +96,9 @@ export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement 
         if (w.shown.changed && w.shown.current === 0) sfx.play(NO_RESULTS);
 
         if (w.loadFailure.changed && w.loadFailure.current !== undefined) sfx.play(LOAD_FAILED);
-        if (w.wallEffect.changed) {
-            if (w.wallEffect.current === 'burn') sfx.play(BURN);
-            else if (w.wallEffect.current === 'develop') sfx.play(DEVELOP);
+        if (w.cardWallEffect.changed) {
+            if (w.cardWallEffect.current === 'burn') sfx.play(BURN);
+            else if (w.cardWallEffect.current === 'develop') sfx.play(DEVELOP);
         }
         // The static starts as the beam comes on. Each burst lasts as long as the beam does.
         if (w.isBeamOn.changed && w.isBeamOn.current) sfx.play(bindings.transitionPhase() === 'powering-on' ? POWER_ON : POWER_OFF);

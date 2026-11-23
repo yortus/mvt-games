@@ -24,7 +24,7 @@ const shareImage = {
     url: `${siteOrigin}${siteBase}arcade/share.jpg`,
     width: 1200,
     height: 630,
-    alt: 'The MVT Arcade\'s wall of cards, one for each game and demo',
+    alt: 'The MVT Arcade\'s card wall, one card for each game',
 };
 
 export default withMermaid(defineConfig({

@@ -1484,7 +1484,7 @@ html.is-runner-turned .perfmon-float {
 /* --- The way in and out -------------------------------------------------- */
 
 /* Over the cards, burning or developing them: under the nav, which hides what scrolls under it */
-.wall-effect {
+.card-wall-effect {
     position: fixed;
     inset: 0;
     width: 100%;

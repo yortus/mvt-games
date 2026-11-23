@@ -1,15 +1,15 @@
 import { onDestroyed, setRefresh } from '@mvtjs/html';
 import type { Rect } from './rect';
-import type { WallEffectKind } from './entry-transition-view-model';
-import { createWallPainter, type WallPainter } from './wall-painter';
+import type { CardWallEffectKind } from './entry-transition-view-model';
+import { createCardWallPainter, type CardWallPainter } from './card-wall-painter';
 
 // ---------------------------------------------------------------------------
 // Bindings
 // ---------------------------------------------------------------------------
 
-export interface WallEffectViewBindings {
+export interface CardWallEffectViewBindings {
     /** What to draw over the cards: nothing hides the canvas. */
-    readonly effect: () => WallEffectKind;
+    readonly effect: () => CardWallEffectKind;
     /** How many cards there are to draw over. */
     readonly cardCount: () => number;
     /** Card `index`'s rectangle in the viewport, in CSS pixels; zero-sized where there is no card. */
@@ -32,14 +32,14 @@ export interface WallEffectViewBindings {
  * simply fade. The canvas takes no pointer events, and draws nothing, and is
  * hidden, when there is no effect.
  */
-export function WallEffectView(bindings: WallEffectViewBindings): HTMLCanvasElement {
+export function CardWallEffectView(bindings: CardWallEffectViewBindings): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
-    canvas.className = 'wall-effect';
+    canvas.className = 'card-wall-effect';
     canvas.setAttribute('aria-hidden', 'true');
     // Hidden by style, not `hidden`, which would stop its refresh
     canvas.style.visibility = 'hidden';
-    let painter: WallPainter | undefined;
-    let drawnEffect: WallEffectKind = 'none';
+    let painter: CardWallPainter | undefined;
+    let drawnEffect: CardWallEffectKind = 'none';
     let isSizeStale = true;
     const onResize = (): void => {
         isSizeStale = true;
@@ -57,7 +57,7 @@ export function WallEffectView(bindings: WallEffectViewBindings): HTMLCanvasElem
             drawnEffect = effect;
         }
         if (effect === 'none') return;
-        painter ??= createWallPainter(canvas);
+        painter ??= createCardWallPainter(canvas);
         if (isSizeStale) {
             isSizeStale = false;
             const bounds = canvas.getBoundingClientRect();

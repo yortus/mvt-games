@@ -5,7 +5,7 @@ import { createAttractViewModel } from './attract-view-model';
 import type { ThemeKind } from '../models';
 import type { PhotoPose } from './card-photo';
 import { cardIn, CardView, isCardLink, isOnCardButton, isOnPolaroid, linkOf, photoPoseOf } from './card-view';
-import { movedPosition, wallMoveFor } from './card-wall-keys';
+import { movedPosition, cardWallMoveFor } from './card-wall-keys';
 import type { CardWallLayout } from './card-wall-layout';
 import type { LivePreview } from './live-preview';
 
@@ -160,31 +160,31 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     }
 
     /** Sizes the card wall, plays the card's entry live, settles the Tab stop, and hands the focus over as the card wall is left and returned to. */
-    function refresh(wall: Element): void {
+    function refresh(cardWall: Element): void {
         playLivePreviewWhenAttractChanges();
-        drawHeight(wall as HTMLElement);
+        drawHeight(cardWall as HTMLElement);
         tabStop = selectedShown();
         const isActive = bindings.isActive();
-        followActivity(wall, isActive);
+        followActivity(cardWall, isActive);
         giveFocus(isActive);
     }
 
-    function drawHeight(wall: HTMLElement): void {
+    function drawHeight(cardWall: HTMLElement): void {
         if (layout.height === drawnHeight) return;
         drawnHeight = layout.height;
-        wall.style.height = `${drawnHeight}px`;
+        cardWall.style.height = `${drawnHeight}px`;
     }
 
     /**
      * As the card wall is left, lets go of the focus, which would take keys meant
      * for the entry or the panel; as it is returned to, asks for it back.
      */
-    function followActivity(wall: Element, isActive: boolean): void {
+    function followActivity(cardWall: Element, isActive: boolean): void {
         if (isActive === wasActive) return;
         wasActive = isActive;
         if (!isActive) {
             const focused = document.activeElement;
-            hadFocus = focused instanceof HTMLElement && wall.contains(focused);
+            hadFocus = focused instanceof HTMLElement && cardWall.contains(focused);
             if (focused instanceof HTMLElement && hadFocus) focused.blur();
         }
         else if (hadFocus) {
@@ -214,7 +214,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
 
     function onKeyDown(e: KeyboardEvent): void {
         if (!bindings.isActive() || e.ctrlKey || e.metaKey || e.altKey || tabStop < 0) return;
-        const move = wallMoveFor(e.key);
+        const move = cardWallMoveFor(e.key);
         if (move !== undefined) {
             const position = positionOf(tabStop);
             const next = movedPosition({ position, move, shownCount: bindings.shownCount(), columnCount: layout.columnCount });
@@ -293,21 +293,21 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     }
 
     /** Measures the card wall and its cards, and listens for what the JSX runtime has no attribute for. */
-    function attach(wall: HTMLElement): void {
-        observer.observe(wall);
+    function attach(cardWall: HTMLElement): void {
+        observer.observe(cardWall);
         for (let i = 0; i < cards.length; i++) observer.observe(cards[i], { box: 'border-box' });
-        wall.addEventListener('focusin', onFocusIn);
-        wall.addEventListener('pointerover', onPointerOver);
+        cardWall.addEventListener('focusin', onFocusIn);
+        cardWall.addEventListener('pointerover', onPointerOver);
     }
 }
 
 /**
- * Where the photo on the card for `entryId`, on `wall` (a card wall this view
+ * Where the photo on the card for `entryId`, on `cardWall` (a card wall this view
  * made), is drawn now, if the card is there. Read from the page, when a
  * transition starts.
  */
-export function photoPoseIn(wall: Element, entryId: string): PhotoPose | undefined {
-    const card = cardIn(wall, entryId);
+export function photoPoseIn(cardWall: Element, entryId: string): PhotoPose | undefined {
+    const card = cardIn(cardWall, entryId);
     return card === undefined ? undefined : photoPoseOf(card);
 }
 

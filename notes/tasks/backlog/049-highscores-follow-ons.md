@@ -52,7 +52,7 @@ from a check on 2026-10-08.
 
 These are from 046's section 11, step 9. Each needs its own decision.
 
-- **The leader on each card.** The Arcade's wall could show each game's top
+- **The leader on each card.** The Arcade's card wall could show each game's top
   score on its card.
 - **Tables in attract mode.** A card playing live could show its table
   between runs, as a cabinet did.

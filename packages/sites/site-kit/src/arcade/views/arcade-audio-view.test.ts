@@ -7,7 +7,7 @@ import {
     POWER_ON, RESUME, TAG_ADD, TAG_REMOVE,
 } from '../sounds';
 import type { ArcadePhase } from '../models';
-import { POWER_OFF_BEAM_MS, POWER_ON_BEAM_MS, type EntryTransitionPhase, type WallEffectKind } from './entry-transition-view-model';
+import { POWER_OFF_BEAM_MS, POWER_ON_BEAM_MS, type EntryTransitionPhase, type CardWallEffectKind } from './entry-transition-view-model';
 import { ArcadeAudioView } from './arcade-audio-view';
 
 // The view is tested by what it asks of its chip: which sounds it plays, and when.
@@ -59,9 +59,9 @@ describe('ArcadeAudioView', () => {
         const { chip, state, tick } = setUp();
         state.phase = 'launching';
         state.transitionPhase = 'entering';
-        state.wallEffect = 'burn';
+        state.cardWallEffect = 'burn';
         tick();
-        state.wallEffect = 'none';
+        state.cardWallEffect = 'none';
         state.transitionPhase = 'powering-on';
         state.isBeamOn = true;
         tick();
@@ -73,7 +73,7 @@ describe('ArcadeAudioView', () => {
         tick();
         state.isBeamOn = false;
         state.transitionPhase = 'returning';
-        state.wallEffect = 'develop';
+        state.cardWallEffect = 'develop';
         tick();
         expect(listPlayed(chip)).toEqual([LAUNCH, BURN, POWER_ON, POWER_OFF, DEVELOP]);
     });
@@ -128,7 +128,7 @@ interface State {
     shownCount: number;
     loadFailure: string | undefined;
     transitionPhase: EntryTransitionPhase;
-    wallEffect: WallEffectKind;
+    cardWallEffect: CardWallEffectKind;
     isBeamOn: boolean;
     cardKeyMoves: number;
 }
@@ -136,7 +136,7 @@ interface State {
 function setUp(initial: Partial<State> = {}) {
     const state: State = {
         phase: 'browsing', isFromShowcase: false, isPaused: false, isPanelOpen: false, searchText: '', chosenTagCount: 0, shownCount: 12,
-        loadFailure: undefined, transitionPhase: 'idle', wallEffect: 'none', isBeamOn: false, cardKeyMoves: 0, ...initial,
+        loadFailure: undefined, transitionPhase: 'idle', cardWallEffect: 'none', isBeamOn: false, cardKeyMoves: 0, ...initial,
     };
     const chip = createSpiedChip();
     const view = ArcadeAudioView({
@@ -151,7 +151,7 @@ function setUp(initial: Partial<State> = {}) {
         loadFailure: () => state.loadFailure,
         transitionPhase: () => state.transitionPhase,
         isBeamOn: () => state.isBeamOn,
-        wallEffect: () => state.wallEffect,
+        cardWallEffect: () => state.cardWallEffect,
         cardKeyMoves: () => state.cardKeyMoves,
     });
     const tick = (): void => refreshView(view);

@@ -28,7 +28,7 @@ import { ResumeOfferView } from './resume-offer-view';
 import { RunnerView } from './runner-view';
 import { EntryTransitionView } from './entry-transition-view';
 import { createEntryTransitionViewModel } from './entry-transition-view-model';
-import { WallEffectView } from './wall-effect-view';
+import { CardWallEffectView } from './card-wall-effect-view';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -200,16 +200,16 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     // Presentation state: whether the entry was paused by its info panel opening over it, to resume as the panel closes
     let isPausedForInfo = false;
 
-    const wall = CardWallView({
+    const cardWall = CardWallView({
         entries,
         layout,
         hrefAt: (index) => bindings.entryHref(entries[index]),
         shownCount: () => model.shownCount,
         shownIndexAt: model.shownIndexAt,
         liftedIndex: () => (transition.phase === 'idle' && model.phase === 'browsing' ? -1 : activeIndex()),
-        isActive: isWallActive,
+        isActive: isCardWallActive,
         isMotionReduced: bindings.isMotionReduced,
-        canPlayLive: () => bindings.livePreview !== undefined && !bindings.isMotionReduced() && isWallActive(),
+        canPlayLive: () => bindings.livePreview !== undefined && !bindings.isMotionReduced() && isCardWallActive(),
         livePreview: bindings.livePreview,
         theme: () => model.theme,
         onLaunchPressed: (index, from) => launch(index, from),
@@ -290,15 +290,15 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         >
             {head}
             <div class="card-wall-frame">
-                {wall}
+                {cardWall}
                 <p class="card-wall-empty" visible={() => model.shownCount === 0} text="Nothing matches this search." />
             </div>
             {/* The showcase, over the card wall, once it has started */}
             <div class={() => (isShowcaseShown() ? 'showcase-frame is-shown' : 'showcase-frame')}>
                 {bindings.showcaseStage}
             </div>
-            <WallEffectView
-                effect={() => transition.wallEffect}
+            <CardWallEffectView
+                effect={() => transition.cardWallEffect}
                 cardCount={() => transition.cardCount}
                 cardRectAt={transition.cardRectAt}
                 cardProgressAt={transition.cardProgressAt}
@@ -443,7 +443,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                     loadFailure={() => model.loadFailure}
                     transitionPhase={() => transition.phase}
                     isBeamOn={() => transition.isBeamOn}
-                    wallEffect={() => transition.wallEffect}
+                    cardWallEffect={() => transition.cardWallEffect}
                     cardKeyMoves={() => cardKeyMoves}
                 />
                 <views.VolumePreviewAudioView
@@ -494,7 +494,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     }
 
     /** Whether the card wall is what the visitor is looking at: browsing it, without a panel or transition over it. */
-    function isWallActive(): boolean {
+    function isCardWallActive(): boolean {
         return model.phase === 'browsing' && model.infoEntry === undefined && transition.phase === 'idle' && !model.isShowcaseMode;
     }
 
@@ -632,7 +632,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
 
     /** `/` goes to the search, as the nav's magnifier does, from anywhere on the card wall but a field. */
     function jumpToSearch(e: KeyboardEvent): void {
-        if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target ?? undefined) || !isWallActive()) return;
+        if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target ?? undefined) || !isCardWallActive()) return;
         e.preventDefault();
         goToSearch();
     }
@@ -781,7 +781,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
      * the card wall: what the transition burns and develops. Read when it starts.
      */
     function cardRects(): Rect[] {
-        const bounds = wall.getBoundingClientRect();
+        const bounds = cardWall.getBoundingClientRect();
         const height = cardHeightFor(layout.columnWidth);
         return entries.map((_entry, index) => (layout.isVisibleAt(index) && layout.opacityAt(index) > 0
             ? { x: bounds.left + layout.xAt(index), y: bounds.top + layout.yAt(index), width: layout.columnWidth, height }
@@ -795,7 +795,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
      * the photo as the card shows it.
      */
     function cardPoseAt(index: number): PhotoPose | undefined {
-        return index < 0 || !layout.isVisibleAt(index) ? undefined : photoPoseIn(wall, entries[index].id);
+        return index < 0 || !layout.isVisibleAt(index) ? undefined : photoPoseIn(cardWall, entries[index].id);
     }
 }
 

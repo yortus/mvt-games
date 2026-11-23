@@ -242,7 +242,7 @@ in code it's `vsnap`, as in `vsnap()`, `defineVsnapConfig` and
 | Vitest, with `@vitest/browser-playwright` | 5 |
 | Playwright, installed with v-snap | 1.65, any patch release |
 | Node | 22.17 or later |
-| Pixi, for Pixi views | 8.16 or later |
+| Pixi, for Pixi views | 8.23 or later |
 | three.js, for three.js views | 0.160 or later |
 
 A canvas test can draw with the browser's own canvas, so it needs no

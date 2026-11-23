@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { movedPosition, type WallMoveKind, wallMoveFor } from './card-wall-keys';
+import { movedPosition, type CardWallMoveKind, cardWallMoveFor } from './card-wall-keys';
 
 describe('moving across the card wall', () => {
     it('takes the arrows, and W, A, S and D', () => {
-        expect(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].map(wallMoveFor)).toEqual(['left', 'right', 'up', 'down']);
-        expect(['a', 'd', 'w', 's', 'W'].map(wallMoveFor)).toEqual(['left', 'right', 'up', 'down', 'up']);
-        expect(wallMoveFor('i')).toBeUndefined();
+        expect(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].map(cardWallMoveFor)).toEqual(['left', 'right', 'up', 'down']);
+        expect(['a', 'd', 'w', 's', 'W'].map(cardWallMoveFor)).toEqual(['left', 'right', 'up', 'down', 'up']);
+        expect(cardWallMoveFor('i')).toBeUndefined();
     });
 
     // Seven cards, three to a row:
     //   0 1 2
     //   3 4 5
     //   6
-    const move = (position: number, kind: WallMoveKind): number => movedPosition({ position, move: kind, shownCount: 7, columnCount: 3 });
+    const move = (position: number, kind: CardWallMoveKind): number => movedPosition({ position, move: kind, shownCount: 7, columnCount: 3 });
 
     it('steps left and right through the order shown, across rows, stopping at the ends', () => {
         expect(move(2, 'right')).toBe(3);

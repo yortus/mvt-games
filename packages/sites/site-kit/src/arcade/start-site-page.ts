@@ -698,16 +698,16 @@ export function startSitePage(site: SiteConfig): void {
      * after the steps, or once the step back lands (see writeTitle).
      */
     function writeUrl(step: 'enter' | 'leave' | 'replace'): void {
-        const wall = wallUrl();
+        const cardWall = cardWallUrl();
         const entry = playingEntry();
-        const url = entry === undefined ? wall : entryUrl(entry);
+        const url = entry === undefined ? cardWall : entryUrl(entry);
         const state: unknown = history.state;
         if (step === 'enter' && entry !== undefined && state !== ENTRY_STEP) {
             if (isPanelState(state)) {
                 history.replaceState(ENTRY_STEP, '', url);
             }
             else {
-                history.replaceState(undefined, '', wall);
+                history.replaceState(undefined, '', cardWall);
                 history.pushState(ENTRY_STEP, '', url);
             }
         }
@@ -753,13 +753,13 @@ export function startSitePage(site: SiteConfig): void {
     function writePanelStep(): void {
         const panel = panelStep();
         const isPanelStep = isPanelState(history.state);
-        if (panel !== undefined && !isPanelStep) history.pushState(panel, '', wallUrl());
-        else if (panel !== undefined) history.replaceState(panel, '', wallUrl());
+        if (panel !== undefined && !isPanelStep) history.pushState(panel, '', cardWallUrl());
+        else if (panel !== undefined) history.replaceState(panel, '', cardWallUrl());
         else if (isPanelStep) stepBack();
     }
 
     /** The card wall's URL: the Arcade's path, with the search in its query. */
-    function wallUrl(): string {
+    function cardWallUrl(): string {
         return ARCADE_PATH + formatArcadeQuery(location.search, model.query, model.chips);
     }
 

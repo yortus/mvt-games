@@ -90,9 +90,9 @@ the answer 051 recommended.
   row is heard. Offset it if the owner hears the gap (051 step 11).
 - **A search link that only a description matches.** The cards' long text
   loads just after the first paint (051 step 17). A link such as
-  `?q=reynolds` shows an empty wall until it arrives, under a second and
+  `?q=reynolds` shows an empty card wall until it arrives, under a second and
   a half in a headless test. The page could load the text at once when
-  the URL has a search, or the wall could say it is still looking.
+  the URL has a search, or the card wall could say it is still looking.
 - **`games-and-demos`, before and after.** 051 steps 4 and 9 changed the
   host's work per frame, and removed about 16 bytes a frame of the games'
   allocation in the headless chips. The suite was not run. Run it on a

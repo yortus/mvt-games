@@ -48,7 +48,7 @@ version.
   `fs.globSync`, which became stable in Node 22.17.
 - **No renderer library.** A canvas test can draw with the browser's own
   canvas, so it needs no library. v-snap's support for Pixi and three.js
-  views draws with your own copy of `pixi.js` (8.16 or later) or `three`
+  views draws with your own copy of `pixi.js` (8.23 or later) or `three`
   (0.160 or later). So you install only the library that your views use.
 
 ## Playwright Versions

@@ -1,5 +1,5 @@
 import type { Rect } from './rect';
-import type { WallEffectKind } from './entry-transition-view-model';
+import type { CardWallEffectKind } from './entry-transition-view-model';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -9,11 +9,11 @@ import type { WallEffectKind } from './entry-transition-view-model';
  * Draws the card wall's burning or developing cards on a canvas: with WebGL, one
  * fragment shader for every card at once; without it, a plain fade.
  */
-export interface WallPainter {
+export interface CardWallPainter {
     /** Sizes the canvas to `width` by `height` CSS pixels, at `pixelRatio` device pixels to each. */
     readonly resize: (width: number, height: number, pixelRatio: number) => void;
     /** Draws `effect` over the cards. */
-    readonly draw: (effect: WallEffectKind, cards: WallCards) => void;
+    readonly draw: (effect: CardWallEffectKind, cards: WallCards) => void;
     /** Leaves the canvas clear. */
     readonly clear: () => void;
 }
@@ -32,7 +32,7 @@ export interface WallCards {
 // ---------------------------------------------------------------------------
 
 /** A painter for `canvas`: WebGL's, or a plain fade where there is no WebGL. */
-export function createWallPainter(canvas: HTMLCanvasElement): WallPainter {
+export function createCardWallPainter(canvas: HTMLCanvasElement): CardWallPainter {
     const background = pageBackground();
     const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false });
     return gl === null ? createFadePainter(canvas, background) : createShaderPainter(canvas, gl, background);
@@ -46,7 +46,7 @@ export function createWallPainter(canvas: HTMLCanvasElement): WallPainter {
 const MAX_CARDS = 32;
 
 /** WebGL's painter: one fragment shader draws every card, burning or developing. */
-function createShaderPainter(canvas: HTMLCanvasElement, gl: WebGLRenderingContext, background: readonly number[]): WallPainter {
+function createShaderPainter(canvas: HTMLCanvasElement, gl: WebGLRenderingContext, background: readonly number[]): CardWallPainter {
     const program = linkProgram(gl, VERTEX_SHADER, FRAGMENT_SHADER);
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -106,7 +106,7 @@ function createShaderPainter(canvas: HTMLCanvasElement, gl: WebGLRenderingContex
 }
 
 /** Without WebGL: each card fades out as it burns, and in as it develops. */
-function createFadePainter(canvas: HTMLCanvasElement, background: readonly number[]): WallPainter {
+function createFadePainter(canvas: HTMLCanvasElement, background: readonly number[]): CardWallPainter {
     const context = canvas.getContext('2d');
     const fill = `rgb(${background.map((c) => Math.round(c * 255)).join(', ')})`;
     let pixelRatio = 1;
@@ -148,18 +148,18 @@ function linkProgram(gl: WebGLRenderingContext, vertexSource: string, fragmentSo
     gl.attachShader(program, compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource));
     gl.linkProgram(program);
     if (gl.getProgramParameter(program, gl.LINK_STATUS) !== true) {
-        throw new Error(`wall effect: ${gl.getProgramInfoLog(program) ?? 'the shaders did not link'}`);
+        throw new Error(`card wall effect: ${gl.getProgramInfoLog(program) ?? 'the shaders did not link'}`);
     }
     return program;
 }
 
 function compileShader(gl: WebGLRenderingContext, kind: number, source: string): WebGLShader {
     const shader = gl.createShader(kind);
-    if (shader === null) throw new Error('wall effect: no shader');
+    if (shader === null) throw new Error('card wall effect: no shader');
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (gl.getShaderParameter(shader, gl.COMPILE_STATUS) !== true) {
-        throw new Error(`wall effect: ${gl.getShaderInfoLog(shader) ?? 'a shader did not compile'}`);
+        throw new Error(`card wall effect: ${gl.getShaderInfoLog(shader) ?? 'a shader did not compile'}`);
     }
     return shader;
 }

@@ -37,7 +37,7 @@ function linkPreviewPlugin(): Plugin {
                 'og:image': `${origin}${siteBase}arcade/share.jpg`,
                 'og:image:width': '1200',
                 'og:image:height': '630',
-                'og:image:alt': 'The MVT Arcade\'s wall of cards, one for each game and demo',
+                'og:image:alt': 'The MVT Arcade\'s card wall, one card for each game',
             };
             return Object.entries(tags).map(([property, content]) => ({ tag: 'meta', attrs: { property, content }, injectTo: 'head' }));
         },
