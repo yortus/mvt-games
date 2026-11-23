@@ -1,0 +1,10 @@
+/* An entry that draws with the DOM, running on a showcase's screen. A view lays it over the screen with a CSS transform */
+.showcase-live-element {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    transform-origin: 0 0;
+    visibility: hidden;
+    pointer-events: none;
+}

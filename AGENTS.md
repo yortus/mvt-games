@@ -74,6 +74,7 @@ packages/sites/site-kit/src/       Imported by the sites as @mvtjs/site-kit/<fol
 ├── pixel-glyphs/        The site's pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way
 ├── random/              The seeded random source models take (createRandom), the same sequence for the same seed
 ├── shared/              The Pixi views entries share: the overlay and pixel text
+├── showcase/            What a site's showcase is built from, imported as @mvtjs/site-kit/showcase: the walker, the host that runs entries on screens, the screen framing, and the 3D views. Its README is the guide to building one
 ├── sound/               The chip types views play on (MusicChip, SfxChip)
 ├── snapshot/            The page generate-thumbnails photographs each entry on
 ├── testing/             describeCatalogue, the checks every site's catalogue passes

@@ -14,6 +14,7 @@
         "./random": "./src/random/index.ts",
         "./runner": "./src/runner/index.ts",
         "./shared": "./src/shared/index.ts",
+        "./showcase": "./src/showcase/index.ts",
         "./site-config": "./src/arcade/site-config.ts",
         "./site-page": "./src/arcade/start-site-page.ts",
         "./snapshot": "./src/snapshot/index.ts",
@@ -40,7 +41,9 @@
     "dependencies": {
         "@mvtjs/html": "^0.9.0",
         "@mvtjs/pixi": "^0.9.0",
+        "@mvtjs/pixi-3d": "*",
         "@mvtjs/utils": "^0.9.0",
+        "@pixi/3d": "0.1.0",
         "audio90": "^0.8.0",
         "pixi.js": "^8.23.0"
     },

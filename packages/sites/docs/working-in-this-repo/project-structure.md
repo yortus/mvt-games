@@ -85,6 +85,7 @@ packages/sites/site-kit/src/
 ├── pixel-glyphs/        The pixel glyphs: every printable ASCII character as rows of cells, which entries draw their own way
 ├── random/              The seeded random source models take: the same seed always gives the same sequence
 ├── shared/              The Pixi views entries share: the overlay and pixel text
+├── showcase/            What a site's showcase is built from: the walker, the host that runs entries on screens, the screen framing, and the 3D views. Its README is the guide to building one
 ├── sound/               The chip types views play on
 ├── snapshot/            The page `generate-thumbnails` photographs each entry on
 ├── testing/             The checks every site's catalogue passes
@@ -171,6 +172,7 @@ public API.
 | `views/`  | View functions, bindings interfaces                       | `HudView`, `HudViewBindings`                              |
 | `packages/libraries/utils/src/` | Renderer-agnostic helpers and models          | `watch`, `createReaction`, `createComputed`, `createSlotList`, `createSequence`, `createMetronome`, `assert` |
 | `packages/sites/site-kit/src/shared/` | The site's shared views                          | `OverlayView`, `PixelTextView` |
+| `packages/sites/site-kit/src/showcase/` | What a site's showcase is built from        | `createWalkerModel`, `createLiveEntriesHost`, `frameScreen`, `placeScreen`, `WalkerCameraView`, `LiveScreenView`, `LiveElementView`, `fitShowcaseWidth` |
 | `packages/sites/site-kit/src/input/pixi/` | Input on a Pixi stage                  | `listenToPointer`, `listenToDragZoom`, `listenToPress`, `SwipeInputView`, `DragInputView`, `TouchInputView` |
 | `packages/sites/site-kit/src/storage/` | What the site keeps in the browser between visits | `LocalStore`, `createLocalStore`, `createMemoryStore` |
 
