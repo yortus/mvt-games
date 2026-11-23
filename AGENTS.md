@@ -52,8 +52,9 @@ packages/sites/<site>/              arcade, demos or puzzles
 ├── vite.config.ts       defineSiteConfig({ site }), from @mvtjs/site-kit/vite
 └── src/
     ├── main.ts          startSitePage(SITE)
-    ├── site.ts          SITE: its name, marquee, About text, catalogue, and its entries' kind (game or demo)
+    ├── site.ts          SITE: its name, marquee, About text, catalogue, showcase, and its entries' kind (game or demo)
     ├── share.jpg        Its card wall's link preview, made by generate-thumbnails
+    ├── showcase/        Its showcase, if it has one, laid out as an entry is, with start/showcase.ts instead of start/entry.ts
     └── entries/         Its entries, one directory each, and catalogue.ts, which lists them
         └── <id>/        Self-contained entry
             ├── start/   entry.ts (what its card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp (its card's picture), share.png (its link preview's picture)
@@ -116,6 +117,7 @@ Full reference: [Project Structure](packages/sites/docs/working-in-this-repo/pro
 - **Top-level names** - every entry's top-level model and view have one name, so they are always easy to find: `GameModel` and `GameView` in a game or puzzle, `DemoModel` and `DemoView` in a demo. A demo with one model and one view just names them that. In a bigger demo, `DemoModel` holds the domain model under its own name (`model.flock`), even if that's all it does. See [Adding an Entry](packages/sites/arcade/src/entries/README.md#step-2-create-models-models)
 - **Tags** - one flat list of an era (at most one) and genres: `tags: ['1980s', 'maze']`. The search shows entries with every tag chosen
 - **CATALOGUE** - a site's entries, in `packages/sites/<site>/src/entries/catalogue.ts`
+- **Showcases** - a site browses its entries on its card wall, or in its showcase, if it has one, which the visitor chooses in the nav's Browse menu. A showcase is a 3D scene that holds the site's entries, for the visitor to walk round and play. It isn't in the catalogue. The site's config names it (`SiteConfig.showcase`), its code is in the site's `src/showcase/`, and it's built from `@mvtjs/site-kit/showcase`. See [Building a Showcase](packages/sites/site-kit/src/showcase/README.md), and [the page's README](packages/sites/site-kit/src/arcade/README.md#11-the-showcase-the-other-way-to-browse) for how the page runs one
 - **ArcadeModel** - the search, the tags chosen, and which entry is launching, playing or paused. **ArcadeView** - the card wall, and the transition into and out of an entry. The page (`startSitePage`) starts and stops sessions as the model's phase changes
 - To add a game, demo or puzzle: create `packages/sites/<site>/src/entries/<id>/` with its own data/models/views and `start/`, add it to that site's `catalogue.ts`, and follow the [originality rules](packages/sites/arcade/src/entries/README.md#originality). See [Adding an Entry](packages/sites/arcade/src/entries/README.md)
 

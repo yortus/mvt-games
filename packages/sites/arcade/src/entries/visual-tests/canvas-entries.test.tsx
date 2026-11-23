@@ -16,6 +16,7 @@ import { canvasTest } from 'v-snap';
 import type { PixiImageOptions } from 'v-snap/pixi';
 import type { ArcadeEntry, PixiEntryStarter } from '@mvtjs/site-kit/entry-types';
 import { advanceHeadless, createHeadlessControls, createHeadlessSound, findThumbnailAdvanceMs, startPixiHeadless } from '@mvtjs/site-kit/runner';
+import { showcase } from '../../showcase';
 import { CATALOGUE } from '../catalogue';
 
 /**
@@ -31,9 +32,10 @@ const CROPS: Readonly<Record<string, Crop>> = {
     'kwazy-cactii': { x: 0, y: 1500, width: 600, height: 680 },
 };
 
-// Each entry's code is loaded before its test is declared. Only then is it
-// known whether the entry is drawn with Pixi, and whether it is pixel art.
-const loaded = await Promise.all(CATALOGUE.map(async (entry) => ({ entry, starter: await entry.load() })));
+// Each entry's code, and the showcase's, is loaded before its test is
+// declared. Only then is it known whether the entry is drawn with Pixi, and
+// whether it is pixel art.
+const loaded = await Promise.all([...CATALOGUE, showcase].map(async (entry) => ({ entry, starter: await entry.load() })));
 
 for (const { entry, starter } of loaded) {
     if (starter.kind !== 'pixi') continue;

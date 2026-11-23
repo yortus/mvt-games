@@ -1,5 +1,6 @@
 import type { SiteConfig } from '@mvtjs/site-kit/arcade';
 import { CATALOGUE } from './entries';
+import { showcase } from './showcase';
 
 /** The arcade site: what its page shows, and the entries it lists. */
 export const SITE: SiteConfig = {
@@ -9,5 +10,6 @@ export const SITE: SiteConfig = {
     wordmark: 'ARCADE',
     about: 'Arcade games, each built with Model-View-Ticker (MVT), an architecture for games and interactive apps. Pick one to play it, or open its info panel to learn more.',
     catalogue: CATALOGUE,
+    showcase,
     entryKind: 'game',
 };

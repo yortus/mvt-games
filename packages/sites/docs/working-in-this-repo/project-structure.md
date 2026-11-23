@@ -60,7 +60,8 @@ packages/sites/<site>/
 ├── vite.config.ts       defineSiteConfig({ site }), from @mvtjs/site-kit/vite
 └── src/
     ├── main.ts          startSitePage(SITE): runs the page
-    ├── site.ts          SITE: its name, its marquee, its catalogue, and whether its entries are games or demos
+    ├── site.ts          SITE: its name, its marquee, its catalogue, its showcase, and whether its entries are games or demos
+    ├── showcase/        Its showcase, if it has one, laid out as an entry is
     └── entries/         Its entries, one directory each, and catalogue.ts, which lists them
         └── <id>/        Self-contained entry
             ├── start/   How the site lists the entry, and loads it
