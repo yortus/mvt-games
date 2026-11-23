@@ -4,6 +4,14 @@
 // taken, as the game loop refreshes once a frame. Afterwards it is destroyed
 // the MVT way, which runs the cleanup that its views registered. A Pixi
 // container's own destroy does that, so Pixi keeps v-snap's disposal.
+//
+// PixiJS 3D adds itself to a Pixi renderer only as the renderer starts, and
+// so does the renderer system that @mvtjs/pixi-3d draws a `ScreenView` with.
+// v-snap starts one renderer for the page and keeps it for every test file
+// after, so @mvtjs/pixi-3d, which imports PixiJS 3D, is imported here,
+// before any test can start the renderer. Otherwise the paper, which is
+// drawn in 3D, doesn't draw whenever an earlier file started the renderer.
+import '@mvtjs/pixi-3d';
 import { refreshView } from '@mvtjs/pixi';
 import { defineVsnapConfig } from 'v-snap';
 import { pixiViews } from 'v-snap/pixi';

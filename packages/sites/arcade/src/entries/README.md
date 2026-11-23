@@ -755,8 +755,10 @@ A site's showcase holds its entries too, in an order chosen by hand. For a
 game, give it a cabinet in the Arcade Hall, in
 [`../showcase/data/cabinet-entries.ts`](../showcase/data/cabinet-entries.ts).
 For a demo, give it a painting in the Gallery, in
-[`demos/src/showcase/data/gallery-entries.ts`](../../../demos/src/showcase/data/gallery-entries.ts).
-A test checks that every game has a cabinet, and every demo a painting.
+[`demos/src/showcase/data/gallery-entries.ts`](../../../demos/src/showcase/data/gallery-entries.ts),
+and a hanging spot. For a puzzle, give it a spread in the newspaper, in
+[`puzzles/src/showcase/data/puzzle-entries.ts`](../../../puzzles/src/showcase/data/puzzle-entries.ts).
+A test checks that each site's showcase holds every one of its entries.
 
 The thumbnail is a picture of the entry running, taken by a script and
 committed. Every page that lists the catalogue imports every entry's
