@@ -69,7 +69,7 @@ export function CabinetView(bindings: CabinetViewBindings): Container3D {
                 geometry={panel}
                 material={black}
                 y={BASE_HEIGHT + 0.03}
-                z={front - PANEL_DEPTH / 2}
+                z={front + PANEL_LIP - PANEL_DEPTH / 2}
                 rotationX={0.18}
             />
             <mesh
@@ -106,5 +106,12 @@ export function CabinetView(bindings: CabinetViewBindings): Container3D {
  * hide the top of the picture.
  */
 const SCREEN_RECESS = Math.sin(SCREEN_TILT) * (BEZEL_HEIGHT / 2) + BEZEL_DEPTH + 0.03;
+/**
+ * How far the control panel reaches out over the base's front, in metres.
+ * Without it, the panel's front face would stand just behind the base's,
+ * so close that rounding in the depth test could pick either face, and
+ * draw the panel's edge differently on different machines.
+ */
+const PANEL_LIP = 0.02;
 /** How bright an idle screen is, against a running one. */
 const IDLE_TINT = 0xb8b8b8;

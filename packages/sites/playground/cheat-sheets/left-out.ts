@@ -16,6 +16,7 @@ export const LEFT_OUT: Readonly<Record<string, string>> = {
     createGpuTimer: "The playground's Performance tab measures a project's performance itself.",
     PerfmonView: "The playground's Performance tab shows the same panel.",
     createTextureRegistry: 'Loads a spritesheet from a URL, and a project in the playground has only its code.',
+    keepReleasedTextTextures: 'Called once by the code that starts the renderer. The playground starts it for your project.',
     Fragment: 'What JSX compiles to. You never call it yourself.',
     jsx: 'What JSX compiles to. You never call it yourself.',
     destroyElement: "Destroys an HTML view the MVT way. The JSX sheet's `onDestroyed` covers what a project needs.",
