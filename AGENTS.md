@@ -247,4 +247,4 @@ this repo. The reading order is in `packages/sites/docs/.vitepress/book.ts`.
 
 ## Tech Stack
 
-TypeScript 5.9 - Pixi.js 8 - PixiJS 3D 0.1 - three.js (one demo) - GSAP 3 - Vite 8 - Vitest 5 - ESLint 9 - ESLint Stylistic
+TypeScript 5.9 - Pixi.js 8 - PixiJS 3D 0.1 (the showcases, Chicane and the Orrery) - three.js (one demo) - GSAP 3 - Vite 8 - Vitest 5 - ESLint 9 - ESLint Stylistic

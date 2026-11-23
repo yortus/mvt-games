@@ -1013,6 +1013,20 @@ that finds where each target is on the puzzle's screen, for the arrow.
 Everything the player sees of the way in is then laid out the same in
 every game.
 
+## A Showcase
+
+A site browses its entries on its card wall, or in its showcase. A
+showcase is a 3D scene that holds them, for the visitor to walk round and
+play, such as the demos' Gallery. It isn't an entry, so it isn't in the
+catalogue. It lives in the site's `src/showcase/`, not here. To build one,
+or change one, see [Building a Showcase](../../../site-kit/src/showcase/README.md).
+
+An entry doesn't need anything of its own to be in a showcase, beyond a
+line in the showcase's list (see Step 6). One that would reload the page
+to restart should check `launchedBy`, which is set while it plays in the
+showcase, and restart in place instead, as Falling Sand does. A reload
+would start it again on its own, outside the showcase.
+
 ## Checklist
 
 - `data/` has constants in domain units (not pixels)
