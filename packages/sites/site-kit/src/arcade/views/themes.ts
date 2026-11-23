@@ -13,14 +13,14 @@ import type { CardPhotoKind } from './card-photo';
  */
 export interface Theme {
     readonly kind: ThemeKind;
-    /** Its name, as the picker lists it. It names the look it gives the wall of cards, such as Neon. */
+    /** Its name, as the picker lists it. It names the look it gives the card wall, such as Neon. */
     readonly name: string;
     /** Whether it is dark or light, which the browser's own controls, such as scroll bars, follow. */
     readonly scheme: 'dark' | 'light';
     /** Three colours that sum it up, for its swatch in the picker: its page, its panels, and its accent. */
     readonly swatch: readonly [page: string, panel: string, accent: string];
     /**
-     * Whether the way into an entry, and out, is the quiet one: the wall
+     * Whether the way into an entry, and out, is the quiet one: the card wall
      * fades rather than burns, and the screen fades up rather than powering
      * on like a tube. It is the way a visitor who asks for less motion gets,
      * whatever the theme.

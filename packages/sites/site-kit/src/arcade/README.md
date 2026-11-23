@@ -27,7 +27,7 @@
 | [`sounds/sounds.ts`](./sounds/sounds.ts) | The Arcade's own sound effects, and the pause menu's two previews. They have a folder of their own, apart from `data/`, because the page's first load imports `data/`. Each sound is made as its module loads, so the bundler can't leave out one that isn't used. A sound in `data/` would bring the notation's parser into the first load. The sounds load with the audio views, on the visitor's first press |
 | [`data/way-in.ts`](./data/way-in.ts) | How long each part of the way into an entry takes, which the model and the transition share |
 | [`views/arcade-view.tsx`](./views/arcade-view.tsx) | The top-level view: takes the model, wires the rest |
-| [`views/card-wall-view.tsx`](./views/card-wall-view.tsx), [`card-view.tsx`](./views/card-view.tsx) | The wall of cards, and one card |
+| [`views/card-wall-view.tsx`](./views/card-wall-view.tsx), [`card-view.tsx`](./views/card-view.tsx) | The card wall, and one card |
 | [`views/card-wall-layout.ts`](./views/card-wall-layout.ts) | View model: where each card goes, in columns, and how it moves there |
 | [`views/entry-transition-view-model.ts`](./views/entry-transition-view-model.ts), [`entry-transition-view.tsx`](./views/entry-transition-view.tsx) | View model and view: the way into an entry and back out |
 | [`views/search-bar-view.tsx`](./views/search-bar-view.tsx), [`search-suggestions.ts`](./views/search-suggestions.ts) | The search box, its tag tokens and suggestions |
@@ -67,13 +67,13 @@ Which state belongs to the model, and which to the views?
   The URL is a projection of them: `start-site-page.ts` writes the query and the path
   from the model (`writeUrl`), and reads them back on load. An entry's path
   is the Arcade's with the entry's id added (`arcade/crumb-chase/`). Going
-  into an entry adds a history step, so Back returns to the wall, and so does
-  opening an info panel on the wall (`writePanelStep`), so Back closes it, as
+  into an entry adds a history step, so Back returns to the card wall, and so does
+  opening an info panel on the card wall (`writePanelStep`), so Back closes it, as
   a phone's back button is expected to. An entry's info panel opened over
   the entry, from the runner's (i), adds none: Back from an entry leaves it. The model also holds the visitor's sound
   settings. These are a volume for the music and one for the effects, the
   level each had when it was turned off, and whether all sound is muted. It
-  holds the visitor's favourites too, which the wall shows first, the
+  holds the visitor's favourites too, which the card wall shows first, the
   entries whose notices they asked not to see again, and whether a saved
   game is offered for resuming. The page saves the settings, the favourites
   and the hidden notices in `localStorage`, through a `LocalStore`
@@ -120,8 +120,8 @@ each is a view model or a pure helper, with its own tests:
 
 | View model | Test | What it decides |
 | --- | --- | --- |
-| [`card-wall-layout.ts`](./views/card-wall-layout.ts) | [`card-wall-layout.test.ts`](./views/card-wall-layout.test.ts) | Columns from the wall's width; each card in the shortest column; where cards slide as the search changes |
-| [`entry-transition-view-model.ts`](./views/entry-transition-view-model.ts) | [`entry-transition-view-model.test.ts`](./views/entry-transition-view-model.test.ts) | The way in (the wall burns, the picture floats to the play area, the screen powers on) and out, and the quiet fade for reduced motion |
+| [`card-wall-layout.ts`](./views/card-wall-layout.ts) | [`card-wall-layout.test.ts`](./views/card-wall-layout.test.ts) | Columns from the card wall's width; each card in the shortest column; where cards slide as the search changes |
+| [`entry-transition-view-model.ts`](./views/entry-transition-view-model.ts) | [`entry-transition-view-model.test.ts`](./views/entry-transition-view-model.test.ts) | The way in (the card wall burns, the picture floats to the play area, the screen powers on) and out, and the quiet fade for reduced motion |
 | [`search-suggestions.ts`](./views/search-suggestions.ts) | [`search-suggestions.test.ts`](./views/search-suggestions.test.ts) | Which tags match what was typed, and which one the arrow keys move to |
 | [`card-wall-keys.ts`](./views/card-wall-keys.ts) | [`card-wall-keys.test.ts`](./views/card-wall-keys.test.ts) | Which card the arrow keys move to, across columns |
 | [`attract-view-model.ts`](./views/attract-view-model.ts) | [`attract-view-model.test.ts`](./views/attract-view-model.test.ts) | Attract mode: which card plays its entry live, once it has stayed selected a second |
@@ -152,9 +152,9 @@ update(deltaMs) {
 ```
 
 - **`'launching'` is open-ended.** It lasts until the entry has loaded,
-  and for at least `LAUNCH_MS`, the time the wall takes to burn away. So
+  and for at least `LAUNCH_MS`, the time the card wall takes to burn away. So
   an entry that loads at once can't cut the burn short. A visitor who came
-  by a link to the entry has no wall to leave, so `launch(id, { isDirect:
+  by a link to the entry doesn't have a card wall to leave, so `launch(id, { isDirect:
   true })` waits for the load alone.
 - **`'revealing'` is timed.** The entry starts as it begins, and stands
   still (`isEntryFrozen`) for `REVEAL_MS`. Over that time the picture
@@ -212,8 +212,8 @@ Arcade's views draw, so its first frame is ready behind the receding
 picture.
 
 The page runs a second entry host too, for attract mode: a card that stays
-selected for a second plays its entry live over its photo. The wall's
-attract view model says which card, and a reaction in the wall's refresh
+selected for a second plays its entry live over its photo. The card wall's
+attract view model says which card, and a reaction in the card wall's refresh
 step plays it on a `LivePreview`, as an audio view plays a sound. The page
 loads the entry and plays it in a host that takes no input (`playLive` in
 `start-site-page.ts`), ticked in the same loop, and the card shows it,
@@ -232,7 +232,7 @@ for the chips to load.
 ## 7. Measurements as Input
 
 Where a card goes depends on how tall it is, which only the browser knows
-once it has laid the card out. The wall measures with a `ResizeObserver`
+once it has laid the card out. The card wall measures with a `ResizeObserver`
 ([`card-wall-view.tsx`](./views/card-wall-view.tsx)) and reports what it
 sees to the layout view model as input:
 
@@ -312,9 +312,10 @@ notice shows it first, and the offer waits behind it.
 The page has three looks: `arcade` (loud and dark, the arcade's own),
 `light` (warm paper and ink, the puzzles' own) and `dark` (calm and modern,
 the demos' own). The picker lists them in the nav's order of their sites,
-named for the look they give the wall of cards: **Neon**, **Paper** and
+named for the look they give the card wall: **Neon**, **Paper** and
 **Night**. The visitor picks one from the palette in the nav, or the
-default, where each site wears its own.
+default, where each site wears its own. For a site with a showcase, the
+same menu offers it too, as the other way to browse (see the next section).
 
 The choice is a setting, like the sound, so it is the model's:
 `themeChoice` (`'default'` or a theme), and `theme`, the one the page
@@ -342,7 +343,7 @@ and each theme shows one.
 
 Three things are not CSS, and are in [`views/themes.ts`](./views/themes.ts).
 A quiet theme (`isQuiet`) takes the quiet way into an entry, as a visitor
-who asks for less motion does: the wall fades rather than burns. A theme
+who asks for less motion does: the card wall fades rather than burns. A theme
 says how its cards show their photos (`cardPhoto`): in a polaroid, tilted
 and taped, as the Arcade's do, or full width, in a square across each
 card's foot, edge to edge, with nothing tilted and nothing growing as the
@@ -356,6 +357,51 @@ each page's `<head>`, which the site kit writes there
 light theme never flashes dark. A test keeps their backgrounds in step with
 the CSS, and another checks every theme's text against what it lies on, for
 WCAG AA's contrast (`themes.test.ts`).
+
+## 11. The Showcase: The Other Way to Browse
+
+A site browses its entries one of two ways: on the **card wall**, or in
+its **showcase**, if it has one. A showcase is a 3D scene that holds the
+site's entries, for the visitor to walk round and play. It isn't in the
+catalogue. The site's config names it (`SiteConfig.showcase`), and the
+model holds it as `showcase`, apart from `entries`. It's described as an
+entry is, with an `ArcadeEntry`, so its info panel is an entry's. While
+the showcase shows, the nav's (i) opens that panel instead of the site's
+note, and the showcase stands still behind it.
+
+Which one the visitor browses is a setting, like the theme. The model
+keeps it as `isShowcaseMode`, and doesn't need anything else. The page
+saves it between visits, for all three sites (`mvt-arcade:showcase`), and
+the visitor chooses it in the nav's palette menu. While it's on, the phase
+is still `'browsing'`. An entry the showcase launches
+(`launch(id, { isFromShowcase: true })`) is launched as from a card, but
+without waiting for a way in. Leaving it goes back to `'browsing'`, which
+is the showcase again. While `isFromShowcase` is true, the views don't draw
+a way in or out. The page starts the entry on a clear canvas, so the
+showcase shows round it.
+
+The page runs the showcase in an entry host of its own. Its element sits
+over the card wall, under the site's nav and under the entry host. The
+page loads the showcase as the visitor chooses it, starts it between
+frames, and stops it as they choose a card wall. It doesn't start the
+showcase under an entry the visitor came straight to. But once started,
+the showcase stays under every entry it launches, standing still
+(`isBehind`). A showcase that fails to load turns the setting off
+(`showcaseFailed`), so the card wall shows, with the reason in the toast.
+
+`ArcadeView` shows the showcase once it has started, fading it up over the
+card wall, which dims while it loads. A page opened on the showcase hides
+the card wall from its first paint (`is-showcase-starting`), so the card
+wall doesn't show first. While the visitor browses the showcase, the nav's
+magnifier hides, since there isn't a card wall to search, and a
+full-screen button shows instead. The page stays at the site's address
+while the showcase shows. The showcase's own address turns it on, and is
+rewritten to the site's. So a link to the showcase opens the site on it,
+and keeps its own link preview.
+
+A showcase fills the area under the nav, as the card wall does, so it lays
+itself out (`fitTo`). On a touch screen, the host then draws its arcade
+controls over its bottom corners, rather than in room kept beside it.
 
 ## Where It Bends the Rules
 

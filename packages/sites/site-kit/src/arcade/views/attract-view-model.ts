@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 /**
- * Attract mode, for the wall: which card plays its entry live. A card that
+ * Attract mode, for the card wall: which card plays its entry live. A card that
  * stays the candidate (the selected card, while previews are allowed) for a
  * while plays; the moment another card is the candidate, or none is, it
  * stops, and the new one waits its turn. One card at a time.

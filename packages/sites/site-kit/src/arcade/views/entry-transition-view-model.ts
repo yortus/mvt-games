@@ -66,9 +66,9 @@ export interface EntryTransitionViewModel {
      */
     readonly isBeamOn: boolean;
 
-    /** What is drawn over the wall's cards now. */
+    /** What is drawn over the card wall's cards now. */
     readonly wallEffect: WallEffectKind;
-    /** How many cards the wall effect covers. */
+    /** How many cards the card wall effect covers. */
     readonly cardCount: number;
     /** Card `index`'s rectangle in the viewport, as it was when the transition started. */
     readonly cardRectAt: (index: number) => Rect;
@@ -80,7 +80,7 @@ export interface EntryTransitionViewModel {
     /** How long it has been waiting, for the waiting bar's movement. */
     readonly waitedMs: number;
 
-    /** Goes in from a card's polaroid, burning the other cards, at `cards` (zero-sized where not on the wall). */
+    /** Goes in from a card's polaroid, burning the other cards, at `cards` (zero-sized where not on the card wall). */
     readonly enterFrom: (from: PhotoPose, cards: readonly Rect[]) => void;
     /**
      * Goes in with the page blacked out and the picture at the play area, as
@@ -99,7 +99,7 @@ export interface EntryTransitionViewModel {
 
 /**
  * Where the transition is:
- * - `'idle'`: nothing moving: the wall, or the entry running.
+ * - `'idle'`: nothing moving: the card wall, or the entry running.
  * - `'entering'`: the other cards burn away as the chosen card's polaroid
  *   floats to the centre of where the entry will play, and the page blacks out.
  * - `'holding'`: waiting for the entry to finish loading.
@@ -123,7 +123,7 @@ export type EntryTransitionPhase =
     | 'powering-off'
     | 'returning';
 
-/** What is drawn over the wall's cards: nothing, their burning, or their developing. */
+/** What is drawn over the card wall's cards: nothing, their burning, or their developing. */
 export type WallEffectKind = 'none' | 'burn' | 'develop';
 
 /** The picture as drawn: a window on the whole picture, in a polaroid's border or none. */
@@ -205,7 +205,7 @@ export function createEntryTransitionViewModel(options: EntryTransitionViewModel
     let isQuiet = false;
     /** Whether the way in is drawing, from the model's phase. */
     let isGoingIn = false;
-    /** Whether this way in started with the picture at the play area, with no wall to leave. */
+    /** Whether this way in started with the picture at the play area, without a card wall to leave. */
     let isGrown = false;
 
     // As drawn: records updated in place, so a frame of the transition makes nothing

@@ -23,6 +23,14 @@ export interface SiteConfig {
     readonly about: string;
     /** Every entry it lists. */
     readonly catalogue: readonly ArcadeEntry[];
+    /**
+     * Its showcase, if it has one. A showcase is a 3D scene that holds the
+     * site's entries, for the visitor to walk round and play. It's the other
+     * way to browse them, instead of the card wall. It's described as an
+     * entry is, but it isn't in the catalogue. Its code is in the site's
+     * `src/showcase/`.
+     */
+    readonly showcase?: ArcadeEntry;
     /** What its entries are. Games are played, and get controls; demos are watched. */
     readonly entryKind: EntryKind;
 }

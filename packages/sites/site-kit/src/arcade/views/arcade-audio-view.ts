@@ -18,6 +18,8 @@ export interface ArcadeAudioViewBindings {
     readonly sfx: SfxChip<'audio80'>;
     /** Where the Arcade is, from browsing to playing an entry. */
     readonly phase: () => ArcadePhase;
+    /** Whether the entry launching, or the one just left, was launched from the showcase. The coin doesn't play for it. */
+    readonly isFromShowcase: () => boolean;
     /** Whether the entry running is paused. */
     readonly isPaused: () => boolean;
     /** Whether an info panel, or the About note, is open. */
@@ -83,7 +85,7 @@ export function ArcadeAudioView(bindings: ArcadeAudioViewBindings): HTMLElement 
 
     function refresh(): void {
         const w = watcher.poll();
-        if (w.phase.changed && w.phase.previous === 'browsing') sfx.play(LAUNCH);
+        if (w.phase.changed && w.phase.previous === 'browsing' && !bindings.isFromShowcase()) sfx.play(LAUNCH);
         // A pause or resume chimes only while the entry keeps playing. Leaving the entry also clears the pause, and that plays nothing.
         if (w.isPaused.changed && !w.phase.changed && (w.phase.current === 'revealing' || w.phase.current === 'playing')) sfx.play(w.isPaused.current ? PAUSE : RESUME);
         if (w.isPanelOpen.changed) sfx.play(w.isPanelOpen.current ? PANEL_OPEN : PANEL_CLOSE);

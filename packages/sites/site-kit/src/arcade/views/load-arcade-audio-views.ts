@@ -7,7 +7,7 @@ import type { VolumePreviewAudioViewBindings } from './volume-preview-audio-view
 
 /** The views that play the Arcade's own sounds on the page's chip. */
 export interface ArcadeAudioViews {
-    /** Plays the Arcade's sounds, for the wall, the way into and out of an entry, pausing and failures. */
+    /** Plays the Arcade's sounds, for the card wall, the way into and out of an entry, pausing and failures. */
     readonly ArcadeAudioView: (bindings: ArcadeAudioViewBindings) => HTMLElement;
     /** Plays the pause menu's previews of the volumes. */
     readonly VolumePreviewAudioView: (bindings: VolumePreviewAudioViewBindings) => HTMLElement;

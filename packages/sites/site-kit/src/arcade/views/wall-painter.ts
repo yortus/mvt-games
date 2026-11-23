@@ -6,7 +6,7 @@ import type { WallEffectKind } from './entry-transition-view-model';
 // ---------------------------------------------------------------------------
 
 /**
- * Draws the wall's burning or developing cards on a canvas: with WebGL, one
+ * Draws the card wall's burning or developing cards on a canvas: with WebGL, one
  * fragment shader for every card at once; without it, a plain fade.
  */
 export interface WallPainter {

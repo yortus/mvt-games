@@ -44,7 +44,7 @@ export interface ArcadeModel {
     readonly chips: readonly TagChip[];
     /**
      * How many entries have this chip's tag and every active one, whatever
-     * the words. It is how many the wall would show were the chip chosen in
+     * the words. It is how many the card wall would show were the chip chosen in
      * place of the words.
      */
     readonly chipCountAt: (index: number) => number;
@@ -75,9 +75,9 @@ export interface ArcadeModel {
     /** Counts each change of tags or words, so the page knows when to write its URL. */
     readonly queryRevision: number;
     /**
-     * How many entries the wall shows. These are the entries the search
+     * How many entries the card wall shows. These are the entries the search
      * picks: the visitor's favourites first, then the rest, each part in
-     * order of name.
+     * order of name. The site's showcase is never among them.
      */
     readonly shownCount: number;
     /** The entry shown `position`th, as its index in `entries`. */
@@ -90,8 +90,17 @@ export interface ArcadeModel {
     readonly favouriteIds: readonly string[];
     /** Whether the entry with `id` is one of the visitor's favourites. */
     readonly isFavourite: (id: string) => boolean;
-    /** Marks the entry with `id` as a favourite, or unmarks it if it is one. Does nothing for an entry not listed. */
+    /** Marks the entry with `id` as a favourite, or unmarks it if it is one. It ignores an entry not listed, and the showcase. */
     readonly toggleFavourite: (id: string) => void;
+
+    // --- The showcase -------------------------------------------------------
+
+    /** The site's showcase, if it has one (see `SiteConfig.showcase`). It isn't among `entries`. */
+    readonly showcase: ArcadeEntry | undefined;
+    /** Whether the visitor browses the showcase instead of the card wall. The phase is still `'browsing'`. It stays off for a site without a showcase. */
+    isShowcaseMode: boolean;
+    /** Turns the showcase off, as it couldn't load, and reports why, as a failed launch does. */
+    readonly showcaseFailed: (reason: string) => void;
 
     // --- Running ------------------------------------------------------------
 
@@ -109,6 +118,8 @@ export interface ArcadeModel {
     readonly activeEntry: ArcadeEntry | undefined;
     /** The active entry, once it has loaded. */
     readonly starter: EntryStarter | undefined;
+    /** Whether the active entry, or the one just left, was launched from the showcase. It doesn't have a way in or out. */
+    readonly isFromShowcase: boolean;
     /** Why the last launch failed, until the visitor dismisses it or launches again. */
     readonly loadFailure: string | undefined;
     /**
@@ -131,7 +142,7 @@ export interface ArcadeModel {
     /**
      * Launches the entry with `id`: loads it, starts it once the way in has
      * had its time, and lets it run once it has been revealed. Does nothing
-     * unless the phase is `'browsing'`.
+     * unless the phase is `'browsing'`, on the card wall or the showcase.
      */
     readonly launch: (id: string, options?: LaunchOptions) => void;
     /** Starts the entry started again, from the beginning. */
@@ -147,7 +158,10 @@ export interface ArcadeModel {
     readonly requestRestart: () => void;
     /** Withdraws the request, and leaves the entry paused. */
     readonly cancelRestart: () => void;
-    /** Leaves the entry, whether it is loading or running, and goes back to the wall. */
+    /**
+     * Leaves the entry, whether it is loading or running, and goes back to
+     * the card wall or the showcase. While browsing, it's ignored.
+     */
     readonly exit: () => void;
     /** Forgets the last launch's failure. */
     readonly dismissLoadFailure: () => void;
@@ -240,7 +254,7 @@ export interface ArcadeModel {
 
     /** The entry whose info panel is open. */
     readonly infoEntry: ArcadeEntry | undefined;
-    /** Opens the info panel of the entry with `id`, in place of any panel open. Does nothing for an entry not listed. */
+    /** Opens the info panel of the entry with `id`, or of the showcase, instead of any panel open. It ignores an entry not listed. */
     readonly openInfo: (id: string) => void;
     /** Closes the entry's info panel, if one is open. */
     readonly closeInfo: () => void;
@@ -255,7 +269,7 @@ export interface ArcadeModel {
 
     /**
      * Whether the Perfmon is open: a panel of how fast the page runs, over the
-     * wall or the entry playing. It always starts closed.
+     * card wall or the entry playing. It always starts closed.
      */
     isPerfmonOpen: boolean;
 
@@ -268,10 +282,10 @@ export interface ArcadeModel {
 
 /**
  * Where the Arcade is:
- * - `'browsing'`: it shows its wall.
+ * - `'browsing'`: it shows its card wall.
  * - `'launching'`: it loads the entry the visitor chose, while the way in
- *   leaves the wall. It lasts until the entry has loaded, and for at least
- *   `LAUNCH_MS` after a launch from the wall.
+ *   leaves the card wall. It lasts until the entry has loaded, and for at least
+ *   `LAUNCH_MS` after a launch from the card wall.
  * - `'revealing'`: the entry has started, and stands still while it shows,
  *   for `REVEAL_MS`.
  * - `'playing'`: the entry runs.
@@ -282,10 +296,13 @@ export type ArcadePhase = 'browsing' | 'launching' | 'revealing' | 'playing';
 export interface LaunchOptions {
     /**
      * Whether the visitor came straight to the entry, by its own address,
-     * with no wall to leave. Then there is no way out of the wall to wait
-     * for, and the entry starts as soon as it has loaded. Defaults to false.
+     * without a card wall to leave. Then it doesn't wait for a way out of the
+     * card wall, and the entry starts as soon as it has loaded. Defaults to
+     * false.
      */
     readonly isDirect?: boolean;
+    /** Whether the showcase launched it, so it plays where the showcase drew it, without a way in. Defaults to false. */
+    readonly isFromShowcase?: boolean;
 }
 
 /** How the visitor closes an entry's notice. */
@@ -302,6 +319,8 @@ export interface CloseNoticeOptions {
 export interface ArcadeModelOptions {
     /** Every entry the Arcade lists. */
     readonly entries: readonly ArcadeEntry[];
+    /** The site's showcase, if it has one. */
+    readonly showcase?: ArcadeEntry;
     /** What was measured of an entry's code when the site was built. */
     readonly factsFor: (id: string) => EntryFacts | undefined;
     /** Loads an entry, and gets everything ready to start it. */
@@ -316,6 +335,8 @@ export interface ArcadeModelOptions {
     readonly soundSettings?: ArcadeSoundSettings;
     /** The ids of the entries the visitor marked as favourites on a visit before. Ids of entries not listed are dropped. */
     readonly favouriteIds?: readonly string[];
+    /** Whether the visitor browsed the showcase on a visit before, on any site. It's off if absent, or if the site doesn't have a showcase. */
+    readonly isShowcaseMode?: boolean;
     /** The theme the visitor chose on a visit before, on any site. Defaults to `'default'`. */
     readonly themeChoice?: ThemeChoice;
     /** The site's own theme, which the default choice wears. Defaults to `'arcade'`. */
@@ -330,17 +351,21 @@ export interface ArcadeModelOptions {
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Creates the Arcade's model. It starts on the wall, with the search that `options.search` holds. */
+/** Creates the Arcade's model. It starts on the card wall, with the search that `options.search` holds. */
 export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     const { entries, factsFor, loadEntry } = options;
     const chips = chipsFor(entries, factsFor);
     const indexById = new Map(entries.map((entry, i) => [entry.id, i]));
+    const { showcase } = options;
 
     // Each entry's long text, once loaded, and whether it has been asked for
     const details: (EntryDetails | undefined)[] = entries.map(() => undefined);
     const isDetailsAskedAt: boolean[] = entries.map(() => false);
+    // The showcase's long text, for its info panel, once loaded, and whether it has been asked for
+    let showcaseDetails: EntryDetails | undefined;
+    let isShowcaseDetailsAsked = false;
 
-    // The favourites: as ids, for the page to keep, and as a flag for each entry, for the wall's order
+    // The favourites: as ids, for the page to keep, and as a flag for each entry, for the card wall's order
     const isFavouriteAt: boolean[] = entries.map((entry) => options.favouriteIds?.includes(entry.id) === true);
     let favouriteIds: readonly string[] = (options.favouriteIds ?? []).filter((id, i, ids) => ids.indexOf(id) === i && entries.some((e) => e.id === id));
 
@@ -365,10 +390,11 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
 
     let phase: ArcadePhase = 'browsing';
     let elapsedMs = 0;
-    /** The shortest time this launch lasts: none for a direct one, which has no wall to leave. */
+    /** The shortest time this launch lasts: 0 for a direct one, which doesn't have a card wall to leave. */
     let launchMs = 0;
     let activeEntry: ArcadeEntry | undefined;
     let starter: EntryStarter | undefined;
+    let isFromShowcase = false;
     let loadFailure: string | undefined;
     let isPaused = false;
     let restartCount = 0;
@@ -384,6 +410,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     /** The info panel open, if any. It is an entry's, or the Arcade's own. */
     let panel: ArcadeEntry | 'about' | undefined;
     let isPerfmonOpen = false;
+    let isShowcaseMode = showcase !== undefined && options.isShowcaseMode === true;
     const highscores = createHighscoresModel({ store: options.highscoreStore, rememberedInitials: options.rememberedInitials });
 
     const model: ArcadeModel = {
@@ -391,6 +418,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         factsFor,
 
         detailsFor(id) {
+            if (id === showcase?.id) return showcaseDetails;
             const index = indexById.get(id);
             return index === undefined ? undefined : details[index];
         },
@@ -448,7 +476,7 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             if (index < 0) return;
             isFavouriteAt[index] = !isFavouriteAt[index];
             favouriteIds = isFavouriteAt[index] ? [...favouriteIds, id] : favouriteIds.filter((f) => f !== id);
-            // The wall's order changes, and the search does not
+            // The card wall's order changes, and the search does not
             deriveFromSearch();
         },
 
@@ -466,6 +494,9 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         },
         get starter() {
             return starter;
+        },
+        get isFromShowcase() {
+            return isFromShowcase;
         },
         get loadFailure() {
             return loadFailure;
@@ -531,16 +562,29 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             themeChoice = choice;
         },
 
+        showcase,
+        get isShowcaseMode() {
+            return isShowcaseMode;
+        },
+        set isShowcaseMode(value) {
+            isShowcaseMode = showcase !== undefined && value;
+        },
+        showcaseFailed(reason) {
+            isShowcaseMode = false;
+            loadFailure = reason;
+        },
+
         launch(id, launchOptions) {
             if (phase !== 'browsing') return;
             const entry = entries.find((e) => e.id === id);
             if (entry === undefined) return;
             askForDetailsAt(entries.indexOf(entry));
+            isFromShowcase = launchOptions?.isFromShowcase === true;
             activeEntry = entry;
             starter = undefined;
             loadFailure = undefined;
             panel = undefined;
-            launchMs = launchOptions?.isDirect === true ? 0 : LAUNCH_MS;
+            launchMs = launchOptions?.isDirect === true || isFromShowcase ? 0 : LAUNCH_MS;
             enter('launching');
             const launch = ++launchCount;
             loadEntry(entry).then(
@@ -626,6 +670,11 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
             return panel === 'about' ? undefined : panel;
         },
         openInfo(id) {
+            if (id === showcase?.id) {
+                panel = showcase;
+                askForShowcaseDetails(showcase);
+                return;
+            }
             panel = entries.find((e) => e.id === id) ?? panel;
             const index = indexById.get(id);
             if (index !== undefined) askForDetailsAt(index);
@@ -681,6 +730,20 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         isResumeOffered = activeEntry !== undefined && options.hasSavedGame?.(activeEntry.id) === true;
     }
 
+    /** Loads the showcase's long text, for its info panel, as `askForDetailsAt` does an entry's. The search never reads it. */
+    function askForShowcaseDetails(of: ArcadeEntry): void {
+        if (isShowcaseDetailsAsked) return;
+        isShowcaseDetailsAsked = true;
+        of.loadDetails().then(
+            (loaded) => {
+                showcaseDetails = loaded;
+            },
+            () => {
+                isShowcaseDetailsAsked = false;
+            },
+        );
+    }
+
     /**
      * Loads the long text of the entry at `index`, unless it has been asked
      * for already. Once it arrives, the search reads it. A load that fails can
@@ -716,9 +779,9 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
     }
 
     /**
-     * Works out the active tags, the entries shown (favourites first, each
-     * part in order of name), and each chip's count, from the chips chosen
-     * and the words.
+     * Works out the active tags, the entries shown (the favourites, then the
+     * rest, each part in order of name), and each chip's count, from the
+     * chips chosen and the words.
      */
     function deriveFromSearch(): void {
         const tags = noActiveTags();

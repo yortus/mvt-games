@@ -68,7 +68,7 @@ export interface TapePiece {
 
 /**
  * The side of the square a card is designed at: a card in the narrowest
- * column of a wide wall (260 pixels, less its border). Every size on a card
+ * column of a wide card wall (260 pixels, less its border). Every size on a card
  * is given at this side, here and in `arcade.css` (its bands, title, tags and
  * info button, the polaroid's margin, border and tape, the etching), and a
  * card of any other width is the same card scaled (`cardScaleFor`), so every

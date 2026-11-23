@@ -4,19 +4,21 @@
  * since sites that build previews read the page's `<meta>` tags. So each
  * entry needs a page of its own, with its own tags.
  *
- * The build writes one for each catalogue entry: a copy of the site's built
- * page, with the entry's name and summary in its title and its Open Graph
- * tags (`og:title`, `og:description`), and its share image, a picture of it
- * as it plays, in `og:image` (see `share-image.ts`). The copy is the site's
- * page, which plays the entry its address names. The site's own page shows
- * the site's share image, a picture of its card wall.
+ * The build writes one for each catalogue entry, and one for the site's
+ * showcase: a copy of the site's built page, with the entry's name and
+ * summary in its title and its Open Graph tags (`og:title`,
+ * `og:description`), and its share image, a picture of it as it plays, in
+ * `og:image` (see `share-image.ts`). The copy is the site's page, which
+ * plays the entry its address names, or opens the site on its showcase.
+ * The site's own page shows the site's share image, a picture of its card
+ * wall.
  *
  * An entry that moved to another site keeps its old address: the build writes
  * a page there that sends the visitor on to the new one. And the site that is
  * the root writes the root's two pages, beside its own folder: `index.html`,
  * which sends the visitor on to it, and `404.html`, which static hosts such
  * as GitHub Pages serve for any address they have no file for. It sends the
- * visitor to the wall of the site the address is in.
+ * visitor to the card wall of the site the address is in.
  *
  * The dev server has no copies. It serves the site's page for an address
  * that names an entry, and sends a moved entry's address on.
@@ -27,7 +29,7 @@ import { basename, join, resolve } from 'node:path';
 import process from 'node:process';
 import { type Plugin, runnerImport } from 'vite';
 import type { SiteKind } from '@mvtjs/site-kit/arcade';
-import { ENTRIES_DIR, findEntryDirectories } from './entry-facts.ts';
+import { findEntryDirectories } from './entry-facts.ts';
 import {
     findShareImage,
     SHARE_IMAGE_HEIGHT,
@@ -115,12 +117,14 @@ export function entryPagesPlugin(options: EntryPagesPluginOptions): Plugin {
                 const siteImageTags = imageTags(origin + base + SITE_SHARE_IMAGE, siteShareImageAlt(siteTitle));
                 page.source = addTags(siteHtml, [['og:url', siteUrl], ...siteImageTags]);
 
-                const { module } = await runnerImport<{ CATALOGUE: readonly CatalogueEntry[] }>(
-                    join(srcDir, ENTRIES_DIR, 'catalogue.ts'),
+                // The showcase's page opens the site on the showcase
+                const { module } = await runnerImport<{ SITE: { catalogue: readonly CatalogueEntry[]; showcase?: CatalogueEntry } }>(
+                    join(srcDir, 'site.ts'),
                     { configFile: false, root: join(srcDir, '..'), logLevel: 'error' },
                 );
+                const { catalogue, showcase } = module.SITE;
                 const entryDirs = findEntryDirectories(srcDir);
-                for (const entry of module.CATALOGUE) {
+                for (const entry of showcase === undefined ? catalogue : [...catalogue, showcase]) {
                     const folder = `${entry.id}/`;
                     const clash = Object.keys(bundle).find((name) => name.startsWith(folder));
                     if (clash !== undefined) this.error(`${entry.id}: its page would be at ${folder}, but the build writes ${clash} there`);
@@ -174,7 +178,7 @@ export function entryPagesPlugin(options: EntryPagesPluginOptions): Plugin {
             ];
             const more = `<meta name="description" content="${ROOT_DESCRIPTION}" />\n<meta name="twitter:card" content="summary_large_image" />`;
             writeFileSync(join(rootDir, 'index.html'), redirectPage(toSite, `${siteRoot}${site}/`, shareTags, more));
-            // Any address with no file goes to the wall of the site whose folder it is in, or else this site's
+            // Any address with no file goes to the card wall of the site whose folder it is in, or else this site's
             const toWall = `'${siteRoot}' + (function (s) { return ${JSON.stringify(SITES)}.indexOf(s) >= 0 ? s : '${site}'; })`
                 + `(location.pathname.slice(${siteRoot.length}).split('/')[0]) + '/' + location.search`;
             writeFileSync(join(rootDir, '404.html'), redirectPage(toWall, `${siteRoot}${site}/`, [], NOINDEX));
@@ -244,7 +248,7 @@ function escapeHtml(text: string): string {
     return text.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-/** The sites, each a folder of the root. The 404 page sends an address in one to its wall. */
+/** The sites, each a folder of the root. The 404 page sends an address in one to its card wall. */
 const SITES: readonly SiteKind[] = ['arcade', 'puzzles', 'demos'];
 
 /** What the root's pages are called, and what the root says it is. */

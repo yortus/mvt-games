@@ -99,6 +99,15 @@ export function describeCatalogue(options: DescribeCatalogueOptions): void {
             }
         });
 
+        it('describes the showcase, if the site has one, apart from the entries it lists', async () => {
+            const { showcase } = site;
+            if (showcase === undefined) return;
+            expect(catalogue.some((entry) => entry.id === showcase.id), showcase.id).toBe(false);
+            const details = await showcase.loadDetails();
+            expect(details.description.trim(), showcase.id).toBeTruthy();
+            expect(details.howToPlay?.controls?.length, showcase.id).toBeGreaterThan(0);
+        });
+
         it('gives each entry a play area', () => {
             for (const entry of catalogue) {
                 expect(entry.screenWidth, entry.id).toBeGreaterThan(0);

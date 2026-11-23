@@ -1,7 +1,8 @@
 /**
  * Facts about each entry measured from its source: its size and the renderers
  * it draws with. An entry is a directory under `src/entries/`, named for the
- * entry's id.
+ * entry's id. A site's showcase is `src/showcase/`, measured as an entry
+ * is, and its id is in its `start/showcase.ts`.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -26,30 +27,31 @@ export interface EntryFacts {
 
 /** The directory under `src/` that holds the entries, one directory each. */
 export const ENTRIES_DIR = 'entries';
+/** The directory under `src/` that holds the site's showcase, if it has one. */
+export const SHOWCASE_DIR = 'showcase';
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
-/** Measures every entry under `srcDir`, by id. */
+/** Measures every entry under `srcDir`, and the showcase, by id. */
 export function readEntryFacts(options: { srcDir: string; repoDir: string }): Record<string, EntryFacts> {
     const { srcDir, repoDir } = options;
     const facts: Record<string, EntryFacts> = {};
-    const entriesDir = join(srcDir, ENTRIES_DIR);
-    for (const id of readdirSync(entriesDir).sort()) {
-        const entryDir = join(entriesDir, id);
-        if (isDirectory(entryDir)) facts[id] = measure(entryDir, repoDir);
-    }
+    const dirs = findEntryDirectories(srcDir);
+    for (const id of Object.keys(dirs).sort()) facts[id] = measure(dirs[id], repoDir);
     return facts;
 }
 
-/** Every entry directory under `srcDir`, by id. */
+/** Every entry directory under `srcDir`, and the showcase's, by id. */
 export function findEntryDirectories(srcDir: string): Record<string, string> {
     const dirs: Record<string, string> = {};
     const entriesDir = join(srcDir, ENTRIES_DIR);
     for (const id of readdirSync(entriesDir)) {
         if (isDirectory(join(entriesDir, id))) dirs[id] = join(entriesDir, id);
     }
+    const showcaseDir = join(srcDir, SHOWCASE_DIR);
+    if (isDirectory(showcaseDir)) dirs[readShowcaseId(showcaseDir)] = showcaseDir;
     return dirs;
 }
 
@@ -88,6 +90,14 @@ function sourceFiles(dir: string): string[] {
         else if ((extname(name) === '.ts' || extname(name) === '.tsx') && !/\.(test|spike)\.tsx?$/.test(name)) found.push(path);
     }
     return found;
+}
+
+/** The showcase's id, from its `start/showcase.ts`, which its folder isn't named for. */
+function readShowcaseId(showcaseDir: string): string {
+    const file = join(showcaseDir, 'start', 'showcase.ts');
+    const id = /\bid:\s*'([a-z0-9-]+)'/.exec(readFileSync(file, 'utf8'))?.[1];
+    if (id === undefined) throw new Error(`${file}: couldn't find an id in the showcase's description`);
+    return id;
 }
 
 function isDirectory(path: string): boolean {

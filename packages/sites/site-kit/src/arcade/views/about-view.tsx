@@ -15,6 +15,8 @@ export interface AboutViewBindings {
     readonly docsHref: string;
     /** Whether the note is open. */
     readonly isOpen: () => boolean;
+    /** Whether the (i) shows as pressed. Pass it when the (i) sometimes opens something other than the note. Without it, the (i) shows as pressed while the note is open. */
+    readonly isOn?: () => boolean;
     /** Reported as the visitor presses the (i), to open or close the note. */
     readonly onAboutPressed?: () => void;
     /** Reported as the visitor presses Escape, or anywhere else, while the note is open. */
@@ -47,7 +49,7 @@ export function AboutView(bindings: AboutViewBindings): Element {
                 class="about-button"
                 aria-label={`About the ${bindings.label.toLowerCase()}`}
                 title="About"
-                aria-expanded={bindings.isOpen}
+                aria-expanded={bindings.isOn ?? bindings.isOpen}
                 aria-controls="about-note"
                 onClick={() => bindings.onAboutPressed?.()}
             />

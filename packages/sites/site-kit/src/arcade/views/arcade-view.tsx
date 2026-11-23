@@ -16,6 +16,7 @@ import { EntryNoticeView } from './entry-notice-view';
 import type { LivePreview } from './live-preview';
 import type { ArcadeAudioViews } from './load-arcade-audio-views';
 import type { Perfmon } from './load-perfmon';
+import { NavFullscreenView } from './nav-fullscreen-view';
 import { NavPerfmonView } from './nav-perfmon-view';
 import { NavSearchView } from './nav-search-view';
 import { NavSoundView } from './nav-sound-view';
@@ -41,6 +42,10 @@ export interface ArcadeViewBindings {
     readonly site: SiteConfig;
     /** The element entries play in, which the page's entry host fills. */
     readonly stage: HTMLElement;
+    /** The element the site's showcase plays in, which the page's showcase host fills. */
+    readonly showcaseStage: HTMLElement;
+    /** Whether the showcase has loaded and started, so it can be shown. */
+    readonly isShowcaseRunning: () => boolean;
     /** Where an entry would play, in the viewport, as the page's entry host would fit it. */
     readonly playRectFor: (entry: ArcadeEntry, starter: EntryStarter | undefined) => Rect;
     /** The last frame of the entry just left, for the way back out, if its renderer gave one. */
@@ -51,7 +56,7 @@ export interface ArcadeViewBindings {
     readonly livePreview?: LivePreview;
     /**
      * A place in the site's nav for the Arcade's own tools, if the page has
-     * one. A magnifier there takes a visitor scrolled down the wall back to
+     * one. A magnifier there takes a visitor scrolled down the card wall back to
      * the search. A speaker there turns all the sound off, or back on. A
      * gauge opens the Perfmon, and an (i) opens a note about the Arcade. The
      * page ticks them with the rest of its views.
@@ -60,14 +65,14 @@ export interface ArcadeViewBindings {
     /**
      * The site nav's links to the Arcade itself: the site's name and the
      * Arcade's link. The page is already the Arcade, so a click on one
-     * scrolls back to the top of the wall, closing any panel open, rather
+     * scrolls back to the top of the card wall, closing any panel open, rather
      * than loading the page again. A click that opens a new tab still does.
      */
     readonly homeLinks?: readonly HTMLElement[];
     /**
      * The site's nav, if the page has one. On a narrow screen its links fold
      * into a menu, which closes as an entry launches, so it isn't still open
-     * when the visitor comes back to the wall.
+     * when the visitor comes back to the card wall.
      */
     readonly nav?: HTMLElement;
     /**
@@ -126,30 +131,31 @@ export interface ArcadeViewBindings {
 
 /**
  * Shows the Arcade. It has a head, with the Arcade's name and a search over
- * its entries. Below is a wall of cards for the entries the search picks, in
+ * its entries. Below is a card wall for the entries the search picks, in
  * order of name. It also has an entry's info panel, and the runner an entry
  * plays in.
  *
  * Choosing an entry burns the other cards away around its polaroid while it
  * loads. Then the polaroid recedes and the entry's screen powers on. Leaving
  * the entry powers the screen off, and the polaroid comes back as the cards
- * develop. The transition and the wall's layout are this view's
+ * develop. The transition and the card wall's layout are this view's
  * presentation state, in view models it owns.
  *
  * A magnifier in the site's nav opens the search, in the head, as `/` does
- * from anywhere on the wall, scrolling back up to it, or closes it while it
+ * from anywhere on the card wall, scrolling back up to it, or closes it while it
  * is empty. The search shows while it is open, or while it holds something,
- * so a narrowed wall always says why. A speaker
+ * so a narrowed card wall always says why. A speaker
  * in the site's nav, and another in the runner's bar, turns all the sound
  * off, or back on at the levels it had. A gauge beside each opens the
- * Perfmon, over the wall or the entry playing. It drops at the top right,
- * under the bar, and the visitor can drag it anywhere. An (i) at the nav's right end opens a note about the Arcade. The
- * Arcade's own sounds play from audio views that load on the visitor's first
- * press.
+ * Perfmon, over the card wall or the entry playing. It drops at the top right,
+ * under the bar, and the visitor can drag it anywhere. An (i) at the nav's
+ * right end opens a note about the Arcade, or the showcase's info panel
+ * while the showcase shows. The Arcade's own sounds play from audio views
+ * that load on the visitor's first press.
  */
 export function ArcadeView(bindings: ArcadeViewBindings): Element {
     const { model } = bindings;
-    const { entries, highscores } = model;
+    const { entries, highscores, showcase } = model;
     /** The long text of `entry`, once it has loaded. */
     const detailsOf = (entry: ArcadeEntry | undefined): EntryDetails | undefined => (entry === undefined ? undefined : model.detailsFor(entry.id));
 
@@ -181,13 +187,16 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         when: 'launching',
         react: closeNavMenu,
     });
-    // A link straight to an entry launches it before there is a wall to leave
+    // A link straight to an entry launches it before there is a card wall to leave
     if (model.phase !== 'browsing') transition.holdGrown();
     /** The picture on the card launched, for the way in to start from as the launch begins. */
     let launchedFrom: PhotoPose | undefined;
     let isScrollLockDrawn = false;
     let isTurnDrawn = false;
     let themeDrawn: ThemeKind | undefined;
+    let isShowcaseOnDrawn = false;
+    // The page's first paint marks it while the visitor browses the showcase, so the card wall doesn't show before it
+    let isShowcaseStartingDrawn = document.documentElement.classList.contains('is-showcase-starting');
     // Presentation state: whether the entry was paused by its info panel opening over it, to resume as the panel closes
     let isPausedForInfo = false;
 
@@ -212,7 +221,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
 
     // Presentation state: whether the visitor has opened the search box, and
     // how many times the caret has been asked for in it. The box also shows
-    // while it holds something, so a search that narrows the wall is in view
+    // while it holds something, so a search that narrows the card wall is in view
     let isSearchOpen = false;
     let searchFocusRequests = 0;
     const head = ArcadeHeadView({
@@ -221,7 +230,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         label: bindings.site.label,
         isSearchShown,
         searchFocusRequests: () => searchFocusRequests,
-        // An empty box closes as it is left. One that holds something stays, so the wall says why it is narrowed
+        // An empty box closes as it is left. One that holds something stays, so the card wall says why it is narrowed
         onSearchLeft: () => { isSearchOpen = false; },
     });
     const navSearch = NavSearchView({
@@ -241,20 +250,32 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         isOpen: () => model.isPerfmonOpen,
         onPressed: togglePerfmon,
     });
+    // Full screen, where the browser has it, shown while the visitor browses the showcase
+    const navFullscreen = document.fullscreenEnabled ? NavFullscreenView() : undefined;
+    navFullscreen?.toggleAttribute('hidden', true);
     const about = AboutView({
         label: bindings.site.label,
         text: bindings.site.about,
         docsHref: bindings.docsHref,
         isOpen: () => model.isAboutOpen,
+        // While the showcase shows, the (i) opens its info panel instead of the note
+        isOn: () => model.isAboutOpen || isShowcaseInfoOpen(),
         onAboutPressed: toggleAbout,
         onDismissed: model.closeAbout,
     });
+    // How to browse the entries: a card wall in one of the themes, or the site's showcase
     const navTheme = NavThemeView({
         choice: () => model.themeChoice,
         siteTheme: SITE_THEMES[bindings.site.id],
-        onChosen: model.chooseTheme,
+        onChosen: (choice) => {
+            model.isShowcaseMode = false;
+            model.chooseTheme(choice);
+        },
+        showcaseName: model.showcase?.name,
+        isShowcaseOn: () => model.isShowcaseMode,
+        onShowcaseChosen: () => { model.isShowcaseMode = true; },
     });
-    bindings.navTools?.append(navSearch, navSound, navTheme, navPerfmon, about);
+    bindings.navTools?.append(navSearch, ...(navFullscreen === undefined ? [] : [navFullscreen]), navSound, navTheme, navPerfmon, about);
 
     window.addEventListener('keydown', onKeyDown);
     const homeLinks = bindings.homeLinks ?? [];
@@ -272,6 +293,10 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 {wall}
                 <p class="card-wall-empty" visible={() => model.shownCount === 0} text="Nothing matches this search." />
             </div>
+            {/* The showcase, over the card wall, once it has started */}
+            <div class={() => (isShowcaseShown() ? 'showcase-frame is-shown' : 'showcase-frame')}>
+                {bindings.showcaseStage}
+            </div>
             <WallEffectView
                 effect={() => transition.wallEffect}
                 cardCount={() => transition.cardCount}
@@ -288,11 +313,12 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 factsFor={model.factsFor}
                 highscoreRowsFor={highscores.tableFor}
                 highscoresStatus={() => highscores.status}
-                isOverEntry={isInfoOverEntry}
+                // Over the showcase too, its button goes back to what's under it
+                isOverEntry={() => isInfoOverEntry() || isShowcaseInfoOpen()}
                 onClosePressed={closeInfo}
                 onPlayPressed={(id) => {
                     // Over the entry, the button resumes it
-                    if (isInfoOverEntry()) {
+                    if (isInfoOverEntry() || isShowcaseInfoOpen()) {
                         closeInfo();
                         return;
                     }
@@ -306,6 +332,8 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
             <RunnerView
                 stage={bindings.stage}
                 isOpen={() => model.phase !== 'browsing'}
+                // An entry launched from the showcase shows it round its play area
+                isClear={() => model.isFromShowcase}
                 isPlaying={isEntryShown}
                 isPaused={() => model.isPaused}
                 isInfoOpen={isInfoOverEntry}
@@ -406,6 +434,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
                 <views.ArcadeAudioView
                     sfx={bindings.pageSfx}
                     phase={() => model.phase}
+                    isFromShowcase={() => model.isFromShowcase}
                     isPaused={() => model.isPaused}
                     isPanelOpen={() => model.infoEntry !== undefined || model.isAboutOpen}
                     searchText={() => model.searchText}
@@ -429,13 +458,17 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         );
     }
 
-    /** Moves the wall's layout on, starts the transition in or out as the phase changes, then advances it. */
+    /** Moves the card wall's layout on, starts the transition in or out as the phase changes, then advances it. */
     function update(deltaMs: number): void {
         // First, so this view's measurements and every card read this tick's layout
         layout.update(deltaMs);
         const { phase } = phaseWatcher.poll();
         if (phase.changed) {
-            if (phase.previous === 'browsing') {
+            // An entry launched from the showcase doesn't have a way in or out
+            if (model.isFromShowcase) {
+                launchedFrom = undefined;
+            }
+            else if (phase.previous === 'browsing') {
                 if (launchedFrom === undefined) transition.holdGrown();
                 else transition.enterFrom(launchedFrom, cardRects());
                 launchedFrom = undefined;
@@ -460,17 +493,38 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         if (model.phase !== 'launching') launchedFrom = undefined;
     }
 
-    /** Whether the wall is what the visitor is looking at: browsing, with no panel or transition over it. */
+    /** Whether the card wall is what the visitor is looking at: browsing it, without a panel or transition over it. */
     function isWallActive(): boolean {
-        return model.phase === 'browsing' && model.infoEntry === undefined && transition.phase === 'idle';
+        return model.phase === 'browsing' && model.infoEntry === undefined && transition.phase === 'idle' && !model.isShowcaseMode;
     }
 
-    /** Writes what the Arcade sets on the whole page: the scroll lock, the runner's turn, and the theme. */
+    /** Writes what the Arcade sets on the whole page: the scroll lock, the runner's turn, the theme, and the showcase mode. */
     function drawPage(): void {
         lockScroll();
         drawTurn();
         drawTheme();
+        drawShowcaseMode();
         closeNavMenuWhenEntryLaunches();
+    }
+
+    /**
+     * Marks the page with whether the visitor browses the showcase, for the
+     * stylesheet, and swaps the nav's magnifier for the full-screen button
+     * while they do. It takes off the first paint's starting mark once the
+     * showcase starts, or won't.
+     */
+    function drawShowcaseMode(): void {
+        const root = document.documentElement;
+        if (isShowcaseStartingDrawn && (bindings.isShowcaseRunning() || !model.isShowcaseMode || model.phase !== 'browsing')) {
+            isShowcaseStartingDrawn = false;
+            root.classList.remove('is-showcase-starting');
+        }
+        const isOn = model.isShowcaseMode;
+        if (isOn === isShowcaseOnDrawn) return;
+        isShowcaseOnDrawn = isOn;
+        root.classList.toggle('is-showcase-on', isOn);
+        navSearch.toggleAttribute('hidden', isOn);
+        navFullscreen?.toggleAttribute('hidden', !isOn);
     }
 
     /**
@@ -514,17 +568,18 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
      * While an entry plays, and until the way back has ended, the page under
      * it stays put: it keeps its place for the way back, and the polaroid and
      * the cards developing stay where the transition put them. Under an info
-     * panel too, which scrolls on its own, the wall stays where it was.
+     * panel too, which scrolls on its own, the card wall stays where it was, and
+     * under the showcase too.
      */
     function lockScroll(): void {
-        const isLocked = model.phase !== 'browsing' || transition.phase !== 'idle' || model.infoEntry !== undefined;
+        const isLocked = model.phase !== 'browsing' || transition.phase !== 'idle' || model.infoEntry !== undefined || model.isShowcaseMode;
         if (isLocked === isScrollLockDrawn) return;
         isScrollLockDrawn = isLocked;
         document.documentElement.classList.toggle('is-scroll-locked', isLocked);
     }
 
     /** Scrolls back up to the head, and puts the caret in the search, which opens its tags. */
-    /** Scrolls back to the top of the wall, with no panel open, for a plain click on a link to the Arcade. */
+    /** Scrolls back to the top of the card wall, with no panel open, for a plain click on a link to the Arcade. */
     function goHome(e: MouseEvent): void {
         if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
         e.preventDefault();
@@ -566,6 +621,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         destroyElement(navSearch);
         destroyElement(navSound);
         destroyElement(navPerfmon);
+        if (navFullscreen !== undefined) destroyElement(navFullscreen);
         destroyElement(about);
     }
 
@@ -574,7 +630,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         else if (e.key === 'Escape') stepBack(e);
     }
 
-    /** `/` goes to the search, as the nav's magnifier does, from anywhere on the wall but a field. */
+    /** `/` goes to the search, as the nav's magnifier does, from anywhere on the card wall but a field. */
     function jumpToSearch(e: KeyboardEvent): void {
         if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target ?? undefined) || !isWallActive()) return;
         e.preventDefault();
@@ -650,8 +706,13 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         model.isPerfmonOpen = !model.isPerfmonOpen;
     }
 
+    /** Opens or closes the site's note, or the showcase's info panel while the showcase shows. */
     function toggleAbout(): void {
-        if (model.isAboutOpen) model.closeAbout();
+        if (showcase !== undefined && isShowcaseShown() && model.phase === 'browsing') {
+            if (isShowcaseInfoOpen()) closeInfo();
+            else model.openInfo(showcase.id);
+        }
+        else if (model.isAboutOpen) model.closeAbout();
         else model.openAbout();
     }
 
@@ -692,6 +753,16 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         }
     }
 
+    /** Whether the showcase shows: the visitor browses it, and it has started. */
+    function isShowcaseShown(): boolean {
+        return model.isShowcaseMode && bindings.isShowcaseRunning();
+    }
+
+    /** Whether the showcase's own info panel is open, over it. */
+    function isShowcaseInfoOpen(): boolean {
+        return showcase !== undefined && model.infoEntry === showcase;
+    }
+
     function activeIndex(): number {
         return indexOf(model.activeEntry);
     }
@@ -707,7 +778,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
 
     /**
      * Every card's rectangle in the viewport, zero-sized for those not on
-     * the wall: what the transition burns and develops. Read when it starts.
+     * the card wall: what the transition burns and develops. Read when it starts.
      */
     function cardRects(): Rect[] {
         const bounds = wall.getBoundingClientRect();
@@ -718,7 +789,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
     }
 
     /**
-     * Card `index`'s photo, if it is on the wall, as it is drawn now, with
+     * Card `index`'s photo, if it is on the card wall, as it is drawn now, with
      * the whole thumbnail behind it: tilted at rest, or straight and closer
      * while selected. Read when a transition starts, so the way back lands on
      * the photo as the card shows it.

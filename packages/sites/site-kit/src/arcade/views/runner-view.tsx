@@ -1,6 +1,7 @@
 /** @jsxImportSource @mvtjs/html */
 import { PauseMenuView } from './pause-menu-view';
 import { listenToPressOutside } from './listen-to-press-outside';
+import { toggleFullscreen } from './toggle-fullscreen';
 
 // ---------------------------------------------------------------------------
 // Bindings
@@ -14,6 +15,8 @@ export interface RunnerViewBindings {
     readonly isOpen: () => boolean;
     /** Whether the chosen entry is playing. */
     readonly isPlaying: () => boolean;
+    /** Whether the stage is clear round the entry's play area, so what's under the runner shows there, such as the showcase it was launched from. */
+    readonly isClear?: () => boolean;
     /** Whether the entry is paused. The pause menu shows while it is, but for while the entry's info panel is over it. */
     readonly isPaused: () => boolean;
     /** Whether the entry's info panel is open over it. The bar's (i) is lit while it is. */
@@ -294,7 +297,9 @@ export function RunnerView(bindings: RunnerViewBindings): Element {
 
     function runnerClass(): string {
         if (!bindings.isOpen()) return 'runner';
-        return bindings.isPlaying() ? 'runner is-open is-playing' : 'runner is-open';
+        const isClear = bindings.isClear?.() === true;
+        if (bindings.isPlaying()) return isClear ? 'runner is-open is-playing is-clear' : 'runner is-open is-playing';
+        return isClear ? 'runner is-open is-clear' : 'runner is-open';
     }
 }
 
@@ -336,9 +341,4 @@ function classesFor(icon: string, state: string, isInState: () => boolean): Tool
         bar: () => (isInState() ? barInState : bar),
         menu: () => (isInState() ? menuInState : menu),
     };
-}
-
-function toggleFullscreen(): void {
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else document.documentElement.requestFullscreen().catch(() => {});
 }

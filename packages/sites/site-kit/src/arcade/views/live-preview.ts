@@ -6,7 +6,7 @@ import type { ArcadeEntry } from '../../entry-types';
 
 /**
  * Plays an entry live on its card (attract mode). This is an output of the
- * wall's, as a sound chip is an output of an audio view's: the view calls
+ * card wall's, as a sound chip is an output of an audio view's: the view calls
  * `play` on a change, and the page does the rest.
  */
 export interface LivePreview {

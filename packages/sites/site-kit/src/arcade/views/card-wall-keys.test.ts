@@ -33,7 +33,7 @@ describe('moving across the card wall', () => {
         expect(move(5, 'down')).toBe(6);
     });
 
-    it('has nowhere to go on an empty wall', () => {
+    it('has nowhere to go on an empty card wall', () => {
         expect(movedPosition({ position: 0, move: 'right', shownCount: 0, columnCount: 3 })).toBe(-1);
     });
 });

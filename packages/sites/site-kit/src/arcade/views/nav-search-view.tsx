@@ -8,7 +8,7 @@ import { createComputed } from '@mvtjs/utils';
 export interface NavSearchViewBindings {
     /** Whether the search box shows, in the Arcade's head: the magnifier is lit while it does. */
     readonly isOn: () => boolean;
-    /** How many entries the search shows, of how many there are: a search that narrows the wall is marked. */
+    /** How many entries the search shows, of how many there are: a search that narrows the card wall is marked. */
     readonly shownCount: () => number;
     readonly totalCount: number;
     readonly onPressed?: () => void;
@@ -21,8 +21,8 @@ export interface NavSearchViewBindings {
 /**
  * A magnifier in the site's nav, always there, which opens the search, or
  * closes it while it is empty. It is lit while the search box shows, and a
- * dot on it says the search is narrowing the wall, which a visitor scrolled
- * down the wall would not otherwise see.
+ * dot on it says the search is narrowing the card wall, which a visitor scrolled
+ * down the card wall would not otherwise see.
  *
  * A press on it leaves the focus where it was: in the search box, it would
  * otherwise leave the box, which closes an empty one before the press could.
@@ -54,7 +54,7 @@ export function NavSearchView(bindings: NavSearchViewBindings): Element {
 // Internals
 // ---------------------------------------------------------------------------
 
-/** The magnifier's label, which says how far a search has narrowed the wall. */
+/** The magnifier's label, which says how far a search has narrowed the card wall. */
 function describeSearch(shown: number, total: number): string {
     return shown < total ? `Search (showing ${shown} of ${total})` : 'Search';
 }

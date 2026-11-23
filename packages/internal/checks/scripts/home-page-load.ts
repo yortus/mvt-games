@@ -1,4 +1,4 @@
-// Measures a site's home page, its wall of cards (the arcade's, the demos' or
+// Measures a site's home page, its card wall (the arcade's, the demos' or
 // the puzzles'): the JavaScript it needs before its first paint, which must
 // not include a renderer (Pixi or three.js) or the sound chips (audio90),
 // and must stay under a budget, gzipped. The page shows cards, not entries: an
@@ -28,7 +28,7 @@ import { build } from 'vite';
 /**
  * The most JavaScript the home page may load before its first paint, gzipped,
  * in bytes. On a midrange phone, each 10 KB more is roughly 30 ms more before
- * the wall shows, so it is a tripwire: going over says something new is on
+ * the card wall shows, so it is a tripwire: going over says something new is on
  * the first load, which may belong in a dynamic import.
  */
 export const HOME_PAGE_BUDGET_BYTES = 60 * 1024;

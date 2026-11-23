@@ -18,7 +18,7 @@ export interface CardViewBindings {
     readonly entry: ArcadeEntry;
     /** The entry's address, for the card's link. */
     readonly href: string;
-    /** Where the card is drawn on the wall, and how wide, in CSS pixels. */
+    /** Where the card is drawn on the card wall, and how wide, in CSS pixels. */
     readonly x: () => number;
     readonly y: () => number;
     readonly width: () => number;
@@ -28,7 +28,7 @@ export interface CardViewBindings {
     readonly isLifted: () => boolean;
     /** Whether the card is selected: its polaroid straightens and comes closer. */
     readonly isSelected: () => boolean;
-    /** Whether the card is the wall's one stop for the Tab key. */
+    /** Whether the card is the card wall's one stop for the Tab key. */
     readonly isTabStop: () => boolean;
     /**
      * The element playing the card's entry live (attract mode), drawn at its
@@ -54,7 +54,7 @@ export interface CardViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * One entry on the wall: its name across the top, a photo of it, a star to
+ * One entry on the card wall: its name across the top, a photo of it, a star to
  * mark it as a favourite and a button for its info panel. Every card is the
  * same size, and shows its photo as the theme says (`cardPhoto`). In a
  * polaroid, the photo, in the shape the entry chose, is fitted inside a
@@ -65,10 +65,10 @@ export interface CardViewBindings {
  * card's foot, edge to edge, with the star and the info button floating over
  * its corner. Only the
  * polaroid (the photo, in its frame) is a link to the entry, so a middle click opens it in a new tab,
- * and a plain click launches it here; the wall selects the card for a press
+ * and a plain click launches it here; the card wall selects the card for a press
  * anywhere else on it. Nothing on the card can be selected or dragged, and it
  * has no context menu, so a long press on a touch screen just holds it. One
- * card's link is a stop for the Tab key; the wall moves the selection, and
+ * card's link is a stop for the Tab key; the card wall moves the selection, and
  * the info button is reached with `i`. A card selected for a while may play
  * its entry live over its photo (attract mode), out of reach of the pointer
  * and the keys, which still act on the card.
@@ -149,7 +149,7 @@ export function CardView(bindings: CardViewBindings): Element {
         </article>
     );
 
-    /** Moves the card to its place on the wall, fits its photo to its width, and marks it lifted, selected or the Tab stop. */
+    /** Moves the card to its place on the card wall, fits its photo to its width, and marks it lifted, selected or the Tab stop. */
     function place(card: Element): void {
         const style = (card as HTMLElement).style;
         const x = bindings.x();
@@ -203,7 +203,7 @@ export function CardView(bindings: CardViewBindings): Element {
      * one line (`--name-fit`, which the stylesheet's size is multiplied by),
      * as the pixel name fits itself. Every size on the card scales with it,
      * so it fits at any width once it fits at one: it is measured again only
-     * for another theme, once the card is on the wall to measure.
+     * for another theme, once the card is on the card wall to measure.
      */
     function fitName(card: HTMLElement): void {
         if (nameText === undefined || !bindings.isVisible() || card.offsetParent === null) return;
@@ -304,10 +304,10 @@ export function CardView(bindings: CardViewBindings): Element {
 }
 
 // ---------------------------------------------------------------------------
-// A card's markup, for the wall
+// A card's markup, for the card wall
 // ---------------------------------------------------------------------------
 
-// What the wall needs to know of a card this view made, asked here, so the
+// What the card wall needs to know of a card this view made, asked here, so the
 // card's markup stays the card's own.
 
 /** The card this view made for `entryId`, if it is in `container`. */
@@ -315,7 +315,7 @@ export function cardIn(container: Element, entryId: string): Element | undefined
     return container.querySelector(`.card[data-entry="${CSS.escape(entryId)}"]`) ?? undefined;
 }
 
-/** The card's link, its polaroid: the wall's stop for the Tab key, and what Enter presses. */
+/** The card's link, its polaroid: the card wall's stop for the Tab key, and what Enter presses. */
 export function linkOf(card: Element): HTMLElement | undefined {
     return card.querySelector<HTMLElement>('.card-link') ?? undefined;
 }

@@ -220,7 +220,7 @@ describe('ArcadeModel', () => {
             expect(model.activeEntry?.id).toBe('maze-game');
             await settle();
             expect(model.starter).toBe(STARTER);
-            // Loaded already, but the way out of the wall takes its time
+            // Loaded already, but the way out of the card wall takes its time
             await advanceTime(LAUNCH_MS - 1, model);
             expect(model.phase).toBe('launching');
             expect(model.isEntryStarted).toBe(false);
@@ -262,13 +262,13 @@ describe('ArcadeModel', () => {
             expect(model.phase).toBe('revealing');
         });
 
-        it('starts an entry launched directly as soon as it has loaded, with no wall to leave', async () => {
+        it('starts an entry launched directly as soon as it has loaded, without a card wall to leave', async () => {
             const model = createArcadeModel(options());
             model.launch('maze-game', { isDirect: true });
             await settle();
             await advanceTime(16, model);
             expect(model.phase).toBe('revealing');
-            // The next launch from the wall takes its time again
+            // The next launch from the card wall takes its time again
             model.exit();
             model.launch('maze-game');
             await settle();
@@ -289,7 +289,7 @@ describe('ArcadeModel', () => {
             expect(model.elapsedMs).toBe(0);
         });
 
-        it('launches only from the wall, and only entries it lists', () => {
+        it('launches only from the card wall, and only entries it lists', () => {
             const model = createArcadeModel(options());
             model.launch('no-such-entry');
             expect(model.phase).toBe('browsing');
@@ -309,7 +309,7 @@ describe('ArcadeModel', () => {
             expect(model.activeEntry?.id).toBe('maze-game');
         });
 
-        it('goes back to the wall, saying why, when a load fails', async () => {
+        it('goes back to the card wall, saying why, when a load fails', async () => {
             const model = createArcadeModel(options({ loadEntry: () => Promise.reject(new Error('offline')) }));
             model.launch('sim-demo');
             await settle();
@@ -388,6 +388,44 @@ describe('ArcadeModel', () => {
             model.openAbout();
             model.launch('sim-demo');
             expect(model.isAboutOpen).toBe(false);
+        });
+    });
+
+    describe('the showcase', () => {
+        it('launches an entry from the showcase without a way in, and goes back to the showcase on leaving', async () => {
+            const model = createArcadeModel(options({ showcase: SHOWCASE, isShowcaseMode: true }));
+            model.launch('maze-game', { isFromShowcase: true });
+            expect(model.isFromShowcase).toBe(true);
+            await settle();
+            await advanceTime(16, model);
+            expect(model.phase).toBe('revealing');
+            model.exit();
+            expect(model.phase).toBe('browsing');
+            expect(model.isShowcaseMode).toBe(true);
+            // Still known on the way out, which doesn't have a way out either
+            expect(model.isFromShowcase).toBe(true);
+        });
+
+        it('opens the info panel of the showcase, with its long text', async () => {
+            const model = createArcadeModel(options({ showcase: SHOWCASE }));
+            model.openInfo('hall');
+            expect(model.infoEntry).toBe(SHOWCASE);
+            await settle();
+            expect(model.detailsFor('hall')).toBeDefined();
+        });
+
+        it('turns the showcase off, saying why, when it fails to load, so the card wall shows', () => {
+            const model = createArcadeModel(options({ showcase: SHOWCASE, isShowcaseMode: true }));
+            model.showcaseFailed('The Hall could not be loaded');
+            expect(model.isShowcaseMode).toBe(false);
+            expect(model.loadFailure).toBe('The Hall could not be loaded');
+        });
+
+        it('stays off for a site without a showcase', () => {
+            const model = createArcadeModel(options({ isShowcaseMode: true }));
+            expect(model.isShowcaseMode).toBe(false);
+            model.isShowcaseMode = true;
+            expect(model.isShowcaseMode).toBe(false);
         });
     });
 
@@ -816,6 +854,9 @@ function countingStore(): { store: HighscoreStore; loads: () => number } {
         loads: () => loads,
     };
 }
+
+/** A showcase, which holds the other entries. */
+const SHOWCASE: ArcadeEntry = entry('hall', 'The Hall', []);
 
 function entry(id: string, name: string, tags: readonly EntryTag[], details: EntryDetails = { description: '' }): ArcadeEntry {
     return {

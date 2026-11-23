@@ -1,5 +1,5 @@
 // How the keyboard moves the selection across the card wall. Every card is
-// the same size, so the wall lays them out in rows, in the order shown:
+// the same size, so the card wall lays them out in rows, in the order shown:
 // left and right step through that order, up and down a column at a time.
 
 /** A way the selection can move. */
@@ -18,8 +18,8 @@ export function wallMoveFor(key: string): WallMoveKind | undefined {
 
 /**
  * The position, in the order shown, that `move` takes the selection to from
- * `position`, on a wall `columnCount` cards wide showing `shownCount` cards.
- * A move off the wall's edge stays put; down from a card with none below it
+ * `position`, on a card wall `columnCount` cards wide showing `shownCount` cards.
+ * A move off the card wall's edge stays put; down from a card with none below it
  * in a short last row goes to the last card.
  */
 export function movedPosition(options: {

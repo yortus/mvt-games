@@ -253,6 +253,8 @@ function setUp(options: { homeLinks?: readonly HTMLElement[]; nav?: HTMLElement;
         model,
         site: SITE,
         stage: document.createElement('div'),
+        showcaseStage: document.createElement('div'),
+        isShowcaseRunning: () => false,
         playRectFor: () => NO_RECT,
         exitFrame: () => undefined,
         isMotionReduced: () => false,

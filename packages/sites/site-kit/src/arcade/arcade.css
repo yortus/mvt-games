@@ -3,8 +3,8 @@
  * theme (`--theme-*`, in `themes.css`), and the nav's from the nav's own
  * names (`--site-nav-*`, in `nav.css`), which are the same in every theme.
  *
- * Stacking, bottom to top: the page and its wall; the canvas that burns and
- * develops the cards (30); the Perfmon over the wall (9998), under the nav,
+ * Stacking, bottom to top: the page and its card wall; the canvas that burns and
+ * develops the cards (30); the Perfmon over the card wall (9998), under the nav,
  * so the (i)'s note drops in front of it; the nav (9999); the stage an entry plays on (10000); the transition's backdrop and picture
  * (10001); the runner's hints (10002); its pause menu, or the offer to resume
  * a saved game (10003); a score that places, asking for initials (10004);
@@ -34,7 +34,7 @@ html.is-scroll-locked { overflow: hidden; }
 
 /*
  * The scrollbar's space is kept whether the page scrolls or not: a search
- * that shortens the wall, or an entry starting, would otherwise widen the
+ * that shortens the card wall, or an entry starting, would otherwise widen the
  * page, and every card would jump to its new place rather than slide.
  */
 html { scrollbar-gutter: stable; }
@@ -59,7 +59,7 @@ button { font: inherit; color: inherit; }
 
 /* For a visitor who has asked for less motion, nothing on the page animates its way between states */
 @media (prefers-reduced-motion: reduce) {
-    .card, .card-polaroid, .search-box, .search-slot, .search-tags-reveal, .chip, .nav-search, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button, .runner-bar button { transition: none; }
+    .card, .card-polaroid, .search-box, .search-slot, .search-tags-reveal, .chip, .nav-search, .nav-fullscreen, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button, .runner-bar button { transition: none; }
 }
 
 .arcade {
@@ -75,7 +75,7 @@ button { font: inherit; color: inherit; }
  */
 .arcade-head {
     position: relative;
-    /* Above the wall's lifted polaroids */
+    /* Above the card wall's lifted polaroids */
     z-index: 20;
     display: flex;
     flex-wrap: wrap;
@@ -108,7 +108,7 @@ button { font: inherit; color: inherit; }
  * drawn by a mask on its `::before`. A tool that is on (the Perfmon open, the
  * note open) is lit as the nav's link to the page is.
  */
-.nav-search, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button, .runner-bar button {
+.nav-search, .nav-fullscreen, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button, .runner-bar button {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -123,9 +123,9 @@ button { font: inherit; color: inherit; }
 }
 /* On a phone, the nav's tools close up, so the site's name keeps its room beside them */
 @media (max-width: 400px) {
-    .nav-search, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button { padding: 5px; }
+    .nav-search, .nav-fullscreen, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button { padding: 5px; }
 }
-.nav-search:hover, .nav-sound:hover, .nav-theme-button:hover, .nav-perfmon:hover, .about-button:hover, .runner-bar button:hover:not(:disabled) {
+.nav-search:hover, .nav-fullscreen:hover, .nav-sound:hover, .nav-theme-button:hover, .nav-perfmon:hover, .about-button:hover, .runner-bar button:hover:not(:disabled) {
     color: var(--site-nav-text);
     background: var(--site-nav-hover-bg);
 }
@@ -133,14 +133,14 @@ button { font: inherit; color: inherit; }
     color: var(--site-nav-text);
     background: var(--site-nav-active-bg);
 }
-.nav-search::before, .nav-sound::before, .nav-theme-button::before, .nav-perfmon::before, .about-button::before, .runner-bar button::before {
+.nav-search::before, .nav-fullscreen::before, .nav-sound::before, .nav-theme-button::before, .nav-perfmon::before, .about-button::before, .runner-bar button::before {
     content: '';
     width: 20px;
     height: 20px;
     background: currentColor;
 }
 
-/* The magnifier, always there: it opens the search, lit while it shows. A dot on it marks a search that narrows the wall */
+/* The magnifier, always there: it opens the search, lit while it shows. A dot on it marks a search that narrows the card wall */
 .nav-search::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") center / 18px no-repeat; }
 .nav-search.is-narrowed::after {
     content: '';
@@ -207,6 +207,24 @@ button { font: inherit; color: inherit; }
 }
 .nav-theme-swatch > span { width: 6px; height: 18px; }
 
+/* The menu's two groups, the card walls and the showcase, each under a small heading */
+.nav-theme-heading {
+    padding: 8px 10px 4px;
+    color: var(--theme-text-muted);
+    font: 600 11px var(--theme-font-ui);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.nav-theme-heading:not(:first-child) { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--theme-border); }
+/* The showcase's icon in the menu, a cube in perspective, since a showcase is a 3D scene */
+.nav-theme-cube {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    background: currentcolor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linejoin='round'%3E%3Cpath d='M8 1.6l5.8 3.2v6.4L8 14.4l-5.8-3.2V4.8z'/%3E%3Cpath d='M2.2 4.8L8 8l5.8-3.2M8 8v6.4'/%3E%3C/svg%3E") center / 18px no-repeat;
+}
+
 /* The gauge, which opens the Perfmon. The runner's bar has one too */
 .nav-perfmon::before, .runner-perfmon::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M2.5 11a5.5 5.5 0 0111 0'/%3E%3Cpath d='M8 11l2.6-3.4'/%3E%3Ccircle cx='8' cy='11' r='1.2' fill='%23000' stroke='none'/%3E%3C/svg%3E") center / 18px no-repeat; }
 
@@ -267,7 +285,7 @@ button { font: inherit; color: inherit; }
 
 /*
  * The search's place in the head. Shut, it is no height, and unseen; it
- * slides open, and shut, so the wall under it moves rather than jumps. The
+ * slides open, and shut, so the card wall under it moves rather than jumps. The
  * clip inside keeps its box's focus ring in view as it slides.
  */
 .search-slot {
@@ -347,9 +365,9 @@ button { font: inherit; color: inherit; }
 
 /*
  * The tags to choose from, opened under the box while it has focus. In the
- * page's flow, so the wall moves down for them rather than hiding under them,
+ * page's flow, so the card wall moves down for them rather than hiding under them,
  * and unfolding, its one row growing from nothing to its own height, so the
- * wall glides there. Folded, it hides once the fold has finished; not with
+ * card wall glides there. Folded, it hides once the fold has finished; not with
  * `hidden`, which would cut the fold short.
  */
 .search-tags-reveal {
@@ -404,7 +422,7 @@ button { font: inherit; color: inherit; }
 .chip:hover, .chip.is-highlighted { border-color: var(--theme-accent); background: var(--theme-accent-tint); }
 .chip-count { font-size: 11px; color: var(--theme-text-muted); font-variant-numeric: tabular-nums; }
 
-/* --- The wall ------------------------------------------------------------- */
+/* --- The card wall ------------------------------------------------------------- */
 
 .card-wall-frame { position: relative; margin-top: 20px; }
 .card-wall { position: relative; }
@@ -429,7 +447,7 @@ button { font: inherit; color: inherit; }
      * catching the light from the top left.
      *
      * Every size on a card is given for a card in the narrowest column of a
-     * wide wall (`CARD_DESIGN_SIDE`), and multiplied by `--card-scale`, set by
+     * wide card wall (`CARD_DESIGN_SIDE`), and multiplied by `--card-scale`, set by
      * the card: a card of any width is the same card, scaled.
      */
     --etch-shadow: color-mix(in srgb, var(--candy, #161b22) 87%, #3a1d00);
@@ -488,7 +506,7 @@ button { font: inherit; color: inherit; }
 /*
  * The photo is a link that cannot be dragged. Only its polaroid takes the
  * pointer, tilted or lifted as it is drawn: a press anywhere else on the
- * card falls through to the card, which the wall selects.
+ * card falls through to the card, which the card wall selects.
  */
 .card-link {
     display: block;
@@ -618,7 +636,7 @@ button { font: inherit; color: inherit; }
 .card-info:hover { border-color: var(--theme-accent); }
 
 /*
- * The star, an outline, filled in gold for a favourite, which the wall shows
+ * The star, an outline, filled in gold for a favourite, which the card wall shows
  * first. It is drawn as a mask, not a character, so it is the same size in
  * every font, and fills its circle as the info button's letter does.
  */
@@ -951,7 +969,42 @@ button { font: inherit; color: inherit; }
     visibility: hidden;
     pointer-events: none;
 }
-.runner-fullscreen::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.7' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10'/%3E%3C/svg%3E") center / 18px no-repeat; }
+/* Four corners, for full screen, in the runner's bar, and in the nav while the visitor browses the showcase */
+.nav-fullscreen::before, .runner-fullscreen::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.7' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10'/%3E%3C/svg%3E") center / 18px no-repeat; }
+
+/*
+ * The showcase, under the site's nav, over the card wall, and under the
+ * panels, the toast and the runner. Laid out even while hidden, so its host
+ * has a size to fit the showcase to. It fades up once it has started.
+ */
+.showcase-frame {
+    position: fixed;
+    top: var(--site-nav-height, 48px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 150;
+    visibility: hidden;
+    background: var(--theme-screen);
+}
+.showcase-frame.is-shown { visibility: visible; animation: showcase-fade-up 0.45s ease-out; }
+@keyframes showcase-fade-up {
+    from { opacity: 0; }
+}
+.showcase-stage { position: absolute; inset: 0; overflow: hidden; }
+/* While the visitor browses the showcase, the card wall dims under it, and its scrollbar's gutter goes */
+:root.is-showcase-on { scrollbar-gutter: auto; }
+.arcade-head, .card-wall-frame { transition: opacity 0.3s; }
+:root.is-showcase-on .arcade-head, :root.is-showcase-on .card-wall-frame { opacity: 0.35; }
+/* A page opened on the showcase doesn't show the card wall first (see first-paint-theme.ts) */
+:root.is-showcase-starting .arcade-head, :root.is-showcase-starting .card-wall-frame { opacity: 0; transition: none; }
+/* For less motion, the showcase appears and the card wall dims at once. After the rules above, which it overrides */
+@media (prefers-reduced-motion: reduce) {
+    .arcade-head, .card-wall-frame { transition: none; }
+    .showcase-frame.is-shown { animation: none; }
+}
+/* An entry launched from the showcase shows the showcase round its play area */
+.runner.is-playing.is-clear .runner-frame { background: none; }
 
 /* Laid out even while hidden, so the transition knows where an entry will play */
 .runner-frame {
@@ -1384,7 +1437,7 @@ html.is-runner-turned .runner-sound-hint {
 
 /*
  * Dropped from the right end of the nav, or of the runner's bar, which has
- * the same height: over the wall, its panels, and the entry playing
+ * the same height: over the card wall, its panels, and the entry playing
  */
 .perfmon-float {
     position: fixed;

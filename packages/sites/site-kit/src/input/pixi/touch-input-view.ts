@@ -20,6 +20,13 @@ export interface TouchInputViewBindings {
     gameWidth: () => number;
     gameHeight: () => number;
     scale: () => number;
+    /**
+     * Whether the controls are drawn over the game, in its bottom corners,
+     * rather than in the room left beside or below it. Over the game, each
+     * control has a dark backing, so it shows over a pale scene. Absent, they
+     * go beside or below.
+     */
+    isOverGame?: () => boolean;
     hasDpad: () => boolean;
     dpadKind: () => DpadKind;
     hasPrimaryButton: () => boolean;
@@ -42,7 +49,8 @@ export interface TouchInputViewBindings {
 
 /**
  * On-screen controls for touch devices. There is a d-pad or a floating
- * joystick, and up to two buttons, beside or below the game. The view is
+ * joystick, and up to two buttons, beside or below the game, or over its
+ * bottom corners, for a game that fills the screen. The view is
  * written in plain TypeScript. It rebuilds its controls when their layout
  * changes. It lays them out by hand each frame, at the canvas's scale.
  *
@@ -86,7 +94,9 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
     let joystickBase: Graphics | undefined;
     let joystickKnob: Graphics | undefined;
 
+    const isOverGame = bindings.isOverGame ?? (() => false);
     const watcher = watch({
+        isOverGame,
         showDpad: bindings.hasDpad,
         showPrimary: bindings.hasPrimaryButton,
         showSecondary: bindings.hasSecondaryButton,
@@ -106,7 +116,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
     function refresh(): void {
         const w = watcher.poll();
 
-        const structuralChange = w.showDpad.changed
+        const structuralChange = w.isOverGame.changed || w.showDpad.changed
             || w.showPrimary.changed || w.showSecondary.changed
             || w.floatingJoystick.changed || w.dpadKind.changed;
 
@@ -146,7 +156,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
                 buildFloatingJoystick(dpadGroup);
             }
             else {
-                buildFixedDpad(dpadGroup, bindings.dpadKind());
+                buildFixedDpad(dpadGroup, bindings.dpadKind(), isOverGame());
             }
         }
 
@@ -155,6 +165,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
                 parent: primaryBtnGroup,
                 label: bindings.primaryLabel(),
                 color: COLOR_PRIMARY,
+                hasBacking: isOverGame(),
                 onChanged: (pressed) => {
                     isPrimaryHeld = pressed;
                     bindings.onPrimaryButtonChanged?.(pressed);
@@ -169,6 +180,7 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
                 parent: secondaryBtnGroup,
                 label: bindings.secondaryLabel(),
                 color: COLOR_SECONDARY,
+                hasBacking: isOverGame(),
                 onChanged: (pressed) => {
                     isSecondaryHeld = pressed;
                     bindings.onSecondaryButtonChanged?.(pressed);
@@ -229,13 +241,24 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
         const invScale = 1 / bindings.scale();
 
         const isPortrait = canvasHeight >= canvasWidth;
+        const btnStep = (BTN_CSS_RADIUS * 2 + MARGIN_CSS) * invScale;
+        const hasBoth = showPrimary && showSecondary;
 
         let dpadCenterX: number;
         let dpadCenterY: number;
         let btnAreaX: number;
         let btnAreaY: number;
 
-        if (isPortrait) {
+        if (isOverGame()) {
+            // Set in from the bottom corners, the d-pad's rim and the lower button's a margin from the edges
+            const dpadInset = (DPAD_CSS_RADIUS + MARGIN_CSS) * invScale;
+            const btnInset = (BTN_CSS_RADIUS + MARGIN_CSS) * invScale;
+            dpadCenterX = dpadInset;
+            dpadCenterY = canvasHeight - dpadInset;
+            btnAreaX = canvasWidth - btnInset;
+            btnAreaY = canvasHeight - btnInset - (hasBoth ? btnStep / 2 : 0);
+        }
+        else if (isPortrait) {
             const belowTop = gameY + gameHeight;
             const belowHeight = canvasHeight - belowTop;
             const controlCenterY = belowTop + belowHeight / 2;
@@ -261,9 +284,6 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
             dpadGroup.position.set(dpadCenterX, dpadCenterY);
             dpadGroup.scale.set(invScale);
         }
-
-        const btnStep = (BTN_CSS_RADIUS * 2 + MARGIN_CSS) * invScale;
-        const hasBoth = showPrimary && showSecondary;
 
         if (showSecondary) {
             const offsetY = hasBoth ? btnStep / 2 : 0;
@@ -388,14 +408,15 @@ export function TouchInputView(bindings: TouchInputViewBindings): Container {
 
     // ---- Fixed D-pad builder -----------------------------------------------
 
-    function buildFixedDpad(parent: Container, kind: DpadKind): void {
+    function buildFixedDpad(parent: Container, kind: DpadKind, hasBacking: boolean): void {
         const dpadBg = new Graphics();
+        if (hasBacking) dpadBg.circle(0, 0, DPAD_CSS_RADIUS).fill({ color: 0x000000, alpha: BACKING_ALPHA });
         dpadBg.circle(0, 0, DPAD_CSS_RADIUS).fill({ color: 0xffffff, alpha: 0.08 });
         parent.addChild(dpadBg);
 
         const arrowGfx = new Graphics();
         drawDpadArrows(arrowGfx, DPAD_CSS_RADIUS, kind);
-        arrowGfx.alpha = ARROW_ALPHA;
+        arrowGfx.alpha = hasBacking ? BACKED_ALPHA : ARROW_ALPHA;
         parent.addChild(arrowGfx);
 
         const dpadHit = new Graphics();
@@ -447,6 +468,10 @@ const COLOR_PRIMARY = 0x58a6ff;
 const COLOR_SECONDARY = 0xf0883e;
 /** How strongly a held button's fill shows, over its resting fill. */
 const HELD_ALPHA = 0.35;
+/** How dark the backing is behind each control drawn over the game. */
+const BACKING_ALPHA = 0.5;
+/** How strongly the arrows and labels show over a backing, brighter than beside the game, to stand out from it. */
+const BACKED_ALPHA = 0.85;
 
 function destroyChildren(container: Container): void {
     while (container.children.length > 0) {
@@ -469,14 +494,17 @@ interface ActionButtonOptions {
     readonly parent: Container;
     readonly label: string;
     readonly color: number;
+    /** Whether it has a dark backing, to show over the game. */
+    readonly hasBacking: boolean;
     /** The button was pressed or let go, by the one finger it follows. */
     readonly onChanged: (pressed: boolean) => void;
 }
 
 /** Builds a round button. It returns its label, and the fill that shows it held down. */
 function buildActionButton(options: ActionButtonOptions): { readonly text: Text; readonly heldFill: Graphics } {
-    const { parent, label, color, onChanged } = options;
+    const { parent, label, color, hasBacking, onChanged } = options;
     const bg = new Graphics();
+    if (hasBacking) bg.circle(0, 0, BTN_CSS_RADIUS).fill({ color: 0x000000, alpha: BACKING_ALPHA });
     bg.circle(0, 0, BTN_CSS_RADIUS).fill({ color, alpha: 0.25 });
     bg.circle(0, 0, BTN_CSS_RADIUS).stroke({ color, alpha: 0.5, width: 2 });
     parent.addChild(bg);
@@ -497,12 +525,13 @@ function buildActionButton(options: ActionButtonOptions): { readonly text: Text;
         style: {
             fontFamily: 'monospace',
             fontSize: Math.round(BTN_CSS_RADIUS * 0.7),
-            fill: color,
+            // Over a dark backing, the button's own colour is too dim to read, so the label is white
+            fill: hasBacking ? 0xffffff : color,
             align: 'center',
         },
     });
     text.anchor.set(0.5, 0.5);
-    text.alpha = 0.6;
+    text.alpha = hasBacking ? BACKED_ALPHA : 0.6;
     fitLabel(text);
     parent.addChild(text);
 

@@ -14,7 +14,7 @@ export interface SearchBarViewBindings {
     /** How many tags are chosen, and which, in the order they were chosen. */
     readonly activeCount: () => number;
     readonly activeChipAt: (position: number) => number;
-    /** How many entries the wall would show were this chip chosen. */
+    /** How many entries the card wall would show were this chip chosen. */
     readonly chipCountAt: (index: number) => number;
     /** Whether choosing this chip would narrow the search: only these are suggested. */
     readonly isChipOfferedAt: (index: number) => boolean;

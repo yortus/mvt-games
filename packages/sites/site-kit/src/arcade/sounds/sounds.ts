@@ -2,7 +2,7 @@ import { type Audio80SoundOptions, createAudio80Song, createAudio80Sound } from 
 
 // The Arcade's own sounds, which play on the page's Audio80 rather than any
 // entry's. They were all written for the Arcade. They are small and soft, at
-// about half the peak of a game's effects. They cover the wall's blips, the
+// about half the peak of a game's effects. They cover the card wall's blips, the
 // way into and out of an entry, pausing, and the pause menu's volume
 // previews.
 
@@ -65,7 +65,7 @@ export const SFX_PREVIEW = createAudio80Sound({
 });
 
 // ---------------------------------------------------------------------------
-// The wall
+// The card wall
 // ---------------------------------------------------------------------------
 
 /** How the search's key ticks sound. Two ticks at different pitches take turns, so fast typing does not drone. */

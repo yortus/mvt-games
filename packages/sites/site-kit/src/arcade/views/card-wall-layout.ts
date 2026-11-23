@@ -5,26 +5,26 @@
 /**
  * The card wall's layout: cards of one width in as many columns as fit, each
  * placed in the shortest column so far, in the order shown. A view model,
- * owned by the wall view: it holds where each card is drawn, eases cards to
+ * owned by the card wall view: it holds where each card is drawn, eases cards to
  * new places when the order or the width changes, and fades cards in and out
  * as they are shown and hidden. Cards are addressed by a fixed index (their
  * place in the catalogue), whatever order they are shown in.
  */
 export interface CardWallLayout {
-    /** How many columns the wall has: as many as fit, from the fewest allowed up to the most. */
+    /** How many columns the card wall has: as many as fit, from the fewest allowed up to the most. */
     readonly columnCount: number;
     /** The width of every card, in CSS pixels. */
     readonly columnWidth: number;
-    /** The wall's height: its longest column's. */
+    /** The card wall's height: its longest column's. */
     readonly height: number;
-    /** Where card `index` is drawn, from the wall's top left corner, in CSS pixels. */
+    /** Where card `index` is drawn, from the card wall's top left corner, in CSS pixels. */
     readonly xAt: (index: number) => number;
     readonly yAt: (index: number) => number;
     /** 0 hidden, 1 shown; in between while fading. */
     readonly opacityAt: (index: number) => number;
     /** Whether card `index` is drawn at all: shown, or still fading out. */
     readonly isVisibleAt: (index: number) => boolean;
-    /** The wall's width, as it is laid out. */
+    /** The card wall's width, as it is laid out. */
     readonly setWidth: (width: number) => void;
     /** A card's height, as it is laid out at the column width. A hidden card's 0 is ignored: it keeps the height it had. */
     readonly setCardHeightAt: (index: number, height: number) => void;
@@ -40,11 +40,11 @@ export interface CardWallLayoutOptions {
     readonly count: number;
     /** Space between columns, and between cards in a column, in CSS pixels. */
     readonly gap: number;
-    /** The narrowest a column may be; the wall has as many columns as fit. */
+    /** The narrowest a column may be; the card wall has as many columns as fit. */
     readonly minColumnWidth: number;
-    /** The fewest columns the wall has, however narrow: below that, columns narrow past `minColumnWidth`. */
+    /** The fewest columns the card wall has, however narrow: below that, columns narrow past `minColumnWidth`. */
     readonly minColumnCount: number;
-    /** The most columns the wall has, however wide. */
+    /** The most columns the card wall has, however wide. */
     readonly maxColumnCount: number;
     /** How many cards are shown, and which, in order. */
     readonly shownCount: () => number;
@@ -83,7 +83,7 @@ export function createCardWallLayout(options: CardWallLayoutOptions): CardWallLa
     // What the targets were worked out from, so they are worked out again only when it changes
     let laidOutWidth = -1;
     let isLayoutStale = true;
-    /** Set when a card's first measure is off its estimate: the wall settles without sliding. */
+    /** Set when a card's first measure is off its estimate: the card wall settles without sliding. */
     let isFirstMeasure = false;
     const laidOutOrder: number[] = [];
     const columnHeights: number[] = [];
@@ -109,7 +109,7 @@ export function createCardWallLayout(options: CardWallLayoutOptions): CardWallLa
         },
         setCardHeightAt(index, value) {
             // A hidden card measures 0; were that taken, showing it again would
-            // look like a first measure, and snap the wall rather than slide it
+            // look like a first measure, and snap the card wall rather than slide it
             if (value <= 0 || value === measured[index]) return;
             if (measured[index] === 0 && Math.abs(value - options.estimatedHeightAt(index, columnWidth)) > ESTIMATE_TOLERANCE) {
                 isFirstMeasure = true;
@@ -175,7 +175,7 @@ export function createCardWallLayout(options: CardWallLayoutOptions): CardWallLa
             columnHeights[column] += cardHeight + gap;
             if (width > 0 && (isPlaced[index] === 0 || isSnap || opacity[index] === 0)) {
                 // A card shown for the first time, or again once it has faded
-                // out, appears where it belongs, and fades in: when the wall
+                // out, appears where it belongs, and fades in: when the card wall
                 // reflows, once the cards sliding off its place have cleared it
                 x[index] = targetX[index];
                 y[index] = targetY[index];
@@ -201,12 +201,12 @@ const FADE_OUT_MS = 60;
 
 /**
  * A card arriving fades in more slowly, to be seen arriving; and, when the
- * wall reflows, only after the cards sliding off its place have mostly gone.
+ * card wall reflows, only after the cards sliding off its place have mostly gone.
  */
 const FADE_IN_MS = 120;
 const FADE_IN_DELAY_MS = 120;
 
-/** How far, in CSS pixels, a card's first measure may be off its estimate and still slide the wall, not snap it. */
+/** How far, in CSS pixels, a card's first measure may be off its estimate and still slide the card wall, not snap it. */
 const ESTIMATE_TOLERANCE = 1;
 
 /** Close enough to land. */

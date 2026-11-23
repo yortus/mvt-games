@@ -6,6 +6,14 @@
     display: block;
 }
 
+/* HTML a Pixi entry shows over its play area, scaled with the canvas. Only the children that ask take the pointer */
+.entry-host-overlay {
+    position: absolute;
+    overflow: hidden;
+    transform-origin: 0 0;
+    pointer-events: none;
+}
+
 .entry-host-element {
     position: absolute;
     inset: 0;

@@ -2,9 +2,9 @@ import { ENTRY_FACTS } from 'virtual:entry-facts';
 import { createFetchHighscoreStore, createMemoryHighscoreStore, GAMES, type HighscoreStore } from '../highscores';
 import { refreshView, updateView } from '@mvtjs/html';
 import { assert, type MetricKind, type PerformanceMeter, watch } from '@mvtjs/utils';
-import type { ArcadeEntry, EntryStarter } from '../entry-types';
+import type { ArcadeEntry, EntryLauncher, EntrySession, EntryStarter, PlayRect } from '../entry-types';
 import { isHandheldDevice, isTouchDevice } from '../device';
-import { createEntryHost, createPageSound } from '../runner';
+import { createEntryHost, createPageSound, type EntryHost } from '../runner';
 import { createLocalStore } from '../storage';
 import {
     type ArcadeSoundSettings,
@@ -38,7 +38,12 @@ import './arcade.css';
 // info panel that is open, an entry's or the Arcade's, has a history step of
 // its own. The page also
 // plays an entry live on its card (attract mode), on a live preview that it
-// passes to the wall, in a second host that takes no input.
+// passes to the card wall, in a second host that takes no input.
+//
+// While the visitor browses the site's showcase instead of the card wall,
+// the page runs it in a host of its own, and passes it a launcher. An entry
+// it launches plays over it, on a clear canvas, so the showcase shows round
+// it.
 //
 // The page also connects the games to their highscore tables. It watches the
 // running session's `scoring` for the end of a run, and remembers the
@@ -79,6 +84,16 @@ export function startSitePage(site: SiteConfig): void {
     // entry's chips as it pauses the game.
     const sound = createPageSound({ isEnabled: true });
     const host = createEntryHost({ element: stage, isTouch, sound });
+    // The site's showcase runs in a host of its own, under the entry host
+    const showcaseStage = document.createElement('div');
+    showcaseStage.className = 'showcase-stage';
+    const showcaseHost = createEntryHost({ element: showcaseStage, isTouch, sound });
+    /** Whether the showcase is stopped, loading, or running. */
+    let showcaseState: 'stopped' | 'loading' | 'running' = 'stopped';
+    /** Counts the showcase's loads, so a load overtaken by turning it off, or on again, is dropped. */
+    let showcaseLoads = 0;
+    /** The showcase host's preparations, one after another. Two at once could each make a renderer. */
+    let showcasePreparing: Promise<void> = Promise.resolve();
     // The Arcade has sounds of its own. Browsers play no sound before the
     // visitor's first press. So the chips, the Arcade's sounds and the views that
     // play them all load on that press, and none of them is in the page's first
@@ -141,6 +156,12 @@ export function startSitePage(site: SiteConfig): void {
      * it too, before this script runs (see the site kit's `define-site-config.ts`).
      */
     const THEME_KEY = 'mvt-arcade:theme';
+    /**
+     * Where the visitor's choice to browse the showcase is kept, as `'on'`.
+     * Every site reads it, so a visitor who browses one site's showcase
+     * arrives in the next one's too.
+     */
+    const SHOWCASE_KEY = 'mvt-arcade:showcase';
     /** Where a game left part way through is kept, for the visitor to resume next time: this, then the entry's id. */
     const SAVED_GAME_KEY = 'mvt-arcade:saved-game:';
     /** Where the ids of the entries whose notices the visitor asked not to see again are kept, as a JSON array. */
@@ -148,6 +169,7 @@ export function startSitePage(site: SiteConfig): void {
 
     const model = createArcadeModel({
         entries: site.catalogue,
+        showcase: site.showcase,
         factsFor: (id) => ENTRY_FACTS[id],
         search: location.search,
         highscoreStore: highscoreStoreFor(import.meta.env.VITE_HIGHSCORES_URL),
@@ -156,6 +178,7 @@ export function startSitePage(site: SiteConfig): void {
         soundSettings: firstSoundSettings,
         favouriteIds: readIds(FAVOURITES_KEY),
         themeChoice: parseThemeChoice(store.read(THEME_KEY)),
+        isShowcaseMode: store.read(SHOWCASE_KEY) === 'on',
         siteTheme: SITE_THEMES[site.id],
         hasSavedGame: (id) => store.read(SAVED_GAME_KEY + id) !== undefined,
         hiddenNoticeIds: readIds(HIDDEN_NOTICES_KEY),
@@ -184,6 +207,8 @@ export function startSitePage(site: SiteConfig): void {
         model,
         site,
         stage,
+        showcaseStage,
+        isShowcaseRunning: () => showcaseState === 'running',
         exitFrame: () => exitFrame,
         isMotionReduced: () => reducedMotion.matches,
         livePreview,
@@ -211,7 +236,7 @@ export function startSitePage(site: SiteConfig): void {
     }));
 
     // Declared before the page follows the URL below, which reads them
-    /** The page's title on the wall, as its `<title>` has it. Each entry's copy of the page puts the entry's name before it. */
+    /** The page's title on the card wall, as its `<title>` has it. Each entry's copy of the page puts the entry's name before it. */
     const ARCADE_TITLE = site.name;
     /** Marks the history step an entry's URL was pushed on, so leaving it knows to step back. */
     const ENTRY_STEP = 'arcade-entry';
@@ -224,9 +249,25 @@ export function startSitePage(site: SiteConfig): void {
 
     // An info panel's step, reloaded, opens its panel again. The watcher is made after it, so its baseline has the panel open
     followPanelStep();
+    /**
+     * How the showcase launches the site's entries. Each launch takes effect
+     * between frames, since the showcase calls it from its update, during
+     * the page's frame.
+     */
+    const launcher: EntryLauncher = {
+        launch: (id) => {
+            queueMicrotask(() => model.launch(id, { isFromShowcase: true }));
+        },
+        launchedId: () => (model.phase !== 'browsing' && model.isFromShowcase ? model.activeEntry?.id : undefined),
+        playRectFor: showcasePlayRectFor,
+    };
+
     const watcher = watch({
         phase: () => model.phase,
-        isEntryStarted: () => model.isEntryStarted,
+        // The id of the entry the host runs, from its start until the visitor leaves it
+        startedId: () => (model.isEntryStarted ? model.activeEntry?.id : undefined),
+        // The entry the URL names, undefined on the card wall or the showcase
+        urlEntryId: () => playingEntry()?.id,
         restarts: () => model.restartCount,
         query: () => model.queryRevision,
         panel: panelStep,
@@ -244,6 +285,8 @@ export function startSitePage(site: SiteConfig): void {
     let keptHiddenNoticeIds = model.hiddenNoticeIds;
     /** The choice of theme last saved. */
     let keptThemeChoice = model.themeChoice;
+    /** Whether the showcase was on as it was last saved. */
+    let keptShowcaseMode = model.isShowcaseMode;
     // A choice made in another tab, on any of the sites, is worn here at once.
     // The browser tells every other tab as a page changes what it keeps
     window.addEventListener('storage', (e) => {
@@ -261,7 +304,7 @@ export function startSitePage(site: SiteConfig): void {
     });
 
     // A link to an entry (`arcade/crumb-chase/`) launches it; going back or forward in history follows,
-    // so Back from an entry returns to the wall, and Back from an info panel closes it
+    // so Back from an entry returns to the card wall, and Back from an info panel closes it
     followUrl();
     window.addEventListener('popstate', onHistoryStep);
 
@@ -275,7 +318,7 @@ export function startSitePage(site: SiteConfig): void {
     /** The Perfmon's panel and its meter, once they have loaded, the first time the Perfmon opens. */
     let perfmon: Perfmon | undefined;
     requestAnimationFrame(frame);
-    // The entries' long text loads once the wall is first drawn, not before it,
+    // The entries' long text loads once the card wall is first drawn, not before it,
     // so the home page's first load holds only what the cards show. A search
     // that only an entry's description matches finds it when the text arrives
     requestAnimationFrame(() => setTimeout(model.loadDetails, 0));
@@ -288,6 +331,7 @@ export function startSitePage(site: SiteConfig): void {
 
         model.update(deltaMs);
         followModel();
+        showcaseHost.tick(timeMs, deltaMs);
         host.tick(timeMs, deltaMs);
         // Only play time counts. A frozen entry, paused or offering to resume, has nothing new to save
         if (model.phase === 'playing' && !model.isEntryFrozen) {
@@ -306,25 +350,19 @@ export function startSitePage(site: SiteConfig): void {
         requestAnimationFrame(frame);
     }
 
-    /** Starts and ends the entry's sessions as the model starts and leaves the entry, and writes the URL. */
+    /** Starts and ends the entry's sessions as the model starts and leaves the entry, and the showcase's as it's chosen, and writes the URL. */
     function followModel(): void {
-        const { phase, isEntryStarted, restarts, query, panel, isRunOver, initials, isPerfmonOpen } = watcher.poll();
-        if (isEntryStarted.changed) {
-            // The session starts as the entry is revealed, and draws its first
-            // frame, standing still, before the Arcade's views next draw
-            if (isEntryStarted.current) {
-                exitFrame = undefined;
-                const { starter, activeEntry } = model;
-                assert(starter !== undefined && activeEntry !== undefined, 'arcade: an entry starts only once it has loaded');
-                host.start(starter, { bestScore: () => model.highscores.bestScoreFor(activeEntry.id) });
-                playedSinceSaveMs = 0;
-                if (model.isResumeOffered) loadSavedGame(activeEntry);
-            }
-            else if (isEntryStarted.previous === true) {
-                saveGame();
+        const { phase, startedId, urlEntryId, restarts, query, panel, isRunOver, initials, isPerfmonOpen } = watcher.poll();
+        // Each session starts as its entry is revealed, and draws its first
+        // frame, standing still, before the Arcade's views next draw
+        if (startedId.changed) {
+            if (startedId.previous !== undefined) {
+                saveGameOf(findEntry(startedId.previous), host.session);
                 exitFrame = host.stop();
             }
+            if (startedId.current !== undefined) startEntry(startedId.current);
         }
+        followShowcase();
         if (restarts.changed) {
             host.restart();
             // The game saved is behind the visitor now. The new one is saved as they leave it
@@ -332,7 +370,7 @@ export function startSitePage(site: SiteConfig): void {
         }
         // A run has ended, and its score may place
         if (isRunOver.changed && isRunOver.current) model.runEnded(host.session?.scoring?.score() ?? 0);
-        // The host stays paused while the entry is frozen: standing still as it is revealed, paused by the visitor, or waiting while a score places.
+        // The host stays paused while its entry is frozen: standing still as it is revealed, paused by the visitor, or waiting while a score places
         host.isPaused = model.isEntryFrozen;
         host.isTurned = isRunnerTurned();
         // Blocked storage means the initials are offered for the rest of this visit only
@@ -352,6 +390,11 @@ export function startSitePage(site: SiteConfig): void {
             if (keptThemeChoice === 'default') store.remove(THEME_KEY);
             else store.write(THEME_KEY, keptThemeChoice);
         }
+        if (model.isShowcaseMode !== keptShowcaseMode) {
+            keptShowcaseMode = model.isShowcaseMode;
+            if (keptShowcaseMode) store.write(SHOWCASE_KEY, 'on');
+            else store.remove(SHOWCASE_KEY);
+        }
         // The model replaces its sound settings object whenever one changes. The page gives the new settings to the host and saves them.
         if (model.soundSettings !== keptSoundSettings) {
             keptSoundSettings = model.soundSettings;
@@ -360,10 +403,110 @@ export function startSitePage(site: SiteConfig): void {
             store.write(SOUND_SETTINGS_KEY, formatSoundSettings(keptSoundSettings));
         }
         if (isPerfmonOpen.changed) measurePerformance(isPerfmonOpen.current);
-        if (phase.changed && phase.previous === 'browsing') writeUrl('enter');
-        else if (phase.changed && phase.current === 'browsing') writeUrl('leave');
+        if (urlEntryId.changed && urlEntryId.previous === undefined) writeUrl('enter');
+        else if (urlEntryId.changed && urlEntryId.current === undefined) writeUrl('leave');
         else if (panel.changed) writePanelStep();
-        else if (phase.changed || query.changed) writeUrl('replace');
+        else if (phase.changed || query.changed || urlEntryId.changed) writeUrl('replace');
+    }
+
+    /**
+     * Starts a session of the entry with `id`, the active entry, which has
+     * loaded. An entry launched from the showcase plays on a clear canvas,
+     * and is passed the showcase's id (`launchedBy`).
+     * Every entry is passed a way to leave itself, which leaves it only
+     * while it's still the entry playing.
+     */
+    function startEntry(id: string): void {
+        const { starter, activeEntry: entry } = model;
+        assert(starter !== undefined && entry?.id === id, 'arcade: an entry starts only once it has loaded');
+        exitFrame = undefined;
+        host.isClear = model.isFromShowcase;
+        host.start(starter, {
+            bestScore: () => model.highscores.bestScoreFor(entry.id),
+            launchedBy: model.isFromShowcase ? site.showcase?.id : undefined,
+            requestExit: () => {
+                queueMicrotask(() => {
+                    if (model.isEntryStarted && model.activeEntry?.id === id) model.exit();
+                });
+            },
+        });
+        playedSinceSaveMs = 0;
+        if (model.isResumeOffered) loadSavedGame(entry);
+    }
+
+    /**
+     * Starts the showcase while the visitor browses it, and stops it once
+     * they don't. It starts only while browsing, not under an entry the
+     * visitor came straight to, but stays under the entries it launches. It
+     * stands still while an entry plays over it, and while its info panel
+     * is open.
+     */
+    function followShowcase(): void {
+        const wantsShowcase = model.isShowcaseMode && (showcaseState !== 'stopped' || model.phase === 'browsing');
+        if (wantsShowcase && showcaseState === 'stopped') startShowcase();
+        else if (!wantsShowcase && showcaseState !== 'stopped') stopShowcase();
+        showcaseHost.isBehind = model.phase !== 'browsing' || (site.showcase !== undefined && model.infoEntry === site.showcase);
+    }
+
+    /**
+     * Loads the showcase and starts it, in its own host. It starts between
+     * frames, as its load finishes, and draws its first frame in the next.
+     * A showcase that can't load turns itself off, so the card wall shows.
+     */
+    function startShowcase(): void {
+        const showcase = site.showcase;
+        if (showcase === undefined) return;
+        showcaseState = 'loading';
+        const load = ++showcaseLoads;
+        showcase.load().then(async (starter) => {
+            if (DEV) checkPlayArea(showcase, starter);
+            const prepared = showcasePreparing.then(() => showcaseHost.prepare(starter));
+            // The next preparation waits for this one, whether or not it succeeds
+            showcasePreparing = prepared.catch(() => undefined);
+            await prepared;
+            if (load !== showcaseLoads) return;
+            showcaseHost.start(starter, { launcher });
+            showcaseState = 'running';
+        }).catch((error: unknown) => {
+            if (load !== showcaseLoads) return;
+            showcaseState = 'stopped';
+            model.showcaseFailed(`${showcase.name} could not be loaded: ${error instanceof Error ? error.message : String(error)}`);
+        });
+    }
+
+    function stopShowcase(): void {
+        showcaseLoads++;
+        showcaseHost.stop();
+        showcaseState = 'stopped';
+    }
+
+    /** The entry with `id`, which the site lists. */
+    function findEntry(id: string): ArcadeEntry | undefined {
+        return site.catalogue.find((entry) => entry.id === id);
+    }
+
+    /** The host whose frames the Perfmon measures: the showcase's, while it shows, or the entry host's. */
+    function measuredHost(): EntryHost {
+        return model.phase === 'browsing' && showcaseState === 'running' ? showcaseHost : host;
+    }
+
+    /**
+     * Where the entry with `id` would play, launched from the showcase, in
+     * the showcase's own pixels. The showcase's host fills the area under
+     * the site's nav, as the entry host fills the area under the runner's
+     * bar, which is the nav's height. So the one is measured against the
+     * other.
+     */
+    function showcasePlayRectFor(id: string, starter?: EntryStarter): PlayRect {
+        const entry = findEntry(id);
+        const own = showcaseHost.starter;
+        if (entry === undefined || own?.kind !== 'pixi') return { x: 0, y: 0, width: 0, height: 0 };
+        const hasControls = site.entryKind === 'game';
+        const ownRect = showcaseHost.playRectFor({ screenWidth: own.screenWidth, screenHeight: own.screenHeight, starter: own, hasControls });
+        const rect = host.playRectFor({ screenWidth: entry.screenWidth, screenHeight: entry.screenHeight, starter, hasControls });
+        if (ownRect.width <= 0) return { x: 0, y: 0, width: 0, height: 0 };
+        const scale = own.screenWidth / ownRect.width;
+        return { x: (rect.x - ownRect.x) * scale, y: (rect.y - ownRect.y) * scale, width: rect.width * scale, height: rect.height * scale };
     }
 
     /**
@@ -447,10 +590,11 @@ export function startSitePage(site: SiteConfig): void {
         meter?.destroy();
         meter = undefined;
         host.isGpuTimed = isOn;
+        showcaseHost.isGpuTimed = isOn;
         if (!isOn) return;
         loadPerfmon().then((loaded) => {
             perfmon = loaded;
-            if (model.isPerfmonOpen && meter === undefined) meter = loaded.createPerformanceMeter({ takeGpuMs: host.takeGpuMs });
+            if (model.isPerfmonOpen && meter === undefined) meter = loaded.createPerformanceMeter({ takeGpuMs: () => measuredHost().takeGpuMs() });
         }).catch((error: unknown) => {
             console.warn('The Perfmon could not load.', error);
         });
@@ -466,7 +610,8 @@ export function startSitePage(site: SiteConfig): void {
      * can't measure. Made again only when the entry running changes.
      */
     function unmeasuredMetrics(): readonly MetricKind[] {
-        const starter = host.session === undefined ? undefined : host.starter;
+        const running = measuredHost();
+        const starter = running.session === undefined ? undefined : running.starter;
         if (starter === unmeasuredFor) return unmeasured;
         unmeasuredFor = starter;
         const own = starter?.unmeasuredMetrics ?? [];
@@ -507,9 +652,12 @@ export function startSitePage(site: SiteConfig): void {
      * they run in hosts of their own.
      */
     function saveGame(): void {
+        saveGameOf(model.activeEntry, host.session);
+    }
+
+    /** Saves `entry`'s game, from `session`, as `saveGame` does the active entry's. */
+    function saveGameOf(entry: ArcadeEntry | undefined, session: EntrySession | undefined): void {
         playedSinceSaveMs = 0;
-        const entry = model.activeEntry;
-        const session = host.session;
         if (entry === undefined || session?.saveGame === undefined) return;
         const saved = session.saveGame();
         if (saved === undefined || !store.writeJson(SAVED_GAME_KEY + entry.id, saved)) store.remove(SAVED_GAME_KEY + entry.id);
@@ -537,10 +685,10 @@ export function startSitePage(site: SiteConfig): void {
 
     /**
      * Writes the URL. Going into an entry adds a step to the browser's history,
-     * with the wall beneath it, so Back (a phone's back button, say) returns to
-     * the wall rather than leaving the Arcade, even from a link straight to the
+     * with the card wall beneath it, so Back (a phone's back button, say) returns to
+     * the card wall rather than leaving the Arcade, even from a link straight to the
      * entry. Played from its info panel, the entry takes over the panel's step
-     * instead, so Back from it returns to the wall, not to the panel. Leaving the
+     * instead, so Back from it returns to the card wall, not to the panel. Leaving the
      * entry some other way (its exit, or a failed load) takes its step back off.
      * Everything else rewrites the step the page is on. The title is written
      * after the steps, or once the step back lands (see writeTitle).
@@ -584,7 +732,11 @@ export function startSitePage(site: SiteConfig): void {
         document.title = entry === undefined ? ARCADE_TITLE : `${entry.name} - ${ARCADE_TITLE}`;
     }
 
-    /** The entry playing, if one is: from its launch until the Arcade is back on the wall. */
+    /**
+     * The entry playing, if one is, from its launch until the Arcade is back
+     * on the card wall or the showcase. The showcase isn't an entry, so the
+     * page stays at the site's address while it shows.
+     */
     function playingEntry(): ArcadeEntry | undefined {
         return model.phase === 'browsing' ? undefined : model.activeEntry;
     }
@@ -602,12 +754,12 @@ export function startSitePage(site: SiteConfig): void {
         else if (isPanelStep) stepBack();
     }
 
-    /** The wall's URL: the Arcade's path, with the search in its query. */
+    /** The card wall's URL: the Arcade's path, with the search in its query. */
     function wallUrl(): string {
         return ARCADE_PATH + formatArcadeQuery(location.search, model.query, model.chips);
     }
 
-    /** The URL of `entry` playing: its own path, keeping the search in the query for the way back to the wall. */
+    /** The URL of `entry` playing: its own path, keeping the search in the query for the way back to the card wall. */
     function entryUrl(entry: ArcadeEntry): string {
         return formatEntryPath(ARCADE_PATH, entry.id) + formatArcadeQuery(location.search, model.query, model.chips);
     }
@@ -677,8 +829,10 @@ export function startSitePage(site: SiteConfig): void {
 
     /**
      * Follows the URL's path. An entry's path launches the entry, and the
-     * Arcade's own path leaves any entry for the wall. A path that names no
-     * entry, as the site's 404 page may be shown at, is rewritten to the wall's.
+     * Arcade's own path leaves any entry for the card wall or the showcase.
+     * The showcase's own path, as a link to it has, turns it on, and is
+     * rewritten to the site's. A path that doesn't name an entry, as the
+     * site's 404 page may be shown at, is rewritten to the site's too.
      */
     function followUrl(): void {
         const id = parseEntryPath(location.pathname, ARCADE_PATH);
@@ -686,11 +840,17 @@ export function startSitePage(site: SiteConfig): void {
             model.exit();
             return;
         }
+        if (id !== undefined && id === site.showcase?.id) {
+            model.exit();
+            model.isShowcaseMode = true;
+            writeUrl('replace');
+            return;
+        }
         if (id === undefined || !site.catalogue.some((entry) => entry.id === id)) {
             writeUrl('replace');
             return;
         }
-        // Straight to the entry, from a link or a step through history: there is no wall to leave
+        // Straight to the entry, from a link or a step through history, so there isn't a card wall to leave
         if (model.phase === 'browsing') model.launch(id, { isDirect: true });
     }
 

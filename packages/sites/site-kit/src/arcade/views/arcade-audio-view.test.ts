@@ -120,6 +120,7 @@ describe('ArcadeAudioView', () => {
 
 interface State {
     phase: ArcadePhase;
+    isFromShowcase: boolean;
     isPaused: boolean;
     isPanelOpen: boolean;
     searchText: string;
@@ -134,13 +135,14 @@ interface State {
 
 function setUp(initial: Partial<State> = {}) {
     const state: State = {
-        phase: 'browsing', isPaused: false, isPanelOpen: false, searchText: '', chosenTagCount: 0, shownCount: 12,
+        phase: 'browsing', isFromShowcase: false, isPaused: false, isPanelOpen: false, searchText: '', chosenTagCount: 0, shownCount: 12,
         loadFailure: undefined, transitionPhase: 'idle', wallEffect: 'none', isBeamOn: false, cardKeyMoves: 0, ...initial,
     };
     const chip = createSpiedChip();
     const view = ArcadeAudioView({
         sfx: chip,
         phase: () => state.phase,
+        isFromShowcase: () => state.isFromShowcase,
         isPaused: () => state.isPaused,
         isPanelOpen: () => state.isPanelOpen,
         searchText: () => state.searchText,

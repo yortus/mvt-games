@@ -40,7 +40,7 @@ export interface EntryInfoViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * An entry's info panel, over the wall, or over the entry as it plays:
+ * An entry's info panel, over the card wall, or over the entry as it plays:
  * everything the card leaves out. Its name, its tags (the renderers it draws
  * with among them) and the classic it is inspired by head the panel. Then
  * come tabs, each where the entry has it: Description (its notice, if it has

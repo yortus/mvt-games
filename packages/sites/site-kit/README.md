@@ -17,7 +17,7 @@
 | [`src/entry-types/`](./src/entry-types/) | What an entry is, and how it starts | `@mvtjs/site-kit/entry-types` |
 | [`src/runner/`](./src/runner/) | The entry host, which runs one entry of any renderer, and the page's sound | `@mvtjs/site-kit/runner` |
 | [`src/shared/`](./src/shared/) | The Pixi views entries share: the overlay and pixel text | `@mvtjs/site-kit/shared` |
-| [`src/input/pixi/`](./src/input/pixi/) | Input on a Pixi stage: `listenToPointer`, `listenToPress`, and the touch, swipe and drag views | `@mvtjs/site-kit/input/pixi` |
+| [`src/input/pixi/`](./src/input/pixi/) | Input on a Pixi stage: `listenToPointer`, `listenToDragZoom`, `listenToPress`, and the touch, swipe and drag views | `@mvtjs/site-kit/input/pixi` |
 | [`src/sound/`](./src/sound/) | The chip types views play on, `MusicChip` and `SfxChip` | `@mvtjs/site-kit/sound` |
 | [`src/pixel-glyphs/`](./src/pixel-glyphs/) | Every printable character as rows of cells, which entries draw their own way | `@mvtjs/site-kit/pixel-glyphs` |
 | [`src/highscores/`](./src/highscores/) | The highscore tables' rules, and the page's stores | `@mvtjs/site-kit/highscores` |
@@ -60,7 +60,7 @@ address `<root>demos/`, with a page of its own for each entry, at
 
 The arcade is the site's root: its build also writes the root's
 `index.html`, which sends visitors on to it, and a `404.html` that sends an
-address to the wall of the site whose folder it is in. Entries that moved
+address to the card wall of the site whose folder it is in. Entries that moved
 from the arcade to another site keep their old addresses, which send
 visitors on (`movedEntries`, in its `vite.config.ts`).
 
@@ -85,10 +85,10 @@ properties, in `src/arcade/themes.css` and `theme-*.css`. See
 docs mounted under their paths. `npm run dev -w @mvtjs/demos` runs one site
 alone.
 
-To make a site's thumbnails and its wall's link preview:
+To make a site's thumbnails and its card wall's link preview:
 
 ```bash
-npm run generate-thumbnails -w @mvtjs/demos           # every entry, and the wall
+npm run generate-thumbnails -w @mvtjs/demos           # every entry, and the card wall
 npm run generate-thumbnails -w @mvtjs/demos -- boids  # one entry
-npm run generate-thumbnails -w @mvtjs/demos -- demos  # the wall alone
+npm run generate-thumbnails -w @mvtjs/demos -- demos  # the card wall alone
 ```

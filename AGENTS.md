@@ -53,7 +53,7 @@ packages/sites/<site>/              arcade, demos or puzzles
 └── src/
     ├── main.ts          startSitePage(SITE)
     ├── site.ts          SITE: its name, marquee, About text, catalogue, and its entries' kind (game or demo)
-    ├── share.jpg        Its wall's link preview, made by generate-thumbnails
+    ├── share.jpg        Its card wall's link preview, made by generate-thumbnails
     └── entries/         Its entries, one directory each, and catalogue.ts, which lists them
         └── <id>/        Self-contained entry
             ├── start/   entry.ts (what its card shows), details.ts (the long text, loaded after the first paint), load.ts (the code, imported on launch), thumbnail.webp (its card's picture), share.png (its link preview's picture)

@@ -4,7 +4,7 @@
 // you see always matches what the model is doing.
 
 // ---------------------------------------------------------------------------
-// Launching: the wall burns away and the picture floats to the play area
+// Launching: the card wall burns away and the picture floats to the play area
 // ---------------------------------------------------------------------------
 
 /** Each card's burn, and the spread of their starts: the nearest to the polaroid first. */
@@ -17,7 +17,7 @@ export const FLOAT_MS = 700;
 export const BACKDROP_DELAY_MS = 650;
 export const BACKDROP_MS = 300;
 /**
- * The shortest time the model spends launching an entry from the wall, so
+ * The shortest time the model spends launching an entry from the card wall, so
  * that an entry that loads at once can't cut the burn and the float short.
  * A slower load holds the polaroid at the play area for as long as it takes.
  */

@@ -60,7 +60,7 @@ describe('EntryTransitionViewModel', () => {
             for (let i = 0; i < 3; i++) expect(harness.transition.cardProgressAt(i)).toBeGreaterThan(0.99);
         });
 
-        it('blacks the page out once the cards have burnt, and draws nothing more over the wall', () => {
+        it('blacks the page out once the cards have burnt, and draws nothing more over the card wall', () => {
             const harness = transitionHarness();
             harness.transition.enterFrom(CARD, WALL);
             at(harness, 'launching', BACKDROP_DELAY_MS);
@@ -325,7 +325,7 @@ describe('EntryTransitionViewModel', () => {
         });
     });
 
-    it('draws nothing over the wall while idle on it', () => {
+    it('draws nothing over the card wall while idle on it', () => {
         const harness = transitionHarness();
         harness.transition.update(16);
         expect(harness.transition.phase).toBe('idle');

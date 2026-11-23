@@ -1,4 +1,4 @@
-import { Application, Container, TextureSource } from 'pixi.js';
+import { Application, Container, Graphics, TextureSource } from 'pixi.js';
 import { createGpuTimer, type GpuTimer, keepReleasedTextTextures, refreshView, setRefresh, setUpdate, SKIP_DESCENDANTS, updateView } from '@mvtjs/pixi';
 import { TouchInputView } from '#input/pixi';
 import type { ArcadeControls } from '../input';
@@ -20,8 +20,14 @@ export interface PixiStage {
     readonly isPixelArt: boolean;
     /** Whether it can draw PixiJS 3D scenes, which is fixed when its renderer is made. */
     readonly draws3d: boolean;
-    /** Starts a session on the stage, passing `options` on to the entry, and shows the canvas. */
-    start: (starter: PixiEntryStarter, options: PixiStageStartOptions) => EntrySession;
+    /**
+     * Starts a session on the stage, passing `options` on to the entry, and
+     * shows the canvas. A clear session (`isClear`) leaves the canvas clear
+     * round the play area, so what's behind it shows there, and clips the
+     * entry to its play area. Inside it, the entry's background colour still
+     * fills it.
+     */
+    start: (starter: PixiEntryStarter, options: PixiStageStartOptions, isClear: boolean) => EntrySession;
     /** Hides the canvas, once the session has ended. */
     hide: () => void;
     /** Runs one frame. It steps the application's ticker, which updates, refreshes and renders the stage. */
@@ -95,6 +101,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         width: 1,
         height: 1,
         background: DEFAULT_BACKGROUND_COLOR,
+        // A canvas made clear can be drawn opaque later, for each entry, but not the other way round
+        backgroundAlpha: 0,
         antialias: !isPixelArt,
         roundPixels: isPixelArt,
         // It is not started, because the host's loop steps it once a frame
@@ -115,6 +123,14 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     canvas.addEventListener('touchend', preventDoubleTapZoom, { passive: false });
     canvas.addEventListener('wheel', preventPinchZoom, { passive: false });
     element.append(canvas);
+    // HTML the entry shows over its play area. Its own views are ticked by whoever puts them there,
+    // so the page's walk skips them
+    const overlay = document.createElement('div');
+    overlay.className = 'entry-host-overlay';
+    overlay.hidden = true;
+    setUpdate(overlay, () => SKIP_DESCENDANTS);
+    setRefresh(overlay, () => SKIP_DESCENDANTS);
+    element.append(overlay);
 
     // Pixi finds where the pointer is on the canvas from the canvas's box in
     // the page. A canvas turned a quarter turn clockwise shows in a box that
@@ -133,6 +149,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     };
 
     let starter: PixiEntryStarter | undefined;
+    // Whether the session running is clear round its play area
+    let isClearSession = false;
     let gpuTimer: GpuTimer | undefined;
     let isGpuTimed = false;
     let area: PlayArea = { scale: 1, stageWidth: 1, stageHeight: 1, offsetX: 0, offsetY: 0 };
@@ -143,6 +161,17 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
     // refreshed, so it shows frozen. No entry knows about pause.
     const entryContainer = new Container();
     entryContainer.label = 'entry';
+    // On a clear canvas, the entry's background colour fills its play area alone, behind it
+    const backdrop = new Graphics();
+    backdrop.label = 'backdrop';
+    backdrop.visible = false;
+    app.stage.addChild(backdrop);
+    // On a clear canvas, the entry is clipped to its play area too. Anything it draws past its edges would
+    // show over what's behind the canvas, such as the showcase that launched it. An opaque canvas covers it
+    const clip = new Graphics();
+    clip.label = 'clip';
+    clip.visible = false;
+    app.stage.addChild(clip);
     setUpdate(entryContainer, () => (options.isPaused() ? SKIP_DESCENDANTS : undefined));
     app.stage.addChild(entryContainer);
 
@@ -161,6 +190,8 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             gameWidth: () => starter?.screenWidth ?? 0,
             gameHeight: () => starter?.screenHeight ?? 0,
             scale: () => area.scale,
+            // An entry that lays itself out fills the area, so its controls go over it
+            isOverGame: () => starter?.fitTo !== undefined,
             hasDpad: () => layout()?.showDpad ?? false,
             dpadKind: () => layout()?.dpadKind ?? 'four-way',
             hasPrimaryButton: () => layout()?.showPrimary ?? false,
@@ -192,18 +223,26 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         isPixelArt,
         draws3d,
 
-        start(next, startOptions) {
+        start(next, startOptions, isClear) {
             starter = next;
+            isClearSession = isClear;
             // This applies to the textures the entry makes as it starts, such as text
             TextureSource.defaultOptions.scaleMode = isPixelArt ? 'nearest' : 'linear';
             // The stage outlives each entry, so each entry's colour is set as it starts
             app.renderer.background.color = next.backgroundColor ?? DEFAULT_BACKGROUND_COLOR;
+            app.renderer.background.alpha = isClear ? 0 : 1;
+            backdrop.visible = isClear;
+            clip.visible = isClear;
+            // eslint-disable-next-line @mvtjs/no-null -- Pixi takes null for no mask
+            entryContainer.mask = isClear ? clip : null;
             const session = startPixiEntry(next, {
                 ...startOptions,
                 stage: entryContainer,
                 isInPage: true,
+                overlay,
             }, findChip);
             canvas.hidden = false;
+            overlay.hidden = false;
             // The new entry's touch controls can change the fit
             fitTo(areaWidth, areaHeight, toLayout(next.arcadeControls));
             return session;
@@ -212,6 +251,9 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         hide() {
             starter = undefined;
             canvas.hidden = true;
+            overlay.hidden = true;
+            // Whatever the entry left in the overlay goes with it
+            overlay.replaceChildren();
             keptTextTextures.releaseAll();
         },
 
@@ -256,6 +298,7 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
         destroy() {
             canvas.removeEventListener('touchend', preventDoubleTapZoom);
             canvas.removeEventListener('wheel', preventPinchZoom);
+            overlay.remove();
             gpuTimer?.destroy();
             gpuTimer = undefined;
             // The page runs several renderers at once, such as an entry's and a card's live preview. Passing
@@ -282,13 +325,28 @@ export async function createPixiStage(options: PixiStageOptions): Promise<PixiSt
             screenWidth: starter.screenWidth,
             screenHeight: starter.screenHeight,
             integerScale: starter.integerScale,
-            hasTouchControls: takesInput && isTouch && config !== undefined,
+            // An entry that lays itself out fills the area it's fitted to, with its touch controls over it,
+            // so the stage doesn't keep room for them. Room kept would shrink it out of the shape it laid itself out in
+            hasTouchControls: takesInput && isTouch && config !== undefined && starter.fitTo === undefined,
         });
         const dpr = window.devicePixelRatio || 1;
         app.renderer.resize(area.stageWidth, area.stageHeight, area.scale * dpr);
         canvas.style.width = `${Math.floor(area.stageWidth * area.scale)}px`;
         canvas.style.height = `${Math.floor(area.stageHeight * area.scale)}px`;
         entryContainer.position.set(area.offsetX, area.offsetY);
+        // The play area's size can change as it's fitted, for an entry that lays itself out, so these follow it
+        const { screenWidth, screenHeight } = starter;
+        if (isClearSession) {
+            backdrop.clear().rect(0, 0, screenWidth, screenHeight).fill(starter.backgroundColor ?? DEFAULT_BACKGROUND_COLOR);
+            clip.clear().rect(0, 0, screenWidth, screenHeight).fill(0xffffff);
+        }
+        backdrop.position.set(area.offsetX, area.offsetY);
+        clip.position.set(area.offsetX, area.offsetY);
+        overlay.style.width = `${screenWidth}px`;
+        overlay.style.height = `${screenHeight}px`;
+        overlay.style.left = `${area.offsetX * area.scale}px`;
+        overlay.style.top = `${area.offsetY * area.scale}px`;
+        overlay.style.transform = `scale(${area.scale})`;
     }
 }
 

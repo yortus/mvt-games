@@ -17,7 +17,7 @@ describe('an entry\'s path', () => {
         expect(parseEntryPath('/mvt-games/arcade/crumb-chase/index.html', ARCADE)).toBe('crumb-chase');
     });
 
-    it('reads the Arcade\'s own path, the wall, as an empty id', () => {
+    it('reads the Arcade\'s own path, the card wall, as an empty id', () => {
         expect(parseEntryPath(ARCADE, ARCADE)).toBe('');
         expect(parseEntryPath('/mvt-games/arcade', ARCADE)).toBe('');
         expect(parseEntryPath('/mvt-games/arcade/index.html', ARCADE)).toBe('');

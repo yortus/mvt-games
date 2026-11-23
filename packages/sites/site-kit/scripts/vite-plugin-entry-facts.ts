@@ -3,12 +3,12 @@
  * renderers, measured from its source when the module is loaded (see
  * `entry-facts.ts`), so the figures the site's page shows are never stale and
  * nobody keeps them by hand. On the dev server, the module is measured again
- * whenever an entry's source changes.
+ * whenever an entry's source changes, or the showcase's.
  */
 
 import { resolve, sep } from 'node:path';
 import type { Plugin } from 'vite';
-import { ENTRIES_DIR, readEntryFacts } from './entry-facts.ts';
+import { ENTRIES_DIR, readEntryFacts, SHOWCASE_DIR } from './entry-facts.ts';
 
 // ---------------------------------------------------------------------------
 // Plugin
@@ -19,6 +19,7 @@ export function entryFactsPlugin(): Plugin {
     let srcDir = '';
     let repoDir = '';
     let entriesDir = '';
+    let showcaseDir = '';
 
     return {
         name: 'entry-facts',
@@ -26,6 +27,7 @@ export function entryFactsPlugin(): Plugin {
             srcDir = resolve(config.root, 'src');
             repoDir = resolve(config.root, '..', '..', '..');
             entriesDir = resolve(srcDir, ENTRIES_DIR) + sep;
+            showcaseDir = resolve(srcDir, SHOWCASE_DIR) + sep;
         },
         resolveId(id) {
             return id === VIRTUAL_ID ? RESOLVED_ID : undefined;
@@ -37,7 +39,8 @@ export function entryFactsPlugin(): Plugin {
         },
         configureServer(server) {
             server.watcher.on('all', (_event, path) => {
-                if (!resolve(path).startsWith(entriesDir)) return;
+                const changed = resolve(path);
+                if (!changed.startsWith(entriesDir) && !changed.startsWith(showcaseDir)) return;
                 const module = server.moduleGraph.getModuleById(RESOLVED_ID);
                 if (module !== undefined) server.moduleGraph.invalidateModule(module);
             });

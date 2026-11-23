@@ -23,7 +23,7 @@ export interface WallEffectViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * Burns the wall's cards away, or develops them back, by drawing over them
+ * Burns the card wall's cards away, or develops them back, by drawing over them
  * on a canvas the size of the window. Burning paints the page's own
  * background in behind a front that creeps across each card from a corner,
  * ragged with noise, glowing at its edge and scorching the card ahead of it.

@@ -19,7 +19,7 @@ describe('CardWallLayout', () => {
         expect(wall.columnCount).toBe(MAX_COLUMNS);
     });
 
-    it('keeps the fewest columns allowed on a narrow wall, narrowing them to fit', () => {
+    it('keeps the fewest columns allowed on a narrow card wall, narrowing them to fit', () => {
         const minColumns = 2;
         const wall = layout({ count: 0, minColumnCount: minColumns });
         const width = MIN_COLUMN_WIDTH;

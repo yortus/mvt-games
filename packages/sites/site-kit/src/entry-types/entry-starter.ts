@@ -184,7 +184,8 @@ export type PixiEntryStarter<K extends SoundChoice = SoundChoice, C extends Cont
 
 /**
  * What every Pixi entry's starter has. The host owns the Pixi application,
- * scales the play area to fit, draws touch controls around it, and pauses the
+ * scales the play area to fit, draws touch controls around it (or over an
+ * entry that fits itself, with `fitTo`), and pauses the
  * entry by leaving its container out of `updateView`. It can also start the
  * entry headless, on a bare container, as thumbnails and benchmarks do.
  */
@@ -203,6 +204,11 @@ export interface PixiEntryStarterFields<K extends SoundChoice, C extends Control
      * in. The host calls it as it prepares the entry, and as the area changes,
      * then calls the session's `resize`. An entry without it plays at one
      * size, scaled to fit.
+     *
+     * An entry with it fills the whole area. So on a touch screen, its arcade
+     * controls are drawn over its bottom corners. Room kept beside or below
+     * it would shrink it out of the shape it laid itself out in. A showcase
+     * is laid out this way.
      */
     readonly fitTo?: (width: number, height: number) => void;
     /**
@@ -256,10 +262,38 @@ export interface PixiStartBase extends StartOptions {
      * and benchmarks do.
      */
     readonly isInPage?: boolean;
+    /**
+     * In the page: an element laid over the entry's play area, for HTML the
+     * entry shows over its scene. It's the play area's size in the entry's own
+     * pixels, and scaled as the canvas is, so its children sit in the same
+     * pixels as the entry's stage. It doesn't take pointer events itself, so
+     * a child that should take them sets `pointer-events: auto`. The host
+     * empties it as the entry ends. Absent when the entry is started
+     * headless.
+     */
+    readonly overlay?: HTMLElement;
 }
 
 /** What the host gives an entry of either kind as it starts. */
 export interface StartOptions {
+    /**
+     * For the site's showcase, in the page: how it launches the site's
+     * entries. Absent anywhere else, such as for an entry, or when the
+     * showcase is started headless.
+     */
+    readonly launcher?: EntryLauncher;
+    /**
+     * In the page: leaves this entry, as the runner's back button does. It
+     * takes effect between frames, so the entry may call it from its update.
+     * Absent anywhere else, such as when the entry is started headless.
+     */
+    readonly requestExit?: () => void;
+    /**
+     * For an entry launched from the site's showcase, the showcase's id. The
+     * entry mustn't reload the page, which would start it again outside the
+     * showcase. Absent anywhere else.
+     */
+    readonly launchedBy?: string;
     /**
      * For a game with a highscore table: the best score in it, for a HUD's
      * "HI". 0 while the table is empty, loading or out of reach. Absent when
@@ -312,6 +346,41 @@ export interface ElementStartBase extends StartOptions {
      * is absent when the entry is started headless.
      */
     readonly takesInput?: boolean;
+}
+
+/**
+ * How the site's showcase launches the site's entries. An entry it launches
+ * plays over it as any entry plays, while the showcase stands still. An
+ * entry on the same kind of sound chip stops the showcase's sound, so the
+ * showcase starts its music again, if it has any, once `launchedId` is
+ * undefined again.
+ */
+export interface EntryLauncher {
+    /**
+     * Launches the entry with `id` over the showcase. It takes effect
+     * between frames, so the showcase may call it from its update. It's
+     * ignored while an entry is still running.
+     */
+    readonly launch: (id: string) => void;
+    /** The id of the entry launched from the showcase, from its launch until the visitor leaves it. */
+    readonly launchedId: () => string | undefined;
+    /**
+     * Returns where the entry with `id` would play, in the showcase's own
+     * pixels, so the showcase can draw something there to hand over to it,
+     * such as a screen. Pass the entry's starter once it has loaded, since
+     * its scaling can change where it plays. It works the rectangle out
+     * afresh on each call, so call it when something it depends on changes,
+     * not every frame.
+     */
+    readonly playRectFor: (id: string, starter?: EntryStarter) => PlayRect;
+}
+
+/** A rectangle, such as where an entry plays. */
+export interface PlayRect {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
 }
 
 /** A running entry. */

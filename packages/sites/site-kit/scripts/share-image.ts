@@ -43,7 +43,7 @@ export const SITE_SHARE_IMAGE = 'share.jpg';
 
 /** What a site's share image shows, for those who can't see it (`og:image:alt`). */
 export function siteShareImageAlt(siteName: string): string {
-    return `The ${siteName} wall of cards, one for each entry`;
+    return `The ${siteName} card wall, one card for each entry`;
 }
 
 /** The share image in `dir`, or `undefined` if it has none. */

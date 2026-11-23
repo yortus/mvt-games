@@ -39,6 +39,25 @@ export interface EntryHost {
      */
     isPaused: boolean;
     /**
+     * Whether an entry plays over this host's entry, on a host of its own,
+     * as over the site's showcase. This host's entry stands still, and its
+     * sound chips pause, as while paused, so its music doesn't play under
+     * the entry in front. They resume as it comes back to the front.
+     *
+     * The entry in front may play on the same chips, if it names the same
+     * kind. Its host stops them as it starts, cutting this entry's sound, and
+     * leaves them resumed as it stops. So this entry starts its music again
+     * when it's in front once more, if it wants it back.
+     */
+    isBehind: boolean;
+    /**
+     * Whether the canvas is clear round the play area of the Pixi entries
+     * started from now on, so what's behind the host's element shows there,
+     * such as the showcase. Inside the play area, the entry's background
+     * colour still fills it.
+     */
+    isClear: boolean;
+    /**
      * Whether the page has turned the host's element a quarter turn
      * clockwise, with a CSS transform on it or an ancestor, so an entry wider
      * than tall plays on its side on a phone held upright. The host then fits
@@ -163,6 +182,8 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let startOptions: StartOptions = {};
     let session: EntrySession | undefined;
     let isPaused = false;
+    let isBehind = false;
+    let isClear = false;
     let isTurned = false;
     let isGpuTimed = false;
     let pixiStage: PixiStage | undefined;
@@ -203,16 +224,26 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             return isPaused;
         },
         set isPaused(value) {
+            // The page sets it every frame, so only a change reaches the chips
+            if (value === isPaused) return;
+            const wasStill = isStill();
             isPaused = value;
-            // The chip's sound pauses with the game, voices held where they are
-            if (value) {
-                sessionChips?.music.pause();
-                sessionChips?.sfx.pause();
-            }
-            else {
-                sessionChips?.music.resume();
-                sessionChips?.sfx.resume();
-            }
+            holdChipsWhenStillChanges(wasStill);
+        },
+        get isBehind() {
+            return isBehind;
+        },
+        set isBehind(value) {
+            if (value === isBehind) return;
+            const wasStill = isStill();
+            isBehind = value;
+            holdChipsWhenStillChanges(wasStill);
+        },
+        get isClear() {
+            return isClear;
+        },
+        set isClear(value) {
+            isClear = value;
         },
         get isTurned() {
             return isTurned;
@@ -242,10 +273,17 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             startOptions = options;
             isPaused = false;
             sessionChips = next.soundChip === undefined ? undefined : sound.findSessionChips(next.soundChip);
-            // No sound of the last session's carries into this one, and a chip left paused by it plays again
+            // No sound of the last session's carries into this one, and a chip left paused by it plays again,
+            // unless this host starts behind another
             stopChips(sessionChips);
-            sessionChips?.music.resume();
-            sessionChips?.sfx.resume();
+            if (isStill()) {
+                sessionChips?.music.pause();
+                sessionChips?.sfx.pause();
+            }
+            else {
+                sessionChips?.music.resume();
+                sessionChips?.sfx.resume();
+            }
             controls = next.arcadeControls === undefined ? undefined : createControls();
             session = startSession(next, options, controls);
         },
@@ -262,7 +300,10 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             controls?.destroy();
             controls = undefined;
             session.destroy();
+            // Silenced, then resumed, so chips shared with a host behind this one aren't left paused for it
             stopChips(sessionChips);
+            sessionChips?.music.resume();
+            sessionChips?.sfx.resume();
             if (starter.kind === 'pixi') pixiStage?.hide();
             else entryElement.hidden = true;
             session = undefined;
@@ -278,9 +319,9 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 return;
             }
             const elementSession = session as ElementEntrySession;
-            if (!isPaused) elementSession.update(deltaMs);
+            if (!isStill()) elementSession.update(deltaMs);
             const views = elementSession.views;
-            if (!isPaused) {
+            if (!isStill()) {
                 for (let i = 0; i < views.length; i++) updateView(views[i], deltaMs);
             }
             for (let i = 0; i < views.length; i++) refreshView(views[i]);
@@ -299,7 +340,11 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
                 screenWidth,
                 screenHeight,
                 integerScale: pixiStarter?.integerScale,
-                hasTouchControls: isTouch && target.hasControls,
+                // Once a Pixi entry has loaded, its stage draws touch controls if it declares the arcade controls, whatever the site
+                hasTouchControls: isTouch && (pixiStarter === undefined
+                    ? target.hasControls
+                    // An entry that lays itself out has its controls drawn over it, so the stage doesn't keep room for them, and neither does this
+                    : pixiStarter.arcadeControls !== undefined && pixiStarter.fitTo === undefined),
             });
             return toViewportRect({ area, screenWidth, screenHeight, areaRect, isTurned });
         },
@@ -341,12 +386,31 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
             takesInput,
             session: () => session,
             controls: () => controls,
-            isPaused: () => isPaused,
+            isPaused: isStill,
             isTurned: () => isTurned,
             findChip,
         });
         pixiStage.fit(areaRect.width, areaRect.height);
         pixiStage.isGpuTimed = isGpuTimed;
+    }
+
+    /** Whether the entry stands still: paused, or behind an entry playing over it. */
+    function isStill(): boolean {
+        return isPaused || isBehind;
+    }
+
+    /** Pauses the chips as the entry comes to stand still, voices held where they are, and resumes them as it moves again. */
+    function holdChipsWhenStillChanges(wasStill: boolean): void {
+        const isNowStill = isStill();
+        if (isNowStill === wasStill) return;
+        if (isNowStill) {
+            sessionChips?.music.pause();
+            sessionChips?.sfx.pause();
+        }
+        else {
+            sessionChips?.music.resume();
+            sessionChips?.sfx.resume();
+        }
     }
 
     /**
@@ -361,7 +425,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     function createControls(): ArcadeControls {
         return createArcadeControls({
             keys: takesInput ? ARCADE_CONTROL_KEYS : undefined,
-            isActive: () => !isPaused,
+            isActive: () => !isStill(),
         });
     }
 
@@ -369,7 +433,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         if (next.kind === 'pixi') {
             if (pixiStage === undefined) throw new Error('entry host: prepare a Pixi entry before starting it');
             fitStarter(next);
-            return pixiStage.start(next, { ...options, controls: nextControls });
+            return pixiStage.start(next, { ...options, controls: nextControls }, isClear);
         }
         entryElement.hidden = false;
         return startElementEntry(next, { ...options, controls: nextControls, element: entryElement, takesInput }, findChip);

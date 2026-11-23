@@ -14,7 +14,7 @@ export function formatEntryPath(arcadePath: string, id: string): string {
 
 /**
  * Reads what `path` names in the Arcade at `arcadePath` (which ends in `/`).
- * It returns `''` for the Arcade's own path, the wall, and an entry's id for
+ * It returns `''` for the Arcade's own path, the card wall, and an entry's id for
  * an entry's path. It returns undefined for a path outside the Arcade, or
  * deeper in it. A missing last `/`, or an `index.html` after it, is the same
  * path. The id is not checked against the entries.

@@ -17,7 +17,7 @@
 In MVT, data flows one way. The model holds state, the views read it, and
 the views write the output. Code never reads the output back.
 
-Some layouts can't work that way. Picture a wall of cards in columns, like
+Some layouts can't work that way. Picture a card wall in columns, like
 a pinboard. Each card goes into the shortest column, so you need to know
 how tall each card is. But a card's height depends on its text, its font
 and the width of its column. Only the browser can measure it, and only
@@ -95,7 +95,7 @@ is called a **forced layout**.
 
 Now picture a refresh step that goes through the cards in turn. It writes
 one card's position, then reads the next card's height. Every read comes
-straight after a write, so every read forces a layout. A wall of 50 cards
+straight after a write, so every read forces a layout. A card wall of 50 cards
 makes the browser lay the page out 50 times in one frame, instead of once.
 On a big page, that's easily enough to make the frame late.
 

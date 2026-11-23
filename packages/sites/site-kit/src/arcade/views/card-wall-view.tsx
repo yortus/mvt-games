@@ -26,7 +26,7 @@ export interface CardWallViewBindings {
     /** The card whose polaroid a transition is carrying, or -1. */
     readonly liftedIndex: () => number;
     /**
-     * Whether the wall is what the visitor is looking at: not under an entry,
+     * Whether the card wall is what the visitor is looking at: not under an entry,
      * an info panel or a transition. Only then does it answer keys, or hold
      * the focus.
      */
@@ -36,7 +36,7 @@ export interface CardWallViewBindings {
     /**
      * Whether a card selected for a while may play its entry live (attract
      * mode) now: not on a touch screen, nor for less motion, and only while
-     * the wall is active.
+     * the card wall is active.
      */
     readonly canPlayLive: () => boolean;
     /** Plays a card's entry live (attract mode), if the page can. Read once. */
@@ -59,8 +59,8 @@ export interface CardWallViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * The wall of cards, one per entry. Its layout view model places the cards
- * and moves them; this view measures the wall's width and each card's height
+ * The card wall, one card per entry. Its layout view model places the cards
+ * and moves them; this view measures the card wall's width and each card's height
  * for it as they change, and writes where each card goes.
  *
  * One card at a time is selected: its polaroid straightens and comes closer.
@@ -69,16 +69,16 @@ export interface CardWallViewBindings {
  * does not launch its entry. A card stays selected until another is, or
  * until such a click on it again deselects it.
  *
- * For the keyboard, the wall is one stop for the Tab key: the selected card,
+ * For the keyboard, the card wall is one stop for the Tab key: the selected card,
  * or the first shown if none is. The arrows, or W, A, S and D, move the
  * selection; Enter or Space plays the selected card's entry, `i` opens
  * its info panel, and F marks it as a favourite, or unmarks it. The selection is this view's presentation state. When an
- * entry, an info panel or a transition takes over, the wall lets go of the
+ * entry, an info panel or a transition takes over, the card wall lets go of the
  * focus, and takes it back after.
  *
  * A card that stays selected for a second plays its entry live over its
  * photo, where that is allowed (attract mode). An attract view model says
- * which card, the wall plays its entry on the page's live preview, and the
+ * which card, the card wall plays its entry on the page's live preview, and the
  * card shows it.
  */
 export function CardWallView(bindings: CardWallViewBindings): Element {
@@ -107,11 +107,11 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     const links = cards.map(linkOf);
 
     // Presentation state: the card selected last, if any, and the focus to
-    // give it, if any, as the wall next refreshes
+    // give it, if any, as the card wall next refreshes
     let selected = -1;
     let focusPending: 'none' | 'in-place' | 'into-view' = 'none';
     let wasActive = true;
-    /** Whether a card had the focus when the wall was last active, to give it back on return. */
+    /** Whether a card had the focus when the card wall was last active, to give it back on return. */
     let hadFocus = false;
     /** Worked out once a frame, before the cards read it: the selected card if shown, or else the first shown. */
     let tabStop = -1;
@@ -159,7 +159,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         attract.update(deltaMs);
     }
 
-    /** Sizes the wall, plays the card's entry live, settles the Tab stop, and hands the focus over as the wall is left and returned to. */
+    /** Sizes the card wall, plays the card's entry live, settles the Tab stop, and hands the focus over as the card wall is left and returned to. */
     function refresh(wall: Element): void {
         playLivePreviewWhenAttractChanges();
         drawHeight(wall as HTMLElement);
@@ -176,7 +176,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     }
 
     /**
-     * As the wall is left, lets go of the focus, which would take keys meant
+     * As the card wall is left, lets go of the focus, which would take keys meant
      * for the entry or the panel; as it is returned to, asks for it back.
      */
     function followActivity(wall: Element, isActive: boolean): void {
@@ -262,7 +262,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
     /**
      * Pointing at a polaroid, or holding it, selects its card. The focus
      * stays where it is: pointing must not take it from the search box, and
-     * the wall's keys act on the selected card, wherever on the wall the
+     * the card wall's keys act on the selected card, wherever on the card wall the
      * focus is.
      */
     function onPointerOver(e: PointerEvent): void {
@@ -292,7 +292,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
         return 0;
     }
 
-    /** Measures the wall and its cards, and listens for what the JSX runtime has no attribute for. */
+    /** Measures the card wall and its cards, and listens for what the JSX runtime has no attribute for. */
     function attach(wall: HTMLElement): void {
         observer.observe(wall);
         for (let i = 0; i < cards.length; i++) observer.observe(cards[i], { box: 'border-box' });
@@ -302,7 +302,7 @@ export function CardWallView(bindings: CardWallViewBindings): Element {
 }
 
 /**
- * Where the photo on the card for `entryId`, on `wall` (a wall this view
+ * Where the photo on the card for `entryId`, on `wall` (a card wall this view
  * made), is drawn now, if the card is there. Read from the page, when a
  * transition starts.
  */

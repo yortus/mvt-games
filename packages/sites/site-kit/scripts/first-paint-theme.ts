@@ -6,6 +6,10 @@
  * its `<head>`, which run before anything else: a script that reads the
  * visitor's choice and marks `<html>`, and each theme's background, which
  * shows until the stylesheets arrive.
+ *
+ * The same script reads whether the visitor browses the showcase, and if
+ * so marks `<html>` `is-showcase-starting`, which hides the card wall until
+ * the showcase starts. The Arcade's view takes the mark off.
  */
 
 import process from 'node:process';
@@ -21,8 +25,9 @@ export function firstPaintThemeHtml(site: SiteKind): string {
     const kinds = Object.keys(FIRST_PAINT) as ThemeKind[];
     const fallback = SITE_THEMES[site];
     // Storage can be blocked, as in a private window, which means the default
-    const script = `(function () { var t; try { t = localStorage.getItem('${THEME_KEY}'); } catch (e) {} `
-        + `document.documentElement.dataset.theme = ${JSON.stringify(kinds)}.indexOf(t) >= 0 ? t : '${fallback}'; })();`;
+    const script = `(function () { var t, s; try { t = localStorage.getItem('${THEME_KEY}'); s = localStorage.getItem('${SHOWCASE_KEY}'); } catch (e) {} `
+        + `var html = document.documentElement; html.dataset.theme = ${JSON.stringify(kinds)}.indexOf(t) >= 0 ? t : '${fallback}'; `
+        + `if (s === 'on') html.classList.add('is-showcase-starting'); })();`;
     const rules = kinds.map((kind) => {
         const { background, scheme } = FIRST_PAINT[kind];
         return `html[data-theme="${kind}"] { background: ${background}; color-scheme: ${scheme}; }`;
@@ -40,6 +45,12 @@ export function firstPaintThemeHtml(site: SiteKind): string {
  * adds it (`KEY_PREFIX` in `local-store.ts`).
  */
 const THEME_KEY = `${process.env.VITE_STORAGE_PREFIX ?? ''}mvt-arcade:theme`;
+/**
+ * Where the page keeps whether the visitor browses the showcase:
+ * `SHOWCASE_KEY` in `start-site-page.ts`, after the build's prefix, as with
+ * `THEME_KEY`.
+ */
+const SHOWCASE_KEY = `${process.env.VITE_STORAGE_PREFIX ?? ''}mvt-arcade:showcase`;
 
 /** Each theme's page background, as `themes.css` has it (`--theme-bg`), and whether it is dark or light. */
 const FIRST_PAINT: Readonly<Record<ThemeKind, { readonly background: string; readonly scheme: 'dark' | 'light' }>> = {

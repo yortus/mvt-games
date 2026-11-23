@@ -1,5 +1,5 @@
 /**
- * Photographs every entry of a site for its card on the site's wall, and for
+ * Photographs every entry of a site for its card on the site's card wall, and for
  * its link preview.
  *
  * Usage:  npm run generate-thumbnails -w @mvtjs/<site> [-- <id> ...]
@@ -139,7 +139,7 @@ try {
     for (const picture of pictures) savePicture(picture);
 
     if (ids.includes(SITE_ID)) {
-        // The wall as it first shows, still, with every photo in view loaded
+        // The card wall as it first shows, still, with every photo in view loaded
         await browser.send('Emulation.setDeviceMetricsOverride', {
             width: SHARE_IMAGE_WIDTH,
             height: SHARE_IMAGE_HEIGHT,
