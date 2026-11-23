@@ -754,7 +754,9 @@ export const CATALOGUE: readonly ArcadeEntry[] = [
 A site's showcase holds its entries too, in an order chosen by hand. For a
 game, give it a cabinet in the Arcade Hall, in
 [`../showcase/data/cabinet-entries.ts`](../showcase/data/cabinet-entries.ts).
-A test checks that every game has one.
+For a demo, give it a painting in the Gallery, in
+[`demos/src/showcase/data/gallery-entries.ts`](../../../demos/src/showcase/data/gallery-entries.ts).
+A test checks that every game has a cabinet, and every demo a painting.
 
 The thumbnail is a picture of the entry running, taken by a script and
 committed. Every page that lists the catalogue imports every entry's

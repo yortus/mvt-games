@@ -183,6 +183,8 @@ export function startSitePage(site: SiteConfig): void {
         hasSavedGame: (id) => store.read(SAVED_GAME_KEY + id) !== undefined,
         hiddenNoticeIds: readIds(HIDDEN_NOTICES_KEY),
         loadEntry: async (entry) => {
+            // One launched from the showcase keeps the size its card lists, which the showcase drew its screen at
+            host.isFittedToArea = !model.isFromShowcase;
             const starter = await entry.load();
             if (DEV) checkPlayArea(entry, starter);
             await host.prepare(starter);

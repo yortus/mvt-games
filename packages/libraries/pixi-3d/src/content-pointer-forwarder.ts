@@ -49,9 +49,11 @@ export interface ContentPointerForwarderOptions {
  * the content dispatches the event from there, as Pixi's own events system
  * does for the stage. The boundary finds the target under the point, and
  * fires its `pointerdown`, `pointertap`, `globalpointermove` and the rest.
- * So buttons, sliders and drags work as they do on the stage. A press on
- * the screen stops propagating there, so it doesn't reach a view behind the
- * screen, such as one that turns the camera. A drag that starts on the
+ * So buttons, sliders and drags work as they do on the stage. A press of
+ * the primary button stops propagating there, so it doesn't reach a view
+ * behind the screen, such as one that turns the camera. Another button,
+ * such as the right mouse button, isn't forwarded, so it still reaches that
+ * view, and can drag it round over the screen. A drag that starts on the
  * screen is followed, wherever the pointer goes, until the pointer is
  * released.
  *
@@ -103,8 +105,10 @@ export function createContentPointerForwarder(options: ContentPointerForwarderOp
     };
 
     function onPressed(e: Pointer3DEvent): void {
-        if (!isEnabled) return;
-        // Stopped here, so a view behind the screen, such as one that turns the camera, never receives it
+        // Only the primary button presses the content. Another, such as the right mouse button, carries on to
+        // whatever is behind the screen, such as a view that turns the camera, so it can drag the view round
+        if (!isEnabled || e.button !== 0) return;
+        // Stopped here, so a view behind the screen never receives it
         e.stopPropagation();
         if (pressedId !== undefined || !measure(e)) return;
         pressedId = e.pointerId;

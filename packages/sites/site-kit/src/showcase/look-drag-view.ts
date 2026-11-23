@@ -22,6 +22,13 @@ export interface LookDragViewBindings {
     readonly onTurned: (radians: number) => void;
     /** The visitor dragged up or down, to look up by `radians`, or down for less than 0. */
     readonly onTilted: (radians: number) => void;
+    /**
+     * The page's overlay over the view (`PixiStartBase.overlay`), if the
+     * showcase lays entries that draw with the DOM on it. A press there with
+     * a mouse button other than the primary drags the view round too, and the
+     * overlay doesn't show the browser's context menu.
+     */
+    readonly overlay?: HTMLElement;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,13 +45,19 @@ export interface LookDragViewBindings {
  * never arrives. Its relays fire from the browser's pointer events, between
  * frames.
  *
+ * The primary button drags only where nothing in the scene stops the
+ * press, so over a screen that receives pointer events, the visitor drags
+ * with another button, such as the right one. Over an entry that draws with
+ * the DOM, on the overlay, that press drags the view round too, and the
+ * entry doesn't receive it.
+ *
  * A mouse drag locks the pointer until you let the button go, as games do.
  * Pointer Lock is the browser's way to hide the cursor and report only how
  * far the mouse moves. So you can turn as far as you like, and the turn
  * doesn't stop when the cursor reaches the window's edge. A browser that
  * won't lock the pointer still drags, as far as the cursor can go.
  */
-export function LookDragView({ scene, width, height, radiansPerPixel, onTurned, onTilted }: LookDragViewBindings): Container {
+export function LookDragView({ scene, width, height, radiansPerPixel, onTurned, onTilted, overlay }: LookDragViewBindings): Container {
     const area = new Rectangle(0, 0, typeof width === 'function' ? width() : width, height);
     const view = new Container({ label: 'look-drag', hitArea: area, children: [scene] });
     if (typeof width === 'function') {
@@ -83,24 +96,52 @@ export function LookDragView({ scene, width, height, radiansPerPixel, onTurned, 
         onCancelled: unlock,
     });
     view.on('pointerdown', lockMouse);
-    view.on('destroyed', unlock);
+    overlay?.addEventListener('pointerdown', onOverlayPressed, { capture: true });
+    overlay?.addEventListener('contextmenu', preventContextMenu);
+    view.on('destroyed', () => {
+        unlock();
+        overlay?.removeEventListener('pointerdown', onOverlayPressed, { capture: true });
+        overlay?.removeEventListener('contextmenu', preventContextMenu);
+    });
     return view;
 
     /** Locks the pointer to the canvas for a mouse drag. */
     function lockMouse(e: FederatedPointerEvent): void {
         const canvas = e.nativeEvent.target;
-        if (e.pointerType !== 'mouse' || !(canvas instanceof Element) || !('requestPointerLock' in canvas)) return;
+        if (e.pointerType !== 'mouse' || !(canvas instanceof Element)) return;
+        lockTo(canvas);
+    }
+
+    /**
+     * Starts a drag from a press on the overlay with a mouse button other
+     * than the primary, over an entry that draws with the DOM. It's caught on
+     * its way down, so the entry doesn't receive it.
+     */
+    function onOverlayPressed(e: PointerEvent): void {
+        if (e.pointerType !== 'mouse' || e.button === 0 || overlay === undefined) return;
+        e.preventDefault();
+        e.stopPropagation();
+        lockTo(overlay);
+    }
+
+    function preventContextMenu(e: Event): void {
+        e.preventDefault();
+    }
+
+    /** Locks the pointer to `element` for a mouse drag, which the mouse's own moves then turn. */
+    function lockTo(element: Element): void {
+        if (!('requestPointerLock' in element) || lockedTo !== undefined) return;
         // Pixi's pixels are the page's, so this measures how the view is scaled on the canvas
         view.toLocal(origin.set(0, 0), undefined, origin);
         view.toLocal(step.set(1, 0), undefined, step);
         pixelsPerMove = step.x - origin.x;
-        lockedTo = canvas;
+        lockedTo = element;
         isFirstMove = true;
         document.addEventListener('pointermove', onLockedMove);
         // Pixi may not see the release of a locked pointer, so the page's own release unlocks it too
         document.addEventListener('pointerup', unlock);
         // In Chrome, the request is a promise, which rejects if the lock fails, as it does just after Esc ends one
-        const request: unknown = canvas.requestPointerLock();
+        const request: unknown = element.requestPointerLock();
         if (request instanceof Promise) request.catch(unlock);
     }
 

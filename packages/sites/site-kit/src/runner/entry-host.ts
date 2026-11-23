@@ -58,6 +58,15 @@ export interface EntryHost {
      */
     isClear: boolean;
     /**
+     * Whether a Pixi entry that lays itself out (`fitTo`) is fitted to the
+     * host's area, as it is by default. Off, it keeps the size it starts at,
+     * the size its card lists, and is scaled to fit, as a fixed-size entry
+     * is. The page turns it off for an entry launched from the showcase, so
+     * it lands on the screen the showcase drew for it at that size. Set it
+     * before the entry is prepared.
+     */
+    isFittedToArea: boolean;
+    /**
      * Whether the page has turned the host's element a quarter turn
      * clockwise, with a CSS transform on it or an ancestor, so an entry wider
      * than tall plays on its side on a phone held upright. The host then fits
@@ -184,6 +193,7 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
     let isPaused = false;
     let isBehind = false;
     let isClear = false;
+    let isFittedToArea = true;
     let isTurned = false;
     let isGpuTimed = false;
     let pixiStage: PixiStage | undefined;
@@ -244,6 +254,12 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         },
         set isClear(value) {
             isClear = value;
+        },
+        get isFittedToArea() {
+            return isFittedToArea;
+        },
+        set isFittedToArea(value) {
+            isFittedToArea = value;
         },
         get isTurned() {
             return isTurned;
@@ -453,9 +469,9 @@ export function createEntryHost(options: EntryHostOptions): EntryHost {
         pixiStage.fit(areaRect.width, areaRect.height);
     }
 
-    /** Fits a Pixi entry that lays itself out (`fitTo`) to the host's area, once it has one. Returns whether it did. */
+    /** Fits a Pixi entry that lays itself out (`fitTo`) to the host's area, once it has one, unless `isFittedToArea` is off. Returns whether it did. */
     function fitStarter(next: PixiEntryStarter): boolean {
-        if (next.fitTo === undefined || areaRect.width <= 0 || areaRect.height <= 0) return false;
+        if (!isFittedToArea || next.fitTo === undefined || areaRect.width <= 0 || areaRect.height <= 0) return false;
         next.fitTo(areaRect.width, areaRect.height);
         return true;
     }
