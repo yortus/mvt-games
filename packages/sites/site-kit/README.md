@@ -72,8 +72,8 @@ on each.
 
 Each site has a theme of its own (`SITE_THEMES`, in
 [`src/arcade/site-config.ts`](./src/arcade/site-config.ts)): the arcade
-Arcade, the demos Dark, the puzzles Light. The visitor can choose one for
-every site from the palette in the nav. The themes are CSS custom
+Neon, the demos Night, the puzzles Paper. The visitor can choose one for
+every site's card wall from the nav's Browse menu. The themes are CSS custom
 properties, in `src/arcade/themes.css` and `theme-*.css`. See
 [the page's README](./src/arcade/README.md#10-themes-a-setting-the-stylesheet-follows).
 

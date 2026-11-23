@@ -59,7 +59,7 @@ button { font: inherit; color: inherit; }
 
 /* For a visitor who has asked for less motion, nothing on the page animates its way between states */
 @media (prefers-reduced-motion: reduce) {
-    .card, .card-polaroid, .search-box, .search-slot, .search-tags-reveal, .chip, .nav-search, .nav-fullscreen, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button, .runner-bar button { transition: none; }
+    .card, .card-polaroid, .search-box, .search-slot, .search-tags-reveal, .chip, .nav-search, .nav-fullscreen, .nav-sound, .nav-browse-button, .nav-perfmon, .about-button, .runner-bar button { transition: none; }
 }
 
 .arcade {
@@ -108,7 +108,7 @@ button { font: inherit; color: inherit; }
  * drawn by a mask on its `::before`. A tool that is on (the Perfmon open, the
  * note open) is lit as the nav's link to the page is.
  */
-.nav-search, .nav-fullscreen, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button, .runner-bar button {
+.nav-search, .nav-fullscreen, .nav-sound, .nav-browse-button, .nav-perfmon, .about-button, .runner-bar button {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -123,17 +123,17 @@ button { font: inherit; color: inherit; }
 }
 /* On a phone, the nav's tools close up, so the site's name keeps its room beside them */
 @media (max-width: 400px) {
-    .nav-search, .nav-fullscreen, .nav-sound, .nav-theme-button, .nav-perfmon, .about-button { padding: 5px; }
+    .nav-search, .nav-fullscreen, .nav-sound, .nav-browse-button, .nav-perfmon, .about-button { padding: 5px; }
 }
-.nav-search:hover, .nav-fullscreen:hover, .nav-sound:hover, .nav-theme-button:hover, .nav-perfmon:hover, .about-button:hover, .runner-bar button:hover:not(:disabled) {
+.nav-search:hover, .nav-fullscreen:hover, .nav-sound:hover, .nav-browse-button:hover, .nav-perfmon:hover, .about-button:hover, .runner-bar button:hover:not(:disabled) {
     color: var(--site-nav-text);
     background: var(--site-nav-hover-bg);
 }
-.nav-search.is-on, .nav-perfmon.is-on, .runner-perfmon.is-on, .runner-pause.is-on, .runner-info.is-on, .about-button[aria-expanded="true"], .nav-theme-button[aria-expanded="true"] {
+.nav-search.is-on, .nav-perfmon.is-on, .runner-perfmon.is-on, .runner-pause.is-on, .runner-info.is-on, .about-button[aria-expanded="true"], .nav-browse-button[aria-expanded="true"] {
     color: var(--site-nav-text);
     background: var(--site-nav-active-bg);
 }
-.nav-search::before, .nav-fullscreen::before, .nav-sound::before, .nav-theme-button::before, .nav-perfmon::before, .about-button::before, .runner-bar button::before {
+.nav-search::before, .nav-fullscreen::before, .nav-sound::before, .nav-browse-button::before, .nav-perfmon::before, .about-button::before, .runner-bar button::before {
     content: '';
     width: 20px;
     height: 20px;
@@ -159,10 +159,10 @@ button { font: inherit; color: inherit; }
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M2 6h3l4-3v10l-4-3H2z' fill='%23000'/%3E%3Cpath d='M11 6l4 4M15 6l-4 4'/%3E%3C/svg%3E");
 }
 
-/* The palette, which drops the menu of themes, and the menu: each choice a swatch of the theme it wears, the one chosen ticked */
-.nav-theme { position: relative; display: inline-flex; }
-.nav-theme-button::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.5' stroke-linejoin='round'%3E%3Cpath d='M8 1.8a6.2 6.2 0 100 12.4c1 0 1.4-.6 1.4-1.3 0-.9-.8-1.2-.8-2 0-.7.6-1.2 1.4-1.2h1.5a3.3 3.3 0 003.3-3.3C14.8 3.9 11.8 1.8 8 1.8z'/%3E%3Ccircle cx='4.8' cy='7.4' r='1' fill='%23000' stroke='none'/%3E%3Ccircle cx='7.2' cy='4.6' r='1' fill='%23000' stroke='none'/%3E%3Ccircle cx='10.6' cy='5.2' r='1' fill='%23000' stroke='none'/%3E%3C/svg%3E") center / 18px no-repeat; }
-.nav-theme-menu {
+/* The Browse button, a 2x2 grid of cards, which drops the menu of ways to browse: each card wall a swatch of its theme, then the showcase, the one chosen ticked */
+.nav-browse { position: relative; display: inline-flex; }
+.nav-browse-button::before { mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'%3E%3Crect x='2.5' y='2.5' width='4.5' height='4.5' rx='1'/%3E%3Crect x='9' y='2.5' width='4.5' height='4.5' rx='1'/%3E%3Crect x='2.5' y='9' width='4.5' height='4.5' rx='1'/%3E%3Crect x='9' y='9' width='4.5' height='4.5' rx='1'/%3E%3C/svg%3E") center / 18px no-repeat; }
+.nav-browse-menu {
     position: absolute;
     z-index: 1;
     top: calc(100% + 10px);
@@ -176,7 +176,7 @@ button { font: inherit; color: inherit; }
     background: var(--theme-surface);
     box-shadow: var(--theme-shadow-note);
 }
-.nav-theme-item {
+.nav-browse-item {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -190,14 +190,14 @@ button { font: inherit; color: inherit; }
     text-align: left;
     cursor: pointer;
 }
-.nav-theme-item:hover, .nav-theme-item:focus-visible { background: var(--theme-hover-wash); color: var(--theme-text-strong); }
+.nav-browse-item:hover, .nav-browse-item:focus-visible { background: var(--theme-hover-wash); color: var(--theme-text-strong); }
 /* The tick, on the choice made */
-.nav-theme-item::after { content: ''; width: 14px; height: 14px; margin-left: auto; }
-.nav-theme-item[aria-checked="true"]::after {
+.nav-browse-item::after { content: ''; width: 14px; height: 14px; margin-left: auto; }
+.nav-browse-item[aria-checked="true"]::after {
     background: var(--theme-accent);
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3L13 4.5'/%3E%3C/svg%3E") center / 14px no-repeat;
 }
-.nav-theme-swatch {
+.nav-browse-swatch {
     display: inline-flex;
     flex: none;
     overflow: hidden;
@@ -205,19 +205,19 @@ button { font: inherit; color: inherit; }
     border-radius: 50%;
     transform: rotate(-30deg);
 }
-.nav-theme-swatch > span { width: 6px; height: 18px; }
+.nav-browse-swatch > span { width: 6px; height: 18px; }
 
 /* The menu's two groups, the card walls and the showcase, each under a small heading */
-.nav-theme-heading {
+.nav-browse-heading {
     padding: 8px 10px 4px;
     color: var(--theme-text-muted);
     font: 600 11px var(--theme-font-ui);
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
-.nav-theme-heading:not(:first-child) { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--theme-border); }
+.nav-browse-heading:not(:first-child) { margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--theme-border); }
 /* The showcase's icon in the menu, a cube in perspective, since a showcase is a 3D scene */
-.nav-theme-cube {
+.nav-browse-cube {
     flex: none;
     width: 20px;
     height: 20px;

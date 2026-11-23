@@ -313,7 +313,7 @@ The page has three looks: `arcade` (loud and dark, the arcade's own),
 `light` (warm paper and ink, the puzzles' own) and `dark` (calm and modern,
 the demos' own). The picker lists them in the nav's order of their sites,
 named for the look they give the card wall: **Neon**, **Paper** and
-**Night**. The visitor picks one from the palette in the nav, or the
+**Night**. The visitor picks one from the nav's Browse menu, or the
 default, where each site wears its own. For a site with a showcase, the
 same menu offers it too, as the other way to browse (see the next section).
 
@@ -372,7 +372,7 @@ note, and the showcase stands still behind it.
 Which one the visitor browses is a setting, like the theme. The model
 keeps it as `isShowcaseMode`, and doesn't need anything else. The page
 saves it between visits, for all three sites (`mvt-arcade:showcase`), and
-the visitor chooses it in the nav's palette menu. While it's on, the phase
+the visitor chooses it in the nav's Browse menu. While it's on, the phase
 is still `'browsing'`. An entry the showcase launches
 (`launch(id, { isFromShowcase: true })`) is launched as from a card, but
 without waiting for a way in. Leaving it goes back to `'browsing'`, which

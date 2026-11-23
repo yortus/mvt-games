@@ -16,11 +16,11 @@ import { EntryNoticeView } from './entry-notice-view';
 import type { LivePreview } from './live-preview';
 import type { ArcadeAudioViews } from './load-arcade-audio-views';
 import type { Perfmon } from './load-perfmon';
+import { NavBrowseView } from './nav-browse-view';
 import { NavFullscreenView } from './nav-fullscreen-view';
 import { NavPerfmonView } from './nav-perfmon-view';
 import { NavSearchView } from './nav-search-view';
 import { NavSoundView } from './nav-sound-view';
-import { NavThemeView } from './nav-theme-view';
 import { THEMES } from './themes';
 import { PlacingView } from './placing-view';
 import { NO_RECT, type Rect } from './rect';
@@ -264,7 +264,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         onDismissed: model.closeAbout,
     });
     // How to browse the entries: a card wall in one of the themes, or the site's showcase
-    const navTheme = NavThemeView({
+    const navBrowse = NavBrowseView({
         choice: () => model.themeChoice,
         siteTheme: SITE_THEMES[bindings.site.id],
         onChosen: (choice) => {
@@ -275,7 +275,7 @@ export function ArcadeView(bindings: ArcadeViewBindings): Element {
         isShowcaseOn: () => model.isShowcaseMode,
         onShowcaseChosen: () => { model.isShowcaseMode = true; },
     });
-    bindings.navTools?.append(navSearch, ...(navFullscreen === undefined ? [] : [navFullscreen]), navSound, navTheme, navPerfmon, about);
+    bindings.navTools?.append(navSearch, ...(navFullscreen === undefined ? [] : [navFullscreen]), navSound, navBrowse, navPerfmon, about);
 
     window.addEventListener('keydown', onKeyDown);
     const homeLinks = bindings.homeLinks ?? [];

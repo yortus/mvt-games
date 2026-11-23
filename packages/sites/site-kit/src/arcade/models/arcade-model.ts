@@ -282,12 +282,12 @@ export interface ArcadeModel {
 
 /**
  * Where the Arcade is:
- * - `'browsing'`: it shows its card wall.
+ * - `'browsing'`: it shows its card wall, or its showcase.
  * - `'launching'`: it loads the entry the visitor chose, while the way in
  *   leaves the card wall. It lasts until the entry has loaded, and for at least
  *   `LAUNCH_MS` after a launch from the card wall.
  * - `'revealing'`: the entry has started, and stands still while it shows,
- *   for `REVEAL_MS`.
+ *   for `REVEAL_MS`. An entry launched from the showcase skips it.
  * - `'playing'`: the entry runs.
  */
 export type ArcadePhase = 'browsing' | 'launching' | 'revealing' | 'playing';
@@ -719,9 +719,9 @@ export function createArcadeModel(options: ArcadeModelOptions): ArcadeModel {
         return phase === 'revealing' || phase === 'playing';
     }
 
-    /** Starts the loaded entry, which stands still while it is revealed. */
+    /** Starts the loaded entry, which stands still while it is revealed, unless the showcase launched it, which doesn't draw a reveal. */
     function startEntry(): void {
-        enter('revealing');
+        enter(isFromShowcase ? 'playing' : 'revealing');
         isPaused = false;
         // Fresh tables, for where a run will place, and for the game's "HI"
         if (activeEntry?.hasHighscores === true) highscores.reload();

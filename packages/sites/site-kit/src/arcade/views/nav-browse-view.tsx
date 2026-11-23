@@ -8,7 +8,7 @@ import { listenToPressOutside } from './listen-to-press-outside';
 // ---------------------------------------------------------------------------
 
 /** What the nav's view picker shows, and what it reports. */
-export interface NavThemeViewBindings {
+export interface NavBrowseViewBindings {
     /** The visitor's choice of theme, which the card wall wears. */
     readonly choice: () => ThemeChoice;
     /** The site's own theme, which the default wears. Fixed. */
@@ -28,14 +28,14 @@ export interface NavThemeViewBindings {
 // ---------------------------------------------------------------------------
 
 /**
- * A palette in the site's nav, and the menu it drops beneath it, for how
- * the visitor browses the site's entries. They choose a card wall in one of
- * the themes, each shown with a swatch, or the site's showcase, if it has
- * one. The default card wall wears each site's own theme. The choice made is
- * ticked. Whether the menu is open is the view's own: choosing, Escape, or a
- * press anywhere else closes it.
+ * The Browse button in the site's nav, drawn as a grid of cards, and the menu it
+ * drops beneath it, for how the visitor browses the site's entries. They
+ * choose a card wall in one of the themes, each shown with a swatch, or the
+ * site's showcase, if it has one. The default card wall wears each site's
+ * own theme. The choice made is ticked. Whether the menu is open is the
+ * view's own: choosing, Escape, or a press anywhere else closes it.
  */
-export function NavThemeView(bindings: NavThemeViewBindings): Element {
+export function NavBrowseView(bindings: NavBrowseViewBindings): Element {
     let root: HTMLElement | undefined;
     let button: HTMLButtonElement | undefined;
     // Presentation state: whether the menu is open
@@ -50,20 +50,20 @@ export function NavThemeView(bindings: NavThemeViewBindings): Element {
     });
 
     return (
-        <div class="nav-theme" ref={(e) => { root = e; }} onDestroyed={stopListening}>
+        <div class="nav-browse" ref={(e) => { root = e; }} onDestroyed={stopListening}>
             <button
                 type="button"
-                class="nav-theme-button"
+                class="nav-browse-button"
                 ref={(e) => { button = e; }}
-                aria-label="View"
-                title="View"
+                aria-label="Browse"
+                title="Browse"
                 aria-haspopup="menu"
                 aria-expanded={() => (isOpen ? 'true' : 'false')}
-                aria-controls="nav-theme-menu"
+                aria-controls="nav-browse-menu"
                 onClick={() => { isOpen = !isOpen; }}
             />
-            <ul class="nav-theme-menu" id="nav-theme-menu" role="menu" aria-label="View" visible={() => isOpen}>
-                <li class="nav-theme-heading" role="none" aria-hidden="true" text="Card wall" />
+            <ul class="nav-browse-menu" id="nav-browse-menu" role="menu" aria-label="Browse" visible={() => isOpen}>
+                <li class="nav-browse-heading" role="none" aria-hidden="true" text="Card wall" />
                 {THEME_CHOICES.map((choice) => {
                     const theme = THEMES[choice === 'default' ? bindings.siteTheme : choice];
                     const name = choice === 'default' ? `Site's own (${theme.name})` : theme.name;
@@ -71,13 +71,13 @@ export function NavThemeView(bindings: NavThemeViewBindings): Element {
                         <li role="none">
                             <button
                                 type="button"
-                                class="nav-theme-item"
+                                class="nav-browse-item"
                                 role="menuitemradio"
                                 aria-label={`${name} card wall`}
                                 aria-checked={() => (!isShowcaseOn() && bindings.choice() === choice ? 'true' : 'false')}
                                 onClick={() => choose(choice)}
                             >
-                                <span class="nav-theme-swatch" aria-hidden="true">
+                                <span class="nav-browse-swatch" aria-hidden="true">
                                     {theme.swatch.map((colour) => <span style={`background: ${colour}`} />)}
                                 </span>
                                 <span text={name} />
@@ -88,17 +88,17 @@ export function NavThemeView(bindings: NavThemeViewBindings): Element {
                 {(showcaseName === undefined
                     ? []
                     : [
-                            <li class="nav-theme-heading" role="none" aria-hidden="true" text="Showcase" />,
+                            <li class="nav-browse-heading" role="none" aria-hidden="true" text="Showcase" />,
                             <li role="none">
                                 <button
                                     type="button"
-                                    class="nav-theme-item"
+                                    class="nav-browse-item"
                                     role="menuitemradio"
                                     aria-label={`${showcaseName} showcase`}
                                     aria-checked={() => (isShowcaseOn() ? 'true' : 'false')}
                                     onClick={chooseShowcase}
                                 >
-                                    <span class="nav-theme-cube" aria-hidden="true" />
+                                    <span class="nav-browse-cube" aria-hidden="true" />
                                     <span text={showcaseName} />
                                 </button>
                             </li>,

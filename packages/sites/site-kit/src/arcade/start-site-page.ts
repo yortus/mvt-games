@@ -631,10 +631,12 @@ export function startSitePage(site: SiteConfig): void {
      * fixed size on the host's Pixi stage turns, since the host maps the
      * pointer through the turn for that stage alone. The entry lists whether
      * it is one (`laysItselfOut`), so the answer is known before its code loads.
+     * An entry launched from the showcase stays upright, so it lands on the
+     * screen the showcase drew for it.
      */
     function isRunnerTurned(): boolean {
         const entry = model.activeEntry;
-        if (!canTurn || model.phase === 'browsing' || entry === undefined || !portrait.matches) return false;
+        if (!canTurn || model.phase === 'browsing' || model.isFromShowcase || entry === undefined || !portrait.matches) return false;
         return entry.screenWidth > entry.screenHeight && entry.laysItselfOut !== true;
     }
 

@@ -392,13 +392,13 @@ describe('ArcadeModel', () => {
     });
 
     describe('the showcase', () => {
-        it('launches an entry from the showcase without a way in, and goes back to the showcase on leaving', async () => {
+        it('plays an entry from the showcase as soon as it loads, without a way in, and goes back to the showcase on leaving', async () => {
             const model = createArcadeModel(options({ showcase: SHOWCASE, isShowcaseMode: true }));
             model.launch('maze-game', { isFromShowcase: true });
             expect(model.isFromShowcase).toBe(true);
             await settle();
             await advanceTime(16, model);
-            expect(model.phase).toBe('revealing');
+            expect(model.phase).toBe('playing');
             model.exit();
             expect(model.phase).toBe('browsing');
             expect(model.isShowcaseMode).toBe(true);
