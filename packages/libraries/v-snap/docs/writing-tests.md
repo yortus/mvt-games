@@ -7,6 +7,7 @@ to declare a test, and what v-snap does with it.
 - [Tests, Actual Images and Reference Images](#tests-actual-images-and-reference-images)
 - [Declaring a Test](#declaring-a-test)
 - [Views That Change Over Time](#views-that-change-over-time)
+- [Keeping Tests Fast](#keeping-tests-fast)
 - [Shared Setup and Assets](#shared-setup-and-assets)
 - [Options and Modifiers](#options-and-modifiers)
 - [New Images](#new-images)
@@ -111,6 +112,31 @@ Before every test, v-snap resets `Math.random`, `crypto.getRandomValues`
 and `crypto.randomUUID` to the same fixed starting point, called a seed.
 So a view that uses random numbers gets the same numbers, and draws the
 same image, on every run.
+
+## Keeping Tests Fast
+
+A small image is quick. A canvas test of a view the size of a game's HUD
+takes a few milliseconds. Two things make a test slower.
+
+- **A big image.** Drawing time grows with the image's size, so an image
+  of a whole game screen can take ten or twenty times as long as one of a
+  single view. By default, a canvas image covers the view's own bounds.
+  Give a test a `width` and `height` only when it needs the whole screen.
+  Test each part of a screen as a view of its own, and keep one or two
+  tests of the whole screen, for the layout. That keeps a failure small
+  too, since it shows which part changed. An HTML test's screenshot
+  takes much the same time at any size, so size matters less there.
+- **A long pose.** Your pose runs the code it calls, for real. If it
+  moves a game on through 30 seconds of game time, the game's update runs
+  for every step of those 30 seconds, before v-snap draws anything. For a game that does
+  a lot of work in each update, such as a simulation, that can take
+  seconds. Move time on only as far as the test needs. For a state that
+  the game reaches only slowly, let the game start in that state instead.
+
+The first test in a file also takes longer than the rest. It runs setup
+that the tests after it reuse, such as compiling the shaders that its
+views use. The run's summary lists the slowest tests, so you can see
+which of them to look at.
 
 ## Shared Setup and Assets
 

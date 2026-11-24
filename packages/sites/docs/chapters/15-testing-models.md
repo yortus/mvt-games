@@ -213,6 +213,23 @@ step it takes is one that a game could produce, so the test relies only
 on what the model guarantees, and it keeps passing when the model's
 insides change.
 
+### Keeping game time short
+
+Game time takes real time to run. `advanceTime` calls each model's
+`update` for every 16 ms step, so ten seconds of game time is over 600
+updates. For most models, that's over in a few milliseconds. But a model
+that does a lot of work in each update runs ten seconds far more slowly.
+A simulation that takes many small steps inside each update is one
+example. A test that moves it on for half a minute can take several
+seconds before it checks anything.
+
+So move time on only as far as the test needs. Some states come only
+after a long time in the game. For one of those, give the model an option
+to start in it. The board in Kwazy Cactii does this: it receives its
+starting cactii as an option (`startKinds`). Then the test creates the
+model in that state, and moves it on for the few steps that the test is
+about.
+
 ## A Helper That Fills In Defaults
 
 A real model often needs several options, and a test that spells them all
@@ -367,6 +384,15 @@ Models don't guarantee anything about a step that big, and this one
 needed an update at a moment in between. Use `advanceTime`, or a loop of
 steps no bigger than the cap.
 
+### A test that plays the game to reach one state
+
+The test runs for seconds, though it checks one thing. It moves the
+model on for a long stretch of game time, to reach a state that the game
+gets to slowly. And the model does a lot of work in every update.
+Give the model an option to start in that state, and move it on only for
+the steps the test is about
+([Keeping game time short](#keeping-game-time-short)).
+
 ### A position that's off by a hair
 
 A position test fails with `expected 2.0000000000000004 to be 2`.
@@ -391,7 +417,9 @@ Time passes only when a test calls `update`. Give a model time as a game
 could, in steps no bigger than the ticker's cap, since a model's guarantee
 covers only those steps. `advanceTime` does that for you, in 16 ms steps,
 letting any `await` inside the model settle after each step. Always
-`await` it.
+`await` it. Game time takes real time to run. So move a model on only as
+far as the test needs, and let it start in a state that the game reaches
+slowly.
 
 Keep each test about one behaviour. A helper with defaults hides the
 options that don't matter, and stand-ins for a model's options are plain

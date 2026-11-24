@@ -170,10 +170,24 @@ A test of a game's top-level view is a test of its whole screen. It
 catches problems that a single view's test misses, such as the layout, the
 order in which views are drawn, or a view that its parent doesn't add.
 
-But it also changes with almost any change to the game. So one or two for
-each game are usually enough. A big screen can be cropped to the part
-that the test is about. Smaller images are faster to compare, and their failures
-are easier to read.
+But a whole screen has two drawbacks:
+
+- **It changes with almost any change to the game.** Its tests fail
+  together, and reviewing a dozen of them is a chore that people soon
+  skip.
+- **It's slow.** The image is big, and drawing it can take ten or twenty
+  times as long as drawing one view at its own size. The pose also runs
+  the game's models up to the moment that the test shows. Game time
+  takes real time to run, as
+  [Chapter 15](15-testing-models.md#keeping-game-time-short) explains.
+  Over a suite, the extra time adds up quickly.
+
+So one or two whole-screen tests for each game are usually enough. Pick
+moments that the game reaches quickly. Test each part of the screen as a
+view of its own, at its own size, with one test for each state that its
+bindings can show. Those tests are fast, and when one fails, it says
+which part changed. A big screen can also be cropped to the part that a
+test is about.
 
 ## The Limits of a Visual Test
 
@@ -271,9 +285,10 @@ want to test.
 ### A dozen whole-screen tests failing at once
 
 Every change to the game fails a dozen whole-screen tests, and reviewing
-them becomes a chore that people skip. A whole screen changes with almost
-any change to the game. Test the parts on their own, and keep one or two
-images of the whole screen.
+them becomes a chore that people skip. The suite slows down too, since
+each whole screen is slow to pose and draw. A whole screen changes with
+almost any change to the game. Test the parts on their own, at their own
+size, and keep one or two images of the whole screen.
 
 ### A bug in a reference image
 
@@ -292,7 +307,9 @@ draws exactly that moment.
 Images stay the same from run to run because models never read the clock
 and receive their random numbers, and because each test fixes everything
 else that it depends on and cleans up after itself. Test the parts of a game one
-at a time, and keep a few images of the whole screen for layout.
+at a time, at their own size, and keep one or two images of the whole
+screen for layout. Whole screens fail together, and they're slow to pose
+and draw.
 
 Every new image is a decision. Look at it, then accept it with the code
 that caused it, or fix the bug it found.

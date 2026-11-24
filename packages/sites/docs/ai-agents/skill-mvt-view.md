@@ -184,6 +184,19 @@ A new or changed view gets a visual test
   stand-in bindings, or for a top-level view a model brought into a state by
   its actions. `advanceTime(ms, model, view)`, from the renderer package,
   moves presentation state on.
+- Draw a leaf view at its own size: leave out `width` and `height` unless
+  the view fills the screen. A whole screen draws ten or twenty times as
+  slowly as one view, and fails with almost any change.
+- Give a top-level view one or two whole-screen tests, not one per state,
+  at moments the game reaches quickly. Test its parts as leaf views
+  ([Testing a whole game's screen](../chapters/17-visual-tests.md#testing-a-whole-game-s-screen)).
+  An Arcade entry already gets one at its start from `canvas-entries` or
+  `html-entries`.
+- Keep a pose's game time short: a model that does a lot of work in each
+  update can take seconds to move on. Start the model in the state through
+  its options instead
+  ([Keeping game time short](../chapters/15-testing-models.md#keeping-game-time-short)).
+  The run's summary lists the slowest tests.
 - The Arcade's options (`pixelArt: false`, `kind: 'three'`, `camera`,
   `scene`) are in
   [Adding an Entry](../../arcade/src/entries/README.md#step-6-list-it-and-take-its-thumbnail).

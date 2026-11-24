@@ -794,8 +794,15 @@ npx vitest run packages/sites/arcade/src/entries/visual-tests/canvas-entries.tes
 ```
 
 Give the views their own visual tests too, with one test for each
-state their bindings can show. See
-[Visual Tests](../../../docs/chapters/17-visual-tests.md).
+state their bindings can show. Draw each view at its own size: leave out
+`width` and `height` unless the view fills the screen. The top-level
+view needs only one or two whole-screen tests of its own, beyond the one
+above, for moments that matter, such as a game over. A whole screen draws
+ten or twenty times as slowly as one view, and almost any change fails
+it. Pick moments that the game reaches quickly, too. A pose runs the
+game's models up to its moment, and a model that does a lot of work in
+each update can take seconds to get there. See
+[Visual Tests](../../../docs/chapters/17-visual-tests.md#testing-a-whole-game-s-screen).
 
 The Arcade's `vsnap.config.ts` registers its three kinds of view, Pixi,
 three.js and HTML. It refreshes each posed view before its image is

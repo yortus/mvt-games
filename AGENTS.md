@@ -96,7 +96,11 @@ Visual tests are in a `visual-tests/` folder beside the views they test, one
 `htmlTest`, from `v-snap` (`packages/libraries/v-snap/`).
 A pose returns the view arranged into one state: stand-in bindings (for a
 top-level view, a model brought into a state through its actions), and
-`advanceTime` for time. Reference images are
+`advanceTime` for time. Draw a leaf view at its own size, and give a
+top-level view one or two whole-screen tests, not one per state: a whole
+screen draws ten or twenty times as slowly, and fails with almost any
+change. Keep a pose's game time short, starting a model in a state
+through its options rather than playing up to it. Reference images are
 beside the tests, named for the test file's stem and the image, such as
 `hud-view.at-the-start.png`, so a test needs no `describe` block that only
 names its view. See

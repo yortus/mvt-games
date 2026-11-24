@@ -31,8 +31,8 @@ about their views, or skip view testing altogether.
 v-snap is fast, and it draws the same images on every machine, without
 Docker.
 
-- **It's an order of magnitude faster per image.** A canvas image takes
-  about 4 ms to draw and check. A screenshot test in the same browser
+- **It's an order of magnitude faster per image.** A canvas image of a
+  HUD panel, up to 400 by 180 pixels, takes about 4 ms to draw and check. A screenshot test in the same browser
   takes 67 ms. 1000 images run in under 8 seconds, start-up included.
 - **Every machine draws the same images.** A reference made on Windows
   passes on Linux and macOS, and the other way round. v-snap is checked on

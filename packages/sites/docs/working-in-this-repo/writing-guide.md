@@ -362,9 +362,9 @@ point to its home. Each says what it is, and keeps it short.
 | Shared values, and why the JSX runtimes don't have context; why views never forward `update` and `refresh` | Chapter 13 |
 | Why views poll, consumer-defined events, the drawbacks of polling and their figures | Chapter 10 (the figures from Appendix C) |
 | View models, recognised gestures, the metronome, sequences | Chapter 18 |
-| Testing a model, `advanceTime` | Chapter 15 |
+| Testing a model, `advanceTime`, keeping a test's game time short | Chapter 15 |
 | Testing an audio view | Chapter 20 |
-| Reference images and reviewing them | Chapter 17 |
+| Reference images and reviewing them, how many whole-screen tests a game needs | Chapter 17 |
 | Hot paths | Chapter 24 |
 | Performance figures | Appendix C, its short version |
 | GSAP timelines in a model | Appendix E |
