@@ -1,10 +1,10 @@
-import { Container, type FederatedPointerEvent, Graphics } from 'pixi.js';
+import { Container, type FederatedPointerEvent } from 'pixi.js';
 import { advanceTime, refreshView } from '@mvtjs/pixi';
 import { createMemoryStore } from '@mvtjs/site-kit/storage';
-import { PAPER_COLOR, toDayNumber } from '../../../../shared';
+import { toDayNumber } from '../../../../shared';
 import { createGameModel, type GameModel, playShowcase } from '../../models';
 import { layOutPicture } from '../picture-layout';
-import { BOARD_HEIGHT, BOARD_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH } from '../view-constants';
+import { BOARD_HEIGHT, BOARD_WIDTH } from '../view-constants';
 
 /** Today, in every pose: Saturday 7 November 2026. */
 export const TODAY = toDayNumber({ year: 2026, month: 11, day: 7 });
@@ -13,15 +13,15 @@ export const TODAY = toDayNumber({ year: 2026, month: 11, day: 7 });
 export type Play = (model: GameModel, view: Container) => void;
 
 /**
- * Returns the view `makeView` makes of a new game on `TODAY`, on paper,
- * after `play` has played in it and `ms` has passed. A list of plays has a
- * frame pass after each, refreshed as on screen, so the view sees each of
- * them.
+ * Returns the view `makeView` makes of a new game on `TODAY`, after `play`
+ * has played in it and `ms` has passed. A list of plays has a frame pass
+ * after each, refreshed as on screen, so the view sees each of them. The
+ * tests draw it on the paper's colour, as their `background`.
  */
 export async function poseGame(makeView: (model: GameModel) => Container, play: Play | readonly Play[], ms = 16): Promise<Container> {
     const model = createGameModel({ today: TODAY, store: createMemoryStore(), offersIntro: false });
     const view = new Container();
-    view.addChild(new Graphics().rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT).fill(PAPER_COLOR), makeView(model));
+    view.addChild(makeView(model));
     await advanceTime(16, model, view);
     const plays = typeof play === 'function' ? [play] : play;
     for (let i = 0; i < plays.length; i++) {
