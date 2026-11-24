@@ -45,20 +45,19 @@ there.
 - **Rotated `<img>` elements look a little jagged.** v-snap draws them
   without smoothing, because arm64 processors round smoothed, rotated
   images differently from other processors.
-- **Small differences pass.** A pixel passes if none of its colour
-  channels differs by more than 2, on a scale of 0 to 255. A real change
-  is almost never that small. On arm64 processors, an image also passes
-  if only a few scattered pixels differ by more: at most one in 10,000,
-  in clumps of at most two. Those processors draw an odd pixel along the
-  edge of a 3D shape differently. On arm64, Vitest's `-u` leaves such a
-  reference alone, since those processors round a little differently.
-  On other processors, `-u` writes the change to the reference.
-- **Keep the faces of a 3D scene apart.** Where two faces nearly meet,
-  such as one a few millimetres behind another, rounding in the depth
-  test decides which one shows. Processors with different features round
-  it differently, so the edge can draw differently on two x64 machines.
-  Move the faces a little further apart, or let one overlap the other
-  clearly.
+- **Small differences pass.** A pixel passes if each of its colour
+  channels differs by at most 2, on a scale of 0 to 255. A real change is
+  almost never that small.
+- **Edge pixels can change more, across shader compilers.** SwiftShader
+  uses one of two shader compilers, and they draw the edges of 3D shapes
+  a little differently. So when a reference was drawn with the other
+  shader compiler, a pixel may also differ by up to its largest step to a
+  neighbour. That lets a layout that moved by one pixel, or a stray
+  pixel, pass on a machine with the other shader compiler. A machine with
+  the reference's own shader compiler still catches it. So run the visual
+  tests in CI with each shader compiler that your team
+  writes references with. [Two Shader
+  Compilers](how-it-works.md#two-shader-compilers) explains.
 - **Drawing is done in software,** on the processor. So it can differ a
   little from what a real graphics card draws.
 
@@ -82,6 +81,24 @@ there.
   it, so a later test of the other kind draws it differently. Its image
   then depends on which test ran first. A texture that sets its own
   sampling, such as a spritesheet's, draws the same in every test.
+- **Keep the faces of a 3D scene further apart than the depth buffer can
+  resolve.** The depth buffer stores how far away each surface is, to a
+  limited precision. Two faces closer together than that fight over which
+  one shows (z-fighting). People see them flicker on every GPU as the
+  camera moves. In a test, the two shader compilers settle each fight
+  differently, so the image fails across them. The gap you need grows
+  with the square of the distance from the camera, and shrinks as you
+  move the camera's near plane further out. So a gap that works close up
+  can fight far away. Move the faces apart, or let one clearly overlap
+  the other.
+- **In a shader, hash with integers, not `sin`.** A common way to make
+  noise in a shader is `fract(sin(x) * 43758.5453)`. It multiplies the
+  last bits of `sin` up into the result. But `sin`'s last bits differ
+  between the two shader compilers, and between GPUs too. So the noise
+  differs all over the image, and the image fails across shader
+  compilers. WebGL2's shaders have `uint`, and integer arithmetic produces
+  the same bits on every machine. So hash with integers, such as with
+  PCG's hash, and turn the result into a float at the end.
 - **Give each canvas font a family that v-snap can draw.** v-snap draws
   canvas text in the fonts that you register, or in one of its own, the
   sans-serif one or the monospace one. It picks one by looking through your

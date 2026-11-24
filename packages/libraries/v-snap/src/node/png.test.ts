@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash } from './png.ts';
+import { decodePng, encodePng, hashImage, type RgbaImage, readPngHash, readPngShaderCompiler } from './png.ts';
 
 const dir = mkdtempSync(join(tmpdir(), 'visual-png-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -31,6 +31,17 @@ describe('encodePng', () => {
         const file = join(dir, 'p.png');
         writeFileSync(file, encodePng(p));
         expect(readPngHash(file)).toBe(hashImage(p));
+    });
+
+    it('carries the shader compiler that drew a reference, beside the hash, when given one', () => {
+        const p = createImage(64, 48, 5);
+        const withCompiler = join(dir, 'with-compiler.png');
+        const without = join(dir, 'without-compiler.png');
+        writeFileSync(withCompiler, encodePng(p, { shaderCompiler: 'llvm' }));
+        writeFileSync(without, encodePng(p));
+        expect({ hash: readPngHash(withCompiler), shaderCompiler: readPngShaderCompiler(withCompiler) }).toEqual({ hash: hashImage(p), shaderCompiler: 'llvm' });
+        expect(readPngShaderCompiler(without)).toBeUndefined();
+        expect([...decodePng(readFileSync(withCompiler)).pixels]).toEqual([...p.pixels]);
     });
 });
 

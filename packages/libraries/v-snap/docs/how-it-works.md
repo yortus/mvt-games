@@ -9,6 +9,7 @@ explains how v-snap avoids both problems, and shows the measurements.
 - [Speed](#speed)
 - [The Benchmark](#the-benchmark)
 - [The Same Images on Every Machine](#the-same-images-on-every-machine)
+- [Two Shader Compilers](#two-shader-compilers)
 - [Checks Before Every Run](#checks-before-every-run)
 - [Why Not Docker, or References for Each System?](#why-not-docker-or-references-for-each-system)
 
@@ -127,7 +128,9 @@ run downloads that.
 - **No graphics card takes part.** WebGL runs on the CPU, in SwiftShader,
   a software GPU that comes with Chromium. 2D canvas drawing and
   compositing, which puts the page's layers together, run on the CPU
-  too. So every system runs the same drawing code.
+  too. So every system runs the same drawing code. SwiftShader compiles
+  that code in one of two ways, as [Two Shader
+  Compilers](#two-shader-compilers) explains.
 - **Settings** such as the colour profile, screen scale, locale and time
   zone are fixed when the browser starts.
 - **Canvas text** is drawn in v-snap's own fonts, Source Sans 3 and
@@ -154,23 +157,85 @@ run downloads that.
   functions draw from a generator of their own. So if you add a call to
   one of them, the numbers that `Math.random` gives don't change.
 - **A tolerance** lets each colour channel of a pixel differ by up to 2
-  levels out of 255. That covers the rounding of some drawing on arm64
-  processors, and a real change is almost never that small. arm64
-  processors also draw an odd pixel along the edge of a 3D shape
-  differently, by more than that. So on arm64, an image also passes if
-  the pixels past the tolerance are few and scattered: at most one in
-  10,000, in clumps of at most two. A real change is almost always a
-  larger clump. On arm64, Vitest's `-u` keeps the reference of such an
-  image, so that an arm64 machine doesn't keep rewriting references. Other processors draw exactly. So on them, a difference
-  within the tolerance is a small real change, and `-u` writes it.
+  levels out of 255. A real change is almost never that small.
 
-The images were checked on GitHub's Windows x64, Linux x64, Linux arm64
-and macOS arm64 runners. Every image was identical on all four, except
-for small differences on arm64 that the tolerance covers. Images of 3D
-scenes, drawn with WebGL, differed on macOS arm64 by scattered pixels
-only.
 [Limits and Rules](limits-and-rules.md) lists what these measures give
 up.
+
+## Two Shader Compilers
+
+SwiftShader turns each shader into code for the processor that it runs
+on, with a shader compiler. It has two. On x64, it uses Subzero. Subzero
+isn't built for arm64, so on arm64, SwiftShader uses LLVM. The WebGL
+renderer string names the shader compiler, such as `SwiftShader Device
+(Subzero)`.
+
+| Machines | Shader compiler |
+| --- | --- |
+| Windows, Linux and macOS on x64 | Subzero |
+| Windows on arm64 | Subzero, since Playwright runs x64 Chromium there |
+| Linux and macOS on arm64 | LLVM |
+
+The two shader compilers round some arithmetic differently. LLVM fuses a
+multiply and an add into one step, which rounds once, where Subzero
+rounds twice. That changes the last bit of dot products, matrix products,
+and functions such as `pow` and `sin`. Usually the change never reaches a
+pixel. Now and then, it moves the edge of a 3D shape by a fraction of a
+pixel. Then a few pixels along the edge change, by up to about 50 levels.
+Lit surfaces can also change by a level or so.
+
+But each shader compiler draws exactly the same images on every machine
+that uses it, whatever its processor or operating system. So each
+reference records the shader compiler that drew it, and v-snap compares
+an image with it in one of two ways:
+
+- **With the same shader compiler,** the image must match its reference
+  within the tolerance. These machines draw alike, so a bigger difference
+  is a real change.
+- **Across shader compilers,** a pixel may also differ by as much as one
+  sample crossing an edge could change it. With antialiasing, a pixel's
+  colour is the average of 4 samples. If an edge moves far enough to put
+  one sample on its other side, the pixel changes by that sample's share
+  of the contrast across the edge. That share is never more than the
+  pixel's largest step to one of its 8 neighbours, in one image or the
+  other. So a pixel passes if each channel differs by at most the
+  tolerance plus that step. The limit comes from how drawing works, not
+  from any set of images.
+
+A reference written before v-snap 0.8 doesn't record a shader compiler,
+so it counts as drawn with Subzero, as every earlier reference was.
+
+The images were checked on GitHub's Windows x64 and arm64, Linux x64 and
+arm64, and macOS arm64 runners. With the same shader compiler, every
+image was identical. Across shader compilers, images of 2D views matched
+within the tolerance, and images of 3D scenes passed by the rule above.
+
+### What the Rule Across Shader Compilers Misses
+
+Most real changes still fail across shader compilers. They change pixels
+in the middle of an area that's flat in both images, where the step is
+zero. Tried on 228 real changes to reference images, the rule failed 219
+of them.
+
+The rule treats a sample crossing an edge and a whole edge moving by a
+pixel alike, though. And a lone pixel that changes makes its own step to
+its neighbours. So a layout that moved by one pixel, or a stray pixel,
+can pass on a machine with the other shader compiler.
+
+A machine with the reference's own shader compiler still catches these.
+So run the visual tests in CI with each shader compiler that your team
+writes references with. [In CI](running-tests.md#in-ci) shows how.
+
+### What `-u` Does
+
+- **With the same shader compiler,** `-u` writes any change to the
+  reference.
+- **Across shader compilers,** `-u` keeps a reference that the actual
+  image passes, and writes one that it fails. The new reference records
+  the new shader compiler.
+
+So a reference changes only for a real change, and it never flips back
+and forth between machines.
 
 ## Checks Before Every Run
 
@@ -185,7 +250,9 @@ images, text, and WebGL shading and textures. The HTML images cover
 boxes, light and dark controls, filters and rotation.
 
 If the fingerprint differs, or a calibration image differs beyond the
-tolerance, the run stops with one error that says what differs. That's
+tolerance, the run stops with one error that says what differs. The
+calibration set allows only the tolerance, whichever shader compiler
+drew it, since it checks the machine itself. That's
 more useful than every test failing for a reason that nobody can see.
 
 ## Why Not Docker, or References for Each System?

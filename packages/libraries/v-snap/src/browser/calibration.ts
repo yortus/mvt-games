@@ -2,6 +2,7 @@ import { inject } from 'vitest';
 import { type Calibration, CANVAS_CALIBRATION, type CanvasCalibration, SAMPLE } from './canvas-calibration';
 import { captureHtmlImage } from './html-image';
 import { describeDifference, hashPixels, isPass, openSession, toBase64, visualCommands } from './judge';
+import { readWebglRenderer } from './shader-compiler';
 import type { VisualEnvironment, PageKind, VisualVerdict } from '../protocol';
 import { isAllOne } from '../shared';
 
@@ -83,11 +84,9 @@ const CANVAS_JUDGED: Readonly<Record<string, Calibration>> = Object.fromEntries(
 );
 
 function readEnvironment(): VisualEnvironment {
-    const gl = document.createElement('canvas').getContext('webgl2');
-    const info = gl?.getExtension('WEBGL_debug_renderer_info');
     return {
         browser: /HeadlessChrome\/[\d.]+/.exec(navigator.userAgent)?.[0] ?? navigator.userAgent,
-        webglRenderer: info !== undefined && info !== null && gl !== null ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : 'none',
+        webglRenderer: readWebglRenderer(),
         locale: Intl.DateTimeFormat().resolvedOptions().locale,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         devicePixelRatio,

@@ -33,7 +33,7 @@ a progress log.
 **Numbering.** Proposals and tasks share one sequence, so a number identifies
 one document wherever it lives, and references such as "004 section 11" stay
 valid when it moves. Numbers are never reused. The next free number is
-**113** (085 and 096 are taken, by work in worktrees).
+**115** (085 and 096 are taken, by work in worktrees).
 
 **Paths in older notes.** The repo became a workspace of packages on
 2026-10-02 (011). Archived notes, and the history recorded in open ones, keep
@@ -191,6 +191,7 @@ deleted.
 | 105 | [The Puzzles' Game Model, Undo and Seeds, in Shared](tasks/backlog/105-puzzle-models-in-shared.md) | low | 2026-11-20 |
 | 111 | [Publish `@mvtjs/pixi-3d`](tasks/backlog/111-publish-pixi-3d.md) | low | 2026-11-22 |
 | 112 | [An HTML `PixiCanvasView`](tasks/backlog/112-html-pixi-canvas-view.md) | low | 2026-11-22 |
+| 114 | [v-snap: Loose Ends From Comparing Across Shader Compilers](tasks/backlog/114-v-snap-shader-compiler-loose-ends.md) | low | 2026-11-24 |
 
 ## Archive
 
@@ -257,6 +258,7 @@ deleted.
 | 106 | [Task: showcases as a site mode, each with an easter egg](archive/106-showcases-as-a-site-mode.md) (a site browses its entries on its card wall or in its showcase, chosen in the nav's Browse menu and kept between visits for all three sites. The showcase fills the area under the nav, at the site's address, and fades up over the card wall; its own address opens it. Each hides an easter egg: the Arcade Hall's meadow, the Gallery's lantern room, and The Daily Fold's noughts and crosses. In vnext since 2026-11-23, with the changes its last section lists) | 2026-11-23 |
 | 108 | [Task: showcases out of the entries](archive/108-showcases-out-of-the-entries.md) (each site's showcase lives in its `src/showcase/`, named by `SiteConfig.showcase`, not the catalogue, and built from `@mvtjs/site-kit/showcase`. The page runs it in a host of its own, and an entry it launches is an ordinary launch on a clear canvas, so nested entries are gone. In vnext since 2026-11-23, with the changes its last section lists) | 2026-11-23 |
 | 107 | [Proposal: a complete JSX for PixiJS 3D](archive/107-complete-pixi-3d-jsx.md) (Views list the geometry, materials and textures they make in `owns`, which the JSX base supports for every renderer. A lint rule and a leak check in each 3D entry's visual tests catch a resource that isn't listed. The base has creation attributes, and the element table is complete, with `sprite3d`, `batchedMesh`, `model`, twelve pointer events and `hitVolume`. Time comes from `deltaMs` alone, through `<model clip clipTimeMs>` and a seeded `ParticlesView`, and a lint rule reports `autoUpdate`. `Scene3DView` is complete, `ScreenView` draws from its first frame through a renderer system, and `ScreenAnchorView` places 2D over a point in 3D. The package matches the other renderer packages, and is ready to build but private. Docs, cheat sheets, a playground starter and PixiJS 3D's own skill cover it. Publishing is 111, and the HTML bridge is 112. Brought into vnext 2026-11-22, with the 3D entries still to come) | 2026-11-22 |
+| 113 | [Proposal: v-snap on machines that draw differently](archive/113-v-snap-on-machines-that-draw-differently.md) (a spike found that SwiftShader compiles shaders with Subzero on x64 and LLVM on arm64, and LLVM fuses its multiply-adds, but each shader compiler draws exactly alike on every machine. v-snap reads the shader compiler from the WebGL renderer string and records it in each reference. Within one shader compiler it compares within the tolerance; across them, each pixel may also change by up to its largest step to a neighbour, the most one antialiasing sample crossing an edge can change it. The stopgap is gone, `-u` keeps a passing reference from the other shader compiler, and `shaderCompiler` is exported for skipping as a last resort. A second reference for each shader compiler was set aside. Loose ends in 114) | 2026-11-24 |
 
 ## Elsewhere
 

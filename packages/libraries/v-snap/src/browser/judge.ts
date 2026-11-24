@@ -93,7 +93,7 @@ export function describeFailure(name: string, verdict: VisualVerdict, pageKind: 
         default: {
             const where = `The actual image is ${verdict.actualFile}, the reference image is ${verdict.referenceFile}, and the diff is ${verdict.diffFile}`;
             const htmlNote = pageKind === 'html' ? ' (HTML text is drawn blank, so only layout and styling show)' : '';
-            return `Image '${name}' differs from its reference in ${describeDifference(verdict)}${htmlNote}. ${where}. If the change is intended, run ${update}.`;
+            return `Image '${name}' differs from its reference in ${describeDifference(verdict)}${htmlNote}.${describeShaderCompilers(verdict)} ${where}. If the change is intended, run ${update}.`;
         }
     }
 }
@@ -101,5 +101,19 @@ export function describeFailure(name: string, verdict: VisualVerdict, pageKind: 
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns a sentence, with a space before it, that says which shader
+ * compilers drew the reference and the actual image, when they differ.
+ * Returns an empty string when the same shader compiler drew both.
+ */
+function describeShaderCompilers(verdict: VisualVerdict): string {
+    const compilers = verdict.shaderCompilers;
+    if (compilers === undefined) return '';
+    const excused = verdict.excused ?? 0;
+    const others = excused === 0 ? '' : ` ${excused} more ${excused === 1 ? 'pixel differs' : 'pixels differ'} only that much, in orange in the diff.`;
+    return ` The reference was drawn with the ${compilers.reference} shader compiler, and this image with the ${compilers.image} shader compiler, `
+        + `so a pixel may also differ by as much as one sample crossing an edge could change it.${others}`;
+}
 
 const sessions = new Map<string, Promise<VisualSession>>();

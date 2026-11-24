@@ -27,7 +27,7 @@ by path works. A browser starts only when v-snap's projects run.
 | `vitest run` | Runs every test, unit and visual. Each actual image is compared with its reference image. Outside CI, a new image is written as its reference, and a reference that no test uses any more is deleted, if git tracks it |
 | `vitest run -p unit` | Runs the unit tests alone, and no browser starts. The `vsnap()` plugin names a flat config's tests `unit`. In a config that lists its projects, use your unit project's own name |
 | `vitest run <path>` | Runs the visual tests alone |
-| `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It repairs references too. It renames a reference whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. On arm64 processors, it leaves a reference alone if the actual image is within the tolerance, or differs by a few scattered pixels |
+| `vitest run -u` | Also writes each new or changed actual image as its reference image, as `-u` does for snapshots. It repairs references too. It renames a reference whose name differs from its test's only in case, and rewrites one whose pixels don't match its hash. It keeps a reference drawn with the other shader compiler if the actual image passes it, so references don't flip back and forth between machines. See [What `-u` Does](how-it-works.md#what--u-does) |
 | `vitest run <file> -t "^<test's name>$" -u` | Updates one test's reference image. A failure message gives you this command |
 | `vitest run <file> -u` | Updates the reference images of one test file |
 | `vitest <path>` | Watches the visual tests, and reruns a test file when it or its view changes. See [Watch Mode](#watch-mode) |
@@ -128,8 +128,12 @@ Actions, the summary also goes to the job's summary page.
 When a test's image changed, the test fails with a message that names its
 files. They are the reference, the actual image in `.vitest/vsnap/`, and
 a diff, if the image kept its size. The diff shows the reference dimmed.
-Pixels that changed by more than the tolerance are red, and those that
-changed by less are dark yellow.
+Pixels that changed by more than is allowed are red, and those that
+changed within the tolerance are dark yellow. When the
+reference was drawn with the other shader compiler, the message names
+both shader compilers. Pixels that changed only as much as one sample
+crossing an edge could change them are orange
+([Two Shader Compilers](how-it-works.md#two-shader-compilers) explains).
 
 The message ends with a command that accepts this one image, in case you
 meant the change. It's `vitest run <file> -t "^<test's name>$" -u`, which
@@ -200,6 +204,21 @@ on Windows runners too. v-snap installs the browser itself if it's
 missing, but a step of its own makes the download easy to spot in the
 log. GitHub's runners already have the libraries that the browser needs.
 On a bare Linux image, also run `npx playwright install-deps chromium`.
+
+Run the job with each shader compiler that your team writes references
+with. On x64 machines, SwiftShader uses Subzero, and on Linux and macOS
+on arm64, it uses LLVM. A machine with the reference's own shader
+compiler compares exactly, so it catches changes as small as one pixel
+([Two Shader Compilers](how-it-works.md#two-shader-compilers) explains).
+If anyone on your team uses a Mac with Apple silicon, run on both kinds
+of runner:
+
+```yaml
+strategy:
+    matrix:
+        os: [ubuntu-latest, macos-latest]
+runs-on: ${{ matrix.os }}
+```
 
 When a test fails, the last step uploads its actual and diff images from
 `.vitest/vsnap/`, so that a reviewer can look at them. If your repository

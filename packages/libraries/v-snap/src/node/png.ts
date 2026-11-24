@@ -1,8 +1,9 @@
 /**
  * Reads and writes reference images as PNG files. Each file carries the
- * hash of its pixels in a text chunk right after the PNG header. So a test
- * run can read every reference's hash from the first hundred or so bytes of
- * its file, without decoding the reference.
+ * hash of its pixels in a text chunk right after the PNG header. A reference
+ * also carries the shader compiler that drew it, in a second text chunk
+ * (see `src/shared/shader-compiler.ts`). So a test run can read both from the
+ * first couple of hundred bytes of the file, without decoding the image.
  */
 
 import { createHash } from 'node:crypto';
@@ -45,11 +46,15 @@ export function hashImage(image: RgbaImage): string {
  *   RGBA. Every image here is opaque. Each row uses whichever of PNG's
  *   five filters suits it best.
  *
+ * A reference passes `shaderCompiler`, which goes in a second text chunk.
+ * An actual image or a diff, written for people to look at, leaves it out.
+ *
  * The same pixels always give the same bytes with the same version of Node.
  */
-export function encodePng(image: RgbaImage): Uint8Array {
+export function encodePng(image: RgbaImage, options: { readonly shaderCompiler?: string } = {}): Uint8Array {
     const { width, height } = image;
-    const text = new TextEncoder().encode(`${HASH_KEYWORD}\0${hashImage(image)}`);
+    const texts = [encodeChunk('tEXt', new TextEncoder().encode(`${HASH_KEYWORD}\0${hashImage(image)}`))];
+    if (options.shaderCompiler !== undefined) texts.push(encodeChunk('tEXt', new TextEncoder().encode(`${SHADER_COMPILER_KEYWORD}\0${options.shaderCompiler}`)));
     const indexed = toIndexed(image);
     const extra: Uint8Array[] = [];
     let colourType: number;
@@ -80,7 +85,7 @@ export function encodePng(image: RgbaImage): Uint8Array {
     return concat([
         SIGNATURE,
         encodeChunk('IHDR', header),
-        encodeChunk('tEXt', text),
+        ...texts,
         ...extra,
         encodeChunk('IDAT', deflateSync(rows, { level: 9 })),
         encodeChunk('IEND', new Uint8Array(0)),
@@ -107,23 +112,16 @@ export function isLfsPointer(bytes: Uint8Array): boolean {
  * that `encodePng` did not write.
  */
 export function readPngHash(path: string): string | undefined {
-    const head = new Uint8Array(160);
-    const file = openSync(path, 'r');
-    try {
-        readSync(file, head, 0, head.length, 0);
-    }
-    finally {
-        closeSync(file);
-    }
-    // The file starts with the signature (8 bytes) and the IHDR chunk (25
-    // bytes). The text chunk follows. It holds its length, its type, the
-    // keyword, a NUL byte and the text.
-    const view = new DataView(head.buffer);
-    const length = view.getUint32(33);
-    const type = String.fromCharCode(...head.subarray(37, 41));
-    if (type !== 'tEXt' || 41 + length > head.length) return undefined;
-    const [keyword, value] = new TextDecoder().decode(head.subarray(41, 41 + length)).split('\0');
-    return keyword === HASH_KEYWORD ? value : undefined;
+    return readTextChunks(path).get(HASH_KEYWORD);
+}
+
+/**
+ * Returns the shader compiler that a reference file records, read from the
+ * file's first bytes. Returns undefined if the file doesn't record one, as with a
+ * reference written before v-snap recorded shader compilers.
+ */
+export function readPngShaderCompiler(path: string): string | undefined {
+    return readTextChunks(path).get(SHADER_COMPILER_KEYWORD);
 }
 
 // ---------------------------------------------------------------------------
@@ -132,6 +130,38 @@ export function readPngHash(path: string): string | undefined {
 
 const SIGNATURE = Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
 const HASH_KEYWORD = 'vsnap';
+const SHADER_COMPILER_KEYWORD = 'vsnap-shader-compiler';
+
+/**
+ * Returns the text chunks right after a PNG file's header, by keyword. Only
+ * the file's first bytes are read, since `encodePng` puts its text chunks
+ * there. The file starts with the signature (8 bytes) and the IHDR chunk (25
+ * bytes). Each text chunk holds its length, its type, the keyword, a NUL
+ * byte, the text and a checksum.
+ */
+function readTextChunks(path: string): Map<string, string> {
+    const head = new Uint8Array(256);
+    const file = openSync(path, 'r');
+    let read: number;
+    try {
+        read = readSync(file, head, 0, head.length, 0);
+    }
+    finally {
+        closeSync(file);
+    }
+    const view = new DataView(head.buffer);
+    const texts = new Map<string, string>();
+    let at = 33;
+    while (at + 8 <= read) {
+        const length = view.getUint32(at);
+        const type = String.fromCharCode(...head.subarray(at + 4, at + 8));
+        if (type !== 'tEXt' || at + 8 + length > read) break;
+        const [keyword, value] = new TextDecoder().decode(head.subarray(at + 8, at + 8 + length)).split('\0');
+        texts.set(keyword, value);
+        at += 12 + length;
+    }
+    return texts;
+}
 
 /** How every Git LFS pointer file starts. */
 const LFS_SPEC = 'version https://git-lfs.github.com/spec/';

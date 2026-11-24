@@ -143,6 +143,23 @@ too. You can use `canvasTest.skip`, `canvasTest.only`, `canvasTest.todo`,
 `canvasTest.skipIf(condition)` and `canvasTest.runIf(condition)`, and the
 same on `htmlTest`.
 
+SwiftShader draws with one of two shader compilers, which draw the edges
+of 3D shapes a little differently ([Two Shader
+Compilers](how-it-works.md#two-shader-compilers) explains). Nearly every
+image passes across them. If one of yours can't, and you can't change
+the scene, you can skip its test on one shader compiler, as a last
+resort. v-snap exports `shaderCompiler`, which is `subzero` on x64
+machines and Windows on arm64, and `llvm` on Linux and macOS on arm64:
+
+```ts
+import { canvasTest, shaderCompiler } from 'v-snap';
+
+canvasTest.skipIf(shaderCompiler === 'llvm')('fog over the hills', SIZE, pose);
+```
+
+Keep a runner in CI with the shader compiler that still runs the test,
+so that the test still catches changes.
+
 To declare one test for each row of a table, use `.each(cases)` or
 `.for(cases)`, as you would in Vitest. Each one passes the row to the
 pose. If a row is an array, `.each` spreads its items as separate

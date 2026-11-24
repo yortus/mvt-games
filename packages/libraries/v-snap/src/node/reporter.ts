@@ -31,7 +31,6 @@ import { toImageName } from '../image-name.ts';
 import type { VisualTestMeta } from '../protocol.ts';
 import type { VisualRunState } from './commands.ts';
 import { resolveReferencePath, type VisualLayout } from './layout.ts';
-import { DRAWS_EXACTLY } from './compare.ts';
 import { createPaint, isColourOn, type Paint } from './paint.ts';
 import { shortenPath, toDisplayPath, toOutputBase } from './paths.ts';
 import { findOrphans, findReferences, findReferencesOfFiles, listTrackedFiles, removeReference, toFileKey } from './references.ts';
@@ -201,9 +200,8 @@ function describeRun(options: {
         }));
     }
     if (images.some((p) => p.meta.outcome === 'within-tolerance')) {
-        const why = DRAWS_EXACTLY
-            ? "This processor draws exactly, so each is a small change, or a reference written on arm64, and Vitest's -u rewrites it."
-            : 'arm64 processors round some drawing so, and Vitest\'s -u leaves those references as they are.';
+        const why = 'Each is a small change, or its reference was drawn with the other shader compiler, which rounds some drawing differently. '
+            + "Vitest's -u rewrites a reference that this machine's shader compiler drew, and keeps one from the other.";
         lines.push('', ` ${paint.dim(`Images within tolerance matched their references closely, but not exactly. ${why}`)}`);
     }
     // The downsampled references come last, after the slowest tests and the

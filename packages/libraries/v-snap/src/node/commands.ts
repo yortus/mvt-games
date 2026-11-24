@@ -29,12 +29,13 @@ import type {
     ColorScheme, VisualCalibration, VisualCaptureRequest, VisualEnvironment, VisualEnvironmentCheck, PageKind, VisualMode, VisualImageId, VisualImagePayload, VisualScope,
     VisualSession, VisualVerdict,
 } from '../protocol.ts';
-import { compareImages, DRAWS_EXACTLY } from './compare.ts';
+import { compareImages } from './compare.ts';
 import { CHECK_CACHE_FILE, ENVIRONMENT_FILE, findCalibrationDir, toDisplayPath, toOutputBase } from './paths.ts';
 import { matchReferenceName, type ReferencePattern, resolveReferencePath, resolveReferencePattern, type VisualLayout } from './layout.ts';
-import { decodePng, encodePng, hashImage, isLfsPointer, type RgbaImage, readPngHash } from './png.ts';
+import { decodePng, encodePng, hashImage, isLfsPointer, type RgbaImage, readPngHash, readPngShaderCompiler } from './png.ts';
 import { advisePlaywright, findPlaywright } from './playwright-advice.ts';
 import { checkReferences } from './references.ts';
+import { DEFAULT_SHADER_COMPILER, findShaderCompiler, toShaderCompilerName } from '../shared/index.ts';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -45,11 +46,14 @@ import { checkReferences } from './references.ts';
  * reads at the end: the calibration sets that matched, and the calibration
  * references that actual images were compared with. The actual calibration
  * images are produced while a page is set up, not by tests, so the reporter
- * learns of them here.
+ * learns of them here. The commands also keep the shader compiler that the
+ * environment check found.
  */
 export interface VisualRunState {
     readonly calibrated: Set<PageKind>;
     readonly calibrationReferences: Set<string>;
+    /** The shader compiler that this machine's SwiftShader uses, which the environment check records before any image is judged. */
+    shaderCompiler: string | undefined;
     /** Each page's DevTools protocol session, by the page's session. The reporter clears it as each run starts, since each run has pages of its own. */
     readonly cdpSessions: Map<string, Promise<Cdp>>;
 }
@@ -60,7 +64,7 @@ export interface VisualRunState {
 
 /** Creates a run's state, which a config's commands and reporter share. */
 export function createRunState(): VisualRunState {
-    return { calibrated: new Set(), calibrationReferences: new Set(), cdpSessions: new Map() };
+    return { calibrated: new Set(), calibrationReferences: new Set(), shaderCompiler: undefined, cdpSessions: new Map() };
 }
 
 /** Creates the browser commands for a project with this layout. */
@@ -101,7 +105,7 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
     const judgeVisualMismatch: BrowserCommand<[VisualImagePayload]> = (ctx, payload): VisualVerdict => {
         const pixels = new Uint8Array(Buffer.from(payload.pixels, 'base64'));
         const actual = { width: payload.width, height: payload.height, pixels };
-        return judge({ file: resolveFile(ctx, payload), id: payload, actual, mode: findMode(ctx), testFile: ctx.testPath });
+        return judge({ file: resolveFile(ctx, payload), id: payload, actual, mode: findMode(ctx), shaderCompiler: findRunShaderCompiler(state), testFile: ctx.testPath });
     };
 
     const captureVisualImage: BrowserCommand<[VisualCaptureRequest]> = async (ctx, request) => {
@@ -115,7 +119,7 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
         });
         const actual = decodePng(Buffer.from(data, 'base64'));
         const captureMs = performance.now() - started;
-        return { ...judge({ file: resolveFile(ctx, request), id: request, actual, mode: findMode(ctx), testFile: ctx.testPath }), captureMs };
+        return { ...judge({ file: resolveFile(ctx, request), id: request, actual, mode: findMode(ctx), shaderCompiler: findRunShaderCompiler(state), testFile: ctx.testPath }), captureMs };
     };
 
     /** Returns the folder and file-name pattern of the references in scope. */
@@ -129,6 +133,30 @@ export function createVisualCommands(options: { readonly layout: VisualLayout; r
         if (id.calibration !== undefined) return join(findCalibrationDir(id.calibration), `${id.name}.png`);
         return resolveReferencePath(layout, findTestPath(ctx), id.name);
     }
+
+    const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): VisualEnvironmentCheck => {
+        state.shaderCompiler = findShaderCompiler(environment.webglRenderer);
+        const facts: EnvironmentFile = {
+            browser: environment.browser,
+            webgl: environment.webglRenderer.includes('SwiftShader') ? 'SwiftShader' : environment.webglRenderer,
+            locale: environment.locale,
+            timeZone: environment.timeZone,
+            devicePixelRatio: environment.devicePixelRatio,
+        };
+        if (process.env.VSNAP_MODE === 'environment') {
+            writeFileSync(ENVIRONMENT_FILE, JSON.stringify(facts, undefined, 4) + '\n');
+            return { problems: [] };
+        }
+        if (!existsSync(ENVIRONMENT_FILE)) return { problems: [`v-snap's ${toDisplayPath(ENVIRONMENT_FILE)} is missing, so v-snap's package is incomplete. Install it again`] };
+        const expected = JSON.parse(readFileSync(ENVIRONMENT_FILE, 'utf8')) as EnvironmentFile;
+        const problems: string[] = [];
+        for (const key of Object.keys(expected) as (keyof EnvironmentFile)[]) {
+            if (expected[key] !== facts[key]) problems.push(`${key} is ${JSON.stringify(facts[key])}, but the reference environment's is ${JSON.stringify(expected[key])}`);
+        }
+        // The browser comes from the Playwright that the project installs
+        const advice = expected.browser === facts.browser ? undefined : advisePlaywright(findPlaywright());
+        return { problems, advice };
+    };
 
     const setVisualColorScheme: BrowserCommand<[ColorScheme]> = async (ctx, scheme) => {
         const cdp = await connectCdp(ctx, state.cdpSessions);
@@ -165,29 +193,6 @@ function isRewriting(mode: VisualMode): boolean {
     return mode === 'update' || mode === 'environment';
 }
 
-const checkVisualEnvironment: BrowserCommand<[VisualEnvironment]> = (_ctx, environment): VisualEnvironmentCheck => {
-    const facts: EnvironmentFile = {
-        browser: environment.browser,
-        webgl: environment.webglRenderer.includes('SwiftShader') ? 'SwiftShader' : environment.webglRenderer,
-        locale: environment.locale,
-        timeZone: environment.timeZone,
-        devicePixelRatio: environment.devicePixelRatio,
-    };
-    if (process.env.VSNAP_MODE === 'environment') {
-        writeFileSync(ENVIRONMENT_FILE, JSON.stringify(facts, undefined, 4) + '\n');
-        return { problems: [] };
-    }
-    if (!existsSync(ENVIRONMENT_FILE)) return { problems: [`v-snap's ${toDisplayPath(ENVIRONMENT_FILE)} is missing, so v-snap's package is incomplete. Install it again`] };
-    const expected = JSON.parse(readFileSync(ENVIRONMENT_FILE, 'utf8')) as EnvironmentFile;
-    const problems: string[] = [];
-    for (const key of Object.keys(expected) as (keyof EnvironmentFile)[]) {
-        if (expected[key] !== facts[key]) problems.push(`${key} is ${JSON.stringify(facts[key])}, but the reference environment's is ${JSON.stringify(expected[key])}`);
-    }
-    // The browser comes from the Playwright that the project installs
-    const advice = expected.browser === facts.browser ? undefined : advisePlaywright(findPlaywright());
-    return { problems, advice };
-};
-
 const abortVisualRun: BrowserCommand<[string]> = (ctx, message) => {
     console.error(`\n${message}\n`);
     // This is not awaited. The cancellation waits for the running file to
@@ -203,6 +208,12 @@ interface EnvironmentFile {
     readonly devicePixelRatio: number;
 }
 
+/** Returns the shader compiler that the environment check found. */
+function findRunShaderCompiler(state: VisualRunState): string {
+    if (state.shaderCompiler === undefined) throw new Error('v-snap judged an image before its environment check found the shader compiler. This is a bug in v-snap.');
+    return state.shaderCompiler;
+}
+
 function findTestPath(ctx: BrowserCommandContext): string {
     if (ctx.testPath === undefined) throw new Error('A visual test command was called from outside a test file.');
     return ctx.testPath;
@@ -210,12 +221,18 @@ function findTestPath(ctx: BrowserCommandContext): string {
 
 /**
  * Compares an actual image with its reference, or writes it as the
- * reference. On arm64, an image whose pixels past the tolerance are few and
- * scattered passes too, as within the tolerance (see `src/node/compare.ts`).
- * When the actual image is within the tolerance, `-u` rewrites the
- * reference only on a processor that draws exactly. That way, an arm64
- * machine, which rounds a little differently, does not keep rewriting the
- * references.
+ * reference. When another shader compiler drew the reference, a pixel may
+ * also differ by as much as one sample crossing an edge could change it
+ * (see `src/node/compare.ts`). The calibration set allows only the
+ * tolerance, since it checks that this machine is the reference
+ * environment.
+ *
+ * `-u` rewrites any change to a reference that this machine's shader
+ * compiler drew. It keeps a reference from another shader compiler that
+ * the actual image matches closely, and rewrites one that it doesn't. So a
+ * reference is rewritten only for a real change, and never flips back and
+ * forth between machines. Each reference records the shader compiler that
+ * drew it, and one that doesn't counts as Subzero's.
  *
  * A reference whose name differs from the test's image name only in case,
  * after a test was renamed so, is renamed by `-u`, and fails the test
@@ -227,9 +244,10 @@ function judge(options: {
     readonly id: VisualImageId;
     readonly actual: RgbaImage;
     readonly mode: VisualMode;
+    readonly shaderCompiler: string;
     readonly testFile?: string;
 }): VisualVerdict {
-    const { file, id, actual, mode } = options;
+    const { file, id, actual, mode, shaderCompiler } = options;
     const referenceFile = toDisplayPath(file);
     const testFile = options.testFile === undefined ? undefined : toDisplayPath(options.testFile);
     const isUpdate = isRewriting(mode);
@@ -251,23 +269,24 @@ function judge(options: {
     let expected: RgbaImage | undefined;
     if (exists) expected = readReference({ file, referenceFile, isWritable, testFile });
     const isSameSize = expected !== undefined && expected.width === actual.width && expected.height === actual.height;
-    const comparison = expected !== undefined && isSameSize ? compareImages({ expected, actual }) : undefined;
+    const referenceShaderCompiler = exists ? (readPngShaderCompiler(file) ?? DEFAULT_SHADER_COMPILER) : shaderCompiler;
+    const isAcrossShaderCompilers = id.calibration === undefined && referenceShaderCompiler !== shaderCompiler;
+    const comparison = expected !== undefined && isSameSize ? compareImages({ expected, actual, isAcrossShaderCompilers }) : undefined;
     // The same pixels, in a file that lacks their hash, or whose hash is
     // wrong, such as one that an image optimiser rewrote. A write adds the
     // hash. A local run repairs it, as it writes new references, and so
     // does `-u`. In CI, the test fails, so that the fix is committed.
     if (comparison?.changed === 0) {
         if (problem !== undefined && !isWritable && mode !== 'new') return { outcome: 'unsound', problem, referenceFile, testFile };
-        if (isWritable || problem !== undefined) writeFileSync(file, encodePng(actual));
+        if (isWritable || problem !== undefined) writeFileSync(file, encodePng(actual, { shaderCompiler }));
         return { outcome: problem === undefined ? same : 'updated', referenceFile };
     }
-    const isClose = comparison !== undefined && (comparison.isWithinTolerance || (!DRAWS_EXACTLY && comparison.isScattered));
-    if (isClose && !(isWritable && DRAWS_EXACTLY)) {
+    if (comparison?.isClose === true && !(isWritable && !isAcrossShaderCompilers)) {
         return { outcome: 'within-tolerance', changed: comparison.changed, maxDelta: comparison.maxDelta, referenceFile };
     }
     if (isWritable) {
         mkdirSync(dirname(file), { recursive: true });
-        writeFileSync(file, encodePng(actual));
+        writeFileSync(file, encodePng(actual, { shaderCompiler }));
         return { outcome: exists ? 'updated' : 'added', referenceFile };
     }
 
@@ -288,6 +307,8 @@ function judge(options: {
         outcome: 'differs',
         changed: comparison.exceeded,
         maxDelta: comparison.maxDelta,
+        excused: isAcrossShaderCompilers ? comparison.excused : undefined,
+        shaderCompilers: isAcrossShaderCompilers ? { reference: toShaderCompilerName(referenceShaderCompiler), image: toShaderCompilerName(shaderCompiler) } : undefined,
         changedRect: comparison.changedRect,
         referenceFile,
         actualFile,

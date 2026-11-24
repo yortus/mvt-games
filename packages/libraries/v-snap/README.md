@@ -36,8 +36,8 @@ Docker.
   takes 67 ms. 1000 images run in under 8 seconds, start-up included.
 - **Every machine draws the same images.** A reference made on Windows
   passes on Linux and macOS, and the other way round. v-snap is checked on
-  Windows x64, Linux x64 and arm64, and macOS arm64. `npm ci` installs
-  everything but the browser, and the first run downloads that.
+  Windows x64 and arm64, Linux x64 and arm64, and macOS arm64. `npm ci`
+  installs everything but the browser, and the first run downloads that.
 
 And it fits the way you already test.
 
@@ -228,6 +228,7 @@ in code it's `vsnap`, as in `vsnap()`, `defineVsnapConfig` and
 | | `defineVsnapConfig(config)` | Returns the config unchanged, with each kind's name kept in its type, so that the `Register` declaration can pass it to `canvasTest`'s types |
 | | `bindCanvasTest(config)` | Returns a `canvasTest` tied to one config's kinds of view, for when each package of a monorepo has its own config |
 | | `htmlViews(options?)` | Returns the kind of view for HTML, with optional steps to prepare and dispose of each view, and a background for every test |
+| | `shaderCompiler` | The shader compiler that SwiftShader uses on this machine, `subzero` or `llvm`, for skipping a test on one as a last resort |
 | | `fitImage`, `readCanvas` | Help you support another renderer. `fitImage` returns how an image fits the size budget, which is the most pixels an image may have. `readCanvas` returns a canvas's pixels |
 | `v-snap/vitest` | `vsnap(options?)` | Returns a Vitest plugin. When Vitest starts, it adds v-snap's projects, which run the visual tests, and leaves the visual test files out of your other tests |
 | | `vsnapProjects(options?)` | Returns v-snap's Vitest projects, for a config that lists its projects itself |

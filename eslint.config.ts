@@ -158,8 +158,9 @@ export default tseslint.config(
     {
         // A package's config files are loaded by Node itself, which imports a
         // file, not a folder. So they import a folder's barrel by its index
-        // file, such as `./scripts/index.ts`.
-        files: ['packages/*/*/*.config.ts'],
+        // file, such as `./scripts/index.ts`. So does v-snap's Node side,
+        // which a project's Vitest config loads, such as `../shared/index.ts`.
+        files: ['packages/*/*/*.config.ts', 'packages/libraries/v-snap/src/node/**/*.ts'],
         rules: {
             '@mvtjs/no-deep-imports': ['error', { allowIndexFile: true }],
         },

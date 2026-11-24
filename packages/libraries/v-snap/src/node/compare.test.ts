@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compareImages, SCATTER_AREA, SCATTER_CLUMP, TOLERANCE } from './compare.ts';
-import type { RgbaImage } from './png.ts';
+import { compareImages, TOLERANCE } from './compare.ts';
+import { decodePng, type RgbaImage } from './png.ts';
 
 function createFlatImage(width: number, height: number, rgba: readonly number[]): RgbaImage {
     const pixels = new Uint8Array(width * height * 4);
@@ -68,33 +70,71 @@ describe('compareImages', () => {
         expect(c.diff.pixels[0]).toBeGreaterThan(0);
     });
 
-    describe('scattered pixels, which arm64 processors draw along the edges of 3D shapes', () => {
-        // An image with room for this many scattered pixels, each a long way past the tolerance
-        const ALLOWED = 4;
-        const WIDTH = 200;
-        const HEIGHT = (ALLOWED * SCATTER_AREA) / WIDTH;
-        const compareWith = (points: readonly (readonly [number, number])[]) => {
-            const actual = createFlatImage(WIDTH, HEIGHT, [100, 100, 100, 255]);
-            for (const [x, y] of points) actual.pixels[(y * WIDTH + x) * 4] = 0;
-            return compareImages({ expected: createFlatImage(WIDTH, HEIGHT, [100, 100, 100, 255]), actual });
+    describe('across shader compilers, where a pixel may also change as much as one sample crossing an edge could', () => {
+        // An 8x8 image, dark on its left half and bright on its right, so the pixels in columns 3 and 4 lie on an edge
+        const DARK = 20;
+        const createEdge = (bright: number) => {
+            const image = createFlatImage(8, 8, [DARK, DARK, DARK, 255]);
+            for (let y = 0; y < 8; y++) for (let x = 4; x < 8; x++) image.pixels[(y * 8 + x) * 4] = bright;
+            return image;
         };
-        // A clump as large as is allowed, in a row, and the rest of the allowance one by one, apart
-        const clump = Array.from({ length: SCATTER_CLUMP }, (_, i) => [10 + i, 10] as const);
-        const apart = Array.from({ length: ALLOWED - SCATTER_CLUMP }, (_, i) => [50 + 20 * i, 100] as const);
+        const changePixel = (image: RgbaImage, x: number, y: number, red: number) => {
+            const changed = { ...image, pixels: image.pixels.slice() };
+            changed.pixels[(y * 8 + x) * 4] = red;
+            return changed;
+        };
 
-        it('counts as many as the image\'s area allows as scattered, apart or in small clumps', () => {
-            const c = compareWith([...clump, ...apart]);
-            expect(c.isWithinTolerance).toBe(false);
-            expect(c.isScattered).toBe(true);
+        it('passes a pixel on an edge that changed by up to the step across it, plus the tolerance', () => {
+            const expected = createEdge(DARK + 40);
+            const c = compareImages({ expected, actual: changePixel(expected, 3, 4, DARK + 40 + TOLERANCE), isAcrossShaderCompilers: true });
+            expect(c.isClose).toBe(true);
+            expect(c.excused).toBe(1);
+            expect([...c.diff.pixels.subarray((4 * 8 + 3) * 4, (4 * 8 + 3) * 4 + 3)]).not.toEqual([255, 0, 0]);
         });
 
-        it('counts one more than the area allows as more than scattered', () => {
-            expect(compareWith([...clump, ...apart, [190, 190]]).isScattered).toBe(false);
+        it('fails a pixel on an edge that changed by one more than that, along with all its neighbours', () => {
+            // The pixel's neighbours changed to its new colour too, so the actual image is flat round it, and only the edge in
+            // the reference excuses it
+            const expected = createEdge(DARK + 40);
+            let actual = expected;
+            for (let y = 3; y <= 5; y++) for (let x = 2; x <= 4; x++) actual = changePixel(actual, x, y, DARK + 40 + TOLERANCE + 1);
+            const c = compareImages({ expected, actual, isAcrossShaderCompilers: true });
+            expect(c.isClose).toBe(false);
+            expect(c.changedRect).toEqual({ x: 3, y: 4, width: 1, height: 1 });
         });
 
-        it('counts a clump one larger than allowed as more than scattered, even touching only diagonally', () => {
-            const last = clump[clump.length - 1];
-            expect(compareWith([...clump, [last[0] + 1, last[1] + 1]]).isScattered).toBe(false);
+        it('fails the same change on an edge when one shader compiler drew both images', () => {
+            const expected = createEdge(DARK + 40);
+            expect(compareImages({ expected, actual: changePixel(expected, 3, 4, DARK + 40) }).isClose).toBe(false);
         });
+
+        it('fails the middle of an area that changed, which is flat in both images', () => {
+            const expected = createFlatImage(8, 8, [DARK, DARK, DARK, 255]);
+            let actual = expected;
+            for (let y = 2; y <= 4; y++) for (let x = 2; x <= 4; x++) actual = changePixel(actual, x, y, DARK + 50);
+            const c = compareImages({ expected, actual, isAcrossShaderCompilers: true });
+            // The area's 8 border pixels each step to the unchanged pixels beside them, but its middle pixel has no step
+            expect(c.excused).toBe(8);
+            expect(c.exceeded).toBe(1);
+            expect(c.changedRect).toEqual({ x: 3, y: 3, width: 1, height: 1 });
+        });
+
+        it('passes a lone pixel that only one image shows, by its step in that image, as for a line thinner than a pixel', () => {
+            const expected = createFlatImage(8, 8, [DARK, DARK, DARK, 255]);
+            expect(compareImages({ expected, actual: changePixel(expected, 3, 3, DARK + 50), isAcrossShaderCompilers: true }).isClose).toBe(true);
+        });
+
+        // Crops of images that arm64 machines, whose SwiftShader uses LLVM, drew differently from their references, which x64
+        // machines drew with Subzero: one long, shallow edge moved by one sample, pixels along diagonal edges, and one pixel of a thin line
+        for (const name of ['shallow-edge', 'diagonal-edges', 'thin-line']) {
+            it(`passes the real difference in '${name}', which fails when one shader compiler drew both`, () => {
+                const folder = resolve(import.meta.dirname, '..', '..', 'fixtures', 'shader-compilers');
+                const expected = decodePng(readFileSync(join(folder, `${name}.subzero.png`)));
+                const actual = decodePng(readFileSync(join(folder, `${name}.llvm.png`)));
+                const across = compareImages({ expected, actual, isAcrossShaderCompilers: true });
+                expect({ isClose: across.isClose, hasExcused: across.excused > 0 }).toEqual({ isClose: true, hasExcused: true });
+                expect(compareImages({ expected, actual }).isClose).toBe(false);
+            });
+        }
     });
 });
