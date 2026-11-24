@@ -1,5 +1,23 @@
 # @mvtjs/pixi
 
+## 0.10.0
+
+### Minor Changes
+
+- 162263a: `keepReleasedTextTextures`, new in `@mvtjs/pixi`, keeps a renderer's text textures for a while after their texts have gone. A view that is destroyed and built again then finds its texts' textures still there, rather than drawing and uploading each one again. Call it once, after the renderer starts, with a budget in pixels. When the kept textures would go over it, those released longest ago go first. Its `releaseAll` releases every kept texture, such as when a game ends, and destroying the renderer releases them too. Only texts that share a style can find their textures again, which JSX texts passed the same `style` object do.
+- 9204f49: Needs pixi.js 8.23 or later, the version it's tested with. It used to accept 8.16.
+- 162263a: In JSX, texts passed the same `style` object now share one Pixi `TextStyle`. So texts with the same string and style share one texture, drawn and kept on the GPU once. Before, every text made a style of its own, and so a texture of its own. `style` now replaces a text's style rather than merging into it. That differs only when a `style` getter switches between objects. Because the style is shared, changing it in code (`text.style.fill = ...`) changes every text passed the same object. For a style of its own, pass a text an inline object or a `TextStyle` of its own.
+- 2ee9b17: Every JSX element now accepts an `owns` attribute. It lists the resources that your view made for the element, such as textures, geometries and materials. Each one is freed when the element is destroyed, so you don't need an `onDestroyed` to free them. Each renderer frees a resource its own way. `@mvtjs/pixi` destroys it, and destroys a texture's source with the texture. `@mvtjs/three` disposes it. `@mvtjs/html` aborts anything with an `abort()` method, such as an `AbortController`. It closes anything with a `close()` method, and destroys anything with a `destroy()` method. Each package exports the type that its `owns` attribute accepts as `OwnedResource`.
+  
+  An element table can now define creation attributes, with `creation()`, or with `creation({ required: true })` for one that the element can't be made without. They're for options that a renderer reads only in its constructor, such as the size of a batch. The runtime passes their values to the element's `create`.
+  
+  Breaking: `JsxTarget` has a new `release` function, which frees a resource that an `owns` attribute lists. A JSX target of your own needs to add it.
+
+### Patch Changes
+
+- Updated dependencies [2ee9b17]
+  - @mvtjs/utils@0.10.0
+
 ## 0.9.0
 
 ### Patch Changes
