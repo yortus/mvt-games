@@ -8,19 +8,20 @@ const SIZE = { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, pixelArt: false };
 
 canvasTest('seeds just planted, with the first caption', SIZE, () => DemoView({ model: createDemoModel({ random: createRandom({ seed: 1 }) }) }));
 
-canvasTest('coral after twelve seconds', SIZE, async () => {
+canvasTest('coral after five seconds', SIZE, async () => {
     const model = createDemoModel({ random: createRandom({ seed: 1 }) });
     const view = DemoView({ model });
-    await advanceTime(12_000, model, view);
+    await advanceTime(5000, model, view);
     return view;
 });
 
-// Moved on to spots, while the colours fade from the first scheme to the second
-canvasTest('spots, in changing colours', SIZE, async () => {
+// Halfway through the first colour scheme's fade into the second, 32 seconds in. The colours are the view's own, so
+// only the view moves on to that moment, and the test doesn't run 27 more seconds of the simulation. The coral stays
+// as it was at five seconds.
+canvasTest('coral, in changing colours', SIZE, async () => {
     const model = createDemoModel({ random: createRandom({ seed: 1 }) });
     const view = DemoView({ model });
-    await advanceTime(12_000, model, view);
-    model.nextPattern();
-    await advanceTime(20_000, model, view);
+    await advanceTime(5000, model, view);
+    await advanceTime(27_000, view);
     return view;
 });
