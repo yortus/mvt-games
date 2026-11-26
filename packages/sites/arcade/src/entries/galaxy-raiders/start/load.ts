@@ -1,5 +1,5 @@
 import { definePixiLoader, type EntrySession } from '@mvtjs/site-kit/entry-types';
-import { createGameModel } from '../models';
+import { createGameModel, GAME_TUNING } from '../models';
 import { GameView, SCREEN_WIDTH, SCREEN_HEIGHT } from '../views';
 import { WAVES, textures } from '../data';
 
@@ -30,6 +30,9 @@ export const load = definePixiLoader(async () => {
         start({ stage, music, sfx, controls }): EntrySession {
             const gameModel = createGameModel({
                 waves: WAVES,
+                tuning: GAME_TUNING,
+                // A new seed each game, so the raiders dive in a new order
+                seed: Math.floor(Math.random() * 2 ** 32),
             });
 
             const gameView = GameView({ model: gameModel, music, sfx, controls });

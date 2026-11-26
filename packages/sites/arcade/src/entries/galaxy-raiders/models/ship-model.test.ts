@@ -5,7 +5,7 @@ const SPEED = 100;
 const START_X = 500;
 
 function makeShip(): ReturnType<typeof createShipModel> {
-    return createShipModel({ startX: START_X, startY: 0, speed: SPEED, minX: 0, maxX: 1000 });
+    return createShipModel({ startX: START_X, startY: 0, tuning: { speedPerSecond: SPEED }, minX: 0, maxX: 1000 });
 }
 
 describe('ShipModel', () => {

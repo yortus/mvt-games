@@ -1,24 +1,20 @@
 import gsap from 'gsap';
 import { createRepeater } from '@mvtjs/utils';
+import { createRandom } from '@mvtjs/site-kit/random';
 import type { WaveConfig } from '../data';
 import { ARENA_WIDTH, ARENA_HEIGHT } from '../data';
 import {
     FORMATION_LEFT,
     FORMATION_TOP,
     CELL_SIZE,
-    HIT_RADIUS_SQ,
-    ENEMY_BULLET_SPEED,
-    BULLET_SPEED,
     MAX_PLAYER_BULLETS,
     MAX_ENEMY_BULLETS,
     SHIP_Y,
-    SHIP_SPEED,
     SHIP_HALF_WIDTH,
-    AUTO_FIRE_INTERVAL_MS,
 } from './model-constants';
 import type { Direction, EnemyKind, GamePhase } from './common';
-import { createShipModel, type ShipModel } from './ship-model';
-import { createEnemyModel, type EnemyModel } from './enemy-model';
+import { createShipModel, SHIP_TUNING, type ShipModel } from './ship-model';
+import { createEnemyModel, ENEMY_TUNING, type EnemyModel } from './enemy-model';
 import { createBulletModel, type BulletModel } from './bullet-model';
 
 // ---------------------------------------------------------------------------
@@ -52,7 +48,7 @@ export interface GameModel {
     targetX: number | undefined;
     /**
      * Whether the ship fires on its own. A shot leaves on each
-     * `AUTO_FIRE_INTERVAL_MS`, from the next update, while the game is playing
+     * `autoFireIntervalMs` of the tuning, from the next update, while the game is playing
      * and a bullet is free.
      */
     isAutoFiring: boolean;
@@ -95,14 +91,63 @@ export interface SavedGame {
 
 export interface GameModelOptions {
     readonly waves: readonly WaveConfig[];
+    /**
+     * How the game plays. The game reads each value where it uses it, so a
+     * change takes effect on the next update, or for the raiders' flight in,
+     * at the next wave. The ship and the raiders have tunings of their own.
+     */
+    readonly tuning: GameTuning;
+    /** Where the game's random numbers start. The same seed, with the same input, plays the same game. */
+    readonly seed: number;
 }
+
+/** How the game plays, as `GAME_TUNING` sets it out. */
+export type GameTuning = Readonly<typeof GAME_TUNING>;
+
+// ---------------------------------------------------------------------------
+// Tuning
+// ---------------------------------------------------------------------------
+
+/**
+ * How Galaxy Raiders plays, beyond how the ship moves and how the raiders
+ * dive, which its loader passes as the game's `tuning`. Distances are in
+ * world units.
+ */
+export const GAME_TUNING = {
+    /** How fast the ship's shots climb, in world units a second. */
+    shipShotSpeedPerSecond: 350,
+    /** How often a shot leaves while the ship fires on its own. */
+    autoFireIntervalMs: 250,
+    /** How fast the raiders' shots fall, in world units a second. */
+    raiderShotSpeedPerSecond: 150,
+    /** How close a shot or a diving raider must come to hit, centre to centre. */
+    hitRadius: 10,
+    /** How much later each row of the formation flies in than the row above. */
+    entryRowDelayMs: 400,
+    /** How much later each raider flies in than the one to its left. */
+    entryColumnDelayMs: 50,
+    /** How far the formation sways from side to side, each way. */
+    swayWidth: 5,
+    /** How far the formation sways up and down, each way. */
+    swayHeight: 3,
+    /** How long the ship's explosion lasts before it comes back, or the game ends. */
+    dyingDelayMs: 1500,
+    /** How long STAGE CLEAR shows before the next wave flies in. */
+    stageClearDelayMs: 1500,
+    // A table inside a tuning needs its own Readonly, since Readonly reaches only one level down
+    /** The points for a raider shot while it sits in formation, by its kind. */
+    pointsInFormation: { scout: 40, striker: 70, carrier: 120 } as Readonly<Record<EnemyKind, number>>,
+    /** The points for a raider shot while it dives, which is harder. */
+    pointsWhileDiving: { scout: 80, striker: 140, carrier: 300 } as Readonly<Record<EnemyKind, number>>,
+};
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 export function createGameModel(options: GameModelOptions): GameModel {
-    const { waves } = options;
+    const { waves, tuning, seed } = options;
+    const random = createRandom({ seed });
     const playHeight = ARENA_HEIGHT;
     const shipStartX = ARENA_WIDTH / 2;
     const shipMinX = SHIP_HALF_WIDTH;
@@ -118,7 +163,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     let isFireRequested = false;
     /** Requests a shot at a steady rate, while the ship is auto-firing. */
     const autoFire = createRepeater({
-        periodMs: () => (model.isAutoFiring ? AUTO_FIRE_INTERVAL_MS : 0),
+        periodMs: () => (model.isAutoFiring ? tuning.autoFireIntervalMs : 0),
         onRepeat: () => model.fire(),
     });
     /** Whether a new game was asked for since the last update. */
@@ -240,8 +285,8 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
             // Formation breathing
             breathTimer += deltaMs;
-            formationOffsetX = Math.sin(breathTimer * 0.001) * BREATH_AMP_X;
-            formationOffsetY = Math.cos(breathTimer * 0.0007) * BREATH_AMP_Y;
+            formationOffsetX = Math.sin(breathTimer * 0.001) * tuning.swayWidth;
+            formationOffsetY = Math.cos(breathTimer * 0.0007) * tuning.swayHeight;
 
             // Update children
             ship.update(deltaMs);
@@ -296,7 +341,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         return createShipModel({
             startX: shipStartX,
             startY: SHIP_Y,
-            speed: SHIP_SPEED,
+            tuning: SHIP_TUNING,
             minX: shipMinX,
             maxX: shipMaxX,
         });
@@ -314,12 +359,14 @@ export function createGameModel(options: GameModelOptions): GameModel {
                     formationRow: slot.row,
                     formationCol: slot.col,
                     kind: slot.kind,
-                    enterDelay: slot.row * 0.4 + slot.col * 0.05,
+                    enterDelay: (slot.row * tuning.entryRowDelayMs + slot.col * tuning.entryColumnDelayMs) * 0.001,
                     diveSpeedFactor: wave.diveSpeedFactor,
                     fireChance: wave.enemyFireChance,
                     playHeight,
                     getFormationOffsetX: () => formationOffsetX,
                     getFormationOffsetY: () => formationOffsetY,
+                    tuning: ENEMY_TUNING,
+                    random,
                 }),
             );
         }
@@ -365,7 +412,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 }
             },
             undefined,
-            DYING_DELAY_MS * 0.001,
+            tuning.dyingDelayMs * 0.001,
         );
     }
 
@@ -379,7 +426,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
                 loadWave();
             },
             undefined,
-            STAGE_CLEAR_DELAY_MS * 0.001,
+            tuning.stageClearDelayMs * 0.001,
         );
     }
 
@@ -412,11 +459,11 @@ export function createGameModel(options: GameModelOptions): GameModel {
         }
         if (candidateCount === 0) return;
 
-        let pick = (Math.random() * candidateCount) | 0;
+        let pick = random.nextIndex(candidateCount);
         for (let i = 0; i < enemies.length; i++) {
             if (enemies[i].isAlive && enemies[i].phase === 'formation') {
                 if (pick === 0) {
-                    const curveDir = Math.random() > 0.5 ? 1 : -1;
+                    const curveDir = random.next() > 0.5 ? 1 : -1;
                     enemies[i].startDive(ship.x, curveDir);
                     return;
                 }
@@ -431,7 +478,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
         if (!ship.isAlive) return;
         for (let b = 0; b < playerBullets.length; b++) {
             if (!playerBullets[b].isActive) {
-                playerBullets[b].fire(ship.x, ship.y - 8, -BULLET_SPEED);
+                playerBullets[b].fire(ship.x, ship.y - 8, -tuning.shipShotSpeedPerSecond);
                 shotsFired++;
                 break;
             }
@@ -446,7 +493,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
             for (let b = 0; b < enemyBullets.length; b++) {
                 if (!enemyBullets[b].isActive) {
-                    enemyBullets[b].fire(enemy.x, enemy.y + 8, ENEMY_BULLET_SPEED);
+                    enemyBullets[b].fire(enemy.x, enemy.y + 8, tuning.raiderShotSpeedPerSecond);
                     break;
                 }
             }
@@ -456,6 +503,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
     // ---- Collision detection -----------------------------------------------
 
     function checkPlayerBulletsVsEnemies(): void {
+        const hitRadiusSq = tuning.hitRadius * tuning.hitRadius;
         for (let b = 0; b < playerBullets.length; b++) {
             const bullet = playerBullets[b];
             if (!bullet.isActive) continue;
@@ -466,9 +514,9 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
                 const dx = bullet.x - enemy.x;
                 const dy = bullet.y - enemy.y;
-                if (dx * dx + dy * dy < HIT_RADIUS_SQ) {
+                if (dx * dx + dy * dy < hitRadiusSq) {
                     const points =
-                        enemy.phase === 'diving' ? SCORE_WHILE_DIVING[enemy.kind] : SCORE_IN_FORMATION[enemy.kind];
+                        enemy.phase === 'diving' ? tuning.pointsWhileDiving[enemy.kind] : tuning.pointsInFormation[enemy.kind];
                     score += points;
                     enemy.kill();
                     bullet.deactivate();
@@ -480,6 +528,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function checkEnemyBulletsVsShip(): void {
         if (!ship.isAlive) return;
+        const hitRadiusSq = tuning.hitRadius * tuning.hitRadius;
 
         for (let b = 0; b < enemyBullets.length; b++) {
             const bullet = enemyBullets[b];
@@ -487,7 +536,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
             const dx = bullet.x - ship.x;
             const dy = bullet.y - ship.y;
-            if (dx * dx + dy * dy < HIT_RADIUS_SQ) {
+            if (dx * dx + dy * dy < hitRadiusSq) {
                 bullet.deactivate();
                 ship.kill();
                 scheduleDying();
@@ -498,6 +547,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
     function checkDivingEnemiesVsShip(): void {
         if (!ship.isAlive) return;
+        const hitRadiusSq = tuning.hitRadius * tuning.hitRadius;
 
         for (let e = 0; e < enemies.length; e++) {
             const enemy = enemies[e];
@@ -505,7 +555,7 @@ export function createGameModel(options: GameModelOptions): GameModel {
 
             const dx = enemy.x - ship.x;
             const dy = enemy.y - ship.y;
-            if (dx * dx + dy * dy < HIT_RADIUS_SQ) {
+            if (dx * dx + dy * dy < hitRadiusSq) {
                 enemy.kill();
                 ship.kill();
                 scheduleDying();
@@ -538,24 +588,3 @@ function isSavedGame(value: unknown): value is SavedGame {
 function isWholeNumber(value: unknown): value is number {
     return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
-
-const STAGE_CLEAR_DELAY_MS = 1500;
-const DYING_DELAY_MS = 1500;
-
-/** Points for destroying an enemy while it sits in formation. */
-const SCORE_IN_FORMATION: Record<EnemyKind, number> = {
-    scout: 40,
-    striker: 70,
-    carrier: 120,
-};
-
-/** Points for destroying an enemy while it is diving. */
-const SCORE_WHILE_DIVING: Record<EnemyKind, number> = {
-    scout: 80,
-    striker: 140,
-    carrier: 300,
-};
-
-/** Amplitude of the formation breathing in world-units. */
-const BREATH_AMP_X = 5;
-const BREATH_AMP_Y = 3;

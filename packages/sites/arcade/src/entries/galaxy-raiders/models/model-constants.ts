@@ -20,34 +20,15 @@ export const FORMATION_TOP = 40;
 /** Y position of the player ship in world-units. */
 export const SHIP_Y = ARENA_HEIGHT - 24;
 
-/** Ship movement speed in world-units per second. */
-export const SHIP_SPEED = 150;
-
 /** Half-width of the ship for clamping in world-units. */
 export const SHIP_HALF_WIDTH = 12;
 
 // ---------------------------------------------------------------------------
-// Bullet Constants
+// Bullet Pools
 // ---------------------------------------------------------------------------
 
 /** Maximum simultaneous player bullets. */
 export const MAX_PLAYER_BULLETS = 2;
 
-/** Player bullet speed in world-units per second (upward). */
-export const BULLET_SPEED = 350;
-
-/** How often a shot leaves while the ship is auto-firing, in ms. */
-export const AUTO_FIRE_INTERVAL_MS = 250;
-
 /** Maximum simultaneous enemy bullets. */
 export const MAX_ENEMY_BULLETS = 8;
-
-/** Enemy bullet speed in world-units per second (downward). */
-export const ENEMY_BULLET_SPEED = 150;
-
-// ---------------------------------------------------------------------------
-// Collision
-// ---------------------------------------------------------------------------
-
-/** Squared collision radius in world-units. */
-export const HIT_RADIUS_SQ = 10 * 10;

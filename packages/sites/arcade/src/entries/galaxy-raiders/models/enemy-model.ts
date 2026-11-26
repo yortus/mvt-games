@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+import type { Random } from '@mvtjs/site-kit/random';
 import type { EnemyKind, EnemyPhase } from './common';
 
 // ---------------------------------------------------------------------------
@@ -46,7 +47,32 @@ export interface EnemyModelOptions {
     readonly playHeight: number;
     readonly getFormationOffsetX: () => number;
     readonly getFormationOffsetY: () => number;
+    /** How the raider dives, read as each dive starts, so a change takes effect on the next dive. */
+    readonly tuning: EnemyTuning;
+    /** Decides whether a dive fires. The game's own, so a game with the same seed plays the same way. */
+    readonly random: Random;
 }
+
+/** How a raider dives, as `ENEMY_TUNING` sets it out. */
+export type EnemyTuning = Readonly<typeof ENEMY_TUNING>;
+
+// ---------------------------------------------------------------------------
+// Tuning
+// ---------------------------------------------------------------------------
+
+/** How the raiders dive in Galaxy Raiders, which the game passes as each raider's `tuning`. Distances are in world units. */
+export const ENEMY_TUNING = {
+    /** How far a diving raider swings out to one side before it strikes. */
+    diveSwingWidth: 50,
+    /** How far a diving raider drops while it swings out. */
+    diveSwingDrop: 100,
+    /** How long the swing lasts, at a wave's dive speed of 1. */
+    diveSwingMs: 400,
+    /** How long the strike down past the ship lasts, at a wave's dive speed of 1. */
+    diveStrikeMs: 600,
+    /** How long a raider flies to get back down into its slot, after it leaves the bottom. */
+    diveReturnMs: 500,
+};
 
 // ---------------------------------------------------------------------------
 // Factory
@@ -65,6 +91,8 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
         playHeight,
         getFormationOffsetX,
         getFormationOffsetY,
+        tuning,
+        random,
     } = options;
 
     const state: {
@@ -124,12 +152,12 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
 
             const fromX = state.x;
             const fromY = state.y;
-            const curveX = fromX + curveDir * 50;
-            const midY = fromY + 100;
+            const curveX = fromX + curveDir * tuning.diveSwingWidth;
+            const midY = fromY + tuning.diveSwingDrop;
 
-            const d1 = 0.4 / diveSpeedFactor;
-            const d2 = 0.6 / diveSpeedFactor;
-            const d3 = 0.5;
+            const d1 = tuning.diveSwingMs * 0.001 / diveSpeedFactor;
+            const d2 = tuning.diveStrikeMs * 0.001 / diveSpeedFactor;
+            const d3 = tuning.diveReturnMs * 0.001;
 
             diveTimeline.clear().time(0);
 
@@ -142,7 +170,7 @@ export function createEnemyModel(options: EnemyModelOptions): EnemyModel {
             diveTimeline.to(state, { x: targetX, y: playHeight + 30, duration: d2, ease: 'none' }, t);
 
             // Maybe fire during the dive
-            if (Math.random() < fireChance) {
+            if (random.next() < fireChance) {
                 diveTimeline.call(
                     () => {
                         state.wantsToFire = true;

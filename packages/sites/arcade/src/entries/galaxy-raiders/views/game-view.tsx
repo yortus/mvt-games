@@ -112,7 +112,7 @@ export function GameView(bindings: GameViewBindings): Container {
                         x={() => bullet().x}
                         y={() => bullet().y}
                         isActive={() => bullet().isActive}
-                        color={() => PLAYER_BULLET_COLOR}
+                        color={() => GAME_VIEW_TUNING.shipShotColor}
                     />
                 )}
             </List>
@@ -122,7 +122,7 @@ export function GameView(bindings: GameViewBindings): Container {
                         x={() => bullet().x}
                         y={() => bullet().y}
                         isActive={() => bullet().isActive}
-                        color={() => ENEMY_BULLET_COLOR}
+                        color={() => GAME_VIEW_TUNING.raiderShotColor}
                     />
                 )}
             </List>
@@ -151,8 +151,17 @@ export function GameView(bindings: GameViewBindings): Container {
 // Internals
 // ---------------------------------------------------------------------------
 
-const PLAYER_BULLET_COLOR = 0xffffff;
-const ENEMY_BULLET_COLOR = 0xff4444;
+/**
+ * How the game looks, where the art doesn't decide it. The view reads each
+ * value as it draws, so a change made while the game runs, such as from a
+ * tuning tool, shows on the next frame.
+ */
+const GAME_VIEW_TUNING = {
+    /** The colour of the ship's shots. */
+    shipShotColor: 0xffffff,
+    /** The colour of the raiders' shots, which the player dodges. */
+    raiderShotColor: 0xff4444,
+};
 
 function drawStars(gfx: Graphics, width: number, height: number): void {
     // Deterministic pseudo-random via simple LCG seeded at 42

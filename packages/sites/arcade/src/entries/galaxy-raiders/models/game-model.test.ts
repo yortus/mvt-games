@@ -1,11 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { WAVES } from '../data';
-import { createGameModel, type GameModel, type SavedGame } from './game-model';
-import { AUTO_FIRE_INTERVAL_MS } from './model-constants';
+import { createGameModel, GAME_TUNING, type GameModel, type SavedGame } from './game-model';
 
 describe('GameModel', () => {
     it('counts the raiders still alive in this wave', () => {
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         const waveSize = WAVES[0].slots.length;
         expect(model.enemiesLeft).toBe(waveSize);
         model.enemies[0].kill();
@@ -15,34 +14,23 @@ describe('GameModel', () => {
     });
 
     it('fires on each beat while auto-firing, from the next update, and stops as it stops', () => {
-        const stepMs = AUTO_FIRE_INTERVAL_MS / 10;
-        const model = createGameModel({ waves: WAVES });
+        const { autoFireIntervalMs } = GAME_TUNING;
+        const stepMs = autoFireIntervalMs / 10;
+        const model = createGame();
         model.isAutoFiring = true;
         model.update(stepMs);
         expect(model.shotsFired).toBe(1);
-        for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS; ms += stepMs) model.update(stepMs);
+        for (let ms = 0; ms < autoFireIntervalMs; ms += stepMs) model.update(stepMs);
         expect(model.shotsFired).toBe(2);
         model.isAutoFiring = false;
-        for (let ms = 0; ms < AUTO_FIRE_INTERVAL_MS * 2; ms += stepMs) model.update(stepMs);
+        for (let ms = 0; ms < autoFireIntervalMs * 2; ms += stepMs) model.update(stepMs);
         expect(model.shotsFired).toBe(2);
     });
 });
 
 describe('GameModel: saving', () => {
-    // Seed the random numbers, so the raiders dive and fire the same way on every run
-    beforeEach(() => {
-        let state = 12345;
-        vi.spyOn(Math, 'random').mockImplementation(() => {
-            state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-            return state / 4294967296;
-        });
-    });
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
-
     it('saves nothing while the game is still at its start', () => {
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         expect(model.save()).toBeUndefined();
         playUntilScored(model);
         expect(model.phase).toBe('playing');
@@ -51,7 +39,7 @@ describe('GameModel: saving', () => {
 
     it('saves a stage part way through as of its start, with the score it had then', () => {
         const saved = saveAtSecondStage();
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         expect(model.load(saved)).toBe(true);
         playUntilScored(model);
         expect(model.score).toBeGreaterThan(saved.score);
@@ -59,14 +47,14 @@ describe('GameModel: saving', () => {
     });
 
     it('saves a stage just cleared as the start of the next, and loads it there', () => {
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         playUntilScored(model);
         clearStage(model);
         expect(model.phase).toBe('stage-clear');
         const saved = model.save();
         expect(saved).toMatchObject({ stage: 2, score: model.score, lives: model.lives });
 
-        const loaded = createGameModel({ waves: WAVES });
+        const loaded = createGame();
         expect(loaded.load(JSON.parse(JSON.stringify(saved)))).toBe(true);
         expect(loaded.phase).toBe('playing');
         expect(loaded.stage).toBe(2);
@@ -77,7 +65,7 @@ describe('GameModel: saving', () => {
 
     it('keeps a life lost, from the moment the ship is hit', () => {
         const stageStart = saveAtSecondStage();
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         expect(model.load(stageStart)).toBe(true);
         const startLives = model.lives;
         playUntil(model, () => model.phase === 'dying', false);
@@ -89,14 +77,14 @@ describe('GameModel: saving', () => {
         expect(model.lives).toBe(startLives - 1);
         expect(model.save()).toEqual(saved);
 
-        const loaded = createGameModel({ waves: WAVES });
+        const loaded = createGame();
         expect(loaded.load(JSON.parse(JSON.stringify(saved)))).toBe(true);
         expect(loaded.phase).toBe('playing');
         expect(loaded.lives).toBe(startLives - 1);
     });
 
     it('loads a stage past the last wave, which plays the last wave again', () => {
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         const stage = WAVES.length + 2;
         expect(model.load({ ...saveAtSecondStage(), stage })).toBe(true);
         expect(model.stage).toBe(stage);
@@ -105,12 +93,12 @@ describe('GameModel: saving', () => {
 
     it('loads nothing that is not a saved game, and plays on as it was', () => {
         const saved = saveAtSecondStage();
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         playUntilScored(model);
         const score = model.score;
         const enemiesLeft = model.enemiesLeft;
         const lives = model.lives;
-        const mostLives = createGameModel({ waves: WAVES }).lives;
+        const mostLives = createGame().lives;
         const rejects: unknown[] = [
             undefined,
             'saved',
@@ -131,7 +119,7 @@ describe('GameModel: saving', () => {
     });
 
     it('saves nothing once the game is over', () => {
-        const model = createGameModel({ waves: WAVES });
+        const model = createGame();
         playUntil(model, () => model.phase === 'game-over', false);
         expect(model.phase).toBe('game-over');
         expect(model.save()).toBeUndefined();
@@ -141,6 +129,11 @@ describe('GameModel: saving', () => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Creates a game with one seed, so the raiders dive and fire the same way on every run. */
+function createGame(): GameModel {
+    return createGameModel({ waves: WAVES, tuning: GAME_TUNING, seed: 12345 });
+}
 
 /** Ticks the game until `isDone`, firing every 8 ticks if `isAutoFiring`, or for a few minutes at most. */
 function playUntil(model: GameModel, isDone: () => boolean, isAutoFiring: boolean): void {
@@ -158,7 +151,7 @@ function playUntilScored(model: GameModel): void {
 
 /** Returns the save of a game that has just cleared its first stage, with some score: the start of the second. */
 function saveAtSecondStage(): SavedGame {
-    const model = createGameModel({ waves: WAVES });
+    const model = createGame();
     playUntilScored(model);
     clearStage(model);
     const saved = model.save();

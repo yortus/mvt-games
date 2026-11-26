@@ -1,4 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
+import { createReaction } from '@mvtjs/utils';
 import { setRefresh } from '@mvtjs/pixi';
 
 // ---------------------------------------------------------------------------
@@ -18,6 +19,7 @@ export interface BulletViewBindings {
 // ---------------------------------------------------------------------------
 
 export function BulletView(bindings: BulletViewBindings): Container {
+    const drawBulletWhenColorChanges = createReaction({ watch: bindings.color, react: drawBullet });
     let gfx: Graphics;
 
     const view = new Container();
@@ -32,6 +34,8 @@ export function BulletView(bindings: BulletViewBindings): Container {
     }
 
     function refresh(): void {
+        // Before the early return, so a colour changed while the bullet is hidden isn't missed
+        drawBulletWhenColorChanges();
         const active = bindings.isActive();
         view.visible = active;
         if (!active) return;

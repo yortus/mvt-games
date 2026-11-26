@@ -31,17 +31,31 @@ export interface ShipModel {
 export interface ShipModelOptions {
     readonly startX: number;
     readonly startY: number;
-    readonly speed: number;
+    /** How the ship moves, read as it moves, so a change takes effect on the next update. */
+    readonly tuning: ShipTuning;
     readonly minX: number;
     readonly maxX: number;
 }
+
+/** How the ship moves, as `SHIP_TUNING` sets it out. */
+export type ShipTuning = Readonly<typeof SHIP_TUNING>;
+
+// ---------------------------------------------------------------------------
+// Tuning
+// ---------------------------------------------------------------------------
+
+/** How the ship moves in Galaxy Raiders, which the game passes as the ship's `tuning`. Distances are in world units. */
+export const SHIP_TUNING = {
+    /** How fast the ship moves sideways, in world units a second. */
+    speedPerSecond: 150,
+};
 
 // ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
 export function createShipModel(options: ShipModelOptions): ShipModel {
-    const { startX, startY, speed, minX, maxX } = options;
+    const { startX, startY, tuning, minX, maxX } = options;
 
     let x = startX;
     const y = startY;
@@ -88,6 +102,7 @@ export function createShipModel(options: ShipModelOptions): ShipModel {
             if (!alive) return;
 
             const deltaSec = deltaMs * 0.001;
+            const speed = tuning.speedPerSecond;
             if (targetX !== undefined) {
                 // As far toward the target as its speed allows, and no further
                 const step = speed * deltaSec;
