@@ -3,8 +3,12 @@
     "private": true,
     "version": "0.0.0",
     "type": "module",
+    "exports": {
+        "./find-visual-tests": "./src/node/find-visual-tests.ts"
+    },
     "scripts": {
-        "serve": "node src/node/serve.ts"
+        "serve": "node src/node/serve.ts",
+        "build:vscode": "esbuild vscode/src/extension.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --sourcemap --outfile=vscode/dist/extension.js"
     },
     "dependencies": {
         "@mvtjs/pixi": "^0.10.0",
@@ -17,6 +21,8 @@
     },
     "devDependencies": {
         "@types/node": "^26.6.3",
+        "@types/vscode": "~1.100.0",
+        "esbuild": "^0.27.7",
         "vitest": "^5.0.1"
     }
 }

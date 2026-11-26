@@ -138,6 +138,8 @@ button:disabled {
     align-items: center;
     justify-content: center;
     overflow: auto;
+    /* An HTML view placed with position: fixed is placed in the viewport, not over the page's own controls */
+    contain: layout paint;
     background: repeating-conic-gradient(#232327 0% 25%, #1b1b1f 0% 50%) 50% / 16px 16px;
 }
 

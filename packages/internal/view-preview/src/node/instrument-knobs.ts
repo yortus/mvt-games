@@ -1,6 +1,7 @@
 import MagicString, { type SourceMap } from 'magic-string';
 import ts from 'typescript';
 import type { KnobInfo, KnobKind, KnobValue, PoseInfo } from '../shared';
+import { findVisualTests, parseTestFile } from './find-visual-tests.ts';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -42,21 +43,12 @@ export interface InstrumentKnobsOptions {
  */
 export function instrumentKnobs(options: InstrumentKnobsOptions): InstrumentedFile | undefined {
     const { code, fileName, runtimeModule } = options;
-    const scriptKind = fileName.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
-    const source = ts.createSourceFile(fileName, code, ts.ScriptTarget.Latest, true, scriptKind);
+    const source = parseTestFile({ code, fileName });
     const out = new MagicString(code);
     const poses: PoseInfo[] = [];
-    const visit = (node: ts.Node): void => {
-        if (ts.isCallExpression(node) && VISUAL_TESTS.has(findRootName(node.expression) ?? '')) {
-            const pose = node.arguments[node.arguments.length - 1];
-            if (pose !== undefined && (ts.isArrowFunction(pose) || ts.isFunctionExpression(pose))) {
-                poses.push(instrumentPose({ pose, source, out }));
-                return;
-            }
-        }
-        ts.forEachChild(node, visit);
-    };
-    visit(source);
+    for (const test of findVisualTests(source)) {
+        if (test.pose !== undefined) poses.push(instrumentPose({ pose: test.pose, source, out }));
+    }
     if (poses.length === 0) return undefined;
     // At the end, since imports are hoisted, so that a JSX pragma in the file's first comment stays first
     out.append(`\nimport { readKnob as ${READ_KNOB}, markPose as ${MARK_POSE} } from ${JSON.stringify(runtimeModule)};\n`);
@@ -66,9 +58,6 @@ export function instrumentKnobs(options: InstrumentKnobsOptions): InstrumentedFi
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
-
-/** The functions that declare visual tests. */
-const VISUAL_TESTS: ReadonlySet<string> = new Set(['canvasTest', 'htmlTest']);
 
 /** The names of the runtime's functions in the instrumented code, chosen so they can't clash with a test file's own names. */
 const READ_KNOB = '__viewPreviewKnob';
@@ -163,12 +152,4 @@ function findCalleeName(callee: ts.Expression, source: ts.SourceFile): string {
     if (ts.isPropertyAccessExpression(callee)) return callee.name.text;
     const text = callee.getText(source);
     return text.length > 24 ? `${text.slice(0, 24)}...` : text;
-}
-
-/** Returns the name at the root of a callee, such as `canvasTest` for `canvasTest.each(cases)`. */
-function findRootName(callee: ts.Expression): string | undefined {
-    if (ts.isIdentifier(callee)) return callee.text;
-    if (ts.isPropertyAccessExpression(callee)) return findRootName(callee.expression);
-    if (ts.isCallExpression(callee)) return findRootName(callee.expression);
-    return undefined;
 }

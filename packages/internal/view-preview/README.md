@@ -11,7 +11,34 @@ npm run serve -w @mvtjs/view-preview -- --site puzzles --port 5190
 
 Then open the address it prints, such as
 `http://localhost:5190/puzzles/__view-preview/`. `--site` is `arcade`,
-`demos` or `puzzles`.
+`demos` or `puzzles`. For any other package with visual tests, give its
+folder instead, as `--root packages/sites/site-kit`.
+
+## In VS Code
+
+The extension in `vscode/` puts a **Preview** lens above each `canvasTest`
+and `htmlTest` call in a visual test file. Following one opens the preview
+in a tab beside the editor, with that test picked. It starts the preview's
+server for the test's package the first time, on a free port, and stops it
+when VS Code closes. Picking another test of the same package switches the
+tab to it, without reloading the page. The link to the source at the top of
+the page opens the test in the editor, at its pose.
+
+To try it, build it, then install it from its folder:
+
+```sh
+npm run build:vscode -w @mvtjs/view-preview
+```
+
+In VS Code, run **Developer: Install Extension from Location...** from the
+Command Palette, pick `packages/internal/view-preview/vscode`, and reload
+the window. The extension finds the server through the `node_modules` of
+the test's package, so open a checkout where `@mvtjs/view-preview` is
+installed. **MVT: Preview This File's Visual Tests**, also on the editor's
+title bar, opens the preview on the file you're in. The servers' output is
+in the **MVT View Preview** output panel. The `mvtViewPreview.node`
+setting names the Node.js the servers run on, which must run TypeScript
+files, as Node.js 22.18 and later do.
 
 ## What You Can Do
 
@@ -63,3 +90,8 @@ added to the page as it is.
   GPU and fonts, and v-snap draws in its own calibrated browser.
 - A view that needs a texture made by v-snap's renderer (`getPixiRenderer`)
   may show it blank, since the preview draws on a renderer of its own.
+- An HTML view shares the preview page, so its stylesheets apply to the
+  page too, and the page's to it.
+- In VS Code, a lens finds its test by the line its pose starts on, as
+  saved. With unsaved changes that move lines, it opens the file without
+  picking a test.

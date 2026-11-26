@@ -79,6 +79,8 @@ const selection = {
     test: undefined as RecordedTest | undefined,
     values: new Map<number, KnobValue>(),
     button: undefined as HTMLElement | undefined,
+    /** Where the selected test's pose is, in its file. */
+    source: undefined as { readonly path: string; readonly line: number; readonly column: number } | undefined,
 };
 const posing = { isRunning: false, isPending: false };
 const loading = { last: Promise.resolve() as Promise<unknown> };
@@ -99,6 +101,18 @@ addEventListener('keydown', (event) => {
 });
 addEventListener('error', (event) => showError(event.error ?? event.message));
 addEventListener('unhandledrejection', (event) => showError(event.reason));
+
+// In VS Code's webview, the extension picks a test by sending the address
+// it's at, and the link to the source asks the extension to open it
+addEventListener('hashchange', () => void restoreSelection());
+addEventListener('message', (event: MessageEvent<{ readonly type?: string; readonly hash?: string }>) => {
+    if (event.data.type === 'view-preview:select' && event.data.hash !== undefined) location.hash = event.data.hash;
+});
+elements.where.addEventListener('click', (event) => {
+    if (window.parent === window || selection.source === undefined) return;
+    event.preventDefault();
+    window.parent.postMessage({ type: 'view-preview:open-source', ...selection.source }, '*');
+});
 
 renderFileList();
 void restoreSelection();
@@ -192,6 +206,8 @@ async function selectTest(options: { readonly file: TestFile; readonly test: Rec
     const pose = findPoseInfo(test.pose);
     elements.title.textContent = test.name;
     const path = decodeURIComponent(file.url.replace(/^.*?@fs\//, ''));
+    selection.source = { path, line: pose?.line ?? 1, column: pose?.column ?? 1 };
+    button.scrollIntoView({ block: 'nearest' });
     elements.where.textContent = `${file.path}${pose === undefined ? '' : `:${pose.line}`}`;
     elements.where.href = `vscode://file/${path}${pose === undefined ? '' : `:${pose.line}:${pose.column}`}`;
     renderKnobs();
@@ -249,18 +265,26 @@ function showError(error: unknown): void {
     elements.error.textContent = error instanceof Error ? `${error.message}\n\n${error.stack ?? ''}` : String(error);
 }
 
-/** Picks the test the page's address names, as it was before a reload. */
+/**
+ * Picks the test the page's address names, as it was before a reload, or as
+ * the VS Code extension asks. The address is the file's path and the test's
+ * name, `#<path>::<name>`, or the line its pose starts on, `#<path>::@<line>`.
+ * A line picks the first test the pose there declares, since a pose in a loop
+ * or written for `.each` declares several. With neither, the file opens.
+ */
 async function restoreSelection(): Promise<void> {
-    const [path, name] = location.hash.slice(1).split('::').map((part) => decodeURIComponent(part));
+    const [path, wanted = ''] = location.hash.slice(1).split('::').map((part) => decodeURIComponent(part));
     const details = [...elements.tests.querySelectorAll('details')].find((element) => element.dataset.path === path);
     const file = testFiles.find((candidate) => candidate.path === path);
     if (details === undefined || file === undefined) return;
     details.open = true;
+    details.scrollIntoView({ block: 'nearest' });
     const tests = await loadFile(file);
     const list = await fillTestList(file, details);
-    const test = tests.find((candidate) => candidate.name === name);
-    const button = [...list.querySelectorAll('button')].find((element) => element.dataset.name === name);
-    if (test !== undefined && button !== undefined) await selectTest({ file, test, button });
+    const line = wanted.startsWith('@') ? Number(wanted.slice(1)) : undefined;
+    const index = tests.findIndex((test) => (line === undefined ? test.name === wanted : findPoseInfo(test.pose)?.line === line));
+    const button = list.querySelectorAll('button')[index];
+    if (index >= 0 && button !== undefined) await selectTest({ file, test: tests[index], button });
 }
 
 /** The key the knobs you changed on a test are kept under, for the browser's tab. */

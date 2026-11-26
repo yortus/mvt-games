@@ -1,0 +1,57 @@
+{
+    "name": "mvt-view-preview",
+    "displayName": "MVT View Preview",
+    "description": "Preview the views in your visual tests live, with a knob for each literal in a test's pose.",
+    "publisher": "mvtjs",
+    "version": "0.0.1",
+    "private": true,
+    "license": "MIT",
+    "engines": {
+        "vscode": "^1.100.0"
+    },
+    "main": "./dist/extension.js",
+    "activationEvents": [
+        "workspaceContains:**/visual-tests/*.test.{ts,tsx}"
+    ],
+    "contributes": {
+        "commands": [
+            {
+                "command": "mvtViewPreview.previewFile",
+                "title": "Preview This File's Visual Tests",
+                "category": "MVT",
+                "icon": "$(play)"
+            }
+        ],
+        "menus": {
+            "commandPalette": [
+                {
+                    "command": "mvtViewPreview.previewFile",
+                    "when": "resourcePath =~ /[\\\\/]visual-tests[\\\\/][^\\\\/]+\\.test\\.tsx?$/"
+                }
+            ],
+            "editor/title": [
+                {
+                    "command": "mvtViewPreview.previewFile",
+                    "when": "resourcePath =~ /[\\\\/]visual-tests[\\\\/][^\\\\/]+\\.test\\.tsx?$/",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "MVT View Preview",
+            "properties": {
+                "mvtViewPreview.node": {
+                    "type": "string",
+                    "default": "node",
+                    "description": "The Node.js that the preview's servers run on. It must run TypeScript files, as Node.js 22.18 and later do."
+                }
+            }
+        }
+    },
+    "devDependencies": {
+        "@mvtjs/view-preview": "*",
+        "@types/vscode": "~1.100.0",
+        "typescript": "~5.9.3",
+        "vitest": "^5.0.1"
+    }
+}
