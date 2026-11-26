@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import type { SnapshotEdit, SnapshotRequest } from '@mvtjs/view-preview/shared';
 import * as vscode from 'vscode';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +28,8 @@ export interface SourceLocation {
 export interface PreviewPanelOptions {
     /** Called when you follow the page's link to a test's source. */
     readonly onOpenSource: (source: SourceLocation) => void;
+    /** Called when you take a snapshot on the page. It adds the test to its file, and returns the edit it made, or why it refused. */
+    readonly onSnapshot: (request: SnapshotRequest) => Promise<SnapshotEdit>;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,7 +37,7 @@ export interface PreviewPanelOptions {
 // ---------------------------------------------------------------------------
 
 export function createPreviewPanel(options: PreviewPanelOptions): PreviewPanel {
-    const { onOpenSource } = options;
+    const { onOpenSource, onSnapshot } = options;
     const state = { panel: undefined as vscode.WebviewPanel | undefined, address: '' };
 
     const createPanel = (): vscode.WebviewPanel => {
@@ -47,9 +50,15 @@ export function createPreviewPanel(options: PreviewPanelOptions): PreviewPanel {
             state.panel = undefined;
             state.address = '';
         });
-        panel.webview.onDidReceiveMessage((message: { readonly type?: string } & Partial<SourceLocation>) => {
+        panel.webview.onDidReceiveMessage((message: PageMessage) => {
             if (message.type === 'view-preview:open-source' && message.path !== undefined) {
                 onOpenSource({ path: message.path, line: message.line ?? 1, column: message.column ?? 1 });
+            }
+            if (message.type === 'view-preview:snapshot' && message.request !== undefined) {
+                const { id, request } = message;
+                void onSnapshot(request)
+                    .catch((error: unknown): SnapshotEdit => ({ kind: 'refused', reason: error instanceof Error ? error.message : String(error) }))
+                    .then((edit) => panel.webview.postMessage({ type: 'view-preview:snapshot-result', id, edit }));
             }
         });
         return panel;
@@ -76,6 +85,13 @@ export function createPreviewPanel(options: PreviewPanelOptions): PreviewPanel {
 // ---------------------------------------------------------------------------
 // Internals
 // ---------------------------------------------------------------------------
+
+/** A message from the preview page, which the webview passes on. */
+interface PageMessage extends Partial<SourceLocation> {
+    readonly type?: string;
+    readonly id?: number;
+    readonly request?: SnapshotRequest;
+}
 
 /**
  * Returns the webview's page, which fills the tab with the preview page, in

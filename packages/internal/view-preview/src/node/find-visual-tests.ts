@@ -48,6 +48,11 @@ export function findVisualTests(source: ts.SourceFile): readonly VisualTestCall[
     return found;
 }
 
+/** Returns whether a path is a visual test file's. That's a `.test.ts` or `.test.tsx` file in a `visual-tests` folder. */
+export function isVisualTestFile(path: string): boolean {
+    return /[\\/]visual-tests[\\/][^\\/]+\.test\.tsx?$/.test(path);
+}
+
 /** Parses a test file's code, as TypeScript, or TSX if its name says so. */
 export function parseTestFile(options: { readonly code: string; readonly fileName: string }): ts.SourceFile {
     const { code, fileName } = options;

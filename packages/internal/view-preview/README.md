@@ -52,6 +52,14 @@ files, as Node.js 22.18 and later do.
 - **Play on from the pose.** Play, Pause and Step move time on from where
   the pose left the view. The models that the pose passed to `advanceTime`
   move on with it, so a celebration or a flight plays to its end.
+- **Keep what you see as a test.** Snapshot adds a test to the file, just
+  below the one you're previewing. It's a copy of that test, with the knobs
+  as you've set them, under a name you choose. Then v-snap writes the new
+  test's reference image, as it does on any new test's first run, and the
+  page shows it below the knobs. That's the image each run of the test
+  compares with, drawn in v-snap's own browser, so you can check it against
+  the preview. In VS Code, the extension adds the test through the editor,
+  and refuses while the file has changes you haven't saved.
 - **Edit and save.** Saving a test file or a view reloads the page, which
   picks the same test again, with the knobs you changed, as long as their
   literals in the file haven't changed.
@@ -92,6 +100,12 @@ added to the page as it is.
   may show it blank, since the preview draws on a renderer of its own.
 - An HTML view shares the preview page, so its stylesheets apply to the
   page too, and the page's to it.
+- Snapshot copies only a test declared in a statement of its own. A copy of
+  a test declared in a loop, or for a table of cases with `.each` or
+  `.for`, would declare a test for each turn or case, all with one name.
+- Each preview server keeps a dependency cache of its own, so it optimizes
+  the dependencies afresh as it starts. The next server to start deletes
+  the caches of those that have stopped.
 - In VS Code, a lens finds its test by the line its pose starts on, as
   saved. With unsaved changes that move lines, it opens the file without
   picking a test.

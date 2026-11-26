@@ -10,6 +10,8 @@ import type { KnobValue } from '../shared';
 import { renderKnobPanel } from './knob-panel';
 import { findPoseInfo, setActiveKnobs } from './knobs';
 import { createPreviewStage } from './preview-stage';
+import { createReferencePanel } from './reference-panel';
+import { createSnapshotForm } from './snapshot-form';
 import { type RecordedTest, startRecording, takeRecordedTests } from './vsnap-stand-in';
 
 // ---------------------------------------------------------------------------
@@ -31,17 +33,27 @@ document.body.innerHTML = `
                     <option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option>
                 </select>
                 <button class="vp-repose" title="Run the pose again (R)">Re-pose</button>
+                <button class="vp-snapshot" title="Add a test that poses the view with the knobs as they are">Snapshot</button>
                 <select class="vp-zoom" title="Zoom">
                     <option value="fit" selected>Fit</option><option value="1">100%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option>
                 </select>
                 <span class="vp-time"></span>
                 <span class="vp-size"></span>
             </div>
+            <form class="vp-snapshot-form" hidden>
+                <label>New test's name <input type="text" spellcheck="false"></label>
+                <button type="submit">Add test</button>
+                <button type="button" class="vp-snapshot-cancel">Cancel</button>
+                <span class="vp-snapshot-message"></span>
+            </form>
         </header>
         <div class="vp-viewport"></div>
         <pre class="vp-error" hidden></pre>
     </main>
-    <aside class="vp-knobs"></aside>
+    <aside class="vp-side">
+        <div class="vp-knobs"></div>
+        <section class="vp-reference" hidden></section>
+    </aside>
 </div>`;
 
 const select = <E extends Element>(selector: string): E => document.querySelector<E>(selector)!;
@@ -59,6 +71,9 @@ const elements = {
     viewport: select<HTMLElement>('.vp-viewport'),
     error: select<HTMLElement>('.vp-error'),
     knobs: select<HTMLElement>('.vp-knobs'),
+    snapshot: select<HTMLButtonElement>('.vp-snapshot'),
+    snapshotForm: select<HTMLFormElement>('.vp-snapshot-form'),
+    reference: select<HTMLElement>('.vp-reference'),
 };
 
 const stage = createPreviewStage({
@@ -83,12 +98,23 @@ const selection = {
     source: undefined as { readonly path: string; readonly line: number; readonly column: number } | undefined,
 };
 const posing = { isRunning: false, isPending: false };
+const referencePanel = createReferencePanel({ host: elements.reference });
+const snapshotForm = createSnapshotForm({
+    form: elements.snapshotForm,
+    target: () => {
+        const { file, test, values, source } = selection;
+        if (file === undefined || test === undefined || source === undefined) return undefined;
+        const takenNames = [...(elements.tests.querySelectorAll<HTMLButtonElement>(`details[data-path="${CSS.escape(file.path)}"] button`))].map((button) => button.dataset.name ?? '');
+        return { file: source.path, fileKey: file.path, testName: test.name, pose: findPoseInfo(test.pose), values, takenNames };
+    },
+});
 const loading = { last: Promise.resolve() as Promise<unknown> };
 
 elements.play.addEventListener('click', () => stage.setPlaying(!stage.isPlaying()));
 elements.step.addEventListener('click', () => stage.step());
 elements.speed.addEventListener('change', () => stage.setSpeed(Number(elements.speed.value)));
 elements.repose.addEventListener('click', () => void requestPose());
+elements.snapshot.addEventListener('click', () => snapshotForm.open());
 elements.zoom.addEventListener('change', () => stage.setZoom(elements.zoom.value === 'fit' ? 'fit' : Number(elements.zoom.value)));
 addEventListener('keydown', (event) => {
     if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
@@ -211,6 +237,8 @@ async function selectTest(options: { readonly file: TestFile; readonly test: Rec
     elements.where.textContent = `${file.path}${pose === undefined ? '' : `:${pose.line}`}`;
     elements.where.href = `vscode://file/${path}${pose === undefined ? '' : `:${pose.line}:${pose.column}`}`;
     renderKnobs();
+    snapshotForm.close();
+    referencePanel.show({ file: path, name: test.name });
     await requestPose();
 }
 

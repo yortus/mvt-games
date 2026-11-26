@@ -4,7 +4,9 @@
     "version": "0.0.0",
     "type": "module",
     "exports": {
-        "./find-visual-tests": "./src/node/find-visual-tests.ts"
+        "./find-visual-tests": "./src/node/find-visual-tests.ts",
+        "./snapshot-edit": "./src/node/snapshot-edit.ts",
+        "./shared": "./src/shared/index.ts"
     },
     "scripts": {
         "serve": "node src/node/serve.ts",

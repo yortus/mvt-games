@@ -1,7 +1,8 @@
 import MagicString, { type SourceMap } from 'magic-string';
 import ts from 'typescript';
-import type { KnobInfo, KnobKind, KnobValue, PoseInfo } from '../shared';
+import type { KnobInfo, PoseInfo } from '../shared';
 import { findVisualTests, parseTestFile } from './find-visual-tests.ts';
+import { listKnobLiterals } from './knob-literals.ts';
 
 // ---------------------------------------------------------------------------
 // Interface
@@ -63,93 +64,22 @@ export function instrumentKnobs(options: InstrumentKnobsOptions): InstrumentedFi
 const READ_KNOB = '__viewPreviewKnob';
 const MARK_POSE = '__viewPreviewPose';
 
-interface Literal {
-    readonly kind: KnobKind;
-    readonly value: KnobValue;
-}
-
 /** Replaces the literals in one pose with knobs, wraps the pose, and returns its knobs. */
 function instrumentPose(options: { readonly pose: ts.ArrowFunction | ts.FunctionExpression; readonly source: ts.SourceFile; readonly out: MagicString }): PoseInfo {
     const { pose, source, out } = options;
     const start = pose.getStart(source);
     const where = source.getLineAndCharacterOfPosition(start);
     const id = `${where.line + 1}:${where.character + 1}`;
-    const knobs: KnobInfo[] = [];
-    const visit = (node: ts.Node): void => {
-        // A literal in a type, such as `'easy'` in `Promise<'easy'>`, isn't a value
-        if (ts.isTypeNode(node)) return;
-        const literal = readLiteral(node, source);
-        if (literal !== undefined && canBeKnob(node)) {
-            const nodeStart = node.getStart(source);
-            const at = source.getLineAndCharacterOfPosition(nodeStart);
-            const index = knobs.length;
-            knobs.push({ index, kind: literal.kind, label: findLabel({ node, pose, source }), line: at.line + 1, column: at.character + 1, value: literal.value });
-            const call = `${READ_KNOB}(${JSON.stringify(id)}, ${index}, ${node.getText(source)})`;
-            // A JSX attribute's string, as in `hint="Swipe"`, needs braces round a call
-            out.overwrite(nodeStart, node.end, ts.isJsxAttribute(node.parent) ? `{${call}}` : call);
-            return;
-        }
-        ts.forEachChild(node, visit);
-    };
-    ts.forEachChild(pose, visit);
+    const knobs = listKnobLiterals({ pose, source }).map(({ node, kind, value, label }, index): KnobInfo => {
+        const nodeStart = node.getStart(source);
+        const at = source.getLineAndCharacterOfPosition(nodeStart);
+        const call = `${READ_KNOB}(${JSON.stringify(id)}, ${index}, ${node.getText(source)})`;
+        // A JSX attribute's string, as in `hint="Swipe"`, needs braces round a call
+        out.overwrite(nodeStart, node.end, ts.isJsxAttribute(node.parent) ? `{${call}}` : call);
+        return { index, kind, label, line: at.line + 1, column: at.character + 1, value };
+    });
     const info: PoseInfo = { id, line: where.line + 1, column: where.character + 1, knobs };
     out.appendLeft(start, `${MARK_POSE}(${JSON.stringify(info)}, `);
     out.appendRight(pose.end, ')');
     return info;
-}
-
-/** Returns the literal a node is, or `undefined` if it isn't one. A negative number is a minus sign before a number. */
-function readLiteral(node: ts.Node, source: ts.SourceFile): Literal | undefined {
-    if (ts.isNumericLiteral(node)) {
-        const text = node.getText(source);
-        const value = Number(text.replaceAll('_', ''));
-        return { kind: /^0x[0-9a-f]{6}$/i.test(text.replaceAll('_', '')) ? 'color' : 'number', value };
-    }
-    if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.MinusToken && ts.isNumericLiteral(node.operand)) {
-        return { kind: 'number', value: -Number(node.operand.getText(source).replaceAll('_', '')) };
-    }
-    if (node.kind === ts.SyntaxKind.TrueKeyword) return { kind: 'boolean', value: true };
-    if (node.kind === ts.SyntaxKind.FalseKeyword) return { kind: 'boolean', value: false };
-    if (ts.isStringLiteral(node)) return { kind: 'string', value: node.text };
-    return undefined;
-}
-
-/** Returns whether a literal holds a value, rather than naming a property or a module. */
-function canBeKnob(node: ts.Node): boolean {
-    const parent = node.parent;
-    if ((ts.isPropertyAssignment(parent) || ts.isMethodDeclaration(parent) || ts.isPropertyAccessExpression(parent)) && parent.name === node) return false;
-    if (ts.isCallExpression(parent) && parent.expression.kind === ts.SyntaxKind.ImportKeyword) return false;
-    return true;
-}
-
-/**
- * Returns what a literal sets, for its knob's label. That's the property,
- * attribute, variable or parameter whose value it is. Or it's the call that
- * it's an argument of, such as `pose arg 3`. The search looks out from the
- * literal as far as the pose.
- */
-function findLabel(options: { readonly node: ts.Node; readonly pose: ts.Node; readonly source: ts.SourceFile }): string {
-    const { pose, source } = options;
-    let child = options.node;
-    while (child !== pose) {
-        const current = child.parent;
-        if (ts.isPropertyAssignment(current) && current.initializer === child) return current.name.getText(source);
-        if (ts.isJsxAttribute(current)) return current.name.getText(source);
-        if ((ts.isVariableDeclaration(current) || ts.isParameter(current)) && current.initializer === child) return current.name.getText(source);
-        if (ts.isBinaryExpression(current) && current.operatorToken.kind === ts.SyntaxKind.EqualsToken && current.right === child) return current.left.getText(source);
-        if (ts.isCallExpression(current) || ts.isNewExpression(current)) {
-            const index = current.arguments?.indexOf(child as ts.Expression) ?? -1;
-            if (index >= 0) return `${findCalleeName(current.expression, source)} arg ${index + 1}`;
-        }
-        child = current;
-    }
-    return 'value';
-}
-
-/** Returns the name a call is made by: `openPuzzle` for `model.openPuzzle(...)`. */
-function findCalleeName(callee: ts.Expression, source: ts.SourceFile): string {
-    if (ts.isIdentifier(callee)) return callee.text;
-    if (ts.isPropertyAccessExpression(callee)) return callee.name.text;
-    const text = callee.getText(source);
-    return text.length > 24 ? `${text.slice(0, 24)}...` : text;
 }

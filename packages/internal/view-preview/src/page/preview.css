@@ -57,7 +57,7 @@ button:disabled {
 }
 
 .vp-tests,
-.vp-knobs {
+.vp-side {
     overflow: auto;
     padding: 12px;
     background: var(--vp-panel);
@@ -67,8 +67,50 @@ button:disabled {
     border-right: 1px solid var(--vp-line);
 }
 
-.vp-knobs {
+.vp-side {
     border-left: 1px solid var(--vp-line);
+}
+
+.vp-snapshot-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.vp-snapshot-form[hidden] {
+    display: none;
+}
+
+.vp-snapshot-form input {
+    width: 360px;
+    background: #1b1b1f;
+    border: 1px solid var(--vp-line);
+    border-radius: 4px;
+    padding: 2px 6px;
+}
+
+.vp-snapshot-message {
+    color: var(--vp-changed);
+}
+
+.vp-reference {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--vp-line);
+}
+
+.vp-reference img {
+    max-width: 100%;
+    image-rendering: pixelated;
+    box-shadow: 0 0 0 1px #000;
+}
+
+.vp-reference pre {
+    white-space: pre-wrap;
+    font-size: 11px;
+    max-height: 300px;
+    overflow: auto;
 }
 
 .vp-tests summary {

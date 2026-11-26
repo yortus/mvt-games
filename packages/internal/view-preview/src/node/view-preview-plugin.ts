@@ -1,7 +1,9 @@
 import { existsSync, globSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import type { Plugin } from 'vite';
+import { isVisualTestFile } from './find-visual-tests.ts';
 import { instrumentKnobs } from './instrument-knobs.ts';
+import { createPreviewApi } from './preview-api.ts';
 
 // ---------------------------------------------------------------------------
 // Options
@@ -29,6 +31,9 @@ export interface ViewPreviewPluginOptions {
  *   them running after the pose returns its view.
  * - `virtual:view-preview/test-files` lists the package's visual test files,
  *   and `virtual:view-preview/vsnap-config` is its `vsnap.config.ts`.
+ *
+ * It also answers the page's requests to add a snapshot test and write its
+ * reference image (see `createPreviewApi`).
  */
 export function viewPreviewPlugin(options: ViewPreviewPluginOptions): Plugin {
     const packageRoot = toUpperCaseDrive(options.packageRoot);
@@ -64,7 +69,7 @@ export function viewPreviewPlugin(options: ViewPreviewPluginOptions): Plugin {
         },
         transform: (code, id) => {
             const path = id.split('?')[0];
-            if (VISUAL_TEST_FILE.test(path)) {
+            if (isVisualTestFile(path)) {
                 const instrumented = instrumentKnobs({ code, fileName: path, runtimeModule: toUrlPath(resolve(pageDir, 'knobs.ts')) });
                 return instrumented === undefined ? undefined : { code: instrumented.code, map: instrumented.map };
             }
@@ -75,6 +80,7 @@ export function viewPreviewPlugin(options: ViewPreviewPluginOptions): Plugin {
             return undefined;
         },
         configureServer: (server) => {
+            server.middlewares.use(createPreviewApi({ packageRoot, path: `${base}${PAGE}/api/`, toFileUrl: (file) => `${base}@fs/${toUrlPath(file)}` }));
             server.middlewares.use((request, response, next) => {
                 const path = request.url?.split('?')[0];
                 if (path !== `${base}${PAGE}` && path !== `${base}${PAGE}/`) return next();
@@ -98,8 +104,6 @@ export const PAGE = '__view-preview';
 
 const TEST_FILES_ID = 'virtual:view-preview/test-files';
 const CONFIG_ID = 'virtual:view-preview/vsnap-config';
-
-const VISUAL_TEST_FILE = /[\\/]visual-tests[\\/][^\\/]+\.test\.tsx?$/;
 
 const ADVANCE_TIME_FILE = '/libraries/utils/src/advance-time.ts';
 
