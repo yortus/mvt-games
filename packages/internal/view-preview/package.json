@@ -1,0 +1,22 @@
+{
+    "name": "@mvtjs/view-preview",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "serve": "node src/node/serve.ts"
+    },
+    "dependencies": {
+        "@mvtjs/pixi": "^0.10.0",
+        "@mvtjs/utils": "^0.10.0",
+        "magic-string": "^0.30.21",
+        "pixi.js": "^8.23.0",
+        "typescript": "~5.9.3",
+        "v-snap": "*",
+        "vite": "^8.3.2"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.3",
+        "vitest": "^5.0.1"
+    }
+}

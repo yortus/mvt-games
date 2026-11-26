@@ -20,6 +20,7 @@
         { "path": "./packages/sites/playground" },
         { "path": "./packages/internal/benchmarks" },
         { "path": "./packages/sites/site-kit/highscores-worker" },
-        { "path": "./packages/internal/checks" }
+        { "path": "./packages/internal/checks" },
+        { "path": "./packages/internal/view-preview" }
     ]
 }
