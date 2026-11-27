@@ -17,6 +17,8 @@ export interface PreviewApiOptions {
     readonly path: string;
     /** Returns the address the server serves a file at, for a reference image. */
     readonly toFileUrl: (path: string) => string;
+    /** Returns the ids of the tuning objects that a test file imports, however indirectly. */
+    readonly findTunings: (testFile: string) => readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -34,9 +36,11 @@ export interface PreviewApiOptions {
  *   reference image. The extension sends it once it has saved a snapshot.
  * - `GET reference?file=...&name=...` returns how the writing is going, with
  *   the image's address once it's written.
+ * - `GET tunings?file=...` returns the ids of the tuning objects that a test
+ *   file imports, however indirectly.
  */
 export function createPreviewApi(options: PreviewApiOptions): (request: IncomingMessage, response: ServerResponse, next: () => void) => void {
-    const { packageRoot, path, toFileUrl } = options;
+    const { packageRoot, path, toFileUrl, findTunings } = options;
     const jobs = createReferenceJobs();
 
     /** Returns a test file's full path, after checking that it's one of the package's visual test files. */
@@ -68,6 +72,7 @@ export function createPreviewApi(options: PreviewApiOptions): (request: Incoming
             if (status === undefined) return { state: 'none' };
             return status.state === 'written' ? { state: 'written', imageUrl: `${toFileUrl(status.image)}?t=${Math.round(status.modifiedMs)}` } : status;
         }
+        if (route === 'GET tunings') return { ids: findTunings(checkTestFile(url.searchParams.get('file'))) };
         throw new Error(`The preview's server doesn't answer ${route}.`);
     };
 

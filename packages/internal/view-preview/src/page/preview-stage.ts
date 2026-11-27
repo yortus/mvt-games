@@ -1,5 +1,5 @@
 import { refreshView, updateView, type View } from '@mvtjs/pixi';
-import { Application, Container } from 'pixi.js';
+import { Application, Container, Rectangle } from 'pixi.js';
 import type { CanvasViewKind, DrawnImage, HtmlViewKind } from 'v-snap';
 import type { RecordedTest } from './vsnap-stand-in';
 
@@ -16,6 +16,15 @@ import type { RecordedTest } from './vsnap-stand-in';
 export interface PreviewStage {
     /** Runs a test's pose, and shows the view it returns in place of the last. */
     readonly show: (test: RecordedTest) => Promise<void>;
+    /**
+     * Runs a test's pose off the page, draws the view it returns, and
+     * returns its pixels. Returns `undefined` for a kind of view whose
+     * pixels the preview can't read, such as an HTML view. Either way, the
+     * pose runs and the view refreshes once, so the reads it makes are noted.
+     */
+    readonly capture: (test: RecordedTest) => Promise<CapturedImage | undefined>;
+    /** Holds the frames still, without updating, refreshing or drawing, while the preview captures other views. */
+    readonly setSuspended: (isSuspended: boolean) => void;
     readonly isPlaying: () => boolean;
     readonly setPlaying: (isPlaying: boolean) => void;
     /** Moves time on by one frame, playing or not. */
@@ -28,6 +37,13 @@ export interface PreviewStage {
     readonly modelCount: () => number;
     /** The view's size in its own pixels, and the zoom it's shown at, for the toolbar. */
     readonly describeSize: () => string;
+}
+
+/** A view's pixels, four bytes to a pixel, a row at a time. */
+export interface CapturedImage {
+    readonly pixels: Uint8ClampedArray;
+    readonly width: number;
+    readonly height: number;
 }
 
 export interface PreviewStageOptions {
@@ -53,6 +69,7 @@ export function createPreviewStage(options: PreviewStageOptions): PreviewStage {
         isNoting: false,
         isPlaying: false,
         isStepping: false,
+        isSuspended: false,
         speed: 1,
         zoom: 'fit' as number | 'fit',
         elapsedMs: 0,
@@ -72,7 +89,7 @@ export function createPreviewStage(options: PreviewStageOptions): PreviewStage {
         const frameMs = Math.min(now - state.lastTime, MAX_FRAME_MS);
         state.lastTime = now;
         const current = state.current;
-        if (current !== undefined) {
+        if (current !== undefined && !state.isSuspended) {
             const deltaMs = state.isStepping ? FRAME_MS : state.isPlaying ? frameMs * state.speed : 0;
             state.isStepping = false;
             if (deltaMs > 0) {
@@ -117,19 +134,12 @@ export function createPreviewStage(options: PreviewStageOptions): PreviewStage {
     const mountPixi = async (kind: AnyCanvasKind, view: Container, imageOptions: Record<string, unknown>): Promise<Mounted> => {
         const isPixelArt = imageOptions.pixelArt === true;
         const app = await getPixiApp(isPixelArt);
-        // Framed as v-snap frames it. An axis whose size the test leaves out is framed by the view's bounds, with a margin
-        const bounds = view.getLocalBounds();
-        const width = imageOptions.width as number | undefined;
-        const height = imageOptions.height as number | undefined;
-        const left = width === undefined ? Math.floor(bounds.x) - FRAME_MARGIN : 0;
-        const top = height === undefined ? Math.floor(bounds.y) - FRAME_MARGIN : 0;
-        const frameWidth = width ?? Math.max(1, Math.ceil(bounds.x + bounds.width) - left + FRAME_MARGIN);
-        const frameHeight = height ?? Math.max(1, Math.ceil(bounds.y + bounds.height) - top + FRAME_MARGIN);
+        const { left, top, width: frameWidth, height: frameHeight } = frameView(view, imageOptions);
         const holder = new Container();
         holder.position.set(-left, -top);
         holder.addChild(view);
         app.stage.addChild(holder);
-        app.renderer.background.color = (imageOptions.background as number | string | undefined) ?? DEFAULT_BACKGROUND;
+        app.renderer.background.color = backgroundOf(imageOptions);
         viewport.replaceChildren(app.canvas);
         const mounted: Mounted = {
             view,
@@ -231,22 +241,18 @@ export function createPreviewStage(options: PreviewStageOptions): PreviewStage {
             state.current = undefined;
             models.clear();
             state.elapsedMs = 0;
-            const kind = findKind({ test, config });
-            const imageOptions = applyDefaults(kind.kind === 'html' ? undefined : (kind as AnyCanvasKind).defaults, test.options);
-            if (kind.kind !== 'html') (kind as AnyCanvasKind).beforePose?.(imageOptions);
             state.isNoting = true;
-            let view: unknown;
+            let posed: Posed;
             try {
-                view = await test.pose(...test.args);
+                posed = await runPose({ test, config });
             }
             finally {
                 state.isNoting = false;
             }
-            const isView = kind.kind === 'html' ? view instanceof Element : (kind as AnyCanvasKind).isView(view);
-            if (!isView) throw new Error(`The pose returned ${describeValue(view)}, which isn't a view of the test's kind, '${kind.kind}'.`);
+            const { kind, imageOptions, view } = posed;
             // A newer pose started while this one ran, so this view is already out of date
             if (shows !== state.shows) {
-                if (kind.kind !== 'html') (kind as AnyCanvasKind).dispose?.(view);
+                disposePosed(posed);
                 return;
             }
             kind.prepare?.(view as never);
@@ -254,6 +260,37 @@ export function createPreviewStage(options: PreviewStageOptions): PreviewStage {
             else if (kind.kind === 'canvas') state.current = mountCanvas(view as HTMLCanvasElement);
             else if (view instanceof Container) state.current = await mountPixi(kind as AnyCanvasKind, view, imageOptions);
             else state.current = await mountDrawn(kind as AnyCanvasKind, view as View, imageOptions);
+        },
+        capture: async (test) => {
+            const posed = await runPose({ test, config });
+            const { kind, imageOptions, view } = posed;
+            try {
+                kind.prepare?.(view as never);
+                if (kind.kind === 'html' || kind.kind === 'canvas') return undefined;
+                if (view instanceof Container) {
+                    const app = await getPixiApp(imageOptions.pixelArt === true);
+                    const { left, top, width, height } = frameView(view, imageOptions);
+                    const holder = new Container();
+                    const framed = new Container();
+                    framed.position.set(-left, -top);
+                    framed.addChild(view);
+                    holder.addChild(framed);
+                    try {
+                        return app.renderer.extract.pixels({ target: holder, frame: new Rectangle(0, 0, width, height), resolution: 1, clearColor: backgroundOf(imageOptions) });
+                    }
+                    finally {
+                        framed.removeChild(view);
+                        holder.destroy({ children: true });
+                    }
+                }
+                return readDrawnImage(await (kind as AnyCanvasKind).draw(view, { ...imageOptions, maxPixels: MAX_PIXELS }));
+            }
+            finally {
+                disposePosed(posed);
+            }
+        },
+        setSuspended: (isSuspended) => {
+            state.isSuspended = isSuspended;
         },
         isPlaying: () => state.isPlaying,
         setPlaying: (isPlaying) => {
@@ -315,6 +352,70 @@ const VIEWPORT_MARGIN = 32;
 const MAX_SMOOTH_ZOOM = 4;
 const MAX_RESOLUTION = 4;
 const MAX_PIXELS = 4_000_000;
+
+/** A view a pose returned, with its kind and the options its image is drawn with. */
+interface Posed {
+    readonly kind: AnyCanvasKind | HtmlViewKind;
+    readonly imageOptions: Record<string, unknown>;
+    readonly view: unknown;
+}
+
+/** Runs a test's pose, and checks that it returned a view of the test's kind. */
+async function runPose(options: { readonly test: RecordedTest; readonly config: PreviewStageOptions['config'] }): Promise<Posed> {
+    const { test } = options;
+    const kind = findKind(options);
+    const imageOptions = applyDefaults(kind.kind === 'html' ? undefined : (kind as AnyCanvasKind).defaults, test.options);
+    if (kind.kind !== 'html') (kind as AnyCanvasKind).beforePose?.(imageOptions);
+    const view: unknown = await test.pose(...test.args);
+    const isView = kind.kind === 'html' ? view instanceof Element : (kind as AnyCanvasKind).isView(view);
+    if (!isView) throw new Error(`The pose returned ${describeValue(view)}, which isn't a view of the test's kind, '${kind.kind}'.`);
+    return { kind, imageOptions, view };
+}
+
+/** Disposes a view that a pose returned, which isn't on the page. */
+function disposePosed(posed: Posed): void {
+    const { kind, view } = posed;
+    if (kind.kind === 'html') {
+        if (kind.dispose === undefined) (view as HTMLElement).remove();
+        else kind.dispose(view as HTMLElement);
+    }
+    else (kind as AnyCanvasKind).dispose?.(view);
+}
+
+/**
+ * Returns how a Pixi view is framed, as v-snap frames it. An axis whose size
+ * the test leaves out is framed by the view's bounds, with a margin.
+ */
+function frameView(view: Container, imageOptions: Record<string, unknown>): { readonly left: number; readonly top: number; readonly width: number; readonly height: number } {
+    const bounds = view.getLocalBounds();
+    const width = imageOptions.width as number | undefined;
+    const height = imageOptions.height as number | undefined;
+    const left = width === undefined ? Math.floor(bounds.x) - FRAME_MARGIN : 0;
+    const top = height === undefined ? Math.floor(bounds.y) - FRAME_MARGIN : 0;
+    return {
+        left,
+        top,
+        width: width ?? Math.max(1, Math.ceil(bounds.x + bounds.width) - left + FRAME_MARGIN),
+        height: height ?? Math.max(1, Math.ceil(bounds.y + bounds.height) - top + FRAME_MARGIN),
+    };
+}
+
+function backgroundOf(imageOptions: Record<string, unknown>): number | string {
+    return (imageOptions.background as number | string | undefined) ?? DEFAULT_BACKGROUND;
+}
+
+/** Returns the pixels of an image that a kind drew. */
+function readDrawnImage(image: DrawnImage): CapturedImage {
+    if (image instanceof HTMLCanvasElement || image instanceof OffscreenCanvas) {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext('2d')!;
+        context.drawImage(image, 0, 0);
+        return { pixels: context.getImageData(0, 0, image.width, image.height).data, width: image.width, height: image.height };
+    }
+    return { pixels: new Uint8ClampedArray(image.pixels), width: image.width, height: image.height };
+}
 
 /** The kind of view a test's pose returns, from its options and the site's config. */
 function findKind(options: { readonly test: RecordedTest; readonly config: PreviewStageOptions['config'] }): AnyCanvasKind | HtmlViewKind {

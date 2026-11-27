@@ -3,7 +3,9 @@
 A page for looking at views in isolation, and changing them as you look. It
 runs the poses in a site's visual tests, so you don't write anything new to
 preview a view. Each literal in a pose becomes a knob that you can change,
-and the view can play on from the pose, in real time.
+and the view can play on from the pose, in real time. The game's tuning
+objects get controls too, so you can tune how the game feels while it
+plays.
 
 ```sh
 npm run serve -w @mvtjs/view-preview -- --site puzzles --port 5190
@@ -49,6 +51,35 @@ files, as Node.js 22.18 and later do.
   boolean and string written in the pose. A number gets a slider and a box,
   a colour written as `0xRRGGBB` gets a colour picker, a boolean gets a
   checkbox and a string gets a text box. Each change runs the pose again.
+  A slider's range is a guess. To go past it, hold the thumb against an
+  end. After a second, the end moves out, faster the longer you hold, and
+  the value follows it. An end that the name's unit fixes stays put, such
+  as 0 below an `Ms` or 1 above a `Chance`.
+- **Tune the game.** Below the knobs, the Tuning section lists the tuning
+  objects that the test imports, however indirectly, with a control for
+  each field. A tuning object is a top-level `const` named like
+  `SHIP_TUNING`, exported or not, whose value is an object literal, as in
+  Galaxy Raiders' models and views. A number's control gets its range from
+  the unit its name ends in, such as `Ms`, `PerSecond` or `Chance`. Each
+  field shows its doc comment under its name. While time stands still, a change
+  runs the pose again, so you see the pose as the new value makes it. While
+  the view plays, a change sets the field on the object itself, and the
+  models and views that read it see it the next time they use it. Changes
+  are kept for the browser's tab, across reloads, and Reset puts a field
+  back as the file has it.
+- **See the knobs that matter.** Once a pose is shown, the preview checks
+  what each knob does to it, which takes a second or two. It runs the pose
+  with each knob set to half and one and a half times its value, the other
+  value of a boolean, or the opposite colour, and compares the pictures.
+  Then each list puts the knobs that change the picture first, with the
+  share of the picture they change, such as `2%`, beside their names. The
+  knobs that leave the picture the same, and the tuning fields the pose
+  doesn't read, are folded away at the bottom, unless you've changed them.
+  As the view plays on, a field it reads for the first time, such as a
+  dive's timing once a raider dives, moves up out of the folded ones,
+  marked `in play`. The line at the top of the panel says how many knobs
+  change the pose. A knob holding text isn't checked, since other text may
+  be text the code doesn't expect, so it's always shown.
 - **Play on from the pose.** Play, Pause and Step move time on from where
   the pose left the view. The models that the pose passed to `advanceTime`
   move on with it, so a celebration or a flight plays to its end.
@@ -80,6 +111,17 @@ preview's server only:
   literal until you change its knob (`src/node/instrument-knobs.ts`).
 - `advanceTime` reports the models it advances, so play can keep them
   running.
+- Each tuning object passes through `registerTuning` as it's created
+  (`src/node/instrument-tunings.ts`), which returns the same object, so the
+  page can change its fields. It returns a stand-in for the object, which
+  notes each field the code reads, so the preview knows which fields a
+  pose reads. To list a test's tuning objects, the server follows the test
+  file's imports through Vite's module graph.
+
+To check what the knobs do (`src/page/knob-effects.ts`), the page runs the
+pose off the page, draws it, and reads its pixels, with the live view held
+still meanwhile. It runs the pose twice as it is first, to check that it
+draws the same picture each time.
 
 The page (`src/page/`) shows each view as the site's `vsnap.config.ts`
 says to treat it. A Pixi view is drawn live on a Pixi renderer of the
@@ -92,8 +134,20 @@ added to the page as it is.
 - Only literals written in the test's own pose become knobs. A constant, a
   helper's default or a loop's value stays as it is.
 - A pose defined elsewhere and passed by name doesn't get knobs.
-- A slider's range is a guess from the literal. Type a value in the box to
-  go past it.
+- A change to a tuning object stays in the page. The preview doesn't write
+  it back to its file yet.
+- A value worked out from a tuning field as its module loads, such as a
+  constant at the top of a file, keeps the value it had then, since the
+  module doesn't run again.
+- The knob check needs a pose that draws the same picture each time it
+  runs. A view that uses `Math.random()` rather than a seeded random source
+  shows every knob, with a line that says why. So does an HTML view, whose
+  pixels the preview can't read.
+- The knob check compares each knob at two other values. A knob whose
+  effect starts beyond them, such as a delay that only matters once it's
+  longer than the pose, is folded away as leaving the pose the same.
+- A slider's range is a guess from the literal. Hold the thumb against an
+  end to grow it, or type a value in the box.
 - What you see isn't the reference image. The browser draws with your
   GPU and fonts, and v-snap draws in its own calibrated browser.
 - A view that needs a texture made by v-snap's renderer (`getPixiRenderer`)

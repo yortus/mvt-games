@@ -48,7 +48,7 @@ export function listKnobLiterals(options: { readonly pose: ts.ArrowFunction | ts
 // ---------------------------------------------------------------------------
 
 /** Returns the literal a node is, or `undefined` if it isn't one. A negative number is a minus sign before a number. */
-function readLiteral(node: ts.Node, source: ts.SourceFile): { readonly kind: KnobKind; readonly value: KnobValue } | undefined {
+export function readLiteral(node: ts.Node, source: ts.SourceFile): { readonly kind: KnobKind; readonly value: KnobValue } | undefined {
     if (ts.isNumericLiteral(node)) {
         const text = node.getText(source).replaceAll('_', '');
         return { kind: /^0x[0-9a-f]{6}$/i.test(text) ? 'color' : 'number', value: Number(text) };

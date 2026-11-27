@@ -1,17 +1,23 @@
 // The preview page. It lists the package's visual test files, loads a file
 // when you open it, and runs the test you pick, with a knob for each literal
-// in its pose. Saving a test file or a view reloads the page, which picks the
+// in its pose, and a control for each field of the tuning objects it imports.
+// Once the pose is shown, it measures what each knob changes, and folds away
+// the knobs that leave the picture the same. Saving a test file or a view reloads the page, which picks the
 // same test again, and keeps the knobs you changed whose literals are still
 // as they were.
 import './preview.css';
 import testFiles from 'virtual:view-preview/test-files';
 import vsnapConfig from 'virtual:view-preview/vsnap-config';
 import type { KnobValue } from '../shared';
+import { callApi } from './call-api';
+import { type KnobEffect, type KnobEffects, measureKnobEffects } from './knob-effects';
 import { renderKnobPanel } from './knob-panel';
 import { findPoseInfo, setActiveKnobs } from './knobs';
 import { createPreviewStage } from './preview-stage';
 import { createReferencePanel } from './reference-panel';
 import { createSnapshotForm } from './snapshot-form';
+import { renderTuningPanel } from './tuning-panel';
+import { findTuning, listTuningReads, type RegisteredTuning } from './tunings';
 import { type RecordedTest, startRecording, takeRecordedTests } from './vsnap-stand-in';
 
 // ---------------------------------------------------------------------------
@@ -51,7 +57,9 @@ document.body.innerHTML = `
         <pre class="vp-error" hidden></pre>
     </main>
     <aside class="vp-side">
+        <p class="vp-effects-status vp-note"></p>
         <div class="vp-knobs"></div>
+        <div class="vp-tuning"></div>
         <section class="vp-reference" hidden></section>
     </aside>
 </div>`;
@@ -70,7 +78,9 @@ const elements = {
     size: select<HTMLElement>('.vp-size'),
     viewport: select<HTMLElement>('.vp-viewport'),
     error: select<HTMLElement>('.vp-error'),
+    effectsStatus: select<HTMLElement>('.vp-effects-status'),
     knobs: select<HTMLElement>('.vp-knobs'),
+    tuning: select<HTMLElement>('.vp-tuning'),
     snapshot: select<HTMLButtonElement>('.vp-snapshot'),
     snapshotForm: select<HTMLFormElement>('.vp-snapshot-form'),
     reference: select<HTMLElement>('.vp-reference'),
@@ -84,6 +94,7 @@ const stage = createPreviewStage({
         elements.time.textContent = `${(stage.elapsedMs() / 1000).toFixed(2)} s played, ${models} model${models === 1 ? '' : 's'}`;
         elements.size.textContent = stage.describeSize();
         elements.play.textContent = stage.isPlaying() ? 'Pause' : 'Play';
+        noteLaterReads();
     },
 });
 
@@ -98,6 +109,15 @@ const selection = {
     source: undefined as { readonly path: string; readonly line: number; readonly column: number } | undefined,
 };
 const posing = { isRunning: false, isPending: false };
+/** What each knob changes on the selected test's pose, once measured, and the measurement under way, if one is. */
+const effects = {
+    test: undefined as RecordedTest | undefined,
+    result: undefined as KnobEffects | undefined,
+    run: undefined as { isCancelled: boolean; done: Promise<void> } | undefined,
+    /** How many fields the view has read since the pose that the pose itself didn't read, as last shown. */
+    laterCount: 0,
+};
+const tuningLists = new Map<RecordedTest, Promise<readonly RegisteredTuning[]>>();
 const referencePanel = createReferencePanel({ host: elements.reference });
 const snapshotForm = createSnapshotForm({
     form: elements.snapshotForm,
@@ -135,9 +155,7 @@ addEventListener('message', (event: MessageEvent<{ readonly type?: string; reado
     if (event.data.type === 'view-preview:select' && event.data.hash !== undefined) location.hash = event.data.hash;
 });
 elements.where.addEventListener('click', (event) => {
-    if (window.parent === window || selection.source === undefined) return;
-    event.preventDefault();
-    window.parent.postMessage({ type: 'view-preview:open-source', ...selection.source }, '*');
+    if (selection.source !== undefined && openSource(selection.source)) event.preventDefault();
 });
 
 renderFileList();
@@ -228,6 +246,8 @@ async function selectTest(options: { readonly file: TestFile; readonly test: Rec
     selection.button?.classList.remove('vp-selected');
     button.classList.add('vp-selected');
     Object.assign(selection, { file, test, button, values: restoreValues(file, test) });
+    Object.assign(effects, { test, result: undefined, laterCount: 0 });
+    elements.effectsStatus.textContent = '';
     history.replaceState(undefined, '', `#${encodeURIComponent(file.path)}::${encodeURIComponent(test.name)}`);
     const pose = findPoseInfo(test.pose);
     elements.title.textContent = test.name;
@@ -237,6 +257,7 @@ async function selectTest(options: { readonly file: TestFile; readonly test: Rec
     elements.where.textContent = `${file.path}${pose === undefined ? '' : `:${pose.line}`}`;
     elements.where.href = `vscode://file/${path}${pose === undefined ? '' : `:${pose.line}:${pose.column}`}`;
     renderKnobs();
+    void renderTuning();
     snapshotForm.close();
     referencePanel.show({ file: path, name: test.name });
     await requestPose();
@@ -249,11 +270,148 @@ function renderKnobs(): void {
         host: elements.knobs,
         pose: findPoseInfo(test.pose),
         values,
+        effectOf: (index) => (effects.test === test ? effects.result?.pose.get(index) : undefined),
         onChange: () => {
             saveValues();
             void requestPose();
         },
     });
+}
+
+/**
+ * Shows the fields of the tuning objects a test imports. The server finds
+ * them in Vite's module graph. A change while time stands still runs the
+ * pose again, so the view shows the pose as the new value makes it. A change
+ * while the view plays sets the value under the running models and views,
+ * which read it the next time they use it.
+ */
+async function renderTuning(): Promise<void> {
+    const { test, source } = selection;
+    if (test === undefined || source === undefined) return;
+    const tunings = await loadTunings({ testFile: source.path, test });
+    if (selection.test !== test) return;
+    renderTuningPanel({
+        host: elements.tuning,
+        tunings,
+        effectOf: (key) => findTuningEffect({ test, key }),
+        onChange: () => {
+            if (!stage.isPlaying()) void requestPose();
+        },
+        openSource,
+    });
+}
+
+/** Returns the tuning objects a test imports, once for each test. The server finds them in Vite's module graph. */
+function loadTunings(options: { readonly testFile: string; readonly test: RecordedTest }): Promise<readonly RegisteredTuning[]> {
+    const { testFile, test } = options;
+    let list = tuningLists.get(test);
+    if (list === undefined) {
+        list = callApi<{ readonly ids: readonly string[] }>({ route: `tunings?file=${encodeURIComponent(testFile)}` }).then(
+            (answer) => answer.ids.map((id) => findTuning(id)).filter((found): found is RegisteredTuning => found !== undefined),
+            (error: unknown) => {
+                showError(error);
+                return [];
+            },
+        );
+        tuningLists.set(test, list);
+    }
+    return list;
+}
+
+/** Returns what a tuning field does to a test's pose. A field the pose doesn't read, but the view has read since, is `later`. */
+function findTuningEffect(options: { readonly test: RecordedTest; readonly key: string }): KnobEffect | undefined {
+    const { test, key } = options;
+    const result = effects.test === test ? effects.result : undefined;
+    const effect = result?.tuning.get(key);
+    if (effect?.kind === 'unread' && listTuningReads().has(key)) return { kind: 'later' };
+    return effect;
+}
+
+/** Shows the tuning panel again when the view reads a field that its pose didn't, so the field moves up from the folded ones. */
+function noteLaterReads(): void {
+    const result = effects.result;
+    if (result === undefined || effects.test !== selection.test) return;
+    let count = 0;
+    for (const key of listTuningReads()) {
+        if (!result.poseReads.has(key)) count++;
+    }
+    if (count === effects.laterCount) return;
+    effects.laterCount = count;
+    void renderTuning();
+}
+
+/**
+ * Measures what each knob changes on the selected test's pose, unless it's
+ * measured already. The frames hold still while it runs, since it sets each
+ * knob in turn. A pose that's requested meanwhile cancels it, and it starts
+ * again once that pose is shown.
+ */
+function startEffects(): void {
+    const { test, source, values } = selection;
+    if (test === undefined || source === undefined || effects.run !== undefined) return;
+    if (effects.test === test && effects.result !== undefined) return;
+    const run = { isCancelled: false, done: Promise.resolve() };
+    effects.run = run;
+    stage.setSuspended(true);
+    elements.effectsStatus.textContent = 'Checking which knobs change this pose...';
+    run.done = (async () => {
+        try {
+            const tunings = await loadTunings({ testFile: source.path, test });
+            const result = await measureKnobEffects({
+                stage,
+                test,
+                pose: findPoseInfo(test.pose),
+                poseValues: values,
+                tunings,
+                onProgress: (done, total) => {
+                    elements.effectsStatus.textContent = `Checking which knobs change this pose: ${done} of ${total}`;
+                },
+                isCancelled: () => run.isCancelled || selection.test !== test,
+            });
+            if (result === undefined || selection.test !== test) return;
+            Object.assign(effects, { test, result, laterCount: 0 });
+            elements.effectsStatus.textContent = describeEffects(result);
+            renderKnobs();
+            await renderTuning();
+        }
+        catch (error) {
+            showError(error);
+        }
+        finally {
+            stage.setSuspended(false);
+            effects.run = undefined;
+        }
+    })();
+}
+
+/** Cancels the measurement under way, if there is one, and waits until it has put every knob back. */
+async function cancelEffects(): Promise<void> {
+    const run = effects.run;
+    if (run === undefined) return;
+    run.isCancelled = true;
+    await run.done;
+}
+
+/** Returns the line above the knobs that says what the measurement found. */
+function describeEffects(result: KnobEffects): string {
+    if (result.note !== undefined) return result.note;
+    const all = [...result.pose.values(), ...result.tuning.values()];
+    const count = (kind: KnobEffect['kind']): number => all.filter((effect) => effect.kind === kind).length;
+    const folded = count('same') + count('unread');
+    const unchecked = count('unchecked');
+    if (all.length === 0) return '';
+    return [
+        `${count('changes')} of ${all.length} knobs change this pose.`,
+        folded > 0 ? `The ${folded} that leave it the same are folded away at the bottom of each list.` : '',
+        unchecked > 0 ? `The preview can't check ${unchecked === 1 ? 'one, such as text, so it\'s' : `${unchecked}, such as text, so they're`} shown too.` : '',
+    ].filter((sentence) => sentence !== '').join(' ');
+}
+
+/** Asks VS Code to open a file at a place, when the page is in its webview. Returns whether it did. */
+function openSource(where: { readonly path: string; readonly line: number; readonly column: number }): boolean {
+    if (window.parent === window) return false;
+    window.parent.postMessage({ type: 'view-preview:open-source', ...where }, '*');
+    return true;
 }
 
 /** Runs the selected test's pose, with the knobs as they are. A change while a pose runs runs it again once it's done. */
@@ -264,6 +422,7 @@ async function requestPose(): Promise<void> {
     }
     posing.isRunning = true;
     try {
+        await cancelEffects();
         do {
             posing.isPending = false;
             await showSelected();
@@ -272,6 +431,7 @@ async function requestPose(): Promise<void> {
     finally {
         posing.isRunning = false;
     }
+    startEffects();
 }
 
 async function showSelected(): Promise<void> {
