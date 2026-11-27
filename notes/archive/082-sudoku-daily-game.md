@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-10-30 |
-| Updated  | 2026-10-30 |
+| Updated  | 2026-11-27 |
 
 ## Description
 
@@ -50,7 +50,7 @@ Sudoku Digger's five levels (081), made by the Digger's generator.
       cells in one row, column or box.
 - [x] A double tap fills in a cell, clearing its doodles.
 - [x] Model, view and visual tests; thumbnail and share picture.
-- [ ] Playtested in a browser, on a phone and with a mouse.
+- [x] Playtested in a browser, on a phone and with a mouse.
 
 ## Progress Log
 
@@ -184,3 +184,10 @@ Sudoku Digger's five levels (081), made by the Digger's generator.
   - Not done: typing JSX text styles as `TextStyleOptions` (the JSX `style`
     prop won't take it); the keypad's take-back still counts in
     `undosDone`.
+- 2026-11-27: Archived in a clean-up of the notes. The entry is now in the
+  puzzles site (`packages/sites/puzzles/src/entries/sudoku/`), and 088 has
+  since changed its way in: the picker and the double tap are gone, and a
+  press and hold fills a cell. Both items left "not done" above are
+  settled: the views now type their text styles as `TextStyleOptions`, and
+  088 removed the keypad's take-back. The user has playtested it, and it
+  is complete.

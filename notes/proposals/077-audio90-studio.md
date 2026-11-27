@@ -9,7 +9,12 @@
 > game. Four stages, each worth shipping on its own: a sound designer, an
 > engine editor, a tracker, and sharing.
 
-**Status:** proposed. Grown from [074](../archive/074-audio90-standalone-package.md)
+**Status:** stage 1 built in a worktree, uncommitted, and not yet in
+vnext. The `studio` worktree (`.claude/worktrees/studio`, at 7e70edfc)
+holds the sound designer, steps 1 to 6, with instruments added on
+2026-10-30, waiting on a playtest (step 7). It was made before the
+Arcade split into three sites. Its changes to the dev server, the deploy
+and the checks need redoing against the site kit before it can merge. Grown from [074](../archive/074-audio90-standalone-package.md)
 section 8, which left the Studio for a proposal of its own once `audio90`
 was published.
 

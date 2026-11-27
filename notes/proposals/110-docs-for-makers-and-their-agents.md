@@ -14,7 +14,8 @@
 > comes in six stages. The first can land at once. The second waits for
 > the `pixi-3d` worktree to merge.
 
-**Status:** proposed. Nothing done yet.
+**Status:** proposed. Nothing done yet. The `pixi-3d` worktree has since
+merged into vnext (by 2026-11-24), so stage 1 can start too.
 
 **Written:** 2026-11-22, on `vnext` at `e78eb349`, from a review of the
 whole book (every chapter's outline, the Preface, Chapters 1 to 3, 9 and 25,

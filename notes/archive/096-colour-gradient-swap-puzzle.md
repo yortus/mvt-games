@@ -15,7 +15,9 @@
 **Status:** proposed. Spiked (sections 3 and 4), then built whole as a
 spike, **Rosette** (first called Glass Smith), and playtested five times. The third playtest cut
 the tiling to a frame (section 3.6). The fifth gave each day its frame, and
-freed the pieces the frame only trims. Nothing is merged.
+freed the pieces the frame only trims. It was committed as an entry in
+94229408 (2026-11-13), and has been in the puzzles site since. Finished
+and archived on 2026-11-27 (section 12).
 
 **Written:** 2026-11-07, against `vnext` at `fbd613bd`. The spikes were Node
 scripts (not in the repo) that ran the Penrose demo's
@@ -28,8 +30,8 @@ and [symmetries](../../packages/sites/demos/src/entries/penrose-tiling/data/cons
 the puzzles' [shared parts](../../packages/sites/puzzles/src/shared/index.ts),
 [A Puzzle's Day and Its Way In](../../packages/sites/arcade/src/entries/README.md#a-puzzles-day-and-its-way-in),
 the [originality rules](../../packages/sites/arcade/src/entries/README.md#originality),
-[087](../archive/087-wall-maze-puzzle.md) (Minotaur's proposal),
-[094](../archive/094-drags-on-a-grid.md) (`listenToPointer`),
+[087](./087-wall-maze-puzzle.md) (Minotaur's proposal),
+[094](./094-drags-on-a-grid.md) (`listenToPointer`),
 [073](../tasks/backlog/073-models-take-their-random-source.md) (models take their random source).
 
 | # | Decision or recommendation | Section |
@@ -767,3 +769,14 @@ Not for the first release, but worth keeping in mind:
    picture.
 9. Playtest with a mouse, and on a phone, at every level. Tune section 6.
 10. The colour vision setting, if it isn't in step 4 to 7 already.
+
+## 12. Progress
+
+- 2026-11-13: Committed as an entry, **Rosette**, in 94229408, after five
+  playtests. Later commits moved it onto the shared random source
+  (f0c65476), and tuned its board, frames and visual tests.
+- 2026-11-27: Finished and archived, at the user's word. What section 10
+  and step 10 left open was set aside rather than built: the colour vision
+  setting, more gradient layouts and moods, and the remaining tuning
+  questions. The Penrose demo and Rosette each keep their own copy of
+  `multigrid-tiles.ts`, rather than sharing one as section 3.1 recommended.

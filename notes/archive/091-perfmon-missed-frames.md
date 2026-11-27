@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-11-06 |
-| Updated  | 2026-11-06 |
+| Updated  | 2026-11-27 |
 
 ## Description
 
@@ -104,3 +104,6 @@ inside the test browser, batching every Nth colour:
 
 - 2026-11-06: Measured two signals on a bare page, and bookmarked the idea.
 - 2026-11-06: Built late frames, found the cliff on mild slowdowns, and rebuilt it as missed frames. Everything above is in the working tree, uncommitted.
+- 2026-11-27: Archived in a clean-up of the notes. It was committed in
+  446eb59a, and released with changesets for `@mvtjs/utils` and
+  `@mvtjs/html`. The checks in Chrome, Firefox and Safari moved to task 017.

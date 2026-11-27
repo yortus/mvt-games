@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-10-30 |
-| Updated  | 2026-10-30 |
+| Updated  | 2026-11-27 |
 
 ## Description
 
@@ -57,8 +57,8 @@ Decided with the user on 2026-10-30:
 - [x] Model tests: every puzzle has one solution and keeps its level's
       limits, the same seed gives the same puzzle, and the grader never
       places a wrong digit or rubs out a right one
-- [ ] Views show each phase, with plain captions, and the controls work by
-      touch and mouse (seen in visual tests; not yet played in a browser)
+- [x] Views show each phase, with plain captions, and the controls work by
+      touch and mouse (seen in visual tests, and playtested in a browser)
 - [x] Sounds tested as Neon Monsoon's are: audible, unclipped, unchanged,
       and softer than -24 LUFS
 - [x] Visual tests for the views, the whole-screen reference image, a
@@ -149,3 +149,8 @@ the levels' givens ranges rethought.
   65.5 KB against its 60 KB budget. Left: a playtest in the browser.
 - 2026-10-31: Renamed the Evil level Hardest, at the user's word. The
   cited paper's title keeps its "Evil".
+- 2026-11-27: Archived in a clean-up of the notes. Since this log, the
+  entry moved to the demos site (`packages/sites/demos/src/entries/sudoku-digger/`)
+  and its generator to `packages/sites/puzzles/src/entries/sudoku/generator/`,
+  imported as `@mvtjs/puzzles/sudoku-generator`. The user has
+  playtested it in a browser, and it works.

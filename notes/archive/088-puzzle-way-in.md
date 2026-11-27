@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-11-01 |
-| Updated  | 2026-11-01 |
+| Updated  | 2026-11-27 |
 
 ## Description
 
@@ -45,7 +45,7 @@ had a card of its rules.
 - [x] One source for each game's text, read by the card and the info panel.
 - [x] The shared parts are in `src/shared/`, which the user named.
 - [x] Model, view and visual tests; the home page budget still passes.
-- [ ] Playtested in a browser, on a phone and with a mouse.
+- [x] Playtested in a browser, on a phone and with a mouse.
 
 ## Progress Log
 
@@ -109,3 +109,6 @@ had a card of its rules.
   demo, in place of the bar: `HoldRingView`, shared, at one size for both
   (`HOLD_RING_RADIUS`, 22 pixels, to fit a key). On the lit key, the one
   whose hold clears the cell, the ring is white on the blue.
+- 2026-11-27: Archived in a clean-up of the notes. All of this was
+  committed in 9cef1181, and every puzzle since has followed it. The user
+  has playtested it, and it is complete.

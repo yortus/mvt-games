@@ -17,9 +17,9 @@
 > givens: **hide the clues the rules can do without**. About a third of
 > them can go, and the rules then take about 70% more passes to finish.
 
-**Status:** steps 1 and 2 built (section 7). Every level can be solved
-without a guess, and Hard and Expert hide clues. Waiting on a playtest of
-the hidden clues.
+**Status:** built and playtested in full (section 7), and archived on
+2026-11-27. Every level can be solved without a guess, and Hard and
+Expert hide clues.
 
 **Written:** 2026-11-17, against `vnext` at `2ef9c043`, at the user's
 request: "look at whether and how this givens technique can also be
@@ -28,9 +28,9 @@ The probes were a Vitest file beside the Minotaur models, not kept. Times
 are in Node.
 
 **Related:**
-[101](../archive/101-stars-without-guessing.md) (Stars without guessing, where the
+[101](./101-stars-without-guessing.md) (Stars without guessing, where the
 line between fair and guessing was drawn),
-[087](../archive/087-wall-maze-puzzle.md) (Minotaur's proposal, whose
+[087](./087-wall-maze-puzzle.md) (Minotaur's proposal, whose
 section 4.5 chose tries for the harder levels),
 [the solver](../../packages/sites/puzzles/src/entries/minotaur/models/maze-solver.ts),
 [the maker](../../packages/sites/puzzles/src/entries/minotaur/models/maze-puzzle.ts),
@@ -242,7 +242,7 @@ out from the cells around it." The rules text loses nothing.
    unchanged; Hard and Expert become fair but harder only by size.
 2. Hidden clues: in the maker, the puzzle, its save and description, the
    board view, the How to play card and the details text.
-3. Timings in Node and on a phone, and a playtest.
+3. ~~Timings in Node and on a phone, and a playtest.~~ Done.
 
 ## 7. Progress
 
@@ -312,3 +312,7 @@ out from the cells around it." The rules text loses nothing.
   on average (worst 24.9). A Hint button, showing the solver's next
   deduction from the player's own marks, was offered and not yet asked
   for.
+- 2026-11-27: Archived in a clean-up of the notes. Steps 1 and 2 are in
+  bce02ad4 and 0ed28bca. The user has playtested it in full, Expert with
+  at most 4 hidden clues included, and it is complete. The Hint
+  button stays an idea, unless a playtest asks for it.

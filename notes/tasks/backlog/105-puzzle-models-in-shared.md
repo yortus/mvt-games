@@ -9,7 +9,7 @@
 ## Description
 
 Found in a review of Boats and River, the puzzles from
-[104](../../proposals/104-fleet-and-track-puzzles.md).
+[104](../../archive/104-fleet-and-track-puzzles.md).
 
 Each of the six daily puzzles keeps its own copy of three models. The
 copies are almost the same, apart from the puzzle's own names.

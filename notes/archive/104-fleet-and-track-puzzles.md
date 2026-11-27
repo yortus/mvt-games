@@ -17,14 +17,16 @@
 > and 102 did for Stars and Minotaur. A solver uses direct techniques only,
 > and the maker adds givens until it finishes.
 
-**Status:** built, awaiting review and a playtest. Both entries,
-**Boats** and **River** (first named Moorings and Meander), were built on 2026-11-20 in the
-`line-puzzles` worktree, and left uncommitted (section 15). The names
-still need searching in the trademark registers.
+**Status:** built and committed. Both entries, **Boats** and **River**
+(first named Moorings and Meander), were built on 2026-11-20 in the
+`line-puzzles` worktree (section 15). They were reviewed and merged into
+vnext the same day (406c660a to 8a7719d4), out of beta. Finished and
+archived on 2026-11-27 (section 15).
 
 **Written:** 2026-11-20, against `vnext` at `bf528841`. The history comes
 from the sources linked in sections 2 and 8. The names were checked by web
-searches only. The trademark registers (USPTO, TMview) are not yet searched.
+searches only. A later check of the US register, on 2026-11-27, is in
+section 15.
 
 **Related:**
 [Stars](../../packages/sites/puzzles/src/entries/stars/) and
@@ -32,8 +34,8 @@ searches only. The trademark registers (USPTO, TMview) are not yet searched.
 the puzzles' [shared parts](../../packages/sites/puzzles/src/shared/index.ts),
 [A Puzzle's Day and Its Way In](../../packages/sites/arcade/src/entries/README.md#a-puzzles-day-and-its-way-in),
 the [originality rules](../../packages/sites/arcade/src/entries/README.md#originality),
-[099](../archive/099-star-placement-puzzle.md) (Stars' proposal, whose shape this follows),
-[101](../archive/101-stars-without-guessing.md) (direct techniques and givens),
+[099](./099-star-placement-puzzle.md) (Stars' proposal, whose shape this follows),
+[101](./101-stars-without-guessing.md) (direct techniques and givens),
 [102](./102-minotaur-without-guessing.md) (the same for Minotaur).
 
 | # | Decision or recommendation | Section |
@@ -522,3 +524,27 @@ level, as a slow test; visual tests for each view.
   marks, -32 for the main mark and a clash, -29 for a boat finished, and
   -26 for solved. So the loudness check is done; the playtest and the
   trademark searches are left.
+- 2026-11-27: Finished and archived, at the user's word. Both games were
+  reviewed, merged into vnext on 2026-11-20 (406c660a to 8a7719d4), and
+  taken out of beta. Open question 2 (shaped boats) was left as it is.
+  Sharing the puzzles' game model, undo and seeds is task 105.
+- 2026-11-27: A quick trademark check of both names. Neither looks like a
+  real risk. Both are plain words that describe their puzzles, and no live
+  mark on the plain word covers games. This isn't legal advice, and the
+  check covered only part of the registers.
+  - **Boats.** The two exact BOATS marks are dead, and neither was for
+    games. The nearest is Supercell's **BOAT** (US serial 79435770, classes
+    9, 28 and 41), for its shooter "Boat Game". It looks like a logo mark,
+    and the US application is pending after a refusal on 2026-11-20. No
+    fleet puzzle is called just "Boats". The nearest is "Boats Solitaire
+    Puzzles", on iOS.
+  - **River.** The live RIVER marks in class 9 cover unrelated software,
+    and those in classes 28 and 41 are dead. The game marks nearest it
+    each add a word: RIVER GAME (reg. 8340429), RIVER RAID (Activision,
+    reg. 1282626) and RIVER RUSH (casino games, reg. 7755677). No game on
+    Steam is called just "River".
+  - **What was searched.** The US register, through Trademarkia's mirror
+    (the first pages of results for each word), and web searches. USPTO's
+    own search, TMview, EUIPO, Justia and the UK office couldn't be
+    reached, so the EU and UK results come from search snippets alone. A
+    search by hand in EUIPO or TMview would fill that gap.

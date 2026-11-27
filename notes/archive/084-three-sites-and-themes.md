@@ -29,8 +29,8 @@ in `vite.config.ts` and `.github/workflows/deploy.yml`.
 (the one precedent in the repo, written to the page from TypeScript),
 [036](../archive/036-website-arcade.md) and
 [052](../archive/052-playground-ide.md) (the earlier splits of the website),
-[081](../tasks/active/081-sudoku-digger-demo.md) and
-[082](../tasks/active/082-sudoku-daily-game.md) (the Sudoku pair, which
+[081](./081-sudoku-digger-demo.md) and
+[082](./082-sudoku-daily-game.md) (the Sudoku pair, which
 share grid code).
 
 | Decision | Recommendation | Section |

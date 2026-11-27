@@ -250,7 +250,7 @@ a mixed song says which channels are Audio80 ones is open (section 9.2).
 ## 7. The Arcade and the Package
 
 - **The Arcade:** remove `SoundChipKind` and the chip-kind type parameters.
-  Every entry gets two Audio90 chips. The nine Audio80 entries change only
+  Every entry gets two Audio90 chips. The ten Audio80 entries change only
   their starter, and their loudness stays as tuned, since their output is
   byte-identical.
 - **The package:** remove the Audio80's browser, headless and worklet

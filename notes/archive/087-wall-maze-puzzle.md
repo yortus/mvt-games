@@ -22,8 +22,8 @@ force on 4x4, 5x5 and 5x6.
 
 **Related:** [Sudoku](../../packages/sites/puzzles/src/entries/sudoku/), whose daily
 calendar, records and seeds this could share.
-[081](../tasks/active/081-sudoku-digger-demo.md) and
-[082](../tasks/active/082-sudoku-daily-game.md). The
+[081](./081-sudoku-digger-demo.md) and
+[082](./082-sudoku-daily-game.md). The
 [originality rules](../../packages/sites/arcade/src/entries/README.md#originality).
 [073](../tasks/backlog/073-models-take-their-random-source.md) (models take their
 random source).

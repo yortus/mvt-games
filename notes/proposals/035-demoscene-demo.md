@@ -11,7 +11,16 @@
 > repo: no input, a model that is a clock and a script, and views that hold no
 > state at all, which makes pause, seek and thumbnails free.
 
-**Status:** proposed. Nothing implemented.
+**Status:** built on a branch, and waiting on a decision. The
+`demoscene-demo` branch (pushed to origin, last changed 2026-10-06) holds
+steps 1 to 6, under the paths of its day
+(`packages/website/src/entries/demoscene/`). Reviews on that branch, in
+`notes/temp/demoscene-reviews/`, recommend against merging it. They
+suggest keeping it for reference, and rebuilding a smaller show of four
+parts, without the boot screen (too close to the original machine's) or
+the 3D vectors. The sound chip they asked for first has since landed.
+You still need to choose whether to rebuild it smaller or drop it. vnext
+doesn't hold any of it.
 
 **Written:** 2026-10-03, against `vnext` at `dd3ec54`. Checked against the demo
 registry ([`demo-entry.ts`](../../packages/sites/arcade/src/demos/demo-entry.ts),

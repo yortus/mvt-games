@@ -4,7 +4,7 @@
 | -------- | ---------- |
 | Priority | medium     |
 | Created  | 2026-09-26 |
-| Updated  | 2026-11-07 |
+| Updated  | 2026-11-27 |
 
 ## Description
 
@@ -165,6 +165,13 @@ Settled questions that should not be reopened without new information are in
   - F1 opens and closes the sheet, checked in Chromium only. Check it in
     Firefox and Safari, and if it doesn't hold in one, add Ctrl+Shift+H. It
     can't work while the preview has the focus until task 063 is done.
+- **The Perfmon's Missed row, checked in real browsers.** From
+  [091](../../archive/091-perfmon-missed-frames.md). Everything so far ran
+  in Playwright's headless shell, where the slowdown that prompted it ran
+  at 5 FPS rather than 45. Watch the row in your own Chrome while an entry
+  drops frames (Penrose Tiling, panned at full zoom-out, was the first
+  case), then try it in Firefox and Safari. If it misreads in one, fix it
+  or note why.
 
 ### Investigate
 
@@ -413,3 +420,5 @@ falling-sand demo. Each is a new variant, measured with
   its two loose ends, the win banner's step and the card wall's `layout` (Fix).
 - 2026-11-07: Fixed the win banner's step, with the other sites that moved at a
   `deltaMs` of 0, and moved the card wall's `layout` on from `arcade-view.tsx`.
+- 2026-11-27: Archived 091 (the Perfmon's missed frames) and took in its
+  checks in real browsers (Decide).
